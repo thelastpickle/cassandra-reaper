@@ -1,0 +1,12 @@
+#!/bin/bash
+
+CLASSPATH="/usr/share/cassandra-reaper/*"
+
+JVM_OPTS=(
+    -Xms1G
+    -Xmx2G
+    )
+exec java ${JVM_OPTS[@]} \
+        -cp "$CLASSPATH" \
+	com.spotify.reaper.ReaperApplication \
+	"$@"
