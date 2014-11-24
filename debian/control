@@ -1,0 +1,11 @@
+Source: cassandra-reaper
+Section: non-free/net
+Priority: extra
+Maintainer:
+Build-Depends: debhelper (>= 7), default-jdk, maven2
+Standards-Version: 3.7.2
+
+Package: cassandra-reaper
+Architecture: all
+Depends: default-jre
+Description: Software to run automated repairs of Cassandra

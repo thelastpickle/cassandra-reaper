@@ -1,0 +1,5 @@
+cassandra-reaper (0.0.1-1) unstable; urgency=low
+
+  * Initial build
+
+ -- Björn Hegerfors <bj0rn@spotify.com>  Mon, 24 Nov 2014 13:56:51 +0100
