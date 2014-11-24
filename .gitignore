@@ -1,0 +1,15 @@
+# Build products and artifacts
+*.html
+.m2-repository/
+pom.xml.versionsBackup
+target/
+dependency-reduced-pom.xml
+
+# Stuff from various IDE's and editors
+*.iml
+*~
+.idea/*
+
+# Mac OS X Finder
+.DS_Store
+
