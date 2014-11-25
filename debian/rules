@@ -16,7 +16,6 @@ build:
 
 binary:
 	dh binary --until dh_fixperms
-	dh_supervision --no-start --no-restart-on-upgrade
 	dh binary --remaining
 
 clean:
