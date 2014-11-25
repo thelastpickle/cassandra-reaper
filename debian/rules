@@ -3,7 +3,7 @@
 DEB_DH_INSTALL_SOURCEDIR=debian/tmp
 DEB_DH_INSTALLINIT_ARGS=-n
 
-MVN = mvn3 -B -U -e -Dmaven.repo.local=$$PWD/.m2-repository -s/etc/maven2/spotify-settings.xml
+MVN = mvn -B -U -e -Dmaven.repo.local=$$PWD/.m2-repository -s/etc/maven2/spotify-settings.xml
 SUREFIRE = -Dsurefire.useFile=false
 
 %:
