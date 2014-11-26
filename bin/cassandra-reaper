@@ -9,4 +9,4 @@ JVM_OPTS=(
 exec java ${JVM_OPTS[@]} \
         -cp "$CLASSPATH" \
 	com.spotify.reaper.ReaperApplication \
-	"$@"
+	server "$@"
