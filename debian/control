@@ -1,7 +1,10 @@
 Source: cassandra-reaper
 Section: non-free/net
 Priority: extra
-Maintainer:
+Maintainer: Hannu Varjoranta <varjo@spotify.com>
+Uploaders: Bjorn Hegerfors <bj0rn@spotify.com>,
+           Jimmy Mardell <yarin@spotify.com>,
+           Radovan Zvoncek <zvo@spotify.com>
 Build-Depends: debhelper (>= 7), default-jdk, maven
 Standards-Version: 3.7.2
 
