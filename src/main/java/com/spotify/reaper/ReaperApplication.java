@@ -1,6 +1,9 @@
 package com.spotify.reaper;
 
+import com.spotify.reaper.resources.AddClusterResource;
+import com.spotify.reaper.resources.AddTableResource;
 import com.spotify.reaper.resources.PingResource;
+import com.spotify.reaper.resources.RepairTableResource;
 
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
@@ -25,8 +28,14 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   @Override
   public void run(ReaperApplicationConfiguration configuration,
                   Environment environment) {
-    final PingResource resource = new PingResource();
-    environment.jersey().register(resource);
+    final PingResource pingResource = new PingResource();
+    final AddClusterResource addClusterResource = new AddClusterResource();
+    final AddTableResource addTableResource = new AddTableResource();
+    final RepairTableResource repairTableResource = new RepairTableResource();
+    environment.jersey().register(pingResource);
+    environment.jersey().register(addClusterResource);
+    environment.jersey().register(addTableResource);
+    environment.jersey().register(repairTableResource);
   }
 
 }
