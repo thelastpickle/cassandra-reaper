@@ -16,6 +16,7 @@ public class AddTableResource {
   public String addTable(@QueryParam("host") Optional<String> host,
                          @QueryParam("keyspace") Optional<String> keyspace,
                          @QueryParam("table") Optional<String> table) {
+
     return String.format("Not implemented yet");
   }
 

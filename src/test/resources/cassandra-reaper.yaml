@@ -1,0 +1,13 @@
+segmentCount: 100
+repairStrategy: com.spotify.reaper.SequentialRepairStrategy
+snapshotRepair: false
+repairIntensity: 0.75
+
+logging:
+  level: INFO
+  appenders:
+    - type: syslog
+      threshold: ALL
+      timeZone: UTC
+      facility: local0
+      stackTracePrefix: \t
