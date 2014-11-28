@@ -4,7 +4,7 @@ snapshotRepair: false
 repairIntensity: 0.75
 
 logging:
-  level: INFO
+  level: DEBUG
   appenders:
     - type: syslog
       threshold: ALL
