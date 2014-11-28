@@ -5,7 +5,7 @@ repairIntensity: 0.75
 
 logging:
   level: DEBUG
+  loggers:
+    io.dropwizard: INFO
   appenders:
-    - type: syslog
-      threshold: ALL
-      facility: local0
+    - type: console
