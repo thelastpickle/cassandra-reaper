@@ -8,12 +8,52 @@ public class RepairSegment {
   private Long id;
   private final ColumnFamily columnFamily;
   private final long runID;
-  private final int priority; // int? long?
+  private final int priority; // int/long/BigInteger?
   private final BigInteger startToken;
   private final BigInteger endToken;
   private final State state;
   private final DateTime startTime;
   private final DateTime endTime;
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public ColumnFamily getColumnFamily() {
+    return columnFamily;
+  }
+
+  public long getRunID() {
+    return runID;
+  }
+
+  public int getPriority() {
+    return priority;
+  }
+
+  public BigInteger getStartToken() {
+    return startToken;
+  }
+
+  public BigInteger getEndToken() {
+    return endToken;
+  }
+
+  public State getState() {
+    return state;
+  }
+
+  public DateTime getStartTime() {
+    return startTime;
+  }
+
+  public DateTime getEndTime() {
+    return endTime;
+  }
 
   public enum State {
     NOT_STARTED,
@@ -21,7 +61,7 @@ public class RepairSegment {
     DONE
   }
 
-  public RepairSegment(RepairSegmentBuilder builder) {
+  private RepairSegment(RepairSegmentBuilder builder) {
     this.id = builder.id;
     this.columnFamily = builder.columnFamily;
     this.runID = builder.runID;
@@ -35,7 +75,7 @@ public class RepairSegment {
 
 
   public static class RepairSegmentBuilder {
-    private long id;
+    private Long id;
     private ColumnFamily columnFamily;
     private long runID;
     private int priority;
@@ -91,7 +131,7 @@ public class RepairSegment {
     }
 
 
-    public RepairSegment createRepairSegment() {
+    public RepairSegment build() {
       return new RepairSegment(this);
     }
   }

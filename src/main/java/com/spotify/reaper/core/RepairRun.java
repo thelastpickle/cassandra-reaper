@@ -12,6 +12,42 @@ public class RepairRun {
   private final DateTime endTime;
   private final double intensity;
 
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public String getCause() {
+    return cause;
+  }
+
+  public String getOwner() {
+    return owner;
+  }
+
+  public State getState() {
+    return state;
+  }
+
+  public DateTime getCreationTime() {
+    return creationTime;
+  }
+
+  public DateTime getStartTime() {
+    return startTime;
+  }
+
+  public DateTime getEndTime() {
+    return endTime;
+  }
+
+  public double getIntensity() {
+    return intensity;
+  }
+
   public enum State {
     NOT_STARTED,
     RUNNING,
