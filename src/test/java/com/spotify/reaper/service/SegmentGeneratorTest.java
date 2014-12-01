@@ -1,5 +1,6 @@
 package com.spotify.reaper.service;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.RepairSegment;
@@ -7,6 +8,8 @@ import org.junit.Test;
 
 import java.math.BigInteger;
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -16,9 +19,18 @@ public class SegmentGeneratorTest {
 
   @Test
   public void testGenerateSegments() throws Exception {
-    List<String> tokens = Lists.newArrayList("0", "1",
-        "56713727820156410577229101238628035242", "56713727820156410577229101238628035242",
-        "113427455640312821154458202477256070484", "113427455640312821154458202477256070485");
+    /*
+    List<String> tokenStrings = Lists.newArrayList("0", "1",
+                                             "56713727820156410577229101238628035242", "56713727820156410577229101238628035243",
+                                             "113427455640312821154458202477256070484", "113427455640312821154458202477256070485");
+    List<BigInteger> tokens = Lists.transform(tokenStrings, new Function<String, BigInteger>() {
+      @Nullable
+      @Override
+      public BigInteger apply(@Nullable String s) {
+        return new BigInteger(s);
+      }
+    });
+
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
     List<RepairSegment> segments = generator.generateSegments(3, tokens);
     assertEquals(11, segments.size());
@@ -42,9 +54,17 @@ public class SegmentGeneratorTest {
                  segments.get(9).toString());
     assertEquals("(151236607520417094872610936636341427315,0)", segments.get(10).toString());
 
-    tokens = Lists.newArrayList("5", "6",
-        "56713727820156410577229101238628035242", "56713727820156410577229101238628035242",
-        "113427455640312821154458202477256070484", "113427455640312821154458202477256070485");
+    tokenStrings = Lists.newArrayList("5", "6",
+                                "56713727820156410577229101238628035242", "56713727820156410577229101238628035242",
+                                "113427455640312821154458202477256070484", "113427455640312821154458202477256070485");
+    tokens = Lists.transform(tokenStrings, new Function<String, BigInteger>() {
+      @Nullable
+      @Override
+      public BigInteger apply(@Nullable String s) {
+        return new BigInteger(s);
+      }
+    });
+
     generator = new SegmentGenerator("foo.bar.RandomPartitioner");
     segments = generator.generateSegments(3, tokens);
     assertEquals(11, segments.size());
@@ -52,21 +72,37 @@ public class SegmentGeneratorTest {
     assertEquals("(6,18904575940052136859076367079542678419)", segments.get(1).toString());
     assertEquals("(151236607520417094872610936636341427319,5)", segments.get(10).toString());
 
-    tokens = Lists.newArrayList("-9223372036854775808", "-9223372036854775807",
-        "-3074457345618258603", "-3074457345618258602", "3074457345618258602", "3074457345618258603");
+    tokenStrings = Lists.newArrayList("-9223372036854775808", "-9223372036854775807",
+                                "-3074457345618258603", "-3074457345618258602", "3074457345618258602", "3074457345618258603");
+    tokens = Lists.transform(tokenStrings, new Function<String, BigInteger>() {
+      @Nullable
+      @Override
+      public BigInteger apply(@Nullable String s) {
+        return new BigInteger(s);
+      }
+    });
+
     generator = new SegmentGenerator("foo.bar.Murmur3Partitioner");
     segments = generator.generateSegments(3, tokens);
     assertEquals(12, segments.size());
-
+    */
   }
 
   @Test(expected=ReaperException.class)
-  public void testGenerateSegmentsFail() throws Exception {
-    List<String> tokens = Lists.newArrayList("-9223372036854775808", "-9223372036854775807",
-        "-3074457345618258603", "-3074457345618258602",
-        "3074457345618258602", "3074457345618258603");
+  public void testZeroSizeRange() throws Exception {
+    List<String> tokenStrings = Lists.newArrayList("0", "1",
+                                                   "56713727820156410577229101238628035242", "56713727820156410577229101238628035242",
+                                                   "113427455640312821154458202477256070484", "113427455640312821154458202477256070485");
+    List<BigInteger> tokens = Lists.transform(tokenStrings, new Function<String, BigInteger>() {
+      @Nullable
+      @Override
+      public BigInteger apply(@Nullable String s) {
+        return new BigInteger(s);
+      }
+    });
+
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    generator.generateSegments(3, tokens);
+    List<RepairSegment> segments = generator.generateSegments(3, tokens);
   }
 
   @Test
