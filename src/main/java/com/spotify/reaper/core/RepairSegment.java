@@ -8,7 +8,6 @@ public class RepairSegment {
   private Long id;
   private final ColumnFamily columnFamily;
   private final long runID;
-  private final int priority; // int/long/BigInteger?
   private final BigInteger startToken;
   private final BigInteger endToken;
   private final State state;
@@ -29,10 +28,6 @@ public class RepairSegment {
 
   public long getRunID() {
     return runID;
-  }
-
-  public int getPriority() {
-    return priority;
   }
 
   public BigInteger getStartToken() {
@@ -65,7 +60,6 @@ public class RepairSegment {
     this.id = builder.id;
     this.columnFamily = builder.columnFamily;
     this.runID = builder.runID;
-    this.priority = builder.priority;
     this.startToken = builder.startToken;
     this.endToken = builder.endToken;
     this.state = builder.state;
@@ -97,11 +91,6 @@ public class RepairSegment {
 
     public RepairSegmentBuilder runID(long runID) {
       this.runID = runID;
-      return this;
-    }
-
-    public RepairSegmentBuilder priority(int priority) {
-      this.priority = priority;
       return this;
     }
 

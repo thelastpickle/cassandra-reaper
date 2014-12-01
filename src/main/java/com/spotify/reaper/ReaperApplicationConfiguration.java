@@ -4,10 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.hibernate.validator.constraints.NotEmpty;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 
 import io.dropwizard.Configuration;
+import io.dropwizard.db.DataSourceFactory;
 
 public class ReaperApplicationConfiguration extends Configuration {
 
@@ -20,6 +21,12 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   private double repairIntensity;
 
+  @NotEmpty
+  private String storageType;
+
+  @Valid
+  @NotNull
+  private DataSourceFactory database = new DataSourceFactory();
 
   @JsonProperty
   public int getSegmentCount() {
@@ -62,5 +69,20 @@ public class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   public void setRepairIntensity(double repairIntensity) {
     this.repairIntensity = repairIntensity;
+  }
+
+  @JsonProperty
+  public void setStorageType(String storageType) {
+    this.storageType = storageType;
+  }
+
+  @JsonProperty
+  public String getStorageType() {
+    return storageType;
+  }
+
+  @JsonProperty
+  public DataSourceFactory getDataSourceFactory() {
+    return database;
   }
 }

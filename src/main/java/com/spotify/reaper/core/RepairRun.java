@@ -2,7 +2,10 @@ package com.spotify.reaper.core;
 
 import org.joda.time.DateTime;
 
+import java.util.List;
+
 public class RepairRun {
+
   private Long id;
   private final String cause;
   private final String owner;
@@ -11,6 +14,7 @@ public class RepairRun {
   private final DateTime startTime;
   private final DateTime endTime;
   private final double intensity;
+  private final List<RepairSegment> repairSegments;
 
   public Long getId() {
     return id;
@@ -48,6 +52,10 @@ public class RepairRun {
     return intensity;
   }
 
+  public List<RepairSegment> getRepairSegments() {
+    return repairSegments;
+  }
+
   public enum State {
     NOT_STARTED,
     RUNNING,
@@ -64,10 +72,11 @@ public class RepairRun {
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
     this.intensity = builder.intensity;
+    this.repairSegments = builder.repairSegments;
   }
 
-
   public static class RepairRunBuilder {
+
     private Long id;
     private String cause;
     private String owner;
@@ -76,6 +85,7 @@ public class RepairRun {
     private DateTime startTime;
     private DateTime endTime;
     private double intensity;
+    private List<RepairSegment> repairSegments;
 
     public RepairRunBuilder id(long id) {
       this.id = id;
@@ -117,6 +127,10 @@ public class RepairRun {
       return this;
     }
 
+    public RepairRunBuilder repairSegments(List<RepairSegment> repairSegments) {
+      this.repairSegments = repairSegments;
+      return this;
+    }
 
     public RepairRun build() {
       return new RepairRun(this);

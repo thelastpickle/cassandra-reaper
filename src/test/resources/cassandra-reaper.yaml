@@ -1,5 +1,5 @@
 segmentCount: 100
-repairStrategy: com.spotify.reaper.SequentialRepairStrategy
+repairStrategy: com.spotify.reaper.service.SequentialRepairStrategy
 snapshotRepair: false
 repairIntensity: 0.75
 
@@ -9,3 +9,47 @@ logging:
     io.dropwizard: INFO
   appenders:
     - type: console
+
+# storageType is either "database" or "memory"
+storageType: memory
+
+## The example below is from:
+## https://dropwizard.github.io/dropwizard/manual/jdbi.html#usage
+## This is not used or needed, if storageType is "memory"
+database:
+  # the name of your JDBC driver
+  driverClass: org.postgresql.Driver
+
+  # the username
+  user: pg-user
+
+  # the password
+  password: iAMs00perSecrEET
+
+  # the JDBC URL
+  url: jdbc:postgresql://db.example.com/db-prod
+
+  # any properties specific to your JDBC driver:
+  properties:
+    charSet: UTF-8
+
+  # the maximum amount of time to wait on an empty pool before throwing an exception
+  maxWaitForConnection: 1s
+
+  # the SQL query to run when validating a connection's liveness
+  validationQuery: "/* MyService Health Check */ SELECT 1"
+
+  # the minimum number of connections to keep open
+  minSize: 8
+
+  # the maximum number of connections to keep open
+  maxSize: 32
+
+  # whether or not idle connections should be validated
+  checkConnectionWhileIdle: false
+
+  # the amount of time to sleep between runs of the idle connection validation, abandoned cleaner and idle pool resizing
+  evictionInterval: 10s
+
+  # the minimum amount of time an connection must sit idle in the pool before it is eligible for eviction
+  minIdleTime: 1 minute
