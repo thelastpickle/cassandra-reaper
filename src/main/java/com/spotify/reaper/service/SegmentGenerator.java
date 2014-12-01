@@ -69,7 +69,11 @@ public class SegmentGenerator {
         if (greaterThan(ocur, RANGE_MAX)) {
           ocur = ocur.subtract(RANGE_SIZE);
         }
-        repairSegments.add(new RepairSegment(ocur, onext));
+        //repairSegments.add(new RepairSegment(ocur, onext));
+        repairSegments.add(new RepairSegment.RepairSegmentBuilder()
+                               .startToken(ocur)
+                               .endToken(onext)
+                               .build());
         total = total.add(next).subtract(cur);
         cur = next;
       }
