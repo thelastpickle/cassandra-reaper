@@ -135,4 +135,10 @@ public class RepairSegment {
       return new RepairSegment(this);
     }
   }
+
+
+  @Override
+  public String toString() {
+    return String.format("(%s,%s)", startToken.toString(), endToken.toString());
+  }
 }
