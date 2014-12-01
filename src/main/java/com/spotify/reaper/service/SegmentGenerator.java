@@ -52,15 +52,11 @@ public class SegmentGenerator {
   public List<RepairSegment> generateSegments(int totalSegmentCount, List<BigInteger> ringTokens)
       throws ReaperException {
     int tokenRangeCount = ringTokens.size();
-    BigInteger start;
-    BigInteger stop;
 
-//    BigInteger total = BigInteger.ZERO;
     List<RepairSegment> repairSegments = Lists.newArrayList();
-
     for (int i = 0; i < tokenRangeCount; i++) {
-      start = ringTokens.get(i);
-      stop = ringTokens.get((i + 1) % tokenRangeCount);
+      BigInteger start = ringTokens.get(i);
+      BigInteger stop = ringTokens.get((i + 1) % tokenRangeCount);
 
       if (!inRange(start) || !inRange(stop)) {
         throw new ReaperException(String.format("Tokens (%s,%s) not in range of %s",
@@ -70,12 +66,13 @@ public class SegmentGenerator {
         throw new ReaperException(String.format("Tokens (%s,%s): two nodes have the same token",
                                                 start, stop));
       }
-      if (lowerThan(stop, start)) {
-        // wrap around case
-        stop = stop.add(RANGE_SIZE);
-      }
 
       BigInteger rangeSize = stop.subtract(start);
+      if (lowerThan(rangeSize, BigInteger.ZERO)) {
+        // wrap around case
+        rangeSize = rangeSize.add(RANGE_SIZE);
+      }
+
       // the below, in essence, does this:
       // segmentCount = ceiling((rangeSize / RANGE_SIZE) * totalSegmentCount)
       BigInteger[] segmentCountAndRemainder =
@@ -85,7 +82,8 @@ public class SegmentGenerator {
 
       LOG.info("Dividing token range [{},{}) into {} segments", start, stop, segmentCount);
 
-      List<BigInteger> reaperTokens = Lists.newArrayList();
+      // Make a list of all the endpoints for the repair segments, including both start and stop
+      List<BigInteger> endpointTokens = Lists.newArrayList();
       for (int j = 0; j <= segmentCount; j++) {
         BigInteger reaperToken =
             start.add(
@@ -93,24 +91,33 @@ public class SegmentGenerator {
                     .multiply(BigInteger.valueOf(j))
                     .divide(BigInteger.valueOf(segmentCount)));
         if (greaterThan(reaperToken, RANGE_MAX))
-          reaperToken = reaperToken.subtract(RANGE_MAX);
-        reaperTokens.add(reaperToken);
+          reaperToken = reaperToken.subtract(RANGE_SIZE);
+        endpointTokens.add(reaperToken);
       }
 
+      // Append the segments between the endpoints
       for (int j = 0; j < segmentCount; j++)
       {
         repairSegments.add(new RepairSegment.RepairSegmentBuilder()
-                           .startToken(reaperTokens.get(j))
-                           .endToken(reaperTokens.get(j + 1))
-                           .build());
-        LOG.debug("Segment #{}: [{},{})", j + 1, reaperTokens.get(j),
-                  reaperTokens.get(j + 1));
+                               .startToken(endpointTokens.get(j))
+                               .endToken(endpointTokens.get(j + 1))
+                               .build());
+        LOG.debug("Segment #{}: [{},{})", j + 1, endpointTokens.get(j),
+                  endpointTokens.get(j + 1));
       }
     }
 
-//    if (!total.equals(RANGE_SIZE)) {
-//      throw new ReaperException("Not entire ring would get repaired");
-//    }
+    // verify that the whole range is repaired
+    BigInteger total = BigInteger.ZERO;
+    for (RepairSegment segment : repairSegments) {
+      BigInteger size = segment.getEndToken().subtract(segment.getStartToken());
+      if (lowerThan(size, BigInteger.ZERO))
+        size = size.add(RANGE_SIZE);
+      total = total.add(size);
+    }
+    if (!total.equals(RANGE_SIZE)) {
+      throw new ReaperException("Not entire ring would get repaired");
+    }
     return repairSegments;
   }
 
