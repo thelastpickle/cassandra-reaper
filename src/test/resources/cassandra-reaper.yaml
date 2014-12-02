@@ -13,6 +13,17 @@ logging:
 # storageType is either "database" or "memory"
 storageType: memory
 
+server:
+  type: default
+  applicationConnectors:
+    - type: http
+      port: 8080
+      bindHost: 127.0.0.1
+  adminConnectors:
+    - type: http
+      port: 8081
+      bindHost: 127.0.0.1
+
 ## The example below is from:
 ## https://dropwizard.github.io/dropwizard/manual/jdbi.html#usage
 ## This is not used or needed, if storageType is "memory"
@@ -37,7 +48,7 @@ database:
   maxWaitForConnection: 1s
 
   # the SQL query to run when validating a connection's liveness
-  validationQuery: "/* MyService Health Check */ SELECT 1"
+  validationQuery: "SELECT 1"
 
   # the minimum number of connections to keep open
   minSize: 8

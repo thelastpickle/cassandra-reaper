@@ -3,6 +3,10 @@
 -- Assumes PostgreSQL version 9.3 or newer
 --
 
+-- CREATE DATABASE reaper_db;
+-- CREATE USER reaper WITH PASSWORD 'my_secret_password';
+-- GRANT ALL PRIVILEGES ON DATABASE reaper_db TO reaper;
+
 CREATE TABLE IF NOT EXISTS "cluster" (
   "id" SERIAL PRIMARY KEY,
   "partitioner" TEXT NOT NULL,
@@ -42,3 +46,8 @@ CREATE TABLE IF NOT EXISTS "repair_segment" (
 );
 CREATE UNIQUE INDEX "repair_segment_run_id_idx" ON "repair_segment" USING BTREE ("run_id");
 CREATE UNIQUE INDEX "repair_segment_state_idx" ON "repair_segment" USING BTREE ("state");
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE cluster TO reaper;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE column_family TO reaper;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_run TO reaper;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_segment TO reaper;
