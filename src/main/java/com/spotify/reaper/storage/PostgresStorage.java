@@ -4,8 +4,10 @@ import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
 
 import org.skife.jdbi.v2.DBI;
+import org.skife.jdbi.v2.Handle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,8 +28,7 @@ public class PostgresStorage implements IStorage {
     try {
       final DBIFactory factory = new DBIFactory();
       jdbi = factory.build(environment, config.getDataSourceFactory(), "postgresql");
-    }
-    catch (ClassNotFoundException ex) {
+    } catch (ClassNotFoundException ex) {
       LOG.error("failed creating database connection: {}", ex);
       throw new ReaperException(ex);
     }
@@ -35,7 +36,28 @@ public class PostgresStorage implements IStorage {
 
   @Override
   public Cluster getCluster(String clusterName) {
-    return null;
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    Cluster result = postgres.getCluster(clusterName);
+    h.close();
+    return result;
+  }
+
+  @Override
+  public Cluster insertCluster(Cluster newCluster) {
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    int rowsAdded = postgres.insertCluster(newCluster);
+    Cluster result;
+    if (rowsAdded < 1) {
+      LOG.warn("failed inserting cluster with name: {}", newCluster.getName());
+      result = null;
+    }
+    else {
+      result = postgres.getCluster(newCluster.getName());
+    }
+    h.close();
+    return result;
   }
 
   @Override

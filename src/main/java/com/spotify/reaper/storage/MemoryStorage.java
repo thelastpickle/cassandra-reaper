@@ -14,6 +14,11 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
+  public Cluster insertCluster(Cluster newCluster) {
+    return null;
+  }
+
+  @Override
   public RepairRun addRepairRun(RepairRun repairRun) {
     return null;
   }

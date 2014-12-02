@@ -26,6 +26,7 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @Valid
   @NotNull
+  @JsonProperty
   private DataSourceFactory database = new DataSourceFactory();
 
   @JsonProperty

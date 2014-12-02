@@ -1,7 +1,9 @@
 package com.spotify.reaper.cassandra;
 
 import com.google.common.collect.Lists;
+
 import com.spotify.reaper.ReaperException;
+
 import org.apache.cassandra.service.StorageServiceMBean;
 
 import java.io.IOException;
@@ -20,11 +22,11 @@ public class JMXProxy {
 
   private static final int DEFAULT_JMX_PORT = 7199;
 
-  private JMXConnector jmxc = null;
+  private JMXConnector jmxConnector = null;
   private StorageServiceMBean ssProxy;
 
-  public JMXProxy(JMXConnector jmxc, StorageServiceMBean ssProxy) {
-    this.jmxc = jmxc;
+  public JMXProxy(JMXConnector jmxConnector, StorageServiceMBean ssProxy) {
+    this.jmxConnector = jmxConnector;
     this.ssProxy = ssProxy;
   }
 
@@ -37,17 +39,17 @@ public class JMXProxy {
     ObjectName name;
     try {
       jmxUrl = new JMXServiceURL(String.format("service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi",
-          host, port));
+                                               host, port));
       name = new ObjectName("org.apache.cassandra.db:type=StorageService");
     } catch (MalformedURLException | MalformedObjectNameException e) {
       throw new ReaperException("Failure during preparations for JMX connection", e);
     }
     try {
-      JMXConnector jmxc = JMXConnectorFactory.connect(jmxUrl);
-      MBeanServerConnection mbeanServerConn = jmxc.getMBeanServerConnection();
+      JMXConnector jmxConnector = JMXConnectorFactory.connect(jmxUrl);
+      MBeanServerConnection mbeanServerConn = jmxConnector.getMBeanServerConnection();
       StorageServiceMBean
           ssProxy = JMX.newMBeanProxy(mbeanServerConn, name, StorageServiceMBean.class);
-      return new JMXProxy(jmxc, ssProxy);
+      return new JMXProxy(jmxConnector, ssProxy);
     } catch (IOException e) {
       throw new ReaperException("Failure when establishing JMX connection", e);
     }
@@ -57,9 +59,13 @@ public class JMXProxy {
     return Lists.newArrayList(ssProxy.getTokenToEndpointMap().keySet());
   }
 
+  public String getClusterName() {
+    return ssProxy.getClusterName();
+  }
+
   public void close() throws ReaperException {
     try {
-      jmxc.close();
+      jmxConnector.close();
     } catch (IOException e) {
       throw new ReaperException(e);
     }

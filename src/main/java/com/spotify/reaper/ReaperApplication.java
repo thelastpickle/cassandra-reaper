@@ -1,6 +1,6 @@
 package com.spotify.reaper;
 
-import com.spotify.reaper.resources.AddClusterResource;
+import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.AddTableResource;
 import com.spotify.reaper.resources.PingResource;
 import com.spotify.reaper.resources.RepairTableResource;
@@ -40,7 +40,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     IStorage storage = initializeStorage(config, environment);
 
     final PingResource pingResource = new PingResource();
-    final AddClusterResource addClusterResource = new AddClusterResource(storage);
+    final ClusterResource addClusterResource = new ClusterResource(storage);
     final AddTableResource addTableResource = new AddTableResource();
     final RepairTableResource repairTableResource = new RepairTableResource();
 

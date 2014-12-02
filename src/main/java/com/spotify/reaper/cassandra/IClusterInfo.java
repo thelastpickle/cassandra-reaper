@@ -6,4 +6,5 @@ public interface IClusterInfo {
 
   public List<String> getTokens();
 
+  public String getClusterName();
 }

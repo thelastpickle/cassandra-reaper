@@ -10,6 +10,8 @@ public interface IStorage {
 
   public Cluster getCluster(String clusterName);
 
+  public Cluster insertCluster(Cluster newCluster);
+
   public RepairRun addRepairRun(RepairRun repairRun);
 
   public RepairRun getRepairRun(long id);
