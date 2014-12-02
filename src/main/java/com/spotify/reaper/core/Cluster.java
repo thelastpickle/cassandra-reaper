@@ -28,7 +28,7 @@ public class Cluster {
     return seedHosts;
   }
 
-  private Cluster(ClusterBuilder builder)
+  private Cluster(Builder builder)
   {
     this.id = builder.id;
     this.partitioner = builder.partitioner;
@@ -37,28 +37,28 @@ public class Cluster {
   }
 
 
-  public static class ClusterBuilder {
+  public static class Builder {
     private Long id;
     private String partitioner;
     private String name;
     private Set<String> seedHosts;
 
-    public ClusterBuilder id(long id) {
+    public Builder id(long id) {
       this.id = id;
       return this;
     }
 
-    public ClusterBuilder partitioner(String partitioner) {
+    public Builder partitioner(String partitioner) {
       this.partitioner = partitioner;
       return this;
     }
 
-    public ClusterBuilder name(String name) {
+    public Builder name(String name) {
       this.name = name;
       return this;
     }
 
-    public ClusterBuilder seedHosts(Set<String> seedHosts) {
+    public Builder seedHosts(Set<String> seedHosts) {
       this.seedHosts = seedHosts;
       return this;
     }

@@ -56,7 +56,7 @@ public class RepairSegment {
     DONE
   }
 
-  private RepairSegment(RepairSegmentBuilder builder) {
+  private RepairSegment(Builder builder) {
     this.id = builder.id;
     this.columnFamily = builder.columnFamily;
     this.runID = builder.runID;
@@ -68,53 +68,52 @@ public class RepairSegment {
   }
 
 
-  public static class RepairSegmentBuilder {
+  public static class Builder {
     private Long id;
     private ColumnFamily columnFamily;
     private long runID;
-    private int priority;
     private BigInteger startToken;
     private BigInteger endToken;
     private RepairSegment.State state;
     private DateTime startTime;
     private DateTime endTime;
 
-    public RepairSegmentBuilder id(long id) {
+    public Builder id(long id) {
       this.id = id;
       return this;
     }
 
-    public RepairSegmentBuilder columnFamily(ColumnFamily columnFamily) {
+    public Builder columnFamily(ColumnFamily columnFamily) {
       this.columnFamily = columnFamily;
       return this;
     }
 
-    public RepairSegmentBuilder runID(long runID) {
+    public Builder runID(long runID) {
       this.runID = runID;
       return this;
     }
 
-    public RepairSegmentBuilder startToken(BigInteger startToken) {
+    public Builder startToken(BigInteger startToken) {
       this.startToken = startToken;
       return this;
     }
 
-    public RepairSegmentBuilder endToken(BigInteger endToken) {
+    public Builder endToken(BigInteger endToken) {
       this.endToken = endToken;
       return this;
     }
 
-    public RepairSegmentBuilder state(RepairSegment.State state) {
+    public Builder state(RepairSegment.State state) {
       this.state = state;
       return this;
     }
 
-    public RepairSegmentBuilder startTime(DateTime startTime) {
+    public Builder startTime(DateTime startTime) {
       this.startTime = startTime;
       return this;
     }
 
-    public RepairSegmentBuilder endTime(DateTime endTime) {
+    public Builder endTime(DateTime endTime) {
       this.endTime = endTime;
       return this;
     }

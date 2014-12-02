@@ -43,7 +43,7 @@ public class ColumnFamily {
     return snapshotRepair;
   }
 
-  private ColumnFamily(ColumnFamilyBuilder builder)
+  private ColumnFamily(Builder builder)
   {
     this.id = builder.id;
     this.cluster = builder.cluster;
@@ -55,7 +55,7 @@ public class ColumnFamily {
   }
 
 
-  public static class ColumnFamilyBuilder {
+  public static class Builder {
     private Long id;
     private Cluster cluster;
     private String keyspaceName;
@@ -64,37 +64,37 @@ public class ColumnFamily {
     private int segmentCount;
     private boolean snapshotRepair;
 
-    public ColumnFamilyBuilder id(long id) {
+    public Builder id(long id) {
       this.id = id;
       return this;
     }
 
-    public ColumnFamilyBuilder cluster(Cluster cluster) {
+    public Builder cluster(Cluster cluster) {
       this.cluster = cluster;
       return this;
     }
 
-    public ColumnFamilyBuilder keyspaceName(String keyspaceName) {
+    public Builder keyspaceName(String keyspaceName) {
       this.keyspaceName = keyspaceName;
       return this;
     }
 
-    public ColumnFamilyBuilder name(String name) {
+    public Builder name(String name) {
       this.name = name;
       return this;
     }
 
-    public ColumnFamilyBuilder strategy(IRepairStrategy strategy) {
+    public Builder strategy(IRepairStrategy strategy) {
       this.strategy = strategy;
       return this;
     }
 
-    public ColumnFamilyBuilder segmentCount(int segmentCount) {
+    public Builder segmentCount(int segmentCount) {
       this.segmentCount = segmentCount;
       return this;
     }
 
-    public ColumnFamilyBuilder snapshotRepair(boolean snapshotRepair) {
+    public Builder snapshotRepair(boolean snapshotRepair) {
       this.snapshotRepair = snapshotRepair;
       return this;
     }

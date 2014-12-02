@@ -63,7 +63,7 @@ public class RepairRun {
     PAUSED
   }
 
-  private RepairRun(RepairRunBuilder builder) {
+  private RepairRun(Builder builder) {
     this.id = builder.id;
     this.cause = builder.cause;
     this.owner = builder.owner;
@@ -75,7 +75,7 @@ public class RepairRun {
     this.repairSegments = builder.repairSegments;
   }
 
-  public static class RepairRunBuilder {
+  public static class Builder {
 
     private Long id;
     private String cause;
@@ -87,47 +87,47 @@ public class RepairRun {
     private double intensity;
     private List<RepairSegment> repairSegments;
 
-    public RepairRunBuilder id(long id) {
+    public Builder id(long id) {
       this.id = id;
       return this;
     }
 
-    public RepairRunBuilder cause(String cause) {
+    public Builder cause(String cause) {
       this.cause = cause;
       return this;
     }
 
-    public RepairRunBuilder owner(String owner) {
+    public Builder owner(String owner) {
       this.owner = owner;
       return this;
     }
 
-    public RepairRunBuilder state(State state) {
+    public Builder state(State state) {
       this.state = state;
       return this;
     }
 
-    public RepairRunBuilder creationTime(DateTime creationTime) {
+    public Builder creationTime(DateTime creationTime) {
       this.creationTime = creationTime;
       return this;
     }
 
-    public RepairRunBuilder startTime(DateTime startTime) {
+    public Builder startTime(DateTime startTime) {
       this.startTime = startTime;
       return this;
     }
 
-    public RepairRunBuilder endTime(DateTime endTime) {
+    public Builder endTime(DateTime endTime) {
       this.endTime = endTime;
       return this;
     }
 
-    public RepairRunBuilder intensity(double intensity) {
+    public Builder intensity(double intensity) {
       this.intensity = intensity;
       return this;
     }
 
-    public RepairRunBuilder repairSegments(List<RepairSegment> repairSegments) {
+    public Builder repairSegments(List<RepairSegment> repairSegments) {
       this.repairSegments = repairSegments;
       return this;
     }

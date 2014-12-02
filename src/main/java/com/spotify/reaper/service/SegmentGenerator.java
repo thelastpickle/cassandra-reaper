@@ -98,7 +98,7 @@ public class SegmentGenerator {
       // Append the segments between the endpoints
       for (int j = 0; j < segmentCount; j++)
       {
-        repairSegments.add(new RepairSegment.RepairSegmentBuilder()
+        repairSegments.add(new RepairSegment.Builder()
                                .startToken(endpointTokens.get(j))
                                .endToken(endpointTokens.get(j + 1))
                                .build());
