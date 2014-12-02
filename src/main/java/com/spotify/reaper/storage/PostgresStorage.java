@@ -44,7 +44,7 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Cluster insertCluster(Cluster newCluster) {
+  public Cluster addCluster(Cluster newCluster) {
     Handle h = jdbi.open();
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
     int rowsAdded = postgres.insertCluster(newCluster);

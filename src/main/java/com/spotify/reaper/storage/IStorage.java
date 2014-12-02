@@ -8,9 +8,9 @@ import com.spotify.reaper.core.RepairRun;
  */
 public interface IStorage {
 
-  public Cluster getCluster(String clusterName);
+  public Cluster addCluster(Cluster cluster);
 
-  public Cluster insertCluster(Cluster newCluster);
+  public Cluster getCluster(String clusterName);
 
   public RepairRun addRepairRun(RepairRun repairRun);
 
