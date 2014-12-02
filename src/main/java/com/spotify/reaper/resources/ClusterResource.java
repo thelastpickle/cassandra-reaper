@@ -24,7 +24,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-@Path("/cluster/{name}")
+@Path("/cluster")
 @Produces(MediaType.APPLICATION_JSON)
 public class ClusterResource {
 
@@ -37,6 +37,7 @@ public class ClusterResource {
   }
 
   @GET
+  @Path("/{name}")
   public Response getCluster(@PathParam("name") String name) {
     Cluster cluster = storage.getCluster(name);
     return Response.ok().entity(cluster).build();
