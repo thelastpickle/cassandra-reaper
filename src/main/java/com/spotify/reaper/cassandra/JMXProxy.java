@@ -63,6 +63,10 @@ public class JMXProxy {
     return ssProxy.getClusterName();
   }
 
+  public String getPartitionerName() {
+    return ssProxy.getPartitionerName();
+  }
+
   public void close() throws ReaperException {
     try {
       jmxConnector.close();

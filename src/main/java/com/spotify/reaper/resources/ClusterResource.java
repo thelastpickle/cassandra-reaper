@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.ClusterInfo;
+import com.spotify.reaper.cassandra.IClusterInfo;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.storage.IStorage;
 
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URL;
+import java.util.Collections;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -51,7 +53,7 @@ public class ClusterResource {
     }
     LOG.info("add cluster called with host: {}", host);
 
-    ClusterInfo clusterInfo;
+    IClusterInfo clusterInfo;
     try {
       clusterInfo = ClusterInfo.getInstance(host.get());
     } catch (ReaperException e) {
@@ -61,13 +63,22 @@ public class ClusterResource {
       return Response.status(400).entity(errMsg).build();
     }
 
+
     URI createdURI = null;
     try {
-      createdURI = (new URL(uriInfo.getAbsolutePath().toURL(), "1")).toURI();
+      createdURI = (new URL(uriInfo.getAbsolutePath().toURL(), clusterInfo.getSymbolicName())).toURI();
     } catch (Exception e) {
-      LOG.error("failed creating target URI: " + uriInfo.getAbsolutePath());
+      String errMsg = "failed creating target for cluster: " + clusterInfo.getSymbolicName();
+      LOG.error(errMsg);
       e.printStackTrace();
+      return Response.status(400).entity(errMsg).build();
     }
+
+    storage.addCluster(new Cluster.Builder()
+                           .name(clusterInfo.getClusterName())
+                           .seedHosts(Collections.singleton(host.get()))
+                           .partitioner(clusterInfo.getPartitionerName())
+                           .build());
 
     String replyMsg = "cluster with name \"" + clusterInfo.getClusterName() + "\" created";
     return Response.created(createdURI).entity(replyMsg).build();

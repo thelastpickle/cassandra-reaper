@@ -9,6 +9,7 @@ public class ClusterInfo implements IClusterInfo {
   private String seedHost;
   private int seedPort = 0;
   private String clusterName;
+  private String partitionerName;
 
   private List<String> tokens;
 
@@ -26,6 +27,7 @@ public class ClusterInfo implements IClusterInfo {
         seedPort == 0 ? JMXProxy.connect(seedHost) : JMXProxy.connect(seedHost, seedPort);
     tokens = jmx.getTokens();
     clusterName = jmx.getClusterName();
+    partitionerName = jmx.getPartitionerName();
     jmx.close();
     return this;
   }
@@ -38,6 +40,20 @@ public class ClusterInfo implements IClusterInfo {
   @Override
   public String getClusterName() {
     return clusterName;
+  }
+
+  public static String toSymbolicName(String s) {
+    return s.toLowerCase().replaceAll("[^a-z0-9_]", "");
+  }
+
+  @Override
+  public String getSymbolicName() {
+    return toSymbolicName(clusterName);
+  }
+
+  @Override
+  public String getPartitionerName() {
+    return partitionerName;
   }
 
 }
