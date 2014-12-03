@@ -18,7 +18,6 @@ CREATE TABLE IF NOT EXISTS "column_family" (
   "cluster_name" TEXT NOT NULL REFERENCES "cluster" ("name"),
   "keyspace_name" TEXT NOT NULL,
   "name" TEXT NOT NULL,
-  "strategy" TEXT NOT NULL,
   "segment_count" INT NOT NULL,
   "snapshot_repair" BOOLEAN NOT NULL
 );

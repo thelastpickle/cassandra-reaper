@@ -8,12 +8,12 @@ public class Cluster {
   private final String partitioner; // Name of the partitioner class
   private final Set<String> seedHosts;
 
-  public String getPartitioner() {
-    return partitioner;
-  }
-
   public String getName() {
     return name;
+  }
+
+  public String getPartitioner() {
+    return partitioner;
   }
 
   public Set<String> getSeedHosts() {
@@ -21,24 +21,23 @@ public class Cluster {
   }
 
   private Cluster(Builder builder) {
-    this.partitioner = builder.partitioner;
     this.name = builder.name;
+    this.partitioner = builder.partitioner;
     this.seedHosts = builder.seedHosts;
   }
 
   public static class Builder {
 
+    private final String name;
     private String partitioner;
-    private String name;
     private Set<String> seedHosts;
+
+    public Builder(String name) {
+      this.name = name;
+    }
 
     public Builder partitioner(String partitioner) {
       this.partitioner = partitioner;
-      return this;
-    }
-
-    public Builder name(String name) {
-      this.name = name;
       return this;
     }
 

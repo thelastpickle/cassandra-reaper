@@ -14,9 +14,6 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   private int segmentCount;
 
-  @NotEmpty
-  private String repairStrategy;
-
   private boolean snapshotRepair;
 
   private double repairIntensity;
@@ -38,18 +35,6 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setSegmentCount(int segmentCount) {
     this.segmentCount = segmentCount;
   }
-
-
-  @JsonProperty
-  public String getRepairStrategy() {
-    return repairStrategy;
-  }
-
-  @JsonProperty
-  public void setRepairStrategy(String repairStrategy) {
-    this.repairStrategy = repairStrategy;
-  }
-
 
   @JsonProperty
   public boolean getSnapshotRepair() {

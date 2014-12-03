@@ -14,8 +14,7 @@ public class ClusterMapper implements ResultSetMapper<Cluster> {
 
   public Cluster map(int index, ResultSet r, StatementContext ctx) throws SQLException {
     String[] seedHosts = (String[]) r.getArray("seed_hosts").getArray();
-    return new Cluster.Builder()
-        .name(r.getString("name"))
+    return new Cluster.Builder(r.getString("name"))
         .partitioner(r.getString("partitioner"))
         .seedHosts(new HashSet<String>(Arrays.asList(seedHosts)))
         .build();

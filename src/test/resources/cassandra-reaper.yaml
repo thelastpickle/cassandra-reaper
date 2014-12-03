@@ -1,5 +1,4 @@
 segmentCount: 100
-repairStrategy: com.spotify.reaper.service.SequentialRepairStrategy
 snapshotRepair: false
 repairIntensity: 0.75
 

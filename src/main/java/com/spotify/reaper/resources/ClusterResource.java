@@ -51,40 +51,49 @@ public class ClusterResource {
       LOG.error("POST on cluster resource called without host");
       return Response.status(400).entity("query parameter \"host\" required").build();
     }
-    LOG.info("add cluster called with host: {}", host);
+    LOG.info("add cluster called with host: {}", host.get());
 
+    Cluster newCluster;
+    try {
+      newCluster = createClusterWithSeedHost(host.get());
+    } catch (ReaperException e) {
+      return Response.status(400)
+          .entity("failed to create cluster with seed host: " + host.get()).build();
+    }
+
+    storage.addCluster(newCluster);
+
+    URI createdURI = null;
+    try {
+      createdURI = (new URL(uriInfo.getAbsolutePath().toURL(), newCluster.getName())).toURI();
+    } catch (Exception e) {
+      String errMsg = "failed creating target URI for cluster: " + newCluster.getName();
+      LOG.error(errMsg);
+      e.printStackTrace();
+      return Response.status(400).entity(errMsg).build();
+    }
+
+    return Response.created(createdURI).entity(newCluster).build();
+  }
+
+  public static Cluster createClusterWithSeedHost(String seedHost)
+      throws ReaperException {
     String clusterName;
     String partitioner;
     try {
-      JmxProxy jmxProxy = JmxProxy.connect(host.get());
+      JmxProxy jmxProxy = JmxProxy.connect(seedHost);
       clusterName = jmxProxy.getClusterName();
       partitioner = jmxProxy.getPartitioner();
       jmxProxy.close();
     } catch (ReaperException e) {
-      String errMsg = "failed to get cluster info from seed host: " + host.get();
-      LOG.error(errMsg);
+      LOG.error("failed to create cluster with seed host: " + seedHost);
       e.printStackTrace();
-      return Response.status(400).entity(errMsg).build();
+      throw e;
     }
-
-    URI createdURI = null;
-    try {
-      createdURI = (new URL(uriInfo.getAbsolutePath().toURL(), clusterName)).toURI();
-    } catch (Exception e) {
-      String errMsg = "failed creating target URI for cluster: " + clusterName;
-      LOG.error(errMsg);
-      e.printStackTrace();
-      return Response.status(400).entity(errMsg).build();
-    }
-
-    storage.addCluster(new Cluster.Builder()
-                           .name(clusterName)
-                           .seedHosts(Collections.singleton(host.get()))
-                           .partitioner(partitioner)
-                           .build());
-
-    String replyMsg = "cluster with name \"" + clusterName + "\" created";
-    return Response.created(createdURI).entity(replyMsg).build();
+    Cluster newCluster = new Cluster.Builder(clusterName)
+        .seedHosts(Collections.singleton(seedHost))
+        .partitioner(partitioner).build();
+    return newCluster;
   }
 
 }

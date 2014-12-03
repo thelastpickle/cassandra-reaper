@@ -1,13 +1,11 @@
 package com.spotify.reaper.core;
 
-import com.spotify.reaper.service.IRepairStrategy;
-
 public class ColumnFamily {
+
   private Long id;
   private final Cluster cluster;
   private final String keyspaceName;
   private final String name;
-  private final IRepairStrategy strategy;
   private final int segmentCount; // int/long/BigInteger?
   private final boolean snapshotRepair;
 
@@ -31,10 +29,6 @@ public class ColumnFamily {
     return name;
   }
 
-  public IRepairStrategy getStrategy() {
-    return strategy;
-  }
-
   public int getSegmentCount() {
     return segmentCount;
   }
@@ -43,24 +37,22 @@ public class ColumnFamily {
     return snapshotRepair;
   }
 
-  private ColumnFamily(Builder builder)
-  {
+  private ColumnFamily(Builder builder) {
     this.id = builder.id;
     this.cluster = builder.cluster;
     this.keyspaceName = builder.keyspaceName;
     this.name = builder.name;
-    this.strategy = builder.strategy;
     this.segmentCount = builder.segmentCount;
     this.snapshotRepair = builder.snapshotRepair;
   }
 
 
   public static class Builder {
+
     private Long id;
     private Cluster cluster;
     private String keyspaceName;
     private String name;
-    private IRepairStrategy strategy;
     private int segmentCount;
     private boolean snapshotRepair;
 
@@ -81,11 +73,6 @@ public class ColumnFamily {
 
     public Builder name(String name) {
       this.name = name;
-      return this;
-    }
-
-    public Builder strategy(IRepairStrategy strategy) {
-      this.strategy = strategy;
       return this;
     }
 
