@@ -36,11 +36,11 @@ public class SegmentGeneratorTest {
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
     List<RepairSegment> segments = generator.generateSegments(10, tokens);
     assertEquals(15, segments.size());
-    assertEquals("[0,1)",
+    assertEquals("(0,1]",
                  segments.get(0).toString());
-    assertEquals("[56713727820156410577229101238628035242,56713727820156410577229101238628035243)",
+    assertEquals("(56713727820156410577229101238628035242,56713727820156410577229101238628035243]",
                  segments.get(5).toString());
-    assertEquals("[113427455640312821154458202477256070484,113427455640312821154458202477256070485)",
+    assertEquals("(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
                  segments.get(10).toString());
 
 
@@ -60,11 +60,11 @@ public class SegmentGeneratorTest {
 
     segments = generator.generateSegments(10, tokens);
     assertEquals(15, segments.size());
-    assertEquals("[5,6)",
+    assertEquals("(5,6]",
                  segments.get(0).toString());
-    assertEquals("[56713727820156410577229101238628035242,56713727820156410577229101238628035243)",
+    assertEquals("(56713727820156410577229101238628035242,56713727820156410577229101238628035243]",
                  segments.get(5).toString());
-    assertEquals("[113427455640312821154458202477256070484,113427455640312821154458202477256070485)",
+    assertEquals("(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
                  segments.get(10).toString());
   }
 
@@ -103,11 +103,11 @@ public class SegmentGeneratorTest {
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
     List<RepairSegment> segments = generator.generateSegments(10, tokens);
     assertEquals(15, segments.size());
-    assertEquals("[113427455640312821154458202477256070484,113427455640312821154458202477256070485)",
+    assertEquals("(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
                  segments.get(4).toString());
-    assertEquals("[5,6)",
+    assertEquals("(5,6]",
                  segments.get(9).toString());
-    assertEquals("[56713727820156410577229101238628035242,56713727820156410577229101238628035243)",
+    assertEquals("(56713727820156410577229101238628035242,56713727820156410577229101238628035243]",
                  segments.get(14).toString());
   }
 

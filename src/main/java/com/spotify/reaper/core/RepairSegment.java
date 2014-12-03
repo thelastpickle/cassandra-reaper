@@ -8,8 +8,8 @@ public class RepairSegment {
   private Long id;
   private final ColumnFamily columnFamily;
   private final long runID;
-  private final BigInteger startToken; // closed/inclusive
-  private final BigInteger endToken; // open/exclusive
+  private final BigInteger startToken; // open/exclusive
+  private final BigInteger endToken; // closed/inclusive
   private final State state;
   private final DateTime startTime;
   private final DateTime endTime;
@@ -127,6 +127,6 @@ public class RepairSegment {
 
   @Override
   public String toString() {
-    return String.format("[%s,%s)", startToken.toString(), endToken.toString());
+    return String.format("(%s,%s]", startToken.toString(), endToken.toString());
   }
 }
