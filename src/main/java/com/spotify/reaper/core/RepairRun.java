@@ -19,7 +19,6 @@ public class RepairRun {
   private final DateTime startTime;
   private final DateTime endTime;
   private final double intensity;
-  private final List<RepairSegment> repairSegments;
 
   public Long getId() {
     return id;
@@ -57,10 +56,6 @@ public class RepairRun {
     return intensity;
   }
 
-  public List<RepairSegment> getRepairSegments() {
-    return repairSegments;
-  }
-
   public enum State {
     NOT_STARTED,
     RUNNING,
@@ -77,7 +72,6 @@ public class RepairRun {
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
     this.intensity = builder.intensity;
-    this.repairSegments = builder.repairSegments;
   }
 
   public static class Builder {
@@ -90,7 +84,6 @@ public class RepairRun {
     private DateTime startTime;
     private DateTime endTime;
     private double intensity;
-    private List<RepairSegment> repairSegments;
 
     public Builder id(long id) {
       this.id = id;
@@ -129,11 +122,6 @@ public class RepairRun {
 
     public Builder intensity(double intensity) {
       this.intensity = intensity;
-      return this;
-    }
-
-    public Builder repairSegments(List<RepairSegment> repairSegments) {
-      this.repairSegments = repairSegments;
       return this;
     }
 
