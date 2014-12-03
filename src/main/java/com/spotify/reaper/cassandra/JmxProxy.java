@@ -1,5 +1,6 @@
 package com.spotify.reaper.cassandra;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
@@ -16,6 +17,7 @@ import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.util.List;
 
+import javax.annotation.Nullable;
 import javax.management.InstanceNotFoundException;
 import javax.management.JMX;
 import javax.management.ListenerNotFoundException;
@@ -112,9 +114,17 @@ public class JmxProxy implements NotificationListener, Serializable {
   /**
    * @return list of tokens in the cluster
    */
-  public List<String> getTokens() {
+  public List<BigInteger> getTokens() {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    return Lists.newArrayList(ssProxy.getTokenToEndpointMap().keySet());
+    return Lists.transform(
+        Lists.newArrayList(ssProxy.getTokenToEndpointMap().keySet()),
+        new Function<String, BigInteger>() {
+          @Nullable
+          @Override
+          public BigInteger apply(@Nullable String s) {
+            return new BigInteger(s);
+          }
+        });
   }
 
   /**
