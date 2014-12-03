@@ -1,9 +1,8 @@
 package com.spotify.reaper;
 
 import com.spotify.reaper.resources.ClusterResource;
-import com.spotify.reaper.resources.AddTableResource;
 import com.spotify.reaper.resources.PingResource;
-import com.spotify.reaper.resources.RepairTableResource;
+import com.spotify.reaper.resources.TableResource;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
@@ -41,13 +40,11 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
     final PingResource pingResource = new PingResource();
     final ClusterResource addClusterResource = new ClusterResource(storage);
-    final AddTableResource addTableResource = new AddTableResource();
-    final RepairTableResource repairTableResource = new RepairTableResource();
+    final TableResource addTableResource = new TableResource(storage);
 
     environment.jersey().register(pingResource);
     environment.jersey().register(addClusterResource);
     environment.jersey().register(addTableResource);
-    environment.jersey().register(repairTableResource);
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config,

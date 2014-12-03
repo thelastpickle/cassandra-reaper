@@ -40,6 +40,7 @@ public class ClusterResource {
   @GET
   @Path("/{name}")
   public Response getCluster(@PathParam("name") String name) {
+    LOG.info("get cluster called with name: {}", name);
     Cluster cluster = storage.getCluster(name);
     return Response.ok().entity(cluster).build();
   }

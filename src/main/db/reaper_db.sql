@@ -8,15 +8,14 @@
 -- GRANT ALL PRIVILEGES ON DATABASE reaper_db TO reaper;
 
 CREATE TABLE IF NOT EXISTS "cluster" (
-  "id" SERIAL PRIMARY KEY,
+  "name" TEXT PRIMARY KEY,
   "partitioner" TEXT NOT NULL,
-  "name" TEXT NOT NULL,
   "seed_hosts" TEXT[] NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "column_family" (
   "id" SERIAL PRIMARY KEY,
-  "cluster_id" INT NOT NULL REFERENCES "cluster" ("id"),
+  "cluster_name" TEXT NOT NULL REFERENCES "cluster" ("name"),
   "keyspace_name" TEXT NOT NULL,
   "name" TEXT NOT NULL,
   "strategy" TEXT NOT NULL,

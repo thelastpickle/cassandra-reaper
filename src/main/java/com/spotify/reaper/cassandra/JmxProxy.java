@@ -125,20 +125,16 @@ public class JmxProxy implements NotificationListener, Serializable {
     return ssProxy.getPartitionerName();
   }
 
+  public static String toSymbolicName(String s) {
+    return s.toLowerCase().replaceAll("[^a-z0-9_]", "");
+  }
+
   /**
    * @return Cassandra cluster name.
    */
   public String getClusterName() {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    return ssProxy.getClusterName();
-  }
-
-  public static String toSymbolicName(String s) {
-    return s.toLowerCase().replaceAll("[^a-z0-9_]", "");
-  }
-
-  public String getSymbolicName() {
-    return toSymbolicName(getClusterName());
+    return toSymbolicName(ssProxy.getClusterName());
   }
 
   /**
