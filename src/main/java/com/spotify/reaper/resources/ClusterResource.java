@@ -3,8 +3,7 @@ package com.spotify.reaper.resources;
 import com.google.common.base.Optional;
 
 import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.cassandra.ClusterInfo;
-import com.spotify.reaper.cassandra.IClusterInfo;
+import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.storage.IStorage;
 
@@ -53,9 +52,13 @@ public class ClusterResource {
     }
     LOG.info("add cluster called with host: {}", host);
 
-    IClusterInfo clusterInfo;
+    String clusterName;
+    String partitioner;
     try {
-      clusterInfo = ClusterInfo.getInstance(host.get());
+      JmxProxy jmxProxy = JmxProxy.connect(host.get());
+      clusterName = jmxProxy.getClusterName();
+      partitioner = jmxProxy.getPartitioner();
+      jmxProxy.close();
     } catch (ReaperException e) {
       String errMsg = "failed to get cluster info from seed host: " + host.get();
       LOG.error(errMsg);
@@ -63,24 +66,23 @@ public class ClusterResource {
       return Response.status(400).entity(errMsg).build();
     }
 
-
     URI createdURI = null;
     try {
-      createdURI = (new URL(uriInfo.getAbsolutePath().toURL(), clusterInfo.getSymbolicName())).toURI();
+      createdURI = (new URL(uriInfo.getAbsolutePath().toURL(), clusterName)).toURI();
     } catch (Exception e) {
-      String errMsg = "failed creating target for cluster: " + clusterInfo.getSymbolicName();
+      String errMsg = "failed creating target URI for cluster: " + clusterName;
       LOG.error(errMsg);
       e.printStackTrace();
       return Response.status(400).entity(errMsg).build();
     }
 
     storage.addCluster(new Cluster.Builder()
-                           .name(clusterInfo.getClusterName())
+                           .name(clusterName)
                            .seedHosts(Collections.singleton(host.get()))
-                           .partitioner(clusterInfo.getPartitionerName())
+                           .partitioner(partitioner)
                            .build());
 
-    String replyMsg = "cluster with name \"" + clusterInfo.getClusterName() + "\" created";
+    String replyMsg = "cluster with name \"" + clusterName + "\" created";
     return Response.created(createdURI).entity(replyMsg).build();
   }
 
