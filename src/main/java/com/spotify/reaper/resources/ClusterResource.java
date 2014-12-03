@@ -60,8 +60,17 @@ public class ClusterResource {
       return Response.status(400)
           .entity("failed to create cluster with seed host: " + host.get()).build();
     }
-
-    storage.addCluster(newCluster);
+    Cluster existingCluster = storage.getCluster(newCluster.getName());
+    if (existingCluster == null) {
+      LOG.info("creating new cluster based on given seed host: {}", newCluster);
+      storage.addCluster(newCluster);
+    }
+    else {
+      LOG.info("cluster already stored with this name: {}", existingCluster);
+      return Response.status(403)
+          .entity(String.format("cluster \"%s\" already exists", existingCluster.getName()))
+          .build();
+    }
 
     URI createdURI = null;
     try {
