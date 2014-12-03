@@ -6,7 +6,7 @@ import java.util.List;
 
 public class RepairRun {
 
-  private Long id;
+  private final long id;
 
   // IDEA: maybe we want to have start and stop token for parallel runners on same repair run?
   //private final long startToken;
@@ -20,12 +20,8 @@ public class RepairRun {
   private final DateTime endTime;
   private final double intensity;
 
-  public Long getId() {
+  public long getId() {
     return id;
-  }
-
-  public void setId(Long id) {
-    this.id = id;
   }
 
   public String getCause() {

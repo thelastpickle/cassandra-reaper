@@ -7,13 +7,20 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.ColumnFamily;
+import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.service.SegmentGenerator;
 import com.spotify.reaper.storage.IStorage;
 
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URL;
+import java.util.List;
+import java.util.Set;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -88,7 +95,7 @@ public class TableResource {
         storage.updateCluster(targetCluster);
       }
     } else if (clusterName.isPresent()) {
-      targetCluster = storage.getCluster(JmxProxy.toSymbolicName(clusterName.get()));
+      targetCluster = storage.getCluster(clusterName.get());
       if (null == targetCluster) {
         return Response.status(404)
             .entity("cluster \"" + clusterName + "\" does not exist").build();
@@ -98,6 +105,7 @@ public class TableResource {
           .entity("Query parameter \"clusterName\" or \"seedHost\" required").build();
     }
 
+    // TODO: verify that the table exists in the cluster.
     ColumnFamily newTable = new ColumnFamily.Builder()
         .cluster(targetCluster)
         .keyspaceName(keyspace.get())
@@ -126,9 +134,45 @@ public class TableResource {
 
     // If startRepair query parameter is given at all, i.e. value not checked.
     if (startRepair.isPresent()) {
-      // TODO:
       // create repair run
-      // create and store segments
+      RepairRun repairRun =
+          storage.addRepairRun("Manually invoked", "No owner specified", DateTime.now(),
+                               config.getRepairIntensity());
+
+      // create segments
+      List<RepairSegment> segments = null;
+      try {
+        SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
+        Set<String> seedHosts = targetCluster.getSeedHosts();
+        for (String host : seedHosts) {
+          try {
+            JmxProxy jmxProxy = JmxProxy.connect(host);
+            List<BigInteger> tokens = jmxProxy.getTokens();
+            segments =
+                sg.generateSegments(newTable.getSegmentCount(), tokens, repairRun.getId(),
+                                    newTable);
+            jmxProxy.close();
+            break;
+          } catch (ReaperException e) {
+            LOG.info("couldn't connect to host: {}", host);
+          }
+        }
+
+        if (segments == null) {
+          String errMsg =
+              "couldn't connect to any of the seed hosts in cluster \"" + clusterName + "\"";
+          LOG.info(errMsg);
+          throw new ReaperException(errMsg);
+        }
+      } catch (ReaperException e) {
+        String errMsg = "failed generating segments for new table: " + newTable;
+        LOG.error(errMsg);
+        e.printStackTrace();
+        return Response.status(400).entity(errMsg).build();
+      }
+
+      // TODO:
+      // store segments
       // initialize segment states
       // store repair run
       // create new runner for the run

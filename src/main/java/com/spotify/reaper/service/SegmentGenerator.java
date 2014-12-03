@@ -3,6 +3,7 @@ package com.spotify.reaper.service;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairSegment;
 
 import org.slf4j.Logger;
@@ -41,13 +42,14 @@ public class SegmentGenerator {
   /**
    * Given a properly ordered list of tokens, compute at least {@code totalSegmentCount} repair
    * segments.
+   *
    * @param totalSegmentCount requested total amount of repair segments. This function may generate
    *                          more segments.
-   * @param ringTokens list of all start tokens in a cluster. They have to be in ring order.
+   * @param ringTokens        list of all start tokens in a cluster. They have to be in ring order.
    * @return a list containing at least {@code totalSegmentCount} repair segments.
-   * @throws ReaperException
    */
-  public List<RepairSegment> generateSegments(int totalSegmentCount, List<BigInteger> ringTokens)
+  public List<RepairSegment> generateSegments(int totalSegmentCount, List<BigInteger> ringTokens,
+                                              long runId, ColumnFamily table)
       throws ReaperException {
     int tokenRangeCount = ringTokens.size();
 
@@ -94,9 +96,11 @@ public class SegmentGenerator {
       }
 
       // Append the segments between the endpoints
-      for (int j = 0; j < segmentCount; j++)
-      {
+      for (int j = 0; j < segmentCount; j++) {
         repairSegments.add(new RepairSegment.Builder()
+                               .runID(runId)
+                               .columnFamily(table)
+                               .state(RepairSegment.State.NOT_STARTED)
                                .startToken(endpointTokens.get(j))
                                .endToken(endpointTokens.get(j + 1))
                                .build());

@@ -1,5 +1,6 @@
 package com.spotify.reaper.storage;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import com.spotify.reaper.core.Cluster;
@@ -7,6 +8,9 @@ import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 
+import org.joda.time.DateTime;
+
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -15,7 +19,7 @@ import java.util.Map;
 public class MemoryStorage implements IStorage {
 
   private Map<String, Cluster> clusters = Maps.newHashMap();
-  private Map<Long, RepairRun> repairRuns = Maps.newHashMap();
+  private List<RepairRun> repairRuns = Lists.newArrayList();
   private Map<Long, ColumnFamily> columnFamilies = Maps.newHashMap();
 
   @Override
@@ -34,13 +38,18 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public RepairRun addRepairRun(RepairRun repairRun) {
-    return repairRuns.put(repairRun.getId(), repairRun);
+  public RepairRun addRepairRun(String cause, String owner, DateTime creationTime,
+                                double intensity) {
+    int id = repairRuns.size();
+    RepairRun repairRun = new RepairRun.Builder().id(id).cause(cause).owner(owner).state(
+        RepairRun.State.NOT_STARTED).creationTime(creationTime).intensity(intensity).build();
+    repairRuns.add(repairRun);
+    return repairRun;
   }
 
   @Override
   public RepairRun getRepairRun(long id) {
-    return repairRuns.get(id);
+    return repairRuns.get((int)id);
   }
 
   @Override

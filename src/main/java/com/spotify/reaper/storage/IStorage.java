@@ -5,6 +5,8 @@ import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 
+import org.joda.time.DateTime;
+
 /**
  * API definition for cassandra-reaper.
  */
@@ -16,7 +18,8 @@ public interface IStorage {
 
   public Cluster getCluster(String clusterName);
 
-  public RepairRun addRepairRun(RepairRun repairRun);
+  public RepairRun addRepairRun(String cause, String owner, DateTime creationTime,
+                                double intensity);
 
   public RepairRun getRepairRun(long id);
 
