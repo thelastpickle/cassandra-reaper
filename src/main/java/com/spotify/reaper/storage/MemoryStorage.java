@@ -1,12 +1,15 @@
 package com.spotify.reaper.storage;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Range;
 
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,6 +26,10 @@ public class MemoryStorage implements IStorage {
   private ConcurrentMap<Long, RepairRun> repairRuns = Maps.newConcurrentMap();
   private ConcurrentMap<Long, ColumnFamily> columnFamilies = Maps.newConcurrentMap();
   private ConcurrentMap<TableName, ColumnFamily> columnFamiliesByName = Maps.newConcurrentMap();
+  private ConcurrentMap<Long, RepairSegment> repairSegments = Maps.newConcurrentMap();
+  private ConcurrentMap<Long, Collection<RepairSegment>>
+      repairSegmentsByRunId =
+      Maps.newConcurrentMap();
 
   public static class TableName {
 
@@ -61,9 +68,13 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Cluster updateCluster(Cluster newCluster) {
-    clusters.put(newCluster.getName(), newCluster);
-    return newCluster;
+  public boolean updateCluster(Cluster newCluster) {
+    if (getCluster(newCluster.getName()) == null) {
+      return false;
+    } else {
+      clusters.put(newCluster.getName(), newCluster);
+      return true;
+    }
   }
 
   @Override
@@ -113,26 +124,50 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public boolean addRepairSegments(Collection<RepairSegment.Builder> newSegments) {
-    // TODO:
-    return false;
+  public Collection<RepairSegment> addRepairSegments(Collection<RepairSegment.Builder> segments) {
+    Collection<RepairSegment> newSegments = Lists.newArrayList();
+    for (RepairSegment.Builder segment : segments) {
+      RepairSegment newRepairSegment = segment.build(REPAIR_RUN_ID.incrementAndGet());
+      repairSegments.put(newRepairSegment.getId(), newRepairSegment);
+      newSegments.add(newRepairSegment);
+    }
+    return newSegments;
   }
 
   @Override
   public boolean updateRepairSegment(RepairSegment newRepairSegment) {
-    // TODO:
-    return false;
+    if (getRepairSegment(newRepairSegment.getId()) == null) {
+      return false;
+    } else {
+      repairSegments.put(newRepairSegment.getId(), newRepairSegment);
+      return true;
+    }
+  }
+
+  @Override
+  public RepairSegment getRepairSegment(long id) {
+    return repairSegments.get(id);
   }
 
   @Override
   public RepairSegment getNextFreeSegment(long runId) {
-    // TODO:
+    for (RepairSegment segment : repairSegmentsByRunId.get(runId)) {
+      if (segment.getState() == RepairSegment.State.NOT_STARTED) {
+        return segment;
+      }
+    }
     return null;
   }
 
   @Override
-  public RepairSegment getNextFreeSegmentInRange(long runId, long start, long end) {
-    // TODO:
+  public RepairSegment getNextFreeSegmentInRange(long runId, Range<BigInteger> range) {
+    for (RepairSegment segment : repairSegmentsByRunId.get(runId)) {
+      if (segment.getState() == RepairSegment.State.NOT_STARTED &&
+          range.encloses(segment.getTokenRange())) {
+        return segment;
+      }
+    }
     return null;
   }
+
 }

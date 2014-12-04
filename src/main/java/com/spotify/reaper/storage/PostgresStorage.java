@@ -1,5 +1,7 @@
 package com.spotify.reaper.storage;
 
+import com.google.common.collect.Range;
+
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
@@ -14,6 +16,7 @@ import org.skife.jdbi.v2.Handle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigInteger;
 import java.util.Collection;
 
 import io.dropwizard.jdbi.DBIFactory;
@@ -68,16 +71,16 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Cluster updateCluster(Cluster cluster) {
+  public boolean updateCluster(Cluster cluster) {
     Handle h = jdbi.open();
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
     int rowsAdded = postgres.updateCluster(cluster);
     h.close();
     if (rowsAdded < 1) {
       LOG.warn("failed updating cluster with name: {}", cluster.getName());
-      return null;
+      return false;
     }
-    return cluster;
+    return true;
   }
 
   @Override
@@ -104,9 +107,9 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public boolean addRepairSegments(Collection<RepairSegment.Builder> newSegments) {
+  public Collection<RepairSegment> addRepairSegments(Collection<RepairSegment.Builder> newSegments) {
     // TODO: implementation
-    return false;
+    return null;
   }
 
   @Override
@@ -116,13 +119,19 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
+  public RepairSegment getRepairSegment(long id) {
+    // TODO: implementation
+    return null;
+  }
+
+  @Override
   public RepairSegment getNextFreeSegment(long runId) {
     // TODO: implementation
     return null;
   }
 
   @Override
-  public RepairSegment getNextFreeSegmentInRange(long runId, long start, long end) {
+  public RepairSegment getNextFreeSegmentInRange(long runId, Range<BigInteger> range) {
     // TODO: implementation
     return null;
   }

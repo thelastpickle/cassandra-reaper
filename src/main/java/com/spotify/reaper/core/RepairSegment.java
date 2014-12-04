@@ -33,6 +33,10 @@ public class RepairSegment {
     return runID;
   }
 
+  public Range<BigInteger> getTokenRange() {
+    return tokenRange;
+  }
+
   public BigInteger getStartToken() {
     return tokenRange.lowerEndpoint();
   }
@@ -86,7 +90,6 @@ public class RepairSegment {
                    BigInteger startToken, BigInteger endToken, State state) {
       this.columnFamily = columnFamily;
       this.runID = runID;
-      this.repairCommandId = repairCommandId;
       this.startToken = startToken;
       this.endToken = endToken;
       this.state = state;
