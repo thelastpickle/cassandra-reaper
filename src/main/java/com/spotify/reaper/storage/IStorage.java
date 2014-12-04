@@ -12,25 +12,26 @@ import java.util.Collection;
  */
 public interface IStorage {
 
-  public boolean addCluster(Cluster newCluster);
+  Cluster addCluster(Cluster cluster);
 
-  public boolean updateCluster(Cluster newCluster);
+  Cluster updateCluster(Cluster newCluster);
 
-  public Cluster getCluster(String clusterName);
+  Cluster getCluster(String clusterName);
 
-  public boolean addRepairRun(RepairRun newRepairRun);
+  RepairRun addRepairRun(RepairRun.Builder repairRun);
 
-  public RepairRun getRepairRun(long id);
+  RepairRun getRepairRun(long id);
 
-  public boolean addColumnFamily(ColumnFamily newTable);
+  ColumnFamily addColumnFamily(ColumnFamily.Builder newTable);
 
-  public ColumnFamily getColumnFamily(long id);
+  ColumnFamily getColumnFamily(long id);
+  ColumnFamily getColumnFamily(String cluster, String keyspace, String table);
 
-  public boolean addRepairSegments(Collection<RepairSegment> newSegments);
+  boolean addRepairSegments(Collection<RepairSegment> newSegments);
 
-  public boolean updateRepairSegment(RepairSegment newRepairSegment);
+  boolean updateRepairSegment(RepairSegment newRepairSegment);
 
-  public RepairSegment getNextFreeSegment(long runId);
+  RepairSegment getNextFreeSegment(long runId);
 
-  public RepairSegment getNextFreeSegmentInRange(long runId, long start, long end);
+  RepairSegment getNextFreeSegmentInRange(long runId, long start, long end);
 }

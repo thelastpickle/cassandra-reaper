@@ -6,7 +6,7 @@ import java.math.BigInteger;
 
 public class RepairSegment {
 
-  private Long id;
+  private final long id;
   private final ColumnFamily columnFamily;
   private final long runID;
   private final BigInteger startToken; // open/exclusive
@@ -15,13 +15,8 @@ public class RepairSegment {
   private final DateTime startTime;
   private final DateTime endTime;
 
-  public Long getId() {
+  public long getId() {
     return id;
-  }
-
-  public void setId(long id) {
-    assert this.id == null : "cannot reset id after once set";
-    this.id = id;
   }
 
   public ColumnFamily getColumnFamily() {
@@ -58,8 +53,8 @@ public class RepairSegment {
     DONE
   }
 
-  private RepairSegment(Builder builder) {
-    this.id = builder.id;
+  private RepairSegment(Builder builder, long id) {
+    this.id = id;
     this.columnFamily = builder.columnFamily;
     this.runID = builder.runID;
     this.startToken = builder.startToken;
@@ -71,43 +66,20 @@ public class RepairSegment {
 
   public static class Builder {
 
-    private Long id;
-    private ColumnFamily columnFamily;
-    private long runID;
-    private BigInteger startToken;
-    private BigInteger endToken;
-    private RepairSegment.State state;
+    public final ColumnFamily columnFamily;
+    public final long runID;
+    public final BigInteger startToken;
+    public final BigInteger endToken;
+    public final State state;
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder id(long id) {
-      this.id = id;
-      return this;
-    }
-
-    public Builder columnFamily(ColumnFamily columnFamily) {
+    public Builder(ColumnFamily columnFamily, long runID, BigInteger startToken, BigInteger endToken, State state) {
       this.columnFamily = columnFamily;
-      return this;
-    }
-
-    public Builder runID(long runID) {
       this.runID = runID;
-      return this;
-    }
-
-    public Builder startToken(BigInteger startToken) {
       this.startToken = startToken;
-      return this;
-    }
-
-    public Builder endToken(BigInteger endToken) {
-      this.endToken = endToken;
-      return this;
-    }
-
-    public Builder state(RepairSegment.State state) {
+      this. endToken = endToken;
       this.state = state;
-      return this;
     }
 
     public Builder startTime(DateTime startTime) {
@@ -120,14 +92,13 @@ public class RepairSegment {
       return this;
     }
 
-
-    public RepairSegment build() {
-      return new RepairSegment(this);
+    public RepairSegment build(long id) {
+      return new RepairSegment(this, id);
     }
-  }
 
-  @Override
-  public String toString() {
-    return String.format("(%s,%s]", startToken.toString(), endToken.toString());
+    @Override
+    public String toString() {
+      return String.format("(%s,%s]", startToken.toString(), endToken.toString());
+    }
   }
 }

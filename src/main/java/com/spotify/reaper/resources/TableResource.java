@@ -115,18 +115,13 @@ public class TableResource {
     }
 
     // TODO: verify that the table exists in the cluster.
-    ColumnFamily newTable = new ColumnFamily.Builder()
-        .cluster(targetCluster)
-        .keyspaceName(keyspace.get())
-        .name(table.get())
-        .keyspaceName(keyspace.get())
-        .snapshotRepair(config.getSnapshotRepair())
-        .segmentCount(config.getSegmentCount())
-        .build();
+    ColumnFamily newTable = storage.addColumnFamily(
+        new ColumnFamily.Builder(targetCluster, keyspace.get(), table.get(),
+                                 config.getSegmentCount(), config.getSnapshotRepair()));
 
     String newTablePathPart = newTable.getCluster().getName() + "/" + newTable.getKeyspaceName()
                               + "/" + newTable.getName();
-    if (!storage.addColumnFamily(newTable)) {
+    if (newTable == null) {
       return Response.status(500)
           .entity("failed creating table into Reaper storage: " + newTablePathPart).build();
     }
@@ -144,21 +139,19 @@ public class TableResource {
     // Start repairing the table if the startRepair query parameter is given at all,
     // i.e. possible value not checked, and not required.
     if (startRepair.isPresent()) {
-      RepairRun newRepairRun = new RepairRun.Builder()
-          .cause(cause.isPresent() ? cause.get() : "no cause specified")
-          .owner(owner.get())
-          .intensity(config.getRepairIntensity())
-          .state(RepairRun.State.NOT_STARTED)
-          .creationTime(DateTime.now())
-          .build();
-      if (!storage.addRepairRun(newRepairRun)) {
+      RepairRun newRepairRun =
+          storage.addRepairRun(new RepairRun.Builder(RepairRun.State.NOT_STARTED, DateTime.now(),
+                                                     config.getRepairIntensity())
+                                   .cause(cause.isPresent() ? cause.get() : "no cause specified")
+                                   .owner(owner.get()));
+      if (newRepairRun == null) {
         return Response.status(500)
             .entity("failed creating repair run into Reaper storage for owner: " + owner.get())
             .build();
       }
 
       // create segments
-      List<RepairSegment> segments = null;
+      List<RepairSegment.Builder> segments = null;
       try {
         SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
         Set<String> seedHosts = targetCluster.getSeedHosts();

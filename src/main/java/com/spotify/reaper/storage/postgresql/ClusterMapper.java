@@ -1,5 +1,7 @@
 package com.spotify.reaper.storage.postgresql;
 
+import com.google.common.collect.Sets;
+
 import com.spotify.reaper.core.Cluster;
 
 import org.skife.jdbi.v2.StatementContext;
@@ -14,10 +16,8 @@ public class ClusterMapper implements ResultSetMapper<Cluster> {
 
   public Cluster map(int index, ResultSet r, StatementContext ctx) throws SQLException {
     String[] seedHosts = (String[]) r.getArray("seed_hosts").getArray();
-    return new Cluster.Builder(r.getString("name"))
-        .partitioner(r.getString("partitioner"))
-        .seedHosts(new HashSet<String>(Arrays.asList(seedHosts)))
-        .build();
+    return new Cluster.Builder(r.getString("name"), r.getString("partitioner"),
+                               Sets.newHashSet(Arrays.asList(seedHosts))).build();
   }
 
 }

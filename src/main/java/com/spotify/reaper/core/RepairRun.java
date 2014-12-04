@@ -4,7 +4,7 @@ import org.joda.time.DateTime;
 
 public class RepairRun {
 
-  private Long id;
+  private final long id;
 
   // IDEA: maybe we want to have start and stop token for parallel runners on same repair run?
   //private final long startToken;
@@ -18,13 +18,8 @@ public class RepairRun {
   private final DateTime endTime;
   private final double intensity;
 
-  public Long getId() {
+  public long getId() {
     return id;
-  }
-
-  public void setId(long id) {
-    assert this.id == null : "cannot reset id after once set";
-    this.id = id;
   }
 
   public String getCause() {
@@ -62,8 +57,8 @@ public class RepairRun {
     PAUSED
   }
 
-  private RepairRun(Builder builder) {
-    this.id = builder.id;
+  private RepairRun(Builder builder, long id) {
+    this.id = id;
     this.cause = builder.cause;
     this.owner = builder.owner;
     this.state = builder.state;
@@ -75,18 +70,18 @@ public class RepairRun {
 
   public static class Builder {
 
-    private Long id;
+    public final State state;
+    public final DateTime creationTime;
+    public final double intensity;
     private String cause;
     private String owner;
-    private State state;
-    private DateTime creationTime;
     private DateTime startTime;
     private DateTime endTime;
-    private double intensity;
 
-    public Builder id(long id) {
-      this.id = id;
-      return this;
+    public Builder(State state, DateTime creationTime, double intensity) {
+      this.state = state;
+      this.creationTime = creationTime;
+      this.intensity = intensity;
     }
 
     public Builder cause(String cause) {
@@ -96,16 +91,6 @@ public class RepairRun {
 
     public Builder owner(String owner) {
       this.owner = owner;
-      return this;
-    }
-
-    public Builder state(State state) {
-      this.state = state;
-      return this;
-    }
-
-    public Builder creationTime(DateTime creationTime) {
-      this.creationTime = creationTime;
       return this;
     }
 
@@ -119,13 +104,8 @@ public class RepairRun {
       return this;
     }
 
-    public Builder intensity(double intensity) {
-      this.intensity = intensity;
-      return this;
-    }
-
-    public RepairRun build() {
-      return new RepairRun(this);
+    public RepairRun build(long id) {
+      return new RepairRun(this, id);
     }
   }
 }

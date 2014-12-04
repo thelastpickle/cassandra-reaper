@@ -2,20 +2,15 @@ package com.spotify.reaper.core;
 
 public class ColumnFamily {
 
-  private Long id;
+  private final long id;
   private final Cluster cluster;
   private final String keyspaceName;
   private final String name;
   private final int segmentCount; // int/long/BigInteger?
   private final boolean snapshotRepair;
 
-  public Long getId() {
+  public long getId() {
     return id;
-  }
-
-  public void setId(long id) {
-    assert this.id == null : "cannot reset id after once set";
-    this.id = id;
   }
 
   public Cluster getCluster() {
@@ -38,8 +33,8 @@ public class ColumnFamily {
     return snapshotRepair;
   }
 
-  private ColumnFamily(Builder builder) {
-    this.id = builder.id;
+  private ColumnFamily(Builder builder, long id) {
+    this.id = id;
     this.cluster = builder.cluster;
     this.keyspaceName = builder.keyspaceName;
     this.name = builder.name;
@@ -50,46 +45,23 @@ public class ColumnFamily {
 
   public static class Builder {
 
-    private Long id;
-    private Cluster cluster;
-    private String keyspaceName;
-    private String name;
-    private int segmentCount;
-    private boolean snapshotRepair;
+    public final Cluster cluster;
+    public final String keyspaceName;
+    public final String name;
+    public final int segmentCount;
+    public final boolean snapshotRepair;
 
-    public Builder id(long id) {
-      this.id = id;
-      return this;
-    }
-
-    public Builder cluster(Cluster cluster) {
+    public Builder(Cluster cluster, String keyspaceName, String name, int segmentCount,
+                   boolean snapshotRepair) {
       this.cluster = cluster;
-      return this;
-    }
-
-    public Builder keyspaceName(String keyspaceName) {
       this.keyspaceName = keyspaceName;
-      return this;
-    }
-
-    public Builder name(String name) {
       this.name = name;
-      return this;
-    }
-
-    public Builder segmentCount(int segmentCount) {
       this.segmentCount = segmentCount;
-      return this;
-    }
-
-    public Builder snapshotRepair(boolean snapshotRepair) {
       this.snapshotRepair = snapshotRepair;
-      return this;
     }
 
-
-    public ColumnFamily build() {
-      return new ColumnFamily(this);
+    public ColumnFamily build(long id) {
+      return new ColumnFamily(this, id);
     }
   }
 }

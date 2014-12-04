@@ -99,9 +99,9 @@ public class ClusterResource {
       e.printStackTrace();
       throw e;
     }
-    Cluster newCluster = new Cluster.Builder(clusterName)
-        .seedHosts(Collections.singleton(seedHost))
-        .partitioner(partitioner).build();
+    Cluster newCluster =
+        new Cluster.Builder(clusterName, partitioner, Collections.singleton(seedHost))
+            .build();
     return newCluster;
   }
 

@@ -34,7 +34,7 @@ public class SegmentGeneratorTest {
     );
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    List<RepairSegment> segments = generator.generateSegments(10, tokens, -1, null);
+    List<RepairSegment.Builder> segments = generator.generateSegments(10, tokens, -1, null);
     assertEquals(15, segments.size());
     assertEquals("(0,1]",
                  segments.get(0).toString());
@@ -101,7 +101,7 @@ public class SegmentGeneratorTest {
     });
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    List<RepairSegment> segments = generator.generateSegments(10, tokens, -1, null);
+    List<RepairSegment.Builder> segments = generator.generateSegments(10, tokens, -1, null);
     assertEquals(15, segments.size());
     assertEquals("(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
                  segments.get(4).toString());

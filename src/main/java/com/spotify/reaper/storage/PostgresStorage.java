@@ -49,35 +49,35 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public boolean addRepairRun(RepairRun newRepairRun) {
+  public RepairRun addRepairRun(RepairRun.Builder newRepairRun) {
     // TODO: implementation
-    return false;
+    return null;
   }
 
   @Override
-  public boolean addCluster(Cluster newCluster) {
+  public Cluster addCluster(Cluster newCluster) {
     Handle h = jdbi.open();
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
     int rowsAdded = postgres.insertCluster(newCluster);
     h.close();
     if (rowsAdded < 1) {
       LOG.warn("failed inserting cluster with name: {}", newCluster.getName());
-      return false;
+      return null;
     }
-    return true;
+    return newCluster;
   }
 
   @Override
-  public boolean updateCluster(Cluster cluster) {
+  public Cluster updateCluster(Cluster cluster) {
     Handle h = jdbi.open();
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
     int rowsAdded = postgres.updateCluster(cluster);
     h.close();
     if (rowsAdded < 1) {
       LOG.warn("failed updating cluster with name: {}", cluster.getName());
-      return false;
+      return null;
     }
-    return true;
+    return cluster;
   }
 
   @Override
@@ -87,14 +87,19 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public boolean addColumnFamily(ColumnFamily newTable) {
+  public ColumnFamily addColumnFamily(ColumnFamily.Builder newTable) {
     // TODO: implementation
-    return false;
+    return null;
   }
 
   @Override
   public ColumnFamily getColumnFamily(long id) {
     // TODO: implementation
+    return null;
+  }
+
+  @Override
+  public ColumnFamily getColumnFamily(String cluster, String keyspace, String table) {
     return null;
   }
 

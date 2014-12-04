@@ -28,21 +28,18 @@ public class Cluster {
 
   public static class Builder {
 
-    private final String name;
-    private String partitioner;
-    private Set<String> seedHosts;
+    public final String name;
+    public final String partitioner;
+    private final Set<String> seedHosts;
 
-    public Builder(String name) {
+    public Builder(String name, String partitioner, Set<String> seedHosts) {
       this.name = name;
-    }
-
-    public Builder partitioner(String partitioner) {
       this.partitioner = partitioner;
-      return this;
+      this.seedHosts = seedHosts;
     }
 
-    public Builder seedHosts(Set<String> seedHosts) {
-      this.seedHosts = seedHosts;
+    public Builder addSeedHost(String seedHost) {
+      seedHosts.add(seedHost);
       return this;
     }
 

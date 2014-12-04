@@ -48,12 +48,13 @@ public class SegmentGenerator {
    * @param ringTokens        list of all start tokens in a cluster. They have to be in ring order.
    * @return a list containing at least {@code totalSegmentCount} repair segments.
    */
-  public List<RepairSegment> generateSegments(int totalSegmentCount, List<BigInteger> ringTokens,
-                                              long runId, ColumnFamily table)
+  public List<RepairSegment.Builder> generateSegments(int totalSegmentCount,
+                                                      List<BigInteger> ringTokens,
+                                                      long runId, ColumnFamily table)
       throws ReaperException {
     int tokenRangeCount = ringTokens.size();
 
-    List<RepairSegment> repairSegments = Lists.newArrayList();
+    List<RepairSegment.Builder> repairSegments = Lists.newArrayList();
     for (int i = 0; i < tokenRangeCount; i++) {
       BigInteger start = ringTokens.get(i);
       BigInteger stop = ringTokens.get((i + 1) % tokenRangeCount);
@@ -97,13 +98,10 @@ public class SegmentGenerator {
 
       // Append the segments between the endpoints
       for (int j = 0; j < segmentCount; j++) {
-        repairSegments.add(new RepairSegment.Builder()
-                               .runID(runId)
-                               .columnFamily(table)
-                               .state(RepairSegment.State.NOT_STARTED)
-                               .startToken(endpointTokens.get(j))
-                               .endToken(endpointTokens.get(j + 1))
-                               .build());
+        repairSegments.add(new RepairSegment.Builder(table, runId,
+                                                     endpointTokens.get(j),
+                                                     endpointTokens.get(j + 1),
+                                                     RepairSegment.State.NOT_STARTED));
         LOG.debug("Segment #{}: [{},{})", j + 1, endpointTokens.get(j),
                   endpointTokens.get(j + 1));
       }
@@ -111,8 +109,8 @@ public class SegmentGenerator {
 
     // verify that the whole range is repaired
     BigInteger total = BigInteger.ZERO;
-    for (RepairSegment segment : repairSegments) {
-      BigInteger size = segment.getEndToken().subtract(segment.getStartToken());
+    for (RepairSegment.Builder segment : repairSegments) {
+      BigInteger size = segment.endToken.subtract(segment.startToken);
       if (lowerThan(size, BigInteger.ZERO))
         size = size.add(RANGE_SIZE);
       total = total.add(size);
