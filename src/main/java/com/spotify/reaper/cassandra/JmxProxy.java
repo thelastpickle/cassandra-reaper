@@ -61,8 +61,7 @@ public class JmxProxy implements NotificationListener, Serializable {
   /**
    * Connect to JMX interface on the given host and default JMX port without RepairStatusHandler.
    */
-  public static JmxProxy connect(String host)
-      throws ReaperException {
+  public static JmxProxy connect(String host) throws ReaperException {
     return connect(Optional.<RepairStatusHandler>absent(), host, JMX_PORT);
   }
 
@@ -153,7 +152,7 @@ public class JmxProxy implements NotificationListener, Serializable {
    * The repair is triggered by {@link org.apache.cassandra.service.StorageServiceMBean#forceRepairRangeAsync}
    * For time being, we don't allow local nor snapshot repairs.
    *
-   * @return repair sequence number
+   * @return Repair command number, or 0 if nothing to repair
    */
   public int triggerRepair(BigInteger beginToken, BigInteger endToken, String keyspace,
                            String columnFamily) {
@@ -194,6 +193,20 @@ public class JmxProxy implements NotificationListener, Serializable {
       // let the handler process the event
       repairStatusHandler.get().handle(repairNo, status, message);
     }
+  }
+
+  public String getConnectionId() throws IOException {
+    return jmxConnector.getConnectionId();
+  }
+
+  public boolean isConnectionAlive() {
+    try {
+      String connectionId = getConnectionId();
+      return null != connectionId && connectionId.length() > 0;
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return false;
   }
 
   /**

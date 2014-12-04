@@ -3,6 +3,7 @@ package com.spotify.reaper;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
 import com.spotify.reaper.resources.TableResource;
+import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
@@ -36,8 +37,13 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   public void run(ReaperApplicationConfiguration config,
                   Environment environment) throws ReaperException {
 
+    LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
+    RepairRunner.initializeThreadPool(config.getRepairRunThreadCount());
+
+    LOG.info("initializing storage of type: {}", config.getStorageType());
     IStorage storage = initializeStorage(config, environment);
 
+    LOG.info("creating resources and registering endpoints");
     final PingResource pingResource = new PingResource();
     final ClusterResource addClusterResource = new ClusterResource(storage);
     final TableResource addTableResource = new TableResource(config, storage);
@@ -45,6 +51,8 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     environment.jersey().register(pingResource);
     environment.jersey().register(addClusterResource);
     environment.jersey().register(addTableResource);
+
+    LOG.info("Reaper is ready to accept connections");
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config,

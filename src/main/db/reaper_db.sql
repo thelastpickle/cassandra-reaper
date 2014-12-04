@@ -22,6 +22,12 @@ CREATE TABLE IF NOT EXISTS "column_family" (
   "snapshot_repair" BOOLEAN NOT NULL
 );
 
+--
+-- Preventing duplicate column families within same cluster and keyspace with following index.
+--
+CREATE UNIQUE INDEX column_family_no_duplicates_idx
+  ON "column_family" ("cluster_name", "keyspace_name", "name");
+
 CREATE TABLE IF NOT EXISTS "repair_run" (
   "id" SERIAL PRIMARY KEY,
   "cause" TEXT NOT NULL,
@@ -42,8 +48,8 @@ CREATE TABLE IF NOT EXISTS "repair_segment" (
   "start_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "end_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
-CREATE UNIQUE INDEX "repair_segment_run_id_idx" ON "repair_segment" USING BTREE ("run_id");
-CREATE UNIQUE INDEX "repair_segment_state_idx" ON "repair_segment" USING BTREE ("state");
+CREATE INDEX "repair_segment_run_id_idx" ON "repair_segment" USING BTREE ("run_id");
+CREATE INDEX "repair_segment_state_idx" ON "repair_segment" USING BTREE ("state");
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE cluster TO reaper;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE column_family TO reaper;

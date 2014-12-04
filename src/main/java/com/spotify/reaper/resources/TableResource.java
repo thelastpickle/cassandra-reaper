@@ -138,74 +138,75 @@ public class TableResource {
 
     // Start repairing the table if the startRepair query parameter is given at all,
     // i.e. possible value not checked, and not required.
-    if (startRepair.isPresent()) {
-      RepairRun newRepairRun =
-          storage.addRepairRun(new RepairRun.Builder(RepairRun.State.NOT_STARTED, DateTime.now(),
-                                                     config.getRepairIntensity())
-                                   .cause(cause.isPresent() ? cause.get() : "no cause specified")
-                                   .owner(owner.get()));
-      if (newRepairRun == null) {
-        return Response.status(500)
-            .entity("failed creating repair run into Reaper storage for owner: " + owner.get())
-            .build();
-      }
-
-      // create segments
-      List<RepairSegment.Builder> segments = null;
-      try {
-        SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
-        Set<String> seedHosts = targetCluster.getSeedHosts();
-        for (String host : seedHosts) {
-          try {
-            JmxProxy jmxProxy = JmxProxy.connect(host);
-            List<BigInteger> tokens = jmxProxy.getTokens();
-            segments = sg.generateSegments(newTable.getSegmentCount(),
-                                           tokens,
-                                           newRepairRun.getId(),
-                                           newTable);
-            jmxProxy.close();
-            break;
-          } catch (ReaperException e) {
-            LOG.info("couldn't connect to host: {}", host);
-          }
-        }
-
-        if (segments == null) {
-          String errMsg =
-              "couldn't connect to any of the seed hosts in cluster \"" + clusterName + "\"";
-          LOG.info(errMsg);
-          throw new ReaperException(errMsg);
-        }
-      } catch (ReaperException e) {
-        String errMsg = "failed generating segments for new table: " + newTable;
-        LOG.error(errMsg);
-        e.printStackTrace();
-        return Response.status(400).entity(errMsg).build();
-      }
-
-      // Notice that our RepairRun core object doesn't contain pointer to
-      // the set of RepairSegments in the run, as they are accessed separately.
-      // RepairSegment has a pointer to the RepairRun it lives in.
-      storage.addRepairSegments(segments);
-
-      // TODO: remove the comments when done with repair runner
-      //RepairRunner.startNewRepairRun(newRepairRun);
-
-      String newRepairRunPathPart = "repair_run/" + newRepairRun.getId();
-      URI createdRepairRunURI;
-      try {
-        createdRepairRunURI = (new URL(uriInfo.getBaseUri().toURL(), newRepairRunPathPart)).toURI();
-      } catch (Exception e) {
-        String errMsg = "failed creating target URI for new repair run: " + newRepairRunPathPart;
-        LOG.error(errMsg);
-        e.printStackTrace();
-        return Response.status(400).entity(errMsg).build();
-      }
-
-      return Response.created(createdRepairRunURI).entity(newTable).build();
+    if (!startRepair.isPresent()) {
+      return Response.created(createdURI).entity(newTable).build();
     }
 
-    return Response.created(createdURI).entity(newTable).build();
+    RepairRun newRepairRun =
+        storage.addRepairRun(new RepairRun.Builder(RepairRun.State.NOT_STARTED, DateTime.now(),
+                                                   config.getRepairIntensity())
+                                 .cause(cause.isPresent() ? cause.get() : "no cause specified")
+                                 .owner(owner.get()));
+    if (newRepairRun == null) {
+      return Response.status(500)
+          .entity("failed creating repair run into Reaper storage for owner: " + owner.get())
+          .build();
+    }
+
+    // create segments
+    List<RepairSegment.Builder> segments = null;
+    String usedSeedHost = null;
+    try {
+      SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
+      Set<String> seedHosts = targetCluster.getSeedHosts();
+      for (String host : seedHosts) {
+        try {
+          JmxProxy jmxProxy = JmxProxy.connect(host);
+          List<BigInteger> tokens = jmxProxy.getTokens();
+          segments = sg.generateSegments(newTable.getSegmentCount(),
+                                         tokens,
+                                         newRepairRun.getId(),
+                                         newTable);
+          jmxProxy.close();
+          usedSeedHost = host;
+          break;
+        } catch (ReaperException e) {
+          LOG.info("couldn't connect to host: {}", host);
+        }
+      }
+
+      if (segments == null || seedHost == null) {
+        String errMsg =
+            "couldn't connect to any of the seed hosts in cluster \"" + clusterName + "\"";
+        LOG.info(errMsg);
+        throw new ReaperException(errMsg);
+      }
+    } catch (ReaperException e) {
+      String errMsg = "failed generating segments for new table: " + newTable;
+      LOG.error(errMsg);
+      e.printStackTrace();
+      return Response.status(400).entity(errMsg).build();
+    }
+
+    // Notice that our RepairRun core object doesn't contain pointer to
+    // the set of RepairSegments in the run, as they are accessed separately.
+    // RepairSegment has a pointer to the RepairRun it lives in.
+    storage.addRepairSegments(segments);
+
+    RepairRunner.startNewRepairRun(storage, newRepairRun, usedSeedHost);
+
+    String newRepairRunPathPart = "repair_run/" + newRepairRun.getId();
+    URI createdRepairRunURI;
+    try {
+      createdRepairRunURI = (new URL(uriInfo.getBaseUri().toURL(), newRepairRunPathPart)).toURI();
+    } catch (Exception e) {
+      String errMsg = "failed creating target URI for new repair run: " + newRepairRunPathPart;
+      LOG.error(errMsg);
+      e.printStackTrace();
+      return Response.status(400).entity(errMsg).build();
+    }
+
+    return Response.created(createdRepairRunURI).entity(newTable).build();
   }
 
 }

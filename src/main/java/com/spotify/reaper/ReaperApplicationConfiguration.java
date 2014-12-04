@@ -18,6 +18,8 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   private double repairIntensity;
 
+  private int repairRunThreadCount;
+
   @NotEmpty
   private String storageType;
 
@@ -58,6 +60,16 @@ public class ReaperApplicationConfiguration extends Configuration {
   }
 
   @JsonProperty
+  public int getRepairRunThreadCount() {
+    return repairRunThreadCount;
+  }
+
+  @JsonProperty
+  public void setRepairRunThreadCount(int repairRunThreadCount) {
+    this.repairRunThreadCount = repairRunThreadCount;
+  }
+
+  @JsonProperty
   public void setStorageType(String storageType) {
     this.storageType = storageType;
   }
@@ -71,4 +83,5 @@ public class ReaperApplicationConfiguration extends Configuration {
   public DataSourceFactory getDataSourceFactory() {
     return database;
   }
+
 }

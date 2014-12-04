@@ -1,6 +1,7 @@
 segmentCount: 100
 snapshotRepair: false
 repairIntensity: 0.75
+repairRunThreadCount: 15
 
 logging:
   level: DEBUG

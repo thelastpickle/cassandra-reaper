@@ -8,7 +8,7 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 
 import java.util.Collection;
-import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -19,12 +19,13 @@ public class MemoryStorage implements IStorage {
   private static final AtomicInteger REPAIR_RUN_ID = new AtomicInteger(0);
   private static final AtomicInteger COLUMN_FAMILY_ID = new AtomicInteger(0);
 
-  private Map<String, Cluster> clusters = Maps.newHashMap();
-  private Map<Long, RepairRun> repairRuns = Maps.newHashMap();
-  private Map<Long, ColumnFamily> columnFamilies = Maps.newHashMap();
-  private Map<TableName, ColumnFamily> columnFamiliesByName = Maps.newHashMap();
+  private ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
+  private ConcurrentMap<Long, RepairRun> repairRuns = Maps.newConcurrentMap();
+  private ConcurrentMap<Long, ColumnFamily> columnFamilies = Maps.newConcurrentMap();
+  private ConcurrentMap<TableName, ColumnFamily> columnFamiliesByName = Maps.newConcurrentMap();
 
   public static class TableName {
+
     public final String cluster;
     public final String keyspace;
     public final String table;
@@ -55,7 +56,7 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public Cluster addCluster(Cluster cluster) {
-    Cluster existing = clusters.putIfAbsent(cluster.getName(), cluster);
+    Cluster existing = clusters.put(cluster.getName(), cluster);
     return existing == null ? cluster : null;
   }
 
