@@ -9,6 +9,7 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.SegmentGenerator;
 import com.spotify.reaper.storage.IStorage;
 
@@ -81,6 +82,8 @@ public class TableResource {
       return Response.status(400)
           .entity("Query parameter \"owner\" required").build();
     }
+
+    // TODO: split this method and clean-up when MVP feature "complete"
 
     Cluster targetCluster;
     if (seedHost.isPresent()) {
@@ -163,9 +166,10 @@ public class TableResource {
           try {
             JmxProxy jmxProxy = JmxProxy.connect(host);
             List<BigInteger> tokens = jmxProxy.getTokens();
-            segments =
-                sg.generateSegments(newTable.getSegmentCount(), tokens, newRepairRun.getId(),
-                                    newTable);
+            segments = sg.generateSegments(newTable.getSegmentCount(),
+                                           tokens,
+                                           newRepairRun.getId(),
+                                           newTable);
             jmxProxy.close();
             break;
           } catch (ReaperException e) {
@@ -186,14 +190,26 @@ public class TableResource {
         return Response.status(400).entity(errMsg).build();
       }
 
-      // TODO:
-      // store segments
-      // initialize segment states
-      // store repair run
-      // create new runner for the run
-      // start the runner and return pointer to new RepairRun
-      // runner holds open jmx proxy to update segment states
-      // runner checks storage after every segment, if run state has changed (paused etc.)
+      // Notice that our RepairRun core object doesn't contain pointer to
+      // the set of RepairSegments in the run, as they are accessed separately.
+      // RepairSegment has a pointer to the RepairRun it lives in.
+      storage.addRepairSegments(segments);
+
+      // TODO: remove the comments when done with repair runner
+      //RepairRunner.startNewRepairRun(newRepairRun);
+
+      String newRepairRunPathPart = "repair_run/" + newRepairRun.getId();
+      URI createdRepairRunURI;
+      try {
+        createdRepairRunURI = (new URL(uriInfo.getBaseUri().toURL(), newRepairRunPathPart)).toURI();
+      } catch (Exception e) {
+        String errMsg = "failed creating target URI for new repair run: " + newRepairRunPathPart;
+        LOG.error(errMsg);
+        e.printStackTrace();
+        return Response.status(400).entity(errMsg).build();
+      }
+
+      return Response.created(createdRepairRunURI).entity(newTable).build();
     }
 
     return Response.created(createdURI).entity(newTable).build();
