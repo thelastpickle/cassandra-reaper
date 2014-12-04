@@ -14,6 +14,8 @@ import org.skife.jdbi.v2.Handle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
+
 import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.setup.Environment;
 
@@ -47,62 +49,75 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public RepairRun addRepairRun(String cause, String owner, DateTime creationTime,
-                                double intensity) {
-    return null;
+  public boolean addRepairRun(RepairRun newRepairRun) {
+    // TODO: implementation
+    return false;
   }
 
   @Override
-  public Cluster addCluster(Cluster newCluster) {
+  public boolean addCluster(Cluster newCluster) {
     Handle h = jdbi.open();
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
     int rowsAdded = postgres.insertCluster(newCluster);
-    Cluster result;
+    h.close();
     if (rowsAdded < 1) {
       LOG.warn("failed inserting cluster with name: {}", newCluster.getName());
-      result = null;
+      return false;
     }
-    else {
-      result = postgres.getCluster(newCluster.getName());
-    }
-    h.close();
-    return result;
+    return true;
   }
 
   @Override
-  public Cluster updateCluster(Cluster cluster) {
+  public boolean updateCluster(Cluster cluster) {
     Handle h = jdbi.open();
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
     int rowsAdded = postgres.updateCluster(cluster);
-    Cluster result;
+    h.close();
     if (rowsAdded < 1) {
       LOG.warn("failed updating cluster with name: {}", cluster.getName());
-      result = null;
+      return false;
     }
-    else {
-      result = postgres.getCluster(cluster.getName());
-    }
-    h.close();
-    return result;
+    return true;
   }
 
   @Override
   public RepairRun getRepairRun(long id) {
+    // TODO: implementation
     return null;
   }
 
   @Override
   public boolean addColumnFamily(ColumnFamily newTable) {
+    // TODO: implementation
     return false;
   }
 
   @Override
   public ColumnFamily getColumnFamily(long id) {
+    // TODO: implementation
     return null;
   }
 
   @Override
+  public boolean addRepairSegments(Collection<RepairSegment> newSegments) {
+    // TODO: implementation
+    return false;
+  }
+
+  @Override
+  public boolean updateRepairSegment(RepairSegment newRepairSegment) {
+    // TODO: implementation
+    return false;
+  }
+
+  @Override
   public RepairSegment getNextFreeSegment(long runId) {
+    // TODO: implementation
+    return null;
+  }
+
+  @Override
+  public RepairSegment getNextFreeSegmentInRange(long runId, long start, long end) {
     // TODO: implementation
     return null;
   }

@@ -5,6 +5,7 @@ import org.joda.time.DateTime;
 import java.math.BigInteger;
 
 public class RepairSegment {
+
   private Long id;
   private final ColumnFamily columnFamily;
   private final long runID;
@@ -18,7 +19,8 @@ public class RepairSegment {
     return id;
   }
 
-  public void setId(Long id) {
+  public void setId(long id) {
+    assert this.id == null : "cannot reset id after once set";
     this.id = id;
   }
 
@@ -67,8 +69,8 @@ public class RepairSegment {
     this.endTime = builder.endTime;
   }
 
-
   public static class Builder {
+
     private Long id;
     private ColumnFamily columnFamily;
     private long runID;
@@ -123,7 +125,6 @@ public class RepairSegment {
       return new RepairSegment(this);
     }
   }
-
 
   @Override
   public String toString() {

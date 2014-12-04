@@ -2,11 +2,9 @@ package com.spotify.reaper.core;
 
 import org.joda.time.DateTime;
 
-import java.util.List;
-
 public class RepairRun {
 
-  private final long id;
+  private Long id;
 
   // IDEA: maybe we want to have start and stop token for parallel runners on same repair run?
   //private final long startToken;
@@ -20,8 +18,13 @@ public class RepairRun {
   private final DateTime endTime;
   private final double intensity;
 
-  public long getId() {
+  public Long getId() {
     return id;
+  }
+
+  public void setId(long id) {
+    assert this.id == null : "cannot reset id after once set";
+    this.id = id;
   }
 
   public String getCause() {

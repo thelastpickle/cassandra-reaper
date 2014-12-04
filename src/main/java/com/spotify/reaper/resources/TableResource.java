@@ -63,9 +63,11 @@ public class TableResource {
                            @QueryParam("seedHost") Optional<String> seedHost,
                            @QueryParam("keyspace") Optional<String> keyspace,
                            @QueryParam("table") Optional<String> table,
-                           @QueryParam("startRepair") Optional<Boolean> startRepair) {
-    LOG.info("add table called with: clusterName = {}, seedHost = {}, keyspace = {}, table = {}",
-             clusterName, seedHost, keyspace, table);
+                           @QueryParam("startRepair") Optional<Boolean> startRepair,
+                           @QueryParam("owner") Optional<String> owner,
+                           @QueryParam("cause") Optional<String> cause) {
+    LOG.info("add table called with: clusterName = {}, seedHost = {}, keyspace = {}, table = {}, "
+             + "owner = {}, cause = {}", clusterName, seedHost, keyspace, table, owner, cause);
 
     if (!keyspace.isPresent()) {
       return Response.status(400)
@@ -74,6 +76,10 @@ public class TableResource {
     if (!table.isPresent()) {
       return Response.status(400)
           .entity("Query parameter \"table\" required").build();
+    }
+    if (!owner.isPresent()) {
+      return Response.status(400)
+          .entity("Query parameter \"owner\" required").build();
     }
 
     Cluster targetCluster;
@@ -115,14 +121,14 @@ public class TableResource {
         .segmentCount(config.getSegmentCount())
         .build();
 
-    String newTablePathPart = newTable.getCluster().getName() + "/" + newTable
-        .getKeyspaceName() + "/" + newTable.getName();
+    String newTablePathPart = newTable.getCluster().getName() + "/" + newTable.getKeyspaceName()
+                              + "/" + newTable.getName();
     if (!storage.addColumnFamily(newTable)) {
       return Response.status(500)
-          .entity("failed creating table: " + newTablePathPart).build();
+          .entity("failed creating table into Reaper storage: " + newTablePathPart).build();
     }
 
-    URI createdURI = null;
+    URI createdURI;
     try {
       createdURI = (new URL(uriInfo.getAbsolutePath().toURL(), newTablePathPart)).toURI();
     } catch (Exception e) {
@@ -132,12 +138,21 @@ public class TableResource {
       return Response.status(400).entity(errMsg).build();
     }
 
-    // If startRepair query parameter is given at all, i.e. value not checked.
+    // Start repairing the table if the startRepair query parameter is given at all,
+    // i.e. possible value not checked, and not required.
     if (startRepair.isPresent()) {
-      // create repair run
-      RepairRun repairRun =
-          storage.addRepairRun("Manually invoked", "No owner specified", DateTime.now(),
-                               config.getRepairIntensity());
+      RepairRun newRepairRun = new RepairRun.Builder()
+          .cause(cause.isPresent() ? cause.get() : "no cause specified")
+          .owner(owner.get())
+          .intensity(config.getRepairIntensity())
+          .state(RepairRun.State.NOT_STARTED)
+          .creationTime(DateTime.now())
+          .build();
+      if (!storage.addRepairRun(newRepairRun)) {
+        return Response.status(500)
+            .entity("failed creating repair run into Reaper storage for owner: " + owner.get())
+            .build();
+      }
 
       // create segments
       List<RepairSegment> segments = null;
@@ -149,7 +164,7 @@ public class TableResource {
             JmxProxy jmxProxy = JmxProxy.connect(host);
             List<BigInteger> tokens = jmxProxy.getTokens();
             segments =
-                sg.generateSegments(newTable.getSegmentCount(), tokens, repairRun.getId(),
+                sg.generateSegments(newTable.getSegmentCount(), tokens, newRepairRun.getId(),
                                     newTable);
             jmxProxy.close();
             break;

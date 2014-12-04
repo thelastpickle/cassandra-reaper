@@ -13,7 +13,8 @@ public class ColumnFamily {
     return id;
   }
 
-  public void setId(Long id) {
+  public void setId(long id) {
+    assert this.id == null : "cannot reset id after once set";
     this.id = id;
   }
 

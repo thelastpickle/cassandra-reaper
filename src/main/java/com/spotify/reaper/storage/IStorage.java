@@ -5,21 +5,20 @@ import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 
-import org.joda.time.DateTime;
+import java.util.Collection;
 
 /**
  * API definition for cassandra-reaper.
  */
 public interface IStorage {
 
-  public Cluster addCluster(Cluster cluster);
+  public boolean addCluster(Cluster newCluster);
 
-  public Cluster updateCluster(Cluster cluster);
+  public boolean updateCluster(Cluster newCluster);
 
   public Cluster getCluster(String clusterName);
 
-  public RepairRun addRepairRun(String cause, String owner, DateTime creationTime,
-                                double intensity);
+  public boolean addRepairRun(RepairRun newRepairRun);
 
   public RepairRun getRepairRun(long id);
 
@@ -27,8 +26,11 @@ public interface IStorage {
 
   public ColumnFamily getColumnFamily(long id);
 
+  public boolean addRepairSegments(Collection<RepairSegment> newSegments);
+
+  public boolean updateRepairSegment(RepairSegment newRepairSegment);
+
   public RepairSegment getNextFreeSegment(long runId);
 
-  // IDEA: should we have something like this for parallel runners on same ring?
-  //public RepairSegment getNextFreeSegmentInRange(long runId, long start, long end);
+  public RepairSegment getNextFreeSegmentInRange(long runId, long start, long end);
 }
