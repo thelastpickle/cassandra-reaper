@@ -9,6 +9,7 @@ import com.spotify.reaper.storage.IStorage;
 
 import org.apache.cassandra.service.ActiveRepairService;
 import org.joda.time.DateTime;
+import org.joda.time.Seconds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,14 +53,44 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     this.clusterSeedHost = clusterSeedHost;
   }
 
+  public static void startNewRepairRun(IStorage storage, RepairRun repairRun,
+                                       String clusterSeedHost) {
+    assert null != executor : "you need to initialize the thread pool first";
+    executor.schedule(new RepairRunner(storage, repairRun, clusterSeedHost), 0, TimeUnit.SECONDS);
+  }
+
   /**
    * This run() method is run in scheduled manner, so don't make this blocking!
    */
   @Override
   public void run() {
-    // TODO:
-    // check status of the repair runs and segments on every run... update states etc.
+    LOG.debug("RepairRunner run on RepairRun \"{}\" with current segment id \"{}\"",
+              repairRun.getId(), currentSegment == null ? "n/a" : currentSegment.getStartToken());
 
+    // Need to check current status from database every time, if state changed etc.
+    repairRun = storage.getRepairRun(repairRun.getId());
+    RepairRun.State state = repairRun.getState();
+
+    switch (state) {
+      case NOT_STARTED:
+        checkIfNeedToStartNextSegment();
+        break;
+      case RUNNING:
+        checkIfNeedToStartNextSegment();
+        break;
+      case PAUSED:
+        startNextSegmentEarliest = DateTime.now().plusSeconds(10);
+        break;
+      case DONE:
+        finishRepairRun();
+        return;
+    }
+
+    int sleepTime = Seconds.secondsBetween(DateTime.now(), startNextSegmentEarliest).getSeconds();
+    executor.schedule(this, sleepTime > 0 ? sleepTime : 1, TimeUnit.SECONDS);
+  }
+
+  private boolean checkJmxProxyInitialized() {
     if (null == jmxProxy || !jmxProxy.isConnectionAlive()) {
       LOG.info("initializing new JMX proxy for repair runner on run id: {}", repairRun.getId());
       try {
@@ -69,43 +100,64 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
                   JMX_FAILURE_SLEEP_DELAY_SEC);
         e.printStackTrace();
         executor.schedule(this, JMX_FAILURE_SLEEP_DELAY_SEC, TimeUnit.SECONDS);
-        return;
+        return false;
       }
     }
-
-    if (null == currentSegment) {
-      RepairSegment nextSegment = storage.getNextFreeSegment(repairRun.getId());
-      if (null == nextSegment) {
-        // TODO: check whether we are done with this repair run
-        LOG.error("not implemented yet, no new segment to repair");
-        return;
-      }
-
-    }
-
-    // check if new segment must be started
-    // check if paused
-
-    long sleepTime = 0; // TODO: delay to start next segment, etc.
-    executor.schedule(this, sleepTime, TimeUnit.SECONDS);
+    return true;
   }
 
-  public static void startNewRepairRun(IStorage storage, RepairRun repairRun,
-                                       String clusterSeedHost) {
-    assert null != executor : "you need to initialize the thread pool first";
-    executor.schedule(new RepairRunner(storage, repairRun, clusterSeedHost),
-                      0, TimeUnit.SECONDS);
+  private void checkIfNeedToStartNextSegment() {
+    // TODO:
+  }
+
+  private void changeCurrentSegmentState(RepairSegment.State running) {
+    // TODO:
+  }
+
+  private void finishRepairRun() {
+    // TODO:
   }
 
   /**
-   * Called when there is an event coming from JMX regarding on-going repair.
+   * Called when there is an event coming from JMX regarding on-going repairs.
    *
    * @param repairNumber repair sequence number, obtained when triggering a repair
-   * @param status new status of the repair (STARTED, SESSION_SUCCESS, SESSION_FAILED, FINISHED)
-   * @param message additional information about the repair
+   * @param status       new status of the repair (STARTED, SESSION_SUCCESS, SESSION_FAILED,
+   *                     FINISHED)
+   * @param message      additional information about the repair
    */
   @Override
   public void handle(int repairNumber, ActiveRepairService.Status status, String message) {
-    // TODO:
+    LOG.debug("handling event: repairNumber = {}, status = {}, message = \"{}\"",
+              repairNumber, status, message);
+    int currentCommandId = null == currentSegment ? -1 : currentSegment.getRepairCommandId();
+    if (currentCommandId != repairNumber) {
+      LOG.debug("got event on non-matching repair command id {}, expecting {}",
+                repairNumber, currentCommandId);
+      return;
+    }
+
+    // See status explanations from: https://wiki.apache.org/cassandra/RepairAsyncAPI
+    switch (status) {
+      case STARTED:
+        LOG.info("repair with number {} started", repairNumber);
+        changeCurrentSegmentState(RepairSegment.State.RUNNING);
+        break;
+      case SESSION_SUCCESS:
+        LOG.warn("repair with number {} got SESSION_SUCCESS state, "
+                 + "which is NOT HANDLED CURRENTLY", repairNumber);
+        break;
+      case SESSION_FAILED:
+        LOG.warn("repair with number {} got SESSION_FAILED state, "
+                 + "setting state to error", repairNumber);
+        changeCurrentSegmentState(RepairSegment.State.ERROR);
+        break;
+      case FINISHED:
+        LOG.info("repair with number {} finished", repairNumber);
+        changeCurrentSegmentState(RepairSegment.State.DONE);
+        checkIfNeedToStartNextSegment();
+        break;
+    }
   }
+
 }
