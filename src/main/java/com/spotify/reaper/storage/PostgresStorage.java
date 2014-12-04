@@ -104,7 +104,7 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public boolean addRepairSegments(Collection<RepairSegment> newSegments) {
+  public boolean addRepairSegments(Collection<RepairSegment.Builder> newSegments) {
     // TODO: implementation
     return false;
   }

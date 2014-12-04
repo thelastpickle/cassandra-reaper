@@ -112,7 +112,7 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public boolean addRepairSegments(Collection<RepairSegment> newSegments) {
+  public boolean addRepairSegments(Collection<RepairSegment.Builder> newSegments) {
     // TODO:
     return false;
   }
