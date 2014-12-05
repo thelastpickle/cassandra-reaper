@@ -12,7 +12,7 @@ public class RepairRun {
 
   private final String cause;
   private final String owner;
-  private final State state;
+  private final RunState runState;
   private final DateTime creationTime;
   private final DateTime startTime;
   private final DateTime endTime;
@@ -30,8 +30,8 @@ public class RepairRun {
     return owner;
   }
 
-  public State getState() {
-    return state;
+  public RunState getState() {
+    return runState;
   }
 
   public DateTime getCreationTime() {
@@ -50,9 +50,10 @@ public class RepairRun {
     return intensity;
   }
 
-  public enum State {
+  public enum RunState {
     NOT_STARTED,
     RUNNING,
+    ERROR,
     DONE,
     PAUSED
   }
@@ -61,7 +62,7 @@ public class RepairRun {
     this.id = id;
     this.cause = builder.cause;
     this.owner = builder.owner;
-    this.state = builder.state;
+    this.runState = builder.runState;
     this.creationTime = builder.creationTime;
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
@@ -70,7 +71,7 @@ public class RepairRun {
 
   public static class Builder {
 
-    public final State state;
+    public final RunState runState;
     public final DateTime creationTime;
     public final double intensity;
     private String cause;
@@ -78,8 +79,8 @@ public class RepairRun {
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder(State state, DateTime creationTime, double intensity) {
-      this.state = state;
+    public Builder(RunState runState, DateTime creationTime, double intensity) {
+      this.runState = runState;
       this.creationTime = creationTime;
       this.intensity = intensity;
     }

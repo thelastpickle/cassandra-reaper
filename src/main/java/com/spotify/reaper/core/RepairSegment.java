@@ -57,6 +57,12 @@ public class RepairSegment {
     return endTime;
   }
 
+  public static RepairSegment.Builder getCopy(RepairSegment origSegment, State newState) {
+    return new RepairSegment.Builder(origSegment.getColumnFamily(), origSegment.getRunID(),
+                                     origSegment.getStartToken(), origSegment.getEndToken(),
+                                     newState);
+  }
+
   public enum State {
     NOT_STARTED,
     RUNNING,

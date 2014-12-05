@@ -18,8 +18,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * RepairRunner controls single RepairRun, works in a separate thread, and dies when the RepairRun
- * in question is complete.
+ * RepairRunner controls single RepairRun, is invoked in scheduled manner on separate thread,
+ * and dies when the RepairRun in question is complete.
  *
  * State of the RepairRun is in the Reaper storage, so if Reaper service is restarted, new
  * RepairRunner will be spawned upon restart.
@@ -61,33 +61,49 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
 
   /**
    * This run() method is run in scheduled manner, so don't make this blocking!
+   *
+   * NOTICE: Do scheduling next execution only in this method, or when starting run.
+   *         Otherwise it is a risk to have multiple parallel scheduling for same run.
    */
   @Override
   public void run() {
     LOG.debug("RepairRunner run on RepairRun \"{}\" with current segment id \"{}\"",
               repairRun.getId(), currentSegment == null ? "n/a" : currentSegment.getStartToken());
 
+    if (!checkJmxProxyInitialized()) {
+      LOG.error("failed to initialize JMX proxy, retrying after {} seconds",
+                JMX_FAILURE_SLEEP_DELAY_SEC);
+      executor.schedule(this, JMX_FAILURE_SLEEP_DELAY_SEC, TimeUnit.SECONDS);
+      // TODO: should we change current segment run state to UNKNOWN now?
+      return;
+    }
+
     // Need to check current status from database every time, if state changed etc.
     repairRun = storage.getRepairRun(repairRun.getId());
-    RepairRun.State state = repairRun.getState();
+    RepairRun.RunState runState = repairRun.getState();
 
-    switch (state) {
+    switch (runState) {
       case NOT_STARTED:
         checkIfNeedToStartNextSegment();
         break;
       case RUNNING:
         checkIfNeedToStartNextSegment();
         break;
+      case ERROR:
+        LOG.warn("repair run {} in ERROR, not doing anything", repairRun.getId());
+        finishRepairRun();
+        return; // no new run scheduling
       case PAUSED:
         startNextSegmentEarliest = DateTime.now().plusSeconds(10);
         break;
       case DONE:
         finishRepairRun();
-        return;
+        return; // no new run scheduling
     }
 
     int sleepTime = Seconds.secondsBetween(DateTime.now(), startNextSegmentEarliest).getSeconds();
-    executor.schedule(this, sleepTime > 0 ? sleepTime : 1, TimeUnit.SECONDS);
+    sleepTime = sleepTime > 0 ? sleepTime : 1;
+    executor.schedule(this, sleepTime, TimeUnit.SECONDS);
   }
 
   private boolean checkJmxProxyInitialized() {
@@ -96,10 +112,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
       try {
         jmxProxy = JmxProxy.connect(clusterSeedHost);
       } catch (ReaperException e) {
-        LOG.error("failed to initialize JMX proxy, retrying after {} seconds",
-                  JMX_FAILURE_SLEEP_DELAY_SEC);
         e.printStackTrace();
-        executor.schedule(this, JMX_FAILURE_SLEEP_DELAY_SEC, TimeUnit.SECONDS);
         return false;
       }
     }
@@ -107,10 +120,89 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   }
 
   private void checkIfNeedToStartNextSegment() {
+    // TODO: Should this be synchronized by each repair run id?
+    if (repairRun.getState() == RepairRun.RunState.PAUSED
+        || repairRun.getState() == RepairRun.RunState.DONE
+        || repairRun.getState() == RepairRun.RunState.ERROR) {
+      LOG.debug("not starting new segment if repair run is not running: {}", repairRun.getId());
+      return;
+    }
+
+    int newRepairCommandId = -1;
+    if (null == currentSegment) {
+      currentSegment = storage.getNextFreeSegment(repairRun.getId());
+      if (null == currentSegment) {
+        LOG.error("first segment not found for repair run {}", repairRun.getId());
+        changeCurrentRepairRunState(RepairRun.RunState.ERROR);
+        return;
+      }
+      LOG.info("triggering repair on segment {} with start token {} on run id {}",
+               currentSegment.getId(), currentSegment.getStartToken(), repairRun.getId());
+      newRepairCommandId = jmxProxy.triggerRepair(currentSegment);
+      if (repairRun.getState() == RepairRun.RunState.NOT_STARTED) {
+        LOG.info("started new repair run {}", repairRun.getId());
+        changeCurrentRepairRunState(RepairRun.RunState.RUNNING);
+      }
+      else {
+        assert repairRun.getState() == RepairRun.RunState.RUNNING : "logical error in run state";
+        LOG.info("started existing repair run {}", repairRun.getId());
+      }
+    }
+    else {
+      LOG.debug("checking whether we need to start new segment on run: {}", repairRun.getId());
+      currentSegment = storage.getRepairSegment(currentSegment.getId());
+
+      if (currentSegment.getState() == RepairSegment.State.RUNNING) {
+        LOG.info("segment {} still running on run {}", currentSegment.getId(), repairRun.getId());
+      }
+      else if (currentSegment.getState() == RepairSegment.State.ERROR) {
+        LOG.error("current segment {} in ERROR status for run {}",
+                  currentSegment.getId(), repairRun.getId());
+        changeCurrentRepairRunState(RepairRun.RunState.ERROR);
+        return;
+      }
+      else if (currentSegment.getState() == RepairSegment.State.NOT_STARTED) {
+        LOG.warn("segment {} repair not started, even triggered for run {}, re-triggering now",
+                 currentSegment.getId(), repairRun.getId());
+        newRepairCommandId = jmxProxy.triggerRepair(currentSegment);
+      }
+      else if (currentSegment.getState() == RepairSegment.State.DONE) {
+        LOG.warn("segment {} repair completed for run {}",
+                 currentSegment.getId(), repairRun.getId());
+        currentSegment = storage.getNextFreeSegment(repairRun.getId());
+        if (null == currentSegment) {
+          LOG.info("no new free segment found for repair run {}", repairRun.getId());
+          changeCurrentRepairRunState(RepairRun.RunState.DONE);
+          return;
+        }
+
+        LOG.info("triggering repair on segment {} with start token {} on run id {}",
+                 currentSegment.getId(), currentSegment.getStartToken(), repairRun.getId());
+        newRepairCommandId = jmxProxy.triggerRepair(currentSegment);
+        assert repairRun.getState() == RepairRun.RunState.RUNNING : "logical error in run state";
+      }
+    }
+
+    if (newRepairCommandId > 0) {
+      RepairSegment updatedSegment = RepairSegment.getCopy(currentSegment,
+                                                           currentSegment.getState())
+          .repairCommandId(newRepairCommandId).build(currentSegment.getId());
+      storage.updateRepairSegment(updatedSegment);
+      LOG.debug("updated segment {} repair command id to {}",
+                currentSegment.getId(), currentSegment.getRepairCommandId());
+    }
+
+    // TODO: should sleep time be relative to past performance?
+    startNextSegmentEarliest = DateTime.now().plusSeconds(5);
+  }
+
+  private void changeCurrentRepairRunState(RepairRun.RunState runState) {
+    LOG.info("repair run with id {} state change from {} to {}",
+             repairRun.getId(), repairRun.getState().toString(), runState.toString());
     // TODO:
   }
 
-  private void changeCurrentSegmentState(RepairSegment.State running) {
+  private void changeCurrentSegmentState(RepairSegment.State state) {
     // TODO:
   }
 
