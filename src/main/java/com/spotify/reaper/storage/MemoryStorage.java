@@ -22,13 +22,14 @@ public class MemoryStorage implements IStorage {
 
   private static final AtomicInteger REPAIR_RUN_ID = new AtomicInteger(0);
   private static final AtomicInteger COLUMN_FAMILY_ID = new AtomicInteger(0);
+  private static final AtomicInteger SEGMENT_ID = new AtomicInteger(0);
 
   private ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
   private ConcurrentMap<Long, RepairRun> repairRuns = Maps.newConcurrentMap();
   private ConcurrentMap<Long, ColumnFamily> columnFamilies = Maps.newConcurrentMap();
   private ConcurrentMap<TableName, ColumnFamily> columnFamiliesByName = Maps.newConcurrentMap();
   private ConcurrentMap<Long, RepairSegment> repairSegments = Maps.newConcurrentMap();
-  private ConcurrentMap<Long, Collection<RepairSegment>> repairSegmentsByRunId =
+  private ConcurrentMap<Long, ConcurrentMap<Long, RepairSegment>> repairSegmentsByRunId =
       Maps.newConcurrentMap();
 
   public static class TableName {
@@ -91,7 +92,12 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public boolean updateRepairRun(RepairRun repairRun) {
-    return false;
+    if (getRepairRun(repairRun.getId(), repairRun.getRepairRunLock()) == null) {
+      return false;
+    } else {
+      repairRuns.put(repairRun.getId(), repairRun);
+      return true;
+    }
   }
 
   @Override
@@ -131,15 +137,16 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public Collection<RepairSegment> addRepairSegments(Collection<RepairSegment.Builder> segments) {
-    Collection<RepairSegment> newSegments = Lists.newArrayList();
+    //Collection<RepairSegment> newSegments = Lists.newArrayList();
+    ConcurrentMap<Long, RepairSegment> newSegments = Maps.newConcurrentMap();
     for (RepairSegment.Builder segment : segments) {
-      RepairSegment newRepairSegment = segment.build(REPAIR_RUN_ID.incrementAndGet());
+      RepairSegment newRepairSegment = segment.build(SEGMENT_ID.incrementAndGet());
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
-      newSegments.add(newRepairSegment);
+      newSegments.put(newRepairSegment.getId(), newRepairSegment);
     }
     // TODO: (bj0rn) this is very ugly, the function should probably take runId.
-    repairSegmentsByRunId.put(newSegments.iterator().next().getRunID(), newSegments);
-    return newSegments;
+    repairSegmentsByRunId.put(newSegments.values().iterator().next().getRunID(), newSegments);
+    return newSegments.values();
   }
 
   @Override
@@ -148,6 +155,7 @@ public class MemoryStorage implements IStorage {
       return false;
     } else {
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
+      repairSegmentsByRunId.get(newRepairSegment.getRunID()).put(newRepairSegment.getId(), newRepairSegment);
       return true;
     }
   }
@@ -159,7 +167,7 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public RepairSegment getNextFreeSegment(long runId) {
-    for (RepairSegment segment : repairSegmentsByRunId.get(runId)) {
+    for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
       if (segment.getState() == RepairSegment.State.NOT_STARTED) {
         return segment;
       }
@@ -185,7 +193,7 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public RepairSegment getNextFreeSegmentInRange(long runId, BigInteger start, BigInteger end) {
-    for (RepairSegment segment : repairSegmentsByRunId.get(runId)) {
+    for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
       if (segment.getState() == RepairSegment.State.NOT_STARTED &&
           encloses(start, end, segment.getStartToken(), segment.getEndToken())) {
         return segment;

@@ -1,5 +1,7 @@
 package com.spotify.reaper.service;
 
+import com.google.common.base.Optional;
+
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
@@ -68,7 +70,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
    */
   @Override
   public void run() {
-    LOG.debug("RepairRunner run on RepairRun \"{}\" with current segment id \"{}\"",
+    LOG.debug("RepairRunner run on RepairRun \"{}\" with start token \"{}\"",
               repairRun.getId(), currentSegment == null ? "n/a" : currentSegment.getStartToken());
 
     if (!checkJmxProxyInitialized()) {
@@ -111,7 +113,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     if (null == jmxProxy || !jmxProxy.isConnectionAlive()) {
       LOG.info("initializing new JMX proxy for repair runner on run id: {}", repairRun.getId());
       try {
-        jmxProxy = JmxProxy.connect(clusterSeedHost);
+        jmxProxy = JmxProxy.connect(Optional.<RepairStatusHandler>of(this), clusterSeedHost);
       } catch (ReaperException e) {
         e.printStackTrace();
         return false;
@@ -150,31 +152,28 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
       if (repairRun.getState() == RepairRun.RunState.NOT_STARTED) {
         LOG.info("started new repair run {}", repairRun.getId());
         changeCurrentRepairRunState(RepairRun.RunState.RUNNING);
-      }
-      else {
+      } else {
         assert repairRun.getState() == RepairRun.RunState.RUNNING : "logical error in run state";
         LOG.info("started existing repair run {}", repairRun.getId());
       }
-    }
-    else {
-      LOG.debug("checking whether we need to start new segment on run: {}", repairRun.getId());
+    } else {
+      LOG.debug("checking whether we need to start new segment ({}) on run: {}",
+                currentSegment.getId(), repairRun.getId());
       currentSegment = storage.getRepairSegment(currentSegment.getId());
 
       if (currentSegment.getState() == RepairSegment.State.RUNNING) {
         LOG.info("segment {} still running on run {}", currentSegment.getId(), repairRun.getId());
-      }
-      else if (currentSegment.getState() == RepairSegment.State.ERROR) {
+      } else if (currentSegment.getState() == RepairSegment.State.ERROR) {
         LOG.error("current segment {} in ERROR status for run {}",
                   currentSegment.getId(), repairRun.getId());
         changeCurrentRepairRunState(RepairRun.RunState.ERROR);
         return;
-      }
-      else if (currentSegment.getState() == RepairSegment.State.NOT_STARTED) {
-        LOG.warn("segment {} repair not started, even triggered for run {}, re-triggering now",
-                 currentSegment.getId(), repairRun.getId());
+      } else if (currentSegment.getState() == RepairSegment.State.NOT_STARTED) {
+        LOG.warn(
+            "segment {} repair not started, although it is triggered for run {}, re-triggering now",
+            currentSegment.getId(), repairRun.getId());
         newRepairCommandId = jmxProxy.triggerRepair(currentSegment);
-      }
-      else if (currentSegment.getState() == RepairSegment.State.DONE) {
+      } else if (currentSegment.getState() == RepairSegment.State.DONE) {
         LOG.warn("segment {} repair completed for run {}",
                  currentSegment.getId(), repairRun.getId());
         currentSegment = storage.getNextFreeSegment(repairRun.getId());
@@ -184,8 +183,8 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
           return;
         }
 
-        LOG.info("triggering repair on segment {} with start token {} on run id {}",
-                 currentSegment.getId(), currentSegment.getStartToken(), repairRun.getId());
+        LOG.info("triggering repair on segment {} {} with start token {} on run id {}",
+                 currentSegment.getId(), currentSegment.getState(), currentSegment.getStartToken(), repairRun.getId());
         newRepairCommandId = jmxProxy.triggerRepair(currentSegment);
         assert repairRun.getState() == RepairRun.RunState.RUNNING : "logical error in run state";
       }
@@ -193,16 +192,15 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
 
     if (newRepairCommandId > 0) {
       // Notice that the segment state is set separately by the JMX notifications, not here
-      RepairSegment updatedSegment = RepairSegment.getCopy(currentSegment,
-                                                           currentSegment.getState(),
-                                                           newRepairCommandId,
-                                                           currentSegment.getStartTime(),
-                                                           currentSegment.getEndTime());
-      if (storage.updateRepairSegment(updatedSegment)) {
+      currentSegment = RepairSegment.getCopy(currentSegment,
+                                             currentSegment.getState(),
+                                             newRepairCommandId,
+                                             currentSegment.getStartTime(),
+                                             currentSegment.getEndTime());
+      if (storage.updateRepairSegment(currentSegment)) {
         LOG.debug("updated segment {} repair command id to {}",
                   currentSegment.getId(), newRepairCommandId);
-      }
-      else {
+      } else {
         LOG.error("failed to update segment {} repair command id to {}",
                   currentSegment.getId(), newRepairCommandId);
         // TODO: what should we do if we fail to update storage?
@@ -210,7 +208,13 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     }
 
     // TODO: should sleep time be relative to past performance?
-    startNextSegmentEarliest = DateTime.now().plusSeconds(1);
+    if (currentSegment.getState() == RepairSegment.State.DONE) {
+      double repairTime =
+          Seconds.secondsBetween(currentSegment.getStartTime(), currentSegment.getEndTime())
+              .getSeconds();
+      int sleepTime = (int) (repairTime / repairRun.getIntensity() - repairTime);
+      startNextSegmentEarliest = DateTime.now().plusSeconds(sleepTime);
+    }
   }
 
   private void changeCurrentRepairRunState(RepairRun.RunState newRunState) {
@@ -293,10 +297,10 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     }
     DateTime newStartTime = currentSegment.getStartTime();
     DateTime newEndTime = currentSegment.getEndTime();
-    RepairSegment updatedSegment = RepairSegment.getCopy(currentSegment, newState,
+    currentSegment = RepairSegment.getCopy(currentSegment, newState,
                                                          currentSegment.getRepairCommandId(),
                                                          newStartTime, newEndTime);
-    if (storage.updateRepairSegment(updatedSegment)) {
+    if (storage.updateRepairSegment(currentSegment)) {
       LOG.info("updated segment {} state to {}", currentSegment.getId(), newState);
     }
     else {
