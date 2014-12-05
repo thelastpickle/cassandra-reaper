@@ -79,25 +79,25 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     }
 
     // Need to check current status from database every time, if state changed etc.
-    repairRun = storage.getRepairRun(repairRun.getId());
+    repairRun = storage.getRepairRun(repairRun.getId(), repairRun.getRepairRunLock());
     RepairRun.RunState runState = repairRun.getState();
 
     switch (runState) {
       case NOT_STARTED:
-        checkIfNeedToStartNextSegment();
+        checkIfNeedToStartNextSegmentSync();
         break;
       case RUNNING:
-        checkIfNeedToStartNextSegment();
+        checkIfNeedToStartNextSegmentSync();
         break;
       case ERROR:
         LOG.warn("repair run {} in ERROR, not doing anything", repairRun.getId());
-        finishRepairRun();
         return; // no new run scheduling
       case PAUSED:
+        checkIfNeedToStartNextSegmentSync();
         startNextSegmentEarliest = DateTime.now().plusSeconds(10);
         break;
       case DONE:
-        finishRepairRun();
+        checkIfNeedToStartNextSegmentSync();
         return; // no new run scheduling
     }
 
@@ -119,12 +119,19 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     return true;
   }
 
+  private void checkIfNeedToStartNextSegmentSync() {
+    synchronized (repairRun.getRepairRunLock()) {
+      checkIfNeedToStartNextSegment();
+    }
+  }
+
   private void checkIfNeedToStartNextSegment() {
-    // TODO: Should this be synchronized by each repair run id?
+    // this method should be synchronized based on runId
     if (repairRun.getState() == RepairRun.RunState.PAUSED
         || repairRun.getState() == RepairRun.RunState.DONE
         || repairRun.getState() == RepairRun.RunState.ERROR) {
-      LOG.debug("not starting new segment if repair run is not running: {}", repairRun.getId());
+      LOG.debug("not starting new segment if repair run (id {}) is not running: {}",
+                repairRun.getId(), repairRun.getState());
       return;
     }
 
@@ -184,30 +191,55 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     }
 
     if (newRepairCommandId > 0) {
+      // Notice that the segment state is set separately by the JMX notifications, not here
       RepairSegment updatedSegment = RepairSegment.getCopy(currentSegment,
-                                                           currentSegment.getState())
-          .repairCommandId(newRepairCommandId).build(currentSegment.getId());
-      storage.updateRepairSegment(updatedSegment);
-      LOG.debug("updated segment {} repair command id to {}",
-                currentSegment.getId(), currentSegment.getRepairCommandId());
+                                                           currentSegment.getState(),
+                                                           newRepairCommandId,
+                                                           currentSegment.getStartTime(),
+                                                           currentSegment.getEndTime());
+      if (storage.updateRepairSegment(updatedSegment)) {
+        LOG.debug("updated segment {} repair command id to {}",
+                  currentSegment.getId(), newRepairCommandId);
+      }
+      else {
+        LOG.error("failed to update segment {} repair command id to {}",
+                  currentSegment.getId(), newRepairCommandId);
+        // TODO: what should we do if we fail to update storage?
+      }
     }
 
     // TODO: should sleep time be relative to past performance?
     startNextSegmentEarliest = DateTime.now().plusSeconds(5);
   }
 
-  private void changeCurrentRepairRunState(RepairRun.RunState runState) {
+  private void changeCurrentRepairRunState(RepairRun.RunState newRunState) {
+    if (repairRun.getState() == newRunState) {
+      LOG.info("repair run {} state {} same as before, not changed",
+               repairRun.getId(), newRunState);
+      return;
+    }
+    DateTime newStartTime = repairRun.getStartTime();
+    DateTime newEndTime = repairRun.getEndTime();
+    if (newRunState == RepairRun.RunState.DONE || newRunState == RepairRun.RunState.ERROR) {
+      newEndTime = DateTime.now();
+      if (null == newStartTime) {
+        LOG.warn("repair run start time not set when closing run {}, setting it to current time",
+                 repairRun.getId());
+        newStartTime = newEndTime;
+      }
+    }
+    else if (newRunState == RepairRun.RunState.RUNNING) {
+      newStartTime = DateTime.now();
+      newEndTime = null;
+    }
+
     LOG.info("repair run with id {} state change from {} to {}",
-             repairRun.getId(), repairRun.getState().toString(), runState.toString());
-    // TODO:
-  }
-
-  private void changeCurrentSegmentState(RepairSegment.State state) {
-    // TODO:
-  }
-
-  private void finishRepairRun() {
-    // TODO:
+             repairRun.getId(), repairRun.getState().toString(), newRunState.toString());
+    RepairRun updatedRun = RepairRun.getCopy(repairRun, newRunState, newStartTime, newEndTime);
+    if (!storage.updateRepairRun(updatedRun)) {
+      LOG.error("failed updating repair run status: {}", repairRun.getId());
+      // TODO: what should we do if we fail to update storage?
+    }
   }
 
   /**
@@ -247,8 +279,29 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
       case FINISHED:
         LOG.info("repair with number {} finished", repairNumber);
         changeCurrentSegmentState(RepairSegment.State.DONE);
-        checkIfNeedToStartNextSegment();
+        checkIfNeedToStartNextSegmentSync();
         break;
+    }
+  }
+
+  private void changeCurrentSegmentState(RepairSegment.State newState) {
+    if (currentSegment.getState() == newState) {
+      LOG.info("repair segment {} state {} same as before, not changed",
+               currentSegment.getId(), newState);
+      return;
+    }
+    DateTime newStartTime = currentSegment.getStartTime();
+    DateTime newEndTime = currentSegment.getEndTime();
+    RepairSegment updatedSegment = RepairSegment.getCopy(currentSegment, newState,
+                                                         currentSegment.getRepairCommandId(),
+                                                         newStartTime, newEndTime);
+    if (storage.updateRepairSegment(updatedSegment)) {
+      LOG.info("updated segment {} state to {}", currentSegment.getId(), newState);
+    }
+    else {
+      LOG.error("failed to update segment {} state to {}",
+                currentSegment.getId(), newState);
+      // TODO: what should we do if we fail to update storage?
     }
   }
 

@@ -57,10 +57,15 @@ public class RepairSegment {
     return endTime;
   }
 
-  public static RepairSegment.Builder getCopy(RepairSegment origSegment, State newState) {
-    return new RepairSegment.Builder(origSegment.getColumnFamily(), origSegment.getRunID(),
+  public static RepairSegment getCopy(RepairSegment origSegment, State newState,
+                                      int newRepairCommandId,
+                                      DateTime newStartTime, DateTime newEndTime) {
+    return new Builder(origSegment.getColumnFamily(), origSegment.getRunID(),
                                      origSegment.getStartToken(), origSegment.getEndToken(),
-                                     newState);
+                                     newState)
+        .repairCommandId(newRepairCommandId)
+        .startTime(newStartTime)
+        .endTime(newEndTime).build(origSegment.getId());
   }
 
   public enum State {

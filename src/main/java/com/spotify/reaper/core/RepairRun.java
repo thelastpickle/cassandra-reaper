@@ -1,5 +1,7 @@
 package com.spotify.reaper.core;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.joda.time.DateTime;
 
 public class RepairRun {
@@ -18,8 +20,16 @@ public class RepairRun {
   private final DateTime endTime;
   private final double intensity;
 
+  // repair run lock exist per single repair run, and will be passed on if instance updated
+  @JsonIgnore
+  private final Object repairRunLock;
+
   public long getId() {
     return id;
+  }
+
+  public Object getRepairRunLock() {
+    return this.repairRunLock;
   }
 
   public String getCause() {
@@ -50,6 +60,17 @@ public class RepairRun {
     return intensity;
   }
 
+  public static RepairRun getCopy(RepairRun repairRun, RunState newState,
+                                  DateTime startTime, DateTime endTime) {
+    return new RepairRun.Builder(repairRun.getRepairRunLock(), newState,
+                                 repairRun.getCreationTime(), repairRun.getIntensity())
+        .cause(repairRun.getCause())
+        .owner(repairRun.getOwner())
+        .startTime(startTime)
+        .endTime(endTime)
+        .build(repairRun.getId());
+  }
+
   public enum RunState {
     NOT_STARTED,
     RUNNING,
@@ -60,6 +81,7 @@ public class RepairRun {
 
   private RepairRun(Builder builder, long id) {
     this.id = id;
+    this.repairRunLock = builder.repairRunLock;
     this.cause = builder.cause;
     this.owner = builder.owner;
     this.runState = builder.runState;
@@ -78,8 +100,10 @@ public class RepairRun {
     private String owner;
     private DateTime startTime;
     private DateTime endTime;
+    private Object repairRunLock;
 
-    public Builder(RunState runState, DateTime creationTime, double intensity) {
+    public Builder(Object repairRunLock, RunState runState, DateTime creationTime,
+                   double intensity) {
       this.runState = runState;
       this.creationTime = creationTime;
       this.intensity = intensity;
@@ -102,6 +126,11 @@ public class RepairRun {
 
     public Builder endTime(DateTime endTime) {
       this.endTime = endTime;
+      return this;
+    }
+
+    public Builder repairRunLock(Object lock) {
+      this.repairRunLock = lock;
       return this;
     }
 

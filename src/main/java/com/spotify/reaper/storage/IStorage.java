@@ -23,7 +23,20 @@ public interface IStorage {
 
   RepairRun addRepairRun(RepairRun.Builder repairRun);
 
-  RepairRun getRepairRun(long id);
+  boolean updateRepairRun(RepairRun repairRun);
+
+  /**
+   * Get new RepairRun instance fetched from database with matching ID.
+   * Notice that the repairRunLock object must be given every time, as the
+   * lock must be shared instance with every separate RepairRun instance
+   * for proper synchronization.
+   *
+   * @param id The storage id of the RepairRun to fetch from storage.
+   * @param repairRunLock Lock object used for synchronization in RepairRunner.
+   *                      Shared between all instances of RepairRun having same id.
+   * @return The fetched RepairRun instance matching given id, or null if not found.
+   */
+  RepairRun getRepairRun(long id, Object repairRunLock);
 
   ColumnFamily addColumnFamily(ColumnFamily.Builder newTable);
 

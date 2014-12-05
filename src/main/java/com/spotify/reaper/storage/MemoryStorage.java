@@ -90,7 +90,13 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public RepairRun getRepairRun(long id) {
+  public boolean updateRepairRun(RepairRun repairRun) {
+    return false;
+  }
+
+  @Override
+  public RepairRun getRepairRun(long id, Object repairRunLock) {
+    // repairRunLock ignored, as the memory instance already has the right instance in it
     return repairRuns.get(id);
   }
 

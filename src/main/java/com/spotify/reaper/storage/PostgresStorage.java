@@ -10,7 +10,6 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
 
-import org.joda.time.DateTime;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.slf4j.Logger;
@@ -58,6 +57,11 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
+  public boolean updateRepairRun(RepairRun repairRun) {
+    return false;
+  }
+
+  @Override
   public Cluster addCluster(Cluster newCluster) {
     Handle h = jdbi.open();
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
@@ -84,7 +88,7 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public RepairRun getRepairRun(long id) {
+  public RepairRun getRepairRun(long id, Object repairRunLock) {
     // TODO: implementation
     return null;
   }
@@ -107,7 +111,8 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Collection<RepairSegment> addRepairSegments(Collection<RepairSegment.Builder> newSegments) {
+  public Collection<RepairSegment> addRepairSegments(
+      Collection<RepairSegment.Builder> newSegments) {
     // TODO: implementation
     return null;
   }
