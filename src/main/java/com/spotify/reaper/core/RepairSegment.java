@@ -12,7 +12,8 @@ public class RepairSegment {
   private final Integer repairCommandId; // received when triggering repair in Cassandra
   private final ColumnFamily columnFamily;
   private final long runID;
-  private final Range<BigInteger> tokenRange;
+  private final BigInteger startToken; // open
+  private final BigInteger endToken; // closed
   private final State state;
   private final DateTime startTime;
   private final DateTime endTime;
@@ -33,16 +34,12 @@ public class RepairSegment {
     return runID;
   }
 
-  public Range<BigInteger> getTokenRange() {
-    return tokenRange;
-  }
-
   public BigInteger getStartToken() {
-    return tokenRange.lowerEndpoint();
+    return startToken;
   }
 
   public BigInteger getEndToken() {
-    return tokenRange.upperEndpoint();
+    return endToken;
   }
 
   public State getState() {
@@ -80,7 +77,8 @@ public class RepairSegment {
     this.repairCommandId = builder.repairCommandId;
     this.columnFamily = builder.columnFamily;
     this.runID = builder.runID;
-    this.tokenRange = Range.openClosed(builder.startToken, builder.endToken);
+    this.startToken = builder.startToken;
+    this.endToken = builder.endToken;
     this.state = builder.state;
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
@@ -133,7 +131,7 @@ public class RepairSegment {
 
   public String toString() {
     return String.format("(%s,%s]",
-                         tokenRange.lowerEndpoint().toString(),
-                         tokenRange.upperEndpoint().toString());
+                         startToken.toString(),
+                         endToken.toString());
   }
 }

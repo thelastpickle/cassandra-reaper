@@ -98,8 +98,7 @@ public class TableResource {
       if (existingCluster == null) {
         LOG.info("creating new cluster based on given seed host: {}", seedHost);
         storage.addCluster(targetCluster);
-      }
-      else if (!existingCluster.equals(targetCluster)) {
+      } else if (!existingCluster.equals(targetCluster)) {
         LOG.info("cluster information has changed for cluster: {}", targetCluster.getName());
         storage.updateCluster(targetCluster);
       }
@@ -127,7 +126,9 @@ public class TableResource {
     }
 
     // TODO: verify that the table exists in the cluster.
-    ColumnFamily existingTable = storage.getColumnFamily(targetCluster.getName(), keyspace.get(), table.get());
+    ColumnFamily
+        existingTable =
+        storage.getColumnFamily(targetCluster.getName(), keyspace.get(), table.get());
     if (existingTable == null) {
       LOG.info("storing new table");
 
@@ -182,7 +183,8 @@ public class TableResource {
 
       if (segments == null || seedHosts.isEmpty()) {
         return Response.status(404)
-            .entity("couldn't connect to any of the seed hosts in cluster \"" + clusterName + "\"").build();
+            .entity("couldn't connect to any of the seed hosts in cluster \"" + existingTable
+                .getCluster().getName() + "\"").build();
       }
     } catch (ReaperException e) {
       String errMsg = "failed generating segments for new table: " + existingTable;

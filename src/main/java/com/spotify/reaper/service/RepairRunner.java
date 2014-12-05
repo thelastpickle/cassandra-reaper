@@ -56,6 +56,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   public static void startNewRepairRun(IStorage storage, RepairRun repairRun,
                                        String clusterSeedHost) {
     assert null != executor : "you need to initialize the thread pool first";
+    LOG.info("scheduling repair for repair run #" + repairRun.getId());
     executor.schedule(new RepairRunner(storage, repairRun, clusterSeedHost), 0, TimeUnit.SECONDS);
   }
 
@@ -209,7 +210,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     }
 
     // TODO: should sleep time be relative to past performance?
-    startNextSegmentEarliest = DateTime.now().plusSeconds(5);
+    startNextSegmentEarliest = DateTime.now().plusSeconds(1);
   }
 
   private void changeCurrentRepairRunState(RepairRun.RunState newRunState) {

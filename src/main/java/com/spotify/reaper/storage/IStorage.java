@@ -49,5 +49,5 @@ public interface IStorage {
 
   RepairSegment getRepairSegment(long id);
   RepairSegment getNextFreeSegment(long runId);
-  RepairSegment getNextFreeSegmentInRange(long runId, Range<BigInteger> range);
+  RepairSegment getNextFreeSegmentInRange(long runId, BigInteger start, BigInteger end);
 }

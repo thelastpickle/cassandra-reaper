@@ -8,6 +8,7 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.service.SegmentGenerator;
 
 import java.math.BigInteger;
 import java.util.Collection;
@@ -27,8 +28,7 @@ public class MemoryStorage implements IStorage {
   private ConcurrentMap<Long, ColumnFamily> columnFamilies = Maps.newConcurrentMap();
   private ConcurrentMap<TableName, ColumnFamily> columnFamiliesByName = Maps.newConcurrentMap();
   private ConcurrentMap<Long, RepairSegment> repairSegments = Maps.newConcurrentMap();
-  private ConcurrentMap<Long, Collection<RepairSegment>>
-      repairSegmentsByRunId =
+  private ConcurrentMap<Long, Collection<RepairSegment>> repairSegmentsByRunId =
       Maps.newConcurrentMap();
 
   public static class TableName {
@@ -137,6 +137,8 @@ public class MemoryStorage implements IStorage {
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
       newSegments.add(newRepairSegment);
     }
+    // TODO: (bj0rn) this is very ugly, the function should probably take runId.
+    repairSegmentsByRunId.put(newSegments.iterator().next().getRunID(), newSegments);
     return newSegments;
   }
 
@@ -165,11 +167,27 @@ public class MemoryStorage implements IStorage {
     return null;
   }
 
+
+  public static boolean encloses(BigInteger rangeStart, BigInteger rangeEnd,
+                                 BigInteger segmentStart, BigInteger segmentEnd) {
+    // TODO: unit test for this
+    if (SegmentGenerator.lowerThanOrEqual(rangeStart, rangeEnd)) {
+      return SegmentGenerator.greaterThanOrEqual(segmentStart, rangeStart) &&
+             SegmentGenerator.lowerThanOrEqual(segmentEnd, rangeEnd);
+    } else if (SegmentGenerator.lowerThanOrEqual(segmentStart, segmentEnd)) {
+      return SegmentGenerator.greaterThanOrEqual(segmentStart, rangeStart) ||
+             SegmentGenerator.lowerThanOrEqual(segmentEnd, rangeEnd);
+    } else {
+      return SegmentGenerator.greaterThanOrEqual(segmentStart, rangeStart) &&
+             SegmentGenerator.lowerThanOrEqual(segmentEnd, rangeEnd);
+    }
+  }
+
   @Override
-  public RepairSegment getNextFreeSegmentInRange(long runId, Range<BigInteger> range) {
+  public RepairSegment getNextFreeSegmentInRange(long runId, BigInteger start, BigInteger end) {
     for (RepairSegment segment : repairSegmentsByRunId.get(runId)) {
       if (segment.getState() == RepairSegment.State.NOT_STARTED &&
-          range.encloses(segment.getTokenRange())) {
+          encloses(start, end, segment.getStartToken(), segment.getEndToken())) {
         return segment;
       }
     }

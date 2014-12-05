@@ -136,7 +136,7 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public RepairSegment getNextFreeSegmentInRange(long runId, Range<BigInteger> range) {
+  public RepairSegment getNextFreeSegmentInRange(long runId, BigInteger start, BigInteger end) {
     // TODO: implementation
     return null;
   }

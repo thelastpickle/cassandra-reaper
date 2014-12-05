@@ -104,6 +104,7 @@ public class RepairRun {
 
     public Builder(Object repairRunLock, RunState runState, DateTime creationTime,
                    double intensity) {
+      this.repairRunLock = repairRunLock;
       this.runState = runState;
       this.creationTime = creationTime;
       this.intensity = intensity;

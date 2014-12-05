@@ -63,14 +63,13 @@ public class SegmentGenerator {
         throw new ReaperException(String.format("Tokens (%s,%s) not in range of %s",
                                                 start, stop, partitioner));
       }
-      if (start.equals(stop)) {
-        // TODO: fix corner case where there is only one token!
+      if (start.equals(stop) && tokenRangeCount != 1) {
         throw new ReaperException(String.format("Tokens (%s,%s): two nodes have the same token",
                                                 start, stop));
       }
 
       BigInteger rangeSize = stop.subtract(start);
-      if (lowerThan(rangeSize, BigInteger.ZERO)) {
+      if (lowerThanOrEqual(rangeSize, BigInteger.ZERO)) {
         // wrap around case
         rangeSize = rangeSize.add(RANGE_SIZE);
       }
@@ -131,23 +130,33 @@ public class SegmentGenerator {
   }
 
   @VisibleForTesting
-  protected static BigInteger max(BigInteger a, BigInteger b) {
+  public static BigInteger max(BigInteger a, BigInteger b) {
     return greaterThan(a, b) ? a : b;
   }
 
   @VisibleForTesting
-  protected static BigInteger min(BigInteger a, BigInteger b) {
+  public static BigInteger min(BigInteger a, BigInteger b) {
     return lowerThan(a, b) ? a : b;
   }
 
   @VisibleForTesting
-  protected static boolean lowerThan(BigInteger a, BigInteger b) {
+  public static boolean lowerThan(BigInteger a, BigInteger b) {
     return a.compareTo(b) < 0;
   }
 
   @VisibleForTesting
-  protected static boolean greaterThan(BigInteger a, BigInteger b) {
+  public static boolean lowerThanOrEqual(BigInteger a, BigInteger b) {
+    return a.compareTo(b) <= 0;
+  }
+
+  @VisibleForTesting
+  public static boolean greaterThan(BigInteger a, BigInteger b) {
     return a.compareTo(b) > 0;
+  }
+
+  @VisibleForTesting
+  public static boolean greaterThanOrEqual(BigInteger a, BigInteger b) {
+    return a.compareTo(b) >= 0;
   }
 
 
