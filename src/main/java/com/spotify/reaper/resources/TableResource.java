@@ -114,32 +114,37 @@ public class TableResource {
           .entity("Query parameter \"clusterName\" or \"seedHost\" required").build();
     }
 
-    // TODO: verify that the table exists in the cluster.
-    ColumnFamily newTable = storage.addColumnFamily(
-        new ColumnFamily.Builder(targetCluster, keyspace.get(), table.get(),
-                                 config.getSegmentCount(), config.getSnapshotRepair()));
-
-    String newTablePathPart = newTable.getCluster().getName() + "/" + newTable.getKeyspaceName()
-                              + "/" + newTable.getName();
-    if (newTable == null) {
-      return Response.status(500)
-          .entity("failed creating table into Reaper storage: " + newTablePathPart).build();
-    }
-
+    String newTablePathPart = targetCluster.getName() + "/" + keyspace.get()
+                              + "/" + table.get();
     URI createdURI;
     try {
       createdURI = (new URL(uriInfo.getAbsolutePath().toURL(), newTablePathPart)).toURI();
     } catch (Exception e) {
-      String errMsg = "failed creating target URI for new table: " + newTablePathPart;
+      String errMsg = "failed creating target URI for table: " + newTablePathPart;
       LOG.error(errMsg);
       e.printStackTrace();
       return Response.status(400).entity(errMsg).build();
     }
 
+    // TODO: verify that the table exists in the cluster.
+    ColumnFamily existingTable = storage.getColumnFamily(targetCluster.getName(), keyspace.get(), table.get());
+    if (existingTable == null) {
+      LOG.info("storing new table");
+
+      existingTable = storage.addColumnFamily(
+          new ColumnFamily.Builder(targetCluster, keyspace.get(), table.get(),
+                                   config.getSegmentCount(), config.getSnapshotRepair()));
+
+      if (existingTable == null) {
+        return Response.status(500)
+            .entity("failed creating table into Reaper storage: " + newTablePathPart).build();
+      }
+    }
+
     // Start repairing the table if the startRepair query parameter is given at all,
     // i.e. possible value not checked, and not required.
     if (!startRepair.isPresent()) {
-      return Response.created(createdURI).entity(newTable).build();
+      return Response.created(createdURI).entity(existingTable).build();
     }
 
     RepairRun newRepairRun =
@@ -163,10 +168,10 @@ public class TableResource {
         try {
           JmxProxy jmxProxy = JmxProxy.connect(host);
           List<BigInteger> tokens = jmxProxy.getTokens();
-          segments = sg.generateSegments(newTable.getSegmentCount(),
+          segments = sg.generateSegments(existingTable.getSegmentCount(),
                                          tokens,
                                          newRepairRun.getId(),
-                                         newTable);
+                                         existingTable);
           jmxProxy.close();
           usedSeedHost = host;
           break;
@@ -180,7 +185,7 @@ public class TableResource {
             .entity("couldn't connect to any of the seed hosts in cluster \"" + clusterName + "\"").build();
       }
     } catch (ReaperException e) {
-      String errMsg = "failed generating segments for new table: " + newTable;
+      String errMsg = "failed generating segments for new table: " + existingTable;
       LOG.error(errMsg);
       e.printStackTrace();
       return Response.status(400).entity(errMsg).build();
@@ -204,7 +209,7 @@ public class TableResource {
       return Response.status(400).entity(errMsg).build();
     }
 
-    return Response.created(createdRepairRunURI).entity(newTable).build();
+    return Response.created(createdRepairRunURI).entity(existingTable).build();
   }
 
 }

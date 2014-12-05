@@ -64,6 +64,7 @@ public class SegmentGenerator {
                                                 start, stop, partitioner));
       }
       if (start.equals(stop)) {
+        // TODO: fix corner case where there is only one token!
         throw new ReaperException(String.format("Tokens (%s,%s): two nodes have the same token",
                                                 start, stop));
       }
