@@ -14,12 +14,20 @@
 package com.spotify.reaper.storage.postgresql;
 
 import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.ColumnFamily;
+import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSegment;
 
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.BindBean;
+import org.skife.jdbi.v2.sqlobject.GetGeneratedKeys;
+import org.skife.jdbi.v2.sqlobject.SqlBatch;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
+import org.skife.jdbi.v2.sqlobject.customizers.BatchChunkSize;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
+
+import java.util.Iterator;
 
 /**
  * JDBI based PostgreSQL interface.
@@ -28,14 +36,17 @@ import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
  */
 public interface IStoragePostgreSQL {
 
-  static final String SQL_GET_CLUSTER = "SELECT name, partitioner, seed_hosts FROM cluster "
-                                        + "WHERE name = :name";
+  // Cluster
+  //
+  static final String SQL_GET_CLUSTER =
+      "SELECT name, partitioner, seed_hosts FROM cluster WHERE name = :name";
 
-  static final String SQL_INSERT_CLUSTER = "INSERT INTO cluster (name, partitioner, seed_hosts) "
-                                           + "VALUES (:name, :partitioner, :seedHosts)";
+  static final String SQL_INSERT_CLUSTER =
+      "INSERT INTO cluster (name, partitioner, seed_hosts) "
+      + "VALUES (:name, :partitioner, :seedHosts)";
 
-  static final String SQL_UPDATE_CLUSTER = "UPDATE cluster SET partitioner = :partitioner, "
-                                           + "seed_hosts = :seedHosts WHERE name = :name";
+  static final String SQL_UPDATE_CLUSTER =
+      "UPDATE cluster SET partitioner = :partitioner, seed_hosts = :seedHosts WHERE name = :name";
 
   @SqlQuery(SQL_GET_CLUSTER)
   @Mapper(ClusterMapper.class)
@@ -46,5 +57,68 @@ public interface IStoragePostgreSQL {
 
   @SqlUpdate(SQL_UPDATE_CLUSTER)
   public int updateCluster(@BindBean Cluster newCluster);
+
+  // RepairRun
+  //
+  static final String SQL_INSERT_REPAIR_RUN =
+      "INSERT INTO repair_run (cause, owner, state, creation_time, start_time, end_time) "
+      + "VALUES (:cause, :owner, :state, :creationTime, :startTime, :endTime) RETURNING id";
+
+  static final String SQL_UPDATE_REPAIR_RUN =
+      "UPDATE repair_run SET cause = :cause, owner = :owner, state = :state, "
+      + "start_time = :startTime, end_time = :endTime WHERE id = :id";
+
+  static final String SQL_GET_REPAIR_RUN =
+      "SELECT id, cause, owner, state, creation_time, start_time, end_time "
+      + "FROM repair_run WHERE id = :id";
+
+  @SqlQuery(SQL_GET_REPAIR_RUN)
+  @Mapper(RepairRunMapper.class)
+  public Cluster getRepairRun(@Bind("id") long repairRunId);
+
+  @SqlUpdate(SQL_INSERT_REPAIR_RUN)
+  @GetGeneratedKeys
+  public long insertRepairRun(@BindBean RepairRun newRepairRun);
+
+  @SqlUpdate(SQL_UPDATE_REPAIR_RUN)
+  public int updateRepairRun(@BindBean RepairRun newRepairRun);
+
+  // ColumnFamily
+  //
+  static final String SQL_INSERT_COLUMN_FAMILY =
+      "INSERT INTO column_family (cluster_name, keyspace_name, name, segment_count, "
+      + "snapshot_repair) VALUES (:clusterName, :keyspaceName, :name, :segmentCount, "
+      + ":snapshotRepair) RETURNING id";
+
+  static final String SQL_GET_COLUMN_FAMILY =
+      "SELECT id, cluster_name, keyspace_name, name, segment_count, snapshot_repair "
+      + "FROM column_family WHERE id = :id";
+
+  @SqlQuery(SQL_GET_COLUMN_FAMILY)
+  @Mapper(ColumnFamilyMapper.class)
+  public ColumnFamily getColumnFamily(@Bind("id") long columnFamilyId);
+
+  @SqlUpdate(SQL_INSERT_COLUMN_FAMILY)
+  @GetGeneratedKeys
+  public long insertColumnFamily(@BindBean ColumnFamily newColumnFamily);
+
+  // RepairSegment
+  //
+  static final String SQL_INSERT_REPAIR_SEGMENT =
+      "INSERT INTO repair_segment (column_family_id, run_id, start_token, end_token, state, "
+      + "start_time, end_time) VALUES (:columnFamilyId, :runId, :startToken, :endToken, "
+      + ":state, startTime:, endTime)";
+
+  static final String SQL_GET_REPAIR_SEGMENT =
+      "SELECT id, column_family_id, run_id, start_token, end_token, state, start_time, end_time "
+      + "FROM repair_segment WHERE id = :id";
+
+  @SqlBatch(SQL_INSERT_REPAIR_SEGMENT)
+  @BatchChunkSize(500)
+  public int insertRepairSegments(@BindBean Iterator<RepairSegment> newRepairSegments);
+
+  @SqlQuery(SQL_GET_REPAIR_SEGMENT)
+  @Mapper(RepairSegmentMapper.class)
+  public RepairSegment getRepairSegment(@Bind("id") long repairSegmentId);
 
 }

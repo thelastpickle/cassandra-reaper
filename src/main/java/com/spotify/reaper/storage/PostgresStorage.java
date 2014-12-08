@@ -13,8 +13,6 @@
  */
 package com.spotify.reaper.storage;
 
-import com.google.common.collect.Range;
-
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
@@ -25,11 +23,16 @@ import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
 
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.PreparedBatch;
+import org.skife.jdbi.v2.TransactionCallback;
+import org.skife.jdbi.v2.TransactionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.setup.Environment;
@@ -56,22 +59,7 @@ public class PostgresStorage implements IStorage {
 
   @Override
   public Cluster getCluster(String clusterName) {
-    Handle h = jdbi.open();
-    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
-    Cluster result = postgres.getCluster(clusterName);
-    h.close();
-    return result;
-  }
-
-  @Override
-  public RepairRun addRepairRun(RepairRun.Builder newRepairRun) {
-    // TODO: implementation
-    return null;
-  }
-
-  @Override
-  public boolean updateRepairRun(RepairRun repairRun) {
-    return false;
+    return (Cluster) getGeneric(Cluster.class, clusterName);
   }
 
   @Override
@@ -102,20 +90,46 @@ public class PostgresStorage implements IStorage {
 
   @Override
   public RepairRun getRepairRun(long id, Object repairRunLock) {
-    // TODO: implementation
-    return null;
+    assert null != repairRunLock : "Repair run lock must be given";
+    RepairRun result = (RepairRun) getGeneric(RepairRun.class, Long.valueOf(id));
+    result.setRepairRunLock(repairRunLock);
+    return result;
   }
 
   @Override
-  public ColumnFamily addColumnFamily(ColumnFamily.Builder newTable) {
-    // TODO: implementation
-    return null;
+  public RepairRun addRepairRun(RepairRun.Builder newRepairRun) {
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    long insertedId = postgres.insertRepairRun(newRepairRun.build(-1));
+    h.close();
+    return newRepairRun.build(insertedId);
+  }
+
+  @Override
+  public boolean updateRepairRun(RepairRun repairRun) {
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    int rowsAdded = postgres.updateRepairRun(repairRun);
+    h.close();
+    if (rowsAdded < 1) {
+      LOG.warn("failed updating repair run with id: {}", repairRun.getId());
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public ColumnFamily addColumnFamily(ColumnFamily.Builder newColumnFamily) {
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    long insertedId = postgres.insertColumnFamily(newColumnFamily.build(-1));
+    h.close();
+    return newColumnFamily.build(insertedId);
   }
 
   @Override
   public ColumnFamily getColumnFamily(long id) {
-    // TODO: implementation
-    return null;
+    return (ColumnFamily) getGeneric(ColumnFamily.class, id);
   }
 
   @Override
@@ -124,10 +138,15 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Collection<RepairSegment> addRepairSegments(
-      Collection<RepairSegment.Builder> newSegments) {
-    // TODO: implementation
-    return null;
+  public int addRepairSegments(Collection<RepairSegment.Builder> newSegments) {
+    List<RepairSegment> insertableSegments = new ArrayList<>();
+    for (RepairSegment.Builder segment : newSegments) {
+      insertableSegments.add(segment.build(-1));
+    }
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    int count = postgres.insertRepairSegments(insertableSegments.iterator());
+    return count;
   }
 
   @Override
@@ -138,8 +157,7 @@ public class PostgresStorage implements IStorage {
 
   @Override
   public RepairSegment getRepairSegment(long id) {
-    // TODO: implementation
-    return null;
+    return (RepairSegment) getGeneric(RepairSegment.class, id);
   }
 
   @Override
@@ -153,4 +171,25 @@ public class PostgresStorage implements IStorage {
     // TODO: implementation
     return null;
   }
+
+  /**
+   * Generic database getter to decrease amount of code duplication.
+   */
+  private Object getGeneric(Class coreObjectType, Object value) {
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    Object result = null;
+    if (coreObjectType == Cluster.class) {
+      result = postgres.getCluster((String) value);
+    } else if (coreObjectType == RepairRun.class) {
+      result = postgres.getRepairRun((Long) value);
+    } else if (coreObjectType == ColumnFamily.class) {
+      result = postgres.getColumnFamily((Long) value);
+    } else if (coreObjectType == RepairSegment.class) {
+      result = postgres.getRepairSegment((Long) value);
+    }
+    h.close();
+    return result;
+  }
+
 }

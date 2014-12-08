@@ -23,7 +23,6 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.HashSet;
 
 public class ClusterMapper implements ResultSetMapper<Cluster> {
 

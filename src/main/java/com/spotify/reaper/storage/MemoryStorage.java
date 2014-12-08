@@ -13,9 +13,7 @@
  */
 package com.spotify.reaper.storage;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Range;
 
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.ColumnFamily;
@@ -121,15 +119,13 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public ColumnFamily addColumnFamily(ColumnFamily.Builder columnFamily) {
-    ColumnFamily
-        existing =
-        getColumnFamily(columnFamily.cluster.getName(), columnFamily.keyspaceName,
-                        columnFamily.name);
+    ColumnFamily existing =
+        getColumnFamily(columnFamily.clusterName, columnFamily.keyspaceName, columnFamily.name);
     if (existing == null) {
       ColumnFamily newColumnFamily = columnFamily.build(COLUMN_FAMILY_ID.incrementAndGet());
       columnFamilies.put(newColumnFamily.getId(), newColumnFamily);
       columnFamiliesByName
-          .put(new TableName(newColumnFamily.getCluster().getName(),
+          .put(new TableName(newColumnFamily.getClusterName(),
                              newColumnFamily.getKeyspaceName(),
                              newColumnFamily.getName()), newColumnFamily);
       return newColumnFamily;
@@ -149,7 +145,7 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Collection<RepairSegment> addRepairSegments(Collection<RepairSegment.Builder> segments) {
+  public int addRepairSegments(Collection<RepairSegment.Builder> segments) {
     //Collection<RepairSegment> newSegments = Lists.newArrayList();
     ConcurrentMap<Long, RepairSegment> newSegments = Maps.newConcurrentMap();
     for (RepairSegment.Builder segment : segments) {
@@ -159,7 +155,7 @@ public class MemoryStorage implements IStorage {
     }
     // TODO: (bj0rn) this is very ugly, the function should probably take runId.
     repairSegmentsByRunId.put(newSegments.values().iterator().next().getRunID(), newSegments);
-    return newSegments.values();
+    return newSegments.size();
   }
 
   @Override
@@ -168,7 +164,8 @@ public class MemoryStorage implements IStorage {
       return false;
     } else {
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
-      repairSegmentsByRunId.get(newRepairSegment.getRunID()).put(newRepairSegment.getId(), newRepairSegment);
+      repairSegmentsByRunId.get(newRepairSegment.getRunID())
+          .put(newRepairSegment.getId(), newRepairSegment);
       return true;
     }
   }

@@ -18,7 +18,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
 import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.core.RepairSegment;
 
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.service.StorageServiceMBean;
@@ -158,12 +157,6 @@ public class JmxProxy implements NotificationListener, Serializable {
   public String getClusterName() {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     return toSymbolicName(ssProxy.getClusterName());
-  }
-
-  public int triggerRepair(RepairSegment segment) {
-    return this.triggerRepair(segment.getStartToken(), segment.getEndToken(),
-                              segment.getColumnFamily().getKeyspaceName(),
-                              segment.getColumnFamily().getName());
   }
 
   /**

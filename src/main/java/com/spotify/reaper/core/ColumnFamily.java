@@ -16,7 +16,7 @@ package com.spotify.reaper.core;
 public class ColumnFamily {
 
   private final long id;
-  private final Cluster cluster;
+  private final String clusterName;
   private final String keyspaceName;
   private final String name;
   private final int segmentCount; // int/long/BigInteger?
@@ -26,8 +26,8 @@ public class ColumnFamily {
     return id;
   }
 
-  public Cluster getCluster() {
-    return cluster;
+  public String getClusterName() {
+    return clusterName;
   }
 
   public String getKeyspaceName() {
@@ -48,25 +48,24 @@ public class ColumnFamily {
 
   private ColumnFamily(Builder builder, long id) {
     this.id = id;
-    this.cluster = builder.cluster;
+    this.clusterName = builder.clusterName;
     this.keyspaceName = builder.keyspaceName;
     this.name = builder.name;
     this.segmentCount = builder.segmentCount;
     this.snapshotRepair = builder.snapshotRepair;
   }
 
-
   public static class Builder {
 
-    public final Cluster cluster;
+    public final String clusterName;
     public final String keyspaceName;
     public final String name;
     public final int segmentCount;
     public final boolean snapshotRepair;
 
-    public Builder(Cluster cluster, String keyspaceName, String name, int segmentCount,
+    public Builder(String clusterName, String keyspaceName, String name, int segmentCount,
                    boolean snapshotRepair) {
-      this.cluster = cluster;
+      this.clusterName = clusterName;
       this.keyspaceName = keyspaceName;
       this.name = name;
       this.segmentCount = segmentCount;

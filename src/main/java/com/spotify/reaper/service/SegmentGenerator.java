@@ -111,10 +111,11 @@ public class SegmentGenerator {
 
       // Append the segments between the endpoints
       for (int j = 0; j < segmentCount; j++) {
-        repairSegments.add(new RepairSegment.Builder(table, runId,
+        repairSegments.add(new RepairSegment.Builder(runId,
                                                      endpointTokens.get(j),
                                                      endpointTokens.get(j + 1),
-                                                     RepairSegment.State.NOT_STARTED));
+                                                     RepairSegment.State.NOT_STARTED)
+        .columnFamilyId(table.getId()));
         LOG.debug("Segment #{}: [{},{})", j + 1, endpointTokens.get(j),
                   endpointTokens.get(j + 1));
       }

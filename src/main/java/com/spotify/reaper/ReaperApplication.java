@@ -43,7 +43,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   @Override
   public void initialize(Bootstrap<ReaperApplicationConfiguration> bootstrap) {
-    // nothing to do yet
+    LOG.debug("ReaperApplication.initialize called");
   }
 
   @Override

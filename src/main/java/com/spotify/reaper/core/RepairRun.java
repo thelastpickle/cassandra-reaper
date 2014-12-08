@@ -35,7 +35,7 @@ public class RepairRun {
 
   // repair run lock exist per single repair run, and will be passed on if instance updated
   @JsonIgnore
-  private final Object repairRunLock;
+  private Object repairRunLock;
 
   public long getId() {
     return id;
@@ -43,6 +43,16 @@ public class RepairRun {
 
   public Object getRepairRunLock() {
     return this.repairRunLock;
+  }
+
+  /**
+   * Repair run lock should be final, but sometimes it is not available on instance build time.
+   *
+   * @param lock The repair run lock to set for this instance.
+   */
+  public void setRepairRunLock(Object lock) {
+    assert null == this.repairRunLock : "Cannot reset repair run lock";
+    this.repairRunLock = lock;
   }
 
   public String getCause() {

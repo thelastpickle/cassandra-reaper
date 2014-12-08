@@ -13,8 +13,6 @@
  */
 package com.spotify.reaper.core;
 
-import com.google.common.collect.Range;
-
 import org.joda.time.DateTime;
 
 import java.math.BigInteger;
@@ -23,7 +21,7 @@ public class RepairSegment {
 
   private final long id;
   private final Integer repairCommandId; // received when triggering repair in Cassandra
-  private final ColumnFamily columnFamily;
+  private long columnFamilyId;
   private final long runID;
   private final BigInteger startToken; // open
   private final BigInteger endToken; // closed
@@ -39,8 +37,8 @@ public class RepairSegment {
     return this.repairCommandId;
   }
 
-  public ColumnFamily getColumnFamily() {
-    return columnFamily;
+  public long getColumnFamilyId() {
+    return columnFamilyId;
   }
 
   public long getRunID() {
@@ -70,9 +68,9 @@ public class RepairSegment {
   public static RepairSegment getCopy(RepairSegment origSegment, State newState,
                                       int newRepairCommandId,
                                       DateTime newStartTime, DateTime newEndTime) {
-    return new Builder(origSegment.getColumnFamily(), origSegment.getRunID(),
-                                     origSegment.getStartToken(), origSegment.getEndToken(),
-                                     newState)
+    return new Builder(origSegment.getRunID(), origSegment.getStartToken(),
+                       origSegment.getEndToken(), newState)
+        .columnFamilyId(origSegment.getColumnFamilyId())
         .repairCommandId(newRepairCommandId)
         .startTime(newStartTime)
         .endTime(newEndTime).build(origSegment.getId());
@@ -88,7 +86,7 @@ public class RepairSegment {
   private RepairSegment(Builder builder, long id) {
     this.id = id;
     this.repairCommandId = builder.repairCommandId;
-    this.columnFamily = builder.columnFamily;
+    this.columnFamilyId = builder.columnFamilyId;
     this.runID = builder.runID;
     this.startToken = builder.startToken;
     this.endToken = builder.endToken;
@@ -99,22 +97,25 @@ public class RepairSegment {
 
   public static class Builder {
 
-    public final ColumnFamily columnFamily;
     public final long runID;
     public final BigInteger startToken;
     public final BigInteger endToken;
     public final State state;
+    private long columnFamilyId;
     private int repairCommandId;
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder(ColumnFamily columnFamily, long runID,
-                   BigInteger startToken, BigInteger endToken, State state) {
-      this.columnFamily = columnFamily;
+    public Builder(long runID, BigInteger startToken, BigInteger endToken, State state) {
       this.runID = runID;
       this.startToken = startToken;
       this.endToken = endToken;
       this.state = state;
+    }
+
+    public Builder columnFamilyId(long columnFamilyId) {
+      this.columnFamilyId = columnFamilyId;
+      return this;
     }
 
     public Builder repairCommandId(int repairCommandId) {

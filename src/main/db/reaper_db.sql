@@ -22,9 +22,8 @@ CREATE TABLE IF NOT EXISTS "column_family" (
   "snapshot_repair" BOOLEAN NOT NULL
 );
 
---
--- Preventing duplicate column families within same cluster and keyspace with following index.
---
+-- Preventing duplicate column families within a same cluster and keyspace
+-- with the following index:
 CREATE UNIQUE INDEX column_family_no_duplicates_idx
   ON "column_family" ("cluster_name", "keyspace_name", "name");
 
@@ -35,7 +34,8 @@ CREATE TABLE IF NOT EXISTS "repair_run" (
   "state" TEXT NOT NULL,
   "creation_time" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   "start_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-  "end_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL
+  "end_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+  "intensity" REAL NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "repair_segment" (

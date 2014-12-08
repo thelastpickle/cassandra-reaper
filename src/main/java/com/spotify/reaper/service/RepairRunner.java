@@ -18,6 +18,7 @@ import com.google.common.base.Optional;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
+import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.storage.IStorage;
@@ -161,7 +162,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
       }
       LOG.info("triggering repair on segment {} with start token {} on run id {}",
                currentSegment.getId(), currentSegment.getStartToken(), repairRun.getId());
-      newRepairCommandId = jmxProxy.triggerRepair(currentSegment);
+      newRepairCommandId = triggerRepair(currentSegment);
       if (repairRun.getState() == RepairRun.RunState.NOT_STARTED) {
         LOG.info("started new repair run {}", repairRun.getId());
         changeCurrentRepairRunState(RepairRun.RunState.RUNNING);
@@ -185,7 +186,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
         LOG.warn(
             "segment {} repair not started, although it is triggered for run {}, re-triggering now",
             currentSegment.getId(), repairRun.getId());
-        newRepairCommandId = jmxProxy.triggerRepair(currentSegment);
+        newRepairCommandId = triggerRepair(currentSegment);
       } else if (currentSegment.getState() == RepairSegment.State.DONE) {
         LOG.warn("segment {} repair completed for run {}",
                  currentSegment.getId(), repairRun.getId());
@@ -197,8 +198,9 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
         }
 
         LOG.info("triggering repair on segment {} {} with start token {} on run id {}",
-                 currentSegment.getId(), currentSegment.getState(), currentSegment.getStartToken(), repairRun.getId());
-        newRepairCommandId = jmxProxy.triggerRepair(currentSegment);
+                 currentSegment.getId(), currentSegment.getState(),
+                 currentSegment.getStartToken(), repairRun.getId());
+        newRepairCommandId = triggerRepair(currentSegment);
         assert repairRun.getState() == RepairRun.RunState.RUNNING : "logical error in run state";
       }
     }
@@ -228,6 +230,12 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
       int sleepTime = (int) (repairTime / repairRun.getIntensity() - repairTime);
       startNextSegmentEarliest = DateTime.now().plusSeconds(sleepTime);
     }
+  }
+
+  private int triggerRepair(RepairSegment segment) {
+    ColumnFamily columnFamily = this.storage.getColumnFamily(segment.getId());
+    return this.jmxProxy.triggerRepair(segment.getStartToken(), segment.getEndToken(),
+                                       columnFamily.getKeyspaceName(), columnFamily.getName());
   }
 
   private void changeCurrentRepairRunState(RepairRun.RunState newRunState) {
