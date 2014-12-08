@@ -207,8 +207,8 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
       }
     }
 
-    // TODO: should sleep time be relative to past performance?
     if (currentSegment.getState() == RepairSegment.State.DONE) {
+      // TODO: the seems to be a problem, stopping this code to ever be reached.
       double repairTime =
           Seconds.secondsBetween(currentSegment.getStartTime(), currentSegment.getEndTime())
               .getSeconds();
