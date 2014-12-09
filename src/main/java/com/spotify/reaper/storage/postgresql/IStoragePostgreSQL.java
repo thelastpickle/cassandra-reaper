@@ -27,6 +27,7 @@ import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.customizers.BatchChunkSize;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 
+import java.math.BigInteger;
 import java.util.Iterator;
 
 /**
@@ -109,16 +110,43 @@ public interface IStoragePostgreSQL {
       + "start_time, end_time) VALUES (:columnFamilyId, :runId, :startToken, :endToken, "
       + ":state, startTime:, endTime)";
 
+  static final String SQL_UPDATE_REPAIR_SEGMENT =
+      "UPDATE repair_segment SET column_family_id = :columnFamilyId, run_id = :runId, "
+      + "start_token = :startToken, end_token = :endToken, state = :state, "
+      + "start_time = :startTime, end_time = :endTime WHERE id = :id";
+
   static final String SQL_GET_REPAIR_SEGMENT =
       "SELECT id, column_family_id, run_id, start_token, end_token, state, start_time, end_time "
       + "FROM repair_segment WHERE id = :id";
+
+  static final String SQL_GET_NEXT_FREE_REPAIR_SEGMENT =
+      "SELECT id, column_family_id, run_id, start_token, end_token, state, start_time, end_time "
+      + "FROM repair_segment WHERE run_id = :runId AND state = 0 ORDER BY start_token ASC LIMIT 1";
+
+  static final String SQL_GET_NEXT_FREE_REPAIR_SEGMENT_ON_RANGE =
+      "SELECT id, column_family_id, run_id, start_token, end_token, state, start_time, end_time "
+      + "FROM repair_segment WHERE run_id = :runId AND state = 0 AND "
+      + "start_token >= :startToken AND end_token < :endToken ORDER BY start_token ASC LIMIT 1";
 
   @SqlBatch(SQL_INSERT_REPAIR_SEGMENT)
   @BatchChunkSize(500)
   public int insertRepairSegments(@BindBean Iterator<RepairSegment> newRepairSegments);
 
+  @SqlUpdate(SQL_UPDATE_REPAIR_SEGMENT)
+  public int updateRepairSegment(@BindBean RepairSegment newRepairSegment);
+
   @SqlQuery(SQL_GET_REPAIR_SEGMENT)
   @Mapper(RepairSegmentMapper.class)
   public RepairSegment getRepairSegment(@Bind("id") long repairSegmentId);
+
+  @SqlQuery(SQL_GET_NEXT_FREE_REPAIR_SEGMENT)
+  @Mapper(RepairSegmentMapper.class)
+  public RepairSegment getNextFreeRepairSegment(@Bind("runId") long runId);
+
+  @SqlQuery(SQL_GET_NEXT_FREE_REPAIR_SEGMENT_ON_RANGE)
+  @Mapper(RepairSegmentMapper.class)
+  public RepairSegment getNextFreeRepairSegmentOnRange(@Bind("runId") long runId,
+                                                       @Bind("startToken") BigInteger startToken,
+                                                       @Bind("endToken") BigInteger endToken);
 
 }

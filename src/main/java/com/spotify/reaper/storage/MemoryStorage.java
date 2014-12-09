@@ -154,7 +154,7 @@ public class MemoryStorage implements IStorage {
       newSegments.put(newRepairSegment.getId(), newRepairSegment);
     }
     // TODO: (bj0rn) this is very ugly, the function should probably take runId.
-    repairSegmentsByRunId.put(newSegments.values().iterator().next().getRunID(), newSegments);
+    repairSegmentsByRunId.put(newSegments.values().iterator().next().getRunId(), newSegments);
     return newSegments.size();
   }
 
@@ -164,7 +164,7 @@ public class MemoryStorage implements IStorage {
       return false;
     } else {
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
-      repairSegmentsByRunId.get(newRepairSegment.getRunID())
+      repairSegmentsByRunId.get(newRepairSegment.getRunId())
           .put(newRepairSegment.getId(), newRepairSegment);
       return true;
     }

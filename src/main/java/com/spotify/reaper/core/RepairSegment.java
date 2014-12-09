@@ -22,7 +22,7 @@ public class RepairSegment {
   private final long id;
   private final Integer repairCommandId; // received when triggering repair in Cassandra
   private long columnFamilyId;
-  private final long runID;
+  private final long runId;
   private final BigInteger startToken; // open
   private final BigInteger endToken; // closed
   private final State state;
@@ -41,8 +41,8 @@ public class RepairSegment {
     return columnFamilyId;
   }
 
-  public long getRunID() {
-    return runID;
+  public long getRunId() {
+    return runId;
   }
 
   public BigInteger getStartToken() {
@@ -68,7 +68,7 @@ public class RepairSegment {
   public static RepairSegment getCopy(RepairSegment origSegment, State newState,
                                       int newRepairCommandId,
                                       DateTime newStartTime, DateTime newEndTime) {
-    return new Builder(origSegment.getRunID(), origSegment.getStartToken(),
+    return new Builder(origSegment.getRunId(), origSegment.getStartToken(),
                        origSegment.getEndToken(), newState)
         .columnFamilyId(origSegment.getColumnFamilyId())
         .repairCommandId(newRepairCommandId)
@@ -87,7 +87,7 @@ public class RepairSegment {
     this.id = id;
     this.repairCommandId = builder.repairCommandId;
     this.columnFamilyId = builder.columnFamilyId;
-    this.runID = builder.runID;
+    this.runId = builder.runId;
     this.startToken = builder.startToken;
     this.endToken = builder.endToken;
     this.state = builder.state;
@@ -97,7 +97,7 @@ public class RepairSegment {
 
   public static class Builder {
 
-    public final long runID;
+    public final long runId;
     public final BigInteger startToken;
     public final BigInteger endToken;
     public final State state;
@@ -106,8 +106,8 @@ public class RepairSegment {
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder(long runID, BigInteger startToken, BigInteger endToken, State state) {
-      this.runID = runID;
+    public Builder(long runId, BigInteger startToken, BigInteger endToken, State state) {
+      this.runId = runId;
       this.startToken = startToken;
       this.endToken = endToken;
       this.state = state;

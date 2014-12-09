@@ -23,9 +23,6 @@ import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
 
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.PreparedBatch;
-import org.skife.jdbi.v2.TransactionCallback;
-import org.skife.jdbi.v2.TransactionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +88,7 @@ public class PostgresStorage implements IStorage {
   @Override
   public RepairRun getRepairRun(long id, Object repairRunLock) {
     assert null != repairRunLock : "Repair run lock must be given";
-    RepairRun result = (RepairRun) getGeneric(RepairRun.class, Long.valueOf(id));
+    RepairRun result = (RepairRun) getGeneric(RepairRun.class, id);
     result.setRepairRunLock(repairRunLock);
     return result;
   }
@@ -145,14 +142,20 @@ public class PostgresStorage implements IStorage {
     }
     Handle h = jdbi.open();
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
-    int count = postgres.insertRepairSegments(insertableSegments.iterator());
-    return count;
+    return postgres.insertRepairSegments(insertableSegments.iterator());
   }
 
   @Override
-  public boolean updateRepairSegment(RepairSegment newRepairSegment) {
-    // TODO: implementation
-    return false;
+  public boolean updateRepairSegment(RepairSegment repairSegment) {
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    int rowsAdded = postgres.updateRepairSegment(repairSegment);
+    h.close();
+    if (rowsAdded < 1) {
+      LOG.warn("failed updating repair segment with id: {}", repairSegment.getId());
+      return false;
+    }
+    return true;
   }
 
   @Override
@@ -162,14 +165,20 @@ public class PostgresStorage implements IStorage {
 
   @Override
   public RepairSegment getNextFreeSegment(long runId) {
-    // TODO: implementation
-    return null;
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    RepairSegment result = postgres.getNextFreeRepairSegment(runId);
+    h.close();
+    return result;
   }
 
   @Override
   public RepairSegment getNextFreeSegmentInRange(long runId, BigInteger start, BigInteger end) {
-    // TODO: implementation
-    return null;
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    RepairSegment result = postgres.getNextFreeRepairSegmentOnRange(runId, start, end);
+    h.close();
+    return result;
   }
 
   /**

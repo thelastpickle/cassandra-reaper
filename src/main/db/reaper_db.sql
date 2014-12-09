@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS "repair_run" (
   "id" SERIAL PRIMARY KEY,
   "cause" TEXT NOT NULL,
   "owner" TEXT NOT NULL,
+  -- see RepairRun.RunState for state values
   "state" TEXT NOT NULL,
   "creation_time" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   "start_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
@@ -44,11 +45,13 @@ CREATE TABLE IF NOT EXISTS "repair_segment" (
   "run_id" INT NOT NULL REFERENCES "repair_run" ("id"),
   "start_token" BIGINT NOT NULL,
   "end_token" BIGINT NOT NULL,
+  -- see RepairSegment.State for state values
   "state" SMALLINT NOT NULL,
   "start_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "end_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
-CREATE INDEX "repair_segment_run_id_idx" ON "repair_segment" USING BTREE ("run_id");
+CREATE INDEX "repair_segment_run_id_start_token_idx"
+  ON "repair_segment" USING BTREE ("run_id" ASC, "start_token" ASC);
 CREATE INDEX "repair_segment_state_idx" ON "repair_segment" USING BTREE ("state");
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE cluster TO reaper;
