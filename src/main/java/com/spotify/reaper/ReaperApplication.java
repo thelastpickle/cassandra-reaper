@@ -15,6 +15,7 @@ package com.spotify.reaper;
 
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
+import com.spotify.reaper.resources.RepairRunResource;
 import com.spotify.reaper.resources.TableResource;
 import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.storage.IStorage;
@@ -60,10 +61,12 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     final PingResource pingResource = new PingResource();
     final ClusterResource addClusterResource = new ClusterResource(storage);
     final TableResource addTableResource = new TableResource(config, storage);
+    final RepairRunResource addRepairRunResource = new RepairRunResource(storage);
 
     environment.jersey().register(pingResource);
     environment.jersey().register(addClusterResource);
     environment.jersey().register(addTableResource);
+    environment.jersey().register(addRepairRunResource);
 
     LOG.info("Reaper is ready to accept connections");
   }

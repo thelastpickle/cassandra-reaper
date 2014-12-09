@@ -23,6 +23,7 @@ import com.spotify.reaper.service.SegmentGenerator;
 
 import java.math.BigInteger;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -40,7 +41,7 @@ public class MemoryStorage implements IStorage {
   private ConcurrentMap<Long, ColumnFamily> columnFamilies = Maps.newConcurrentMap();
   private ConcurrentMap<TableName, ColumnFamily> columnFamiliesByName = Maps.newConcurrentMap();
   private ConcurrentMap<Long, RepairSegment> repairSegments = Maps.newConcurrentMap();
-  private ConcurrentMap<Long, ConcurrentMap<Long, RepairSegment>> repairSegmentsByRunId =
+  private ConcurrentMap<Long, LinkedHashMap<Long, RepairSegment>> repairSegmentsByRunId =
       Maps.newConcurrentMap();
 
   public static class TableName {
@@ -146,8 +147,7 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public int addRepairSegments(Collection<RepairSegment.Builder> segments) {
-    //Collection<RepairSegment> newSegments = Lists.newArrayList();
-    ConcurrentMap<Long, RepairSegment> newSegments = Maps.newConcurrentMap();
+    LinkedHashMap<Long, RepairSegment> newSegments = Maps.newLinkedHashMap();
     for (RepairSegment.Builder segment : segments) {
       RepairSegment newRepairSegment = segment.build(SEGMENT_ID.incrementAndGet());
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);

@@ -63,7 +63,7 @@ public class TableResource {
 
   @GET
   @Path("/{clusterName}/{keyspace}/{table}")
-  public Response getCluster(@PathParam("clusterName") String clusterName,
+  public Response getTable(@PathParam("clusterName") String clusterName,
                              @PathParam("keyspace") String keyspace,
                              @PathParam("table") String table) {
     LOG.info("get table called with: clusterName = {}, keyspace = {}, table = {}",

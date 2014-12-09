@@ -15,6 +15,7 @@ package com.spotify.reaper.resources;
 
 import com.google.common.base.Optional;
 
+import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.storage.IStorage;
 
 import org.slf4j.Logger;
@@ -43,12 +44,13 @@ public class RepairRunResource {
 
   @GET
   @Path("/{id}")
-  public Response getCluster(@PathParam("id") Long repairRunId) {
+  public Response getRepairRun(@PathParam("id") Long repairRunId) {
     LOG.info("get repair_run called with: id = {}", repairRunId);
-    return Response.ok().entity("not implemented yet").build();
+    RepairRun repairRun = storage.getRepairRun(repairRunId, null);
+    return Response.ok().entity(repairRun).build();
   }
 
   // We probably don't want to create repair runs with this resource,
-  // but actually only by posting the cluster resource.
+  // but actually only by posting the table resource.
   // Get here is used only for providing visibility to what is going on with the run.
 }
