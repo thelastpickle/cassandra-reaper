@@ -21,7 +21,7 @@ public class RepairSegment {
 
   private final long id;
   private final Integer repairCommandId; // received when triggering repair in Cassandra
-  private long columnFamilyId;
+  private final long columnFamilyId;
   private final long runId;
   private final BigInteger startToken; // open
   private final BigInteger endToken; // closed

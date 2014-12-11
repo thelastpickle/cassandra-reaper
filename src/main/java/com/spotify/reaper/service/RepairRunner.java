@@ -137,6 +137,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   }
 
   private void checkIfNeedToStartNextSegmentSync() {
+    // We don't want to mutate the currentSegment or repairRun in parallel with this function.
     synchronized (repairRun.getRepairRunLock()) {
       checkIfNeedToStartNextSegment();
     }
@@ -266,44 +267,47 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
    */
   @Override
   public void handle(int repairNumber, ActiveRepairService.Status status, String message) {
-    LOG.debug("handling event: repairNumber = {}, status = {}, message = \"{}\"",
-              repairNumber, status, message);
-    int currentCommandId = null == currentSegment ? -1 : currentSegment.getRepairCommandId();
-    if (currentCommandId != repairNumber) {
-      LOG.debug("got event on non-matching repair command id {}, expecting {}",
-                repairNumber, currentCommandId);
-      return;
-    }
+    // We don't want to mutate the currentSegment or repairRun in parallel with this function.
+    synchronized (repairRun.getRepairRunLock()) {
+      LOG.debug("handling event: repairNumber = {}, status = {}, message = \"{}\"",
+                repairNumber, status, message);
+      int currentCommandId = null == currentSegment ? -1 : currentSegment.getRepairCommandId();
+      if (currentCommandId != repairNumber) {
+        LOG.debug("got event on non-matching repair command id {}, expecting {}",
+                  repairNumber, currentCommandId);
+        return;
+      }
 
-    // See status explanations from: https://wiki.apache.org/cassandra/RepairAsyncAPI
-    switch (status) {
-      case STARTED:
-        LOG.info("repair with number {} started", repairNumber);
-        //changeCurrentSegmentState(RepairSegment.State.RUNNING);
-        currentSegment =
-            RepairSegment.getCopy(currentSegment, RepairSegment.State.RUNNING,
-                                  currentSegment.getRepairCommandId(), DateTime.now(), null);
-        storage.updateRepairSegment(currentSegment);
-        break;
-      case SESSION_SUCCESS:
-        LOG.warn("repair with number {} got SESSION_SUCCESS state, "
-                 + "which is NOT HANDLED CURRENTLY", repairNumber);
-        break;
-      case SESSION_FAILED:
-        LOG.warn("repair with number {} got SESSION_FAILED state, "
-                 + "setting state to error", repairNumber);
-        changeCurrentSegmentState(RepairSegment.State.ERROR);
-        break;
-      case FINISHED:
-        LOG.info("repair with number {} finished", repairNumber);
-        //changeCurrentSegmentState(RepairSegment.State.DONE);
-        currentSegment =
-            RepairSegment.getCopy(currentSegment, RepairSegment.State.DONE,
-                                  currentSegment.getRepairCommandId(),
-                                  currentSegment.getStartTime(), DateTime.now());
-        storage.updateRepairSegment(currentSegment);
-        checkIfNeedToStartNextSegmentSync();
-        break;
+      // See status explanations from: https://wiki.apache.org/cassandra/RepairAsyncAPI
+      switch (status) {
+        case STARTED:
+          LOG.info("repair with number {} started", repairNumber);
+          //changeCurrentSegmentState(RepairSegment.State.RUNNING);
+          currentSegment =
+              RepairSegment.getCopy(currentSegment, RepairSegment.State.RUNNING,
+                                    currentSegment.getRepairCommandId(), DateTime.now(), null);
+          storage.updateRepairSegment(currentSegment);
+          break;
+        case SESSION_SUCCESS:
+          LOG.warn("repair with number {} got SESSION_SUCCESS state, "
+                   + "which is NOT HANDLED CURRENTLY", repairNumber);
+          break;
+        case SESSION_FAILED:
+          LOG.warn("repair with number {} got SESSION_FAILED state, "
+                   + "setting state to error", repairNumber);
+          changeCurrentSegmentState(RepairSegment.State.ERROR);
+          break;
+        case FINISHED:
+          LOG.info("repair with number {} finished", repairNumber);
+          //changeCurrentSegmentState(RepairSegment.State.DONE);
+          currentSegment =
+              RepairSegment.getCopy(currentSegment, RepairSegment.State.DONE,
+                                    currentSegment.getRepairCommandId(),
+                                    currentSegment.getStartTime(), DateTime.now());
+          storage.updateRepairSegment(currentSegment);
+          checkIfNeedToStartNextSegment();
+          break;
+      }
     }
   }
 
