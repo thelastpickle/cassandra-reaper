@@ -26,6 +26,8 @@ import java.util.Collection;
  */
 public interface IStorage {
 
+  boolean isStorageConnected();
+
   Cluster addCluster(Cluster cluster);
 
   boolean updateCluster(Cluster newCluster);

@@ -15,6 +15,7 @@ package com.spotify.reaper;
 
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
+import com.spotify.reaper.resources.ReaperHealthCheck;
 import com.spotify.reaper.resources.RepairRunResource;
 import com.spotify.reaper.resources.TableResource;
 import com.spotify.reaper.service.RepairRunner;
@@ -57,15 +58,23 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     LOG.info("initializing storage of type: {}", config.getStorageType());
     IStorage storage = initializeStorage(config, environment);
 
+    LOG.info("creating and registering health checks");
+    // Notice that health checks are registered under the admin application on /healthcheck
+    final ReaperHealthCheck healthCheck = new ReaperHealthCheck(storage);
+    environment.healthChecks().register("reaper", healthCheck);
+    environment.jersey().register(healthCheck);
+
     LOG.info("creating resources and registering endpoints");
     final PingResource pingResource = new PingResource();
-    final ClusterResource addClusterResource = new ClusterResource(storage);
-    final TableResource addTableResource = new TableResource(config, storage);
-    final RepairRunResource addRepairRunResource = new RepairRunResource(storage);
-
     environment.jersey().register(pingResource);
+
+    final ClusterResource addClusterResource = new ClusterResource(storage);
     environment.jersey().register(addClusterResource);
+
+    final TableResource addTableResource = new TableResource(config, storage);
     environment.jersey().register(addTableResource);
+
+    final RepairRunResource addRepairRunResource = new RepairRunResource(storage);
     environment.jersey().register(addRepairRunResource);
 
     LOG.info("Reaper is ready to accept connections");
@@ -73,16 +82,17 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config,
                                      Environment environment) throws ReaperException {
+    IStorage storage;
     if (config.getStorageType().equalsIgnoreCase("memory")) {
-      return new MemoryStorage();
-    }
-    else if (config.getStorageType().equalsIgnoreCase("database")) {
-      return new PostgresStorage(config, environment);
-    }
-    else {
+      storage = new MemoryStorage();
+    } else if (config.getStorageType().equalsIgnoreCase("database")) {
+      storage = new PostgresStorage(config, environment);
+    } else {
       LOG.error("invalid storageType: {}", config.getStorageType());
       throw new ReaperException("invalid storage type: " + config.getStorageType());
     }
+    assert storage.isStorageConnected() : "Failed to connect storage";
+    return storage;
   }
 
 }

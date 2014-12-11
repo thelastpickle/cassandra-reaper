@@ -75,6 +75,12 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
+  public boolean isStorageConnected() {
+    // Just assuming the MemoryStorage is always functional when instantiated.
+    return true;
+  }
+
+  @Override
   public Cluster addCluster(Cluster cluster) {
     Cluster existing = clusters.put(cluster.getName(), cluster);
     return existing == null ? cluster : null;

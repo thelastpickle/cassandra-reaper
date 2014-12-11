@@ -37,6 +37,9 @@ import java.util.Iterator;
  */
 public interface IStoragePostgreSQL {
 
+  @SqlQuery("SELECT version()")
+  public String getVersion();
+
   // Cluster
   //
   static final String SQL_GET_CLUSTER =

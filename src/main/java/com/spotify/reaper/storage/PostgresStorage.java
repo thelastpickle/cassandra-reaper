@@ -60,6 +60,18 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
+  public boolean isStorageConnected() {
+    if (null == jdbi) {
+      return false;
+    }
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    String postgresVersion = postgres.getVersion();
+    LOG.debug("connected PostgreSQL version: {}", postgresVersion);
+    return null != postgresVersion && postgresVersion.trim().length() > 0;
+  }
+
+  @Override
   public Cluster addCluster(Cluster newCluster) {
     Handle h = jdbi.open();
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
