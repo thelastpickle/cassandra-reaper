@@ -14,8 +14,7 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
 
   public RepairRun map(int index, ResultSet r, StatementContext ctx) throws SQLException {
     RepairRun.RunState runState = RepairRun.RunState.valueOf(r.getString("state"));
-    return new RepairRun.Builder(null,
-                                 runState,
+    return new RepairRun.Builder(runState,
                                  getDateTimeOrNull(r, "creation_time"),
                                  r.getFloat("intensity"))
         .owner(r.getString("owner"))

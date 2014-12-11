@@ -42,7 +42,7 @@ public class RepairRunResource {
   @Path("/{id}")
   public Response getRepairRun(@PathParam("id") Long repairRunId) {
     LOG.info("get repair_run called with: id = {}", repairRunId);
-    RepairRun repairRun = storage.getRepairRun(repairRunId, null);
+    RepairRun repairRun = storage.getRepairRun(repairRunId);
     return Response.ok().entity(repairRun).build();
   }
 

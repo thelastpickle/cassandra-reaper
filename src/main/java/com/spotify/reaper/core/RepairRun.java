@@ -33,26 +33,8 @@ public class RepairRun {
   private final DateTime endTime;
   private final double intensity;
 
-  // repair run lock exist per single repair run, and will be passed on if instance updated
-  @JsonIgnore
-  private Object repairRunLock;
-
   public long getId() {
     return id;
-  }
-
-  public Object getRepairRunLock() {
-    return this.repairRunLock;
-  }
-
-  /**
-   * Repair run lock should be final, but sometimes it is not available on instance build time.
-   *
-   * @param lock The repair run lock to set for this instance.
-   */
-  public void setRepairRunLock(Object lock) {
-    assert null == this.repairRunLock : "Cannot reset repair run lock";
-    this.repairRunLock = lock;
   }
 
   public String getCause() {
@@ -85,7 +67,7 @@ public class RepairRun {
 
   public static RepairRun getCopy(RepairRun repairRun, RunState newState,
                                   DateTime startTime, DateTime endTime) {
-    return new RepairRun.Builder(repairRun.getRepairRunLock(), newState,
+    return new RepairRun.Builder(newState,
                                  repairRun.getCreationTime(), repairRun.getIntensity())
         .cause(repairRun.getCause())
         .owner(repairRun.getOwner())
@@ -104,7 +86,6 @@ public class RepairRun {
 
   private RepairRun(Builder builder, long id) {
     this.id = id;
-    this.repairRunLock = builder.repairRunLock;
     this.cause = builder.cause;
     this.owner = builder.owner;
     this.runState = builder.runState;
@@ -123,11 +104,9 @@ public class RepairRun {
     private String owner;
     private DateTime startTime;
     private DateTime endTime;
-    private Object repairRunLock;
 
-    public Builder(Object repairRunLock, RunState runState, DateTime creationTime,
+    public Builder(RunState runState, DateTime creationTime,
                    double intensity) {
-      this.repairRunLock = repairRunLock;
       this.runState = runState;
       this.creationTime = creationTime;
       this.intensity = intensity;
@@ -150,11 +129,6 @@ public class RepairRun {
 
     public Builder endTime(DateTime endTime) {
       this.endTime = endTime;
-      return this;
-    }
-
-    public Builder repairRunLock(Object lock) {
-      this.repairRunLock = lock;
       return this;
     }
 

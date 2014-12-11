@@ -110,7 +110,7 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public boolean updateRepairRun(RepairRun repairRun) {
-    if (getRepairRun(repairRun.getId(), repairRun.getRepairRunLock()) == null) {
+    if (getRepairRun(repairRun.getId()) == null) {
       return false;
     } else {
       repairRuns.put(repairRun.getId(), repairRun);
@@ -119,8 +119,7 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public RepairRun getRepairRun(long id, Object repairRunLock) {
-    // repairRunLock ignored, as the memory instance already has the right instance in it
+  public RepairRun getRepairRun(long id) {
     return repairRuns.get(id);
   }
 

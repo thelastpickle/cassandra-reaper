@@ -98,10 +98,8 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public RepairRun getRepairRun(long id, Object repairRunLock) {
-    assert null != repairRunLock : "Repair run lock must be given";
+  public RepairRun getRepairRun(long id) {
     RepairRun result = (RepairRun) getGeneric(RepairRun.class, id);
-    result.setRepairRunLock(repairRunLock);
     return result;
   }
 

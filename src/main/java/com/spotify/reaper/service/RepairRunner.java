@@ -96,7 +96,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     }
 
     // Need to check current status from database every time, if state changed etc.
-    repairRun = storage.getRepairRun(repairRun.getId(), repairRun.getRepairRunLock());
+    repairRun = storage.getRepairRun(repairRun.getId());
     RepairRun.RunState runState = repairRun.getState();
 
     switch (runState) {
@@ -138,7 +138,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
 
   private void checkIfNeedToStartNextSegmentSync() {
     // We don't want to mutate the currentSegment or repairRun in parallel with this function.
-    synchronized (repairRun.getRepairRunLock()) {
+    synchronized (this) {
       checkIfNeedToStartNextSegment();
     }
   }
@@ -268,7 +268,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   @Override
   public void handle(int repairNumber, ActiveRepairService.Status status, String message) {
     // We don't want to mutate the currentSegment or repairRun in parallel with this function.
-    synchronized (repairRun.getRepairRunLock()) {
+    synchronized (this) {
       LOG.debug("handling event: repairNumber = {}, status = {}, message = \"{}\"",
                 repairNumber, status, message);
       int currentCommandId = null == currentSegment ? -1 : currentSegment.getRepairCommandId();
