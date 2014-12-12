@@ -59,19 +59,20 @@ public class ClusterResource {
   }
 
   @POST
-  public Response addCluster(@Context UriInfo uriInfo, @QueryParam("host") Optional<String> host) {
-    if (!host.isPresent()) {
-      LOG.error("POST on cluster resource called without host");
-      return Response.status(400).entity("query parameter \"host\" required").build();
+  public Response addCluster(@Context UriInfo uriInfo,
+                             @QueryParam("seedHost") Optional<String> seedHost) {
+    if (!seedHost.isPresent()) {
+      LOG.error("POST on cluster resource called without seedHost");
+      return Response.status(400).entity("query parameter \"seedHost\" required").build();
     }
-    LOG.info("add cluster called with host: {}", host.get());
+    LOG.info("add cluster called with seedHost: {}", seedHost.get());
 
     Cluster newCluster;
     try {
-      newCluster = createClusterWithSeedHost(host.get());
+      newCluster = createClusterWithSeedHost(seedHost.get());
     } catch (ReaperException e) {
       return Response.status(400)
-          .entity("failed to create cluster with seed host: " + host.get()).build();
+          .entity("failed to create cluster with seed host: " + seedHost.get()).build();
     }
     Cluster existingCluster = storage.getCluster(newCluster.getName());
     if (existingCluster == null) {
