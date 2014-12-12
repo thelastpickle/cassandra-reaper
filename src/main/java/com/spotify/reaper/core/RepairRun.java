@@ -74,11 +74,10 @@ public class RepairRun {
   }
 
   public static RepairRun getCopy(RepairRun repairRun, RunState newState,
-                                  DateTime startTime, DateTime endTime,
-                                  int totalSegments, int completedSegments) {
+                                  DateTime startTime, DateTime endTime, int completedSegments) {
     return new RepairRun.Builder(newState,
                                  repairRun.getCreationTime(), repairRun.getIntensity(),
-                                 totalSegments, completedSegments)
+                                 repairRun.getTotalSegments(), completedSegments)
         .cause(repairRun.getCause())
         .owner(repairRun.getOwner())
         .startTime(startTime)
