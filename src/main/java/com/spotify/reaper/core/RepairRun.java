@@ -13,7 +13,11 @@
  */
 package com.spotify.reaper.core;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 public class RepairRun {
 
@@ -49,16 +53,40 @@ public class RepairRun {
     return runState;
   }
 
+  @JsonIgnore
   public DateTime getCreationTime() {
     return creationTime;
   }
 
+  @JsonProperty("creationTime")
+  public String getCreationTimeISO8601() {
+    if (creationTime == null) return null;
+    return creationTime.toDateTime(DateTimeZone.UTC).toString(
+        "YYYY-MM-dd'T'HH:mm:ss'Z'");
+  }
+
+  @JsonIgnore
   public DateTime getStartTime() {
     return startTime;
   }
 
+  @JsonProperty("startTime")
+  public String getStartTimeISO8601() {
+    if (startTime == null) return null;
+    return startTime.toDateTime(DateTimeZone.UTC).toString(
+        "YYYY-MM-dd'T'HH:mm:ss'Z'");
+  }
+
+  @JsonIgnore
   public DateTime getEndTime() {
     return endTime;
+  }
+
+  @JsonProperty("endTime")
+  public String getEndTimeISO8601() {
+    if (endTime == null) return null;
+    return endTime.toDateTime(DateTimeZone.UTC).toString(
+        "YYYY-MM-dd'T'HH:mm:ss'Z'");
   }
 
   public double getIntensity() {
