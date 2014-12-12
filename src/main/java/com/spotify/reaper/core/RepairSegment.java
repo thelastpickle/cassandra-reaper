@@ -68,12 +68,12 @@ public class RepairSegment {
   public static RepairSegment getCopy(RepairSegment origSegment, State newState,
                                       int newRepairCommandId,
                                       DateTime newStartTime, DateTime newEndTime) {
-    return new Builder(origSegment.getRunId(), origSegment.getStartToken(),
+    return new Builder(origSegment.getStartToken(),
                        origSegment.getEndToken(), newState)
         .columnFamilyId(origSegment.getColumnFamilyId())
         .repairCommandId(newRepairCommandId)
         .startTime(newStartTime)
-        .endTime(newEndTime).build(origSegment.getId());
+        .endTime(newEndTime).build(origSegment.getRunId(), origSegment.getId());
   }
 
   public enum State {
@@ -83,11 +83,11 @@ public class RepairSegment {
     DONE
   }
 
-  private RepairSegment(Builder builder, long id) {
+  private RepairSegment(Builder builder, long runId, long id) {
     this.id = id;
     this.repairCommandId = builder.repairCommandId;
     this.columnFamilyId = builder.columnFamilyId;
-    this.runId = builder.runId;
+    this.runId = runId;
     this.startToken = builder.startToken;
     this.endToken = builder.endToken;
     this.state = builder.state;
@@ -97,7 +97,6 @@ public class RepairSegment {
 
   public static class Builder {
 
-    public final long runId;
     public final BigInteger startToken;
     public final BigInteger endToken;
     public final State state;
@@ -106,8 +105,7 @@ public class RepairSegment {
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder(long runId, BigInteger startToken, BigInteger endToken, State state) {
-      this.runId = runId;
+    public Builder(BigInteger startToken, BigInteger endToken, State state) {
       this.startToken = startToken;
       this.endToken = endToken;
       this.state = state;
@@ -133,8 +131,8 @@ public class RepairSegment {
       return this;
     }
 
-    public RepairSegment build(long id) {
-      return new RepairSegment(this, id);
+    public RepairSegment build(long runId, long id) {
+      return new RepairSegment(this, runId, id);
     }
 
     @Override

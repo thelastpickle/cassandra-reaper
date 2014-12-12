@@ -242,15 +242,18 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
                  repairRun.getId());
         newStartTime = newEndTime;
       }
-    }
-    else if (newRunState == RepairRun.RunState.RUNNING) {
+    } else if (newRunState == RepairRun.RunState.RUNNING) {
       newStartTime = DateTime.now();
       newEndTime = null;
     }
 
     LOG.info("repair run with id {} state change from {} to {}",
              repairRun.getId(), repairRun.getState().toString(), newRunState.toString());
-    RepairRun updatedRun = RepairRun.getCopy(repairRun, newRunState, newStartTime, newEndTime);
+    RepairRun
+        updatedRun =
+        RepairRun
+            .getCopy(repairRun, newRunState, newStartTime, newEndTime,
+                     repairRun.getTotalSegments(), repairRun.getCompletedSegments());
     if (!storage.updateRepairRun(updatedRun)) {
       LOG.error("failed updating repair run status: {}", repairRun.getId());
       // TODO: what should we do if we fail to update storage?

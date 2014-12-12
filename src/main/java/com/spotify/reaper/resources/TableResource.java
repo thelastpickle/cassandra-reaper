@@ -160,17 +160,6 @@ public class TableResource {
       return Response.created(createdURI).entity(existingTable).build();
     }
 
-    RepairRun newRepairRun =
-        storage.addRepairRun(new RepairRun.Builder(RepairRun.RunState.NOT_STARTED,
-                                                   DateTime.now(), config.getRepairIntensity())
-                                 .cause(cause.isPresent() ? cause.get() : "no cause specified")
-                                 .owner(owner.get()));
-    if (newRepairRun == null) {
-      return Response.status(500)
-          .entity("failed creating repair run into Reaper storage for owner: " + owner.get())
-          .build();
-    }
-
     // create segments
     List<RepairSegment.Builder> segments = null;
     String usedSeedHost = null;
@@ -183,7 +172,6 @@ public class TableResource {
           List<BigInteger> tokens = jmxProxy.getTokens();
           segments = sg.generateSegments(existingTable.getSegmentCount(),
                                          tokens,
-                                         newRepairRun.getId(),
                                          existingTable);
           jmxProxy.close();
           usedSeedHost = host;
@@ -205,10 +193,22 @@ public class TableResource {
       return Response.status(400).entity(errMsg).build();
     }
 
+    RepairRun newRepairRun =
+        storage.addRepairRun(new RepairRun.Builder(RepairRun.RunState.NOT_STARTED,
+                                                   DateTime.now(), config.getRepairIntensity(),
+                             segments.size(), 0)
+            .cause(cause.isPresent() ? cause.get() : "no cause specified")
+            .owner(owner.get()));
+    if (newRepairRun == null) {
+      return Response.status(500)
+          .entity("failed creating repair run into Reaper storage for owner: " + owner.get())
+          .build();
+    }
+
     // Notice that our RepairRun core object doesn't contain pointer to
     // the set of RepairSegments in the run, as they are accessed separately.
     // RepairSegment has a pointer to the RepairRun it lives in.
-    storage.addRepairSegments(segments);
+    storage.addRepairSegments(newRepairRun.getId(), segments);
 
     RepairRunner.startNewRepairRun(storage, newRepairRun, usedSeedHost);
 

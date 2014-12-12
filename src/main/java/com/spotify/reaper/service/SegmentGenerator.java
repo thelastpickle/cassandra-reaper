@@ -63,7 +63,7 @@ public class SegmentGenerator {
    */
   public List<RepairSegment.Builder> generateSegments(int totalSegmentCount,
                                                       List<BigInteger> ringTokens,
-                                                      long runId, ColumnFamily table)
+                                                      ColumnFamily table)
       throws ReaperException {
     int tokenRangeCount = ringTokens.size();
 
@@ -111,8 +111,7 @@ public class SegmentGenerator {
 
       // Append the segments between the endpoints
       for (int j = 0; j < segmentCount; j++) {
-        repairSegments.add(new RepairSegment.Builder(runId,
-                                                     endpointTokens.get(j),
+        repairSegments.add(new RepairSegment.Builder(endpointTokens.get(j),
                                                      endpointTokens.get(j + 1),
                                                      RepairSegment.State.NOT_STARTED)
         .columnFamilyId(table.getId()));

@@ -11,14 +11,13 @@ import java.sql.SQLException;
 public class RepairSegmentMapper implements ResultSetMapper<RepairSegment> {
 
   public RepairSegment map(int index, ResultSet r, StatementContext ctx) throws SQLException {
-    return new RepairSegment.Builder(r.getLong("run_id"),
-                                     r.getBigDecimal("start_token").toBigInteger(),
+    return new RepairSegment.Builder(r.getBigDecimal("start_token").toBigInteger(),
                                      r.getBigDecimal("end_token").toBigInteger(),
                                      RepairSegment.State.values()[r.getInt("state")])
         .columnFamilyId(r.getLong("column_family_id"))
         .startTime(RepairRunMapper.getDateTimeOrNull(r, "start_time"))
         .endTime(RepairRunMapper.getDateTimeOrNull(r, "end_time"))
-        .build(r.getLong("id"));
+        .build(r.getLong("run_id"),r.getLong("id"));
   }
 
 }

@@ -13,8 +13,6 @@
  */
 package com.spotify.reaper.core;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import org.joda.time.DateTime;
 
 public class RepairRun {
@@ -32,6 +30,8 @@ public class RepairRun {
   private final DateTime startTime;
   private final DateTime endTime;
   private final double intensity;
+  private final int totalSegments;
+  private final int completedSegments;
 
   public long getId() {
     return id;
@@ -65,10 +65,20 @@ public class RepairRun {
     return intensity;
   }
 
+  public int getTotalSegments() {
+    return totalSegments;
+  }
+
+  public int getCompletedSegments() {
+    return completedSegments;
+  }
+
   public static RepairRun getCopy(RepairRun repairRun, RunState newState,
-                                  DateTime startTime, DateTime endTime) {
+                                  DateTime startTime, DateTime endTime,
+                                  int totalSegments, int completedSegments) {
     return new RepairRun.Builder(newState,
-                                 repairRun.getCreationTime(), repairRun.getIntensity())
+                                 repairRun.getCreationTime(), repairRun.getIntensity(),
+                                 totalSegments, completedSegments)
         .cause(repairRun.getCause())
         .owner(repairRun.getOwner())
         .startTime(startTime)
@@ -93,6 +103,8 @@ public class RepairRun {
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
     this.intensity = builder.intensity;
+    this.totalSegments = builder.totalSegments;
+    this.completedSegments = builder.completedSegments;
   }
 
   public static class Builder {
@@ -100,16 +112,20 @@ public class RepairRun {
     public final RunState runState;
     public final DateTime creationTime;
     public final double intensity;
+    public final int totalSegments;
+    public final int completedSegments;
     private String cause;
     private String owner;
     private DateTime startTime;
     private DateTime endTime;
 
     public Builder(RunState runState, DateTime creationTime,
-                   double intensity) {
+                   double intensity, int totalSegments, int completedSegments) {
       this.runState = runState;
       this.creationTime = creationTime;
       this.intensity = intensity;
+      this.totalSegments = totalSegments;
+      this.completedSegments = completedSegments;
     }
 
     public Builder cause(String cause) {

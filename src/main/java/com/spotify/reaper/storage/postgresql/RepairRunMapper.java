@@ -16,7 +16,9 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
     RepairRun.RunState runState = RepairRun.RunState.valueOf(r.getString("state"));
     return new RepairRun.Builder(runState,
                                  getDateTimeOrNull(r, "creation_time"),
-                                 r.getFloat("intensity"))
+                                 r.getFloat("intensity"),
+                                 r.getInt("total_segments"),
+                                 r.getInt("completed_segments"))
         .owner(r.getString("owner"))
         .cause(r.getString("cause"))
         .startTime(getDateTimeOrNull(r, "start_time"))
