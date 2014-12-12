@@ -8,5 +8,5 @@ repairs for multi-site clusters.
 Usage
 -----
 
-This project is build on top of Dropwizard, and can be run as defined in:
+This project is built on top of Dropwizard, and can be run as defined in:
 http://dropwizard.io/getting-started.html#running-your-application
