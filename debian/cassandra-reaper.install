@@ -1,2 +1,3 @@
 bin/cassandra-reaper usr/bin
+bin/spreaper usr/bin
 target/cassandra-reaper*.jar usr/share/cassandra-reaper/
