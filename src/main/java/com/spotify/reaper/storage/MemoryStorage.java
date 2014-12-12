@@ -19,6 +19,7 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
 
 import java.math.BigInteger;
@@ -157,10 +158,10 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public int addRepairSegments(long runId, Collection<RepairSegment.Builder> segments) {
+  public int addRepairSegments(Collection<RepairSegment.Builder> segments) {
     LinkedHashMap<Long, RepairSegment> newSegments = Maps.newLinkedHashMap();
     for (RepairSegment.Builder segment : segments) {
-      RepairSegment newRepairSegment = segment.build(runId, SEGMENT_ID.incrementAndGet());
+      RepairSegment newRepairSegment = segment.build(SEGMENT_ID.incrementAndGet());
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
       newSegments.put(newRepairSegment.getId(), newRepairSegment);
     }
@@ -196,27 +197,11 @@ public class MemoryStorage implements IStorage {
     return null;
   }
 
-
-  public static boolean encloses(BigInteger rangeStart, BigInteger rangeEnd,
-                                 BigInteger segmentStart, BigInteger segmentEnd) {
-    // TODO: unit test for this
-    if (SegmentGenerator.lowerThanOrEqual(rangeStart, rangeEnd)) {
-      return SegmentGenerator.greaterThanOrEqual(segmentStart, rangeStart) &&
-             SegmentGenerator.lowerThanOrEqual(segmentEnd, rangeEnd);
-    } else if (SegmentGenerator.lowerThanOrEqual(segmentStart, segmentEnd)) {
-      return SegmentGenerator.greaterThanOrEqual(segmentStart, rangeStart) ||
-             SegmentGenerator.lowerThanOrEqual(segmentEnd, rangeEnd);
-    } else {
-      return SegmentGenerator.greaterThanOrEqual(segmentStart, rangeStart) &&
-             SegmentGenerator.lowerThanOrEqual(segmentEnd, rangeEnd);
-    }
-  }
-
   @Override
-  public RepairSegment getNextFreeSegmentInRange(long runId, BigInteger start, BigInteger end) {
+  public RepairSegment getNextFreeSegmentInRange(long runId, RingRange range) {
     for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
       if (segment.getState() == RepairSegment.State.NOT_STARTED &&
-          encloses(start, end, segment.getStartToken(), segment.getEndToken())) {
+          range.encloses(segment.getTokenRange())) {
         return segment;
       }
     }

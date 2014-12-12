@@ -19,6 +19,7 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
 
 import org.skife.jdbi.v2.DBI;
@@ -152,10 +153,10 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public int addRepairSegments(long runId, Collection<RepairSegment.Builder> newSegments) {
+  public int addRepairSegments(Collection<RepairSegment.Builder> newSegments) {
     List<RepairSegment> insertableSegments = new ArrayList<>();
     for (RepairSegment.Builder segment : newSegments) {
-      insertableSegments.add(segment.build(runId, -1));
+      insertableSegments.add(segment.build(-1));
     }
     Handle h = jdbi.open();
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
@@ -190,10 +191,10 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public RepairSegment getNextFreeSegmentInRange(long runId, BigInteger start, BigInteger end) {
+  public RepairSegment getNextFreeSegmentInRange(long runId, RingRange range) {
     Handle h = jdbi.open();
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
-    RepairSegment result = postgres.getNextFreeRepairSegmentOnRange(runId, start, end);
+    RepairSegment result = postgres.getNextFreeRepairSegmentOnRange(runId, range.getStart(), range.getEnd());
     h.close();
     return result;
   }

@@ -47,7 +47,7 @@ public class SegmentGeneratorTest {
     );
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    List<RepairSegment.Builder> segments = generator.generateSegments(10, tokens, null);
+    List<RingRange> segments = generator.generateSegments(10, tokens);
     assertEquals(15, segments.size());
     assertEquals("(0,1]",
                  segments.get(0).toString());
@@ -71,7 +71,7 @@ public class SegmentGeneratorTest {
         }
     );
 
-    segments = generator.generateSegments(10, tokens, null);
+    segments = generator.generateSegments(10, tokens);
     assertEquals(15, segments.size());
     assertEquals("(5,6]",
                  segments.get(0).toString());
@@ -96,7 +96,7 @@ public class SegmentGeneratorTest {
     });
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    generator.generateSegments(10, tokens, null);
+    generator.generateSegments(10, tokens);
   }
 
   @Test
@@ -114,7 +114,7 @@ public class SegmentGeneratorTest {
     });
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    List<RepairSegment.Builder> segments = generator.generateSegments(10, tokens, null);
+    List<RingRange> segments = generator.generateSegments(10, tokens);
     assertEquals(15, segments.size());
     assertEquals("(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
                  segments.get(4).toString());
@@ -139,7 +139,7 @@ public class SegmentGeneratorTest {
     });
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    generator.generateSegments(10, tokens, null);
+    generator.generateSegments(10, tokens);
     // Will throw an exception when concluding that the repair segments don't add up.
     // This is because the tokens were supplied out of order.
   }

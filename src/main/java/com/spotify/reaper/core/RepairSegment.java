@@ -13,6 +13,8 @@
  */
 package com.spotify.reaper.core;
 
+import com.spotify.reaper.service.RingRange;
+
 import org.joda.time.DateTime;
 
 import java.math.BigInteger;
@@ -23,8 +25,7 @@ public class RepairSegment {
   private final Integer repairCommandId; // received when triggering repair in Cassandra
   private final long columnFamilyId;
   private final long runId;
-  private final BigInteger startToken; // open
-  private final BigInteger endToken; // closed
+  private final RingRange tokenRange;
   private final State state;
   private final DateTime startTime;
   private final DateTime endTime;
@@ -45,12 +46,8 @@ public class RepairSegment {
     return runId;
   }
 
-  public BigInteger getStartToken() {
-    return startToken;
-  }
-
-  public BigInteger getEndToken() {
-    return endToken;
+  public RingRange getTokenRange() {
+    return tokenRange;
   }
 
   public State getState() {
@@ -68,12 +65,11 @@ public class RepairSegment {
   public static RepairSegment getCopy(RepairSegment origSegment, State newState,
                                       int newRepairCommandId,
                                       DateTime newStartTime, DateTime newEndTime) {
-    return new Builder(origSegment.getStartToken(),
-                       origSegment.getEndToken(), newState)
+    return new Builder(origSegment.getRunId(), origSegment.getTokenRange(), newState)
         .columnFamilyId(origSegment.getColumnFamilyId())
         .repairCommandId(newRepairCommandId)
         .startTime(newStartTime)
-        .endTime(newEndTime).build(origSegment.getRunId(), origSegment.getId());
+        .endTime(newEndTime).build(origSegment.getId());
   }
 
   public enum State {
@@ -83,13 +79,12 @@ public class RepairSegment {
     DONE
   }
 
-  private RepairSegment(Builder builder, long runId, long id) {
+  private RepairSegment(Builder builder,long id) {
     this.id = id;
     this.repairCommandId = builder.repairCommandId;
     this.columnFamilyId = builder.columnFamilyId;
-    this.runId = runId;
-    this.startToken = builder.startToken;
-    this.endToken = builder.endToken;
+    this.runId = builder.runId;
+    this.tokenRange = builder.tokenRange;
     this.state = builder.state;
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
@@ -97,17 +92,17 @@ public class RepairSegment {
 
   public static class Builder {
 
-    public final BigInteger startToken;
-    public final BigInteger endToken;
+    public final long runId;
+    public final RingRange tokenRange;
     public final State state;
     private long columnFamilyId;
     private int repairCommandId;
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder(BigInteger startToken, BigInteger endToken, State state) {
-      this.startToken = startToken;
-      this.endToken = endToken;
+    public Builder(long runId, RingRange tokenRange, State state) {
+      this.runId = runId;
+      this.tokenRange = tokenRange;
       this.state = state;
     }
 
@@ -131,19 +126,8 @@ public class RepairSegment {
       return this;
     }
 
-    public RepairSegment build(long runId, long id) {
-      return new RepairSegment(this, runId, id);
+    public RepairSegment build(long id) {
+      return new RepairSegment(this, id);
     }
-
-    @Override
-    public String toString() {
-      return String.format("(%s,%s]", startToken.toString(), endToken.toString());
-    }
-  }
-
-  public String toString() {
-    return String.format("(%s,%s]",
-                         startToken.toString(),
-                         endToken.toString());
   }
 }

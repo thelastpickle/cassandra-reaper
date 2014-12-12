@@ -14,6 +14,7 @@
 package com.spotify.reaper.resources;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
 
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
@@ -23,6 +24,7 @@ import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.service.RepairRunner;
+import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
 import com.spotify.reaper.storage.IStorage;
 
@@ -161,7 +163,7 @@ public class TableResource {
     }
 
     // create segments
-    List<RepairSegment.Builder> segments = null;
+    List<RingRange> segments = null;
     String usedSeedHost = null;
     try {
       SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
@@ -170,9 +172,7 @@ public class TableResource {
         try {
           JmxProxy jmxProxy = JmxProxy.connect(host);
           List<BigInteger> tokens = jmxProxy.getTokens();
-          segments = sg.generateSegments(existingTable.getSegmentCount(),
-                                         tokens,
-                                         existingTable);
+          segments = sg.generateSegments(existingTable.getSegmentCount(), tokens);
           jmxProxy.close();
           usedSeedHost = host;
           break;
@@ -208,7 +208,14 @@ public class TableResource {
     // Notice that our RepairRun core object doesn't contain pointer to
     // the set of RepairSegments in the run, as they are accessed separately.
     // RepairSegment has a pointer to the RepairRun it lives in.
-    storage.addRepairSegments(newRepairRun.getId(), segments);
+    List<RepairSegment.Builder> repairSegments = Lists.newArrayList();
+    for (RingRange range : segments) {
+      repairSegments
+          .add(new RepairSegment.Builder(newRepairRun.getId(), range,
+                                         RepairSegment.State.NOT_STARTED)
+                   .columnFamilyId(existingTable.getId()));
+    }
+    storage.addRepairSegments(repairSegments);
 
     RepairRunner.startNewRepairRun(storage, newRepairRun, usedSeedHost);
 

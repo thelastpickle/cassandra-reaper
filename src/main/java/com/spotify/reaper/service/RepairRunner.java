@@ -84,8 +84,8 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
    */
   @Override
   public void run() {
-    LOG.debug("RepairRunner run on RepairRun \"{}\" with start token \"{}\"",
-              repairRun.getId(), currentSegment == null ? "n/a" : currentSegment.getStartToken());
+    LOG.debug("RepairRunner run on RepairRun \"{}\" with token range \"{}\"",
+              repairRun.getId(), currentSegment == null ? "n/a" : currentSegment.getTokenRange());
 
     if (!checkJmxProxyInitialized()) {
       LOG.error("failed to initialize JMX proxy, retrying after {} seconds",
@@ -181,8 +181,8 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
         return;
       } else if (currentSegment.getState() == RepairSegment.State.NOT_STARTED &&
                  DateTime.now().isAfter(startNextSegmentEarliest)) {
-        LOG.info("triggering repair on segment {} with start token {} on run id {}",
-                 currentSegment.getId(), currentSegment.getStartToken(), repairRun.getId());
+        LOG.info("triggering repair on segment #{} with token range {} on run id {}",
+                 currentSegment.getId(), currentSegment.getTokenRange(), repairRun.getId());
         newRepairCommandId = triggerRepair(currentSegment);
       } else if (currentSegment.getState() == RepairSegment.State.DONE) {
         LOG.warn("segment {} repair completed for run {}",
@@ -223,8 +223,9 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
 
   private int triggerRepair(RepairSegment segment) {
     ColumnFamily columnFamily = this.storage.getColumnFamily(segment.getColumnFamilyId());
-    return this.jmxProxy.triggerRepair(segment.getStartToken(), segment.getEndToken(),
-                                       columnFamily.getKeyspaceName(), columnFamily.getName());
+    return this.jmxProxy
+        .triggerRepair(segment.getTokenRange().getStart(), segment.getTokenRange().getEnd(),
+                       columnFamily.getKeyspaceName(), columnFamily.getName());
   }
 
   private void changeCurrentRepairRunState(RepairRun.RunState newRunState) {
