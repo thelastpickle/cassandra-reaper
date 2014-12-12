@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URL;
+import java.util.Collection;
 import java.util.Collections;
 
 import javax.ws.rs.GET;
@@ -48,6 +49,14 @@ public class ClusterResource {
 
   public ClusterResource(IStorage storage) {
     this.storage = storage;
+  }
+
+  @GET
+  @Path("/")
+  public Response getClusterList() {
+    LOG.info("get cluster list called");
+    Collection<Cluster> clusters = storage.getClusters();
+    return Response.ok().entity(clusters).build();
   }
 
   @GET

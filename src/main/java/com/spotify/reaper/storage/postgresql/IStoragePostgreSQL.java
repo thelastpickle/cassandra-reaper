@@ -28,6 +28,7 @@ import org.skife.jdbi.v2.sqlobject.customizers.BatchChunkSize;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 
 import java.math.BigInteger;
+import java.util.Collection;
 import java.util.Iterator;
 
 /**
@@ -42,6 +43,10 @@ public interface IStoragePostgreSQL {
 
   // Cluster
   //
+
+  static final String SQL_GET_ALL_CLUSTERS =
+      "SELECT name, partitioner, seed_hosts FROM cluster";
+
   static final String SQL_GET_CLUSTER =
       "SELECT name, partitioner, seed_hosts FROM cluster WHERE name = :name";
 
@@ -55,6 +60,10 @@ public interface IStoragePostgreSQL {
   @SqlQuery(SQL_GET_CLUSTER)
   @Mapper(ClusterMapper.class)
   public Cluster getCluster(@Bind("name") String clusterName);
+
+  @SqlQuery(SQL_GET_ALL_CLUSTERS)
+  @Mapper(ClusterMapper.class)
+  public Collection<Cluster> getClusters();
 
   @SqlUpdate(SQL_INSERT_CLUSTER)
   public int insertCluster(@BindBean Cluster newCluster);

@@ -91,13 +91,14 @@ The available commands are:
     def list(self):
         args = _parse_arguments('List all registered Cassandra clusters',
                                 'spreaper list [<args>]')
-        # TODO: implementation
-        print "not implemented yet"
-        print "list: " + str(args)
+        reaper = self.init_reaper(args)
+        print "listing all available clusters in the Reaper"
+        reply = reaper.call_list_clusters()
+        print "got reply:\n{0}".format(reply)
 
     def register(self):
         def arguments_for_register(parser):
-            parser.add_argument("seed-host",
+            parser.add_argument("seed_host",
                                 help="the seed host of the Cassandra cluster to be registered")
             parser.add_argument("--trigger-repair", default=False, action='store_true',
                                 help="trigger repair immediately upon successful register [False]")
@@ -113,9 +114,9 @@ The available commands are:
 
     def repair(self):
         def arguments_for_repair(parser):
-            parser.add_argument("seed-host", default=None,
+            parser.add_argument("--seed-host", default=None,
                                 help="the seed host of the target Cassandra cluster")
-            parser.add_argument("cluster-name", default=None,
+            parser.add_argument("--cluster-name", default=None,
                                 help="the name of the target Cassandra cluster")
             _triggering_arguments(parser)
 
@@ -152,6 +153,15 @@ class ReaperCaller(object):
     def __init__(self, host_name, host_port, use_ssl):
         self.base_url = "{0}://{1}:{2}".format(use_ssl and 'https' or 'http',
                                                str(host_name), int(host_port))
+
+    def call_list_clusters(self):
+        the_url = urlparse.urljoin(self.base_url, "cluster")
+        log.info("making HTTP GET to %s", the_url)
+        r = requests.get(the_url)
+        log.info("HTTP GET return code %s with content of length %s",
+                 r.status_code, len(str(r.text)))
+        r.raise_for_status()
+        return r.text
 
     def call_register(self, owner, seed_host=None, cluster_name=None, keyspace=None, table=None,
                       cause=None, repair_immediately=False):

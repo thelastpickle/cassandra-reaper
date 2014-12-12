@@ -24,6 +24,7 @@ import com.spotify.reaper.service.SegmentGenerator;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -78,6 +79,11 @@ public class MemoryStorage implements IStorage {
   public boolean isStorageConnected() {
     // Just assuming the MemoryStorage is always functional when instantiated.
     return true;
+  }
+
+  @Override
+  public Collection<Cluster> getClusters() {
+    return clusters.values();
   }
 
   @Override

@@ -34,8 +34,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * RepairRunner controls single RepairRun, is invoked in scheduled manner on separate thread,
- * and dies when the RepairRun in question is complete.
+ * RepairRunner controls single RepairRun, is invoked in scheduled manner on separate thread, and
+ * dies when the RepairRun in question is complete.
  *
  * State of the RepairRun is in the Reaper storage, so if Reaper service is restarted, new
  * RepairRunner will be spawned upon restart.
@@ -79,8 +79,8 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   /**
    * This run() method is run in scheduled manner, so don't make this blocking!
    *
-   * NOTICE: Do scheduling next execution only in this method, or when starting run.
-   *         Otherwise it is a risk to have multiple parallel scheduling for same run.
+   * NOTICE: Do scheduling next execution only in this method, or when starting run. Otherwise it is
+   * a risk to have multiple parallel scheduling for same run.
    */
   @Override
   public void run() {
@@ -249,11 +249,8 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
 
     LOG.info("repair run with id {} state change from {} to {}",
              repairRun.getId(), repairRun.getState().toString(), newRunState.toString());
-    RepairRun
-        updatedRun =
-        RepairRun
-            .getCopy(repairRun, newRunState, newStartTime, newEndTime,
-                     repairRun.getCompletedSegments());
+    RepairRun updatedRun = RepairRun.getCopy(repairRun, newRunState, newStartTime, newEndTime,
+                                             repairRun.getCompletedSegments());
     if (!storage.updateRepairRun(updatedRun)) {
       LOG.error("failed updating repair run status: {}", repairRun.getId());
       // TODO: what should we do if we fail to update storage?
@@ -327,12 +324,11 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     DateTime newStartTime = currentSegment.getStartTime();
     DateTime newEndTime = currentSegment.getEndTime();
     currentSegment = RepairSegment.getCopy(currentSegment, newState,
-                                                         currentSegment.getRepairCommandId(),
-                                                         newStartTime, newEndTime);
+                                           currentSegment.getRepairCommandId(),
+                                           newStartTime, newEndTime);
     if (storage.updateRepairSegment(currentSegment)) {
       LOG.info("updated segment {} state to {}", currentSegment.getId(), newState);
-    }
-    else {
+    } else {
       LOG.error("failed to update segment {} state to {}",
                 currentSegment.getId(), newState);
       // TODO: what should we do if we fail to update storage?

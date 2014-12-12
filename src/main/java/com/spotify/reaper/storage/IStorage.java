@@ -28,6 +28,8 @@ public interface IStorage {
 
   boolean isStorageConnected();
 
+  Collection<Cluster> getClusters();
+
   Cluster addCluster(Cluster cluster);
 
   boolean updateCluster(Cluster newCluster);
@@ -55,4 +57,6 @@ public interface IStorage {
   RepairSegment getNextFreeSegment(long runId);
 
   RepairSegment getNextFreeSegmentInRange(long runId, BigInteger start, BigInteger end);
+
+
 }
