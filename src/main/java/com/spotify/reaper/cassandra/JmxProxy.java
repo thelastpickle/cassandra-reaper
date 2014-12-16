@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -157,6 +158,14 @@ public class JmxProxy implements NotificationListener, Serializable {
   public String getClusterName() {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     return toSymbolicName(ssProxy.getClusterName());
+  }
+
+  /**
+   * @return list of available keyspaces
+   */
+  public List<String> getKeySpaces() {
+    checkNotNull(ssProxy, "Looks like the proxy is not connected");
+    return ssProxy.getKeyspaces();
   }
 
   /**

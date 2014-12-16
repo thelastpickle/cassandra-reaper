@@ -56,5 +56,8 @@ CREATE INDEX "repair_segment_state_idx" ON "repair_segment" USING BTREE ("state"
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE cluster TO reaper;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE column_family TO reaper;
+GRANT USAGE, SELECT ON SEQUENCE column_family_id_seq TO reaper;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_run TO reaper;
+GRANT USAGE, SELECT ON SEQUENCE repair_run_id_seq TO reaper;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_segment TO reaper;
+GRANT USAGE, SELECT ON SEQUENCE repair_segment_id_seq TO reaper;

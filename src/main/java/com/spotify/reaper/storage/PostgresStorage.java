@@ -21,6 +21,7 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
+import com.spotify.reaper.storage.postgresql.PostgresArrayArgumentFactory;
 
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
@@ -82,6 +83,7 @@ public class PostgresStorage implements IStorage {
   @Override
   public Cluster addCluster(Cluster newCluster) {
     Handle h = jdbi.open();
+    h.registerArgumentFactory(new PostgresArrayArgumentFactory());
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
     int rowsAdded = postgres.insertCluster(newCluster);
     h.close();
@@ -95,6 +97,7 @@ public class PostgresStorage implements IStorage {
   @Override
   public boolean updateCluster(Cluster cluster) {
     Handle h = jdbi.open();
+    h.registerArgumentFactory(new PostgresArrayArgumentFactory());
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
     int rowsAdded = postgres.updateCluster(cluster);
     h.close();
@@ -114,6 +117,7 @@ public class PostgresStorage implements IStorage {
   @Override
   public RepairRun addRepairRun(RepairRun.Builder newRepairRun) {
     Handle h = jdbi.open();
+    h.registerArgumentFactory(new PostgresArrayArgumentFactory());
     IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
     long insertedId = postgres.insertRepairRun(newRepairRun.build(-1));
     h.close();
