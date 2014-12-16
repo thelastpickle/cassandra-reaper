@@ -16,8 +16,6 @@ package com.spotify.reaper.service;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.core.ColumnFamily;
-import com.spotify.reaper.core.RepairSegment;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,8 +58,7 @@ public class SegmentGenerator {
    * @param ringTokens        list of all start tokens in a cluster. They have to be in ring order.
    * @return a list containing at least {@code totalSegmentCount} repair segments.
    */
-  public List<RingRange> generateSegments(int totalSegmentCount,
-                                                      List<BigInteger> ringTokens)
+  public List<RingRange> generateSegments(int totalSegmentCount, List<BigInteger> ringTokens)
       throws ReaperException {
     int tokenRangeCount = ringTokens.size();
 
@@ -119,8 +116,6 @@ public class SegmentGenerator {
     BigInteger total = BigInteger.ZERO;
     for (RingRange segment : repairSegments) {
       BigInteger size = segment.span(RANGE_SIZE);
-      if (lowerThan(size, BigInteger.ZERO))
-        size = size.add(RANGE_SIZE);
       total = total.add(size);
     }
     if (!total.equals(RANGE_SIZE)) {

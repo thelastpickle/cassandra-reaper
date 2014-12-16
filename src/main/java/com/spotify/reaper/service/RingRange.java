@@ -15,6 +15,7 @@ package com.spotify.reaper.service;
 
 import java.math.BigInteger;
 
+// TODO: Check if this duplicates org.apache.cassandra.dht.Range.
 public class RingRange {
   private final BigInteger start;
   private final BigInteger end;

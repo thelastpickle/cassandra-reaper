@@ -18,6 +18,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.service.RingRange;
 
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.service.StorageServiceMBean;
@@ -30,6 +31,7 @@ import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.management.InstanceNotFoundException;
@@ -132,12 +134,27 @@ public class JmxProxy implements NotificationListener, Serializable {
     return Lists.transform(
         Lists.newArrayList(ssProxy.getTokenToEndpointMap().keySet()),
         new Function<String, BigInteger>() {
-          @Nullable
           @Override
-          public BigInteger apply(@Nullable String s) {
+          public BigInteger apply(String s) {
             return new BigInteger(s);
           }
         });
+  }
+
+  /**
+   * @return all hosts owning a range of tokens
+   */
+  @Nullable
+  public List<String> tokenRangeToEndpoint(String keyspace, RingRange tokenRange) {
+    checkNotNull(ssProxy, "Looks like the proxy is not connected");
+    for (Map.Entry<List<String>, List<String>> entry : ssProxy.getRangeToEndpointMap(keyspace)
+        .entrySet()) {
+      if (new RingRange(new BigInteger(entry.getKey().get(0)),
+                        new BigInteger(entry.getKey().get(1))).encloses(tokenRange)) {
+        return entry.getValue();
+      }
+    }
+    return null;
   }
 
   /**
