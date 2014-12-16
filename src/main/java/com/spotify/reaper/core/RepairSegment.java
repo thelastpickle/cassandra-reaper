@@ -50,6 +50,14 @@ public class RepairSegment {
     return tokenRange;
   }
 
+  public BigInteger getStartToken() {
+    return tokenRange.getStart();
+  }
+
+  public BigInteger getEndToken() {
+    return tokenRange.getEnd();
+  }
+
   public State getState() {
     return state;
   }

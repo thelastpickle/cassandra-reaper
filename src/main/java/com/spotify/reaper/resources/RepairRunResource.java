@@ -19,6 +19,10 @@ import com.spotify.reaper.storage.IStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -44,6 +48,18 @@ public class RepairRunResource {
     LOG.info("get repair_run called with: id = {}", repairRunId);
     RepairRun repairRun = storage.getRepairRun(repairRunId);
     return Response.ok().entity(repairRun).build();
+  }
+
+  @GET
+  @Path("/cluster/{cluster_name}")
+  public Response getRepairRunsForCluster(@PathParam("cluster_name") String clusterName) {
+    LOG.info("get repair run for cluster called with: cluster_name = {}", clusterName);
+    Collection<RepairRun> repairRuns = storage.getRepairRunsForCluster(clusterName);
+    List<Long> repairRunIds = new ArrayList<>();
+    for (RepairRun repairRun : repairRuns) {
+      repairRunIds.add(repairRun.getId());
+    }
+    return Response.ok().entity(repairRunIds).build();
   }
 
   // We probably don't want to create repair runs with this resource,

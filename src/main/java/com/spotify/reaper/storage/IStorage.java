@@ -19,7 +19,6 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.service.RingRange;
 
-import java.math.BigInteger;
 import java.util.Collection;
 
 /**
@@ -43,6 +42,8 @@ public interface IStorage {
 
   RepairRun getRepairRun(long id);
 
+  Collection<RepairRun> getRepairRunsForCluster(String clusterName);
+
   ColumnFamily addColumnFamily(ColumnFamily.Builder newTable);
 
   ColumnFamily getColumnFamily(long id);
@@ -58,6 +59,4 @@ public interface IStorage {
   RepairSegment getNextFreeSegment(long runId);
 
   RepairSegment getNextFreeSegmentInRange(long runId, RingRange range);
-
-
 }

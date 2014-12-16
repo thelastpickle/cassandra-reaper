@@ -29,9 +29,11 @@ CREATE UNIQUE INDEX column_family_no_duplicates_idx
 
 CREATE TABLE IF NOT EXISTS "repair_run" (
   "id" SERIAL PRIMARY KEY,
+  "cluster_name" TEXT NOT NULL REFERENCES "cluster" ("name"),
+  "column_family_id" INT NOT NULL REFERENCES "column_family" ("id"),
   "cause" TEXT NOT NULL,
   "owner" TEXT NOT NULL,
-  -- see RepairRun.RunState for state values
+  -- see (Java) RepairRun.RunState for state values
   "state" TEXT NOT NULL,
   "creation_time" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   "start_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
@@ -43,9 +45,9 @@ CREATE TABLE IF NOT EXISTS "repair_segment" (
   "id" SERIAL PRIMARY KEY,
   "column_family_id" INT NOT NULL REFERENCES "column_family" ("id"),
   "run_id" INT NOT NULL REFERENCES "repair_run" ("id"),
-  "start_token" BIGINT NOT NULL,
-  "end_token" BIGINT NOT NULL,
-  -- see RepairSegment.State for state values
+  "start_token" NUMERIC(50) NOT NULL,
+  "end_token" NUMERIC(50) NOT NULL,
+  -- see (Java) RepairSegment.State for state values
   "state" SMALLINT NOT NULL,
   "start_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "end_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL

@@ -98,7 +98,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
 
     // Need to check current status from database every time, if state changed etc.
     repairRun = storage.getRepairRun(repairRun.getId());
-    RepairRun.RunState runState = repairRun.getState();
+    RepairRun.RunState runState = repairRun.getRunState();
 
     switch (runState) {
       case NOT_STARTED:
@@ -145,11 +145,11 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   }
 
   private void checkIfNeedToStartNextSegment() {
-    if (repairRun.getState() == RepairRun.RunState.PAUSED
-        || repairRun.getState() == RepairRun.RunState.DONE
-        || repairRun.getState() == RepairRun.RunState.ERROR) {
+    if (repairRun.getRunState() == RepairRun.RunState.PAUSED
+        || repairRun.getRunState() == RepairRun.RunState.DONE
+        || repairRun.getRunState() == RepairRun.RunState.ERROR) {
       LOG.debug("not starting new segment if repair run (id {}) is not running: {}",
-                repairRun.getId(), repairRun.getState());
+                repairRun.getId(), repairRun.getRunState());
       return;
     }
 
@@ -161,11 +161,11 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
         changeCurrentRepairRunState(RepairRun.RunState.ERROR);
         return;
       }
-      if (repairRun.getState() == RepairRun.RunState.NOT_STARTED) {
+      if (repairRun.getRunState() == RepairRun.RunState.NOT_STARTED) {
         LOG.info("started new repair run {}", repairRun.getId());
         changeCurrentRepairRunState(RepairRun.RunState.RUNNING);
       } else {
-        assert repairRun.getState() == RepairRun.RunState.RUNNING : "logical error in run state";
+        assert repairRun.getRunState() == RepairRun.RunState.RUNNING : "logical error in run state";
         LOG.info("started existing repair run {}", repairRun.getId());
       }
     } else {
@@ -245,7 +245,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   }
 
   private void changeCurrentRepairRunState(RepairRun.RunState newRunState) {
-    if (repairRun.getState() == newRunState) {
+    if (repairRun.getRunState() == newRunState) {
       LOG.info("repair run {} state {} same as before, not changed",
                repairRun.getId(), newRunState);
       return;
@@ -265,7 +265,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     }
 
     LOG.info("repair run with id {} state change from {} to {}",
-             repairRun.getId(), repairRun.getState().toString(), newRunState.toString());
+             repairRun.getId(), repairRun.getRunState().toString(), newRunState.toString());
     RepairRun updatedRun = RepairRun.getCopy(repairRun, newRunState, newStartTime, newEndTime,
                                              repairRun.getCompletedSegments());
     if (!storage.updateRepairRun(updatedRun)) {
@@ -323,7 +323,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
                                     currentSegment.getStartTime(), DateTime.now());
           storage.updateRepairSegment(currentSegment);
           repairRun =
-              RepairRun.getCopy(repairRun, repairRun.getState(), repairRun.getStartTime(),
+              RepairRun.getCopy(repairRun, repairRun.getRunState(), repairRun.getStartTime(),
                                 repairRun.getEndTime(), repairRun.getCompletedSegments() + 1);
           storage.updateRepairRun(repairRun);
           checkIfNeedToStartNextSegment();

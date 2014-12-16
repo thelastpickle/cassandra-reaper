@@ -194,8 +194,11 @@ public class TableResource {
     }
 
     RepairRun newRepairRun =
-        storage.addRepairRun(new RepairRun.Builder(RepairRun.RunState.NOT_STARTED,
-                                                   DateTime.now(), config.getRepairIntensity(),
+        storage.addRepairRun(new RepairRun.Builder(targetCluster.getName(),
+                                                   existingTable.getId(),
+                                                   RepairRun.RunState.NOT_STARTED,
+                                                   DateTime.now(),
+                                                   config.getRepairIntensity(),
                              segments.size(), 0)
             .cause(cause.isPresent() ? cause.get() : "no cause specified")
             .owner(owner.get()));

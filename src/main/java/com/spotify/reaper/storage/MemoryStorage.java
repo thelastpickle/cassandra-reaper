@@ -20,9 +20,8 @@ import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.service.RingRange;
-import com.spotify.reaper.service.SegmentGenerator;
 
-import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -131,6 +130,17 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
+  public List<RepairRun> getRepairRunsForCluster(String clusterName) {
+    List<RepairRun> foundRepairRuns = new ArrayList<>();
+    for (RepairRun repairRun : repairRuns.values()) {
+      if (repairRun.getClusterName().equalsIgnoreCase(clusterName)) {
+        foundRepairRuns.add(repairRun);
+      }
+    }
+    return foundRepairRuns;
+  }
+
+  @Override
   public ColumnFamily addColumnFamily(ColumnFamily.Builder columnFamily) {
     ColumnFamily existing =
         getColumnFamily(columnFamily.clusterName, columnFamily.keyspaceName, columnFamily.name);
@@ -165,7 +175,6 @@ public class MemoryStorage implements IStorage {
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
       newSegments.put(newRepairSegment.getId(), newRepairSegment);
     }
-    // TODO: (bj0rn) this is very ugly, the function should probably take runId.
     repairSegmentsByRunId.put(newSegments.values().iterator().next().getRunId(), newSegments);
     return newSegments.size();
   }

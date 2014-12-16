@@ -29,6 +29,8 @@ public class RepairRun {
 
   private final String cause;
   private final String owner;
+  private final String clusterName;
+  private final long columnFamilyId;
   private final RunState runState;
   private final DateTime creationTime;
   private final DateTime startTime;
@@ -41,6 +43,14 @@ public class RepairRun {
     return id;
   }
 
+  public long getColumnFamilyId() {
+    return columnFamilyId;
+  }
+
+  public String getClusterName() {
+    return clusterName;
+  }
+
   public String getCause() {
     return cause;
   }
@@ -49,7 +59,7 @@ public class RepairRun {
     return owner;
   }
 
-  public RunState getState() {
+  public RunState getRunState() {
     return runState;
   }
 
@@ -60,7 +70,9 @@ public class RepairRun {
 
   @JsonProperty("creationTime")
   public String getCreationTimeISO8601() {
-    if (creationTime == null) return null;
+    if (creationTime == null) {
+      return null;
+    }
     return creationTime.toDateTime(DateTimeZone.UTC).toString(
         "YYYY-MM-dd'T'HH:mm:ss'Z'");
   }
@@ -72,7 +84,9 @@ public class RepairRun {
 
   @JsonProperty("startTime")
   public String getStartTimeISO8601() {
-    if (startTime == null) return null;
+    if (startTime == null) {
+      return null;
+    }
     return startTime.toDateTime(DateTimeZone.UTC).toString(
         "YYYY-MM-dd'T'HH:mm:ss'Z'");
   }
@@ -84,7 +98,9 @@ public class RepairRun {
 
   @JsonProperty("endTime")
   public String getEndTimeISO8601() {
-    if (endTime == null) return null;
+    if (endTime == null) {
+      return null;
+    }
     return endTime.toDateTime(DateTimeZone.UTC).toString(
         "YYYY-MM-dd'T'HH:mm:ss'Z'");
   }
@@ -103,8 +119,8 @@ public class RepairRun {
 
   public static RepairRun getCopy(RepairRun repairRun, RunState newState,
                                   DateTime startTime, DateTime endTime, int completedSegments) {
-    return new RepairRun.Builder(newState,
-                                 repairRun.getCreationTime(), repairRun.getIntensity(),
+    return new RepairRun.Builder(repairRun.getClusterName(), repairRun.getColumnFamilyId(),
+                                 newState, repairRun.getCreationTime(), repairRun.getIntensity(),
                                  repairRun.getTotalSegments(), completedSegments)
         .cause(repairRun.getCause())
         .owner(repairRun.getOwner())
@@ -123,6 +139,8 @@ public class RepairRun {
 
   private RepairRun(Builder builder, long id) {
     this.id = id;
+    this.clusterName = builder.clusterName;
+    this.columnFamilyId = builder.columnFamilyId;
     this.cause = builder.cause;
     this.owner = builder.owner;
     this.runState = builder.runState;
@@ -136,6 +154,8 @@ public class RepairRun {
 
   public static class Builder {
 
+    public final String clusterName;
+    public final long columnFamilyId;
     public final RunState runState;
     public final DateTime creationTime;
     public final double intensity;
@@ -146,8 +166,11 @@ public class RepairRun {
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder(RunState runState, DateTime creationTime,
-                   double intensity, int totalSegments, int completedSegments) {
+    public Builder(String clusterName, long columnFamilyId, RunState runState,
+                   DateTime creationTime, double intensity, int totalSegments,
+                   int completedSegments) {
+      this.clusterName = clusterName;
+      this.columnFamilyId = columnFamilyId;
       this.runState = runState;
       this.creationTime = creationTime;
       this.intensity = intensity;
