@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -57,7 +58,11 @@ public class ClusterResource {
   public Response getClusterList() {
     LOG.info("get cluster list called");
     Collection<Cluster> clusters = storage.getClusters();
-    return Response.ok().entity(clusters).build();
+    List<String> clusterNames = new ArrayList<>();
+    for (Cluster cluster : clusters) {
+      clusterNames.add(cluster.getName());
+    }
+    return Response.ok().entity(clusterNames).build();
   }
 
   @GET

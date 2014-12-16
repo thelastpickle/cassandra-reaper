@@ -74,20 +74,30 @@ public interface IStoragePostgreSQL {
   // RepairRun
   //
   static final String SQL_INSERT_REPAIR_RUN =
-      "INSERT INTO repair_run (cause, owner, state, creation_time, start_time, end_time) "
-      + "VALUES (:cause, :owner, :state, :creationTime, :startTime, :endTime)";
+      "INSERT INTO repair_run (cluster_name, column_family_id, cause, owner, state, "
+      + "creation_time, start_time, end_time, intensity) "
+      + "VALUES (:clusterName, :columnFamilyId, :cause, :owner, :runState, :creationTime, "
+      + ":startTime, :endTime, :intensity)";
 
   static final String SQL_UPDATE_REPAIR_RUN =
-      "UPDATE repair_run SET cause = :cause, owner = :owner, state = :state, "
-      + "start_time = :startTime, end_time = :endTime WHERE id = :id";
+      "UPDATE repair_run SET cause = :cause, owner = :owner, state = :runState, "
+      + "start_time = :startTime, end_time = :endTime, intensity = :intensity WHERE id = :id";
 
   static final String SQL_GET_REPAIR_RUN =
-      "SELECT id, cause, owner, state, creation_time, start_time, end_time "
-      + "FROM repair_run WHERE id = :id";
+      "SELECT id, cluster_name, column_family_id, cause, owner, state, creation_time, "
+      + "start_time, end_time, intensity FROM repair_run WHERE id = :id";
+
+  static final String SQL_GET_REPAIR_RUNS_FOR_CLUSTER =
+      "SELECT id, cluster_name, column_family_id, cause, owner, state, creation_time, "
+      + "start_time, end_time, intensity FROM repair_run WHERE cluster_name = :clusterName";
 
   @SqlQuery(SQL_GET_REPAIR_RUN)
   @Mapper(RepairRunMapper.class)
-  public Cluster getRepairRun(@Bind("id") long repairRunId);
+  public RepairRun getRepairRun(@Bind("id") long repairRunId);
+
+  @SqlQuery(SQL_GET_REPAIR_RUNS_FOR_CLUSTER)
+  @Mapper(RepairRunMapper.class)
+  public Collection<RepairRun> getRepairRunsForCluster(@Bind("clusterName") String clusterName);
 
   @SqlUpdate(SQL_INSERT_REPAIR_RUN)
   @GetGeneratedKeys
@@ -107,9 +117,20 @@ public interface IStoragePostgreSQL {
       "SELECT id, cluster_name, keyspace_name, name, segment_count, snapshot_repair "
       + "FROM column_family WHERE id = :id";
 
+  static final String SQL_GET_COLUMN_FAMILY_BY_CLUSTER_AND_NAME =
+      "SELECT id, cluster_name, keyspace_name, name, segment_count, snapshot_repair "
+      + "FROM column_family WHERE cluster_name = :clusterName AND keyspace_name = :keyspaceName "
+      + "AND name = :name";
+
   @SqlQuery(SQL_GET_COLUMN_FAMILY)
   @Mapper(ColumnFamilyMapper.class)
   public ColumnFamily getColumnFamily(@Bind("id") long columnFamilyId);
+
+  @SqlQuery(SQL_GET_COLUMN_FAMILY_BY_CLUSTER_AND_NAME)
+  @Mapper(ColumnFamilyMapper.class)
+  public ColumnFamily getColumnFamilyByClusterAndName(@Bind("clusterName") String clusterName,
+                                                      @Bind("keyspaceName") String keyspaceName,
+                                                      @Bind("name") String tableName);
 
   @SqlUpdate(SQL_INSERT_COLUMN_FAMILY)
   @GetGeneratedKeys
@@ -120,7 +141,7 @@ public interface IStoragePostgreSQL {
   static final String SQL_INSERT_REPAIR_SEGMENT =
       "INSERT INTO repair_segment (column_family_id, run_id, start_token, end_token, state, "
       + "start_time, end_time) VALUES (:columnFamilyId, :runId, :startToken, :endToken, "
-      + ":state, startTime:, endTime)";
+      + ":state, :startTime, :endTime)";
 
   static final String SQL_UPDATE_REPAIR_SEGMENT =
       "UPDATE repair_segment SET column_family_id = :columnFamilyId, run_id = :runId, "

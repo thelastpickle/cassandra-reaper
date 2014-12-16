@@ -20,15 +20,17 @@ import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.service.RingRange;
+import com.spotify.reaper.storage.postgresql.BigIntegerArgumentFactory;
 import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
 import com.spotify.reaper.storage.postgresql.PostgresArrayArgumentFactory;
+import com.spotify.reaper.storage.postgresql.RunStateArgumentFactory;
+import com.spotify.reaper.storage.postgresql.StateArgumentFactory;
 
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -56,6 +58,14 @@ public class PostgresStorage implements IStorage {
     }
   }
 
+  private static IStoragePostgreSQL getPostgresStorage(Handle h) {
+    h.registerArgumentFactory(new PostgresArrayArgumentFactory());
+    h.registerArgumentFactory(new RunStateArgumentFactory());
+    h.registerArgumentFactory(new StateArgumentFactory());
+    h.registerArgumentFactory(new BigIntegerArgumentFactory());
+    return h.attach(IStoragePostgreSQL.class);
+  }
+
   @Override
   public Cluster getCluster(String clusterName) {
     return (Cluster) getGeneric(Cluster.class, clusterName);
@@ -67,7 +77,7 @@ public class PostgresStorage implements IStorage {
       return false;
     }
     Handle h = jdbi.open();
-    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
     String postgresVersion = postgres.getVersion();
     LOG.debug("connected PostgreSQL version: {}", postgresVersion);
     return null != postgresVersion && postgresVersion.trim().length() > 0;
@@ -76,15 +86,14 @@ public class PostgresStorage implements IStorage {
   @Override
   public Collection<Cluster> getClusters() {
     Handle h = jdbi.open();
-    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
     return postgres.getClusters();
   }
 
   @Override
   public Cluster addCluster(Cluster newCluster) {
     Handle h = jdbi.open();
-    h.registerArgumentFactory(new PostgresArrayArgumentFactory());
-    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
     int rowsAdded = postgres.insertCluster(newCluster);
     h.close();
     if (rowsAdded < 1) {
@@ -97,8 +106,7 @@ public class PostgresStorage implements IStorage {
   @Override
   public boolean updateCluster(Cluster cluster) {
     Handle h = jdbi.open();
-    h.registerArgumentFactory(new PostgresArrayArgumentFactory());
-    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
     int rowsAdded = postgres.updateCluster(cluster);
     h.close();
     if (rowsAdded < 1) {
@@ -115,10 +123,16 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
+  public Collection<RepairRun> getRepairRunsForCluster(String clusterName) {
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
+    return postgres.getRepairRunsForCluster(clusterName);
+  }
+
+  @Override
   public RepairRun addRepairRun(RepairRun.Builder newRepairRun) {
     Handle h = jdbi.open();
-    h.registerArgumentFactory(new PostgresArrayArgumentFactory());
-    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
     long insertedId = postgres.insertRepairRun(newRepairRun.build(-1));
     h.close();
     return newRepairRun.build(insertedId);
@@ -127,7 +141,7 @@ public class PostgresStorage implements IStorage {
   @Override
   public boolean updateRepairRun(RepairRun repairRun) {
     Handle h = jdbi.open();
-    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
     int rowsAdded = postgres.updateRepairRun(repairRun);
     h.close();
     if (rowsAdded < 1) {
@@ -140,7 +154,7 @@ public class PostgresStorage implements IStorage {
   @Override
   public ColumnFamily addColumnFamily(ColumnFamily.Builder newColumnFamily) {
     Handle h = jdbi.open();
-    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
     long insertedId = postgres.insertColumnFamily(newColumnFamily.build(-1));
     h.close();
     return newColumnFamily.build(insertedId);
@@ -152,8 +166,13 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public ColumnFamily getColumnFamily(String cluster, String keyspace, String table) {
-    return null;
+  public ColumnFamily getColumnFamily(String clusterName, String keyspaceName, String tableName) {
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
+    ColumnFamily result = postgres.getColumnFamilyByClusterAndName(clusterName, keyspaceName,
+                                                                   tableName);
+    h.close();
+    return result;
   }
 
   @Override
@@ -163,14 +182,14 @@ public class PostgresStorage implements IStorage {
       insertableSegments.add(segment.build(-1));
     }
     Handle h = jdbi.open();
-    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
     return postgres.insertRepairSegments(insertableSegments.iterator());
   }
 
   @Override
   public boolean updateRepairSegment(RepairSegment repairSegment) {
     Handle h = jdbi.open();
-    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
     int rowsAdded = postgres.updateRepairSegment(repairSegment);
     h.close();
     if (rowsAdded < 1) {
@@ -188,7 +207,7 @@ public class PostgresStorage implements IStorage {
   @Override
   public RepairSegment getNextFreeSegment(long runId) {
     Handle h = jdbi.open();
-    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
     RepairSegment result = postgres.getNextFreeRepairSegment(runId);
     h.close();
     return result;
@@ -197,8 +216,9 @@ public class PostgresStorage implements IStorage {
   @Override
   public RepairSegment getNextFreeSegmentInRange(long runId, RingRange range) {
     Handle h = jdbi.open();
-    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
-    RepairSegment result = postgres.getNextFreeRepairSegmentOnRange(runId, range.getStart(), range.getEnd());
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
+    RepairSegment result = postgres.getNextFreeRepairSegmentOnRange(runId, range.getStart(),
+                                                                    range.getEnd());
     h.close();
     return result;
   }
@@ -208,7 +228,7 @@ public class PostgresStorage implements IStorage {
    */
   private Object getGeneric(Class coreObjectType, Object value) {
     Handle h = jdbi.open();
-    IStoragePostgreSQL postgres = h.attach(IStoragePostgreSQL.class);
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
     Object result = null;
     if (coreObjectType == Cluster.class) {
       result = postgres.getCluster((String) value);

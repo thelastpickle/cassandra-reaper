@@ -23,11 +23,16 @@ import urlparse
 USER = getpass.getuser()
 DEFAULT_CAUSE = "manual spreaper run"
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(name)s %(levelname)s - %(message)s')
+log_level = logging.WARN
+if "-v" in sys.argv or "--verbose" in sys.argv:
+    log_level = logging.DEBUG
+logging.basicConfig(level=log_level, format='%(asctime)s %(name)s %(levelname)s - %(message)s')
 
 log = logging.getLogger("spreaper")
-log.debug("logging initialized, username running this: {0}".format(USER))
+log.debug("logging initialized, the user running this: {0}".format(USER))
+
+
+import json
 
 
 def _global_arguments(parser):
@@ -37,6 +42,8 @@ def _global_arguments(parser):
                         help="port of the Reaper service [8080]")
     parser.add_argument("--reaper-use-ssl", default=False, action='store_true',
                         help="use https to call Reaper [False]")
+    parser.add_argument("-v", "--verbose", help="increase output verbosity",
+                        action="store_true")
 
 
 def _triggering_arguments(parser):
@@ -93,8 +100,13 @@ The available commands are:
                                 'spreaper list [<args>]')
         reaper = self.init_reaper(args)
         print "listing all available clusters in the Reaper"
-        reply = reaper.call_list_clusters()
-        print "got reply:\n{0}".format(reply)
+        cluster_names = reaper.call_list_clusters()
+        if cluster_names:
+            print "found {0} clusters:".format(len(cluster_names))
+            for cluster_name in cluster_names:
+                print cluster_name
+        else:
+            print "no clusters found"
 
     def register(self):
         def arguments_for_register(parser):
@@ -127,24 +139,29 @@ The available commands are:
         if args.cluster_name:
             print "triggering a repair on Cassandra cluster "\
                   "with name: {0}".format(args.cluster_name)
-            reaper.call_register(args.owner, cluster_name=args.cluster_name,
-                                 keyspace=args.keyspace, table=args.table, cause=args.cause,
-                                 repair_immediately=True)
+            reply = reaper.call_register(args.owner, cluster_name=args.cluster_name,
+                                         keyspace=args.keyspace, table=args.table,
+                                         cause=args.cause, repair_immediately=True)
         else:
             print "triggering a repair on Cassandra cluster "\
                   "with seed host: {0}".format(args.seed_host)
-            reaper.call_register(args.owner, seed_host=args.seed_host,
-                                 keyspace=args.keyspace, table=args.table, cause=args.cause,
-                                 repair_immediately=True)
-        print "repair triggering succeeded"
+            reply = reaper.call_register(args.owner, seed_host=args.seed_host,
+                                         keyspace=args.keyspace, table=args.table,
+                                         cause=args.cause, repair_immediately=True)
+        print "repair triggering succeeded. reply:"
+        print reply
 
     def status(self):
-        args = _parse_arguments('Show status of a Cassandra cluster or a repair run',
-                                'spreaper status [<args>]')
+        def arguments_for_status(parser):
+            parser.add_argument("repair_run_id",
+                                help="the repair run id, which you get from the reply of calling "
+                                     "the repair command")
+        args = _parse_arguments('Show status of a repair run',
+                                'spreaper status repair_run_id [<args>]')
         reaper = self.init_reaper(args)
-        print "not implemented, just calling ping for testing purposes..."
-        reply = reaper.call_ping()
-        print "got reply: {0}".format(reply)
+        print "repair run with id {0}".format(args.repair_run_id)
+        repair_run = reaper.call_status(args.repair_run_id)
+        print json.dumps(repair_run, indent=2)
 
 
 class ReaperCaller(object):
@@ -154,14 +171,26 @@ class ReaperCaller(object):
         self.base_url = "{0}://{1}:{2}".format(use_ssl and 'https' or 'http',
                                                str(host_name), int(host_port))
 
-    def call_list_clusters(self):
-        the_url = urlparse.urljoin(self.base_url, "cluster")
-        log.info("making HTTP GET to %s", the_url)
-        r = requests.get(the_url)
-        log.info("HTTP GET return code %s with content of length %s",
-                 r.status_code, len(str(r.text)))
+    def _http_req(self, http_method, the_url, params=None):
+        http_method = http_method.upper()
+        if params is None:
+            params = {}
+        log.info("making HTTP %s to %s", http_method, the_url)
+        if http_method == 'GET':
+            r = requests.get(the_url, params=params)
+        elif http_method == 'POST':
+            r = requests.post(the_url, params=params)
+        else:
+            assert False, "invalid HTTP method: {0}".format(http_method)
+        log.info("HTTP %s return code %s with content of length %s",
+                 http_method, r.status_code, len(str(r.text)))
         r.raise_for_status()
         return r.text
+
+    def call_list_clusters(self):
+        the_url = urlparse.urljoin(self.base_url, "cluster")
+        reply = self._http_req("GET", the_url)
+        return json.loads(reply)
 
     def call_register(self, owner, seed_host=None, cluster_name=None, keyspace=None, table=None,
                       cause=None, repair_immediately=False):
@@ -190,19 +219,17 @@ class ReaperCaller(object):
             if repair_immediately:
                 params['startRepair'] = 'true'
 
-        log.info("making HTTP POST to %s with params %s", the_url, params)
-        r = requests.post(the_url, params=params)
-        log.info("HTTP POST return code %s with content: %s", r.status_code, r.text)
-        r.raise_for_status()
-        return r.text
+        reply = self._http_req("POST", the_url, params=params)
+        return json.loads(reply)
+
+    def call_status(self, repair_run_id):
+        the_url = urlparse.urljoin(self.base_url, "repair_run", repair_run_id)
+        reply = self._http_req("GET", the_url)
+        return json.loads(reply)
 
     def call_ping(self):
         the_url = urlparse.urljoin(self.base_url, "ping")
-        log.info("making HTTP GET to %s", the_url)
-        r = requests.get(the_url)
-        log.info("HTTP GET return code %s with content: %s", r.status_code, r.text)
-        r.raise_for_status()
-        return r.text
+        return self._http_req("GET", the_url)
 
 
 if __name__ == '__main__':

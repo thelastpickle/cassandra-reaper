@@ -67,6 +67,7 @@ The Reaper service specific configuration values are:
   divided by the intensity value. 0.5 means half of the time is spent sleeping, and half running.
 
 * repairRunThreadCount:
+
   The amount of threads to use for handling the Reaper tasks. Have this big enough not to cause
   blocking in cause some thread is waiting for I/O, like calling a Cassandra cluster through JMX.
 
@@ -76,10 +77,10 @@ REST API
 
 TODO:
 
-GET     /ping (com.spotify.reaper.resources.PingResource)
-GET     /cluster (com.spotify.reaper.resources.ClusterResource)
-GET     /cluster/{name} (com.spotify.reaper.resources.ClusterResource)
-POST    /cluster (com.spotify.reaper.resources.ClusterResource)
-GET     /table/{clusterName}/{keyspace}/{table} (com.spotify.reaper.resources.TableResource)
-POST    /table (com.spotify.reaper.resources.TableResource)
-GET     /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)
+  GET     /ping (com.spotify.reaper.resources.PingResource)
+  GET     /cluster (com.spotify.reaper.resources.ClusterResource)
+  GET     /cluster/{name} (com.spotify.reaper.resources.ClusterResource)
+  POST    /cluster (com.spotify.reaper.resources.ClusterResource)
+  GET     /table/{clusterName}/{keyspace}/{table} (com.spotify.reaper.resources.TableResource)
+  POST    /table (com.spotify.reaper.resources.TableResource)
+  GET     /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)

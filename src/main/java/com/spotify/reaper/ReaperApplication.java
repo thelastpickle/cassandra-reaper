@@ -43,14 +43,21 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     return "cassandra-reaper";
   }
 
+  /**
+   * Before a Dropwizard application can provide the command-line interface, parse a configuration
+   * file, or run as a server, it must first go through a bootstrapping phase. You can add Bundles,
+   * Commands, or register Jackson modules to allow you to include custom types as part of your
+   * configuration class.
+   */
   @Override
   public void initialize(Bootstrap<ReaperApplicationConfiguration> bootstrap) {
-    LOG.debug("ReaperApplication.initialize called");
+    // nothing to initialize
   }
 
   @Override
   public void run(ReaperApplicationConfiguration config,
                   Environment environment) throws ReaperException {
+    checkConfiguration(config);
 
     LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
     RepairRunner.initializeThreadPool(config.getRepairRunThreadCount());
@@ -95,4 +102,10 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     return storage;
   }
 
+  private void checkConfiguration(ReaperApplicationConfiguration config) throws ReaperException {
+    LOG.debug("repairIntensity: " + config.getRepairIntensity());
+    LOG.debug("repairRunThreadCount: " + config.getRepairRunThreadCount());
+    LOG.debug("segmentCount: " + config.getSegmentCount());
+    LOG.debug("snapshotRepair: " + config.getSnapshotRepair());
+  }
 }
