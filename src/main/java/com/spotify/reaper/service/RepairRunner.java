@@ -29,6 +29,7 @@ import org.joda.time.Seconds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -183,7 +184,12 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
                  DateTime.now().isAfter(startNextSegmentEarliest)) {
         LOG.info("triggering repair on segment #{} with token range {} on run id {}",
                  currentSegment.getId(), currentSegment.getTokenRange(), repairRun.getId());
-        newRepairCommandId = triggerRepair(currentSegment);
+        try {
+          newRepairCommandId = triggerRepair(currentSegment);
+        } catch (ReaperException e) {
+          LOG.error("failed triggering repair on segment #{} with token range {} on run id {}",
+                    currentSegment.getId(), currentSegment.getTokenRange(), repairRun.getId());
+        }
       } else if (currentSegment.getState() == RepairSegment.State.DONE) {
         LOG.warn("segment {} repair completed for run {}",
                  currentSegment.getId(), repairRun.getId());
@@ -221,9 +227,19 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     }
   }
 
-  private int triggerRepair(RepairSegment segment) {
+  private int triggerRepair(RepairSegment segment) throws ReaperException {
     ColumnFamily columnFamily = this.storage.getColumnFamily(segment.getColumnFamilyId());
-    return this.jmxProxy
+
+    // Make sure that we connect to a node that can act as coordinator for this repair.
+    List<String>
+        potentialCoordinators =
+        jmxProxy.tokenRangeToEndpoint(columnFamily.getKeyspaceName(), segment.getTokenRange());
+
+    jmxProxy.close();
+    // TODO: What if the coordinator doesn't use the default JMX port?
+    jmxProxy =
+        JmxProxy.connect(Optional.<RepairStatusHandler>of(this), potentialCoordinators.get(0));
+    return jmxProxy
         .triggerRepair(segment.getTokenRange().getStart(), segment.getTokenRange().getEnd(),
                        columnFamily.getKeyspaceName(), columnFamily.getName());
   }
