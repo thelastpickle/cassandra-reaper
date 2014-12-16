@@ -23,10 +23,12 @@ import com.spotify.reaper.storage.IStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -52,7 +54,6 @@ public class ClusterResource {
   }
 
   @GET
-  @Path("/")
   public Response getClusterList() {
     LOG.info("get cluster list called");
     Collection<Cluster> clusters = storage.getClusters();

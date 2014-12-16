@@ -75,7 +75,7 @@ public interface IStoragePostgreSQL {
   //
   static final String SQL_INSERT_REPAIR_RUN =
       "INSERT INTO repair_run (cause, owner, state, creation_time, start_time, end_time) "
-      + "VALUES (:cause, :owner, :state, :creationTime, :startTime, :endTime) RETURNING id";
+      + "VALUES (:cause, :owner, :state, :creationTime, :startTime, :endTime)";
 
   static final String SQL_UPDATE_REPAIR_RUN =
       "UPDATE repair_run SET cause = :cause, owner = :owner, state = :state, "
@@ -101,7 +101,7 @@ public interface IStoragePostgreSQL {
   static final String SQL_INSERT_COLUMN_FAMILY =
       "INSERT INTO column_family (cluster_name, keyspace_name, name, segment_count, "
       + "snapshot_repair) VALUES (:clusterName, :keyspaceName, :name, :segmentCount, "
-      + ":snapshotRepair) RETURNING id";
+      + ":snapshotRepair)";
 
   static final String SQL_GET_COLUMN_FAMILY =
       "SELECT id, cluster_name, keyspace_name, name, segment_count, snapshot_repair "

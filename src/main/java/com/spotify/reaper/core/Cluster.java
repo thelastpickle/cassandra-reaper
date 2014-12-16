@@ -21,7 +21,11 @@ public class Cluster {
 
   @JsonProperty
   private final String name;
-  private final String partitioner; // Name of the partitioner class
+
+  @JsonProperty
+  private final String partitioner; // Full name of the partitioner class
+
+  @JsonProperty
   private final Set<String> seedHosts;
 
   public String getName() {
