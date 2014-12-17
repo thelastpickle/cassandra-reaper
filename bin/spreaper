@@ -75,34 +75,36 @@ class ReaperCLI(object):
                         "Reaper service through its REST API",
             usage="""spreaper <command> [<args>]
 The available commands are:
-    list        List registered Cassandra clusters in a Reaper
-    register    Register a Cassandra cluster for repairs
-    repair      Trigger a repair on a Cassandra cluster
-    status      Show status of a Cassandra cluster or a repair run
+    list-clusters  List registered Cassandra clusters in a Reaper
+    register       Register a Cassandra cluster for repairs
+    repair         Trigger a repair on a Cassandra cluster
+    status-cluster Show status of a Cassandra cluster
+    status-repair  Show status of a repair run
 """)
         parser.add_argument('command', help='The subcommand to run')
         _global_arguments(parser)
         # parse_args defaults to [1:] for args, but you need to
         # exclude the rest of the args too, or validation will fail
         args = parser.parse_args(sys.argv[1:2])
-        if not hasattr(self, args.command):
+        command = args.command.replace('-', '_')
+        if not hasattr(self, command):
             print 'Unrecognized command: {0}'.format(args.command)
             parser.print_help()
             exit(1)
-        # use dispatch pattern to invoke method with same name
-        getattr(self, args.command)()
+        # use dispatch pattern to invoke method with same)
+        getattr(self, command)()
 
     def init_reaper(self, args):
         return ReaperCaller(args.reaper_host, args.reaper_port, args.reaper_use_ssl)
 
-    def list(self):
+    def list_clusters(self):
         args = _parse_arguments('List all registered Cassandra clusters',
-                                'spreaper list [<args>]')
+                                'spreaper list-clusters [<args>]')
         reaper = self.init_reaper(args)
-        print "listing all available clusters in the Reaper"
+        print "# listing all available clusters in the Reaper"
         cluster_names = reaper.call_list_clusters()
         if cluster_names:
-            print "found {0} clusters:".format(len(cluster_names))
+            print "# found {0} clusters:".format(len(cluster_names))
             for cluster_name in cluster_names:
                 print cluster_name
         else:
@@ -120,9 +122,9 @@ The available commands are:
                                 'spreaper register [<args>]',
                                 arguments_for_register)
         reaper = self.init_reaper(args)
-        print "registering Cassandra cluster with seed host: {0}".format(args.seed_host)
+        print "# registering Cassandra cluster with seed host: {0}".format(args.seed_host)
         reaper.call_register(args.owner, args.seed_host)
-        print "registration succeeded"
+        print "# registration succeeded"
 
     def repair(self):
         def arguments_for_repair(parser):
@@ -137,30 +139,40 @@ The available commands are:
                                 arguments_for_repair)
         reaper = self.init_reaper(args)
         if args.cluster_name:
-            print "triggering a repair on Cassandra cluster "\
+            print "# triggering a repair on Cassandra cluster "\
                   "with name: {0}".format(args.cluster_name)
             reply = reaper.call_register(args.owner, cluster_name=args.cluster_name,
                                          keyspace=args.keyspace, table=args.table,
                                          cause=args.cause, repair_immediately=True)
         else:
-            print "triggering a repair on Cassandra cluster "\
+            print "# triggering a repair on Cassandra cluster "\
                   "with seed host: {0}".format(args.seed_host)
             reply = reaper.call_register(args.owner, seed_host=args.seed_host,
                                          keyspace=args.keyspace, table=args.table,
                                          cause=args.cause, repair_immediately=True)
-        print "repair triggering succeeded. reply:"
+        print "# repair triggering succeeded. reply:"
         print reply
 
-    def status(self):
-        def arguments_for_status(parser):
-            parser.add_argument("repair_run_id",
-                                help="the repair run id, which you get from the reply of calling "
-                                     "the repair command")
-        args = _parse_arguments('Show status of a repair run',
-                                'spreaper status repair_run_id [<args>]')
+    def status_cluster(self):
+        def arguments_for_status_cluster(parser):
+            parser.add_argument("cluster_name", help="the cluster name")
+        args = _parse_arguments('Show status of a cluster, including the repairs for the cluster',
+                                'spreaper status-cluster repair_run_id [<args>]',
+                                arguments_for_status_cluster)
         reaper = self.init_reaper(args)
-        print "repair run with id {0}".format(args.repair_run_id)
-        repair_run = reaper.call_status(args.repair_run_id)
+        print "# cluster '{0}':".format(args.cluster_name)
+        cluster_data = reaper.call_status_cluster(args.cluster_name)
+        print json.dumps(cluster_data, indent=2)
+
+    def status_repair(self):
+        def arguments_for_status_repair(parser):
+            parser.add_argument("repair_run_id", help="the repair run id")
+        args = _parse_arguments('Show status of a repair run',
+                                'spreaper status-repair repair_run_id [<args>]',
+                                arguments_for_status_repair)
+        reaper = self.init_reaper(args)
+        print "# repair run with id {0}".format(args.repair_run_id)
+        repair_run = reaper.call_status_repair(args.repair_run_id)
         print json.dumps(repair_run, indent=2)
 
 
@@ -222,8 +234,13 @@ class ReaperCaller(object):
         reply = self._http_req("POST", the_url, params=params)
         return json.loads(reply)
 
-    def call_status(self, repair_run_id):
-        the_url = urlparse.urljoin(self.base_url, "repair_run", repair_run_id)
+    def call_status_cluster(self, cluster_name):
+        the_url = urlparse.urljoin(self.base_url, "cluster/{0}".format(cluster_name))
+        reply = self._http_req("GET", the_url)
+        return json.loads(reply)
+
+    def call_status_repair(self, repair_run_id):
+        the_url = urlparse.urljoin(self.base_url, "repair_run/{0}".format(repair_run_id))
         reply = self._http_req("GET", the_url)
         return json.loads(reply)
 
