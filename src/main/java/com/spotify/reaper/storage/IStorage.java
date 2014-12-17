@@ -50,7 +50,7 @@ public interface IStorage {
 
   ColumnFamily getColumnFamily(String cluster, String keyspace, String table);
 
-  int addRepairSegments(Collection<RepairSegment.Builder> newSegments);
+  void addRepairSegments(Collection<RepairSegment.Builder> newSegments);
 
   boolean updateRepairSegment(RepairSegment newRepairSegment);
 
