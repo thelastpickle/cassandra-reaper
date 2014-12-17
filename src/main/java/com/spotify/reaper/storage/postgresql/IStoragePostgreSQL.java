@@ -163,7 +163,7 @@ public interface IStoragePostgreSQL {
 
   @SqlBatch(SQL_INSERT_REPAIR_SEGMENT)
   @BatchChunkSize(500)
-  public int insertRepairSegments(@BindBean Iterator<RepairSegment> newRepairSegments);
+  public void insertRepairSegments(@BindBean Iterator<RepairSegment> newRepairSegments);
 
   @SqlUpdate(SQL_UPDATE_REPAIR_SEGMENT)
   public int updateRepairSegment(@BindBean RepairSegment newRepairSegment);
