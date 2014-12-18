@@ -23,8 +23,10 @@ import com.spotify.reaper.service.RingRange;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -214,6 +216,31 @@ public class MemoryStorage implements IStorage {
       }
     }
     return null;
+  }
+
+  @Override
+  public Collection<Long> getRepairRunIdsForCluster(String clusterName) {
+    Collection<Long> repairRunIds = new HashSet<>();
+    for (RepairRun repairRun : repairRuns.values()) {
+      if (repairRun.getClusterName().equalsIgnoreCase(clusterName)) {
+        repairRunIds.add(repairRun.getId());
+      }
+    }
+    return repairRunIds;
+  }
+
+  @Override
+  public int getSegmentAmountForRepairRun(long runId, RepairSegment.State state) {
+    Map<Long, RepairSegment> segmentsMap = repairSegmentsByRunId.get(runId);
+    int amount = 0;
+    if (null != segmentsMap) {
+      for (RepairSegment segment : segmentsMap.values()) {
+        if (segment.getState() == state) {
+          amount += 1;
+        }
+      }
+    }
+    return amount;
   }
 
 }

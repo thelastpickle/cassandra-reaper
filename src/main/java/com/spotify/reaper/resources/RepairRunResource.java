@@ -13,7 +13,10 @@
  */
 package com.spotify.reaper.resources;
 
+import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.storage.IStorage;
 
 import org.slf4j.Logger;
@@ -21,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -47,7 +49,11 @@ public class RepairRunResource {
   public Response getRepairRun(@PathParam("id") Long repairRunId) {
     LOG.info("get repair_run called with: id = {}", repairRunId);
     RepairRun repairRun = storage.getRepairRun(repairRunId);
-    return Response.ok().entity(repairRun).build();
+    if (null == repairRun) {
+      return Response.status(404)
+          .entity("repair run \"" + repairRunId + "\" does not exist").build();
+    }
+    return Response.ok().entity(getRepairRunStatus(repairRun)).build();
   }
 
   @GET
@@ -55,11 +61,22 @@ public class RepairRunResource {
   public Response getRepairRunsForCluster(@PathParam("cluster_name") String clusterName) {
     LOG.info("get repair run for cluster called with: cluster_name = {}", clusterName);
     Collection<RepairRun> repairRuns = storage.getRepairRunsForCluster(clusterName);
-    List<Long> repairRunIds = new ArrayList<>();
+    Collection<RepairRunStatus> repairRunViews = new ArrayList<>();
     for (RepairRun repairRun : repairRuns) {
-      repairRunIds.add(repairRun.getId());
+      repairRunViews.add(getRepairRunStatus(repairRun));
     }
-    return Response.ok().entity(repairRunIds).build();
+    return Response.ok().entity(repairRunViews).build();
+  }
+
+  private RepairRunStatus getRepairRunStatus(RepairRun repairRun) {
+    ColumnFamily columnFamily = storage.getColumnFamily(repairRun.getColumnFamilyId());
+    RepairRunStatus repairRunStatus = new RepairRunStatus(repairRun, columnFamily);
+    if (repairRun.getRunState() != RepairRun.RunState.NOT_STARTED) {
+      int segmentsRepaired =
+          storage.getSegmentAmountForRepairRun(repairRun.getId(), RepairSegment.State.DONE);
+      repairRunStatus.setSegmentsRepaired(segmentsRepaired);
+    }
+    return repairRunStatus;
   }
 
   // We probably don't want to create repair runs with this resource,

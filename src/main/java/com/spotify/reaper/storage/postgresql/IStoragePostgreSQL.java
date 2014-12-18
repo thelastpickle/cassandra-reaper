@@ -182,4 +182,19 @@ public interface IStoragePostgreSQL {
                                                        @Bind("startToken") BigInteger startToken,
                                                        @Bind("endToken") BigInteger endToken);
 
+  // Utility methods
+  //
+  static final String SQL_GET_REPAIR_RUN_IDS_FOR_CLUSTER =
+      "SELECT id FROM repair_run WHERE cluster_name = :clusterName";
+
+  static final String SQL_SEGMENTS_AMOUNT_FOR_REPAIR_RUN =
+      "SELECT count(*) FROM repair_segment WHERE run_id = :runId AND state = :state";
+
+  @SqlQuery(SQL_GET_REPAIR_RUN_IDS_FOR_CLUSTER)
+  Collection<Long> getRepairRunIdsForCluster(@Bind("clusterName") String clusterName);
+
+  @SqlQuery(SQL_SEGMENTS_AMOUNT_FOR_REPAIR_RUN)
+  int getSegmentAmountForRepairRun(@Bind("runId") long runId,
+                                   @Bind("state") RepairSegment.State state);
+
 }

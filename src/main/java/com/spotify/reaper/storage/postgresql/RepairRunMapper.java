@@ -31,9 +31,7 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
                                  r.getLong("column_family_id"),
                                  runState,
                                  getDateTimeOrNull(r, "creation_time"),
-                                 r.getFloat("intensity"),
-                                 r.getInt("total_segments"),
-                                 r.getInt("completed_segments"))
+                                 r.getFloat("intensity"))
         .owner(r.getString("owner"))
         .cause(r.getString("cause"))
         .startTime(getDateTimeOrNull(r, "start_time"))

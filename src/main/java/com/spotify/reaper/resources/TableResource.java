@@ -23,6 +23,7 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.resources.view.ColumnFamilyStatus;
 import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
@@ -159,7 +160,7 @@ public class TableResource {
     // Start repairing the table if the startRepair query parameter is given at all,
     // i.e. possible value not checked, and not required.
     if (!startRepair.isPresent()) {
-      return Response.created(createdURI).entity(existingTable).build();
+      return Response.created(createdURI).entity(new ColumnFamilyStatus(existingTable)).build();
     }
 
     // create segments
@@ -198,8 +199,7 @@ public class TableResource {
                                                    existingTable.getId(),
                                                    RepairRun.RunState.NOT_STARTED,
                                                    DateTime.now(),
-                                                   config.getRepairIntensity(),
-                             segments.size(), 0)
+                                                   config.getRepairIntensity())
             .cause(cause.isPresent() ? cause.get() : "no cause specified")
             .owner(owner.get()));
     if (newRepairRun == null) {
@@ -233,7 +233,8 @@ public class TableResource {
       return Response.status(400).entity(errMsg).build();
     }
 
-    return Response.created(createdRepairRunURI).entity(existingTable).build();
+    return Response.created(createdRepairRunURI)
+        .entity(new ColumnFamilyStatus(existingTable)).build();
   }
 
 }
