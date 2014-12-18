@@ -13,19 +13,12 @@
  */
 package com.spotify.reaper.core;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Set;
 
 public class Cluster {
 
-  @JsonProperty
   private final String name;
-
-  @JsonProperty
   private final String partitioner; // Full name of the partitioner class
-
-  @JsonProperty
   private final Set<String> seedHosts;
 
   public String getName() {

@@ -13,11 +13,7 @@
  */
 package com.spotify.reaper.core;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 
 public class RepairRun {
 
@@ -36,8 +32,6 @@ public class RepairRun {
   private final DateTime startTime;
   private final DateTime endTime;
   private final double intensity;
-  private final int totalSegments;
-  private final int completedSegments;
 
   public long getId() {
     return id;
@@ -63,65 +57,26 @@ public class RepairRun {
     return runState;
   }
 
-  @JsonIgnore
   public DateTime getCreationTime() {
     return creationTime;
   }
 
-  @JsonProperty("creationTime")
-  public String getCreationTimeISO8601() {
-    if (creationTime == null) {
-      return null;
-    }
-    return creationTime.toDateTime(DateTimeZone.UTC).toString(
-        "YYYY-MM-dd'T'HH:mm:ss'Z'");
-  }
-
-  @JsonIgnore
   public DateTime getStartTime() {
     return startTime;
   }
 
-  @JsonProperty("startTime")
-  public String getStartTimeISO8601() {
-    if (startTime == null) {
-      return null;
-    }
-    return startTime.toDateTime(DateTimeZone.UTC).toString(
-        "YYYY-MM-dd'T'HH:mm:ss'Z'");
-  }
-
-  @JsonIgnore
   public DateTime getEndTime() {
     return endTime;
-  }
-
-  @JsonProperty("endTime")
-  public String getEndTimeISO8601() {
-    if (endTime == null) {
-      return null;
-    }
-    return endTime.toDateTime(DateTimeZone.UTC).toString(
-        "YYYY-MM-dd'T'HH:mm:ss'Z'");
   }
 
   public double getIntensity() {
     return intensity;
   }
 
-  public int getTotalSegments() {
-    return totalSegments;
-  }
-
-  public int getCompletedSegments() {
-    return completedSegments;
-  }
-
   public static RepairRun getCopy(RepairRun repairRun, RunState newState,
-                                  DateTime startTime, DateTime endTime, int completedSegments) {
+                                  DateTime startTime, DateTime endTime) {
     return new RepairRun.Builder(repairRun.getClusterName(), repairRun.getColumnFamilyId(),
-                                 newState, repairRun.getCreationTime(), repairRun.getIntensity(),
-                                 repairRun.getTotalSegments(), completedSegments)
+                                 newState, repairRun.getCreationTime(), repairRun.getIntensity())
         .cause(repairRun.getCause())
         .owner(repairRun.getOwner())
         .startTime(startTime)
@@ -148,8 +103,6 @@ public class RepairRun {
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
     this.intensity = builder.intensity;
-    this.totalSegments = builder.totalSegments;
-    this.completedSegments = builder.completedSegments;
   }
 
   public static class Builder {
@@ -159,23 +112,18 @@ public class RepairRun {
     public final RunState runState;
     public final DateTime creationTime;
     public final double intensity;
-    public final int totalSegments;
-    public final int completedSegments;
     private String cause;
     private String owner;
     private DateTime startTime;
     private DateTime endTime;
 
     public Builder(String clusterName, long columnFamilyId, RunState runState,
-                   DateTime creationTime, double intensity, int totalSegments,
-                   int completedSegments) {
+                   DateTime creationTime, double intensity) {
       this.clusterName = clusterName;
       this.columnFamilyId = columnFamilyId;
       this.runState = runState;
       this.creationTime = creationTime;
       this.intensity = intensity;
-      this.totalSegments = totalSegments;
-      this.completedSegments = completedSegments;
     }
 
     public Builder cause(String cause) {

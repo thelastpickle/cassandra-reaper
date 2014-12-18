@@ -18,12 +18,12 @@ import com.google.common.base.Optional;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.resources.view.ClusterStatus;
 import com.spotify.reaper.storage.IStorage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
@@ -66,11 +66,13 @@ public class ClusterResource {
   }
 
   @GET
-  @Path("/{name}")
-  public Response getCluster(@PathParam("name") String name) {
-    LOG.info("get cluster called with name: {}", name);
-    Cluster cluster = storage.getCluster(name);
-    return Response.ok().entity(cluster).build();
+  @Path("/{cluster_name}")
+  public Response getCluster(@PathParam("cluster_name") String clusterName) {
+    LOG.info("get cluster called with cluster_name: {}", clusterName);
+    Cluster cluster = storage.getCluster(clusterName);
+    ClusterStatus view = new ClusterStatus(cluster);
+    view.setRepairRunIds(storage.getRepairRunIdsForCluster(cluster.getName()));
+    return Response.ok().entity(view).build();
   }
 
   @POST
@@ -93,8 +95,7 @@ public class ClusterResource {
     if (existingCluster == null) {
       LOG.info("creating new cluster based on given seed host: {}", newCluster);
       storage.addCluster(newCluster);
-    }
-    else {
+    } else {
       LOG.info("cluster already stored with this name: {}", existingCluster);
       return Response.status(403)
           .entity(String.format("cluster \"%s\" already exists", existingCluster.getName()))
@@ -111,7 +112,7 @@ public class ClusterResource {
       return Response.status(400).entity(errMsg).build();
     }
 
-    return Response.created(createdURI).entity(newCluster).build();
+    return Response.created(createdURI).entity(new ClusterStatus(newCluster)).build();
   }
 
   public static Cluster createClusterWithSeedHost(String seedHost)
@@ -129,8 +130,7 @@ public class ClusterResource {
       throw e;
     }
     Cluster newCluster =
-        new Cluster.Builder(clusterName, partitioner, Collections.singleton(seedHost))
-            .build();
+        new Cluster.Builder(clusterName, partitioner, Collections.singleton(seedHost)).build();
     return newCluster;
   }
 

@@ -223,6 +223,24 @@ public class PostgresStorage implements IStorage {
     return result;
   }
 
+  @Override
+  public Collection<Long> getRepairRunIdsForCluster(String clusterName) {
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
+    Collection<Long> result = postgres.getRepairRunIdsForCluster(clusterName);
+    h.close();
+    return result;
+  }
+
+  @Override
+  public int getSegmentAmountForRepairRun(long runId, RepairSegment.State state) {
+    Handle h = jdbi.open();
+    IStoragePostgreSQL postgres = getPostgresStorage(h);
+    int result = postgres.getSegmentAmountForRepairRun(runId, state);
+    h.close();
+    return result;
+  }
+
   /**
    * Generic database getter to decrease amount of code duplication.
    */

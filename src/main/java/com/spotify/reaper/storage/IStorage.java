@@ -59,4 +59,8 @@ public interface IStorage {
   RepairSegment getNextFreeSegment(long runId);
 
   RepairSegment getNextFreeSegmentInRange(long runId, RingRange range);
+
+  Collection<Long> getRepairRunIdsForCluster(String clusterName);
+
+  int getSegmentAmountForRepairRun(long runId, RepairSegment.State state);
 }

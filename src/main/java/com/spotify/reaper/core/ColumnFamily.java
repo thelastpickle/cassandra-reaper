@@ -19,7 +19,7 @@ public class ColumnFamily {
   private final String clusterName;
   private final String keyspaceName;
   private final String name;
-  private final int segmentCount; // int/long/BigInteger?
+  private final int segmentCount;
   private final boolean snapshotRepair;
 
   public long getId() {
