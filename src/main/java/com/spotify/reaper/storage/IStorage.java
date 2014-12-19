@@ -21,6 +21,8 @@ import com.spotify.reaper.service.RingRange;
 
 import java.util.Collection;
 
+import javax.annotation.Nullable;
+
 /**
  * API definition for cassandra-reaper.
  */
@@ -44,6 +46,8 @@ public interface IStorage {
 
   Collection<RepairRun> getRepairRunsForCluster(String clusterName);
 
+  Collection<RepairRun> getAllRunningRepairRuns();
+
   ColumnFamily addColumnFamily(ColumnFamily.Builder newTable);
 
   ColumnFamily getColumnFamily(long id);
@@ -59,6 +63,16 @@ public interface IStorage {
   RepairSegment getNextFreeSegment(long runId);
 
   RepairSegment getNextFreeSegmentInRange(long runId, RingRange range);
+
+  /**
+   * If RepairRun is running, there should always be only one running segment at a time.
+   * TODO: what if we have parallel repair run on one ring?
+   *
+   * @param runId The RepairRun id that should be running to have one running segment.
+   * @return The running segment, or null in case there is none.
+   */
+  @Nullable
+  RepairSegment getTheRunningSegment(long runId);
 
   Collection<Long> getRepairRunIdsForCluster(String clusterName);
 

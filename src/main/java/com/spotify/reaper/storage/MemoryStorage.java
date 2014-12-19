@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nullable;
+
 /**
  * Implements the StorageAPI using transient Java classes.
  */
@@ -143,6 +145,17 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
+  public Collection<RepairRun> getAllRunningRepairRuns() {
+    List<RepairRun> foundRepairRuns = new ArrayList<>();
+    for (RepairRun repairRun : repairRuns.values()) {
+      if (repairRun.getRunState() == RepairRun.RunState.RUNNING) {
+        foundRepairRuns.add(repairRun);
+      }
+    }
+    return foundRepairRuns;
+  }
+
+  @Override
   public ColumnFamily addColumnFamily(ColumnFamily.Builder columnFamily) {
     ColumnFamily existing =
         getColumnFamily(columnFamily.clusterName, columnFamily.keyspaceName, columnFamily.name);
@@ -216,6 +229,19 @@ public class MemoryStorage implements IStorage {
       }
     }
     return null;
+  }
+
+  @Nullable
+  @Override
+  public RepairSegment getTheRunningSegment(long runId) {
+    RepairSegment theSegment = null;
+    for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
+      if (segment.getState() == RepairSegment.State.RUNNING) {
+        assert null == theSegment : "there are more than one RUNNING segment on run: " + runId;
+        theSegment = segment;
+      }
+    }
+    return theSegment;
   }
 
   @Override
