@@ -70,16 +70,6 @@ public class RepairSegment {
     return endTime;
   }
 
-  public static RepairSegment getCopy(RepairSegment origSegment, State newState,
-                                      int newRepairCommandId,
-                                      DateTime newStartTime, DateTime newEndTime) {
-    return new Builder(origSegment.getRunId(), origSegment.getTokenRange(), newState)
-        .columnFamilyId(origSegment.getColumnFamilyId())
-        .repairCommandId(newRepairCommandId)
-        .startTime(newStartTime)
-        .endTime(newEndTime).build(origSegment.getId());
-  }
-
   public enum State {
     NOT_STARTED,
     RUNNING,
@@ -98,11 +88,15 @@ public class RepairSegment {
     this.endTime = builder.endTime;
   }
 
+  public Builder with() {
+    return new Builder(this);
+  }
+
   public static class Builder {
 
     public final long runId;
     public final RingRange tokenRange;
-    public final State state;
+    private State state;
     private long columnFamilyId;
     private int repairCommandId;
     private DateTime startTime;
@@ -112,6 +106,21 @@ public class RepairSegment {
       this.runId = runId;
       this.tokenRange = tokenRange;
       this.state = state;
+    }
+
+    private Builder(RepairSegment original) {
+      runId = original.runId;
+      tokenRange = original.tokenRange;
+      state = original.state;
+      columnFamilyId = original.columnFamilyId;
+      repairCommandId = original.repairCommandId;
+      startTime = original.startTime;
+      endTime = original.endTime;
+    }
+
+    public Builder state(State state) {
+      this.state = state;
+      return this;
     }
 
     public Builder columnFamilyId(long columnFamilyId) {

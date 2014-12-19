@@ -130,7 +130,7 @@ public class ClusterResource {
       throw e;
     }
     Cluster newCluster =
-        new Cluster.Builder(clusterName, partitioner, Collections.singleton(seedHost)).build();
+        new Cluster(clusterName, partitioner, Collections.singleton(seedHost));
     return newCluster;
   }
 
