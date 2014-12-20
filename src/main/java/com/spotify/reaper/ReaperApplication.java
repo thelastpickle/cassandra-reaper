@@ -19,6 +19,7 @@ import com.spotify.reaper.resources.ReaperHealthCheck;
 import com.spotify.reaper.resources.RepairRunResource;
 import com.spotify.reaper.resources.TableResource;
 import com.spotify.reaper.service.RepairRunner;
+import com.spotify.reaper.service.SimpleRepairRunner;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
@@ -61,6 +62,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
     LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
     RepairRunner.initializeThreadPool(config.getRepairRunThreadCount());
+    SimpleRepairRunner.initializeThreadPool(config.getRepairRunThreadCount());
 
     LOG.info("initializing storage of type: {}", config.getStorageType());
     IStorage storage = initializeStorage(config, environment);
@@ -70,6 +72,9 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     final ReaperHealthCheck healthCheck = new ReaperHealthCheck(storage);
     environment.healthChecks().register("reaper", healthCheck);
     environment.jersey().register(healthCheck);
+
+    LOG.info("resuming pending repair runs");
+    SimpleRepairRunner.resumeRunningRepairRuns(storage);
 
     LOG.info("creating resources and registering endpoints");
     final PingResource pingResource = new PingResource();
