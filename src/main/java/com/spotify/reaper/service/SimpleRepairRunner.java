@@ -25,7 +25,6 @@ import com.spotify.reaper.storage.IStorage;
 
 import org.apache.cassandra.service.ActiveRepairService;
 import org.joda.time.DateTime;
-import org.joda.time.Seconds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -188,6 +187,13 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
     List<String> potentialCoordinators =
         jmxProxy.tokenRangeToEndpoint(keyspace,
                                       storage.getNextFreeSegment(repairRunId).getTokenRange());
+    if (potentialCoordinators == null) {
+      // This segment has a faulty token range. Abort the entire repair run.
+      RepairRun repairRun = storage.getRepairRun(repairRunId);
+      storage.updateRepairRun(
+          repairRun.with().runState(RepairRun.RunState.ERROR).build(repairRun.getId()));
+      return;
+    }
 
     try {
       jmxProxy.close();
@@ -201,12 +207,13 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
     }
 
     currentSegmentId = next.getId();
-    storage.updateRepairSegment(
-        next.with().state(RepairSegment.State.RUNNING).build(currentSegmentId));
     repairTimeout = executor.schedule(this, REPAIR_TIMEOUT_HOURS, TimeUnit.HOURS);
     // TODO: ensure that no repair is already running (abort all repairs)
     currentCommandId = jmxProxy
         .triggerRepair(next.getStartToken(), next.getEndToken(), keyspace, columnFamily.getName());
+    storage.updateRepairSegment(
+        next.with().state(RepairSegment.State.RUNNING).repairCommandId(currentCommandId)
+            .build(currentSegmentId));
   }
 
   @Override
