@@ -55,13 +55,17 @@ public class ColumnFamily {
     this.snapshotRepair = builder.snapshotRepair;
   }
 
+  public Builder with() {
+    return new Builder(this);
+  }
+
   public static class Builder {
 
     public final String clusterName;
     public final String keyspaceName;
     public final String name;
-    public final int segmentCount;
-    public final boolean snapshotRepair;
+    private int segmentCount;
+    private boolean snapshotRepair;
 
     public Builder(String clusterName, String keyspaceName, String name, int segmentCount,
                    boolean snapshotRepair) {
@@ -70,6 +74,24 @@ public class ColumnFamily {
       this.name = name;
       this.segmentCount = segmentCount;
       this.snapshotRepair = snapshotRepair;
+    }
+
+    public Builder(ColumnFamily original) {
+      clusterName = original.clusterName;
+      keyspaceName = original.keyspaceName;
+      name = original.name;
+      segmentCount = original.segmentCount;
+      snapshotRepair = original.snapshotRepair;
+    }
+
+    public Builder segmentCount(int segmentCount) {
+      this.segmentCount = segmentCount;
+      return this;
+    }
+
+    public Builder snapshotRepair(boolean snapshotRepair) {
+      this.snapshotRepair = snapshotRepair;
+      return this;
     }
 
     public ColumnFamily build(long id) {

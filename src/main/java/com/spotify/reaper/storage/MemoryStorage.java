@@ -63,14 +63,11 @@ public class MemoryStorage implements IStorage {
 
     @Override
     public boolean equals(Object other) {
-      if (other instanceof TableName) {
-        return
-            cluster.equals(((TableName) other).cluster) &&
-            keyspace.equals(((TableName) other).keyspace) &&
-            table.equals(((TableName) other).table);
-      } else {
-        return false;
-      }
+      return
+          other instanceof TableName &&
+          cluster.equals(((TableName) other).cluster) &&
+          keyspace.equals(((TableName) other).keyspace) &&
+          table.equals(((TableName) other).table);
     }
 
     @Override

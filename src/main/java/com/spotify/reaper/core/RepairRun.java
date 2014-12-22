@@ -73,17 +73,6 @@ public class RepairRun {
     return intensity;
   }
 
-  public static RepairRun getCopy(RepairRun repairRun, RunState newState,
-                                  DateTime startTime, DateTime endTime) {
-    return new RepairRun.Builder(repairRun.getClusterName(), repairRun.getColumnFamilyId(),
-                                 newState, repairRun.getCreationTime(), repairRun.getIntensity())
-        .cause(repairRun.getCause())
-        .owner(repairRun.getOwner())
-        .startTime(startTime)
-        .endTime(endTime)
-        .build(repairRun.getId());
-  }
-
   public enum RunState {
     NOT_STARTED,
     RUNNING,
@@ -105,13 +94,17 @@ public class RepairRun {
     this.intensity = builder.intensity;
   }
 
+  public Builder with() {
+    return new Builder(this);
+  }
+
   public static class Builder {
 
     public final String clusterName;
     public final long columnFamilyId;
-    public final RunState runState;
-    public final DateTime creationTime;
-    public final double intensity;
+    private RunState runState;
+    private DateTime creationTime;
+    private double intensity;
     private String cause;
     private String owner;
     private DateTime startTime;
@@ -124,6 +117,33 @@ public class RepairRun {
       this.runState = runState;
       this.creationTime = creationTime;
       this.intensity = intensity;
+    }
+
+    private Builder(RepairRun original) {
+      clusterName = original.clusterName;
+      columnFamilyId = original.columnFamilyId;
+      runState = original.runState;
+      creationTime = original.creationTime;
+      intensity = original.intensity;
+      cause = original.cause;
+      owner = original.owner;
+      startTime = original.startTime;
+      endTime = original.endTime;
+    }
+
+    public Builder runState(RunState runState) {
+      this.runState = runState;
+      return this;
+    }
+
+    public Builder creationTime(DateTime creationTime) {
+      this.creationTime = creationTime;
+      return this;
+    }
+
+    public Builder intensity(double intensity) {
+      this.intensity = intensity;
+      return this;
     }
 
     public Builder cause(String cause) {

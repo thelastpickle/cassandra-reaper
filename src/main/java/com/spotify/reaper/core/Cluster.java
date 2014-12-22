@@ -33,31 +33,9 @@ public class Cluster {
     return seedHosts;
   }
 
-  private Cluster(Builder builder) {
-    this.name = builder.name;
-    this.partitioner = builder.partitioner;
-    this.seedHosts = builder.seedHosts;
-  }
-
-  public static class Builder {
-
-    public final String name;
-    public final String partitioner;
-    private final Set<String> seedHosts;
-
-    public Builder(String name, String partitioner, Set<String> seedHosts) {
-      this.name = name;
-      this.partitioner = partitioner;
-      this.seedHosts = seedHosts;
-    }
-
-    public Builder addSeedHost(String seedHost) {
-      seedHosts.add(seedHost);
-      return this;
-    }
-
-    public Cluster build() {
-      return new Cluster(this);
-    }
+  public Cluster(String name, String partitioner, Set<String> seedHosts) {
+    this.name = name;
+    this.partitioner = partitioner;
+    this.seedHosts = seedHosts;
   }
 }
