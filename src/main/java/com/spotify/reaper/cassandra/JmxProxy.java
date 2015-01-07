@@ -52,7 +52,7 @@ public class JmxProxy implements NotificationListener, Serializable {
 
   private static final Logger LOG = LoggerFactory.getLogger(JmxProxy.class);
 
-  private static final int JMX_PORT = 7100;
+  private static final int JMX_PORT = 7199;
   private static final String JMX_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
   private static final String JMX_OBJECT_NAME = "org.apache.cassandra.db:type=StorageService";
 

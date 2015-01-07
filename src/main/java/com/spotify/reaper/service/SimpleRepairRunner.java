@@ -315,7 +315,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
     long repairDuration =
         repairSegment.getEndTime().getMillis() - repairSegment.getStartTime().getMillis();
     long delay = (long) (repairDuration / repairRun.getIntensity() - repairDuration);
-    LOG.debug("Scheduling next runner run() with delay {}", delay);
+    LOG.debug("Scheduling next runner run() with delay {} ms", delay);
     return delay;
   }
 }
