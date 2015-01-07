@@ -68,6 +68,12 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
     }
   }
 
+  public static void startNewRepairRun(IStorage storage, long repairRunID) {
+    assert null != executor : "you need to initialize the thread pool first";
+    LOG.info("scheduling repair for repair run #" + repairRunID);
+    executor.schedule(new SimpleRepairRunner(storage, repairRunID), 0, TimeUnit.SECONDS);
+  }
+
 
   private final IStorage storage;
   private final long repairRunId;
