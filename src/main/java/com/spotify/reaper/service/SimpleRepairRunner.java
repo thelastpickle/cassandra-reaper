@@ -70,7 +70,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
 
   public static void startNewRepairRun(IStorage storage, long repairRunID) {
     assert null != executor : "you need to initialize the thread pool first";
-    LOG.info("scheduling repair for repair run #" + repairRunID);
+    LOG.info("scheduling repair for repair run #{}", repairRunID);
     executor.schedule(new SimpleRepairRunner(storage, repairRunID), 0, TimeUnit.SECONDS);
   }
 
@@ -83,6 +83,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
   private ScheduledFuture<?> repairTimeout = null;
   private int currentCommandId = -1;
   private long currentSegmentId = -1;
+  private JmxProxy jmxConnection = null;
 
   private SimpleRepairRunner(IStorage storage, long repairRunId) {
     this.storage = storage;
@@ -90,16 +91,15 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
   }
 
 
-  @Override
-  public void run() {
-    resume();
-  }
 
   /**
    * Starts/resumes a repair run that is supposed to run.
    */
-  private void resume() {
-    switch (storage.getRepairRun(repairRunId).getRunState()) {
+  @Override
+  public void run() {
+    RepairRun.RunState state = storage.getRepairRun(repairRunId).getRunState();
+    LOG.debug("run() called with repairRunId #{} and run state {}", repairRunId, state);
+    switch (state) {
       case NOT_STARTED:
         start();
         break;
@@ -110,6 +110,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
         // Do nothing
         break;
       case DONE:
+        LOG.info("Repairs for repair run #{} done", repairRunId);
         // Do nothing
         break;
     }
@@ -122,7 +123,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
     RepairRun repairRun = storage.getRepairRun(repairRunId);
     storage.updateRepairRun(
         repairRun.with().runState(RepairRun.RunState.RUNNING).build(repairRun.getId()));
-    resume();
+    startNextSegment();
   }
 
   /**
@@ -142,6 +143,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
         RepairRun repairRun = storage.getRepairRun(repairRunId);
         storage.updateRepairRun(
             repairRun.with().runState(RepairRun.RunState.DONE).build(repairRun.getId()));
+        run();
       }
     }
   }
@@ -158,10 +160,11 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
       closeRepairCommand();
       storage.updateRepairSegment(
           running.with().state(RepairSegment.State.NOT_STARTED).build(running.getId()));
-      resume();
+      run();
     } else {
       // The repair might not have finished, so let it timeout before resetting its status.
       // This may happen if the RepairRunner was created for an incomplete repair run.
+      LOG.warn("Scheduling next segment to restart after {} hours", REPAIR_TIMEOUT_HOURS);
       repairTimeout = executor.schedule(this, REPAIR_TIMEOUT_HOURS, TimeUnit.HOURS);
     }
   }
@@ -170,7 +173,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
    * Start the repair of a segment.
    * @param next the segment to repair.
    */
-  private void doRepairSegment(RepairSegment next) {
+  private synchronized void doRepairSegment(RepairSegment next) {
     // TODO: directly store the right host to contact per segment (or per run, if we guarantee that
     // TODO: one host can coordinate all repair segments).
     Set<String> seeds =
@@ -201,9 +204,10 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
       return;
     }
 
+    // Connect to a node that can act as coordinator for the new repair.
     try {
       jmxProxy.close();
-      jmxProxy =
+      jmxConnection =
           JmxProxy
               .connect(Optional.<RepairStatusHandler>of(this), potentialCoordinators.get(0));
     } catch (ReaperException e) {
@@ -215,16 +219,19 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
     currentSegmentId = next.getId();
     repairTimeout = executor.schedule(this, REPAIR_TIMEOUT_HOURS, TimeUnit.HOURS);
     // TODO: ensure that no repair is already running (abort all repairs)
-    currentCommandId = jmxProxy
+    currentCommandId = jmxConnection
         .triggerRepair(next.getStartToken(), next.getEndToken(), keyspace, columnFamily.getName());
+    LOG.debug("Triggered repair with command id {}", currentCommandId);
     storage.updateRepairSegment(
         next.with().state(RepairSegment.State.RUNNING).repairCommandId(currentCommandId)
             .build(currentSegmentId));
   }
 
   @Override
-  public void handle(int repairNumber, ActiveRepairService.Status status, String message) {
+  public synchronized void handle(int repairNumber, ActiveRepairService.Status status, String message) {
+    LOG.debug("handle called with repairRunId {}, repairNumber {} and status {}", repairRunId, repairNumber, status);
     if (repairNumber != currentCommandId) {
+      LOG.warn("Repair run id != current command id. {} != {}", repairNumber, currentCommandId);
       // bj0rn: Should this ever be allowed to happen? Perhaps shut down Reaper, because repairs
       // are happening outside of Reaper?
       //throw new ReaperException("Other repairs outside of reaper's control are happening");
@@ -237,30 +244,35 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
       // See status explanations from: https://wiki.apache.org/cassandra/RepairAsyncAPI
       switch (status) {
         case STARTED:
-          storage.updateRepairSegment(
-              currentSegment.with().startTime(DateTime.now())
-                  .build(currentSegmentId));
+          DateTime now = DateTime.now();
+          storage.updateRepairSegment(currentSegment.with().startTime(now).build(currentSegmentId));
           // We already set the state of the segment to RUNNING.
           break;
         case SESSION_SUCCESS:
           // This gets called once for each column family if multiple cf's were specified in a
           // single repair command.
           break;
-        case SESSION_FAILED:
+        case SESSION_FAILED: {
           // How should we handle this? Here, it's almost treated like a success.
-          storage.updateRepairSegment(
+          RepairSegment
+              updatedSegment =
               currentSegment.with().state(RepairSegment.State.ERROR).endTime(DateTime.now())
-                  .build(currentSegmentId));
+                  .build(currentSegmentId);
+          storage.updateRepairSegment(updatedSegment);
           closeRepairCommand();
-          executor.schedule(this, intensityBasedDelayMillis(currentSegment), TimeUnit.MILLISECONDS);
-          break;
-        case FINISHED:
-          storage.updateRepairSegment(
+          executor.schedule(this, intensityBasedDelayMillis(updatedSegment), TimeUnit.MILLISECONDS);
+        }
+        break;
+        case FINISHED: {
+          RepairSegment
+              updatedSegment =
               currentSegment.with().state(RepairSegment.State.DONE).endTime(DateTime.now())
-                  .build(currentSegmentId));
+                  .build(currentSegmentId);
+          storage.updateRepairSegment(updatedSegment);
           closeRepairCommand();
-          executor.schedule(this, intensityBasedDelayMillis(currentSegment), TimeUnit.MILLISECONDS);
-          break;
+          executor.schedule(this, intensityBasedDelayMillis(updatedSegment), TimeUnit.MILLISECONDS);
+        }
+        break;
       }
     }
   }
@@ -277,11 +289,18 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
    * Stop countdown for repair, and stop listening for JMX notifications for the current repair.
    */
   void closeRepairCommand() {
-    if (repairTimeout != null) {
-      repairTimeout.cancel(false);
-      repairTimeout = null;
-      currentCommandId = -1;
-      currentSegmentId = -1;
+    LOG.debug("Closing repair command with commandId {} and segmentId {}", currentCommandId,
+              currentSegmentId);
+    assert repairTimeout != null;
+
+    repairTimeout.cancel(false);
+    repairTimeout = null;
+    currentCommandId = -1;
+    currentSegmentId = -1;
+    try {
+      jmxConnection.close();
+    } catch (ReaperException e) {
+      e.printStackTrace();
     }
   }
 
@@ -292,8 +311,11 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
    */
   long intensityBasedDelayMillis(RepairSegment repairSegment) {
     RepairRun repairRun = storage.getRepairRun(repairRunId);
+    assert repairSegment.getEndTime() != null && repairSegment.getStartTime() != null;
     long repairDuration =
         repairSegment.getEndTime().getMillis() - repairSegment.getStartTime().getMillis();
-    return (long) (repairDuration / repairRun.getIntensity() - repairDuration);
+    long delay = (long) (repairDuration / repairRun.getIntensity() - repairDuration);
+    LOG.debug("Scheduling next runner run() with delay {}", delay);
+    return delay;
   }
 }

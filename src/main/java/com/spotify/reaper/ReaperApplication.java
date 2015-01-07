@@ -18,7 +18,6 @@ import com.spotify.reaper.resources.PingResource;
 import com.spotify.reaper.resources.ReaperHealthCheck;
 import com.spotify.reaper.resources.RepairRunResource;
 import com.spotify.reaper.resources.TableResource;
-import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.SimpleRepairRunner;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
@@ -61,7 +60,6 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     checkConfiguration(config);
 
     LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
-    RepairRunner.initializeThreadPool(config.getRepairRunThreadCount());
     SimpleRepairRunner.initializeThreadPool(config.getRepairRunThreadCount());
 
     LOG.info("initializing storage of type: {}", config.getStorageType());

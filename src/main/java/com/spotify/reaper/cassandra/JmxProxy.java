@@ -52,7 +52,7 @@ public class JmxProxy implements NotificationListener, Serializable {
 
   private static final Logger LOG = LoggerFactory.getLogger(JmxProxy.class);
 
-  private static final int JMX_PORT = 7199;
+  private static final int JMX_PORT = 7100;
   private static final String JMX_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
   private static final String JMX_OBJECT_NAME = "org.apache.cassandra.db:type=StorageService";
 
@@ -78,7 +78,7 @@ public class JmxProxy implements NotificationListener, Serializable {
    * Connect to JMX interface on the given host and default JMX port without RepairStatusHandler.
    */
   public static JmxProxy connect(String host) throws ReaperException {
-    return connect(Optional.<RepairStatusHandler>absent(), host, JMX_PORT);
+    return connect(Optional.<RepairStatusHandler>absent(), host);
   }
 
   /**
@@ -89,7 +89,13 @@ public class JmxProxy implements NotificationListener, Serializable {
    */
   public static JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
       throws ReaperException {
-    return connect(handler, host, JMX_PORT);
+    String[] parts = host.split(":");
+    if (parts.length == 2) {
+      return connect(handler, parts[0], Integer.valueOf(parts[1]));
+    }
+    else {
+      return connect(handler, host, JMX_PORT);
+    }
   }
 
   /**
