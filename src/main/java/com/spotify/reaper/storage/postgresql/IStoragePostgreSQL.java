@@ -155,7 +155,7 @@ public interface IStoragePostgreSQL {
   static final String SQL_REPAIR_SEGMENT_ALL_FIELDS = "id, " + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID;
 
   static final String SQL_INSERT_REPAIR_SEGMENT =
-      "INSERT INTO repair_segment (" + SQL_REPAIR_SEGMENT_ALL_FIELDS + ") VALUES "
+      "INSERT INTO repair_segment (" + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID + ") VALUES "
       + "(:columnFamilyId, :runId, :startToken, :endToken, :state, :startTime, :endTime)";
 
   static final String SQL_UPDATE_REPAIR_SEGMENT =
