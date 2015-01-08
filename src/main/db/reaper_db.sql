@@ -7,6 +7,12 @@
 -- CREATE USER reaper WITH PASSWORD 'my_secret_password';
 -- GRANT ALL PRIVILEGES ON DATABASE reaper_db TO reaper;
 
+-- For cleaning up the database, just do first in the following order:
+-- DROP TABLE "repair_segment";
+-- DROP TABLE "repair_run";
+-- DROP TABLE "column_family";
+-- DROP TABLE "cluster";
+
 CREATE TABLE IF NOT EXISTS "cluster" (
   "name" TEXT PRIMARY KEY,
   "partitioner" TEXT NOT NULL,
@@ -54,7 +60,8 @@ CREATE TABLE IF NOT EXISTS "repair_segment" (
 );
 CREATE INDEX "repair_segment_run_id_start_token_idx"
   ON "repair_segment" USING BTREE ("run_id" ASC, "start_token" ASC);
-CREATE INDEX "repair_segment_state_idx" ON "repair_segment" USING BTREE ("state");
+CREATE INDEX "repair_segment_state_idx"
+  ON "repair_segment" USING BTREE ("state");
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE cluster TO reaper;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE column_family TO reaper;
