@@ -15,7 +15,7 @@ node of each registered cluster.
 
 You can also run the Reaper with memory storage, which is not persistent, and all the registered
 clusters, column families, and repair runs will be lost upon service restart. Currently Reaper
-supports only PostgreSQL database for persisting the state.
+supports only PostgreSQL database for persisting the running repairs state.
 
 This project is built on top of Dropwizard:
 http://dropwizard.io/

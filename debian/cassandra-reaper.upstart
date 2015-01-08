@@ -1,0 +1,23 @@
+description "cassandra-reaper process"
+author "Bases <bases@spotify.com>"
+
+start on runlevel [2345]
+stop on runlevel [!2345]
+
+kill signal SIGKILL
+
+respawn
+# respawn unlimited, but uncomment following to get 15 retries with 5 sec sleep
+# respawn limit 15 5
+
+# Timeout is set to 5s
+kill timeout 5
+
+env TZ=universal
+
+script
+    exec /usr/bin/cassandra-reaper
+end script
+
+# prevent respawning more than once every 5 seconds
+post-stop exec sleep 5

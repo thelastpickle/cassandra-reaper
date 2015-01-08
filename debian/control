@@ -11,4 +11,4 @@ Standards-Version: 3.7.2
 Package: cassandra-reaper
 Architecture: all
 Depends: default-jre
-Description: Software to run automated repairs of Cassandra
+Description: Software to run automated (anti-entropy) repairs of Cassandra cluster data

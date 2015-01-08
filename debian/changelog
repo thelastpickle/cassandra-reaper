@@ -1,3 +1,10 @@
+cassandra-reaper (0.0.2-1) unstable; urgency=low
+
+  * Initial working version
+  * Changed to use Upstart instead of Supervision
+
+ -- Hannu Varjoranta <varjo@spotify.com>  Thu, 8 Jan 2015 15:24:13 +0100
+
 cassandra-reaper (0.0.1-1) unstable; urgency=low
 
   * Initial build

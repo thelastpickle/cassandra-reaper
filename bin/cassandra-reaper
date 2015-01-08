@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2014 Spotify AB
+# Copyright (c) 2014-2015 Spotify AB
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,13 +13,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-CLASSPATH="/usr/share/cassandra-reaper/*"
+CLASS_PATH="/usr/share/cassandra-reaper/*"
+
+if [ $# -eq 0 ]; then
+    CONFIG_PATH="/etc/spotify/cassandra-reaper.yaml"
+else
+    CONFIG_PATH="$@"
+fi
 
 JVM_OPTS=(
     -Xms1G
     -Xmx2G
     )
 exec java ${JVM_OPTS[@]} \
-        -cp "$CLASSPATH" \
+        -cp ${CLASS_PATH} \
 	com.spotify.reaper.ReaperApplication \
-	server "$@"
+	server ${CONFIG_PATH}
