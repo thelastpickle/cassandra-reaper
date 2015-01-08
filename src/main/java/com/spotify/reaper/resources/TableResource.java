@@ -26,7 +26,7 @@ import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.resources.view.ColumnFamilyStatus;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
-import com.spotify.reaper.service.SimpleRepairRunner;
+import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.storage.IStorage;
 
 import org.joda.time.DateTime;
@@ -220,7 +220,7 @@ public class TableResource {
     }
     storage.addRepairSegments(repairSegments);
 
-    SimpleRepairRunner.startNewRepairRun(storage, newRepairRun.getId());
+    RepairRunner.startNewRepairRun(storage, newRepairRun.getId());
 
     String newRepairRunPathPart = "repair_run/" + newRepairRun.getId();
     URI createdRepairRunURI;

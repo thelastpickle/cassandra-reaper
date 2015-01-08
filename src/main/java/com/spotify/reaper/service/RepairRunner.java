@@ -39,12 +39,12 @@ import java.util.concurrent.TimeUnit;
 /**
  * A repair runner that only triggers one segment repair at a time.
  */
-public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
+public class RepairRunner implements Runnable, RepairStatusHandler {
   // TODO: test
   // TODO: logging
   // TODO: handle failed storage updates
 
-  private static final Logger LOG = LoggerFactory.getLogger(SimpleRepairRunner.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RepairRunner.class);
 
   private static final int JMX_FAILURE_SLEEP_DELAY_SECONDS = 30;
 
@@ -53,7 +53,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
 
   public static void initializeThreadPool(int threadAmount, int repairTimeoutMins) {
     executor = Executors.newScheduledThreadPool(threadAmount);
-    SimpleRepairRunner.repairTimeoutMins = repairTimeoutMins;
+    RepairRunner.repairTimeoutMins = repairTimeoutMins;
   }
 
   /**
@@ -66,14 +66,14 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
     assert null != executor : "you need to initialize the thread pool first";
     Collection<RepairRun> repairRuns = storage.getAllRunningRepairRuns();
     for (RepairRun repairRun : repairRuns) {
-      executor.schedule(new SimpleRepairRunner(storage, repairRun.getId()), 0, TimeUnit.SECONDS);
+      executor.schedule(new RepairRunner(storage, repairRun.getId()), 0, TimeUnit.SECONDS);
     }
   }
 
   public static void startNewRepairRun(IStorage storage, long repairRunID) {
     assert null != executor : "you need to initialize the thread pool first";
     LOG.info("scheduling repair for repair run #{}", repairRunID);
-    executor.schedule(new SimpleRepairRunner(storage, repairRunID), 0, TimeUnit.SECONDS);
+    executor.schedule(new RepairRunner(storage, repairRunID), 0, TimeUnit.SECONDS);
   }
 
 
@@ -87,7 +87,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
   private long currentSegmentId = -1;
   private JmxProxy jmxConnection = null;
 
-  private SimpleRepairRunner(IStorage storage, long repairRunId) {
+  private RepairRunner(IStorage storage, long repairRunId) {
     this.storage = storage;
     this.repairRunId = repairRunId;
   }
@@ -110,8 +110,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
         // Do nothing
         break;
       case DONE:
-        LOG.info("Repairs for repair run #{} done", repairRunId);
-        end();
+        // Do nothing
         break;
     }
   }
@@ -120,6 +119,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
    * Starts the repair run.
    */
   private void start() {
+    LOG.info("Repairs for repair run #{} starting", repairRunId);
     RepairRun repairRun = storage.getRepairRun(repairRunId);
     storage.updateRepairRun(
         repairRun.with()
@@ -133,16 +133,18 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
    * Concludes the repair run.
    */
   private void end() {
+    LOG.info("Repairs for repair run #{} done", repairRunId);
     RepairRun repairRun = storage.getRepairRun(repairRunId);
-    storage.updateRepairRun(repairRun.with()
-                                .runState(RepairRun.RunState.DONE)
-                                .endTime(DateTime.now())
-                                .build(repairRun.getId()));
+    storage.updateRepairRun(
+        repairRun.with()
+            .runState(RepairRun.RunState.DONE)
+            .endTime(DateTime.now())
+            .build(repairRun.getId()));
   }
 
   /**
-   * If no segment has the state RUNNING, start the next repair. Otherwise, mark the RUNNING segment
-   * as NOT_STARTED to queue it up for a retry.
+   * If no segment has the state RUNNING, start the next repair. Otherwise, mark the RUNNING
+   * segment as NOT_STARTED to queue it up for a retry.
    */
   private void startNextSegment() {
     RepairSegment running = storage.getTheRunningSegment(repairRunId);
@@ -154,10 +156,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
       if (next != null) {
         doRepairSegment(next);
       } else {
-        RepairRun repairRun = storage.getRepairRun(repairRunId);
-        storage.updateRepairRun(
-            repairRun.with().runState(RepairRun.RunState.DONE).build(repairRun.getId()));
-        run();
+        end();
       }
     }
   }
@@ -255,7 +254,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
       return;
     }
 
-    // if !repairIsTriggered, repair has timed out.
+    // if !repairIsTriggered(), repair has timed out.
     if (repairIsTriggered()) {
       RepairSegment currentSegment = storage.getRepairSegment(currentSegmentId);
       // See status explanations from: https://wiki.apache.org/cassandra/RepairAsyncAPI
@@ -270,8 +269,9 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
           // single repair command.
           break;
         case SESSION_FAILED: {
-          // How should we handle this? Here, it's almost treated like a success.
-          RepairSegment updatedSegment =
+          // Bj0rn: How should we handle this? Here, it's almost treated like a success.
+          RepairSegment
+              updatedSegment =
               currentSegment.with().state(RepairSegment.State.ERROR).endTime(DateTime.now())
                   .build(currentSegmentId);
           storage.updateRepairSegment(updatedSegment);
