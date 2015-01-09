@@ -11,7 +11,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class SimpleRepairRunnerTest {
+public class RepairRunnerTest {
 
   IStorage storage;
 
@@ -37,8 +37,8 @@ public class SimpleRepairRunnerTest {
 
     // start the repair
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
-    SimpleRepairRunner.initializeThreadPool(1, 180);
-    SimpleRepairRunner.startNewRepairRun(storage, RUN_ID);
+    RepairRunner.initializeThreadPool(1, 180);
+    RepairRunner.startNewRepairRun(storage, RUN_ID);
     Thread.sleep(200);
 
     // check if the start time was properly set
@@ -50,7 +50,7 @@ public class SimpleRepairRunnerTest {
     DateTimeUtils.setCurrentMillisFixed(TIME_END);
     RepairRun run = storage.getRepairRun(RUN_ID);
     storage.updateRepairRun(run.with().runState(RepairRun.RunState.DONE).build(RUN_ID));
-    SimpleRepairRunner.startNewRepairRun(storage, RUN_ID);
+    RepairRunner.startNewRepairRun(storage, RUN_ID);
     Thread.sleep(200);
 
     // check if the end time was properly set
