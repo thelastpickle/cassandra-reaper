@@ -26,13 +26,16 @@ import com.spotify.reaper.storage.PostgresStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
+
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 
 public class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
+  static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
 
   public static void main(String[] args) throws Exception {
     new ReaperApplication().run(args);
@@ -58,6 +61,8 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   public void run(ReaperApplicationConfiguration config,
                   Environment environment) throws ReaperException {
     checkConfiguration(config);
+
+    addSignalHandlers(); // SIGHUP, etc.
 
     LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
     SimpleRepairRunner.initializeThreadPool(config.getRepairRunThreadCount(),
@@ -113,4 +118,21 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     LOG.debug("snapshotRepair: " + config.getSnapshotRepair());
     LOG.debug("hangingRepairTimeoutMins: " + config.getHangingRepairTimeoutMins());
   }
+
+  void reloadConfiguration() {
+    // TODO: reload configuration, but how?
+    LOG.warn("SIGHUP signal dropped, missing implementation");
+  }
+
+  private void addSignalHandlers() {
+    LOG.debug("adding signal handler for SIGHUP");
+    Signal.handle(new Signal("HUP"), new SignalHandler() {
+      @Override
+      public void handle(Signal signal) {
+        LOG.info("received SIGHUP signal: {}", signal);
+        reloadConfiguration();
+      }
+    });
+  }
+
 }
