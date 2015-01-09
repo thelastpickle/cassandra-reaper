@@ -13,14 +13,6 @@
  */
 package com.spotify.reaper.service;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-
-import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.cassandra.JmxProxy;
-import com.spotify.reaper.cassandra.RepairStatusHandler;
-import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.storage.IStorage;
@@ -30,23 +22,9 @@ import org.apache.cassandra.service.ActiveRepairService;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.concurrent.atomic.AtomicInteger;
-
-
-import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class RepairRunnerTest {
 
@@ -67,9 +45,8 @@ public class RepairRunnerTest {
 
     // place a dummy repair run into the storage
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATION);
-    RepairRun.Builder runBuilder =
-        new RepairRun.Builder(TEST_CLUSTER, CF_ID, RepairRun.RunState.NOT_STARTED, DateTime.now(),
-            INTENSITY);
+    RepairRun.Builder runBuilder = new RepairRun.Builder("TestCluster", CF_ID,
+        RepairRun.RunState.NOT_STARTED, DateTime.now(), INTENSITY);
     storage.addRepairRun(runBuilder);
     storage.addRepairSegments(Collections.<RepairSegment.Builder>emptySet(), RUN_ID);
 
