@@ -66,6 +66,17 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     }
   }
 
+  public static void startNewRepairRun(IStorage storage, long repairRunID) {
+    assert null != executor : "you need to initialize the thread pool first";
+    LOG.info("scheduling repair for repair run #{}", repairRunID);
+    try {
+      executor.schedule(new RepairRunner(storage, repairRunID, jmxConnectionFactory), 0, TimeUnit.SECONDS);
+    } catch (ReaperException e) {
+      e.printStackTrace();
+      LOG.warn("Failed to schedule repair for repair run #{}", repairRunID);
+    }
+  }
+
 
   private final IStorage storage;
   private final long repairRunId;
