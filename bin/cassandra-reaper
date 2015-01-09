@@ -25,7 +25,8 @@ JVM_OPTS=(
     -Xms1G
     -Xmx2G
     )
+
 exec java ${JVM_OPTS[@]} \
-        -cp ${CLASS_PATH} \
-	com.spotify.reaper.ReaperApplication \
-	server ${CONFIG_PATH}
+    -cp ${CLASS_PATH} \
+    com.spotify.reaper.ReaperApplication \
+    server ${CONFIG_PATH}

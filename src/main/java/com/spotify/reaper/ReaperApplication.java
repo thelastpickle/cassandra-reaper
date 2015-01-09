@@ -60,7 +60,8 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     checkConfiguration(config);
 
     LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
-    SimpleRepairRunner.initializeThreadPool(config.getRepairRunThreadCount());
+    SimpleRepairRunner.initializeThreadPool(config.getRepairRunThreadCount(),
+                                            config.getHangingRepairTimeoutMins());
 
     LOG.info("initializing storage of type: {}", config.getStorageType());
     IStorage storage = initializeStorage(config, environment);
@@ -110,5 +111,6 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     LOG.debug("repairRunThreadCount: " + config.getRepairRunThreadCount());
     LOG.debug("segmentCount: " + config.getSegmentCount());
     LOG.debug("snapshotRepair: " + config.getSnapshotRepair());
+    LOG.debug("hangingRepairTimeoutMins: " + config.getHangingRepairTimeoutMins());
   }
 }

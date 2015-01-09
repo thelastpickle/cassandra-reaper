@@ -47,16 +47,18 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
   private static final Logger LOG = LoggerFactory.getLogger(SimpleRepairRunner.class);
 
   private static final int JMX_FAILURE_SLEEP_DELAY_SECONDS = 30;
-  private static final int REPAIR_TIMEOUT_HOURS = 3;
 
   private static ScheduledExecutorService executor = null;
+  private int repairTimeoutMins;
 
-  public static void initializeThreadPool(int threadAmount) {
+  public static void initializeThreadPool(int threadAmount, int repairTimeoutMins) {
     executor = Executors.newScheduledThreadPool(threadAmount);
+    repairTimeoutMins = repairTimeoutMins;
   }
 
   /**
    * Consult storage to see if any repairs are running, and resume those repair runs.
+   *
    * @param storage Reaper's internal storage.
    */
   public static void resumeRunningRepairRuns(IStorage storage) {
@@ -89,7 +91,6 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
     this.storage = storage;
     this.repairRunId = repairRunId;
   }
-
 
 
   /**
@@ -127,8 +128,8 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
   }
 
   /**
-   * If no segment has the state RUNNING, start the next repair. Otherwise, mark the RUNNING
-   * segment as NOT_STARTED to queue it up for a retry.
+   * If no segment has the state RUNNING, start the next repair. Otherwise, mark the RUNNING segment
+   * as NOT_STARTED to queue it up for a retry.
    */
   private void startNextSegment() {
     RepairSegment running = storage.getTheRunningSegment(repairRunId);
@@ -151,6 +152,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
   /**
    * Set the running repair segment back to NOT_STARTED, either now or later, based on need to wait
    * for timeout.
+   *
    * @param running the running repair segment.
    */
   public void handleRunningRepairSegment(RepairSegment running) {
@@ -164,13 +166,14 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
     } else {
       // The repair might not have finished, so let it timeout before resetting its status.
       // This may happen if the RepairRunner was created for an incomplete repair run.
-      LOG.warn("Scheduling next segment to restart after {} hours", REPAIR_TIMEOUT_HOURS);
-      repairTimeout = executor.schedule(this, REPAIR_TIMEOUT_HOURS, TimeUnit.HOURS);
+      LOG.warn("Scheduling next segment to restart after {} minutes", repairTimeoutMins);
+      repairTimeout = executor.schedule(this, repairTimeoutMins, TimeUnit.MINUTES);
     }
   }
 
   /**
    * Start the repair of a segment.
+   *
    * @param next the segment to repair.
    */
   private synchronized void doRepairSegment(RepairSegment next) {
@@ -217,7 +220,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
     }
 
     currentSegmentId = next.getId();
-    repairTimeout = executor.schedule(this, REPAIR_TIMEOUT_HOURS, TimeUnit.HOURS);
+    repairTimeout = executor.schedule(this, repairTimeoutMins, TimeUnit.MINUTES);
     // TODO: ensure that no repair is already running (abort all repairs)
     currentCommandId = jmxConnection
         .triggerRepair(next.getStartToken(), next.getEndToken(), keyspace, columnFamily.getName());
@@ -228,8 +231,10 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
   }
 
   @Override
-  public synchronized void handle(int repairNumber, ActiveRepairService.Status status, String message) {
-    LOG.debug("handle called with repairRunId {}, repairNumber {} and status {}", repairRunId, repairNumber, status);
+  public synchronized void handle(int repairNumber, ActiveRepairService.Status status,
+                                  String message) {
+    LOG.debug("handle called with repairRunId {}, repairNumber {} and status {}", repairRunId,
+              repairNumber, status);
     if (repairNumber != currentCommandId) {
       LOG.warn("Repair run id != current command id. {} != {}", repairNumber, currentCommandId);
       // bj0rn: Should this ever be allowed to happen? Perhaps shut down Reaper, because repairs
@@ -254,8 +259,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
           break;
         case SESSION_FAILED: {
           // How should we handle this? Here, it's almost treated like a success.
-          RepairSegment
-              updatedSegment =
+          RepairSegment updatedSegment =
               currentSegment.with().state(RepairSegment.State.ERROR).endTime(DateTime.now())
                   .build(currentSegmentId);
           storage.updateRepairSegment(updatedSegment);
@@ -306,6 +310,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
 
   /**
    * Calculate the delay that should be used before starting the next repair segment.
+   *
    * @param repairSegment the last finished repair segment.
    * @return the delay in milliseconds.
    */

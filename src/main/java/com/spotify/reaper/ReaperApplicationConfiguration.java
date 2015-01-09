@@ -33,6 +33,8 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   private int repairRunThreadCount;
 
+  private int hangingRepairTimeoutMins;
+
   @NotEmpty
   private String storageType;
 
@@ -97,4 +99,13 @@ public class ReaperApplicationConfiguration extends Configuration {
     return database;
   }
 
+  @JsonProperty
+  public int getHangingRepairTimeoutMins() {
+    return hangingRepairTimeoutMins;
+  }
+
+  @JsonProperty
+  public void setHangingRepairTimeoutMins(int hangingRepairTimeoutMins) {
+    this.hangingRepairTimeoutMins = hangingRepairTimeoutMins;
+  }
 }
