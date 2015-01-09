@@ -77,9 +77,6 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     environment.healthChecks().register("reaper", healthCheck);
     environment.jersey().register(healthCheck);
 
-    LOG.info("resuming pending repair runs");
-    SimpleRepairRunner.resumeRunningRepairRuns(storage);
-
     LOG.info("creating resources and registering endpoints");
     final PingResource pingResource = new PingResource();
     environment.jersey().register(pingResource);
@@ -94,6 +91,9 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     environment.jersey().register(addRepairRunResource);
 
     LOG.info("Reaper is ready to accept connections");
+
+    LOG.info("resuming pending repair runs");
+    SimpleRepairRunner.resumeRunningRepairRuns(storage);
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config,
