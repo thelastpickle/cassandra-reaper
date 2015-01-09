@@ -28,9 +28,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -62,34 +60,46 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
    * @param storage Reaper's internal storage.
    */
   public static void resumeRunningRepairRuns(IStorage storage) {
-    // TODO: make sure that not more than one RepairRunner is created per RepairRun
-    assert null != executor : "you need to initialize the thread pool first";
-    Collection<RepairRun> repairRuns = storage.getAllRunningRepairRuns();
-    for (RepairRun repairRun : repairRuns) {
-      executor.schedule(new RepairRunner(storage, repairRun.getId()), 0, TimeUnit.SECONDS);
+    for (RepairRun repairRun : storage.getAllRunningRepairRuns()) {
+      startNewRepairRun(storage, repairRun.getId());
     }
   }
 
   public static void startNewRepairRun(IStorage storage, long repairRunID) {
+    // TODO: make sure that no more than one RepairRunner is created per RepairRun
     assert null != executor : "you need to initialize the thread pool first";
     LOG.info("scheduling repair for repair run #{}", repairRunID);
-    executor.schedule(new RepairRunner(storage, repairRunID), 0, TimeUnit.SECONDS);
+    try {
+      executor.schedule(new RepairRunner(storage, repairRunID), 0, TimeUnit.SECONDS);
+    } catch (ReaperException e) {
+      e.printStackTrace();
+      LOG.warn("Failed to schedule repair for repair run #{}", repairRunID);
+    }
   }
 
 
   private final IStorage storage;
   private final long repairRunId;
+  private JmxProxy jmxConnection;
 
   // These fields are only set when a segment is being repaired.
   // TODO: bundle them into a class?
   private ScheduledFuture<?> repairTimeout = null;
   private int currentCommandId = -1;
   private long currentSegmentId = -1;
-  private JmxProxy jmxConnection = null;
 
-  private RepairRunner(IStorage storage, long repairRunId) {
+  private RepairRunner(IStorage storage, long repairRunId) throws ReaperException {
+    this(storage,
+         repairRunId,
+         JmxProxy.connect(Optional.<RepairStatusHandler>absent(),
+                          storage.getCluster(storage.getRepairRun(repairRunId).getClusterName())
+                              .getSeedHosts().iterator().next()));
+  }
+
+  private RepairRunner(IStorage storage, long repairRunId, JmxProxy jmxConnection) {
     this.storage = storage;
     this.repairRunId = repairRunId;
+    this.jmxConnection = jmxConnection;
   }
 
   /**
@@ -191,26 +201,31 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   private synchronized void doRepairSegment(RepairSegment next) {
     // TODO: directly store the right host to contact per segment (or per run, if we guarantee that
     // TODO: one host can coordinate all repair segments).
-    Set<String> seeds =
-        storage.getCluster(storage.getRepairRun(repairRunId).getClusterName()).getSeedHosts();
-
-    JmxProxy jmxProxy;
-    try {
-      jmxProxy = JmxProxy.connect(seeds.iterator().next());
-    } catch (ReaperException e) {
-      e.printStackTrace();
-      executor.schedule(this, JMX_FAILURE_SLEEP_DELAY_SECONDS, TimeUnit.SECONDS);
-      return;
-    }
 
     ColumnFamily
         columnFamily =
         storage.getColumnFamily(storage.getRepairRun(repairRunId).getColumnFamilyId());
     String keyspace = columnFamily.getKeyspaceName();
 
+    if (!jmxConnection.isConnectionAlive()) {
+      try {
+        jmxConnection =
+            jmxConnection.switchNode(Optional.<RepairStatusHandler>absent(), storage
+                .getCluster(storage.getRepairRun(repairRunId).getClusterName()).getSeedHosts()
+                .iterator().next());
+      } catch (ReaperException e) {
+        e.printStackTrace();
+        LOG.warn(
+            "Failed to reestablish JMX connection in runner #{}, reattempting in {} seconds",
+            repairRunId, JMX_FAILURE_SLEEP_DELAY_SECONDS);
+        executor.schedule(this, JMX_FAILURE_SLEEP_DELAY_SECONDS, TimeUnit.SECONDS);
+        return;
+      }
+    }
+
     List<String> potentialCoordinators =
-        jmxProxy.tokenRangeToEndpoint(keyspace,
-                                      storage.getNextFreeSegment(repairRunId).getTokenRange());
+        jmxConnection.tokenRangeToEndpoint(keyspace,
+                                           storage.getNextFreeSegment(repairRunId).getTokenRange());
     if (potentialCoordinators == null) {
       // This segment has a faulty token range. Abort the entire repair run.
       RepairRun repairRun = storage.getRepairRun(repairRunId);
@@ -221,11 +236,14 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
 
     // Connect to a node that can act as coordinator for the new repair.
     try {
-      jmxProxy.close();
-      jmxConnection = JmxProxy.connect(Optional.<RepairStatusHandler>of(this),
-                                       potentialCoordinators.get(0));
+      jmxConnection = jmxConnection.switchNode(Optional.<RepairStatusHandler>of(this),
+                                               potentialCoordinators.get(0));
     } catch (ReaperException e) {
       e.printStackTrace();
+      LOG.warn(
+          "Failed to connect to a coordinator node for next repair in runner #{}, "
+          + "reattempting in {} seconds",
+          repairRunId, JMX_FAILURE_SLEEP_DELAY_SECONDS);
       executor.schedule(this, JMX_FAILURE_SLEEP_DELAY_SECONDS, TimeUnit.SECONDS);
       return;
     }
@@ -248,9 +266,12 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
               repairNumber, status);
     if (repairNumber != currentCommandId) {
       LOG.warn("Repair run id != current command id. {} != {}", repairNumber, currentCommandId);
-      // bj0rn: Should this ever be allowed to happen? Perhaps shut down Reaper, because repairs
-      // are happening outside of Reaper?
+      // bj0rn: Should this ever be allowed to happen? Perhaps shut down the runner, because
+      // repairs are happening outside of Reaper?
       //throw new ReaperException("Other repairs outside of reaper's control are happening");
+
+      // bj0rn: on second thought, this would happen if multiple keyspaces (and maybe column
+      // families) were repaired simultaneously.
       return;
     }
 
@@ -313,12 +334,6 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     repairTimeout = null;
     currentCommandId = -1;
     currentSegmentId = -1;
-    try {
-      jmxConnection.close();
-    } catch (ReaperException e) {
-      LOG.warn("failed closing JMX connection: {}", e);
-      e.printStackTrace();
-    }
   }
 
   /**
