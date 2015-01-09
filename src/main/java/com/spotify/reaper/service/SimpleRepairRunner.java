@@ -92,7 +92,6 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
     this.repairRunId = repairRunId;
   }
 
-
   /**
    * Starts/resumes a repair run that is supposed to run.
    */
@@ -112,7 +111,7 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
         break;
       case DONE:
         LOG.info("Repairs for repair run #{} done", repairRunId);
-        // Do nothing
+        end();
         break;
     }
   }
@@ -123,13 +122,27 @@ public class SimpleRepairRunner implements Runnable, RepairStatusHandler {
   private void start() {
     RepairRun repairRun = storage.getRepairRun(repairRunId);
     storage.updateRepairRun(
-        repairRun.with().runState(RepairRun.RunState.RUNNING).build(repairRun.getId()));
+        repairRun.with()
+            .runState(RepairRun.RunState.RUNNING)
+            .startTime(DateTime.now())
+            .build(repairRun.getId()));
     startNextSegment();
   }
 
   /**
-   * If no segment has the state RUNNING, start the next repair. Otherwise, mark the RUNNING segment
-   * as NOT_STARTED to queue it up for a retry.
+   * Concludes the repair run.
+   */
+  private void end() {
+    RepairRun repairRun = storage.getRepairRun(repairRunId);
+    storage.updateRepairRun(repairRun.with()
+        .runState(RepairRun.RunState.DONE)
+        .endTime(DateTime.now())
+        .build(repairRun.getId()));
+  }
+
+  /**
+   * If no segment has the state RUNNING, start the next repair. Otherwise, mark the RUNNING
+   * segment as NOT_STARTED to queue it up for a retry.
    */
   private void startNextSegment() {
     RepairSegment running = storage.getTheRunningSegment(repairRunId);
