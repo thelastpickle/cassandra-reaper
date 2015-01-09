@@ -13,6 +13,7 @@
  */
 package com.spotify.reaper.service;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 
 import com.spotify.reaper.ReaperException;
@@ -96,7 +97,8 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
                               .getSeedHosts().iterator().next()));
   }
 
-  private RepairRunner(IStorage storage, long repairRunId, JmxProxy jmxConnection) {
+  @VisibleForTesting
+  RepairRunner(IStorage storage, long repairRunId, JmxProxy jmxConnection) {
     this.storage = storage;
     this.repairRunId = repairRunId;
     this.jmxConnection = jmxConnection;
