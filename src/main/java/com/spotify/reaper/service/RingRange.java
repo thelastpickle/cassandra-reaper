@@ -45,13 +45,13 @@ public class RingRange {
     // TODO: unit test for this
     if (SegmentGenerator.lowerThanOrEqual(start, end)) {
       return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
-             SegmentGenerator.lowerThanOrEqual(other.end, end);
+          SegmentGenerator.lowerThanOrEqual(other.end, end);
     } else if (SegmentGenerator.lowerThanOrEqual(other.start, other.end)) {
       return SegmentGenerator.greaterThanOrEqual(other.start, start) ||
-             SegmentGenerator.lowerThanOrEqual(other.end, end);
+          SegmentGenerator.lowerThanOrEqual(other.end, end);
     } else {
       return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
-             SegmentGenerator.lowerThanOrEqual(other.end, end);
+          SegmentGenerator.lowerThanOrEqual(other.end, end);
     }
   }
 

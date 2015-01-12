@@ -76,8 +76,9 @@ public class ClusterResource {
   }
 
   @POST
-  public Response addCluster(@Context UriInfo uriInfo,
-                             @QueryParam("seedHost") Optional<String> seedHost) {
+  public Response addCluster(
+      @Context UriInfo uriInfo,
+      @QueryParam("seedHost") Optional<String> seedHost) {
     if (!seedHost.isPresent()) {
       LOG.error("POST on cluster resource called without seedHost");
       return Response.status(400).entity("query parameter \"seedHost\" required").build();
@@ -129,9 +130,7 @@ public class ClusterResource {
       e.printStackTrace();
       throw e;
     }
-    Cluster newCluster =
-        new Cluster(clusterName, partitioner, Collections.singleton(seedHost));
-    return newCluster;
+    return new Cluster(clusterName, partitioner, Collections.singleton(seedHost));
   }
 
 }

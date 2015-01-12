@@ -29,7 +29,7 @@ public class ClusterMapper implements ResultSetMapper<Cluster> {
   public Cluster map(int index, ResultSet r, StatementContext ctx) throws SQLException {
     String[] seedHosts = (String[]) r.getArray("seed_hosts").getArray();
     return new Cluster(r.getString("name"), r.getString("partitioner"),
-                       Sets.newHashSet(Arrays.asList(seedHosts)));
+        Sets.newHashSet(Arrays.asList(seedHosts)));
   }
 
 }

@@ -68,7 +68,7 @@ public class ColumnFamily {
     private boolean snapshotRepair;
 
     public Builder(String clusterName, String keyspaceName, String name, int segmentCount,
-                   boolean snapshotRepair) {
+        boolean snapshotRepair) {
       this.clusterName = clusterName;
       this.keyspaceName = keyspaceName;
       this.name = name;

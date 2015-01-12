@@ -77,7 +77,7 @@ public class RepairSegment {
     DONE
   }
 
-  private RepairSegment(Builder builder,long id) {
+  private RepairSegment(Builder builder, long id) {
     this.id = id;
     this.repairCommandId = builder.repairCommandId;
     this.columnFamilyId = builder.columnFamilyId;
