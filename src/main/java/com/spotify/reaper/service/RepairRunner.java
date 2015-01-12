@@ -48,11 +48,11 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   private static final int JMX_FAILURE_SLEEP_DELAY_SECONDS = 30;
 
   private static ScheduledExecutorService executor = null;
-  private static int repairTimeoutMins;
+  private static int repairTimeoutSecs;
 
-  public static void initializeThreadPool(int threadAmount, int repairTimeoutMins) {
+  public static void initializeThreadPool(int threadAmount, int repairTimeoutSecs) {
     executor = Executors.newScheduledThreadPool(threadAmount);
-    RepairRunner.repairTimeoutMins = repairTimeoutMins;
+    RepairRunner.repairTimeoutSecs = repairTimeoutSecs;
   }
 
   /**
@@ -182,16 +182,17 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   public void handleRunningRepairSegment(RepairSegment running) {
     if (repairIsTriggered()) {
       // Implies that repair has timed out.
-      assert repairTimeout.isDone();
-      repairTimeout = null;
+      LOG.warn("Repair with commandId {} and segmentId {} in repair run {}, timed out",
+                currentCommandId, currentSegmentId, repairRunId);
+      closeRepairCommand();
       storage.updateRepairSegment(
           running.with().state(RepairSegment.State.NOT_STARTED).build(running.getId()));
       run();
     } else {
       // The repair might not have finished, so let it timeout before resetting its status.
       // This may happen if the RepairRunner was created for an incomplete repair run.
-      LOG.warn("Scheduling next segment to restart after {} minutes", repairTimeoutMins);
-      repairTimeout = executor.schedule(this, repairTimeoutMins, TimeUnit.MINUTES);
+      LOG.warn("Scheduling next segment to restart after {} seconds", repairTimeoutSecs);
+      repairTimeout = executor.schedule(this, repairTimeoutSecs, TimeUnit.SECONDS);
     }
   }
 
@@ -251,7 +252,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     }
 
     currentSegmentId = next.getId();
-    repairTimeout = executor.schedule(this, repairTimeoutMins, TimeUnit.MINUTES);
+    repairTimeout = executor.schedule(this, repairTimeoutSecs, TimeUnit.SECONDS);
     // TODO: ensure that no repair is already running (abort all repairs)
     currentCommandId = jmxConnection
         .triggerRepair(next.getStartToken(), next.getEndToken(), keyspace, columnFamily.getName());

@@ -186,7 +186,7 @@ public class JmxProxy implements NotificationListener, Serializable {
   /**
    * @return list of available keyspaces
    */
-  public List<String> getKeySpaces() {
+  public List<String> getKeyspaces() {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     return ssProxy.getKeyspaces();
   }
