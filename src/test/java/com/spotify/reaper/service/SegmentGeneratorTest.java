@@ -15,8 +15,9 @@ package com.spotify.reaper.service;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+
 import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.core.RepairSegment;
+
 import org.junit.Test;
 
 import java.math.BigInteger;
