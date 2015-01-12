@@ -46,7 +46,8 @@ public class RepairRunnerTest {
     // place a dummy repair run into the storage
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATION);
     RepairRun.Builder runBuilder = new RepairRun.Builder("TestCluster", CF_ID,
-        RepairRun.RunState.NOT_STARTED, DateTime.now(), INTENSITY);
+                                                         RepairRun.RunState.NOT_STARTED,
+                                                         DateTime.now(), INTENSITY);
     storage.addRepairRun(runBuilder);
     storage.addRepairSegments(Collections.<RepairSegment.Builder>emptySet(), RUN_ID);
 
@@ -111,29 +112,19 @@ public class RepairRunnerTest {
 
     when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
     when(jmx.isConnectionAlive()).thenReturn(true);
-    when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
-        .thenReturn(Lists.newArrayList(""));
-
-    final AtomicInteger repairAttempts = new AtomicInteger(0);
-    when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(), anyString()))
-        .then(new Answer<Integer>() {
+    when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class))).thenReturn(
+        Lists.newArrayList(""));
+    when(jmx.switchNode(Matchers.<Optional<RepairStatusHandler>>any(), anyString()))
+        .thenReturn(jmx);
+    when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(), anyString())).then(
+        new Answer<Integer>() {
           @Override
           public Integer answer(InvocationOnMock invocation) throws Throwable {
             return repairAttempts.incrementAndGet();
           }
         });
 
-    RepairRunner.initializeThreadPool(1, 1);
-    final RepairRunner repairRunner = new RepairRunner(storage, 1, new JmxConnectionFactory() {
-      @Override
-      public JmxProxy create(Optional<RepairStatusHandler> handler, String host)
-          throws ReaperException {
-        return jmx;
-      }
-    });
-
-    assertEquals(storage.getRepairSegment(1).getState(), RepairSegment.State.NOT_STARTED);
-    assertEquals(0, repairAttempts.get());
+    RepairRunner repairRunner = new RepairRunner(storage, 1, jmx);
     repairRunner.run();
     assertEquals(1, repairAttempts.get());
     assertEquals(storage.getRepairSegment(1).getState(), RepairSegment.State.RUNNING);
