@@ -19,6 +19,7 @@ import com.google.common.collect.Lists;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
+import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
@@ -56,13 +57,18 @@ public class RepairRunnerTest {
     final double INTENSITY = 0.5f;
     final long TIME_CREATION = 41l;
     final long TIME_START = 42l;
+    final long TIME_END = 43l;
+    final String TEST_CLUSTER = "TestCluster";
 
     IStorage storage = new MemoryStorage();
+
+    // place a dummy cluster into storage
+    storage.addCluster(new Cluster(TEST_CLUSTER, null, Collections.<String>singleton(null)));
 
     // place a dummy repair run into the storage
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATION);
     RepairRun.Builder runBuilder =
-        new RepairRun.Builder("TestCluster", CF_ID, RepairRun.RunState.NOT_STARTED, DateTime.now(),
+        new RepairRun.Builder(TEST_CLUSTER, CF_ID, RepairRun.RunState.NOT_STARTED, DateTime.now(),
             INTENSITY);
     storage.addRepairRun(runBuilder);
     storage.addRepairSegments(Collections.<RepairSegment.Builder>emptySet(), RUN_ID);
@@ -70,7 +76,13 @@ public class RepairRunnerTest {
     // start the repair
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
     RepairRunner.initializeThreadPool(1, 180);
-    RepairRunner.startNewRepairRun(storage, RUN_ID);
+    RepairRunner.startNewRepairRun(storage, RUN_ID, new JmxConnectionFactory() {
+      @Override
+      public JmxProxy create(Optional<RepairStatusHandler> handler, String host)
+          throws ReaperException {
+        return null;
+      }
+    });
     Thread.sleep(200);
 
     // check if the start time was properly set
@@ -78,10 +90,18 @@ public class RepairRunnerTest {
     assertNotNull(startTime);
     assertEquals(TIME_START, startTime.getMillis());
 
-    // end time will also be set immediately
-    DateTime endTime = storage.getRepairRun(RUN_ID).getEndTime();
-    assertNotNull(endTime);
-    assertEquals(TIME_START, endTime.getMillis());
+    // end the repair
+    DateTimeUtils.setCurrentMillisFixed(TIME_END);
+    RepairRun run = storage.getRepairRun(RUN_ID);
+    storage.updateRepairRun(run.with().runState(RepairRun.RunState.RUNNING).build(RUN_ID));
+    RepairRunner.startNewRepairRun(storage, RUN_ID, new JmxConnectionFactory() {
+      @Override
+      public JmxProxy create(Optional<RepairStatusHandler> handler, String host)
+          throws ReaperException {
+        return null;
+      }
+    });
+    Thread.sleep(200);
   }
 
 
@@ -96,6 +116,8 @@ public class RepairRunnerTest {
 
     IStorage storage = new MemoryStorage();
 
+    storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
+
     ColumnFamily cf =
         storage.addColumnFamily(new ColumnFamily.Builder(CLUSTER_NAME, KS_NAME, CF_NAME, 1, false));
 
@@ -108,14 +130,12 @@ public class RepairRunnerTest {
         new RepairSegment.Builder(repairRun.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE),
             RepairSegment.State.NOT_STARTED)));
 
-    JmxProxy jmx = mock(JmxProxy.class);
+    final JmxProxy jmx = mock(JmxProxy.class);
 
     when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
         .thenReturn(Lists.newArrayList(""));
-    when(jmx.switchNode(Matchers.<Optional<RepairStatusHandler>>any(), anyString()))
-        .thenReturn(jmx);
 
     final AtomicInteger repairAttempts = new AtomicInteger(0);
     when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(), anyString()))
@@ -127,7 +147,13 @@ public class RepairRunnerTest {
         });
 
     RepairRunner.initializeThreadPool(1, 1);
-    final RepairRunner repairRunner = new RepairRunner(storage, 1, jmx);
+    final RepairRunner repairRunner = new RepairRunner(storage, 1, new JmxConnectionFactory() {
+      @Override
+      public JmxProxy create(Optional<RepairStatusHandler> handler, String host)
+          throws ReaperException {
+        return jmx;
+      }
+    });
 
     assertEquals(storage.getRepairSegment(1).getState(), RepairSegment.State.NOT_STARTED);
     assertEquals(0, repairAttempts.get());

@@ -37,9 +37,9 @@ import javax.annotation.Nullable;
  */
 public class MemoryStorage implements IStorage {
 
-  private static final AtomicInteger REPAIR_RUN_ID = new AtomicInteger(0);
-  private static final AtomicInteger COLUMN_FAMILY_ID = new AtomicInteger(0);
-  private static final AtomicInteger SEGMENT_ID = new AtomicInteger(0);
+  private final AtomicInteger REPAIR_RUN_ID = new AtomicInteger(0);
+  private final AtomicInteger COLUMN_FAMILY_ID = new AtomicInteger(0);
+  private final AtomicInteger SEGMENT_ID = new AtomicInteger(0);
 
   private ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
   private ConcurrentMap<Long, RepairRun> repairRuns = Maps.newConcurrentMap();

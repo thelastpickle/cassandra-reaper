@@ -13,11 +13,13 @@
  */
 package com.spotify.reaper;
 
+import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
 import com.spotify.reaper.resources.ReaperHealthCheck;
 import com.spotify.reaper.resources.RepairRunResource;
 import com.spotify.reaper.resources.TableResource;
+import com.spotify.reaper.service.JmxConnectionFactory;
 import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
@@ -93,7 +95,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     LOG.info("Reaper is ready to accept connections");
 
     LOG.info("resuming pending repair runs");
-    RepairRunner.resumeRunningRepairRuns(storage);
+    resumeRunningRepairRuns(storage);
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config,
@@ -133,5 +135,17 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
         reloadConfiguration();
       }
     });
+  }
+
+  /**
+   * Consult storage to see if any repairs are running, and resume those repair runs.
+   *
+   * @param storage Reaper's internal storage.
+   */
+  public static void resumeRunningRepairRuns(IStorage storage) {
+    JmxConnectionFactory jmxConnectionFactory = new JmxConnectionFactory();
+    for (RepairRun repairRun : storage.getAllRunningRepairRuns()) {
+      RepairRunner.startNewRepairRun(storage, repairRun.getId(), jmxConnectionFactory);
+    }
   }
 }
