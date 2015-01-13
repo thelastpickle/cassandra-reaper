@@ -63,8 +63,7 @@ public class MemoryStorage implements IStorage {
 
     @Override
     public boolean equals(Object other) {
-      return
-          other instanceof TableName &&
+      return other instanceof TableName &&
           cluster.equals(((TableName) other).cluster) &&
           keyspace.equals(((TableName) other).keyspace) &&
           table.equals(((TableName) other).table);
@@ -159,10 +158,9 @@ public class MemoryStorage implements IStorage {
     if (existing == null) {
       ColumnFamily newColumnFamily = columnFamily.build(COLUMN_FAMILY_ID.incrementAndGet());
       columnFamilies.put(newColumnFamily.getId(), newColumnFamily);
-      columnFamiliesByName
-          .put(new TableName(newColumnFamily.getClusterName(),
-                             newColumnFamily.getKeyspaceName(),
-                             newColumnFamily.getName()), newColumnFamily);
+      TableName tableName = new TableName(newColumnFamily.getClusterName(),
+          newColumnFamily.getKeyspaceName(), newColumnFamily.getName());
+      columnFamiliesByName.put(tableName, newColumnFamily);
       return newColumnFamily;
     } else {
       return null;
@@ -180,14 +178,14 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public void addRepairSegments(Collection<RepairSegment.Builder> segments) {
+  public void addRepairSegments(Collection<RepairSegment.Builder> segments, long runId) {
     LinkedHashMap<Long, RepairSegment> newSegments = Maps.newLinkedHashMap();
     for (RepairSegment.Builder segment : segments) {
       RepairSegment newRepairSegment = segment.build(SEGMENT_ID.incrementAndGet());
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
       newSegments.put(newRepairSegment.getId(), newRepairSegment);
     }
-    repairSegmentsByRunId.put(newSegments.values().iterator().next().getRunId(), newSegments);
+    repairSegmentsByRunId.put(runId, newSegments);
   }
 
   @Override
@@ -196,8 +194,9 @@ public class MemoryStorage implements IStorage {
       return false;
     } else {
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
-      repairSegmentsByRunId.get(newRepairSegment.getRunId())
-          .put(newRepairSegment.getId(), newRepairSegment);
+      LinkedHashMap<Long, RepairSegment> updatedSegment =
+          repairSegmentsByRunId.get(newRepairSegment.getRunId());
+      updatedSegment.put(newRepairSegment.getId(), newRepairSegment);
       return true;
     }
   }

@@ -54,7 +54,7 @@ public interface IStorage {
 
   ColumnFamily getColumnFamily(String cluster, String keyspace, String table);
 
-  void addRepairSegments(Collection<RepairSegment.Builder> newSegments);
+  void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId);
 
   boolean updateRepairSegment(RepairSegment newRepairSegment);
 

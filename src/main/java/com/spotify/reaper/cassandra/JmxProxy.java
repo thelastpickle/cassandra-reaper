@@ -29,9 +29,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 import javax.management.InstanceNotFoundException;
@@ -64,8 +64,7 @@ public class JmxProxy implements NotificationListener, Serializable {
   private final String host;
 
   private JmxProxy(Optional<RepairStatusHandler> handler, String host, JMXConnector jmxConnector,
-                   StorageServiceMBean ssProxy, ObjectName mbeanName,
-                   MBeanServerConnection mbeanServer) {
+      StorageServiceMBean ssProxy, ObjectName mbeanName, MBeanServerConnection mbeanServer) {
     this.host = host;
     this.jmxConnector = jmxConnector;
     this.mbeanName = mbeanName;
@@ -118,8 +117,8 @@ public class JmxProxy implements NotificationListener, Serializable {
     try {
       JMXConnector jmxConn = JMXConnectorFactory.connect(jmxUrl);
       MBeanServerConnection mbeanServerConn = jmxConn.getMBeanServerConnection();
-      StorageServiceMBean
-          ssProxy = JMX.newMBeanProxy(mbeanServerConn, mbeanName, StorageServiceMBean.class);
+      StorageServiceMBean ssProxy =
+          JMX.newMBeanProxy(mbeanServerConn, mbeanName, StorageServiceMBean.class);
       JmxProxy proxy = new JmxProxy(handler, host, jmxConn, ssProxy, mbeanName, mbeanServerConn);
       // registering a listener throws bunch of exceptions, so we do it here rather than in the
       // constructor
@@ -153,10 +152,12 @@ public class JmxProxy implements NotificationListener, Serializable {
   @Nullable
   public List<String> tokenRangeToEndpoint(String keyspace, RingRange tokenRange) {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    for (Map.Entry<List<String>, List<String>> entry : ssProxy.getRangeToEndpointMap(keyspace)
-        .entrySet()) {
-      if (new RingRange(new BigInteger(entry.getKey().get(0)),
-                        new BigInteger(entry.getKey().get(1))).encloses(tokenRange)) {
+    Set<Map.Entry<List<String>, List<String>>> entries =
+        ssProxy.getRangeToEndpointMap(keyspace).entrySet();
+    for (Map.Entry<List<String>, List<String>> entry : entries) {
+      BigInteger rangeStart = new BigInteger(entry.getKey().get(0));
+      BigInteger rangeEnd = new BigInteger(entry.getKey().get(1));
+      if (new RingRange(rangeStart, rangeEnd).encloses(tokenRange)) {
         return entry.getValue();
       }
     }
@@ -200,11 +201,11 @@ public class JmxProxy implements NotificationListener, Serializable {
    * @return Repair command number, or 0 if nothing to repair
    */
   public int triggerRepair(BigInteger beginToken, BigInteger endToken, String keyspace,
-                           String columnFamily) {
+      String columnFamily) {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    LOG.info(String.format("Triggering repair of range (%s,%s] for %s.%s via host %s",
-                           beginToken.toString(), endToken.toString(), keyspace, columnFamily,
-                           this.host));
+    String msg = String.format("Triggering repair of range (%s,%s] for %s.%s via host %s",
+        beginToken.toString(), endToken.toString(), keyspace, columnFamily, this.host);
+    LOG.info(msg);
     return ssProxy.forceRepairRangeAsync(
         beginToken.toString(),
         endToken.toString(),

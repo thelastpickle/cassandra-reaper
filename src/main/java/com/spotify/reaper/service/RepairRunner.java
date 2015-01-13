@@ -117,11 +117,10 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   private void start() {
     LOG.info("Repairs for repair run #{} starting", repairRunId);
     RepairRun repairRun = storage.getRepairRun(repairRunId);
-    storage.updateRepairRun(
-        repairRun.with()
-            .runState(RepairRun.RunState.RUNNING)
-            .startTime(DateTime.now())
-            .build(repairRun.getId()));
+    storage.updateRepairRun(repairRun.with()
+        .runState(RepairRun.RunState.RUNNING)
+        .startTime(DateTime.now())
+        .build(repairRun.getId()));
     startNextSegment();
   }
 
@@ -131,11 +130,10 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   private void end() {
     LOG.info("Repairs for repair run #{} done", repairRunId);
     RepairRun repairRun = storage.getRepairRun(repairRunId);
-    storage.updateRepairRun(
-        repairRun.with()
-            .runState(RepairRun.RunState.DONE)
-            .endTime(DateTime.now())
-            .build(repairRun.getId()));
+    storage.updateRepairRun(repairRun.with()
+        .runState(RepairRun.RunState.DONE)
+        .endTime(DateTime.now())
+        .build(repairRun.getId()));
   }
 
   /**
@@ -169,8 +167,9 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
       LOG.warn("Repair with commandId {} and segmentId {} in repair run {}, timed out",
                 currentCommandId, currentSegmentId, repairRunId);
       closeRepairCommand();
-      storage.updateRepairSegment(
-          running.with().state(RepairSegment.State.NOT_STARTED).build(running.getId()));
+      storage.updateRepairSegment(running.with()
+          .state(RepairSegment.State.NOT_STARTED)
+          .build(running.getId()));
       run();
     } else {
       // The repair might not have finished, so let it timeout before resetting its status.
@@ -189,8 +188,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     // TODO: directly store the right host to contact per segment (or per run, if we guarantee that
     // TODO: one host can coordinate all repair segments).
 
-    ColumnFamily
-        columnFamily =
+    ColumnFamily columnFamily =
         storage.getColumnFamily(storage.getRepairRun(repairRunId).getColumnFamilyId());
     String keyspace = columnFamily.getKeyspaceName();
 
@@ -215,8 +213,9 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     if (potentialCoordinators == null) {
       // This segment has a faulty token range. Abort the entire repair run.
       RepairRun repairRun = storage.getRepairRun(repairRunId);
-      storage.updateRepairRun(
-          repairRun.with().runState(RepairRun.RunState.ERROR).build(repairRun.getId()));
+      storage.updateRepairRun(repairRun.with()
+          .runState(RepairRun.RunState.ERROR)
+          .build(repairRun.getId()));
       return;
     }
 
@@ -238,12 +237,13 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     currentSegmentId = next.getId();
     repairTimeout = executor.schedule(this, repairTimeoutSecs, TimeUnit.SECONDS);
     // TODO: ensure that no repair is already running (abort all repairs)
-    currentCommandId = jmxConnection
-        .triggerRepair(next.getStartToken(), next.getEndToken(), keyspace, columnFamily.getName());
+    currentCommandId = jmxConnection.triggerRepair(next.getStartToken(), next.getEndToken(),
+        keyspace, columnFamily.getName());
     LOG.debug("Triggered repair with command id {}", currentCommandId);
-    storage.updateRepairSegment(
-        next.with().state(RepairSegment.State.RUNNING).repairCommandId(currentCommandId)
-            .build(currentSegmentId));
+    storage.updateRepairSegment(next.with()
+        .state(RepairSegment.State.RUNNING)
+        .repairCommandId(currentCommandId)
+        .build(currentSegmentId));
   }
 
   /**
@@ -256,9 +256,9 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
    */
   @Override
   public synchronized void handle(int repairNumber, ActiveRepairService.Status status,
-                                  String message) {
+      String message) {
     LOG.debug("handle called with repairRunId {}, repairNumber {} and status {}", repairRunId,
-              repairNumber, status);
+        repairNumber, status);
     if (repairNumber != currentCommandId) {
       LOG.warn("Repair run id != current command id. {} != {}", repairNumber, currentCommandId);
       // bj0rn: Should this ever be allowed to happen? Perhaps shut down the runner, because
@@ -286,20 +286,20 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
           break;
         case SESSION_FAILED: {
           // Bj0rn: How should we handle this? Here, it's almost treated like a success.
-          RepairSegment
-              updatedSegment =
-              currentSegment.with().state(RepairSegment.State.ERROR).endTime(DateTime.now())
-                  .build(currentSegmentId);
+          RepairSegment updatedSegment = currentSegment.with()
+              .state(RepairSegment.State.ERROR)
+              .endTime(DateTime.now())
+              .build(currentSegmentId);
           storage.updateRepairSegment(updatedSegment);
           closeRepairCommand();
           executor.schedule(this, intensityBasedDelayMillis(updatedSegment), TimeUnit.MILLISECONDS);
         }
         break;
         case FINISHED: {
-          RepairSegment
-              updatedSegment =
-              currentSegment.with().state(RepairSegment.State.DONE).endTime(DateTime.now())
-                  .build(currentSegmentId);
+          RepairSegment updatedSegment = currentSegment.with()
+              .state(RepairSegment.State.DONE)
+              .endTime(DateTime.now())
+              .build(currentSegmentId);
           storage.updateRepairSegment(updatedSegment);
           closeRepairCommand();
           executor.schedule(this, intensityBasedDelayMillis(updatedSegment), TimeUnit.MILLISECONDS);
@@ -322,7 +322,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
    */
   void closeRepairCommand() {
     LOG.debug("Closing repair command with commandId {} and segmentId {} in repair run {}",
-              currentCommandId, currentSegmentId, repairRunId);
+        currentCommandId, currentSegmentId, repairRunId);
     assert repairTimeout != null;
 
     repairTimeout.cancel(false);
@@ -340,8 +340,9 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   long intensityBasedDelayMillis(RepairSegment repairSegment) {
     RepairRun repairRun = storage.getRepairRun(repairRunId);
     assert repairSegment.getEndTime() != null && repairSegment.getStartTime() != null;
-    long repairDuration =
-        repairSegment.getEndTime().getMillis() - repairSegment.getStartTime().getMillis();
+    long repairEnd = repairSegment.getEndTime().getMillis();
+    long repairStart = repairSegment.getStartTime().getMillis();
+    long repairDuration = repairEnd - repairStart;
     long delay = (long) (repairDuration / repairRun.getIntensity() - repairDuration);
     LOG.debug("Scheduling next runner run() with delay {} ms", delay);
     return delay;

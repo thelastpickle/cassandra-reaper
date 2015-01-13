@@ -207,7 +207,7 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public void addRepairSegments(Collection<RepairSegment.Builder> newSegments) {
+  public void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId) {
     List<RepairSegment> insertableSegments = new ArrayList<>();
     for (RepairSegment.Builder segment : newSegments) {
       insertableSegments.add(segment.build(-1));
@@ -253,8 +253,8 @@ public class PostgresStorage implements IStorage {
   public RepairSegment getNextFreeSegmentInRange(long runId, RingRange range) {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getNextFreeRepairSegmentOnRange(runId, range.getStart(),
-                                                                     range.getEnd());
+      result = getPostgresStorage(h)
+          .getNextFreeRepairSegmentOnRange(runId, range.getStart(), range.getEnd());
     }
     return result;
   }
@@ -264,8 +264,8 @@ public class PostgresStorage implements IStorage {
   public RepairSegment getTheRunningSegment(long runId) {
     RepairSegment result = null;
     try (Handle h = jdbi.open()) {
-      Collection<RepairSegment> segments =
-          getPostgresStorage(h).getRepairSegmentForRunWithState(runId, RepairSegment.State.RUNNING);
+      Collection<RepairSegment> segments = getPostgresStorage(h)
+          .getRepairSegmentForRunWithState(runId, RepairSegment.State.RUNNING);
       if (null != segments) {
         assert segments.size() < 2 : "there are more than one RUNNING segment on run: " + runId;
         if (segments.size() == 1) {

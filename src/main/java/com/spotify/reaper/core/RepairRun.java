@@ -111,7 +111,7 @@ public class RepairRun {
     private DateTime endTime;
 
     public Builder(String clusterName, long columnFamilyId, RunState runState,
-                   DateTime creationTime, double intensity) {
+        DateTime creationTime, double intensity) {
       this.clusterName = clusterName;
       this.columnFamilyId = columnFamilyId;
       this.runState = runState;
