@@ -40,7 +40,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class RepairRunner implements Runnable, RepairStatusHandler {
   // TODO: test
-  // TODO: logging
   // TODO: handle failed storage updates
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunner.class);
@@ -55,23 +54,12 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     RepairRunner.repairTimeoutSecs = repairTimeoutSecs;
   }
 
-  /**
-   * Consult storage to see if any repairs are running, and resume those repair runs.
-   *
-   * @param storage Reaper's internal storage.
-   */
-  public static void resumeRunningRepairRuns(IStorage storage) {
-    for (RepairRun repairRun : storage.getAllRunningRepairRuns()) {
-      startNewRepairRun(storage, repairRun.getId());
-    }
-  }
-
-  public static void startNewRepairRun(IStorage storage, long repairRunID) {
+  public static void startNewRepairRun(IStorage storage, long repairRunID, JmxConnectionFactory jmxConnectionFactory) {
     // TODO: make sure that no more than one RepairRunner is created per RepairRun
     assert null != executor : "you need to initialize the thread pool first";
     LOG.info("scheduling repair for repair run #{}", repairRunID);
     try {
-      executor.schedule(new RepairRunner(storage, repairRunID), 0, TimeUnit.SECONDS);
+      executor.schedule(new RepairRunner(storage, repairRunID, jmxConnectionFactory), 0, TimeUnit.SECONDS);
     } catch (ReaperException e) {
       e.printStackTrace();
       LOG.warn("Failed to schedule repair for repair run #{}", repairRunID);
@@ -81,6 +69,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
 
   private final IStorage storage;
   private final long repairRunId;
+  private final JmxConnectionFactory jmxConnectionFactory;
   private JmxProxy jmxConnection;
 
   // These fields are only set when a segment is being repaired.
@@ -89,19 +78,14 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   private int currentCommandId = -1;
   private long currentSegmentId = -1;
 
-  private RepairRunner(IStorage storage, long repairRunId) throws ReaperException {
-    this(storage,
-         repairRunId,
-         JmxProxy.connect(Optional.<RepairStatusHandler>absent(),
-                          storage.getCluster(storage.getRepairRun(repairRunId).getClusterName())
-                              .getSeedHosts().iterator().next()));
-  }
-
   @VisibleForTesting
-  RepairRunner(IStorage storage, long repairRunId, JmxProxy jmxConnection) {
+  RepairRunner(IStorage storage, long repairRunId, JmxConnectionFactory jmxConnectionFactory)
+      throws ReaperException {
     this.storage = storage;
     this.repairRunId = repairRunId;
-    this.jmxConnection = jmxConnection;
+    this.jmxConnectionFactory = jmxConnectionFactory;
+    jmxConnection = this.jmxConnectionFactory.connectAny(Optional.<RepairStatusHandler>absent(),
+        storage.getCluster(storage.getRepairRun(repairRunId).getClusterName()).getSeedHosts());
   }
 
   /**
@@ -212,19 +196,18 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
 
     if (!jmxConnection.isConnectionAlive()) {
       try {
-        jmxConnection =
-            jmxConnection.switchNode(Optional.<RepairStatusHandler>absent(), storage
-                .getCluster(storage.getRepairRun(repairRunId).getClusterName()).getSeedHosts()
-                .iterator().next());
+        LOG.info("reestablishing JMX proxy for repair runner on run id: {}", repairRunId);
+        jmxConnection = jmxConnectionFactory.connectAny(Optional.<RepairStatusHandler>absent(),
+            storage.getCluster(storage.getRepairRun(repairRunId).getClusterName()).getSeedHosts());
       } catch (ReaperException e) {
         e.printStackTrace();
-        LOG.warn(
-            "Failed to reestablish JMX connection in runner #{}, reattempting in {} seconds",
+        LOG.warn("Failed to reestablish JMX connection in runner #{}, reattempting in {} seconds",
             repairRunId, JMX_FAILURE_SLEEP_DELAY_SECONDS);
         executor.schedule(this, JMX_FAILURE_SLEEP_DELAY_SECONDS, TimeUnit.SECONDS);
         return;
       }
     }
+
 
     List<String> potentialCoordinators =
         jmxConnection.tokenRangeToEndpoint(keyspace,
@@ -239,8 +222,9 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
 
     // Connect to a node that can act as coordinator for the new repair.
     try {
-      jmxConnection = jmxConnection.switchNode(Optional.<RepairStatusHandler>of(this),
-                                               potentialCoordinators.get(0));
+      jmxConnection.close();
+      jmxConnection = jmxConnectionFactory
+          .connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators);
     } catch (ReaperException e) {
       e.printStackTrace();
       LOG.warn(
@@ -262,6 +246,14 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
             .build(currentSegmentId));
   }
 
+  /**
+   * Called when there is an event coming from JMX regarding on-going repairs.
+   *
+   * @param repairNumber repair sequence number, obtained when triggering a repair
+   * @param status       new status of the repair (STARTED, SESSION_SUCCESS, SESSION_FAILED,
+   *                     FINISHED)
+   * @param message      additional information about the repair
+   */
   @Override
   public synchronized void handle(int repairNumber, ActiveRepairService.Status status,
                                   String message) {

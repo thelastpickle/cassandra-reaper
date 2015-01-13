@@ -24,6 +24,7 @@ import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.resources.view.ColumnFamilyStatus;
+import com.spotify.reaper.service.JmxConnectionFactory;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
 import com.spotify.reaper.service.RepairRunner;
@@ -184,8 +185,8 @@ public class TableResource {
 
       if (segments == null || seedHosts.isEmpty()) {
         return Response.status(404)
-            .entity("couldn't connect to any of the seed hosts in cluster \""
-                    + existingTable.getClusterName() + "\"").build();
+            .entity("couldn't connect to any of the seed hosts in cluster \"" + existingTable
+                .getClusterName() + "\"").build();
       }
     } catch (ReaperException e) {
       String errMsg = "failed generating segments for new table: " + existingTable;
@@ -215,12 +216,11 @@ public class TableResource {
     for (RingRange range : segments) {
       repairSegments
           .add(new RepairSegment.Builder(newRepairRun.getId(), range,
-                                         RepairSegment.State.NOT_STARTED)
-                   .columnFamilyId(existingTable.getId()));
+              RepairSegment.State.NOT_STARTED).columnFamilyId(existingTable.getId()));
     }
     storage.addRepairSegments(repairSegments);
 
-    RepairRunner.startNewRepairRun(storage, newRepairRun.getId());
+    RepairRunner.startNewRepairRun(storage, newRepairRun.getId(), new JmxConnectionFactory());
 
     String newRepairRunPathPart = "repair_run/" + newRepairRun.getId();
     URI createdRepairRunURI;

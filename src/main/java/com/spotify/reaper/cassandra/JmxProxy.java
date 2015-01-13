@@ -265,15 +265,4 @@ public class JmxProxy implements NotificationListener, Serializable {
       throw new ReaperException(e);
     }
   }
-
-  /**
-   * Closes this JMX connection and establishes a connection to a new node.
-   *
-   * @return the newly established connection.
-   */
-  public JmxProxy switchNode(Optional<RepairStatusHandler> handler, String endpoint) throws ReaperException {
-    // TODO: If the new node is the same as this one, do nothing.
-    close();
-    return JmxProxy.connect(handler, endpoint);
-  }
 }
