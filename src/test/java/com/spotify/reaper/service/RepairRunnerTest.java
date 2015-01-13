@@ -24,13 +24,12 @@ public class RepairRunnerTest {
   }
 
   @Test
-  public void runTest() throws InterruptedException {
+  public void noSegmentsTest() throws InterruptedException {
     final int RUN_ID = 1;
     final int CF_ID = 1;
     final double INTENSITY = 0.5f;
     final long TIME_CREATION = 41l;
     final long TIME_START = 42l;
-    final long TIME_END = 43l;
 
     // place a dummy repair run into the storage
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATION);
@@ -50,17 +49,10 @@ public class RepairRunnerTest {
     assertNotNull(startTime);
     assertEquals(TIME_START, startTime.getMillis());
 
-    // end the repair
-    DateTimeUtils.setCurrentMillisFixed(TIME_END);
-    RepairRun run = storage.getRepairRun(RUN_ID);
-    storage.updateRepairRun(run.with().runState(RepairRun.RunState.RUNNING).build(RUN_ID));
-    RepairRunner.startNewRepairRun(storage, RUN_ID);
-    Thread.sleep(200);
-
-    // check if the end time was properly set
+    // end time will also be set immediately
     DateTime endTime = storage.getRepairRun(RUN_ID).getEndTime();
     assertNotNull(endTime);
-    assertEquals(TIME_END, endTime.getMillis());
+    assertEquals(TIME_START, endTime.getMillis());
   }
 
 }
