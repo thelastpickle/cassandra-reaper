@@ -13,6 +13,13 @@
  */
 package com.spotify.reaper.service;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+
+import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxProxy;
+import com.spotify.reaper.cassandra.RepairStatusHandler;
+import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.storage.IStorage;
@@ -65,9 +72,9 @@ public class RepairRunnerTest {
 
     // place a dummy repair run into the storage
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATION);
-    RepairRun.Builder runBuilder = new RepairRun.Builder("TestCluster", CF_ID,
-                                                         RepairRun.RunState.NOT_STARTED,
-                                                         DateTime.now(), INTENSITY);
+    RepairRun.Builder runBuilder =
+        new RepairRun.Builder("TestCluster", CF_ID, RepairRun.RunState.NOT_STARTED, DateTime.now(),
+            INTENSITY);
     storage.addRepairRun(runBuilder);
     storage.addRepairSegments(Collections.<RepairSegment.Builder>emptySet(), RUN_ID);
 
@@ -132,19 +139,29 @@ public class RepairRunnerTest {
 
     when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
     when(jmx.isConnectionAlive()).thenReturn(true);
-    when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class))).thenReturn(
-        Lists.newArrayList(""));
-    when(jmx.switchNode(Matchers.<Optional<RepairStatusHandler>>any(), anyString()))
-        .thenReturn(jmx);
-    when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(), anyString())).then(
-        new Answer<Integer>() {
+    when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
+        .thenReturn(Lists.newArrayList(""));
+
+    final AtomicInteger repairAttempts = new AtomicInteger(0);
+    when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(), anyString()))
+        .then(new Answer<Integer>() {
           @Override
           public Integer answer(InvocationOnMock invocation) throws Throwable {
             return repairAttempts.incrementAndGet();
           }
         });
 
-    RepairRunner repairRunner = new RepairRunner(storage, 1, jmx);
+    RepairRunner.initializeThreadPool(1, 1);
+    final RepairRunner repairRunner = new RepairRunner(storage, 1, new JmxConnectionFactory() {
+      @Override
+      public JmxProxy create(Optional<RepairStatusHandler> handler, String host)
+          throws ReaperException {
+        return jmx;
+      }
+    });
+
+    assertEquals(storage.getRepairSegment(1).getState(), RepairSegment.State.NOT_STARTED);
+    assertEquals(0, repairAttempts.get());
     repairRunner.run();
     assertEquals(1, repairAttempts.get());
     assertEquals(storage.getRepairSegment(1).getState(), RepairSegment.State.RUNNING);
