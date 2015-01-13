@@ -63,8 +63,7 @@ public class MemoryStorage implements IStorage {
 
     @Override
     public boolean equals(Object other) {
-      return
-          other instanceof TableName &&
+      return other instanceof TableName &&
           cluster.equals(((TableName) other).cluster) &&
           keyspace.equals(((TableName) other).keyspace) &&
           table.equals(((TableName) other).table);
@@ -159,10 +158,9 @@ public class MemoryStorage implements IStorage {
     if (existing == null) {
       ColumnFamily newColumnFamily = columnFamily.build(COLUMN_FAMILY_ID.incrementAndGet());
       columnFamilies.put(newColumnFamily.getId(), newColumnFamily);
-      columnFamiliesByName
-          .put(new TableName(newColumnFamily.getClusterName(),
-                             newColumnFamily.getKeyspaceName(),
-                             newColumnFamily.getName()), newColumnFamily);
+      TableName tableName = new TableName(newColumnFamily.getClusterName(),
+          newColumnFamily.getKeyspaceName(), newColumnFamily.getName());
+      columnFamiliesByName.put(tableName, newColumnFamily);
       return newColumnFamily;
     } else {
       return null;
@@ -196,8 +194,9 @@ public class MemoryStorage implements IStorage {
       return false;
     } else {
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
-      repairSegmentsByRunId.get(newRepairSegment.getRunId())
-          .put(newRepairSegment.getId(), newRepairSegment);
+      LinkedHashMap<Long, RepairSegment> updatedSegment =
+          repairSegmentsByRunId.get(newRepairSegment.getRunId());
+      updatedSegment.put(newRepairSegment.getId(), newRepairSegment);
       return true;
     }
   }

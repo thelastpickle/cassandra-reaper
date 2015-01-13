@@ -69,11 +69,11 @@ public class SegmentGenerator {
 
       if (!inRange(start) || !inRange(stop)) {
         throw new ReaperException(String.format("Tokens (%s,%s) not in range of %s",
-                                                start, stop, partitioner));
+            start, stop, partitioner));
       }
       if (start.equals(stop) && tokenRangeCount != 1) {
         throw new ReaperException(String.format("Tokens (%s,%s): two nodes have the same token",
-                                                start, stop));
+            start, stop));
       }
 
       BigInteger rangeSize = stop.subtract(start);
@@ -87,20 +87,20 @@ public class SegmentGenerator {
       BigInteger[] segmentCountAndRemainder =
           rangeSize.multiply(BigInteger.valueOf(totalSegmentCount)).divideAndRemainder(RANGE_SIZE);
       int segmentCount = segmentCountAndRemainder[0].intValue() +
-                         (segmentCountAndRemainder[1].equals(BigInteger.ZERO) ? 0 : 1);
+          (segmentCountAndRemainder[1].equals(BigInteger.ZERO) ? 0 : 1);
 
       LOG.info("Dividing token range [{},{}) into {} segments", start, stop, segmentCount);
 
       // Make a list of all the endpoints for the repair segments, including both start and stop
       List<BigInteger> endpointTokens = Lists.newArrayList();
       for (int j = 0; j <= segmentCount; j++) {
-        BigInteger reaperToken =
-            start.add(
-                rangeSize
-                    .multiply(BigInteger.valueOf(j))
-                    .divide(BigInteger.valueOf(segmentCount)));
-        if (greaterThan(reaperToken, RANGE_MAX))
+        BigInteger offset = rangeSize
+            .multiply(BigInteger.valueOf(j))
+            .divide(BigInteger.valueOf(segmentCount));
+        BigInteger reaperToken = start.add(offset);
+        if (greaterThan(reaperToken, RANGE_MAX)) {
           reaperToken = reaperToken.subtract(RANGE_SIZE);
+        }
         endpointTokens.add(reaperToken);
       }
 
@@ -108,7 +108,7 @@ public class SegmentGenerator {
       for (int j = 0; j < segmentCount; j++) {
         repairSegments.add(new RingRange(endpointTokens.get(j), endpointTokens.get(j + 1)));
         LOG.debug("Segment #{}: [{},{})", j + 1, endpointTokens.get(j),
-                  endpointTokens.get(j + 1));
+            endpointTokens.get(j + 1));
       }
     }
 

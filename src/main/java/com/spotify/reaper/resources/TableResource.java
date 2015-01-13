@@ -66,23 +66,25 @@ public class TableResource {
 
   @GET
   @Path("/{clusterName}/{keyspace}/{table}")
-  public Response getTable(@PathParam("clusterName") String clusterName,
-                             @PathParam("keyspace") String keyspace,
-                             @PathParam("table") String table) {
+  public Response getTable(
+      @PathParam("clusterName") String clusterName,
+      @PathParam("keyspace") String keyspace,
+      @PathParam("table") String table) {
     LOG.info("get table called with: clusterName = {}, keyspace = {}, table = {}",
              clusterName, keyspace, table);
     return Response.ok().entity("not implemented yet").build();
   }
 
   @POST
-  public Response addTable(@Context UriInfo uriInfo,
-                           @QueryParam("clusterName") Optional<String> clusterName,
-                           @QueryParam("seedHost") Optional<String> seedHost,
-                           @QueryParam("keyspace") Optional<String> keyspace,
-                           @QueryParam("table") Optional<String> table,
-                           @QueryParam("startRepair") Optional<Boolean> startRepair,
-                           @QueryParam("owner") Optional<String> owner,
-                           @QueryParam("cause") Optional<String> cause) {
+  public Response addTable(
+      @Context UriInfo uriInfo,
+      @QueryParam("clusterName") Optional<String> clusterName,
+      @QueryParam("seedHost") Optional<String> seedHost,
+      @QueryParam("keyspace") Optional<String> keyspace,
+      @QueryParam("table") Optional<String> table,
+      @QueryParam("startRepair") Optional<Boolean> startRepair,
+      @QueryParam("owner") Optional<String> owner,
+      @QueryParam("cause") Optional<String> cause) {
     LOG.info("add table called with: clusterName = {}, seedHost = {}, keyspace = {}, table = {}, "
              + "owner = {}, cause = {}", clusterName, seedHost, keyspace, table, owner, cause);
 
@@ -108,7 +110,8 @@ public class TableResource {
       } catch (ReaperException e) {
         e.printStackTrace();
         return Response.status(400)
-            .entity("failed creating cluster with seed host: " + seedHost.get()).build();
+            .entity("failed creating cluster with seed host: " + seedHost.get())
+            .build();
       }
       Cluster existingCluster = storage.getCluster(targetCluster.getName());
       if (existingCluster == null) {
@@ -121,16 +124,16 @@ public class TableResource {
     } else if (clusterName.isPresent()) {
       targetCluster = storage.getCluster(clusterName.get());
       if (null == targetCluster) {
-        return Response.status(404)
-            .entity("cluster \"" + clusterName + "\" does not exist").build();
+        return Response.status(404).entity("cluster \"" + clusterName + "\" does not exist")
+            .build();
       }
     } else {
-      return Response.status(400)
-          .entity("Query parameter \"clusterName\" or \"seedHost\" required").build();
+      return Response.status(400).entity("Query parameter \"clusterName\" or \"seedHost\" required")
+          .build();
     }
 
-    String newTablePathPart = targetCluster.getName() + "/" + keyspace.get()
-                              + "/" + table.get();
+    String newTablePathPart =
+        String.format("%s/%s/%s", targetCluster.getName(), keyspace.get(), table.get());
     URI createdURI;
     try {
       createdURI = (new URL(uriInfo.getAbsolutePath().toURL(), newTablePathPart)).toURI();
@@ -147,9 +150,9 @@ public class TableResource {
     if (existingTable == null) {
       LOG.info("storing new table");
 
-      existingTable = storage.addColumnFamily(
-          new ColumnFamily.Builder(targetCluster.getName(), keyspace.get(), table.get(),
-                                   config.getSegmentCount(), config.getSnapshotRepair()));
+      ColumnFamily.Builder newCf = new ColumnFamily.Builder(targetCluster.getName(), keyspace.get(),
+          table.get(), config.getSegmentCount(), config.getSnapshotRepair());
+      existingTable = storage.addColumnFamily(newCf);
 
       if (existingTable == null) {
         return Response.status(500)
@@ -183,9 +186,9 @@ public class TableResource {
       }
 
       if (segments == null || seedHosts.isEmpty()) {
-        return Response.status(404)
-            .entity("couldn't connect to any of the seed hosts in cluster \""
-                    + existingTable.getClusterName() + "\"").build();
+        String errMsg = String.format("couldn't connect to any of the seed hosts in cluster \"%s\"",
+            existingTable.getClusterName());
+        return Response.status(404).entity(errMsg).build();
       }
     } catch (ReaperException e) {
       String errMsg = "failed generating segments for new table: " + existingTable;
@@ -194,14 +197,12 @@ public class TableResource {
       return Response.status(400).entity(errMsg).build();
     }
 
-    RepairRun newRepairRun =
-        storage.addRepairRun(new RepairRun.Builder(targetCluster.getName(),
-                                                   existingTable.getId(),
-                                                   RepairRun.RunState.NOT_STARTED,
-                                                   DateTime.now(),
-                                                   config.getRepairIntensity())
-            .cause(cause.isPresent() ? cause.get() : "no cause specified")
-            .owner(owner.get()));
+    RepairRun.Builder runBuilder = new RepairRun.Builder(targetCluster.getName(),
+        existingTable.getId(), RepairRun.RunState.NOT_STARTED, DateTime.now(),
+        config.getRepairIntensity());
+    runBuilder.cause(cause.isPresent() ? cause.get() : "no cause specified");
+    runBuilder.owner(owner.get());
+    RepairRun newRepairRun = storage.addRepairRun(runBuilder);
     if (newRepairRun == null) {
       return Response.status(500)
           .entity("failed creating repair run into Reaper storage for owner: " + owner.get())
@@ -213,10 +214,10 @@ public class TableResource {
     // RepairSegment has a pointer to the RepairRun it lives in.
     List<RepairSegment.Builder> repairSegments = Lists.newArrayList();
     for (RingRange range : segments) {
-      repairSegments
-          .add(new RepairSegment.Builder(newRepairRun.getId(), range,
-                                         RepairSegment.State.NOT_STARTED)
-                   .columnFamilyId(existingTable.getId()));
+      RepairSegment.Builder repairSegment =
+          new RepairSegment.Builder(newRepairRun.getId(), range, RepairSegment.State.NOT_STARTED);
+      repairSegment.columnFamilyId(existingTable.getId());
+      repairSegments.add(repairSegment);
     }
     storage.addRepairSegments(repairSegments);
 
@@ -233,8 +234,8 @@ public class TableResource {
       return Response.status(400).entity(errMsg).build();
     }
 
-    return Response.created(createdRepairRunURI)
-        .entity(new ColumnFamilyStatus(existingTable)).build();
+    return Response.created(createdRepairRunURI).entity(new ColumnFamilyStatus(existingTable))
+        .build();
   }
 
 }
