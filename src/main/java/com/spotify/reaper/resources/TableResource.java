@@ -219,7 +219,7 @@ public class TableResource {
       repairSegment.columnFamilyId(existingTable.getId());
       repairSegments.add(repairSegment);
     }
-    storage.addRepairSegments(repairSegments);
+    storage.addRepairSegments(repairSegments, newRepairRun.getId());
 
     RepairRunner.startNewRepairRun(storage, newRepairRun.getId());
 

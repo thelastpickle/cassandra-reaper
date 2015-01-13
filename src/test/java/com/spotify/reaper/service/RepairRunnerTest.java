@@ -1,12 +1,15 @@
 package com.spotify.reaper.service;
 
 import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -34,6 +37,7 @@ public class RepairRunnerTest {
     RepairRun.Builder runBuilder = new RepairRun.Builder("TestCluster", CF_ID,
         RepairRun.RunState.NOT_STARTED, DateTime.now(), INTENSITY);
     storage.addRepairRun(runBuilder);
+    storage.addRepairSegments(Collections.<RepairSegment.Builder>emptySet(), RUN_ID);
 
     // start the repair
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
@@ -49,7 +53,7 @@ public class RepairRunnerTest {
     // end the repair
     DateTimeUtils.setCurrentMillisFixed(TIME_END);
     RepairRun run = storage.getRepairRun(RUN_ID);
-    storage.updateRepairRun(run.with().runState(RepairRun.RunState.DONE).build(RUN_ID));
+    storage.updateRepairRun(run.with().runState(RepairRun.RunState.RUNNING).build(RUN_ID));
     RepairRunner.startNewRepairRun(storage, RUN_ID);
     Thread.sleep(200);
 

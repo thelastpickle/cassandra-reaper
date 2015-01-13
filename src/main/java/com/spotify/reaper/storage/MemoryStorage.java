@@ -178,14 +178,14 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public void addRepairSegments(Collection<RepairSegment.Builder> segments) {
+  public void addRepairSegments(Collection<RepairSegment.Builder> segments, long runId) {
     LinkedHashMap<Long, RepairSegment> newSegments = Maps.newLinkedHashMap();
     for (RepairSegment.Builder segment : segments) {
       RepairSegment newRepairSegment = segment.build(SEGMENT_ID.incrementAndGet());
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
       newSegments.put(newRepairSegment.getId(), newRepairSegment);
     }
-    repairSegmentsByRunId.put(newSegments.values().iterator().next().getRunId(), newSegments);
+    repairSegmentsByRunId.put(runId, newSegments);
   }
 
   @Override

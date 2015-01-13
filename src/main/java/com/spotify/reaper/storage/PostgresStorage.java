@@ -207,7 +207,7 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public void addRepairSegments(Collection<RepairSegment.Builder> newSegments) {
+  public void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId) {
     List<RepairSegment> insertableSegments = new ArrayList<>();
     for (RepairSegment.Builder segment : newSegments) {
       insertableSegments.add(segment.build(-1));
