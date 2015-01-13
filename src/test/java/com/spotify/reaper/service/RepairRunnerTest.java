@@ -42,6 +42,7 @@ import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -150,7 +151,8 @@ public class RepairRunnerTest {
     repairRunner.run();
     assertEquals(1, repairAttempts.get());
     assertEquals(storage.getRepairSegment(1).getState(), RepairSegment.State.RUNNING);
-    repairRunner.handle(repairAttempts.get(), ActiveRepairService.Status.STARTED,
+    assertTrue(storage.getRepairSegment(1).getStartTime() == null);
+    repairRunner.handleRepairOutcome(repairAttempts.get(), RepairRunner.RepairOutcome.STARTED,
         "Repair " + repairAttempts + " started");
     assertEquals(DateTime.now(), storage.getRepairSegment(1).getStartTime());
     assertEquals(RepairRun.RunState.RUNNING, storage.getRepairRun(1).getRunState());
@@ -160,12 +162,13 @@ public class RepairRunnerTest {
     assertEquals(storage.getRepairSegment(1).getState(), RepairSegment.State.RUNNING);
 
     DateTimeUtils.setCurrentMillisFixed(TIME_RERUN);
-    repairRunner.handle(repairAttempts.get(), ActiveRepairService.Status.STARTED,
+    assertTrue(storage.getRepairSegment(1).getStartTime() == null);
+    repairRunner.handleRepairOutcome(repairAttempts.get(), RepairRunner.RepairOutcome.STARTED,
         "Repair " + repairAttempts + " started");
     assertEquals(DateTime.now(), storage.getRepairSegment(1).getStartTime());
     assertEquals(RepairRun.RunState.RUNNING, storage.getRepairRun(1).getRunState());
 
-    repairRunner.handle(repairAttempts.get(), ActiveRepairService.Status.FINISHED,
+    repairRunner.handleRepairOutcome(repairAttempts.get(), RepairRunner.RepairOutcome.FINISHED,
         "Repair " + repairAttempts + " finished");
     Thread.sleep(100);
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(1).getRunState());
