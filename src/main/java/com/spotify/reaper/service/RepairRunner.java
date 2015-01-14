@@ -119,9 +119,10 @@ public class RepairRunner implements Runnable {
   private void start() {
     LOG.info("Repairs for repair run #{} starting", repairRunId);
     RepairRun repairRun = storage.getRepairRun(repairRunId);
-    storage.updateRepairRun(
-        repairRun.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now())
-            .build(repairRun.getId()));
+    storage.updateRepairRun(repairRun.with()
+        .runState(RepairRun.RunState.RUNNING)
+        .startTime(DateTime.now())
+        .build(repairRun.getId()));
     startNextSegment();
   }
 
@@ -131,9 +132,10 @@ public class RepairRunner implements Runnable {
   private void end() {
     LOG.info("Repairs for repair run #{} done", repairRunId);
     RepairRun repairRun = storage.getRepairRun(repairRunId);
-    storage.updateRepairRun(
-        repairRun.with().runState(RepairRun.RunState.DONE).endTime(DateTime.now())
-            .build(repairRun.getId()));
+    storage.updateRepairRun(repairRun.with()
+        .runState(RepairRun.RunState.DONE)
+        .endTime(DateTime.now())
+        .build(repairRun.getId()));
   }
 
   /**
@@ -167,8 +169,9 @@ public class RepairRunner implements Runnable {
       LOG.warn("Repair with commandId {} and segmentId {} in repair run {}, timed out",
           currentCommandId, currentSegmentId, repairRunId);
       closeRepairCommand();
-      storage.updateRepairSegment(
-          running.with().state(RepairSegment.State.NOT_STARTED).build(running.getId()));
+      storage.updateRepairSegment(running.with()
+          .state(RepairSegment.State.NOT_STARTED)
+          .build(running.getId()));
       run();
     } else {
       // The repair might not have finished, so let it timeout before resetting its status.
@@ -211,8 +214,9 @@ public class RepairRunner implements Runnable {
     if (potentialCoordinators == null) {
       // This segment has a faulty token range. Abort the entire repair run.
       RepairRun repairRun = storage.getRepairRun(repairRunId);
-      storage.updateRepairRun(
-          repairRun.with().runState(RepairRun.RunState.ERROR).build(repairRun.getId()));
+      storage.updateRepairRun(repairRun.with()
+          .runState(RepairRun.RunState.ERROR)
+          .build(repairRun.getId()));
       return;
     }
 
@@ -262,9 +266,10 @@ public class RepairRunner implements Runnable {
       }
     }, repairTimeoutSecs, TimeUnit.SECONDS);
     LOG.debug("Triggered repair with command id {}", currentCommandId);
-    storage.updateRepairSegment(
-        next.with().state(RepairSegment.State.RUNNING).repairCommandId(currentCommandId)
-            .build(currentSegmentId));
+    storage.updateRepairSegment(next.with()
+        .state(RepairSegment.State.RUNNING)
+        .repairCommandId(currentCommandId)
+        .build(currentSegmentId));
   }
 
 
@@ -303,13 +308,16 @@ public class RepairRunner implements Runnable {
       switch (outcome) {
         case STARTED:
           DateTime now = DateTime.now();
-          storage.updateRepairSegment(currentSegment.with().startTime(now).build(currentSegmentId));
+          storage.updateRepairSegment(currentSegment.with()
+              .startTime(now)
+              .build(currentSegmentId));
           // We already set the state of the segment to RUNNING.
           break;
         case FINISHED: {
-          RepairSegment updatedSegment =
-              currentSegment.with().state(RepairSegment.State.DONE).endTime(DateTime.now())
-                  .build(currentSegmentId);
+          RepairSegment updatedSegment = currentSegment.with()
+              .state(RepairSegment.State.DONE)
+              .endTime(DateTime.now())
+              .build(currentSegmentId);
           storage.updateRepairSegment(updatedSegment);
           closeRepairCommand();
           executor.schedule(this, intensityBasedDelayMillis(updatedSegment), TimeUnit.MILLISECONDS);
@@ -317,9 +325,10 @@ public class RepairRunner implements Runnable {
         break;
         case FAILED: {
           // TODO: Bj0rn: How should we handle this? Here, it's almost treated like a success.
-          RepairSegment updatedSegment =
-              currentSegment.with().state(RepairSegment.State.ERROR).endTime(DateTime.now())
-                  .build(currentSegmentId);
+          RepairSegment updatedSegment = currentSegment.with()
+              .state(RepairSegment.State.ERROR)
+              .endTime(DateTime.now())
+              .build(currentSegmentId);
           storage.updateRepairSegment(updatedSegment);
           closeRepairCommand();
           executor.schedule(this, intensityBasedDelayMillis(updatedSegment), TimeUnit.MILLISECONDS);
@@ -327,9 +336,10 @@ public class RepairRunner implements Runnable {
         break;
         case TIMEOUT: {
           // TODO: abort the repair.
-          RepairSegment updatedSegment =
-              currentSegment.with().state(RepairSegment.State.NOT_STARTED).startTime(null)
-                  .build(currentSegmentId);
+          RepairSegment updatedSegment = currentSegment.with()
+              .state(RepairSegment.State.NOT_STARTED)
+              .startTime(null)
+              .build(currentSegmentId);
           storage.updateRepairSegment(updatedSegment);
           closeRepairCommand();
           executor.schedule(this, 0, TimeUnit.MILLISECONDS);
