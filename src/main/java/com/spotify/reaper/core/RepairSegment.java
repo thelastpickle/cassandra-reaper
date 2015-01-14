@@ -34,8 +34,8 @@ public class RepairSegment {
     return id;
   }
 
-  public int getRepairCommandId() {
-    return this.repairCommandId;
+  public Integer getRepairCommandId() {
+    return repairCommandId;
   }
 
   public long getColumnFamilyId() {
@@ -98,7 +98,7 @@ public class RepairSegment {
     public final RingRange tokenRange;
     private State state;
     private long columnFamilyId;
-    private int repairCommandId;
+    private Integer repairCommandId;
     private DateTime startTime;
     private DateTime endTime;
 
@@ -128,7 +128,7 @@ public class RepairSegment {
       return this;
     }
 
-    public Builder repairCommandId(int repairCommandId) {
+    public Builder repairCommandId(Integer repairCommandId) {
       this.repairCommandId = repairCommandId;
       return this;
     }

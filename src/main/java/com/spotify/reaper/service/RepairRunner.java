@@ -163,11 +163,13 @@ public class RepairRunner implements Runnable {
    * @param runningSegment the running repair segment.
    */
   public void abortSegment(RepairSegment runningSegment) {
-    // TODO: actually abort the repair.
+    // TODO: actually abort the repair. (runningSegment.getRepairCommandId() should be set)
+    assert runningSegment.getRepairCommandId() != null;
     LOG.debug("Aborting repair with and segmentId {} in repair run #{}",
         runningSegment.getId(), repairRunId);
     storage.updateRepairSegment(runningSegment.with()
         .startTime(null)
+        .repairCommandId(null)
         .state(RepairSegment.State.NOT_STARTED)
         .build(runningSegment.getId()));
   }
@@ -285,16 +287,14 @@ public class RepairRunner implements Runnable {
         repairRunId, repairCommandId, outcome, message);
     if (repairCommandId != currentCommandId) {
       LOG.warn("Repair run id != current command id. {} != {}", repairCommandId, currentCommandId);
-      // bj0rn: Should this ever be allowed to happen? Perhaps shut down the runner, because
-      // repairs are happening outside of Reaper?
-      //throw new ReaperException("Other repairs outside of reaper's control are happening");
+      // This can be reached if timeout happens while finished repair is being handled, or vice
+      // versa. Since this method is synchronized, only one will get through.
 
-      // bj0rn: on second thought, this would happen if multiple keyspaces (and maybe column
-      // families) were repaired simultaneously.
+      // Another cause for getting here is other repairs running on the node than what this runner
+      // has initiated.
       return;
     }
 
-    // if !repairIsTriggered(), repair has timed out.
     if (repairIsTriggered()) {
       RepairSegment currentSegment = storage.getRepairSegment(currentSegmentId);
       // See status explanations from: https://wiki.apache.org/cassandra/RepairAsyncAPI
