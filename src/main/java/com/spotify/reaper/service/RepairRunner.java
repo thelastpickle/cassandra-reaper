@@ -60,8 +60,7 @@ public class RepairRunner implements Runnable {
     assert null != executor : "you need to initialize the thread pool first";
     LOG.info("scheduling repair for repair run #{}", repairRunID);
     try {
-      executor.schedule(new RepairRunner(storage, repairRunID, jmxConnectionFactory), 0,
-          TimeUnit.SECONDS);
+      executor.submit(new RepairRunner(storage, repairRunID, jmxConnectionFactory));
     } catch (ReaperException e) {
       e.printStackTrace();
       LOG.warn("Failed to schedule repair for repair run #{}", repairRunID);
@@ -96,7 +95,7 @@ public class RepairRunner implements Runnable {
   @Override
   public void run() {
     RepairRun.RunState state = storage.getRepairRun(repairRunId).getRunState();
-    LOG.debug("run() called with repairRunId #{} and run state {}", repairRunId, state);
+    LOG.debug("run() called for repair run #{} with run state {}", repairRunId, state);
     switch (state) {
       case NOT_STARTED:
         start();
@@ -145,7 +144,8 @@ public class RepairRunner implements Runnable {
   private void startNextSegment() {
     RepairSegment running = storage.getTheRunningSegment(repairRunId);
     if (running != null) {
-      handleRunningRepairSegment(running);
+      abortSegment(running);
+      startNextSegment();
     } else {
       assert !repairIsTriggered();
       RepairSegment next = storage.getNextFreeSegment(repairRunId);
@@ -158,27 +158,18 @@ public class RepairRunner implements Runnable {
   }
 
   /**
-   * Set the running repair segment back to NOT_STARTED, either now or later, based on need to wait
-   * for timeout.
+   * Set the running repair segment back to NOT_STARTED.
    *
-   * @param running the running repair segment.
+   * @param runningSegment the running repair segment.
    */
-  public void handleRunningRepairSegment(RepairSegment running) {
-    if (repairIsTriggered()) {
-      // Implies that repair has timed out.
-      LOG.warn("Repair with commandId {} and segmentId {} in repair run {}, timed out",
-          currentCommandId, currentSegmentId, repairRunId);
-      closeRepairCommand();
-      storage.updateRepairSegment(running.with()
-          .state(RepairSegment.State.NOT_STARTED)
-          .build(running.getId()));
-      run();
-    } else {
-      // The repair might not have finished, so let it timeout before resetting its status.
-      // This may happen if the RepairRunner was created for an incomplete repair run.
-      LOG.warn("Scheduling next segment to restart after {} seconds", repairTimeoutSecs);
-      repairTimeout = executor.schedule(this, repairTimeoutSecs, TimeUnit.SECONDS);
-    }
+  public void abortSegment(RepairSegment runningSegment) {
+    // TODO: actually abort the repair.
+    LOG.debug("Aborting repair with and segmentId {} in repair run #{}",
+        runningSegment.getId(), repairRunId);
+    storage.updateRepairSegment(runningSegment.with()
+        .startTime(null)
+        .state(RepairSegment.State.NOT_STARTED)
+        .build(runningSegment.getId()));
   }
 
   /**
@@ -196,7 +187,7 @@ public class RepairRunner implements Runnable {
 
     if (!jmxConnection.isConnectionAlive()) {
       try {
-        LOG.info("reestablishing JMX proxy for repair runner on run id: {}", repairRunId);
+        LOG.debug("reestablishing JMX proxy for repair runner on run id: {}", repairRunId);
         jmxConnection = jmxConnectionFactory.connectAny(Optional.<RepairStatusHandler>absent(),
             storage.getCluster(storage.getRepairRun(repairRunId).getClusterName()).getSeedHosts());
       } catch (ReaperException e) {
@@ -206,6 +197,7 @@ public class RepairRunner implements Runnable {
         executor.schedule(this, JMX_FAILURE_SLEEP_DELAY_SECONDS, TimeUnit.SECONDS);
         return;
       }
+      LOG.info("successfully reestablished JMX proxy for repair runner on run id: {}", repairRunId);
     }
 
 
@@ -223,8 +215,8 @@ public class RepairRunner implements Runnable {
     // Connect to a node that can act as coordinator for the new repair.
     try {
       jmxConnection.close();
-      jmxConnection = jmxConnectionFactory
-          .connectAny(Optional.<RepairStatusHandler>of(new RepairStatusHandler() {
+      jmxConnection = jmxConnectionFactory.connectAny(Optional.<RepairStatusHandler>of(
+          new RepairStatusHandler() {
             @Override
             public void handle(int repairNumber, ActiveRepairService.Status status,
                 String message) {
@@ -266,6 +258,7 @@ public class RepairRunner implements Runnable {
       }
     }, repairTimeoutSecs, TimeUnit.SECONDS);
     LOG.debug("Triggered repair with command id {}", currentCommandId);
+    LOG.info("Repair for segment {} started in repair run #{}", currentSegmentId, repairRunId);
     storage.updateRepairSegment(next.with()
         .state(RepairSegment.State.RUNNING)
         .repairCommandId(currentCommandId)
@@ -288,7 +281,7 @@ public class RepairRunner implements Runnable {
   public synchronized void handleRepairOutcome(int repairCommandId, RepairOutcome outcome,
       String message) {
     LOG.debug(
-        "handleRepairOutcome called with repairRunId {}, repairCommandId {}, outcome {} and message: {}",
+        "handleRepairOutcome called for repair run #{}, repairCommandId {}, outcome {} and message: {}",
         repairRunId, repairCommandId, outcome, message);
     if (repairCommandId != currentCommandId) {
       LOG.warn("Repair run id != current command id. {} != {}", repairCommandId, currentCommandId);
@@ -335,14 +328,9 @@ public class RepairRunner implements Runnable {
         }
         break;
         case TIMEOUT: {
-          // TODO: abort the repair.
-          RepairSegment updatedSegment = currentSegment.with()
-              .state(RepairSegment.State.NOT_STARTED)
-              .startTime(null)
-              .build(currentSegmentId);
-          storage.updateRepairSegment(updatedSegment);
           closeRepairCommand();
-          executor.schedule(this, 0, TimeUnit.MILLISECONDS);
+          abortSegment(currentSegment);
+          executor.submit(this);
         }
         break;
       }
@@ -361,7 +349,7 @@ public class RepairRunner implements Runnable {
    * Stop countdown for repair, and stop listening for JMX notifications for the current repair.
    */
   void closeRepairCommand() {
-    LOG.debug("Closing repair command with commandId {} and segmentId {} in repair run {}",
+    LOG.debug("Closing repair command with commandId {} and segmentId {} in repair run #{}",
         currentCommandId, currentSegmentId, repairRunId);
     assert repairTimeout != null;
 
