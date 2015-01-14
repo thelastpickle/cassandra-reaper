@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * A repair runner that only triggers one segment repair at a time.
  */
-public class RepairRunner implements Runnable, RepairStatusHandler {
+public class RepairRunner implements Runnable {
   // TODO: test
   // TODO: handle failed storage updates
 
@@ -54,12 +54,14 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     RepairRunner.repairTimeoutSecs = repairTimeoutSecs;
   }
 
-  public static void startNewRepairRun(IStorage storage, long repairRunID, JmxConnectionFactory jmxConnectionFactory) {
+  public static void startNewRepairRun(IStorage storage, long repairRunID,
+      JmxConnectionFactory jmxConnectionFactory) {
     // TODO: make sure that no more than one RepairRunner is created per RepairRun
     assert null != executor : "you need to initialize the thread pool first";
     LOG.info("scheduling repair for repair run #{}", repairRunID);
     try {
-      executor.schedule(new RepairRunner(storage, repairRunID, jmxConnectionFactory), 0, TimeUnit.SECONDS);
+      executor.schedule(new RepairRunner(storage, repairRunID, jmxConnectionFactory), 0,
+          TimeUnit.SECONDS);
     } catch (ReaperException e) {
       e.printStackTrace();
       LOG.warn("Failed to schedule repair for repair run #{}", repairRunID);
@@ -117,10 +119,9 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   private void start() {
     LOG.info("Repairs for repair run #{} starting", repairRunId);
     RepairRun repairRun = storage.getRepairRun(repairRunId);
-    storage.updateRepairRun(repairRun.with()
-        .runState(RepairRun.RunState.RUNNING)
-        .startTime(DateTime.now())
-        .build(repairRun.getId()));
+    storage.updateRepairRun(
+        repairRun.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now())
+            .build(repairRun.getId()));
     startNextSegment();
   }
 
@@ -130,15 +131,14 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
   private void end() {
     LOG.info("Repairs for repair run #{} done", repairRunId);
     RepairRun repairRun = storage.getRepairRun(repairRunId);
-    storage.updateRepairRun(repairRun.with()
-        .runState(RepairRun.RunState.DONE)
-        .endTime(DateTime.now())
-        .build(repairRun.getId()));
+    storage.updateRepairRun(
+        repairRun.with().runState(RepairRun.RunState.DONE).endTime(DateTime.now())
+            .build(repairRun.getId()));
   }
 
   /**
-   * If no segment has the state RUNNING, start the next repair. Otherwise, mark the RUNNING
-   * segment as NOT_STARTED to queue it up for a retry.
+   * If no segment has the state RUNNING, start the next repair. Otherwise, mark the RUNNING segment
+   * as NOT_STARTED to queue it up for a retry.
    */
   private void startNextSegment() {
     RepairSegment running = storage.getTheRunningSegment(repairRunId);
@@ -165,7 +165,7 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     if (repairIsTriggered()) {
       // Implies that repair has timed out.
       LOG.warn("Repair with commandId {} and segmentId {} in repair run {}, timed out",
-                currentCommandId, currentSegmentId, repairRunId);
+          currentCommandId, currentSegmentId, repairRunId);
       closeRepairCommand();
       storage.updateRepairSegment(
           running.with().state(RepairSegment.State.NOT_STARTED).build(running.getId()));
@@ -206,15 +206,13 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     }
 
 
-    List<String> potentialCoordinators =
-        jmxConnection.tokenRangeToEndpoint(keyspace,
-                                           storage.getNextFreeSegment(repairRunId).getTokenRange());
+    List<String> potentialCoordinators = jmxConnection
+        .tokenRangeToEndpoint(keyspace, storage.getNextFreeSegment(repairRunId).getTokenRange());
     if (potentialCoordinators == null) {
       // This segment has a faulty token range. Abort the entire repair run.
       RepairRun repairRun = storage.getRepairRun(repairRunId);
-      storage.updateRepairRun(repairRun.with()
-          .runState(RepairRun.RunState.ERROR)
-          .build(repairRun.getId()));
+      storage.updateRepairRun(
+          repairRun.with().runState(RepairRun.RunState.ERROR).build(repairRun.getId()));
       return;
     }
 
@@ -222,44 +220,73 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     try {
       jmxConnection.close();
       jmxConnection = jmxConnectionFactory
-          .connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators);
+          .connectAny(Optional.<RepairStatusHandler>of(new RepairStatusHandler() {
+            @Override
+            public void handle(int repairNumber, ActiveRepairService.Status status,
+                String message) {
+              RepairOutcome outcome;
+              switch (status) {
+                case STARTED:
+                  outcome = RepairOutcome.STARTED;
+                  break;
+                case SESSION_FAILED:
+                  outcome = RepairOutcome.FAILED;
+                  break;
+                case FINISHED:
+                  outcome = RepairOutcome.FINISHED;
+                  break;
+                default:
+                  // Do nothing, wait for FINISHED.
+                  return;
+              }
+              handleRepairOutcome(repairNumber, outcome, message);
+            }
+          }), potentialCoordinators);
     } catch (ReaperException e) {
       e.printStackTrace();
-      LOG.warn(
-          "Failed to connect to a coordinator node for next repair in runner #{}, "
-          + "reattempting in {} seconds",
-          repairRunId, JMX_FAILURE_SLEEP_DELAY_SECONDS);
+      LOG.warn("Failed to connect to a coordinator node for next repair in runner #{}, "
+          + "reattempting in {} seconds", repairRunId, JMX_FAILURE_SLEEP_DELAY_SECONDS);
       executor.schedule(this, JMX_FAILURE_SLEEP_DELAY_SECONDS, TimeUnit.SECONDS);
       return;
     }
 
     currentSegmentId = next.getId();
-    repairTimeout = executor.schedule(this, repairTimeoutSecs, TimeUnit.SECONDS);
     // TODO: ensure that no repair is already running (abort all repairs)
-    currentCommandId = jmxConnection.triggerRepair(next.getStartToken(), next.getEndToken(),
-        keyspace, columnFamily.getName());
+    currentCommandId = jmxConnection
+        .triggerRepair(next.getStartToken(), next.getEndToken(), keyspace, columnFamily.getName());
+    repairTimeout = executor.schedule(new Runnable() {
+      @Override
+      public void run() {
+        handleRepairOutcome(currentCommandId, RepairOutcome.TIMEOUT,
+            "[Reaper] Repair command timed out");
+      }
+    }, repairTimeoutSecs, TimeUnit.SECONDS);
     LOG.debug("Triggered repair with command id {}", currentCommandId);
-    storage.updateRepairSegment(next.with()
-        .state(RepairSegment.State.RUNNING)
-        .repairCommandId(currentCommandId)
-        .build(currentSegmentId));
+    storage.updateRepairSegment(
+        next.with().state(RepairSegment.State.RUNNING).repairCommandId(currentCommandId)
+            .build(currentSegmentId));
+  }
+
+
+  public static enum RepairOutcome {
+    STARTED, FINISHED, FAILED, TIMEOUT
   }
 
   /**
-   * Called when there is an event coming from JMX regarding on-going repairs.
+   * Called when there is an event coming either from JMX or this runner regarding on-going
+   * repairs.
    *
-   * @param repairNumber repair sequence number, obtained when triggering a repair
-   * @param status       new status of the repair (STARTED, SESSION_SUCCESS, SESSION_FAILED,
-   *                     FINISHED)
-   * @param message      additional information about the repair
+   * @param repairCommandId repair sequence number, obtained when triggering a repair
+   * @param outcome         new status of the repair (STARTED, FINISHED, FAILED, TIMEOUT)
+   * @param message         additional information about the repair
    */
-  @Override
-  public synchronized void handle(int repairNumber, ActiveRepairService.Status status,
+  public synchronized void handleRepairOutcome(int repairCommandId, RepairOutcome outcome,
       String message) {
-    LOG.debug("handle called with repairRunId {}, repairNumber {} and status {}", repairRunId,
-        repairNumber, status);
-    if (repairNumber != currentCommandId) {
-      LOG.warn("Repair run id != current command id. {} != {}", repairNumber, currentCommandId);
+    LOG.debug(
+        "handleRepairOutcome called with repairRunId {}, repairCommandId {}, outcome {} and message: {}",
+        repairRunId, repairCommandId, outcome, message);
+    if (repairCommandId != currentCommandId) {
+      LOG.warn("Repair run id != current command id. {} != {}", repairCommandId, currentCommandId);
       // bj0rn: Should this ever be allowed to happen? Perhaps shut down the runner, because
       // repairs are happening outside of Reaper?
       //throw new ReaperException("Other repairs outside of reaper's control are happening");
@@ -273,35 +300,39 @@ public class RepairRunner implements Runnable, RepairStatusHandler {
     if (repairIsTriggered()) {
       RepairSegment currentSegment = storage.getRepairSegment(currentSegmentId);
       // See status explanations from: https://wiki.apache.org/cassandra/RepairAsyncAPI
-      switch (status) {
+      switch (outcome) {
         case STARTED:
           DateTime now = DateTime.now();
           storage.updateRepairSegment(currentSegment.with().startTime(now).build(currentSegmentId));
           // We already set the state of the segment to RUNNING.
           break;
-        case SESSION_SUCCESS:
-          // This gets called once for each column family if multiple cf's were specified in a
-          // single repair command.
-          break;
-        case SESSION_FAILED: {
-          // Bj0rn: How should we handle this? Here, it's almost treated like a success.
-          RepairSegment updatedSegment = currentSegment.with()
-              .state(RepairSegment.State.ERROR)
-              .endTime(DateTime.now())
-              .build(currentSegmentId);
+        case FINISHED: {
+          RepairSegment updatedSegment =
+              currentSegment.with().state(RepairSegment.State.DONE).endTime(DateTime.now())
+                  .build(currentSegmentId);
           storage.updateRepairSegment(updatedSegment);
           closeRepairCommand();
           executor.schedule(this, intensityBasedDelayMillis(updatedSegment), TimeUnit.MILLISECONDS);
         }
         break;
-        case FINISHED: {
-          RepairSegment updatedSegment = currentSegment.with()
-              .state(RepairSegment.State.DONE)
-              .endTime(DateTime.now())
-              .build(currentSegmentId);
+        case FAILED: {
+          // TODO: Bj0rn: How should we handle this? Here, it's almost treated like a success.
+          RepairSegment updatedSegment =
+              currentSegment.with().state(RepairSegment.State.ERROR).endTime(DateTime.now())
+                  .build(currentSegmentId);
           storage.updateRepairSegment(updatedSegment);
           closeRepairCommand();
           executor.schedule(this, intensityBasedDelayMillis(updatedSegment), TimeUnit.MILLISECONDS);
+        }
+        break;
+        case TIMEOUT: {
+          // TODO: abort the repair.
+          RepairSegment updatedSegment =
+              currentSegment.with().state(RepairSegment.State.NOT_STARTED).startTime(null)
+                  .build(currentSegmentId);
+          storage.updateRepairSegment(updatedSegment);
+          closeRepairCommand();
+          executor.schedule(this, 0, TimeUnit.MILLISECONDS);
         }
         break;
       }
