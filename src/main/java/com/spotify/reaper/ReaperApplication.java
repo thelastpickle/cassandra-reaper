@@ -83,7 +83,8 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     final PingResource pingResource = new PingResource();
     environment.jersey().register(pingResource);
 
-    final ClusterResource addClusterResource = new ClusterResource(storage);
+    final ClusterResource addClusterResource = new ClusterResource(storage,
+        new JmxConnectionFactory());
     environment.jersey().register(addClusterResource);
 
     final TableResource addTableResource = new TableResource(config, storage);
