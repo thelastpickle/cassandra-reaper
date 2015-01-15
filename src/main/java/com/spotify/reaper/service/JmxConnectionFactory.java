@@ -29,7 +29,7 @@ public class JmxConnectionFactory {
 
   public JmxProxy create(Optional<RepairStatusHandler> handler, String host)
       throws ReaperException {
-    return new JmxProxy().connect(handler, host);
+    return JmxProxy.connect(handler, host);
   }
 
   public JmxProxy connectAny(Optional<RepairStatusHandler> handler, Collection<String> hosts)

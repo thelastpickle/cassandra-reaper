@@ -56,14 +56,12 @@ public class JmxProxy implements NotificationListener, Serializable {
   private static final String JMX_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
   private static final String JMX_OBJECT_NAME = "org.apache.cassandra.db:type=StorageService";
 
-  private JMXConnector jmxConnector;
-  private ObjectName mbeanName;
-  private MBeanServerConnection mbeanServer;
-  private StorageServiceMBean ssProxy;
-  private Optional<RepairStatusHandler> repairStatusHandler;
-  private String host;
-
-  public JmxProxy() { }
+  private final JMXConnector jmxConnector;
+  private final ObjectName mbeanName;
+  private final MBeanServerConnection mbeanServer;
+  private final StorageServiceMBean ssProxy;
+  private final Optional<RepairStatusHandler> repairStatusHandler;
+  private final String host;
 
   private JmxProxy(Optional<RepairStatusHandler> handler, String host, JMXConnector jmxConnector,
       StorageServiceMBean ssProxy, ObjectName mbeanName, MBeanServerConnection mbeanServer) {
@@ -78,7 +76,7 @@ public class JmxProxy implements NotificationListener, Serializable {
   /**
    * Connect to JMX interface on the given host and default JMX port without RepairStatusHandler.
    */
-  public JmxProxy connect(String host) throws ReaperException {
+  public static JmxProxy connect(String host) throws ReaperException {
     return connect(Optional.<RepairStatusHandler>absent(), host);
   }
 
@@ -88,7 +86,7 @@ public class JmxProxy implements NotificationListener, Serializable {
    * @param handler Implementation of {@link RepairStatusHandler} to process incoming notifications
    *                of repair events.
    */
-  public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
+  public static JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
       throws ReaperException {
     String[] parts = host.split(":");
     if (parts.length == 2) {

@@ -75,7 +75,6 @@ public class TableResourceTest {
     when(uriInfo.getBaseUri()).thenReturn(SAMPLE_URI);
 
     final JmxProxy proxy = mock(JmxProxy.class);
-    when(proxy.connect(any(String.class))).thenReturn(proxy);
     when(proxy.getClusterName()).thenReturn(CLUSTER_NAME);
     when(proxy.getPartitioner()).thenReturn(PARTITIONER);
     when(proxy.getTokens()).thenReturn(TOKENS);
