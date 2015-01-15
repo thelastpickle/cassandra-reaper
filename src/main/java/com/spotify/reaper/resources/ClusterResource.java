@@ -19,6 +19,7 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.resources.view.ClusterStatus;
+import com.spotify.reaper.service.JmxConnectionFactory;
 import com.spotify.reaper.storage.IStorage;
 
 import org.slf4j.Logger;
@@ -48,10 +49,12 @@ public class ClusterResource {
 
   private static final Logger LOG = LoggerFactory.getLogger(ClusterResource.class);
 
+  private final JmxConnectionFactory jmxFactory;
   private final IStorage storage;
 
-  public ClusterResource(IStorage storage) {
+  public ClusterResource(IStorage storage, JmxConnectionFactory factory) {
     this.storage = storage;
+    this.jmxFactory = factory;
   }
 
   @GET
@@ -87,7 +90,7 @@ public class ClusterResource {
 
     Cluster newCluster;
     try {
-      newCluster = createClusterWithSeedHost(seedHost.get());
+      newCluster = createClusterWithSeedHost(seedHost.get(), jmxFactory);
     } catch (ReaperException e) {
       return Response.status(400)
           .entity("failed to create cluster with seed host: " + seedHost.get()).build();
@@ -116,12 +119,12 @@ public class ClusterResource {
     return Response.created(createdURI).entity(new ClusterStatus(newCluster)).build();
   }
 
-  public static Cluster createClusterWithSeedHost(String seedHost)
+  public static Cluster createClusterWithSeedHost(String seedHost, JmxConnectionFactory factory)
       throws ReaperException {
     String clusterName;
     String partitioner;
     try {
-      JmxProxy jmxProxy = JmxProxy.connect(seedHost);
+      JmxProxy jmxProxy = factory.create(seedHost);
       clusterName = jmxProxy.getClusterName();
       partitioner = jmxProxy.getPartitioner();
       jmxProxy.close();

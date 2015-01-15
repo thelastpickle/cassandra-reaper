@@ -15,7 +15,6 @@ package com.spotify.reaper.resources;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
@@ -25,17 +24,18 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.resources.view.ColumnFamilyStatus;
 import com.spotify.reaper.service.JmxConnectionFactory;
+import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
-import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.storage.IStorage;
-
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 import java.util.Set;
@@ -51,6 +51,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 @Path("/table")
 @Produces(MediaType.APPLICATION_JSON)
 public class TableResource {
@@ -59,12 +61,26 @@ public class TableResource {
 
   private final IStorage storage;
   private final ReaperApplicationConfiguration config;
+  private final JmxConnectionFactory jmxFactory;
 
   public TableResource(ReaperApplicationConfiguration config, IStorage storage) {
     this.storage = storage;
     this.config = config;
+    this.jmxFactory = new JmxConnectionFactory();
   }
 
+  public TableResource(ReaperApplicationConfiguration config, IStorage storage,
+      JmxConnectionFactory jmxFactory) {
+    this.storage = storage;
+    this.config = config;
+    this.jmxFactory = jmxFactory;
+  }
+
+
+  /**
+   * Will return repair status of a table.
+   * @return
+   */
   @GET
   @Path("/{clusterName}/{keyspace}/{table}")
   public Response getTable(
@@ -76,44 +92,117 @@ public class TableResource {
     return Response.ok().entity("not implemented yet").build();
   }
 
+  /**
+   * Very beastly endpoint to register a new table, with the option to immediately trigger
+   * a repair.
+   *
+   * @return 400 if some args are missing, 500 if something goes wrong, 200 if requested operation
+   * is successful.
+   */
   @POST
   public Response addTable(
       @Context UriInfo uriInfo,
       @QueryParam("clusterName") Optional<String> clusterName,
       @QueryParam("seedHost") Optional<String> seedHost,
       @QueryParam("keyspace") Optional<String> keyspace,
-      @QueryParam("table") Optional<String> table,
+      @QueryParam("table") Optional<String> tableName,
       @QueryParam("startRepair") Optional<Boolean> startRepair,
       @QueryParam("owner") Optional<String> owner,
       @QueryParam("cause") Optional<String> cause) {
+
     LOG.info("add table called with: clusterName = {}, seedHost = {}, keyspace = {}, table = {}, "
-             + "owner = {}, cause = {}", clusterName, seedHost, keyspace, table, owner, cause);
+             + "owner = {}, cause = {}", clusterName, seedHost, keyspace, tableName, owner, cause);
 
     if (!keyspace.isPresent()) {
-      return Response.status(400)
-          .entity("Query parameter \"keyspace\" required").build();
+      return Response.status(400).entity("Query parameter \"keyspace\" required").build();
     }
-    if (!table.isPresent()) {
-      return Response.status(400)
-          .entity("Query parameter \"table\" required").build();
+    if (!tableName.isPresent()) {
+      return Response.status(400).entity("Query parameter \"table\" required").build();
     }
     if (!owner.isPresent()) {
-      return Response.status(400)
-          .entity("Query parameter \"owner\" required").build();
+      return Response.status(400).entity("Query parameter \"owner\" required").build();
+    }
+    if (!seedHost.isPresent() && !clusterName.isPresent()) {
+      String msg = "Either \"clusterName\" or \"seedHost\" is required";
+      return Response.status(400).entity(msg).build();
     }
 
-    // TODO: split this method and clean-up when MVP feature "complete"
+    try {
+      URI tableUri = buildTableUri(uriInfo, clusterName, keyspace, tableName);
 
-    Cluster targetCluster;
-    if (seedHost.isPresent()) {
-      try {
-        targetCluster = ClusterResource.createClusterWithSeedHost(seedHost.get());
-      } catch (ReaperException e) {
-        e.printStackTrace();
-        return Response.status(400)
-            .entity("failed creating cluster with seed host: " + seedHost.get())
-            .build();
+      ColumnFamily table = registerNewTable(tableUri, seedHost, clusterName, keyspace, tableName);
+
+      if (!startRepair.isPresent()) {
+        return Response.created(tableUri).entity(new ColumnFamilyStatus(table)).build();
       }
+
+      URI createdRepairRunURI = triggerRepairRun(uriInfo, table, cause, owner);
+
+      Response response = Response.created(createdRepairRunURI)
+          .entity(new ColumnFamilyStatus(table))
+          .build();
+      return response;
+    } catch (ReaperException e) {
+      LOG.error(e.getMessage());
+      e.printStackTrace();
+      return Response.status(500).entity(e.getMessage()).build();
+    }
+  }
+
+  /**
+   * Builds an URI used to describe a table.
+   * @throws ReaperException
+   */
+  private URI buildTableUri(UriInfo uriInfo, Optional<String> clusterName,
+      Optional<String> keyspace, Optional<String> table) throws ReaperException {
+    String tablePath = String.format("%s/%s/%s", clusterName.get(), keyspace.get(), table.get());
+    try {
+      return new URL(uriInfo.getAbsolutePath().toURL(), tablePath).toURI();
+    } catch (MalformedURLException | URISyntaxException e) {
+      e.printStackTrace();
+      throw new ReaperException(e);
+    }
+  }
+
+  /**
+   * Registers a new table by first fetching a cluster info from the storage backend, and
+   * consequently storing the table.
+   *
+   * Cluster is keyed by seedHost if present, otherwise clusterName is used.
+   *
+   * @return
+   * @throws ReaperException from below
+   */
+  private ColumnFamily registerNewTable(URI tableUri, Optional<String> seedHost,
+      Optional<String> clusterName, Optional<String> keyspace, Optional<String> table)
+      throws ReaperException {
+    // fetch information about the cluster the table is added to
+    Cluster targetCluster = null;
+    if (seedHost.isPresent()) {
+      targetCluster = getClusterBySeed(seedHost.get());
+    } else {
+      targetCluster = getClusterByName(clusterName.get());
+    }
+    String msg = String.format("Failed to fetch cluster for table \"%s\"", table.get());
+    checkNotNull(targetCluster, msg);
+
+    // store the new table
+    ColumnFamily existingTable = storeNewTable(tableUri, targetCluster, keyspace.get(), table.get());
+    String errMsg = String.format("failed creating new table: \"%s\"", table.get());
+    checkNotNull(tableUri, errMsg);
+    checkNotNull(existingTable, errMsg);
+    return existingTable;
+  }
+
+  /**
+   * Queries the storage backend for cluster information based on a seedHost.
+   * @return
+   * @throws ReaperException if cluster can't be found
+   */
+  private Cluster getClusterBySeed(String seedHost) throws ReaperException {
+    Cluster targetCluster;
+    try {
+      targetCluster = ClusterResource.createClusterWithSeedHost(seedHost, jmxFactory);
       Cluster existingCluster = storage.getCluster(targetCluster.getName());
       if (existingCluster == null) {
         LOG.info("creating new cluster based on given seed host: {}", seedHost);
@@ -122,121 +211,198 @@ public class TableResource {
         LOG.info("cluster information has changed for cluster: {}", targetCluster.getName());
         storage.updateCluster(targetCluster);
       }
-    } else if (clusterName.isPresent()) {
-      targetCluster = storage.getCluster(clusterName.get());
-      if (null == targetCluster) {
-        return Response.status(404).entity("cluster \"" + clusterName + "\" does not exist")
-            .build();
-      }
-    } else {
-      return Response.status(400).entity("Query parameter \"clusterName\" or \"seedHost\" required")
-          .build();
-    }
-
-    String newTablePathPart =
-        String.format("%s/%s/%s", targetCluster.getName(), keyspace.get(), table.get());
-    URI createdURI;
-    try {
-      createdURI = (new URL(uriInfo.getAbsolutePath().toURL(), newTablePathPart)).toURI();
-    } catch (Exception e) {
-      String errMsg = "failed creating target URI for table: " + newTablePathPart;
-      LOG.error(errMsg);
-      e.printStackTrace();
-      return Response.status(400).entity(errMsg).build();
-    }
-
-    // TODO: verify that the table exists in the cluster.
-    ColumnFamily existingTable =
-        storage.getColumnFamily(targetCluster.getName(), keyspace.get(), table.get());
-    if (existingTable == null) {
-      LOG.info("storing new table");
-
-      ColumnFamily.Builder newCf = new ColumnFamily.Builder(targetCluster.getName(), keyspace.get(),
-          table.get(), config.getSegmentCount(), config.getSnapshotRepair());
-      existingTable = storage.addColumnFamily(newCf);
-
-      if (existingTable == null) {
-        return Response.status(500)
-            .entity("failed creating table into Reaper storage: " + newTablePathPart).build();
-      }
-    }
-
-    // Start repairing the table if the startRepair query parameter is given at all,
-    // i.e. possible value not checked, and not required.
-    if (!startRepair.isPresent()) {
-      return Response.created(createdURI).entity(new ColumnFamilyStatus(existingTable)).build();
-    }
-
-    // create segments
-    List<RingRange> segments = null;
-    String usedSeedHost = null;
-    try {
-      SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
-      Set<String> seedHosts = targetCluster.getSeedHosts();
-      for (String host : seedHosts) {
-        try {
-          JmxProxy jmxProxy = JmxProxy.connect(host);
-          List<BigInteger> tokens = jmxProxy.getTokens();
-          segments = sg.generateSegments(existingTable.getSegmentCount(), tokens);
-          jmxProxy.close();
-          usedSeedHost = host;
-          break;
-        } catch (ReaperException e) {
-          LOG.info("couldn't connect to host: {}", host);
-        }
-      }
-
-      if (segments == null || seedHosts.isEmpty()) {
-        String errMsg = String.format("couldn't connect to any of the seed hosts in cluster \"%s\"",
-            existingTable.getClusterName());
-        return Response.status(404).entity(errMsg).build();
-      }
+      return targetCluster;
     } catch (ReaperException e) {
-      String errMsg = "failed generating segments for new table: " + existingTable;
-      LOG.error(errMsg);
       e.printStackTrace();
-      return Response.status(400).entity(errMsg).build();
+      throw new ReaperException("failed creating cluster with seed host: " + seedHost);
+    }
+  }
+
+  /**
+   * Queries the storage backed for cluster information based on clusterName.
+   * @return
+   * @throws ReaperException if cluster can't be found
+   */
+  private Cluster getClusterByName(String clusterName) throws ReaperException {
+    Cluster targetCluster = storage.getCluster(clusterName);
+    if (targetCluster == null) {
+      throw new ReaperException(String.format("Cluster \"%s\" does not exist.", clusterName));
+    }
+    return targetCluster;
+  }
+
+  /**
+   * Stores a table information into the storage.
+   * @return
+   * @throws ReaperException if table already exists in the storage or in Cassandra cluster.
+   */
+  private ColumnFamily storeNewTable(URI createdUri, Cluster cluster, String keyspace,
+      String table) throws ReaperException {
+    String clusterName = cluster.getName();
+
+    // check if the table doesn't already exists in Reaper's storage
+    ColumnFamily existingTable = storage.getColumnFamily(clusterName, keyspace, table);
+    if (existingTable != null) {
+      String errMsg = String.format("table \"%s\" already exists", createdUri.toString());
+      throw new ReaperException(errMsg);
     }
 
-    RepairRun.Builder runBuilder = new RepairRun.Builder(targetCluster.getName(),
-        existingTable.getId(), RepairRun.RunState.NOT_STARTED, DateTime.now(),
-        config.getRepairIntensity());
-    runBuilder.cause(cause.isPresent() ? cause.get() : "no cause specified");
-    runBuilder.owner(owner.get());
-    RepairRun newRepairRun = storage.addRepairRun(runBuilder);
-    if (newRepairRun == null) {
-      return Response.status(500)
-          .entity("failed creating repair run into Reaper storage for owner: " + owner.get())
-          .build();
+    // check if the table actually exists in the Cassandra cluster
+    if (!existsInCluster(cluster, keyspace, table)) {
+      String errMsg = String.format("table \"%s\" actually doesn't exists in Cassandra",
+          createdUri.toString());
+      throw new ReaperException(errMsg);
     }
+
+    // actually store the new table
+    LOG.info(String.format("storing new table \"%s\"", createdUri.toString()));
+    ColumnFamily.Builder newCf = new ColumnFamily.Builder(clusterName, keyspace, table,
+        config.getSegmentCount(), config.getSnapshotRepair());
+    existingTable = storage.addColumnFamily(newCf);
+    if (existingTable == null) {
+      String errMsg = String.format("failed storing new table \"%s\"", createdUri.toString());
+      throw new ReaperException(errMsg);
+    }
+    return existingTable;
+  }
+
+  /**
+   * Checks if given table actually exists in the Cassandra cluster.
+   * @return
+   */
+  private boolean existsInCluster(Cluster cluster, String keyspace, String table) {
+    // TODO(zvo): verify that the table also exists in the cluster.
+    LOG.warn("Skipping check for existence of {}/{} in cluster {}", keyspace, table, cluster);
+    return true;
+  }
+
+  /**
+   * Triggers a repair run for the given table.
+   *
+   * This involves:
+   *   1) split token range into segments
+   *   2) create a RepairRun instance
+   *   3) create RepairSegment instances linked to RepairRun. these are directly stored in storage
+   *   4) change actually trigger the RepairRun
+   * @return
+   * @throws ReaperException from below
+   */
+  private URI triggerRepairRun(UriInfo uriInfo, ColumnFamily existingTable, Optional<String> cause,
+      Optional<String> owner) throws ReaperException {
+
+    Cluster targetCluster = getClusterByName(existingTable.getClusterName());
+
+    // startRepair query parameter is present, will proceed with setting up & starting a repair
+    // the first step is to generate token segments
+    List<RingRange> tokenSegments = generateSegments(targetCluster, existingTable);
+    checkNotNull(tokenSegments, "failed generating repair segments");
+
+    // the next step is to prepare a repair run object
+    RepairRun repairRun = prepareRepairRun(targetCluster, existingTable, cause.get(), owner.get());
+    checkNotNull(repairRun, "failed preparing repair run");
 
     // Notice that our RepairRun core object doesn't contain pointer to
     // the set of RepairSegments in the run, as they are accessed separately.
-    // RepairSegment has a pointer to the RepairRun it lives in.
-    List<RepairSegment.Builder> repairSegments = Lists.newArrayList();
-    for (RingRange range : segments) {
-      RepairSegment.Builder repairSegment =
-          new RepairSegment.Builder(newRepairRun.getId(), range, RepairSegment.State.NOT_STARTED);
-      repairSegment.columnFamilyId(existingTable.getId());
-      repairSegments.add(repairSegment);
-    }
-    storage.addRepairSegments(repairSegments, newRepairRun.getId());
+    // However, RepairSegment has a pointer to the RepairRun it lives in
 
-    RepairRunner.startNewRepairRun(storage, newRepairRun.getId(), new JmxConnectionFactory());
+    // the next step is to generate actual repair segments
+    prepareRepairSegments(tokenSegments, repairRun, existingTable);
 
-    String newRepairRunPathPart = "repair_run/" + newRepairRun.getId();
-    URI createdRepairRunURI;
-    try {
-      createdRepairRunURI = (new URL(uriInfo.getBaseUri().toURL(), newRepairRunPathPart)).toURI();
-    } catch (Exception e) {
-      String errMsg = "failed creating target URI for new repair run: " + newRepairRunPathPart;
-      LOG.error(errMsg);
-      e.printStackTrace();
-      return Response.status(400).entity(errMsg).build();
-    }
+    // with all the repair segments generated and stored, we can trigger the repair run
+    RepairRunner.startNewRepairRun(storage, repairRun.getId(), jmxFactory);
 
-    return Response.created(createdRepairRunURI).entity(new ColumnFamilyStatus(existingTable))
-        .build();
+    return buildRepairRunURI(uriInfo, repairRun);
   }
 
+  /**
+   * Splits a token range for given table into segments
+   * @return
+   * @throws ReaperException when fails to discover seeds for the cluster or fails to connect to
+   *   any of the nodes in the Cluster.
+   */
+  private List<RingRange> generateSegments(Cluster targetCluster, ColumnFamily existingTable)
+      throws ReaperException {
+    List<RingRange> segments = null;
+    SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
+    Set<String> seedHosts = targetCluster.getSeedHosts();
+    if (seedHosts.isEmpty()) {
+      String errMsg = String.format("didn't get any seed hosts for cluster \"%s\"",
+          existingTable.getClusterName());
+      LOG.error(errMsg);
+      throw new ReaperException(errMsg);
+    }
+    for (String host : seedHosts) {
+      try {
+        JmxProxy jmxProxy = jmxFactory.create(host);
+        List<BigInteger> tokens = jmxProxy.getTokens();
+        segments = sg.generateSegments(existingTable.getSegmentCount(), tokens);
+        jmxProxy.close();
+        break;
+      } catch (ReaperException e) {
+        LOG.warn("couldn't connect to host: {}, will try next one", host);
+      }
+    }
+    if (segments == null) {
+      String errMsg = String.format("failed to generate repair segments for cluster \"%s\"",
+          existingTable.getClusterName());
+      LOG.error(errMsg);
+      throw new ReaperException(errMsg);
+    }
+    return segments;
+  }
+
+  /**
+   * Instantiates a RepairRun and stores it in the storage backend.
+   * @return
+   * @throws ReaperException when fails to store the RepairRun.
+   */
+  private RepairRun prepareRepairRun(Cluster targetCluster, ColumnFamily existingTable,
+      String cause, String owner) throws ReaperException {
+    RepairRun.Builder runBuilder = new RepairRun.Builder(targetCluster.getName(),
+        existingTable.getId(), RepairRun.RunState.NOT_STARTED, DateTime.now(),
+        config.getRepairIntensity());
+    runBuilder.cause(cause == null ? "no cause specified" : cause);
+    runBuilder.owner(owner);
+    RepairRun newRepairRun = storage.addRepairRun(runBuilder);
+    if (newRepairRun == null) {
+      String errMsg = String.format("failed storing repair run for cluster \"%s/%s/%s",
+          targetCluster.getName(), existingTable.getKeyspaceName(), existingTable.getName());
+      LOG.error(errMsg);
+      throw new ReaperException(errMsg);
+    }
+    return newRepairRun;
+  }
+
+  /**
+   * Creates the repair runs linked to given RepairRun and stores them directly in the
+   * storage backend.
+   */
+  private void prepareRepairSegments(List<RingRange> tokenSegments,
+      RepairRun repairRun, ColumnFamily existingTable) {
+    List <RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
+    for (RingRange range : tokenSegments) {
+      RepairSegment.Builder repairSegment =
+          new RepairSegment.Builder(repairRun.getId(), range, RepairSegment.State.NOT_STARTED);
+      repairSegment.columnFamilyId(existingTable.getId());
+      repairSegmentBuilders.add(repairSegment);
+    }
+    storage.addRepairSegments(repairSegmentBuilders, repairRun.getId());
+  }
+
+  /**
+   * Crafts an URI used to identify given repair run.
+   * @return
+   */
+  private URI buildRepairRunURI(UriInfo uriInfo, RepairRun repairRun) {
+    String newRepairRunPathPart = "repair_run/" + repairRun.getId();
+    URI runUri = null;
+    try {
+      runUri = new URL(uriInfo.getBaseUri().toURL(), newRepairRunPathPart).toURI();
+    } catch (MalformedURLException | URISyntaxException e) {
+      LOG.error(e.getMessage());
+      e.printStackTrace();
+    }
+    checkNotNull(runUri, "failed to build repair run uri");
+    return runUri;
+  }
 }

@@ -22,9 +22,14 @@ import com.spotify.reaper.cassandra.RepairStatusHandler;
 import java.util.Collection;
 
 public class JmxConnectionFactory {
+
+  public JmxProxy create(String host) throws ReaperException {
+    return create(Optional.<RepairStatusHandler>absent(), host);
+  }
+
   public JmxProxy create(Optional<RepairStatusHandler> handler, String host)
       throws ReaperException {
-    return JmxProxy.connect(handler, host);
+    return new JmxProxy().connect(handler, host);
   }
 
   public JmxProxy connectAny(Optional<RepairStatusHandler> handler, Collection<String> hosts)
