@@ -23,7 +23,7 @@ import java.util.Collection;
 
 public class JmxConnectionFactory {
 
-  public JmxProxy create(String host) throws ReaperException {
+  public final JmxProxy create(String host) throws ReaperException {
     return create(Optional.<RepairStatusHandler>absent(), host);
   }
 
@@ -32,7 +32,7 @@ public class JmxConnectionFactory {
     return JmxProxy.connect(handler, host);
   }
 
-  public JmxProxy connectAny(Optional<RepairStatusHandler> handler, Collection<String> hosts)
+  public final JmxProxy connectAny(Optional<RepairStatusHandler> handler, Collection<String> hosts)
       throws ReaperException {
     return create(handler, hosts.iterator().next());
   }

@@ -88,7 +88,7 @@ public class TableResource {
       @PathParam("keyspace") String keyspace,
       @PathParam("table") String table) {
     LOG.info("get table called with: clusterName = {}, keyspace = {}, table = {}",
-             clusterName, keyspace, table);
+        clusterName, keyspace, table);
     return Response.ok().entity("not implemented yet").build();
   }
 
@@ -111,7 +111,7 @@ public class TableResource {
       @QueryParam("cause") Optional<String> cause) {
 
     LOG.info("add table called with: clusterName = {}, seedHost = {}, keyspace = {}, table = {}, "
-             + "owner = {}, cause = {}", clusterName, seedHost, keyspace, tableName, owner, cause);
+        + "owner = {}, cause = {}", clusterName, seedHost, keyspace, tableName, owner, cause);
 
     if (!keyspace.isPresent()) {
       return Response.status(400).entity("Query parameter \"keyspace\" required").build();
