@@ -26,9 +26,8 @@ public class BigIntegerArgumentFactory implements ArgumentFactory<BigInteger> {
   @Override
   public Argument build(Class<?> expectedType, final BigInteger value, StatementContext ctx) {
     return new Argument() {
-      public void apply(int position,
-                        PreparedStatement statement,
-                        StatementContext ctx) throws SQLException {
+      public void apply(int position, PreparedStatement statement, StatementContext ctx)
+          throws SQLException {
         statement.setBigDecimal(position, new BigDecimal(value));
       }
     };
