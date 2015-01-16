@@ -20,6 +20,7 @@ import com.google.common.collect.Lists;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.service.RingRange;
 
+import org.apache.cassandra.db.ColumnFamilyStoreMBean;
 import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.compaction.CompactionManagerMBean;
 import org.apache.cassandra.service.ActiveRepairService;
@@ -216,6 +217,31 @@ public class JmxProxy implements NotificationListener, Serializable {
   public void cancelAllRepairs() {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     ssProxy.forceTerminateAllRepairSessions();
+  }
+
+  /**
+   * Checks if table exists in the cluster by instantiating a MBean for that table.
+   * @throws ReaperException if the query fails, not when the table doesn't exist
+   */
+  public boolean tableExists(String ks, String cf) throws ReaperException {
+    try {
+      String type = cf.contains(".") ? "IndexColumnFamilies" : "ColumnFamilies";
+      String nameStr = String.format("org.apache.cassandra.db:type=*%s,keyspace=%s,columnfamily=%s",
+          type, ks, cf);
+      Set<ObjectName> beans = mbeanServer.queryNames(new ObjectName(nameStr), null);
+      if (beans.isEmpty() || beans.size() != 1) {
+        return false;
+      }
+      ObjectName bean = beans.iterator().next();
+      JMX.newMBeanProxy(mbeanServer, bean, ColumnFamilyStoreMBean.class);
+    }
+    catch (MalformedObjectNameException | IOException e) {
+      String errMsg = String.format("ColumnFamilyStore for %s/%s not found: %s", ks, cf,
+          e.getMessage());
+      LOG.warn(errMsg);
+      return false;
+    }
+    return true;
   }
 
   /**
