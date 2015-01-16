@@ -26,16 +26,13 @@ public class RepairSegmentMapper implements ResultSetMapper<RepairSegment> {
 
   public RepairSegment map(int index, ResultSet r, StatementContext ctx) throws SQLException {
     RingRange range = new RingRange(r.getBigDecimal("start_token").toBigInteger(),
-                                    r.getBigDecimal("end_token").toBigInteger());
+        r.getBigDecimal("end_token").toBigInteger());
     RepairSegment.Builder repairSegmentBuilder =
-        new RepairSegment.Builder(r.getLong("run_id"),
-                                  range,
-                                  RepairSegment.State.values()[r.getInt("state")]);
+        new RepairSegment.Builder(r.getLong("run_id"), range, r.getLong("column_family_id"));
     return repairSegmentBuilder
-        .columnFamilyId(r.getLong("column_family_id"))
+        .state(RepairSegment.State.values()[r.getInt("state")])
         .startTime(RepairRunMapper.getDateTimeOrNull(r, "start_time"))
         .endTime(RepairRunMapper.getDateTimeOrNull(r, "end_time"))
         .build(r.getLong("id"));
   }
-
 }

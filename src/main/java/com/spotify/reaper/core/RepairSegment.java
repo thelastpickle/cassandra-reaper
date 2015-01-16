@@ -96,16 +96,17 @@ public class RepairSegment {
 
     public final long runId;
     public final RingRange tokenRange;
+    private final long columnFamilyId;
     private State state;
-    private long columnFamilyId;
     private Integer repairCommandId;
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder(long runId, RingRange tokenRange, State state) {
+    public Builder(long runId, RingRange tokenRange, long columnFamilyId) {
       this.runId = runId;
       this.tokenRange = tokenRange;
-      this.state = state;
+      this.columnFamilyId = columnFamilyId;
+      this.state = State.NOT_STARTED;
     }
 
     private Builder(RepairSegment original) {
@@ -120,11 +121,6 @@ public class RepairSegment {
 
     public Builder state(State state) {
       this.state = state;
-      return this;
-    }
-
-    public Builder columnFamilyId(long columnFamilyId) {
-      this.columnFamilyId = columnFamilyId;
       return this;
     }
 

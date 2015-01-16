@@ -199,7 +199,7 @@ public class TableResource {
     }
 
     RepairRun.Builder runBuilder = new RepairRun.Builder(targetCluster.getName(),
-        existingTable.getId(), RepairRun.RunState.NOT_STARTED, DateTime.now(),
+        existingTable.getId(), DateTime.now(),
         config.getRepairIntensity());
     runBuilder.cause(cause.isPresent() ? cause.get() : "no cause specified");
     runBuilder.owner(owner.get());
@@ -216,8 +216,7 @@ public class TableResource {
     List<RepairSegment.Builder> repairSegments = Lists.newArrayList();
     for (RingRange range : segments) {
       RepairSegment.Builder repairSegment =
-          new RepairSegment.Builder(newRepairRun.getId(), range, RepairSegment.State.NOT_STARTED);
-      repairSegment.columnFamilyId(existingTable.getId());
+          new RepairSegment.Builder(newRepairRun.getId(), range, existingTable.getId());
       repairSegments.add(repairSegment);
     }
     storage.addRepairSegments(repairSegments, newRepairRun.getId());
