@@ -211,6 +211,14 @@ public class JmxProxy implements NotificationListener, Serializable {
   }
 
   /**
+   * Terminates all ongoing repairs on the node this proxy is connected to
+   */
+  public void cancelAllRepairs() {
+    checkNotNull(ssProxy, "Looks like the proxy is not connected");
+    ssProxy.forceTerminateAllRepairSessions();
+  }
+
+  /**
    * Triggers a repair of range (beginToken, endToken] for given keyspace and column family.
    *
    * The repair is triggered by {@link org.apache.cassandra.service.StorageServiceMBean#forceRepairRangeAsync}
