@@ -75,7 +75,7 @@ public class RepairRunnerTest {
     // place a dummy repair run into the storage
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATION);
     RepairRun.Builder runBuilder =
-        new RepairRun.Builder(TEST_CLUSTER, CF_ID, RepairRun.RunState.NOT_STARTED, DateTime.now(),
+        new RepairRun.Builder(TEST_CLUSTER, CF_ID, DateTime.now(),
             INTENSITY);
     storage.addRepairRun(runBuilder);
     storage.addRepairSegments(Collections.<RepairSegment.Builder>emptySet(), RUN_ID);
@@ -122,12 +122,10 @@ public class RepairRunnerTest {
 
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun repairRun = storage.addRepairRun(
-        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), RepairRun.RunState.NOT_STARTED,
-            DateTime.now(), INTENSITY));
+        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY));
 
     storage.addRepairSegments(Collections.singleton(
-        new RepairSegment.Builder(repairRun.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE),
-            RepairSegment.State.NOT_STARTED)), repairRun.getId());
+        new RepairSegment.Builder(repairRun.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE), cf.getId())), repairRun.getId());
 
     final JmxProxy jmx = mock(JmxProxy.class);
 

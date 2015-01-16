@@ -88,7 +88,7 @@ public class TableResource {
       @PathParam("keyspace") String keyspace,
       @PathParam("table") String table) {
     LOG.info("get table called with: clusterName = {}, keyspace = {}, table = {}",
-             clusterName, keyspace, table);
+        clusterName, keyspace, table);
     return Response.ok().entity("not implemented yet").build();
   }
 
@@ -111,7 +111,7 @@ public class TableResource {
       @QueryParam("cause") Optional<String> cause) {
 
     LOG.info("add table called with: clusterName = {}, seedHost = {}, keyspace = {}, table = {}, "
-             + "owner = {}, cause = {}", clusterName, seedHost, keyspace, tableName, owner, cause);
+        + "owner = {}, cause = {}", clusterName, seedHost, keyspace, tableName, owner, cause);
 
     if (!keyspace.isPresent()) {
       return Response.status(400).entity("Query parameter \"keyspace\" required").build();
@@ -364,7 +364,7 @@ public class TableResource {
   private RepairRun prepareRepairRun(Cluster targetCluster, ColumnFamily existingTable,
       String cause, String owner) throws ReaperException {
     RepairRun.Builder runBuilder = new RepairRun.Builder(targetCluster.getName(),
-        existingTable.getId(), RepairRun.RunState.NOT_STARTED, DateTime.now(),
+        existingTable.getId(), DateTime.now(),
         config.getRepairIntensity());
     runBuilder.cause(cause == null ? "no cause specified" : cause);
     runBuilder.owner(owner);
@@ -387,8 +387,7 @@ public class TableResource {
     List <RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
     for (RingRange range : tokenSegments) {
       RepairSegment.Builder repairSegment =
-          new RepairSegment.Builder(repairRun.getId(), range, RepairSegment.State.NOT_STARTED);
-      repairSegment.columnFamilyId(existingTable.getId());
+          new RepairSegment.Builder(repairRun.getId(), range, existingTable.getId());
       repairSegmentBuilders.add(repairSegment);
     }
     storage.addRepairSegments(repairSegmentBuilders, repairRun.getId());

@@ -28,13 +28,15 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
   public RepairRun map(int index, ResultSet r, StatementContext ctx) throws SQLException {
     RepairRun.RunState runState = RepairRun.RunState.valueOf(r.getString("state"));
     RepairRun.Builder repairRunBuilder = new RepairRun.Builder(r.getString("cluster_name"),
-        r.getLong("column_family_id"), runState, getDateTimeOrNull(r, "creation_time"),
+        r.getLong("column_family_id"), getDateTimeOrNull(r, "creation_time"),
         r.getFloat("intensity"));
-    repairRunBuilder.owner(r.getString("owner"));
-    repairRunBuilder.cause(r.getString("cause"));
-    repairRunBuilder.startTime(getDateTimeOrNull(r, "start_time"));
-    repairRunBuilder.endTime(getDateTimeOrNull(r, "end_time"));
-    return repairRunBuilder.build(r.getLong("id"));
+    return repairRunBuilder
+        .runState(runState)
+        .owner(r.getString("owner"))
+        .cause(r.getString("cause"))
+        .startTime(getDateTimeOrNull(r, "start_time"))
+        .endTime(getDateTimeOrNull(r, "end_time"))
+        .build(r.getLong("id"));
   }
 
   static DateTime getDateTimeOrNull(ResultSet r, String columnName) throws SQLException {
