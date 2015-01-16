@@ -200,8 +200,8 @@ public class PostgresStorage implements IStorage {
   public ColumnFamily getColumnFamily(String clusterName, String keyspaceName, String tableName) {
     ColumnFamily result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getColumnFamilyByClusterAndName(clusterName, keyspaceName,
-                                                                     tableName);
+      IStoragePostgreSQL storage = getPostgresStorage(h);
+      result = storage.getColumnFamilyByClusterAndName(clusterName, keyspaceName, tableName);
     }
     return result;
   }
@@ -253,8 +253,8 @@ public class PostgresStorage implements IStorage {
   public RepairSegment getNextFreeSegmentInRange(long runId, RingRange range) {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h)
-          .getNextFreeRepairSegmentOnRange(runId, range.getStart(), range.getEnd());
+      IStoragePostgreSQL storage = getPostgresStorage(h);
+      result = storage.getNextFreeRepairSegmentOnRange(runId, range.getStart(), range.getEnd());
     }
     return result;
   }

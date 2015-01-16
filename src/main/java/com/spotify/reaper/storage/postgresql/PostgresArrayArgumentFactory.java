@@ -36,9 +36,8 @@ public class PostgresArrayArgumentFactory implements ArgumentFactory<Collection<
   public Argument build(Class<?> expectedType, final Collection<String> value,
       StatementContext ctx) {
     return new Argument() {
-      public void apply(int position,
-          PreparedStatement statement,
-          StatementContext ctx) throws SQLException {
+      public void apply(int position, PreparedStatement statement, StatementContext ctx)
+          throws SQLException {
         Array sqlArray = ctx.getConnection().createArrayOf("text", value.toArray());
         statement.setArray(position, sqlArray);
       }

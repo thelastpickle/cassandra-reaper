@@ -33,8 +33,8 @@ public class RunStateArgumentFactory implements ArgumentFactory<RepairRun.RunSta
   }
 
   @Override
-  public Argument build(Class<?> expectedType, final RepairRun.RunState value,
-      StatementContext ctx) {
+  public Argument build(Class<?> expectedType, final RepairRun.RunState value, StatementContext ctx)
+  {
     return new Argument() {
       public void apply(int position, PreparedStatement statement, StatementContext ctx)
           throws SQLException {
