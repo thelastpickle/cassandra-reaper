@@ -12,6 +12,7 @@ import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.resources.view.ColumnFamilyStatus;
 import com.spotify.reaper.service.JmxConnectionFactory;
 import com.spotify.reaper.service.RepairRunner;
+import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import org.joda.time.DateTimeUtils;
@@ -21,7 +22,9 @@ import org.junit.Test;
 import java.math.BigInteger;
 import java.net.URI;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -80,13 +83,11 @@ public class TableResourceTest {
     when(proxy.getPartitioner()).thenReturn(PARTITIONER);
     when(proxy.getTokens()).thenReturn(TOKENS);
     when(proxy.tableExists(anyString(), anyString())).thenReturn(Boolean.TRUE);
+    when(proxy.isConnectionAlive()).thenReturn(Boolean.TRUE);
+    when(proxy.tokenRangeToEndpoint(anyString(), any(RingRange.class))).thenReturn(Collections.singletonList(""));
     factory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy create(String host) throws ReaperException {
-        return proxy;
-      }
-      @Override
-      public JmxProxy connectAny(Optional<RepairStatusHandler> handler, Collection<String> hosts) {
+      public JmxProxy create(Optional<RepairStatusHandler> handler, String host) throws ReaperException {
         return proxy;
       }
     };
@@ -132,7 +133,7 @@ public class TableResourceTest {
     Optional<String> owner = Optional.of("test");
     Optional<String> cause = Optional.of("tetsCase");
 
-    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S);
+    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS);
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
 
     Response response = resource.addTable(uriInfo, clusterName, seedHost, keyspace, table,

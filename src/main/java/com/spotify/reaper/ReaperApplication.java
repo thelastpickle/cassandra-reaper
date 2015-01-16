@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
+import java.util.concurrent.TimeUnit;
+
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
@@ -68,7 +70,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
     LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
     RepairRunner.initializeThreadPool(config.getRepairRunThreadCount(),
-                                      config.getHangingRepairTimeoutMins() * 60);
+        config.getHangingRepairTimeoutMins(), TimeUnit.MINUTES);
 
     LOG.info("initializing storage of type: {}", config.getStorageType());
     IStorage storage = initializeStorage(config, environment);

@@ -69,7 +69,9 @@ public class SegmentRunnerTest {
                 anyString()))
                 .then(new Answer<Integer>() {
                   @Override
-                  public Integer answer(InvocationOnMock invocation) throws Throwable {
+                  public Integer answer(InvocationOnMock invocation) {
+                    assertEquals(RepairSegment.State.NOT_STARTED,
+                        storage.getRepairSegment(segmentId).getState());
                     new Thread() {
                       @Override
                       public void run() {
@@ -124,6 +126,8 @@ public class SegmentRunnerTest {
                 .then(new Answer<Integer>() {
                   @Override
                   public Integer answer(InvocationOnMock invocation) throws Throwable {
+                    assertEquals(RepairSegment.State.NOT_STARTED,
+                        storage.getRepairSegment(segmentId).getState());
                     new Thread() {
                       @Override
                       public void run() {
@@ -191,6 +195,8 @@ public class SegmentRunnerTest {
                 .then(new Answer<Integer>() {
                   @Override
                   public Integer answer(InvocationOnMock invocation) throws Throwable {
+                    assertEquals(RepairSegment.State.NOT_STARTED,
+                        storage.getRepairSegment(segmentId).getState());
                     new Thread() {
                       @Override
                       public void run() {

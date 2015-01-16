@@ -50,7 +50,8 @@ public final class SegmentRunner implements RepairStatusHandler {
     this.storage = storage;
     this.segmentId = segmentId;
 
-    // TODO: don't trigger the repair in the constructor. Requires commandId to be mutable
+    // TODO: don't trigger the repair in the constructor. The change will force commandId to be
+    // TODO: mutable, but that's better than this.
     synchronized (this) {
       jmxConnection = jmxConnectionFactory.connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators);
 
@@ -59,6 +60,7 @@ public final class SegmentRunner implements RepairStatusHandler {
           storage.getColumnFamily(segment.getColumnFamilyId());
       String keyspace = columnFamily.getKeyspaceName();
 
+      assert !segment.getState().equals(RepairSegment.State.RUNNING);
       commandId = jmxConnection
           .triggerRepair(segment.getStartToken(), segment.getEndToken(), keyspace,
               columnFamily.getName());
