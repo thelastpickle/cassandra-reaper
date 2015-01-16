@@ -32,6 +32,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -78,6 +79,7 @@ public class TableResourceTest {
     when(proxy.getClusterName()).thenReturn(CLUSTER_NAME);
     when(proxy.getPartitioner()).thenReturn(PARTITIONER);
     when(proxy.getTokens()).thenReturn(TOKENS);
+    when(proxy.tableExists(anyString(), anyString())).thenReturn(Boolean.TRUE);
     factory = new JmxConnectionFactory() {
       @Override
       public JmxProxy create(String host) throws ReaperException {

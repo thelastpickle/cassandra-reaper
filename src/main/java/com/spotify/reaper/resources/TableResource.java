@@ -249,7 +249,7 @@ public class TableResource {
 
     // check if the table actually exists in the Cassandra cluster
     if (!existsInCluster(cluster, keyspace, table)) {
-      String errMsg = String.format("table \"%s\" actually doesn't exists in Cassandra",
+      String errMsg = String.format("table \"%s\" doesn't exists in Cassandra",
           createdUri.toString());
       throw new ReaperException(errMsg);
     }
@@ -271,9 +271,14 @@ public class TableResource {
    * @return
    */
   private boolean existsInCluster(Cluster cluster, String keyspace, String table) {
-    // TODO(zvo): verify that the table also exists in the cluster.
-    LOG.warn("Skipping check for existence of {}/{} in cluster {}", keyspace, table, cluster);
-    return true;
+    String seedHost = cluster.getSeedHosts().iterator().next();
+    try {
+      return jmxFactory.create(seedHost).tableExists(keyspace, table);
+    } catch (ReaperException e) {
+      LOG.error(e.getMessage());
+      e.printStackTrace();
+      return false;
+    }
   }
 
   /**
