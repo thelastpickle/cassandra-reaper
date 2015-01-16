@@ -13,6 +13,8 @@
  */
 package com.spotify.reaper.service;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import java.math.BigInteger;
 
 // TODO: Check if this duplicates org.apache.cassandra.dht.Range.
@@ -33,6 +35,10 @@ public class RingRange {
     return end;
   }
 
+  /**
+   * Returns the size of this range
+   * @return size of the range, max - range, in case of wrap
+   */
   public BigInteger span(BigInteger ringSize) {
     if (SegmentGenerator.greaterThanOrEqual(start, end)) {
       return end.subtract(start).add(ringSize);
@@ -41,18 +47,33 @@ public class RingRange {
     }
   }
 
+  /**
+   * @return true if other is enclosed in this range.
+   */
   public boolean encloses(RingRange other) {
-    // TODO: unit test for this
-    if (SegmentGenerator.lowerThanOrEqual(start, end)) {
-      return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
-          SegmentGenerator.lowerThanOrEqual(other.end, end);
-    } else if (SegmentGenerator.lowerThanOrEqual(other.start, other.end)) {
-      return SegmentGenerator.greaterThanOrEqual(other.start, start) ||
-          SegmentGenerator.lowerThanOrEqual(other.end, end);
-    } else {
+    if (!this.isWrapping() && !other.isWrapping()) {
       return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
           SegmentGenerator.lowerThanOrEqual(other.end, end);
     }
+    else if (!this.isWrapping() && other.isWrapping()) {
+      return false;
+    }
+    else if (this.isWrapping() && !other.isWrapping()) {
+      return SegmentGenerator.greaterThanOrEqual(other.start, start) ||
+          SegmentGenerator.lowerThanOrEqual(other.end, end);
+    }
+    else { // if (this.isWrapping() && other.isWrapping())
+      return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
+          SegmentGenerator.lowerThanOrEqual(other.end, end);
+    }
+  }
+
+  /**
+   * @return true if 0 is inside of this range. Note that if start == end, then wrapping is true
+   */
+  @VisibleForTesting
+  protected boolean isWrapping() {
+    return SegmentGenerator.greaterThanOrEqual(start, end);
   }
 
   @Override
