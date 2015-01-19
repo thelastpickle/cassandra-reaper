@@ -51,15 +51,10 @@ public class ClusterResourceTest {
     when(proxy.getPartitioner()).thenReturn(PARTITIONER);
     factory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy create(String host) throws ReaperException {
-        return proxy;
-      }
-      @Override
-      public JmxProxy connectAny(Optional<RepairStatusHandler> handler, Collection<String> hosts) {
+      public JmxProxy create(Optional<RepairStatusHandler> handler, String host) throws ReaperException {
         return proxy;
       }
     };
-
   }
 
   @Test
@@ -92,5 +87,4 @@ public class ClusterResourceTest {
     assertTrue(msg.contains("already exists"));
     assertEquals(1, storage.getClusters().size());
   }
-
 }
