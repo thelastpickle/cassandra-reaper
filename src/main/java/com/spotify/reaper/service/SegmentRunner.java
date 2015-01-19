@@ -118,12 +118,8 @@ public final class SegmentRunner implements RepairStatusHandler {
         "handleRepairOutcome called for repairCommandId {}, outcome {} and message: {}",
         repairNumber, status, message);
     if (repairNumber != commandId) {
-      LOG.warn("Repair run id != current command id. {} != {}", repairNumber, commandId);
-      // This can be reached if timeout happens while finished repair is being handled, or vice
-      // versa. Since this method is synchronized, only one will get through.
-
-      // Another cause for getting here is other repairs running on the node than what this runner
-      // has initiated.
+      LOG.debug("Handler for command id {} not handling message with number {}",
+          commandId, repairNumber);
       return;
     }
 

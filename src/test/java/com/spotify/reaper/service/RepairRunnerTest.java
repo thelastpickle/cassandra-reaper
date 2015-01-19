@@ -153,18 +153,10 @@ public class RepairRunnerTest {
                     new Thread() {
                       @Override
                       public void run() {
-                        try {
-                          sleep(10);
-
-                          handler.get()
-                              .handle(repairNumber, ActiveRepairService.Status.STARTED, null);
-                          sleep(100);
-
-                          assertEquals(RepairSegment.State.RUNNING,
-                              storage.getRepairSegment(SEGMENT_ID).getState());
-                        } catch (InterruptedException e) {
-                          e.printStackTrace();
-                        }
+                        handler.get()
+                            .handle(repairNumber, ActiveRepairService.Status.STARTED, null);
+                        assertEquals(RepairSegment.State.RUNNING,
+                            storage.getRepairSegment(SEGMENT_ID).getState());
                       }
                     }.start();
                     break;
@@ -172,26 +164,16 @@ public class RepairRunnerTest {
                     new Thread() {
                       @Override
                       public void run() {
-                        try {
-                          sleep(10);
-
-                          handler.get()
-                              .handle(repairNumber, ActiveRepairService.Status.STARTED, null);
-                          sleep(100);
-
-                          assertEquals(RepairSegment.State.RUNNING,
-                              storage.getRepairSegment(SEGMENT_ID).getState());
-                          handler.get()
-                              .handle(repairNumber, ActiveRepairService.Status.SESSION_SUCCESS, null);
-                          sleep(10);
-
-                          assertEquals(RepairSegment.State.RUNNING,
-                              storage.getRepairSegment(SEGMENT_ID).getState());
-                          handler.get()
-                              .handle(repairNumber, ActiveRepairService.Status.FINISHED, null);
-                        } catch (InterruptedException e) {
-                          e.printStackTrace();
-                        }
+                        handler.get()
+                            .handle(repairNumber, ActiveRepairService.Status.STARTED, null);
+                        assertEquals(RepairSegment.State.RUNNING,
+                            storage.getRepairSegment(SEGMENT_ID).getState());
+                        handler.get()
+                            .handle(repairNumber, ActiveRepairService.Status.SESSION_SUCCESS, null);
+                        assertEquals(RepairSegment.State.RUNNING,
+                            storage.getRepairSegment(SEGMENT_ID).getState());
+                        handler.get()
+                            .handle(repairNumber, ActiveRepairService.Status.FINISHED, null);
                       }
                     }.start();
                     break;
@@ -205,7 +187,9 @@ public class RepairRunnerTest {
       }
     });
 
-    Thread.sleep(1000);
+    // TODO: refactor so that we can properly wait for the repair runner to finish rather than
+    // TODO: using this sleep().
+    Thread.sleep(600);
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).getRunState());
   }
 
