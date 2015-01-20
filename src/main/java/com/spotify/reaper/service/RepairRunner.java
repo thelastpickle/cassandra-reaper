@@ -39,14 +39,34 @@ public class RepairRunner implements Runnable {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunner.class);
 
-  private static final int JMX_FAILURE_SLEEP_DELAY_SECONDS = 30;
-
   private static ScheduledExecutorService executor = null;
   private static long repairTimeoutMillis;
+  private static long retryDelayMillis;
 
-  public static void initializeThreadPool(int threadAmount, long repairTimeout, TimeUnit timeUnit) {
+  public static void initializeThreadPool(int threadAmount, long repairTimeout,
+      TimeUnit repairTimeoutTimeUnit, long retryDelay, TimeUnit retryDelayTimeUnit) {
     executor = Executors.newScheduledThreadPool(threadAmount);
-    RepairRunner.repairTimeoutMillis = timeUnit.toMillis(repairTimeout);
+    RepairRunner.repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
+    RepairRunner.retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
+  }
+
+  /**
+   * Consult storage to see if any repairs are running, and resume those repair runs.
+   *
+   * @param storage Reaper's internal storage.
+   */
+  public static void resumeRunningRepairRuns(IStorage storage,
+      JmxConnectionFactory jmxConnectionFactory) {
+    for (RepairRun repairRun : storage.getAllRunningRepairRuns()) {
+      while (true) {
+        RepairSegment runningSegment = storage.getTheRunningSegment(repairRun.getId());
+        if (runningSegment == null) {
+          break;
+        }
+        SegmentRunner.postpone(storage, runningSegment);
+      }
+      RepairRunner.startNewRepairRun(storage, repairRun.getId(), jmxConnectionFactory);
+    }
   }
 
   public static void startNewRepairRun(IStorage storage, long repairRunID,
@@ -130,15 +150,14 @@ public class RepairRunner implements Runnable {
   }
 
   /**
-   * If no segment has the state RUNNING, start the next repair. Otherwise, mark the RUNNING segment
-   * as NOT_STARTED to queue it up for a retry.
+   * Get the next segment and repair it. If there is none, we're done.
    */
   private void startNextSegment() {
     // Currently not allowing parallel repairs.
     assert storage.getSegmentAmountForRepairRun(repairRunId, RepairSegment.State.RUNNING) == 0;
     RepairSegment next = storage.getNextFreeSegment(repairRunId);
     if (next != null) {
-      doRepairSegment(next.getId(), next.getTokenRange());
+      repairSegment(next.getId(), next.getTokenRange());
     } else {
       end();
     }
@@ -147,10 +166,10 @@ public class RepairRunner implements Runnable {
   /**
    * Start the repair of a segment.
    *
-   * @param segmentId id of the segment to repair.
+   * @param segmentId  id of the segment to repair.
    * @param tokenRange token range of the segment to repair.
    */
-  private void doRepairSegment(long segmentId, RingRange tokenRange) {
+  private void repairSegment(long segmentId, RingRange tokenRange) {
     ColumnFamily columnFamily =
         storage.getColumnFamily(storage.getRepairRun(repairRunId).getColumnFamilyId());
     String keyspace = columnFamily.getKeyspaceName();
@@ -163,8 +182,8 @@ public class RepairRunner implements Runnable {
       } catch (ReaperException e) {
         e.printStackTrace();
         LOG.warn("Failed to reestablish JMX connection in runner #{}, reattempting in {} seconds",
-            repairRunId, JMX_FAILURE_SLEEP_DELAY_SECONDS);
-        executor.schedule(this, JMX_FAILURE_SLEEP_DELAY_SECONDS, TimeUnit.SECONDS);
+            repairRunId, retryDelayMillis);
+        executor.schedule(this, retryDelayMillis, TimeUnit.MILLISECONDS);
         return;
       }
       LOG.info("successfully reestablished JMX proxy for repair runner on run id: {}", repairRunId);
@@ -180,14 +199,8 @@ public class RepairRunner implements Runnable {
       return;
     }
 
-    try {
-      SegmentRunner.triggerRepair(storage, segmentId, potentialCoordinators, repairTimeoutMillis,
-          jmxConnectionFactory);
-    } catch (ReaperException e) {
-      e.printStackTrace();
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
+    SegmentRunner.triggerRepair(storage, segmentId, potentialCoordinators, repairTimeoutMillis,
+        jmxConnectionFactory);
 
     handleResult(segmentId);
   }
@@ -200,20 +213,19 @@ public class RepairRunner implements Runnable {
     switch (state) {
       case NOT_STARTED:
         // Repair timed out
-        executor.submit(this);
+        executor.schedule(this, retryDelayMillis, TimeUnit.MILLISECONDS);
         break;
       case DONE:
         // Successful repair
         executor.schedule(this, intensityBasedDelayMillis(segment), TimeUnit.MILLISECONDS);
         break;
-      case ERROR:
-        // Unsuccessful repair
-        executor.schedule(this, intensityBasedDelayMillis(segment), TimeUnit.MILLISECONDS);
-        break;
-      case RUNNING:
+      default:
         // Another thread has started a new repair on this segment already
         // Or maybe the same repair segment id should never be re-run in which case this is an error
-        executor.submit(this);
+        String msg = "handleResult called with a segment state (" + state + ") that it should not"
+            + " have after segmentRunner has tried a repair";
+        LOG.error(msg);
+        throw new RuntimeException(msg);
     }
   }
 

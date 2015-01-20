@@ -102,6 +102,7 @@ public class SegmentRunnerTest {
     executor.shutdown();
 
     assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(segmentId).getState());
+    assertEquals(1, storage.getRepairSegment(segmentId).getFailCount());
   }
 
   @Test
@@ -120,7 +121,7 @@ public class SegmentRunnerTest {
     final MutableObject<Future<?>> future = new MutableObject<>();
 
     SegmentRunner.triggerRepair(storage, segmentId,
-        Collections.singleton(""), 500, new JmxConnectionFactory() {
+        Collections.singleton(""), 1000, new JmxConnectionFactory() {
           @Override
           public JmxProxy create(final Optional<RepairStatusHandler> handler, String host)
               throws ReaperException {
@@ -168,6 +169,7 @@ public class SegmentRunnerTest {
     executor.shutdown();
 
     assertEquals(RepairSegment.State.DONE, storage.getRepairSegment(segmentId).getState());
+    assertEquals(0, storage.getRepairSegment(segmentId).getFailCount());
   }
 
   @Test
@@ -186,7 +188,7 @@ public class SegmentRunnerTest {
     final MutableObject<Future<?>> future = new MutableObject<>();
 
     SegmentRunner.triggerRepair(storage, segmentId,
-        Collections.singleton(""), 500, new JmxConnectionFactory() {
+        Collections.singleton(""), 1000, new JmxConnectionFactory() {
           @Override
           public JmxProxy create(final Optional<RepairStatusHandler> handler, String host)
               throws ReaperException {
@@ -215,7 +217,7 @@ public class SegmentRunnerTest {
                             storage.getRepairSegment(segmentId).getState());
                         handler.get().handle(1, ActiveRepairService.Status.SESSION_FAILED,
                             "Repair command 1 has failed");
-                        assertEquals(RepairSegment.State.ERROR,
+                        assertEquals(RepairSegment.State.NOT_STARTED,
                             storage.getRepairSegment(segmentId).getState());
                       }
                     }));
@@ -231,6 +233,7 @@ public class SegmentRunnerTest {
     future.getValue().get();
     executor.shutdown();
 
-    assertEquals(RepairSegment.State.ERROR, storage.getRepairSegment(segmentId).getState());
+    assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(segmentId).getState());
+    assertEquals(1, storage.getRepairSegment(segmentId).getFailCount());
   }
 }

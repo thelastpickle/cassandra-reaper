@@ -14,6 +14,7 @@
 package com.spotify.reaper;
 
 import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
 import com.spotify.reaper.resources.ReaperHealthCheck;
@@ -21,6 +22,7 @@ import com.spotify.reaper.resources.RepairRunResource;
 import com.spotify.reaper.resources.TableResource;
 import com.spotify.reaper.service.JmxConnectionFactory;
 import com.spotify.reaper.service.RepairRunner;
+import com.spotify.reaper.service.SegmentRunner;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
@@ -70,7 +72,8 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
     LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
     RepairRunner.initializeThreadPool(config.getRepairRunThreadCount(),
-        config.getHangingRepairTimeoutMins(), TimeUnit.MINUTES);
+        config.getHangingRepairTimeoutMins(), TimeUnit.MINUTES, 30, TimeUnit.SECONDS);
+    JmxConnectionFactory jmxConnectionFactory = new JmxConnectionFactory();
 
     LOG.info("initializing storage of type: {}", config.getStorageType());
     IStorage storage = initializeStorage(config, environment);
@@ -85,8 +88,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     final PingResource pingResource = new PingResource();
     environment.jersey().register(pingResource);
 
-    final ClusterResource addClusterResource = new ClusterResource(storage,
-        new JmxConnectionFactory());
+    final ClusterResource addClusterResource = new ClusterResource(storage, jmxConnectionFactory);
     environment.jersey().register(addClusterResource);
 
     final TableResource addTableResource = new TableResource(config, storage);
@@ -98,7 +100,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     LOG.info("Reaper is ready to accept connections");
 
     LOG.info("resuming pending repair runs");
-    resumeRunningRepairRuns(storage);
+    RepairRunner.resumeRunningRepairRuns(storage, jmxConnectionFactory);
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config,
@@ -138,17 +140,5 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
         reloadConfiguration();
       }
     });
-  }
-
-  /**
-   * Consult storage to see if any repairs are running, and resume those repair runs.
-   *
-   * @param storage Reaper's internal storage.
-   */
-  public static void resumeRunningRepairRuns(IStorage storage) {
-    JmxConnectionFactory jmxConnectionFactory = new JmxConnectionFactory();
-    for (RepairRun repairRun : storage.getAllRunningRepairRuns()) {
-      RepairRunner.startNewRepairRun(storage, repairRun.getId(), jmxConnectionFactory);
-    }
   }
 }
