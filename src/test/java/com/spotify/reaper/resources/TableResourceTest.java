@@ -2,29 +2,26 @@ package com.spotify.reaper.resources;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
+import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.ColumnFamily;
-import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.resources.view.ColumnFamilyStatus;
 import com.spotify.reaper.service.JmxConnectionFactory;
-import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
-import org.joda.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.math.BigInteger;
 import java.net.URI;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -32,20 +29,13 @@ import javax.ws.rs.core.UriInfo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-
 public class TableResourceTest {
-
-  long TIME_CREATE = 42l;
-
-  int THREAD_CNT = 1;
-  int REPAIR_TIMEOUT_S = 60;
 
   double REPAIR_INTENSITY = 0.5f;
   int SEGMENT_CNT = 6;
@@ -54,11 +44,11 @@ public class TableResourceTest {
       BigInteger.valueOf(100l),
       BigInteger.valueOf(200l));
 
-  String CLUSTER_NAME = "TestCluster";
-  String PARTITIONER = "org.apache.cassandra.dht.RandomPartitioner";
-  String SEED_HOST = "TestHost";
-  String KEYSPACE = "testKeyspace";
-  String TABLE = "testTable";
+  Optional<String> CLUSTER_NAME = Optional.of("TestCluster");
+  Optional<String> PARTITIONER = Optional.of("org.apache.cassandra.dht.RandomPartitioner");
+  Optional<String> SEED_HOST = Optional.of("TestHost");
+  Optional<String> KEYSPACE = Optional.of("testKeyspace");
+  Optional<String> TABLE = Optional.of("testTable");
 
   URI SAMPLE_URI = URI.create("http://test");
 
@@ -70,6 +60,10 @@ public class TableResourceTest {
   @Before
   public void setUp() throws Exception {
     storage = new MemoryStorage();
+    Cluster cluster = new Cluster(CLUSTER_NAME.get(), PARTITIONER.get(),
+      Sets.newHashSet(SEED_HOST.get()));
+    storage.addCluster(cluster);
+
     config = mock(ReaperApplicationConfiguration.class);
     when(config.getSegmentCount()).thenReturn(SEGMENT_CNT);
     when(config.getRepairIntensity()).thenReturn(REPAIR_INTENSITY);
@@ -79,8 +73,8 @@ public class TableResourceTest {
     when(uriInfo.getBaseUri()).thenReturn(SAMPLE_URI);
 
     final JmxProxy proxy = mock(JmxProxy.class);
-    when(proxy.getClusterName()).thenReturn(CLUSTER_NAME);
-    when(proxy.getPartitioner()).thenReturn(PARTITIONER);
+    when(proxy.getClusterName()).thenReturn(CLUSTER_NAME.get());
+    when(proxy.getPartitioner()).thenReturn(PARTITIONER.get());
     when(proxy.getTokens()).thenReturn(TOKENS);
     when(proxy.tableExists(anyString(), anyString())).thenReturn(Boolean.TRUE);
     when(proxy.isConnectionAlive()).thenReturn(Boolean.TRUE);
@@ -94,71 +88,50 @@ public class TableResourceTest {
   }
 
   @Test
-  public void testAddTableWithoutTrigger() throws Exception {
-
+  public void testAddTable() throws Exception {
     TableResource resource = new TableResource(config, storage, factory);
-    Optional<String> clusterName = Optional.of(CLUSTER_NAME);
-    Optional<String> seedHost = Optional.of(SEED_HOST);
-    Optional<String> keyspace = Optional.of(KEYSPACE);
-    Optional<String> table = Optional.of(TABLE);
-    Optional<Boolean> startRepair = Optional.absent();
-    Optional<String> owner = Optional.of("test");
-    Optional<String> cause = Optional.of("tetsCase");
-
-    Response response = resource.addTable(uriInfo, clusterName, seedHost, keyspace, table,
-        startRepair, owner, cause);
+    Response response = resource.addTable(uriInfo, CLUSTER_NAME, KEYSPACE, TABLE);
 
     assertEquals(201, response.getStatus());
     assertTrue(response.getEntity() instanceof ColumnFamilyStatus);
 
     assertEquals(1, storage.getClusters().size());
-    assertEquals(0, storage.getRepairRunsForCluster(CLUSTER_NAME).size());
-    assertEquals(0, storage.getRepairRunIdsForCluster(CLUSTER_NAME).size());
+    assertEquals(0, storage.getRepairRunsForCluster(CLUSTER_NAME.get()).size());
+    assertEquals(0, storage.getRepairRunIdsForCluster(CLUSTER_NAME.get()).size());
 
-    ColumnFamily cf = storage.getColumnFamily(CLUSTER_NAME, KEYSPACE, TABLE);
+    ColumnFamily cf = storage.getColumnFamily(CLUSTER_NAME.get(), KEYSPACE.get(), TABLE.get());
     assertNotNull("Failed fetch table info from storage", cf);
     assertEquals(SEGMENT_CNT, cf.getSegmentCount());
     assertFalse(cf.isSnapshotRepair());
   }
 
   @Test
-  public void testAddTableWithTrigger() throws Exception {
-
+  public void testAddTableArgMissing() throws Exception {
     TableResource resource = new TableResource(config, storage, factory);
-    Optional<String> clusterName = Optional.of(CLUSTER_NAME);
-    Optional<String> seedHost = Optional.of(SEED_HOST);
-    Optional<String> keyspace = Optional.of(KEYSPACE);
-    Optional<String> table = Optional.of(TABLE);
-    Optional<Boolean> startRepair = Optional.of(Boolean.TRUE);
-    Optional<String> owner = Optional.of("test");
-    Optional<String> cause = Optional.of("tetsCase");
+    Response response = resource.addTable(uriInfo, CLUSTER_NAME, Optional.<String>absent(), TABLE);
+    assertEquals(500, response.getStatus());
+    assertTrue(response.getEntity() instanceof String);
+    assertTrue(response.getEntity().toString().contains("argument missing"));
+  }
 
-    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS);
-    DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
+  @Test
+  public void testAddExistingTable() throws Exception {
+    TableResource resource = new TableResource(config, storage, factory);
+    resource.addTable(uriInfo, CLUSTER_NAME, KEYSPACE, TABLE);
+    Response response = resource.addTable(uriInfo, CLUSTER_NAME, KEYSPACE, TABLE);
+    assertEquals(500, response.getStatus());
+    assertTrue(response.getEntity() instanceof String);
+    assertTrue(response.getEntity().toString().contains("already exists"));
+  }
 
-    Response response = resource.addTable(uriInfo, clusterName, seedHost, keyspace, table,
-        startRepair, owner, cause);
-
-    assertEquals(201, response.getStatus());
-    assertTrue(response.getEntity() instanceof ColumnFamilyStatus);
-
-    // give the runner time to start the repair run
-    Thread.sleep(200);
-
-    assertEquals(1, storage.getClusters().size());
-    assertEquals(1, storage.getRepairRunsForCluster(CLUSTER_NAME).size());
-    assertEquals(1, storage.getRepairRunIdsForCluster(CLUSTER_NAME).size());
-    Long runId = storage.getRepairRunIdsForCluster(CLUSTER_NAME).iterator().next();
-    RepairRun run = storage.getRepairRun(runId);
-    assertEquals(RepairRun.RunState.RUNNING, run.getRunState());
-    assertEquals(TIME_CREATE, run.getStartTime().getMillis());
-    assertEquals(REPAIR_INTENSITY, run.getIntensity(), 0.0f);
-    assertNull(run.getEndTime());
-
-    // apparently, tokens [0, 100, 200] and 6 requested segments causes generating 8 RepairSegments
-    assertEquals(1, storage.getSegmentAmountForRepairRun(run.getId(), RepairSegment.State.RUNNING));
-    assertEquals(7,
-        storage.getSegmentAmountForRepairRun(run.getId(), RepairSegment.State.NOT_STARTED));
+  @Test
+  public void testAddTableIfClusterNotExists() throws Exception {
+    storage = new MemoryStorage();
+    TableResource resource = new TableResource(config, storage, factory);
+    Response response = resource.addTable(uriInfo, CLUSTER_NAME, KEYSPACE, TABLE);
+    assertEquals(500, response.getStatus());
+    assertTrue(response.getEntity() instanceof String);
+    assertTrue(response.getEntity().toString().contains("Failed to fetch cluster"));
   }
 
 }

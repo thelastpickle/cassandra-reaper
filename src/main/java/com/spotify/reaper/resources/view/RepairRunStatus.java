@@ -32,6 +32,9 @@ public class RepairRunStatus {
 
   private final String owner;
 
+  @JsonProperty("id")
+  private final long id;
+
   @JsonProperty("cluster_name")
   private final String clusterName;
 
@@ -61,20 +64,6 @@ public class RepairRunStatus {
   @JsonProperty("segments_repaired")
   private int segmentsRepaired = 0;
 
-  public RepairRunStatus(RepairRun repairRun, ColumnFamily columnFamily) {
-    this.cause = repairRun.getCause();
-    this.owner = repairRun.getOwner();
-    this.clusterName = repairRun.getClusterName();
-    this.columnFamilyName = columnFamily.getName();
-    this.keyspaceName = columnFamily.getKeyspaceName();
-    this.runState = repairRun.getRunState().name();
-    this.creationTime = repairRun.getCreationTime();
-    this.startTime = repairRun.getStartTime();
-    this.endTime = repairRun.getEndTime();
-    this.intensity = repairRun.getIntensity();
-    this.segmentCount = columnFamily.getSegmentCount();
-  }
-
   @JsonProperty("creation_time")
   public String getCreationTimeISO8601() {
     if (creationTime == null) {
@@ -101,5 +90,28 @@ public class RepairRunStatus {
 
   public void setSegmentsRepaired(int segmentsRepaired) {
     this.segmentsRepaired = segmentsRepaired;
+  }
+
+  public long getId() {
+    return this.id;
+  }
+
+  public String getRunState() {
+    return this.runState;
+  }
+
+  public RepairRunStatus(RepairRun repairRun, ColumnFamily columnFamily) {
+    this.id = repairRun.getId();
+    this.cause = repairRun.getCause();
+    this.owner = repairRun.getOwner();
+    this.clusterName = repairRun.getClusterName();
+    this.columnFamilyName = columnFamily.getName();
+    this.keyspaceName = columnFamily.getKeyspaceName();
+    this.runState = repairRun.getRunState().name();
+    this.creationTime = repairRun.getCreationTime();
+    this.startTime = repairRun.getStartTime();
+    this.endTime = repairRun.getEndTime();
+    this.intensity = repairRun.getIntensity();
+    this.segmentCount = columnFamily.getSegmentCount();
   }
 }

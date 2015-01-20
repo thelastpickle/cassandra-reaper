@@ -59,60 +59,18 @@ class ReaperCaller(object):
         r.raise_for_status()
         return r.text
 
-    def call_list_clusters(self):
-        the_url = urlparse.urljoin(self.base_url, "cluster")
-        reply = self._http_req("GET", the_url)
-        return json.loads(reply)
-
-    def call_register(self, owner, seed_host=None, cluster_name=None, keyspace=None, table=None,
-                      cause=None, repair_immediately=False):
-        if not seed_host and not cluster_name:
-            print "either --seed-host or --cluster-name is required for this operation"
-            exit(1)
-        if cluster_name:
-            params = {"clusterName": cluster_name}
-        else:
-            params = {"seedHost": seed_host}
-
-        if not keyspace and not table:
-            if repair_immediately:
-                print "you cannot repair whole cluster, but must define table and keyspace name"
-                exit(1)
-            the_url = urlparse.urljoin(self.base_url, "cluster")
-        elif not keyspace or not table:
-            print "both 'keyspace' and 'table' (or neither) required for registering"
-            exit(1)
-        else:
-            the_url = urlparse.urljoin(self.base_url, "table")
-            params['keyspace'] = keyspace
-            params['table'] = table
-            params['owner'] = owner
-            params['cause'] = cause and cause or DEFAULT_CAUSE
-            if repair_immediately:
-                params['startRepair'] = 'true'
-
-        reply = self._http_req("POST", the_url, params=params)
-        return json.loads(reply)
-
-    def call_status_cluster(self, cluster_name):
-        the_url = urlparse.urljoin(self.base_url, "cluster/{0}".format(cluster_name))
-        reply = self._http_req("GET", the_url)
-        return json.loads(reply)
-
-    def call_status_repair(self, repair_run_id):
-        the_url = urlparse.urljoin(self.base_url, "repair_run/{0}".format(repair_run_id))
-        reply = self._http_req("GET", the_url)
-        return json.loads(reply)
-
-    def call_ping(self):
-        the_url = urlparse.urljoin(self.base_url, "ping")
+    def get(self, endpoint):
+        the_url = urlparse.urljoin(self.base_url, endpoint)
         return self._http_req("GET", the_url)
 
+    def post(self, endpoint, **params):
+        the_url = urlparse.urljoin(self.base_url, endpoint)
+        return self._http_req("POST", the_url, params)
 
 # === Arguments for commands ============================================================
 
 
-def _global_arguments(parser):
+def _global_arguments(parser, command):
     """Arguments relevant for every CLI command
     """
     group = parser.add_argument_group('global arguments')
@@ -124,105 +82,110 @@ def _global_arguments(parser):
                        help="use https to call Reaper [False]")
     group.add_argument("-v", "--verbose", help="increase output verbosity",
                        action="store_true")
-
-
-def _triggering_arguments(parser):
-    """Arguments relevant for triggering a repair
-    """
-    group = parser.add_argument_group('triggering arguments')
-    group.add_argument("--owner", default=USER,
-                       help="name of local user calling the Reaper [{0}]".format(USER))
-    group.add_argument("--cause", default=DEFAULT_CAUSE,
-                       help="cause string used for logging and auditing "
-                            "purposes [\"{0}\"]".format(DEFAULT_CAUSE))
-    group.add_argument("--keyspace", default=None,
-                       help="the keyspace in the Cassandra cluster")
-    group.add_argument("--table", default=None,
-                       help="the table within a keyspace in the Cassandra cluster")
-    group.add_argument("--seed-host",
-                       help="the seed host of the Cassandra cluster to be registered")
-
-
-def _arguments_for_register(parser):
-    """Arguments relevant for registering a cluster
-    """
-    group = parser.add_argument_group('register arguments', 'includes triggering arguments')
-    group.add_argument("--trigger-repair", default=False, action='store_true',
-                       help="trigger repair immediately upon successful register [False]. "
-                            "See also repair arguments")
-
-
-def _arguments_for_repair(parser):
-    """Arguments relevant for triggering a repair
-    """
-    group = parser.add_argument_group('repair arguments', 'includes triggering arguments')
-    group.add_argument("--cluster-name", default=None,
-                       help="the name of the target Cassandra cluster")
+    parser.add_argument(command)
 
 
 def _arguments_for_status_cluster(parser):
     """Arguments relevant for querying cluster status
     """
-    group = parser.add_argument_group('status-cluster arguments')
-    group.add_argument("--name", help="the cluster name")
+    parser.add_argument("cluster_name", help="the cluster name")
 
 
 def _arguments_for_status_repair(parser):
     """Arguments relevant for querying a repair status
     """
-    group = parser.add_argument_group('status-repair arguments')
-    group.add_argument("--run-id", help="the repair run id")
+    parser.add_argument("run_id", help="identifier of the run to fetch more info about")
 
 
-def _parse_arguments(command, description, usage, extra_arguments=None):
+def _arguments_for_add_cluster(parser):
+    """Arguments relevant for registering a cluster
+    """
+    parser.add_argument("seed_host", help="the seed host of the Cassandra cluster to be registered")
+
+
+def _arguments_for_add_table(parser):
+    """Arguments relevant for registering a table
+    """
+    group = parser.add_argument_group('required arguments')
+    group.add_argument("--cluster-name", default=None,
+                       help="the name of the target Cassandra cluster")
+    group.add_argument("--keyspace", default=None,
+                       help="the keyspace in the Cassandra cluster")
+    group.add_argument("--table", default=None,
+                       help="the table within a keyspace in the Cassandra cluster")
+
+
+def _arguments_for_repair_and_trigger(parser):
+    parser.add_argument("--owner", default=USER,
+                        help="name of local user calling the Reaper [\"{0}\"]".format(USER))
+    parser.add_argument("--cause", default=DEFAULT_CAUSE,
+                        help="cause string used for logging and auditing "
+                             "purposes [\"{0}\"]".format(DEFAULT_CAUSE))
+
+
+def _arguments_for_repair(parser):
+    """Arguments relevant for registering a repair and optionally triggering it
+    """
+    _arguments_for_add_table(parser)
+    _arguments_for_repair_and_trigger(parser)
+    parser.add_argument("--trigger", action='store_true',
+                        help="trigger a repair run right after generating it")
+
+
+def _arguments_for_trigger(parser):
+    """Arguments relevant for triggering a repair
+    """
+    _arguments_for_repair_and_trigger(parser)
+    parser.add_argument("run_id", help="ID of the run to trigger")
+
+
+def _parse_arguments(command, description, usage=None, extra_arguments=None):
     """Generic argument parsing done by every command
     """
     parser = argparse.ArgumentParser(description=description, usage=usage)
-    _global_arguments(parser)
-    _triggering_arguments(parser)
+    _global_arguments(parser, command)
     if extra_arguments:
         extra_arguments(parser)
-    return parser.parse_args(sys.argv.remove(command))
+    return parser.parse_args()
 
 # === The actual CLI ========================================================================
 
-REAPER_USAGE = """spreaper [<global_args>] <command> [<command_args>]
-
-<command> can be:
-    list-clusters  List registered Cassandra clusters in a Reaper
-    register       Register a Cassandra cluster for repairs
-    repair         Trigger a repair on a Cassandra cluster
-    status-cluster Show status of a Cassandra cluster
-    status-repair  Show status of a repair run
-"""
 
 REAPER_DESCRIPTION = "spreaper (Spotify Reaper) CLI tool is used to control Reaper service " \
                      "through its REST API"
 
 
+REAPER_USAGE = REAPER_DESCRIPTION + """
+Usage: spreaper [<global_args>] <command> [<command_args>]
+
+<command> can be:
+    list-clusters  List registered Cassandra clusters in a Reaper
+    status-cluster Show status of a Cassandra cluster
+    status-repair  Show status of a repair run
+    add-cluster    Register a cluster in Reaper
+    add-table      Register a table for a previously added cluster
+    repair         Create a repair run, optionally triggering it
+    trigger        Start a repair run
+    ping           Test connectivity to to the Reaper service
+"""
+
+
 class ReaperCLI(object):
     """Aim of this class is to separate CLI (argparse) specific stuff
        separate from the actual logic of calling Reaper.
-
-       We're parsing the arguments twice. Once in the constructor to determine
-       what command to run and show help if requested. Second time happens when a command
-       is executed, because each commands adds its specific options.
     """
     def __init__(self):
-        parser = argparse.ArgumentParser(description=REAPER_DESCRIPTION, usage=REAPER_USAGE)
-        _global_arguments(parser)
-        _arguments_for_register(parser)
-        _arguments_for_repair(parser)
-        _arguments_for_status_cluster(parser)
-        _arguments_for_status_repair(parser)
-        _triggering_arguments(parser)
-        parser.add_argument('command', help='The subcommand to run')
-
-        args = parser.parse_args()
-        command = args.command.replace('-', '_')
+        if len(sys.argv) < 2:
+            print REAPER_USAGE
+            exit(1)
+        commands = [arg for arg in sys.argv[1:] if not arg[0].startswith('-')]
+        if len(commands) < 1:
+            print REAPER_USAGE
+            exit(1)
+        command = commands[0].replace('-', '_')
         if not hasattr(self, command):
-            print 'Unrecognized command: {0}'.format(args.command)
-            parser.print_help()
+            print 'Unrecognized command: {0}'.format(command)
+            print REAPER_USAGE
             exit(1)
         # use dispatch pattern to invoke method with same)
         getattr(self, command)()
@@ -230,13 +193,19 @@ class ReaperCLI(object):
     def init_reaper(self, args):
         return ReaperCaller(args.reaper_host, args.reaper_port, args.reaper_use_ssl)
 
+    def ping(self):
+        args = _parse_arguments(command="ping",
+                                description="Test connectivity to the Reaper service")
+        reaper = self.init_reaper(args)
+        reaper.get("ping")
+        print "# pong"
+
     def list_clusters(self):
         args = _parse_arguments(command='list-clusters',
-                                description='List all registered Cassandra clusters',
-                                usage='spreaper [<global_args>] list-clusters')
+                                description='Lists all registered Cassandra clusters')
         reaper = self.init_reaper(args)
         print "# listing all available clusters in the Reaper"
-        cluster_names = reaper.call_list_clusters()
+        cluster_names = json.loads(reaper.get("cluster"))
         if cluster_names:
             print "# found {0} clusters:".format(len(cluster_names))
             for cluster_name in cluster_names:
@@ -247,59 +216,73 @@ class ReaperCLI(object):
     def status_cluster(self):
         args = _parse_arguments(command='status-cluster',
                                 description='Show status of a cluster, including the repairs',
-                                usage='spreaper status-cluster repair_run_id [<status_args>]',
                                 extra_arguments=_arguments_for_status_cluster)
-        if not args.name:
-            print "Please specify cluster name with --name"
-            exit(-1)
         reaper = self.init_reaper(args)
-        print "# cluster '{0}':".format(args.name)
-        cluster_data = reaper.call_status_cluster(args.name)
-        print json.dumps(cluster_data, indent=2)
+        print "# cluster '{0}':".format(args.cluster_name)
+        cluster_data = reaper.get("cluster/{0}".format(args.cluster_name))
+        print json.dumps(json.loads(cluster_data), indent=2)
 
     def status_repair(self):
         args = _parse_arguments(command='status-repair',
                                 description='Show status of a repair run',
-                                usage='spreaper status-repair repair_run_id [<args>]',
                                 extra_arguments=_arguments_for_status_repair)
-        if not args.run_id:
-            print "Please specify repair run id with --run-id"
-            exit(-1)
         reaper = self.init_reaper(args)
         print "# repair run with id {0}".format(args.run_id)
-        repair_run = reaper.call_status_repair(args.run_id)
-        print json.dumps(repair_run, indent=2)
+        repair_run = reaper.get("repair_run/{0}".format(args.run_id))
+        print json.dumps(json.loads(repair_run), indent=2)
 
-    def register(self):
-        args = _parse_arguments(command='register',
-                                description='Register a Cassandra cluster for repairs',
-                                usage='spreaper [<global_args>] register <seed_host> [<args>]',
-                                extra_arguments=_arguments_for_register)
+    def add_cluster(self):
+        args = _parse_arguments(command='add-cluster',
+                                description="Register a cluster in Reaper",
+                                extra_arguments=_arguments_for_add_cluster)
         reaper = self.init_reaper(args)
         print "# registering Cassandra cluster with seed host: {0}".format(args.seed_host)
-        reaper.call_register(args.owner, args.seed_host)
+        reaper.post("cluster", seedHost=args.seed_host)
         print "# registration succeeded"
+
+    def add_table(self):
+        args = _parse_arguments(command='add-table',
+                                description='Register a table for a cluster already in Reaper',
+                                extra_arguments=_arguments_for_add_table)
+        if not args.table or not args.keyspace or not args.cluster_name:
+            print "Please specify all add-table arguments"
+            exit(1)
+        reaper = self.init_reaper(args)
+        print "# adding table '{0}' for keyspace '{1}' in cluster '{2}'".format(args.table,
+                                                                                args.keyspace,
+                                                                                args.cluster_name)
+        reaper.post("table", clusterName=args.cluster_name, keyspace=args.keyspace,
+                    table=args.table)
+        print "# table successfully added"
 
     def repair(self):
         args = _parse_arguments(command='repair',
-                                description='Trigger a repair on a Cassandra cluster',
-                                usage='spreaper repair [<args>]',
+                                description='Initialise a repair, optionally triggering it',
                                 extra_arguments=_arguments_for_repair)
         reaper = self.init_reaper(args)
-        if args.cluster_name:
-            print "# triggering a repair on Cassandra cluster "\
-                  "with name: {0}".format(args.cluster_name)
-            reply = reaper.call_register(args.owner, cluster_name=args.cluster_name,
-                                         keyspace=args.keyspace, table=args.table,
-                                         cause=args.cause, repair_immediately=True)
-        else:
-            print "# triggering a repair on Cassandra cluster "\
-                  "with seed host: {0}".format(args.seed_host)
-            reply = reaper.call_register(args.owner, seed_host=args.seed_host,
-                                         keyspace=args.keyspace, table=args.table,
-                                         cause=args.cause, repair_immediately=True)
-        print "# repair triggering succeeded. reply:"
-        print reply
+        if not args.table or not args.keyspace or not args.cluster_name:
+            print "Please specify all of cluster, keyspace and table names"
+            exit(1)
+        print "# registering repair run for {0}/{1}/{2}".format(args.cluster_name, args.keyspace,
+                                                                args.table)
+        reply = reaper.post("repair_run", clusterName=args.cluster_name, keyspace=args.keyspace,
+                            table=args.table, owner=args.owner)
+        run_id = json.loads(reply)['id']
+        print "# run with id={0} created".format(run_id)
+        if args.trigger:
+            self._trigger_run(reaper, run_id, args)
+
+    def trigger(self):
+        args = _parse_arguments(command='trigger',
+                                description='trigger a new or paused repair run',
+                                extra_arguments=_arguments_for_trigger)
+        reaper = self.init_reaper(args)
+        self._trigger_run(reaper, args.id, args)
+
+    def _trigger_run(self, reaper, run_id, args):
+        print "# triggering run with id: {0}".format(run_id)
+        reaper.post("repair_run/{0}".format(run_id), owner=args.owner, cause=args.cause)
+        print "# run triggered"
 
 
 if __name__ == '__main__':

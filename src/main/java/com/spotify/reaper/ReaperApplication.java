@@ -92,7 +92,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     final TableResource addTableResource = new TableResource(config, storage);
     environment.jersey().register(addTableResource);
 
-    final RepairRunResource addRepairRunResource = new RepairRunResource(storage);
+    final RepairRunResource addRepairRunResource = new RepairRunResource(config, storage);
     environment.jersey().register(addRepairRunResource);
 
     LOG.info("Reaper is ready to accept connections");
