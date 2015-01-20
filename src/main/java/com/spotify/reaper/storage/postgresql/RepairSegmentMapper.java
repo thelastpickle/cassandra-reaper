@@ -33,6 +33,7 @@ public class RepairSegmentMapper implements ResultSetMapper<RepairSegment> {
         .state(RepairSegment.State.values()[r.getInt("state")])
         .startTime(RepairRunMapper.getDateTimeOrNull(r, "start_time"))
         .endTime(RepairRunMapper.getDateTimeOrNull(r, "end_time"))
+        .failCount(r.getInt("fail_count"))
         .build(r.getLong("id"));
   }
 }

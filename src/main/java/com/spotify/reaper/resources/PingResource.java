@@ -31,9 +31,9 @@ public class PingResource {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterResource.class);
 
   @GET
-  public String answerPing(@QueryParam("name") Optional<String> name) {
-    LOG.info("ping called with name: {}", name);
-    return String.format("Ping %s", name.or("stranger"));
+  public String answerPing() {
+    LOG.info("ping called");
+    return String.format("Cassandra Reaper ping resource replies to you in plain text: PING");
   }
 
 }

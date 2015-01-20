@@ -27,6 +27,7 @@ public class RepairSegment {
   private final long runId;
   private final RingRange tokenRange;
   private final State state;
+  private final int failCount;
   private final DateTime startTime;
   private final DateTime endTime;
 
@@ -62,6 +63,10 @@ public class RepairSegment {
     return state;
   }
 
+  public int getFailCount() {
+    return failCount;
+  }
+
   public DateTime getStartTime() {
     return startTime;
   }
@@ -86,6 +91,7 @@ public class RepairSegment {
     this.state = builder.state;
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
+    this.failCount = builder.failCount;
   }
 
   public Builder with() {
@@ -98,6 +104,7 @@ public class RepairSegment {
     public final RingRange tokenRange;
     private final long columnFamilyId;
     private State state;
+    private int failCount;
     private Integer repairCommandId;
     private DateTime startTime;
     private DateTime endTime;
@@ -107,12 +114,14 @@ public class RepairSegment {
       this.tokenRange = tokenRange;
       this.columnFamilyId = columnFamilyId;
       this.state = State.NOT_STARTED;
+      this.failCount = 0;
     }
 
     private Builder(RepairSegment original) {
       runId = original.runId;
       tokenRange = original.tokenRange;
       state = original.state;
+      failCount = original.failCount;
       columnFamilyId = original.columnFamilyId;
       repairCommandId = original.repairCommandId;
       startTime = original.startTime;
@@ -121,6 +130,11 @@ public class RepairSegment {
 
     public Builder state(State state) {
       this.state = state;
+      return this;
+    }
+
+    public Builder failCount(int failCount) {
+      this.failCount = failCount;
       return this;
     }
 
