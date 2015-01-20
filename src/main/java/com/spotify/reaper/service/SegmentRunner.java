@@ -35,6 +35,7 @@ import java.util.concurrent.locks.Condition;
 public final class SegmentRunner implements RepairStatusHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentRunner.class);
+  private static final int MAX_PENDING_COMPACTIONS = 20;
 
   private final IStorage storage;
   private final long segmentId;
@@ -50,6 +51,16 @@ public final class SegmentRunner implements RepairStatusHandler {
         .runRepair(potentialCoordinators, jmxConnectionFactory, timeoutMillis);
   }
 
+  public static void postpone(IStorage storage, RepairSegment segment) {
+    LOG.warn("Postponing segment {}", segment.getId());
+    storage.updateRepairSegment(segment.with()
+        .state(RepairSegment.State.NOT_STARTED)
+        .repairCommandId(null)
+        .startTime(null)
+        .failCount(segment.getFailCount() + 1)
+        .build(segment.getId()));
+  }
+
   private SegmentRunner(IStorage storage, long segmentId) {
     this.storage = storage;
     this.segmentId = segmentId;
@@ -57,14 +68,18 @@ public final class SegmentRunner implements RepairStatusHandler {
 
   private void runRepair(Collection<String> potentialCoordinators,
       JmxConnectionFactory jmxConnectionFactory, long timeoutMillis) {
+    final RepairSegment segment = storage.getRepairSegment(segmentId);
     try (JmxProxy jmxConnection = jmxConnectionFactory
         .connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators)) {
-      final RepairSegment segment = storage.getRepairSegment(segmentId);
       ColumnFamily columnFamily =
           storage.getColumnFamily(segment.getColumnFamilyId());
       String keyspace = columnFamily.getKeyspaceName();
 
-      assert !segment.getState().equals(RepairSegment.State.RUNNING);
+      if (!canRepair(jmxConnection, segment)) {
+        postpone(segment);
+        return;
+      }
+
       synchronized (condition) {
         commandId = jmxConnection
             .triggerRepair(segment.getStartToken(), segment.getEndToken(), keyspace,
@@ -85,24 +100,41 @@ public final class SegmentRunner implements RepairStatusHandler {
           LOG.info("Repair command {} on segment {} exited with state {}", commandId, segmentId,
               resultingSegment.getState());
           if (resultingSegment.getState().equals(RepairSegment.State.RUNNING)) {
+            LOG.info("Repair command {} on segment {} has been cancelled while running", commandId, segmentId);
             abort(resultingSegment, jmxConnection);
-            LOG.info("Repair command {} on segment {} has been cancelled", commandId, segmentId);
           }
         }
       }
     } catch (ReaperException e) {
-      LOG.warn("Failed to connect to a coordinator node for segment {}. Aborting repair", segmentId);
+      LOG.warn("Failed to connect to a coordinator node for segment {}", segmentId);
+      postpone(segment);
     }
+  }
+
+  boolean canRepair(JmxProxy jmx, RepairSegment segment) {
+    if (segment.getState().equals(RepairSegment.State.RUNNING)) {
+      LOG.error(
+          "Repair segment {} was already marked as started when SegmentRunner was asked to trigger repair",
+          segmentId);
+      return false;
+    }
+    if (jmx.getPendingCompactions() > MAX_PENDING_COMPACTIONS) {
+      LOG.warn(
+          "SegmentRunner declined to repair segment {} because of too many pending compactions (> {})",
+          segmentId, MAX_PENDING_COMPACTIONS);
+      return false;
+    }
+    return true;
+  }
+
+  private void postpone(RepairSegment segment) {
+    postpone(storage, segment);
   }
 
   private void abort(RepairSegment segment, JmxProxy jmxConnection) {
     LOG.warn("Aborting command {} on segment {}", commandId, segmentId);
     jmxConnection.cancelAllRepairs();
-    storage.updateRepairSegment(segment.with()
-        .startTime(null)
-        .repairCommandId(null)
-        .state(RepairSegment.State.NOT_STARTED)
-        .build(segmentId));
+    postpone(storage, segment);
   }
 
 
@@ -137,11 +169,7 @@ public final class SegmentRunner implements RepairStatusHandler {
           // We already set the state of the segment to RUNNING.
           break;
         case SESSION_FAILED:
-          // TODO: Bj0rn: How should we handle this? Here, it's almost treated like a success.
-          storage.updateRepairSegment(currentSegment.with()
-              .state(RepairSegment.State.ERROR)
-              .endTime(DateTime.now())
-              .build(segmentId));
+          postpone(currentSegment);
           condition.signalAll();
           break;
         case SESSION_SUCCESS:

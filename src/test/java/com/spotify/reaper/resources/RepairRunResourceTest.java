@@ -44,6 +44,7 @@ public class RepairRunResourceTest {
 
   int THREAD_CNT = 1;
   int REPAIR_TIMEOUT_S = 60;
+  int RETRY_DELAY_S = 10;
 
   long TIME_CREATE = 42l;
   long TIME_START = 43l;
@@ -143,7 +144,7 @@ public class RepairRunResourceTest {
   @Test
   public void testTriggerRepairRun() throws Exception {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
-    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS);
+    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S, TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(config, storage, factory);
     Response response = resource.addRepairRun(uriInfo, CLUSTER_NAME, KEYSPACE, TABLE, OWNER,
       Optional.<String>absent());
@@ -184,7 +185,7 @@ public class RepairRunResourceTest {
   @Test
   public void testTriggerAlreadyRunningRun() throws InterruptedException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
-    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS);
+    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S, TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(config, storage, factory);
     Response response = resource.addRepairRun(uriInfo, CLUSTER_NAME, KEYSPACE, TABLE, OWNER,
       Optional.<String>absent());
@@ -223,7 +224,7 @@ public class RepairRunResourceTest {
 
   @Test
   public void testTriggerRunMissingArgument() {
-    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS);
+    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S, TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(config, storage, factory);
     Response response = resource.addRepairRun(uriInfo, CLUSTER_NAME, Optional.<String>absent(),
       TABLE, OWNER, Optional.<String>absent());
