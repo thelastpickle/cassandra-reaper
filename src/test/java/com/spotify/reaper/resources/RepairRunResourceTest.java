@@ -152,9 +152,10 @@ public class RepairRunResourceTest {
     long runId = repairRunStatus.getId();
 
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
-    response = resource.triggerRepairRun(uriInfo, runId);
+    Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
+    response = resource.modifyRunState(uriInfo, runId, newState);
 
-    assertEquals(201, response.getStatus());
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof RepairRunStatus);
     // the thing we get as a reply from the endpoint is a not started run. This is because the
     // executor didn't have time to start the run
@@ -176,8 +177,9 @@ public class RepairRunResourceTest {
   @Test
   public void testTriggerNotExistingRun() {
     RepairRunResource resource = new RepairRunResource(config, storage, factory);
-    Response response = resource.triggerRepairRun(uriInfo, 42l);
-    assertEquals(500, response.getStatus());
+    Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
+    Response response = resource.modifyRunState(uriInfo, 42l, newState);
+    assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
     assertTrue(response.getEntity().toString().contains("not found"));
   }
@@ -193,11 +195,11 @@ public class RepairRunResourceTest {
     long runId = repairRunStatus.getId();
 
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
-    resource.triggerRepairRun(uriInfo, runId);
+    Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
+    resource.modifyRunState(uriInfo, runId, newState);
     Thread.sleep(1000);
-    response = resource.triggerRepairRun(uriInfo, runId);
-    assertEquals(500, response.getStatus());
-    assertTrue(response.getEntity().toString().contains("already running"));
+    response = resource.modifyRunState(uriInfo, runId, newState);
+    assertEquals(Response.Status.NOT_MODIFIED.getStatusCode(), response.getStatus());
   }
 
   @Test
@@ -232,4 +234,65 @@ public class RepairRunResourceTest {
     assertTrue(response.getEntity() instanceof String);
     assertTrue(response.getEntity().toString().contains("argument missing"));
   }
+
+  @Test
+  public void testPauseRunningRun() throws InterruptedException {
+    // first trigger a run
+    DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
+    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S, TimeUnit.SECONDS);
+    RepairRunResource resource = new RepairRunResource(config, storage, factory);
+    Response response = resource.addRepairRun(uriInfo, CLUSTER_NAME, KEYSPACE, TABLE, OWNER,
+      Optional.<String>absent());
+    RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
+    long runId = repairRunStatus.getId();
+    DateTimeUtils.setCurrentMillisFixed(TIME_START);
+    Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
+    resource.modifyRunState(uriInfo, runId, newState);
+
+    Thread.sleep(200);
+
+    // now pause it
+    response = resource.modifyRunState(uriInfo, runId,
+      Optional.of(RepairRun.RunState.PAUSED.toString()));
+    Thread.sleep(200);
+
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    RepairRun repairRun = storage.getRepairRun(runId);
+    // the run should be paused
+    assertEquals(RepairRun.RunState.PAUSED, repairRun.getRunState());
+    // but the running segment should be untouched
+    assertEquals(1, storage.getSegmentAmountForRepairRun(runId, RepairSegment.State.RUNNING));
+  }
+
+  @Test
+  public void testPauseNotRunningRun() throws InterruptedException {
+    DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
+    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S, TimeUnit.SECONDS);
+    RepairRunResource resource = new RepairRunResource(config, storage, factory);
+    Response response = resource.addRepairRun(uriInfo, CLUSTER_NAME, KEYSPACE, TABLE, OWNER,
+      Optional.<String>absent());
+    RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
+    long runId = repairRunStatus.getId();
+
+    response = resource.modifyRunState(uriInfo, runId,
+      Optional.of(RepairRun.RunState.PAUSED.toString()));
+    Thread.sleep(200);
+
+    assertEquals(501, response.getStatus());
+    RepairRun repairRun = storage.getRepairRun(runId);
+    // the run should be paused
+    assertEquals(RepairRun.RunState.NOT_STARTED, repairRun.getRunState());
+    // but the running segment should be untouched
+    assertEquals(0, storage.getSegmentAmountForRepairRun(runId, RepairSegment.State.RUNNING));
+  }
+
+  @Test
+  public void testPauseNotExistingRun() throws InterruptedException {
+    RepairRunResource resource = new RepairRunResource(config, storage, factory);
+    Response response = resource.modifyRunState(uriInfo, 42l,
+      Optional.of(RepairRun.RunState.PAUSED.toString()));
+    assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
+    assertEquals(0, storage.getAllRunningRepairRuns().size());
+  }
+
 }

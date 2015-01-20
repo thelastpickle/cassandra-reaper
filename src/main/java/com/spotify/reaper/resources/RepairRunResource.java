@@ -30,6 +30,7 @@ import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
 import com.spotify.reaper.storage.IStorage;
 
+import org.apache.cassandra.db.Column;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,7 @@ import java.util.Set;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -126,33 +128,97 @@ public class RepairRunResource {
   }
 
   /**
-   * Triggers an orchestration of a repair run.
-   * @return 201 if all goes well, 500 in case of errors.
+   * Modifies a state of the repair run.
+   *
+   * Currently supports NOT_STARTED|PAUSED -> RUNNING and RUNNING -> PAUSED.
+   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one,
+   * and 501 (NOT_IMPLEMENTED) if transition is not supported.
    */
-  @POST
+  @PUT
   @Path("/{id}")
-  public Response triggerRepairRun(
-      @Context UriInfo uriInfo,
-      @PathParam("id") Long repairRunId) {
+  public Response modifyRunState(
+    @Context UriInfo uriInfo,
+    @PathParam("id") Long repairRunId,
+    @QueryParam("state") Optional<String> state) {
 
-    LOG.info("trigger repair run called with: runId = {}", repairRunId);
+    LOG.info("pause repair run called with: runId = {}", repairRunId);
+
+    if (!state.isPresent()) {
+      return Response.status(Response.Status.BAD_REQUEST.getStatusCode())
+        .entity("New state not specified")
+        .build();
+    }
 
     try {
       RepairRun repairRun = fetchRepairRun(repairRunId);
-      // TODO(zvo): this prevents PAUSED runs to resume, will fix later
-      if (repairRun.getRunState() != RepairRun.RunState.NOT_STARTED) {
-        throw new ReaperException(String.format("Repair run \"%d\" already running", repairRunId));
+      ColumnFamily table = storage.getColumnFamily(repairRun.getColumnFamilyId());
+      RepairRun.RunState newState = RepairRun.RunState.valueOf(state.get());
+      RepairRun.RunState oldState = repairRun.getRunState();
+
+      if (oldState == newState) {
+        return Response.status(Response.Status.NOT_MODIFIED).build();
       }
-      ColumnFamily table = getTable(repairRun.getColumnFamilyId());
-      RepairRunner.startNewRepairRun(storage, repairRun.getId(), jmxFactory);
-      return Response.created(buildRepairRunURI(uriInfo, repairRun))
-          .entity(new RepairRunStatus(repairRun, table))
-          .build();
+
+      if (isStarting(oldState, newState)) {
+        return startRun(repairRun, table);
+      }
+      if (isPausing(oldState, newState)) {
+        return pauseRun(repairRun, table);
+      }
+      if (isResuming(oldState, newState)) {
+        return resumeRun(repairRun, table);
+      }
+      String errMsg = String.format("Transition %s->%s not supported.", newState.toString(),
+        oldState.toString());
+      LOG.error(errMsg);
+      return Response.status(501).entity(errMsg).build();
     } catch (ReaperException e) {
       LOG.error(e.getMessage());
       e.printStackTrace();
-      return Response.status(500).entity(e.getMessage()).build();
+      return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
     }
+  }
+
+  private boolean isStarting(RepairRun.RunState oldState, RepairRun.RunState newState) {
+    return oldState == RepairRun.RunState.NOT_STARTED && newState == RepairRun.RunState.RUNNING;
+  }
+
+  private boolean isPausing(RepairRun.RunState oldState, RepairRun.RunState newState) {
+    return oldState == RepairRun.RunState.RUNNING && newState == RepairRun.RunState.PAUSED;
+  }
+
+  private boolean isResuming(RepairRun.RunState oldState, RepairRun.RunState newState) {
+    return oldState == RepairRun.RunState.PAUSED && newState == RepairRun.RunState.RUNNING;
+  }
+
+  private Response startRun(RepairRun repairRun, ColumnFamily table) {
+    LOG.info("Starting run {}", repairRun.getId());
+    RepairRun updatedRun = new RepairRun.Builder(repairRun)
+      .runState(RepairRun.RunState.RUNNING)
+      .startTime(DateTime.now())
+      .build(repairRun.getId());
+    storage.updateRepairRun(updatedRun);
+    RepairRunner.startNewRepairRun(storage, repairRun.getId(), jmxFactory);
+    return Response.status(Response.Status.OK).entity(new RepairRunStatus(repairRun, table))
+      .build();
+  }
+
+  private Response pauseRun(RepairRun repairRun, ColumnFamily table) {
+    LOG.info("Pausing run {}", repairRun.getId());
+    RepairRun updatedRun = new RepairRun.Builder(repairRun)
+      .runState(RepairRun.RunState.PAUSED)
+      .build(repairRun.getId());
+    storage.updateRepairRun(updatedRun);
+    return Response.ok().entity(new RepairRunStatus(repairRun, table)).build();
+  }
+
+  private Response resumeRun(RepairRun repairRun, ColumnFamily table) {
+    LOG.info("Resuming run {}", repairRun.getId());
+    RepairRun updatedRun = new RepairRun.Builder(repairRun)
+      .runState(RepairRun.RunState.RUNNING)
+      .build(repairRun.getId());
+    storage.updateRepairRun(updatedRun);
+    return Response.ok().entity(new RepairRunStatus(repairRun, table)).build();
   }
 
   /**

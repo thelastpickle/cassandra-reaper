@@ -52,6 +52,8 @@ class ReaperCaller(object):
             r = requests.get(the_url, params=params)
         elif http_method == 'POST':
             r = requests.post(the_url, params=params)
+        elif http_method == 'PUT':
+            r = requests.put(the_url, params=params)
         else:
             assert False, "invalid HTTP method: {0}".format(http_method)
         log.info("HTTP %s return code %s with content of length %s",
@@ -66,6 +68,10 @@ class ReaperCaller(object):
     def post(self, endpoint, **params):
         the_url = urlparse.urljoin(self.base_url, endpoint)
         return self._http_req("POST", the_url, params)
+
+    def put(self, endpoint, **params):
+        the_url = urlparse.urljoin(self.base_url, endpoint)
+        return self._http_req("PUT", the_url, params)
 
 # === Arguments for commands ============================================================
 
@@ -139,6 +145,12 @@ def _arguments_for_trigger(parser):
     parser.add_argument("run_id", help="ID of the run to trigger")
 
 
+def _arguments_for_pause(parser):
+    """Arguments needed for pausing a repair
+    """
+    parser.add_argument("run_id", help="ID of the run to pause")
+
+
 def _parse_arguments(command, description, usage=None, extra_arguments=None):
     """Generic argument parsing done by every command
     """
@@ -166,6 +178,8 @@ Usage: spreaper [<global_args>] <command> [<command_args>]
     add-table      Register a table for a previously added cluster
     repair         Create a repair run, optionally triggering it
     trigger        Start a repair run
+    pause          Pause a repair run
+    resume         Resume a previously paused run
     ping           Test connectivity to to the Reaper service
 """
 
@@ -270,18 +284,36 @@ class ReaperCLI(object):
         run_id = json.loads(reply)['id']
         print "# run with id={0} created".format(run_id)
         if args.trigger:
-            self._trigger_run(reaper, run_id, args)
+            self._trigger_run(reaper, run_id, args, "RUNNING")
 
     def trigger(self):
         args = _parse_arguments(command='trigger',
                                 description='trigger a new or paused repair run',
                                 extra_arguments=_arguments_for_trigger)
         reaper = self.init_reaper(args)
-        self._trigger_run(reaper, args.id, args)
+        self._trigger_run(reaper, args.run_id, args, "RUNNING")
 
-    def _trigger_run(self, reaper, run_id, args):
+    def pause(self):
+        args = _parse_arguments(command='pause',
+                                description='pause a running repair run',
+                                extra_arguments=_arguments_for_pause)
+        reaper = self.init_reaper(args)
+        print "# pausing run with id: {0}".format(args.run_id)
+        reaper.put("repair_run/{0}".format(args.run_id), state="PAUSED")
+        print "# run paused"
+
+    def resume(self):
+        args = _parse_arguments(command='resume',
+                                description='resume a repair run',
+                                extra_arguments=_arguments_for_pause)
+        reaper = self.init_reaper(args)
+        print "# resuming a run with id: {0}".format(args.run_id)
+        reaper.put("repair_run/{0}".format(args.run_id), state="RUNNING")
+        print "# run resumed"
+
+    def _trigger_run(self, reaper, run_id, args, st):
         print "# triggering run with id: {0}".format(run_id)
-        reaper.post("repair_run/{0}".format(run_id), owner=args.owner, cause=args.cause)
+        reaper.put("repair_run/{0}".format(run_id), owner=args.owner, cause=args.cause, state=st)
         print "# run triggered"
 
 

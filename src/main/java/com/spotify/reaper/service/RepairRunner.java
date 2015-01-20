@@ -82,7 +82,6 @@ public class RepairRunner implements Runnable {
     }
   }
 
-
   private final IStorage storage;
   private final long repairRunId;
   private final JmxConnectionFactory jmxConnectionFactory;
