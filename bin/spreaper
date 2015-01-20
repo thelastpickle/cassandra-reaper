@@ -187,7 +187,7 @@ class ReaperCLI(object):
             print 'Unrecognized command: {0}'.format(command)
             print REAPER_USAGE
             exit(1)
-        # use dispatch pattern to invoke method with same)
+        # use dispatch pattern to invoke method with same name as given command
         getattr(self, command)()
 
     def init_reaper(self, args):

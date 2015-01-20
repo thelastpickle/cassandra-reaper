@@ -270,10 +270,11 @@ public class JmxProxy implements NotificationListener, Serializable {
   /**
    * Invoked when the MBean this class listens to publishes an event.
    *
-   * We're only interested in repair-related events. Their format is explained at {@link
-   * org.apache.cassandra.service.StorageServiceMBean#forceRepairAsync} The format is: notification
-   * type: "repair" notification userData: int array of length 2 where [0] = command number [1] =
-   * ordinal of AntiEntropyService.Status
+   * We're only interested in repair-related events. Their format is explained at
+   * {@link org.apache.cassandra.service.StorageServiceMBean#forceRepairAsync}
+   * The format is: notification type: "repair" notification
+   * userData: int array of length 2 where [0] = command number
+   * [1] = ordinal of AntiEntropyService.Status
    */
   @Override
   public void handleNotification(Notification notification, Object handback) {

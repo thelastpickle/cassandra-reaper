@@ -19,5 +19,5 @@ script
     exec /usr/bin/cassandra-reaper
 end script
 
-# prevent respawning more than once every 5 seconds
+# prevent re-spawning more than once every 5 seconds
 post-stop exec sleep 5

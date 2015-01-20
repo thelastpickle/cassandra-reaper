@@ -39,13 +39,16 @@ public final class SegmentRunner implements RepairStatusHandler {
   private final JmxProxy jmxConnection;
 
 
-  public static void triggerRepair(IStorage storage, long segmentId, Collection<String> potentialCoordinators, long timeoutMillis, JmxConnectionFactory jmxConnectionFactory)
+  public static void triggerRepair(IStorage storage, long segmentId,
+                                   Collection<String> potentialCoordinators, long timeoutMillis,
+                                   JmxConnectionFactory jmxConnectionFactory)
       throws ReaperException, InterruptedException {
-    new SegmentRunner(storage, segmentId, potentialCoordinators, jmxConnectionFactory).awaitOutcome(
-        timeoutMillis);
+    new SegmentRunner(storage, segmentId, potentialCoordinators, jmxConnectionFactory)
+        .awaitOutcome(timeoutMillis);
   }
 
-  private SegmentRunner(IStorage storage, long segmentId, Collection<String> potentialCoordinators, JmxConnectionFactory jmxConnectionFactory)
+  private SegmentRunner(IStorage storage, long segmentId, Collection<String> potentialCoordinators,
+                        JmxConnectionFactory jmxConnectionFactory)
       throws ReaperException {
     this.storage = storage;
     this.segmentId = segmentId;
@@ -53,7 +56,8 @@ public final class SegmentRunner implements RepairStatusHandler {
     // TODO: don't trigger the repair in the constructor. The change will force commandId to be
     // TODO: mutable, but that's better than this.
     synchronized (this) {
-      jmxConnection = jmxConnectionFactory.connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators);
+      jmxConnection = jmxConnectionFactory
+          .connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators);
 
       RepairSegment segment = storage.getRepairSegment(segmentId);
       ColumnFamily columnFamily =
@@ -63,13 +67,13 @@ public final class SegmentRunner implements RepairStatusHandler {
       assert !segment.getState().equals(RepairSegment.State.RUNNING);
       commandId = jmxConnection
           .triggerRepair(segment.getStartToken(), segment.getEndToken(), keyspace,
-              columnFamily.getName());
+                         columnFamily.getName());
       LOG.debug("Triggered repair with command id {}", commandId);
       LOG.info("Repair for segment {} started", segmentId);
       storage.updateRepairSegment(segment.with()
-          .state(RepairSegment.State.RUNNING)
-          .repairCommandId(commandId)
-          .build(segmentId));
+                                      .state(RepairSegment.State.RUNNING)
+                                      .repairCommandId(commandId)
+                                      .build(segmentId));
     }
   }
 
@@ -97,10 +101,10 @@ public final class SegmentRunner implements RepairStatusHandler {
   private synchronized void abort(RepairSegment segment) {
     LOG.warn("Aborting command {} on segment {}", commandId, segmentId);
     storage.updateRepairSegment(segment.with()
-        .startTime(null)
-        .repairCommandId(null)
-        .state(RepairSegment.State.NOT_STARTED)
-        .build(segmentId));
+                                    .startTime(null)
+                                    .repairCommandId(null)
+                                    .state(RepairSegment.State.NOT_STARTED)
+                                    .build(segmentId));
   }
 
 
@@ -113,7 +117,8 @@ public final class SegmentRunner implements RepairStatusHandler {
    * @param message      additional information about the repair
    */
   @Override
-  public synchronized void handle(int repairNumber, ActiveRepairService.Status status, String message) {
+  public synchronized void handle(int repairNumber, ActiveRepairService.Status status,
+                                  String message) {
     LOG.debug(
         "handleRepairOutcome called for repairCommandId {}, outcome {} and message: {}",
         repairNumber, status, message);
@@ -129,16 +134,16 @@ public final class SegmentRunner implements RepairStatusHandler {
       case STARTED:
         DateTime now = DateTime.now();
         storage.updateRepairSegment(currentSegment.with()
-            .startTime(now)
-            .build(segmentId));
+                                        .startTime(now)
+                                        .build(segmentId));
         // We already set the state of the segment to RUNNING.
         break;
       case SESSION_FAILED:
         // TODO: Bj0rn: How should we handle this? Here, it's almost treated like a success.
         storage.updateRepairSegment(currentSegment.with()
-            .state(RepairSegment.State.ERROR)
-            .endTime(DateTime.now())
-            .build(segmentId));
+                                        .state(RepairSegment.State.ERROR)
+                                        .endTime(DateTime.now())
+                                        .build(segmentId));
         notify();
         break;
       case SESSION_SUCCESS:
@@ -146,9 +151,9 @@ public final class SegmentRunner implements RepairStatusHandler {
         break;
       case FINISHED:
         storage.updateRepairSegment(currentSegment.with()
-            .state(RepairSegment.State.DONE)
-            .endTime(DateTime.now())
-            .build(segmentId));
+                                        .state(RepairSegment.State.DONE)
+                                        .endTime(DateTime.now())
+                                        .build(segmentId));
         notify();
         break;
     }

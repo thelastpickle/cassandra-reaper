@@ -150,18 +150,19 @@ public interface IStoragePostgreSQL {
   // RepairSegment
   //
   static final String SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID =
-      "column_family_id, run_id, start_token, end_token, state, start_time, end_time";
+      "column_family_id, run_id, start_token, end_token, state, start_time, end_time, fail_count";
 
   static final String SQL_REPAIR_SEGMENT_ALL_FIELDS = "id, " + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID;
 
   static final String SQL_INSERT_REPAIR_SEGMENT =
       "INSERT INTO repair_segment (" + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID + ") VALUES "
-      + "(:columnFamilyId, :runId, :startToken, :endToken, :state, :startTime, :endTime)";
+      + "(:columnFamilyId, :runId, :startToken, :endToken, :state, :startTime, :endTime, "
+      + ":failCount)";
 
   static final String SQL_UPDATE_REPAIR_SEGMENT =
       "UPDATE repair_segment SET column_family_id = :columnFamilyId, run_id = :runId, "
       + "start_token = :startToken, end_token = :endToken, state = :state, "
-      + "start_time = :startTime, end_time = :endTime WHERE id = :id";
+      + "start_time = :startTime, end_time = :endTime, fail_count = :failCount WHERE id = :id";
 
   static final String SQL_GET_REPAIR_SEGMENT =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE id = :id";
@@ -172,12 +173,12 @@ public interface IStoragePostgreSQL {
 
   static final String SQL_GET_NEXT_FREE_REPAIR_SEGMENT =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE run_id = :runId "
-      + "AND state = 0 ORDER BY start_token ASC LIMIT 1";
+      + "AND state = 0 ORDER BY fail_count ASC, start_token ASC LIMIT 1";
 
   static final String SQL_GET_NEXT_FREE_REPAIR_SEGMENT_ON_RANGE =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE "
       + "run_id = :runId AND state = 0 AND start_token >= :startToken "
-      + "AND end_token < :endToken ORDER BY start_token ASC LIMIT 1";
+      + "AND end_token < :endToken ORDER BY fail_count ASC, start_token ASC LIMIT 1";
 
   @SqlBatch(SQL_INSERT_REPAIR_SEGMENT)
   @BatchChunkSize(500)
