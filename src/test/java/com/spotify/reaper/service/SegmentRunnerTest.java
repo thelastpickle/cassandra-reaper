@@ -120,7 +120,7 @@ public class SegmentRunnerTest {
     final MutableObject<Future<?>> future = new MutableObject<>();
 
     SegmentRunner.triggerRepair(storage, segmentId,
-        Collections.singleton(""), 500, new JmxConnectionFactory() {
+        Collections.singleton(""), 1000, new JmxConnectionFactory() {
           @Override
           public JmxProxy create(final Optional<RepairStatusHandler> handler, String host)
               throws ReaperException {
@@ -186,7 +186,7 @@ public class SegmentRunnerTest {
     final MutableObject<Future<?>> future = new MutableObject<>();
 
     SegmentRunner.triggerRepair(storage, segmentId,
-        Collections.singleton(""), 500, new JmxConnectionFactory() {
+        Collections.singleton(""), 1000, new JmxConnectionFactory() {
           @Override
           public JmxProxy create(final Optional<RepairStatusHandler> handler, String host)
               throws ReaperException {

@@ -180,14 +180,8 @@ public class RepairRunner implements Runnable {
       return;
     }
 
-    try {
-      SegmentRunner.triggerRepair(storage, segmentId, potentialCoordinators, repairTimeoutMillis,
-          jmxConnectionFactory);
-    } catch (ReaperException e) {
-      e.printStackTrace();
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
+    SegmentRunner.triggerRepair(storage, segmentId, potentialCoordinators, repairTimeoutMillis,
+        jmxConnectionFactory);
 
     handleResult(segmentId);
   }

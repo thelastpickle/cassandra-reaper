@@ -51,7 +51,7 @@ import javax.management.remote.JMXServiceURL;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class JmxProxy implements NotificationListener, Serializable {
+public class JmxProxy implements NotificationListener, Serializable, AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(JmxProxy.class);
 
@@ -97,8 +97,7 @@ public class JmxProxy implements NotificationListener, Serializable {
     String[] parts = host.split(":");
     if (parts.length == 2) {
       return connect(handler, parts[0], Integer.valueOf(parts[1]));
-    }
-    else {
+    } else {
       return connect(handler, host, JMX_PORT);
     }
   }
@@ -221,6 +220,7 @@ public class JmxProxy implements NotificationListener, Serializable {
 
   /**
    * Checks if table exists in the cluster by instantiating a MBean for that table.
+   *
    * @throws ReaperException if the query fails, not when the table doesn't exist
    */
   public boolean tableExists(String ks, String cf) throws ReaperException {
@@ -234,8 +234,7 @@ public class JmxProxy implements NotificationListener, Serializable {
       }
       ObjectName bean = beans.iterator().next();
       JMX.newMBeanProxy(mbeanServer, bean, ColumnFamilyStoreMBean.class);
-    }
-    catch (MalformedObjectNameException | IOException e) {
+    } catch (MalformedObjectNameException | IOException e) {
       String errMsg = String.format("ColumnFamilyStore for %s/%s not found: %s", ks, cf,
           e.getMessage());
       LOG.warn(errMsg);
@@ -311,6 +310,7 @@ public class JmxProxy implements NotificationListener, Serializable {
   /**
    * Cleanly shut down by un-registering the listener and closing the JMX connection.
    */
+  @Override
   public void close() throws ReaperException {
     try {
       mbeanServer.removeNotificationListener(ssMbeanName, this);
