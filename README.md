@@ -92,9 +92,13 @@ Using "*" as bind value won't work.
 REST API
 --------
 
+## Ping
+
 * GET     /ping (com.spotify.reaper.resources.PingResource)
   * Expected query parameters: *None*
   * Simple ping resource that can be used to check whether the reaper is running.
+
+## Manipulating clusters
 
 * GET     /cluster (com.spotify.reaper.resources.ClusterResource)
   * Expected query parameters: *None*
@@ -111,6 +115,8 @@ REST API
   * Adds a new cluster to the service, and returns the newly added cluster resource,
     if the operation was successful.
 
+## Manipulating tables
+
 * GET     /table/{clusterName}/{keyspace}/{table} (com.spotify.reaper.resources.TableResource)
   * Expected query parameters: *None*
   * Returns a table resource identified by the given "clusterName", "keyspace", and "table"
@@ -119,14 +125,10 @@ REST API
 * POST    /table (com.spotify.reaper.resources.TableResource)
   * Expected query parameters:
     * *clusterName*: Name of the Cassandra cluster.
-    * *seedHost*: IP or host name of the clusters seed host.
     * *keyspace*: The name of the table keyspace.
     * *table*: The name of the table (column family).
-    * *startRepair*: If this query parameter is given, a new repair run will be started
-      on this new table.
-    * *owner*: Owner name for the table. This could be any string identifying the owner.
-    * *cause*: Identifies the process, or cause the repair was started. Used only if *startRepair*
-      query parameter is given.
+
+## Manipulating repair runs
 
 * GET     /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)
   * Expected query parameters: *None*
@@ -136,3 +138,14 @@ REST API
   * Expected query parameters: *None*
   * Returns a list of all repair run statuses found for the given "cluster_name" path parameter.
 
+* POST    /repair_run (com.spotify.reaper.resources.RepairRunResource)
+  * Expected query parameters:
+    * *clusterName*: Name of the Cassandra cluster.
+    * *keyspace*: The name of the table keyspace.
+    * *table*: The name of the table (column family).
+    * *owner*: Owner name for the table. This could be any string identifying the owner.
+    * *cause*: Identifies the process, or cause the repair was started. 
+
+* POST    /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)
+  * Expected query parameters: *None*
+  * Triggers a repair run identified by the "id" path parameter.
