@@ -14,7 +14,7 @@
 package com.spotify.reaper.storage;
 
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.ColumnFamily;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.service.RingRange;
@@ -48,11 +48,11 @@ public interface IStorage {
 
   Collection<RepairRun> getAllRunningRepairRuns();
 
-  ColumnFamily addColumnFamily(ColumnFamily.Builder newTable);
+  RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit);
 
-  ColumnFamily getColumnFamily(long id);
+  RepairUnit getRepairUnit(long id);
 
-  ColumnFamily getColumnFamily(String cluster, String keyspace, String table);
+  RepairUnit getRepairUnit(String cluster, String keyspace, String table);
 
   void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId);
 

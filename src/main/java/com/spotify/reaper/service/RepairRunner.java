@@ -17,9 +17,10 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
-import com.spotify.reaper.core.ColumnFamily;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.storage.IStorage;
@@ -97,8 +98,8 @@ public class RepairRunner implements Runnable {
     this.storage = storage;
     this.repairRunId = repairRunId;
     this.jmxConnectionFactory = jmxConnectionFactory;
-    jmxConnection = this.jmxConnectionFactory.connectAny(Optional.<RepairStatusHandler>absent(),
-        storage.getCluster(storage.getRepairRun(repairRunId).getClusterName()).getSeedHosts());
+    jmxConnection = this.jmxConnectionFactory.connectAny(
+        storage.getCluster(storage.getRepairRun(repairRunId).getClusterName()));
   }
 
   /**
@@ -173,9 +174,9 @@ public class RepairRunner implements Runnable {
    * @param tokenRange token range of the segment to repair.
    */
   private void repairSegment(long segmentId, RingRange tokenRange) {
-    ColumnFamily columnFamily =
-        storage.getColumnFamily(storage.getRepairRun(repairRunId).getColumnFamilyId());
-    String keyspace = columnFamily.getKeyspaceName();
+    RepairUnit repairUnit =
+        storage.getColumnFamily(storage.getRepairRun(repairRunId).getRepairUnitId());
+    String keyspace = repairUnit.getKeyspaceName();
 
     if (!jmxConnection.isConnectionAlive()) {
       try {

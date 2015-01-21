@@ -20,17 +20,16 @@ import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.ColumnFamily;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.resources.view.RepairRunStatus;
-import com.spotify.reaper.service.JmxConnectionFactory;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
 import com.spotify.reaper.storage.IStorage;
 
-import org.apache.cassandra.db.Column;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,19 +86,24 @@ public class RepairRunResource {
    * must be called to initiate the repair. Creating a repair run includes generating repair
    * segments.
    *
-   * @return repair run ID in case of everything going well, 500 in case of errors.
+   * Notice that query parameter "tables" can be a single String, or a comma-separated list
+   * of table names. If the "tables" parameter is omitted, and only the keyspace is defined,
+   * then created repair run will target all the tables in the keyspace.
+   *
+   * @return repair run ID in case of everything going well,
+   *         and a status code 500 in case of errors.
    */
   @POST
   public Response addRepairRun(
       @Context UriInfo uriInfo,
       @QueryParam("clusterName") Optional<String> clusterName,
       @QueryParam("keyspace") Optional<String> keyspace,
-      @QueryParam("table") Optional<String> tableName,
+      @QueryParam("tables") Optional<String> tableNames,
       @QueryParam("owner") Optional<String> owner,
       @QueryParam("cause") Optional<String> cause) {
 
-    LOG.info("add repair run called with: clusterName = {}, keyspace = {}, table = {}, owner = {},"
-             + " cause = {}", clusterName, keyspace, tableName, owner, cause);
+    LOG.info("add repair run called with: clusterName = {}, keyspace = {}, tables = {}, owner = {},"
+             + " cause = {}", clusterName, keyspace, tableNames, owner, cause);
 
     try {
       if (!clusterName.isPresent()) {
@@ -108,17 +112,26 @@ public class RepairRunResource {
       if (!keyspace.isPresent()) {
         throw new ReaperException("\"keyspace\" argument missing");
       }
-      if (!tableName.isPresent()) {
-        throw new ReaperException("\"tableName\" argument missing");
-      }
       if (!owner.isPresent()) {
         throw new ReaperException("\"owner\" argument missing");
       }
+
       Cluster cluster = getCluster(clusterName.get());
-      ColumnFamily table = getTable(clusterName.get(), keyspace.get(), tableName.get());
-      RepairRun newRepairRun = registerRepairRun(cluster, table, cause, owner.get());
+      JmxProxy jmxProxy = jmxFactory.create(cluster.getSeedHosts().iterator().next());
+      List<String> knownTables = jmxProxy.getTableNamesForKeyspace(keyspace.get());
+      if (knownTables.size() == 0) {
+        LOG.debug("no known tables for keyspace {} in cluster {}", keyspace.get(),
+            clusterName.get());
+        return Response.status(Response.Status.NOT_FOUND).entity(
+            "no column families found for keyspace").build();
+      }
+
+      jmxProxy.close();
+
+      RepairUnit repairUnit = getRepairUnit(clusterName.get(), keyspace.get(), tableNames.get());
+      RepairRun newRepairRun = registerRepairRun(cluster, repairUnit, cause, owner.get());
       return Response.created(buildRepairRunURI(uriInfo, newRepairRun))
-          .entity(new RepairRunStatus(newRepairRun, table))
+          .entity(new RepairRunStatus(newRepairRun, repairUnit))
           .build();
     } catch (ReaperException e) {
       LOG.error(e.getMessage());
@@ -141,32 +154,32 @@ public class RepairRunResource {
     @PathParam("id") Long repairRunId,
     @QueryParam("state") Optional<String> state) {
 
-    LOG.info("pause repair run called with: runId = {}", repairRunId);
+    LOG.info("pause repair run called with: id = {}, state = {}", repairRunId, state);
 
     if (!state.isPresent()) {
       return Response.status(Response.Status.BAD_REQUEST.getStatusCode())
-        .entity("New state not specified")
+        .entity("\"state\" argument missing")
         .build();
     }
 
     try {
-      RepairRun repairRun = fetchRepairRun(repairRunId);
-      ColumnFamily table = storage.getColumnFamily(repairRun.getColumnFamilyId());
+      RepairRun repairRun = getRepairRun(repairRunId);
+      RepairUnit repairUnit = storage.getRepairUnit(repairRun.getRepairUnitId());
       RepairRun.RunState newState = RepairRun.RunState.valueOf(state.get());
       RepairRun.RunState oldState = repairRun.getRunState();
 
       if (oldState == newState) {
-        return Response.status(Response.Status.NOT_MODIFIED).build();
+        return Response.ok("given \"state\" is same as the current run state").build();
       }
 
       if (isStarting(oldState, newState)) {
-        return startRun(repairRun, table);
+        return startRun(repairRun, repairUnit);
       }
       if (isPausing(oldState, newState)) {
-        return pauseRun(repairRun, table);
+        return pauseRun(repairRun, repairUnit);
       }
       if (isResuming(oldState, newState)) {
-        return resumeRun(repairRun, table);
+        return resumeRun(repairRun, repairUnit);
       }
       String errMsg = String.format("Transition %s->%s not supported.", newState.toString(),
         oldState.toString());
@@ -191,7 +204,7 @@ public class RepairRunResource {
     return oldState == RepairRun.RunState.PAUSED && newState == RepairRun.RunState.RUNNING;
   }
 
-  private Response startRun(RepairRun repairRun, ColumnFamily table) {
+  private Response startRun(RepairRun repairRun, RepairUnit repairUnit) {
     LOG.info("Starting run {}", repairRun.getId());
     RepairRun updatedRun = repairRun.with()
       .runState(RepairRun.RunState.RUNNING)
@@ -199,26 +212,26 @@ public class RepairRunResource {
       .build(repairRun.getId());
     storage.updateRepairRun(updatedRun);
     RepairRunner.startNewRepairRun(storage, repairRun.getId(), jmxFactory);
-    return Response.status(Response.Status.OK).entity(new RepairRunStatus(repairRun, table))
+    return Response.status(Response.Status.OK).entity(new RepairRunStatus(repairRun, repairUnit))
       .build();
   }
 
-  private Response pauseRun(RepairRun repairRun, ColumnFamily table) {
+  private Response pauseRun(RepairRun repairRun, RepairUnit repairUnit) {
     LOG.info("Pausing run {}", repairRun.getId());
     RepairRun updatedRun = repairRun.with()
       .runState(RepairRun.RunState.PAUSED)
       .build(repairRun.getId());
     storage.updateRepairRun(updatedRun);
-    return Response.ok().entity(new RepairRunStatus(repairRun, table)).build();
+    return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();
   }
 
-  private Response resumeRun(RepairRun repairRun, ColumnFamily table) {
+  private Response resumeRun(RepairRun repairRun, RepairUnit repairUnit) {
     LOG.info("Resuming run {}", repairRun.getId());
     RepairRun updatedRun = repairRun.with()
       .runState(RepairRun.RunState.RUNNING)
       .build(repairRun.getId());
     storage.updateRepairRun(updatedRun);
-    return Response.ok().entity(new RepairRunStatus(repairRun, table)).build();
+    return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();
   }
 
   /**
@@ -228,14 +241,13 @@ public class RepairRunResource {
   @Path("/{id}")
   public Response getRepairRun(@PathParam("id") Long repairRunId) {
     LOG.info("get repair_run called with: id = {}", repairRunId);
-    try {
-      RepairRun repairRun = fetchRepairRun(repairRunId);
+    RepairRun repairRun = storage.getRepairRun(repairRunId);
+    if (null != repairRun) {
       return Response.ok().entity(getRepairRunStatus(repairRun)).build();
-    } catch (ReaperException e) {
-      e.printStackTrace();
-      LOG.error(e.getMessage());
-      return Response.status(404).entity("repair run \"" + repairRunId + "\" does not exist")
-          .build();
+    }
+    else {
+      return Response.status(404).entity(
+          "repair run with id " + repairRunId + " doesn't exist").build();
     }
   }
 
@@ -267,43 +279,30 @@ public class RepairRunResource {
   }
 
   /**
-   * @return table information for given cluster, keyspace and table name
+   * @return repair unit information for given cluster, keyspace and table name
    * @throws ReaperException if such table is not found in Reaper's storage
    */
-  private ColumnFamily getTable(String clusterName, String keyspace,
-    String tableName) throws ReaperException {
-    ColumnFamily cf = storage.getColumnFamily(clusterName, keyspace, tableName);
-    if (cf == null) {
+  private RepairUnit getRepairUnit(String clusterName, String keyspace,
+    Collection<String> tableNames) throws ReaperException {
+    RepairUnit repairUnit = storage.getRepairUnit(clusterName, keyspace, tableName);
+    if (repairUnit == null) {
       throw new ReaperException(String.format("Column family \"%s/%s/%s\" not found", clusterName,
           keyspace, tableName));
     }
-    return cf;
+    return repairUnit;
   }
 
   /**
    * @return table information for given table id
    * @throws ReaperException if such table is not found in Reaper's storage
    */
-  private ColumnFamily getTable(long columnFamilyId) throws ReaperException {
-    ColumnFamily cf =  storage.getColumnFamily(columnFamilyId);
-    if (cf == null) {
+  private RepairUnit getRepairUnit(long repairUnitId) throws ReaperException {
+    RepairUnit repairUnit =  storage.getRepairUnit(repairUnitId);
+    if (repairUnit == null) {
       throw new ReaperException(String.format("Column family with id \"%d\" not found",
-          columnFamilyId));
+          repairUnitId));
     }
-    return cf;
-  }
-
-  /**
-   * @return repair run given its ID
-   * @throws ReaperException if the run is not found
-   * @param repairRunId
-   */
-  private RepairRun fetchRepairRun(Long repairRunId) throws ReaperException {
-    RepairRun repairRun = storage.getRepairRun(repairRunId);
-    if (repairRun == null) {
-      throw new ReaperException(String.format("Repair run with id = %s not found", repairRunId));
-    }
-    return repairRun;
+    return repairUnit;
   }
 
   /**
@@ -315,17 +314,17 @@ public class RepairRunResource {
    *   3) create RepairSegment instances linked to RepairRun. these are directly stored in storage
    * @throws ReaperException if repair run fails to be stored in Reaper's storage
    */
-  private RepairRun registerRepairRun(Cluster cluster, ColumnFamily table, Optional<String> cause,
-      String owner) throws ReaperException {
+  private RepairRun registerRepairRun(Cluster cluster, RepairUnit repairUnit,
+      Optional<String> cause, String owner) throws ReaperException {
 
     // preparing a repair run involves several steps
 
     // the first step is to generate token segments
-    List<RingRange> tokenSegments = generateSegments(cluster, table);
+    List<RingRange> tokenSegments = generateSegments(cluster, repairUnit);
     checkNotNull(tokenSegments, "failed generating repair segments");
 
     // the next step is to prepare a repair run object
-    RepairRun repairRun = storeNewRepairRun(cluster, table, cause, owner);
+    RepairRun repairRun = storeNewRepairRun(cluster, repairUnit, cause, owner);
     checkNotNull(repairRun, "failed preparing repair run");
 
     // Notice that our RepairRun core object doesn't contain pointer to
@@ -333,7 +332,7 @@ public class RepairRunResource {
     // However, RepairSegment has a pointer to the RepairRun it lives in
 
     // the last preparation step is to generate actual repair segments
-    storeNewRepairSegments(tokenSegments, repairRun, table);
+    storeNewRepairSegments(tokenSegments, repairRun, repairUnit);
 
     // now we're done and can return
     return repairRun;
@@ -345,7 +344,7 @@ public class RepairRunResource {
    * @throws ReaperException when fails to discover seeds for the cluster or fails to connect to
    *   any of the nodes in the Cluster.
    */
-  private List<RingRange> generateSegments(Cluster targetCluster, ColumnFamily existingTable)
+  private List<RingRange> generateSegments(Cluster targetCluster, RepairUnit existingTable)
       throws ReaperException {
     List<RingRange> segments = null;
     SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
@@ -381,7 +380,7 @@ public class RepairRunResource {
    * @return
    * @throws ReaperException when fails to store the RepairRun.
    */
-  private RepairRun storeNewRepairRun(Cluster cluster, ColumnFamily table, Optional<String> cause,
+  private RepairRun storeNewRepairRun(Cluster cluster, RepairUnit table, Optional<String> cause,
       String owner) throws ReaperException {
     RepairRun.Builder runBuilder = new RepairRun.Builder(cluster.getName(), table.getId(),
         DateTime.now(), config.getRepairIntensity());
@@ -402,7 +401,7 @@ public class RepairRunResource {
    * storage backend.
    */
   private void storeNewRepairSegments(List<RingRange> tokenSegments, RepairRun repairRun,
-      ColumnFamily table) {
+      RepairUnit table) {
     List <RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
     for (RingRange range : tokenSegments) {
       RepairSegment.Builder repairSegment = new RepairSegment.Builder(repairRun.getId(), range,
@@ -417,8 +416,8 @@ public class RepairRunResource {
    * @return only a status of a repair run, not the entire repair run info.
    */
   private RepairRunStatus getRepairRunStatus(RepairRun repairRun) {
-    ColumnFamily columnFamily = storage.getColumnFamily(repairRun.getColumnFamilyId());
-    RepairRunStatus repairRunStatus = new RepairRunStatus(repairRun, columnFamily);
+    RepairUnit repairUnit = storage.getColumnFamily(repairRun.getRepairUnitId());
+    RepairRunStatus repairRunStatus = new RepairRunStatus(repairRun, repairUnit);
     if (repairRun.getRunState() != RepairRun.RunState.NOT_STARTED) {
       int segmentsRepaired =
           storage.getSegmentAmountForRepairRun(repairRun.getId(), RepairSegment.State.DONE);

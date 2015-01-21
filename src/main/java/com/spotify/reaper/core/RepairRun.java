@@ -26,7 +26,7 @@ public class RepairRun {
   private final String cause;
   private final String owner;
   private final String clusterName;
-  private final long columnFamilyId;
+  private final long repairUnitId;
   private final RunState runState;
   private final DateTime creationTime;
   private final DateTime startTime;
@@ -37,8 +37,8 @@ public class RepairRun {
     return id;
   }
 
-  public long getColumnFamilyId() {
-    return columnFamilyId;
+  public long getRepairUnitId() {
+    return repairUnitId;
   }
 
   public String getClusterName() {
@@ -84,7 +84,7 @@ public class RepairRun {
   private RepairRun(Builder builder, long id) {
     this.id = id;
     this.clusterName = builder.clusterName;
-    this.columnFamilyId = builder.columnFamilyId;
+    this.repairUnitId = builder.repairUnitId;
     this.cause = builder.cause;
     this.owner = builder.owner;
     this.runState = builder.runState;
@@ -101,7 +101,7 @@ public class RepairRun {
   public static class Builder {
 
     public final String clusterName;
-    public final long columnFamilyId;
+    public final long repairUnitId;
     private RunState runState;
     private DateTime creationTime;
     private double intensity;
@@ -110,10 +110,10 @@ public class RepairRun {
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder(String clusterName, long columnFamilyId, DateTime creationTime,
+    public Builder(String clusterName, long repairUnitId, DateTime creationTime,
         double intensity) {
       this.clusterName = clusterName;
-      this.columnFamilyId = columnFamilyId;
+      this.repairUnitId = repairUnitId;
       this.runState = RunState.NOT_STARTED;
       this.creationTime = creationTime;
       this.intensity = intensity;
@@ -121,7 +121,7 @@ public class RepairRun {
 
     private Builder(RepairRun original) {
       clusterName = original.clusterName;
-      columnFamilyId = original.columnFamilyId;
+      repairUnitId = original.repairUnitId;
       runState = original.runState;
       creationTime = original.creationTime;
       intensity = original.intensity;

@@ -16,7 +16,7 @@ package com.spotify.reaper.storage;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.ColumnFamily;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.service.RingRange;
@@ -178,8 +178,8 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public ColumnFamily addColumnFamily(ColumnFamily.Builder newColumnFamily) {
-    ColumnFamily result;
+  public RepairUnit addColumnFamily(RepairUnit.Builder newColumnFamily) {
+    RepairUnit result;
     try (Handle h = jdbi.open()) {
       long insertedId = getPostgresStorage(h).insertColumnFamily(newColumnFamily.build(-1));
       result = newColumnFamily.build(insertedId);
@@ -188,8 +188,8 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public ColumnFamily getColumnFamily(long id) {
-    ColumnFamily result;
+  public RepairUnit getColumnFamily(long id) {
+    RepairUnit result;
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getColumnFamily(id);
     }
@@ -197,8 +197,8 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public ColumnFamily getColumnFamily(String clusterName, String keyspaceName, String tableName) {
-    ColumnFamily result;
+  public RepairUnit getColumnFamily(String clusterName, String keyspaceName, String tableName) {
+    RepairUnit result;
     try (Handle h = jdbi.open()) {
       IStoragePostgreSQL storage = getPostgresStorage(h);
       result = storage.getColumnFamilyByClusterAndName(clusterName, keyspaceName, tableName);

@@ -17,10 +17,11 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.ColumnFamily;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.storage.IStorage;
@@ -114,8 +115,8 @@ public class RepairRunnerTest {
     final IStorage storage = new MemoryStorage();
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
-    ColumnFamily cf =
-        storage.addColumnFamily(new ColumnFamily.Builder(CLUSTER_NAME, KS_NAME, CF_NAME, 1, false));
+    RepairUnit cf =
+        storage.addColumnFamily(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAME, 1, false));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY));
@@ -206,7 +207,7 @@ public class RepairRunnerTest {
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
     long cf =
-        storage.addColumnFamily(new ColumnFamily.Builder(CLUSTER_NAME, KS_NAME, CF_NAME, 1, false))
+        storage.addColumnFamily(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAME, 1, false))
             .getId();
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(

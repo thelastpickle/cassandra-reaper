@@ -16,10 +16,8 @@ package com.spotify.reaper.cassandra;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.service.RingRange;
-
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
 import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.compaction.CompactionManagerMBean;
@@ -28,26 +26,16 @@ import org.apache.cassandra.service.StorageServiceMBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+import javax.management.*;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.annotation.Nullable;
-import javax.management.InstanceNotFoundException;
-import javax.management.JMX;
-import javax.management.ListenerNotFoundException;
-import javax.management.MBeanServerConnection;
-import javax.management.MalformedObjectNameException;
-import javax.management.Notification;
-import javax.management.NotificationListener;
-import javax.management.ObjectName;
-import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-import javax.management.remote.JMXServiceURL;
+import java.util.*;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -62,10 +50,10 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private final JMXConnector jmxConnector;
   private final ObjectName ssMbeanName;
   private final MBeanServerConnection mbeanServer;
+  private final CompactionManagerMBean cmProxy;
   private final StorageServiceMBean ssProxy;
   private final Optional<RepairStatusHandler> repairStatusHandler;
   private final String host;
-  private final CompactionManagerMBean cmProxy;
 
   private JmxProxy(Optional<RepairStatusHandler> handler, String host, JMXConnector jmxConnector,
       StorageServiceMBean ssProxy, ObjectName ssMbeanName, MBeanServerConnection mbeanServer,
@@ -77,13 +65,6 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     this.ssProxy = ssProxy;
     this.repairStatusHandler = handler;
     this.cmProxy = cmProxy;
-  }
-
-  /**
-   * Connect to JMX interface on the given host and default JMX port without RepairStatusHandler.
-   */
-  public static JmxProxy connect(String host) throws ReaperException {
-    return connect(Optional.<RepairStatusHandler>absent(), host);
   }
 
   /**
@@ -128,14 +109,14 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
           JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean.class);
       CompactionManagerMBean cmProxy =
           JMX.newMBeanProxy(mbeanServerConn, cmMbeanName, CompactionManagerMBean.class);
-      JmxProxy proxy =
-          new JmxProxy(handler, host, jmxConn, ssProxy, ssMbeanName, mbeanServerConn, cmProxy);
+      JmxProxy proxy = new JmxProxy(handler, host, jmxConn, ssProxy, ssMbeanName,
+          mbeanServerConn, cmProxy);
       // registering a listener throws bunch of exceptions, so we do it here rather than in the
       // constructor
       mbeanServerConn.addNotificationListener(ssMbeanName, proxy, null, null);
       LOG.info(String.format("JMX connection to %s properly connected.", host));
       return proxy;
-    } catch (IOException | InstanceNotFoundException e) {
+    } catch (IOException | InstanceNotFoundException | MalformedObjectNameException e) {
       LOG.error("Failed to establish JMX connection");
       throw new ReaperException("Failure when establishing JMX connection", e);
     }
@@ -206,6 +187,26 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     return ssProxy.getKeyspaces();
   }
 
+  public List<String> getTableNamesForKeyspace(String keyspace) throws ReaperException {
+    List<String> tableNames = new ArrayList<>();
+    Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> proxies = null;
+    try {
+      proxies = ColumnFamilyStoreMBeanIterator.getColumnFamilyStoreMBeanProxies(mbeanServer);
+    } catch (IOException | MalformedObjectNameException e) {
+      e.printStackTrace();
+      throw new ReaperException("failed to get ColumnFamilyStoreMBean instances from JMX");
+    }
+    while (proxies.hasNext()) {
+      Map.Entry<String, ColumnFamilyStoreMBean> proxyEntry = proxies.next();
+      String keyspaceName = proxyEntry.getKey();
+      if (keyspace.equalsIgnoreCase(keyspaceName)) {
+        ColumnFamilyStoreMBean columnFamilyMBean = proxyEntry.getValue();
+        tableNames.add(columnFamilyMBean.getColumnFamilyName());
+      }
+    }
+    return tableNames;
+  }
+
   /**
    * @return number of pending compactions on the node this proxy is connected to
    */
@@ -249,7 +250,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 
   /**
    * Triggers a repair of range (beginToken, endToken] for given keyspace and column family.
-   *
+   * <p/>
    * The repair is triggered by {@link org.apache.cassandra.service.StorageServiceMBean#forceRepairRangeAsync}
    * For time being, we don't allow local nor snapshot repairs.
    *
@@ -272,7 +273,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 
   /**
    * Invoked when the MBean this class listens to publishes an event.
-   *
+   * <p/>
    * We're only interested in repair-related events. Their format is explained at
    * {@link org.apache.cassandra.service.StorageServiceMBean#forceRepairAsync}
    * The format is: notification type: "repair" notification
@@ -322,5 +323,44 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     } catch (IOException | InstanceNotFoundException | ListenerNotFoundException e) {
       throw new ReaperException(e);
     }
+  }
+}
+
+/**
+ * This code is copied and adjusted from from NodeProbe.java from Cassandra source.
+ */
+class ColumnFamilyStoreMBeanIterator
+    implements Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> {
+
+  static Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> getColumnFamilyStoreMBeanProxies(
+      MBeanServerConnection mbeanServerConn)
+      throws IOException, MalformedObjectNameException {
+    return new ColumnFamilyStoreMBeanIterator(mbeanServerConn);
+  }
+
+  private Iterator<ObjectName> resIter;
+  private MBeanServerConnection mbeanServerConn;
+
+  public ColumnFamilyStoreMBeanIterator(MBeanServerConnection mbeanServerConn)
+      throws MalformedObjectNameException, NullPointerException, IOException {
+    ObjectName query = new ObjectName("org.apache.cassandra.db:type=ColumnFamilies,*");
+    resIter = mbeanServerConn.queryNames(query, null).iterator();
+    this.mbeanServerConn = mbeanServerConn;
+  }
+
+  public boolean hasNext() {
+    return resIter.hasNext();
+  }
+
+  public Map.Entry<String, ColumnFamilyStoreMBean> next() {
+    ObjectName objectName = resIter.next();
+    String keyspaceName = objectName.getKeyProperty("keyspace");
+    ColumnFamilyStoreMBean cfsProxy =
+        JMX.newMBeanProxy(mbeanServerConn, objectName, ColumnFamilyStoreMBean.class);
+    return new AbstractMap.SimpleImmutableEntry<>(keyspaceName, cfsProxy);
+  }
+
+  public void remove() {
+    throw new UnsupportedOperationException();
   }
 }

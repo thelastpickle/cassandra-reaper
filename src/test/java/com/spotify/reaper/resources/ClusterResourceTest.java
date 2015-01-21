@@ -7,14 +7,13 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.service.JmxConnectionFactory;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.net.URI;
-import java.util.Collection;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;

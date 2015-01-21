@@ -10,7 +10,7 @@
 -- For cleaning up the database, just do first in the following order:
 -- DROP TABLE "repair_segment";
 -- DROP TABLE "repair_run";
--- DROP TABLE "column_family";
+-- DROP TABLE "repair_unit";
 -- DROP TABLE "cluster";
 
 CREATE TABLE IF NOT EXISTS "cluster" (
@@ -19,24 +19,22 @@ CREATE TABLE IF NOT EXISTS "cluster" (
   "seed_hosts" TEXT[] NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS "column_family" (
+-- Repair unit is basically a keyspace with a set of column families.
+-- Cassandra supports repairing multiple column families in one go.
+--
+CREATE TABLE IF NOT EXISTS "repair_unit" (
   "id" SERIAL PRIMARY KEY,
   "cluster_name" TEXT NOT NULL REFERENCES "cluster" ("name"),
   "keyspace_name" TEXT NOT NULL,
-  "name" TEXT NOT NULL,
+  "column_families" TEXT[] NOT NULL,
   "segment_count" INT NOT NULL,
   "snapshot_repair" BOOLEAN NOT NULL
 );
 
--- Preventing duplicate column families within a same cluster and keyspace
--- with the following index:
-CREATE UNIQUE INDEX column_family_no_duplicates_idx
-  ON "column_family" ("cluster_name", "keyspace_name", "name");
-
 CREATE TABLE IF NOT EXISTS "repair_run" (
   "id" SERIAL PRIMARY KEY,
   "cluster_name" TEXT NOT NULL REFERENCES "cluster" ("name"),
-  "column_family_id" INT NOT NULL REFERENCES "column_family" ("id"),
+  "repair_unit_id" INT NOT NULL REFERENCES "repair_unit" ("id"),
   "cause" TEXT NOT NULL,
   "owner" TEXT NOT NULL,
   -- see (Java) RepairRun.RunState for state values
@@ -49,7 +47,7 @@ CREATE TABLE IF NOT EXISTS "repair_run" (
 
 CREATE TABLE IF NOT EXISTS "repair_segment" (
   "id" SERIAL PRIMARY KEY,
-  "column_family_id" INT NOT NULL REFERENCES "column_family" ("id"),
+  "repair_unit_id" INT NOT NULL REFERENCES "repair_unit" ("id"),
   "run_id" INT NOT NULL REFERENCES "repair_run" ("id"),
   "start_token" NUMERIC(50) NOT NULL,
   "end_token" NUMERIC(50) NOT NULL,
@@ -59,14 +57,14 @@ CREATE TABLE IF NOT EXISTS "repair_segment" (
   "end_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "fail_count" INT NOT NULL DEFAULT 0
 );
-CREATE INDEX "repair_segment_run_id_fail_count_start_token_idx"
-  ON "repair_segment" USING BTREE ("run_id" DESC, "fail_count" ASC, "start_token" ASC);
+CREATE INDEX "repair_segment_run_id_fail_count_idx"
+  ON "repair_segment" USING BTREE ("run_id" ASC, "fail_count" ASC);
 CREATE INDEX "repair_segment_state_idx"
   ON "repair_segment" USING BTREE ("state");
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE cluster TO reaper;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE column_family TO reaper;
-GRANT USAGE, SELECT ON SEQUENCE column_family_id_seq TO reaper;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_unit TO reaper;
+GRANT USAGE, SELECT ON SEQUENCE repair_unit_id_seq TO reaper;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_run TO reaper;
 GRANT USAGE, SELECT ON SEQUENCE repair_run_id_seq TO reaper;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_segment TO reaper;

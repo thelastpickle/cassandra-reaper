@@ -23,7 +23,7 @@ public class RepairSegment {
 
   private final long id;
   private final long runId;
-  private final long columnFamilyId;
+  private final long repairUnitId;
   private final RingRange tokenRange;
   private final int failCount;
   private final State state;
@@ -40,8 +40,8 @@ public class RepairSegment {
     return runId;
   }
 
-  public long getColumnFamilyId() {
-    return columnFamilyId;
+  public long getRepairUnitId() {
+    return repairUnitId;
   }
 
   public RingRange getTokenRange() {
@@ -89,7 +89,7 @@ public class RepairSegment {
   private RepairSegment(Builder builder, long id) {
     this.id = id;
     this.runId = builder.runId;
-    this.columnFamilyId = builder.columnFamilyId;
+    this.repairUnitId = builder.repairUnitId;
     this.tokenRange = builder.tokenRange;
     this.failCount = builder.failCount;
     this.state = builder.state;
@@ -106,7 +106,7 @@ public class RepairSegment {
   public static class Builder {
 
     public final long runId;
-    private final long columnFamilyId;
+    private final long repairUnitId;
     public final RingRange tokenRange;
     private int failCount;
     private State state;
@@ -115,9 +115,9 @@ public class RepairSegment {
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder(long runId, RingRange tokenRange, long columnFamilyId) {
+    public Builder(long runId, RingRange tokenRange, long repairUnitId) {
       this.runId = runId;
-      this.columnFamilyId = columnFamilyId;
+      this.repairUnitId = repairUnitId;
       this.tokenRange = tokenRange;
       this.failCount = 0;
       this.state = State.NOT_STARTED;
@@ -125,7 +125,7 @@ public class RepairSegment {
 
     private Builder(RepairSegment original) {
       runId = original.runId;
-      columnFamilyId = original.columnFamilyId;
+      repairUnitId = original.repairUnitId;
       tokenRange = original.tokenRange;
       failCount = original.failCount;
       state = original.state;

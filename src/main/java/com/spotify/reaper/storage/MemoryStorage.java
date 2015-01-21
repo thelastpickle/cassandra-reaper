@@ -16,7 +16,7 @@ package com.spotify.reaper.storage;
 import com.google.common.collect.Maps;
 
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.ColumnFamily;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.service.RingRange;
@@ -43,8 +43,8 @@ public class MemoryStorage implements IStorage {
 
   private ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
   private ConcurrentMap<Long, RepairRun> repairRuns = Maps.newConcurrentMap();
-  private ConcurrentMap<Long, ColumnFamily> columnFamilies = Maps.newConcurrentMap();
-  private ConcurrentMap<TableName, ColumnFamily> columnFamiliesByName = Maps.newConcurrentMap();
+  private ConcurrentMap<Long, RepairUnit> columnFamilies = Maps.newConcurrentMap();
+  private ConcurrentMap<TableName, RepairUnit> columnFamiliesByName = Maps.newConcurrentMap();
   private ConcurrentMap<Long, RepairSegment> repairSegments = Maps.newConcurrentMap();
   private ConcurrentMap<Long, LinkedHashMap<Long, RepairSegment>> repairSegmentsByRunId =
       Maps.newConcurrentMap();
@@ -152,28 +152,28 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public ColumnFamily addColumnFamily(ColumnFamily.Builder columnFamily) {
-    ColumnFamily existing =
+  public RepairUnit addColumnFamily(RepairUnit.Builder columnFamily) {
+    RepairUnit existing =
         getColumnFamily(columnFamily.clusterName, columnFamily.keyspaceName, columnFamily.name);
     if (existing == null) {
-      ColumnFamily newColumnFamily = columnFamily.build(COLUMN_FAMILY_ID.incrementAndGet());
-      columnFamilies.put(newColumnFamily.getId(), newColumnFamily);
-      TableName tableName = new TableName(newColumnFamily.getClusterName(),
-          newColumnFamily.getKeyspaceName(), newColumnFamily.getName());
-      columnFamiliesByName.put(tableName, newColumnFamily);
-      return newColumnFamily;
+      RepairUnit newRepairUnit = columnFamily.build(COLUMN_FAMILY_ID.incrementAndGet());
+      columnFamilies.put(newRepairUnit.getId(), newRepairUnit);
+      TableName tableName = new TableName(newRepairUnit.getClusterName(),
+          newRepairUnit.getKeyspaceName(), newRepairUnit.getName());
+      columnFamiliesByName.put(tableName, newRepairUnit);
+      return newRepairUnit;
     } else {
       return null;
     }
   }
 
   @Override
-  public ColumnFamily getColumnFamily(long id) {
+  public RepairUnit getColumnFamily(long id) {
     return columnFamilies.get(id);
   }
 
   @Override
-  public ColumnFamily getColumnFamily(String cluster, String keyspace, String table) {
+  public RepairUnit getColumnFamily(String cluster, String keyspace, String table) {
     return columnFamiliesByName.get(new TableName(cluster, keyspace, table));
   }
 
