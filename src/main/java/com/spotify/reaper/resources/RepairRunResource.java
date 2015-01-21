@@ -193,7 +193,7 @@ public class RepairRunResource {
 
   private Response startRun(RepairRun repairRun, ColumnFamily table) {
     LOG.info("Starting run {}", repairRun.getId());
-    RepairRun updatedRun = new RepairRun.Builder(repairRun)
+    RepairRun updatedRun = repairRun.with()
       .runState(RepairRun.RunState.RUNNING)
       .startTime(DateTime.now())
       .build(repairRun.getId());
@@ -205,7 +205,7 @@ public class RepairRunResource {
 
   private Response pauseRun(RepairRun repairRun, ColumnFamily table) {
     LOG.info("Pausing run {}", repairRun.getId());
-    RepairRun updatedRun = new RepairRun.Builder(repairRun)
+    RepairRun updatedRun = repairRun.with()
       .runState(RepairRun.RunState.PAUSED)
       .build(repairRun.getId());
     storage.updateRepairRun(updatedRun);
@@ -214,7 +214,7 @@ public class RepairRunResource {
 
   private Response resumeRun(RepairRun repairRun, ColumnFamily table) {
     LOG.info("Resuming run {}", repairRun.getId());
-    RepairRun updatedRun = new RepairRun.Builder(repairRun)
+    RepairRun updatedRun = repairRun.with()
       .runState(RepairRun.RunState.RUNNING)
       .build(repairRun.getId());
     storage.updateRepairRun(updatedRun);

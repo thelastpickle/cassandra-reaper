@@ -76,7 +76,7 @@ public class ColumnFamily {
       this.snapshotRepair = snapshotRepair;
     }
 
-    public Builder(ColumnFamily original) {
+    private Builder(ColumnFamily original) {
       clusterName = original.clusterName;
       keyspaceName = original.keyspaceName;
       name = original.name;

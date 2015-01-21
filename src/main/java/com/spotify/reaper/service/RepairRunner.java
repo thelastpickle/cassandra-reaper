@@ -34,9 +34,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class RepairRunner implements Runnable {
-  // TODO: test
-  // TODO: handle failed storage updates
-
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunner.class);
 
   private static ScheduledExecutorService executor = null;
@@ -63,6 +60,7 @@ public class RepairRunner implements Runnable {
         if (runningSegment == null) {
           break;
         }
+        // TODO: abort in Cassandra
         SegmentRunner.postpone(storage, runningSegment);
       }
       RepairRunner.startNewRepairRun(storage, repairRun.getId(), jmxConnectionFactory);
