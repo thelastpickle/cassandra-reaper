@@ -9,11 +9,11 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.ColumnFamily;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.resources.view.RepairRunStatus;
-import com.spotify.reaper.service.JmxConnectionFactory;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.IStorage;
@@ -99,7 +99,7 @@ public class RepairRunResourceTest {
       }
     };
 
-    ColumnFamily.Builder cfBuilder = new ColumnFamily.Builder(CLUSTER_NAME.get(), KEYSPACE.get(),
+    RepairUnit.Builder cfBuilder = new RepairUnit.Builder(CLUSTER_NAME.get(), KEYSPACE.get(),
       TABLE.get(), SEGMENT_CNT, IS_SNAPSHOT_REPAIR);
     storage.addColumnFamily(cfBuilder);
   }

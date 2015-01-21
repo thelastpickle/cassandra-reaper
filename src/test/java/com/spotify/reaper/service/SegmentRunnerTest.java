@@ -17,9 +17,10 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
-import com.spotify.reaper.core.ColumnFamily;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.storage.IStorage;
@@ -51,8 +52,8 @@ public class SegmentRunnerTest {
   @Test
   public void timeoutTest() throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
-    ColumnFamily cf =
-        storage.addColumnFamily(new ColumnFamily.Builder("reaper", "reaper", "reaper", 1, false));
+    RepairUnit cf =
+        storage.addColumnFamily(new RepairUnit.Builder("reaper", "reaper", "reaper", 1, false));
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(),
             0.5));
@@ -108,8 +109,8 @@ public class SegmentRunnerTest {
   @Test
   public void successTest() throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
-    ColumnFamily cf =
-        storage.addColumnFamily(new ColumnFamily.Builder("reaper", "reaper", "reaper", 1, false));
+    RepairUnit cf =
+        storage.addColumnFamily(new RepairUnit.Builder("reaper", "reaper", "reaper", 1, false));
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5));
     storage.addRepairSegments(Collections.singleton(
@@ -175,8 +176,8 @@ public class SegmentRunnerTest {
   @Test
   public void failureTest() throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
-    ColumnFamily cf =
-        storage.addColumnFamily(new ColumnFamily.Builder("reaper", "reaper", "reaper", 1, false));
+    RepairUnit cf =
+        storage.addColumnFamily(new RepairUnit.Builder("reaper", "reaper", "reaper", 1, false));
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5));
     storage.addRepairSegments(Collections.singleton(

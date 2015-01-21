@@ -11,13 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.spotify.reaper.service;
+package com.spotify.reaper.cassandra;
 
 import com.google.common.base.Optional;
-
 import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.cassandra.JmxProxy;
-import com.spotify.reaper.cassandra.RepairStatusHandler;
+import com.spotify.reaper.core.Cluster;
 
 import java.util.Collection;
 
@@ -35,5 +33,10 @@ public class JmxConnectionFactory {
   public final JmxProxy connectAny(Optional<RepairStatusHandler> handler, Collection<String> hosts)
       throws ReaperException {
     return create(handler, hosts.iterator().next());
+  }
+
+  public final JmxProxy connectAny(Cluster cluster)
+      throws ReaperException {
+    return connectAny(Optional.<RepairStatusHandler>absent(), cluster.getSeedHosts());
   }
 }

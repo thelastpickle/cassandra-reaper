@@ -13,16 +13,13 @@
  */
 package com.spotify.reaper;
 
-import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
 import com.spotify.reaper.resources.ReaperHealthCheck;
 import com.spotify.reaper.resources.RepairRunResource;
 import com.spotify.reaper.resources.TableResource;
-import com.spotify.reaper.service.JmxConnectionFactory;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.service.RepairRunner;
-import com.spotify.reaper.service.SegmentRunner;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;

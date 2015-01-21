@@ -14,7 +14,7 @@
 package com.spotify.reaper.storage.postgresql;
 
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.ColumnFamily;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 
@@ -115,7 +115,7 @@ public interface IStoragePostgreSQL {
   @SqlUpdate(SQL_UPDATE_REPAIR_RUN)
   public int updateRepairRun(@BindBean RepairRun newRepairRun);
 
-  // ColumnFamily
+  // RepairUnit
   //
   static final String SQL_COLUMN_FAMILY_ALL_FIELDS_NO_ID =
       "cluster_name, keyspace_name, name, segment_count, snapshot_repair";
@@ -135,17 +135,17 @@ public interface IStoragePostgreSQL {
 
   @SqlQuery(SQL_GET_COLUMN_FAMILY)
   @Mapper(ColumnFamilyMapper.class)
-  public ColumnFamily getColumnFamily(@Bind("id") long columnFamilyId);
+  public RepairUnit getColumnFamily(@Bind("id") long columnFamilyId);
 
   @SqlQuery(SQL_GET_COLUMN_FAMILY_BY_CLUSTER_AND_NAME)
   @Mapper(ColumnFamilyMapper.class)
-  public ColumnFamily getColumnFamilyByClusterAndName(@Bind("clusterName") String clusterName,
+  public RepairUnit getColumnFamilyByClusterAndName(@Bind("clusterName") String clusterName,
                                                       @Bind("keyspaceName") String keyspaceName,
                                                       @Bind("name") String tableName);
 
   @SqlUpdate(SQL_INSERT_COLUMN_FAMILY)
   @GetGeneratedKeys
-  public long insertColumnFamily(@BindBean ColumnFamily newColumnFamily);
+  public long insertColumnFamily(@BindBean RepairUnit newRepairUnit);
 
   // RepairSegment
   //

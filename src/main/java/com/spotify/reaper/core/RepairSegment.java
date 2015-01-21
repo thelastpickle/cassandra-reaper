@@ -23,7 +23,7 @@ public class RepairSegment {
 
   private final long id;
   private final Integer repairCommandId; // received when triggering repair in Cassandra
-  private final long columnFamilyId;
+  private final long repairUnitId;
   private final long runId;
   private final RingRange tokenRange;
   private final State state;
@@ -39,8 +39,8 @@ public class RepairSegment {
     return repairCommandId;
   }
 
-  public long getColumnFamilyId() {
-    return columnFamilyId;
+  public long getRepairUnitId() {
+    return repairUnitId;
   }
 
   public long getRunId() {
@@ -84,7 +84,7 @@ public class RepairSegment {
   private RepairSegment(Builder builder, long id) {
     this.id = id;
     this.repairCommandId = builder.repairCommandId;
-    this.columnFamilyId = builder.columnFamilyId;
+    this.repairUnitId = builder.repairUnitId;
     this.runId = builder.runId;
     this.tokenRange = builder.tokenRange;
     this.state = builder.state;
@@ -101,17 +101,17 @@ public class RepairSegment {
 
     public final long runId;
     public final RingRange tokenRange;
-    private final long columnFamilyId;
+    private final long repairUnitId;
     private State state;
     private int failCount;
     private Integer repairCommandId;
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder(long runId, RingRange tokenRange, long columnFamilyId) {
+    public Builder(long runId, RingRange tokenRange, long repairUnitId) {
       this.runId = runId;
       this.tokenRange = tokenRange;
-      this.columnFamilyId = columnFamilyId;
+      this.repairUnitId = repairUnitId;
       this.state = State.NOT_STARTED;
       this.failCount = 0;
     }
@@ -121,7 +121,7 @@ public class RepairSegment {
       tokenRange = original.tokenRange;
       state = original.state;
       failCount = original.failCount;
-      columnFamilyId = original.columnFamilyId;
+      repairUnitId = original.repairUnitId;
       repairCommandId = original.repairCommandId;
       startTime = original.startTime;
       endTime = original.endTime;

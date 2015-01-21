@@ -16,9 +16,10 @@ package com.spotify.reaper.service;
 import com.google.common.base.Optional;
 
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
-import com.spotify.reaper.core.ColumnFamily;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.storage.IStorage;
 
@@ -77,9 +78,9 @@ public final class SegmentRunner implements RepairStatusHandler {
     final RepairSegment segment = storage.getRepairSegment(segmentId);
     try (JmxProxy jmxConnection = jmxConnectionFactory
         .connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators)) {
-      ColumnFamily columnFamily =
-          storage.getColumnFamily(segment.getColumnFamilyId());
-      String keyspace = columnFamily.getKeyspaceName();
+      RepairUnit repairUnit =
+          storage.getColumnFamily(segment.getRepairUnitId());
+      String keyspace = repairUnit.getKeyspaceName();
 
       if (!canRepair(jmxConnection, segment)) {
         postpone(segment);
@@ -89,7 +90,7 @@ public final class SegmentRunner implements RepairStatusHandler {
       synchronized (condition) {
         commandId = jmxConnection
             .triggerRepair(segment.getStartToken(), segment.getEndToken(), keyspace,
-                columnFamily.getName());
+                repairUnit.getName());
         LOG.debug("Triggered repair with command id {}", commandId);
         storage.updateRepairSegment(segment.with()
             .state(RepairSegment.State.RUNNING)

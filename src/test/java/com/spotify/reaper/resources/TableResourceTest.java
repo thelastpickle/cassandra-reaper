@@ -9,9 +9,9 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.ColumnFamily;
-import com.spotify.reaper.resources.view.ColumnFamilyStatus;
-import com.spotify.reaper.service.JmxConnectionFactory;
+import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.resources.view.RepairUnitStatus;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
@@ -93,13 +93,13 @@ public class TableResourceTest {
     Response response = resource.addTable(uriInfo, CLUSTER_NAME, KEYSPACE, TABLE);
 
     assertEquals(201, response.getStatus());
-    assertTrue(response.getEntity() instanceof ColumnFamilyStatus);
+    assertTrue(response.getEntity() instanceof RepairUnitStatus);
 
     assertEquals(1, storage.getClusters().size());
     assertEquals(0, storage.getRepairRunsForCluster(CLUSTER_NAME.get()).size());
     assertEquals(0, storage.getRepairRunIdsForCluster(CLUSTER_NAME.get()).size());
 
-    ColumnFamily cf = storage.getColumnFamily(CLUSTER_NAME.get(), KEYSPACE.get(), TABLE.get());
+    RepairUnit cf = storage.getColumnFamily(CLUSTER_NAME.get(), KEYSPACE.get(), TABLE.get());
     assertNotNull("Failed fetch table info from storage", cf);
     assertEquals(SEGMENT_CNT, cf.getSegmentCount());
     assertFalse(cf.isSnapshotRepair());
