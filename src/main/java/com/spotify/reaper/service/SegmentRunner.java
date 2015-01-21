@@ -106,7 +106,8 @@ public final class SegmentRunner implements RepairStatusHandler {
           LOG.info("Repair command {} on segment {} exited with state {}", commandId, segmentId,
               resultingSegment.getState());
           if (resultingSegment.getState().equals(RepairSegment.State.RUNNING)) {
-            LOG.info("Repair command {} on segment {} has been cancelled while running", commandId, segmentId);
+            LOG.info("Repair command {} on segment {} has been cancelled while running", commandId,
+                segmentId);
             abort(resultingSegment, jmxConnection);
           }
         }
@@ -119,15 +120,13 @@ public final class SegmentRunner implements RepairStatusHandler {
 
   boolean canRepair(JmxProxy jmx, RepairSegment segment) {
     if (segment.getState().equals(RepairSegment.State.RUNNING)) {
-      LOG.error(
-          "Repair segment {} was already marked as started when SegmentRunner was asked to trigger repair",
-          segmentId);
+      LOG.error("Repair segment {} was already marked as started when SegmentRunner was "
+          + "asked to trigger repair", segmentId);
       return false;
     }
     if (jmx.getPendingCompactions() > MAX_PENDING_COMPACTIONS) {
-      LOG.warn(
-          "SegmentRunner declined to repair segment {} because of too many pending compactions (> {})",
-          segmentId, MAX_PENDING_COMPACTIONS);
+      LOG.warn("SegmentRunner declined to repair segment {} because of too many pending "
+          + "compactions (> {})", segmentId, MAX_PENDING_COMPACTIONS);
       return false;
     }
     return true;

@@ -33,7 +33,7 @@ public class PingResource {
   @GET
   public String answerPing() {
     LOG.info("ping called");
-    return String.format("Cassandra Reaper ping resource replies to you in plain text: PING");
+    return String.format("Cassandra Reaper ping resource: PONG");
   }
 
 }
