@@ -58,7 +58,7 @@ database:
   maxSize: 32
 
   # whether or not idle connections should be validated
-  checkConnectionWhileIdle: false
+  checkConnectionWhileIdle: true
 
   # the amount of time to sleep between runs of the idle connection validation, abandoned cleaner and idle pool resizing
   evictionInterval: 10s

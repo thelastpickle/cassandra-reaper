@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS "repair_segment" (
   "end_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "fail_count" INT NOT NULL DEFAULT 0
 );
-CREATE INDEX "repair_segment_run_id_start_token_idx"
+CREATE INDEX "repair_segment_run_id_fail_count_start_token_idx"
   ON "repair_segment" USING BTREE ("run_id" DESC, "fail_count" ASC, "start_token" ASC);
 CREATE INDEX "repair_segment_state_idx"
   ON "repair_segment" USING BTREE ("state");
