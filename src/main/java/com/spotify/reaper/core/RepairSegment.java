@@ -22,12 +22,13 @@ import java.math.BigInteger;
 public class RepairSegment {
 
   private final long id;
-  private final Integer repairCommandId; // received when triggering repair in Cassandra
-  private final long columnFamilyId;
   private final long runId;
+  private final long columnFamilyId;
   private final RingRange tokenRange;
-  private final State state;
   private final int failCount;
+  private final State state;
+  private final String coordinatorHost;
+  private final Integer repairCommandId; // received when triggering repair in Cassandra
   private final DateTime startTime;
   private final DateTime endTime;
 
@@ -35,16 +36,12 @@ public class RepairSegment {
     return id;
   }
 
-  public Integer getRepairCommandId() {
-    return repairCommandId;
+  public long getRunId() {
+    return runId;
   }
 
   public long getColumnFamilyId() {
     return columnFamilyId;
-  }
-
-  public long getRunId() {
-    return runId;
   }
 
   public RingRange getTokenRange() {
@@ -59,12 +56,20 @@ public class RepairSegment {
     return tokenRange.getEnd();
   }
 
+  public int getFailCount() {
+    return failCount;
+  }
+
   public State getState() {
     return state;
   }
 
-  public int getFailCount() {
-    return failCount;
+  public String getCoordinatorHost() {
+    return coordinatorHost;
+  }
+
+  public Integer getRepairCommandId() {
+    return repairCommandId;
   }
 
   public DateTime getStartTime() {
@@ -83,14 +88,15 @@ public class RepairSegment {
 
   private RepairSegment(Builder builder, long id) {
     this.id = id;
-    this.repairCommandId = builder.repairCommandId;
-    this.columnFamilyId = builder.columnFamilyId;
     this.runId = builder.runId;
+    this.columnFamilyId = builder.columnFamilyId;
     this.tokenRange = builder.tokenRange;
+    this.failCount = builder.failCount;
     this.state = builder.state;
+    this.coordinatorHost = builder.coordinatorHost;
+    this.repairCommandId = builder.repairCommandId;
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
-    this.failCount = builder.failCount;
   }
 
   public Builder with() {
@@ -100,31 +106,38 @@ public class RepairSegment {
   public static class Builder {
 
     public final long runId;
-    public final RingRange tokenRange;
     private final long columnFamilyId;
-    private State state;
+    public final RingRange tokenRange;
     private int failCount;
+    private State state;
+    private String coordinatorHost;
     private Integer repairCommandId;
     private DateTime startTime;
     private DateTime endTime;
 
     public Builder(long runId, RingRange tokenRange, long columnFamilyId) {
       this.runId = runId;
-      this.tokenRange = tokenRange;
       this.columnFamilyId = columnFamilyId;
-      this.state = State.NOT_STARTED;
+      this.tokenRange = tokenRange;
       this.failCount = 0;
+      this.state = State.NOT_STARTED;
     }
 
     private Builder(RepairSegment original) {
       runId = original.runId;
-      tokenRange = original.tokenRange;
-      state = original.state;
-      failCount = original.failCount;
       columnFamilyId = original.columnFamilyId;
+      tokenRange = original.tokenRange;
+      failCount = original.failCount;
+      state = original.state;
+      coordinatorHost = original.coordinatorHost;
       repairCommandId = original.repairCommandId;
       startTime = original.startTime;
       endTime = original.endTime;
+    }
+
+    public Builder failCount(int failCount) {
+      this.failCount = failCount;
+      return this;
     }
 
     public Builder state(State state) {
@@ -132,8 +145,8 @@ public class RepairSegment {
       return this;
     }
 
-    public Builder failCount(int failCount) {
-      this.failCount = failCount;
+    public Builder coordinatorHost(String coordinatorHost) {
+      this.coordinatorHost = coordinatorHost;
       return this;
     }
 

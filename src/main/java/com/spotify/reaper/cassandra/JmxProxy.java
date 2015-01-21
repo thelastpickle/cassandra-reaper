@@ -141,6 +141,10 @@ public class JmxProxy implements NotificationListener, Serializable, AutoCloseab
     }
   }
 
+  public String getHost() {
+    return host;
+  }
+
   /**
    * @return list of tokens in the cluster
    */
