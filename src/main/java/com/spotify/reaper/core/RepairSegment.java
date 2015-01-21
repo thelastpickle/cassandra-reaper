@@ -78,7 +78,6 @@ public class RepairSegment {
   public enum State {
     NOT_STARTED,
     RUNNING,
-    ERROR,
     DONE
   }
 
