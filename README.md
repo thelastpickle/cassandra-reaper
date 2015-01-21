@@ -149,3 +149,8 @@ REST API
 * POST    /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)
   * Expected query parameters: *None*
   * Triggers a repair run identified by the "id" path parameter.
+
+* PUT    /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)
+  * Expected query parameters:
+    * *state*: new value for the state of the repair run, e.g. "PAUSED"
+  * Pauses a repair run identified by the "id" path parameter.

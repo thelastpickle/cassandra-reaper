@@ -119,7 +119,7 @@ public class RepairRun {
       this.intensity = intensity;
     }
 
-    private Builder(RepairRun original) {
+    public Builder(RepairRun original) {
       clusterName = original.clusterName;
       columnFamilyId = original.columnFamilyId;
       runState = original.runState;
