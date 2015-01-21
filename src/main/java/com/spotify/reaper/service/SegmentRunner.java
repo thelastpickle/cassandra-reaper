@@ -63,9 +63,9 @@ public final class SegmentRunner implements RepairStatusHandler {
   }
 
   public static void abort(IStorage storage, RepairSegment segment, JmxProxy jmxConnection) {
+    postpone(storage, segment);
     LOG.warn("Aborting command {} on segment {}", segment.getRepairCommandId(), segment.getId());
     jmxConnection.cancelAllRepairs();
-    postpone(storage, segment);
   }
 
   private SegmentRunner(IStorage storage, long segmentId) {
