@@ -254,6 +254,7 @@ public class RepairRunResource {
     LOG.info("Pausing run {}", repairRun.getId());
     RepairRun updatedRun = repairRun.with()
         .runState(RepairRun.RunState.PAUSED)
+        .pauseTime(DateTime.now())
         .build(repairRun.getId());
     storage.updateRepairRun(updatedRun);
     return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();
@@ -263,6 +264,7 @@ public class RepairRunResource {
     LOG.info("Resuming run {}", repairRun.getId());
     RepairRun updatedRun = repairRun.with()
         .runState(RepairRun.RunState.RUNNING)
+        .pauseTime(null)
         .build(repairRun.getId());
     storage.updateRepairRun(updatedRun);
     return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();

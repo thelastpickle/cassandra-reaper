@@ -31,6 +31,7 @@ public class RepairRun {
   private final DateTime creationTime;
   private final DateTime startTime;
   private final DateTime endTime;
+  private final DateTime pauseTime;
   private final double intensity;
 
   public long getId() {
@@ -69,6 +70,10 @@ public class RepairRun {
     return endTime;
   }
 
+  public DateTime getPauseTime() {
+    return pauseTime;
+  }
+
   public double getIntensity() {
     return intensity;
   }
@@ -91,6 +96,7 @@ public class RepairRun {
     this.creationTime = builder.creationTime;
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
+    this.pauseTime = builder.pauseTime;
     this.intensity = builder.intensity;
   }
 
@@ -109,6 +115,7 @@ public class RepairRun {
     private String owner;
     private DateTime startTime;
     private DateTime endTime;
+    private DateTime pauseTime;
 
     public Builder(String clusterName, long repairUnitId, DateTime creationTime,
         double intensity) {
@@ -129,6 +136,7 @@ public class RepairRun {
       owner = original.owner;
       startTime = original.startTime;
       endTime = original.endTime;
+      pauseTime = original.pauseTime;
     }
 
     public Builder runState(RunState runState) {
@@ -163,6 +171,11 @@ public class RepairRun {
 
     public Builder endTime(DateTime endTime) {
       this.endTime = endTime;
+      return this;
+    }
+
+    public Builder pauseTime(DateTime pauseTime) {
+      this.pauseTime = pauseTime;
       return this;
     }
 
