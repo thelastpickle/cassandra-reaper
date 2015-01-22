@@ -39,7 +39,7 @@ import java.util.*;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class JmxProxy implements NotificationListener, Serializable, AutoCloseable {
+public class JmxProxy implements NotificationListener, AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(JmxProxy.class);
 
@@ -120,6 +120,10 @@ public class JmxProxy implements NotificationListener, Serializable, AutoCloseab
       LOG.error("Failed to establish JMX connection");
       throw new ReaperException("Failure when establishing JMX connection", e);
     }
+  }
+
+  public String getHost() {
+    return host;
   }
 
   /**

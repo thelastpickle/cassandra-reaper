@@ -56,6 +56,7 @@ public final class SegmentRunner implements RepairStatusHandler {
     LOG.warn("Postponing segment {}", segment.getId());
     storage.updateRepairSegment(segment.with()
         .state(RepairSegment.State.NOT_STARTED)
+        .coordinatorHost(null)
         .repairCommandId(null)
         .startTime(null)
         .failCount(segment.getFailCount() + 1)
@@ -63,9 +64,9 @@ public final class SegmentRunner implements RepairStatusHandler {
   }
 
   public static void abort(IStorage storage, RepairSegment segment, JmxProxy jmxConnection) {
+    postpone(storage, segment);
     LOG.warn("Aborting command {} on segment {}", segment.getRepairCommandId(), segment.getId());
     jmxConnection.cancelAllRepairs();
-    postpone(storage, segment);
   }
 
   private SegmentRunner(IStorage storage, long segmentId) {
@@ -94,6 +95,7 @@ public final class SegmentRunner implements RepairStatusHandler {
         LOG.debug("Triggered repair with command id {}", commandId);
         storage.updateRepairSegment(segment.with()
             .state(RepairSegment.State.RUNNING)
+            .coordinatorHost(jmxConnection.getHost())
             .repairCommandId(commandId)
             .build(segmentId));
         LOG.info("Repair for segment {} started", segmentId);

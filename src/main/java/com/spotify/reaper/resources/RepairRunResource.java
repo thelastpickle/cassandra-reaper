@@ -23,10 +23,11 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
-import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
@@ -82,13 +83,13 @@ public class RepairRunResource {
    * Endpoint used to create a repair run. Does not allow triggering the run. triggerRepairRun()
    * must be called to initiate the repair. Creating a repair run includes generating repair
    * segments.
-   * <p/>
+   *
    * Notice that query parameter "tables" can be a single String, or a comma-separated list
    * of table names. If the "tables" parameter is omitted, and only the keyspace is defined,
    * then created repair run will target all the tables in the keyspace.
    *
    * @return repair run ID in case of everything going well,
-   * and a status code 500 in case of errors.
+   *         and a status code 500 in case of errors.
    */
   @POST
   public Response addRepairRun(
@@ -377,8 +378,7 @@ public class RepairRunResource {
    * @throws ReaperException when fails to store the RepairRun.
    */
   private RepairRun storeNewRepairRun(Cluster cluster, RepairUnit repairUnit,
-      Optional<String> cause,
-      String owner) throws ReaperException {
+      Optional<String> cause, String owner) throws ReaperException {
     RepairRun.Builder runBuilder = new RepairRun.Builder(cluster.getName(), repairUnit.getId(),
         DateTime.now(), config.getRepairIntensity());
     runBuilder.cause(cause.isPresent() ? cause.get() : "no cause specified");

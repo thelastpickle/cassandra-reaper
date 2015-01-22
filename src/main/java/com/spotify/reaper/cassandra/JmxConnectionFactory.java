@@ -21,13 +21,13 @@ import java.util.Collection;
 
 public class JmxConnectionFactory {
 
-  public final JmxProxy create(String host) throws ReaperException {
-    return create(Optional.<RepairStatusHandler>absent(), host);
-  }
-
   public JmxProxy create(Optional<RepairStatusHandler> handler, String host)
       throws ReaperException {
     return JmxProxy.connect(handler, host);
+  }
+
+  public final JmxProxy create(String host) throws ReaperException {
+    return create(Optional.<RepairStatusHandler>absent(), host);
   }
 
   public final JmxProxy connectAny(Optional<RepairStatusHandler> handler, Collection<String> hosts)

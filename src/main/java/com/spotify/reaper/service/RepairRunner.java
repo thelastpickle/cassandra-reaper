@@ -61,8 +61,14 @@ public class RepairRunner implements Runnable {
         if (runningSegment == null) {
           break;
         }
-        // TODO: abort in Cassandra
-        SegmentRunner.postpone(storage, runningSegment);
+        try {
+          SegmentRunner.abort(storage, runningSegment,
+              jmxConnectionFactory.create(runningSegment.getCoordinatorHost()));
+        } catch (ReaperException e) {
+          LOG.debug("Tried to abort repair on segment {} marked as RUNNING, but the host was down"
+              + " (so abortion won't be needed)", runningSegment.getId());
+          SegmentRunner.postpone(storage, runningSegment);
+        }
       }
       RepairRunner.startNewRepairRun(storage, repairRun.getId(), jmxConnectionFactory);
     }
@@ -93,7 +99,11 @@ public class RepairRunner implements Runnable {
     this.repairRunId = repairRunId;
     this.jmxConnectionFactory = jmxConnectionFactory;
     jmxConnection = this.jmxConnectionFactory.connectAny(
+<<<<<<< HEAD
         storage.getCluster(storage.getRepairRun(repairRunId).get().getClusterName()).get());
+=======
+        storage.getCluster(storage.getRepairRun(repairRunId).getClusterName()));
+>>>>>>> origin/temp
   }
 
   /**

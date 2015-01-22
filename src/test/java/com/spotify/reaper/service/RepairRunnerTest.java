@@ -214,7 +214,7 @@ public class RepairRunnerTest {
         new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY));
     storage.addRepairSegments(Lists.newArrayList(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE), cf).state(
-            RepairSegment.State.RUNNING).startTime(DateTime.now()).repairCommandId(1337),
+            RepairSegment.State.RUNNING).startTime(DateTime.now()).coordinatorHost("reaper").repairCommandId(1337),
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO), cf)
     ), run.getId());
     final long RUN_ID = run.getId();
