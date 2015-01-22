@@ -48,6 +48,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -131,10 +132,16 @@ public class RepairRunResource {
       jmxProxy.close();
 
       Set<String> tableNames;
-      if (tableNamesParam.isPresent()) {
+      if (tableNamesParam.isPresent() && !tableNamesParam.get().isEmpty()) {
         tableNames = Sets.newHashSet(COMMA_SEPARATED_LIST_SPLITTER.split(tableNamesParam.get()));
+        for (String name : tableNames) {
+          if (!knownTables.contains(name)) {
+            return Response.status(Response.Status.NOT_FOUND).entity(
+                "keyspace doesn't contain a table named \"" + name + "\"").build();
+          }
+        }
       } else {
-        tableNames = knownTables;
+        tableNames = Collections.emptySet();
       }
 
       Optional<RepairUnit> storedRepairUnit =
@@ -254,7 +261,7 @@ public class RepairRunResource {
     LOG.info("Pausing run {}", repairRun.getId());
     RepairRun updatedRun = repairRun.with()
         .runState(RepairRun.RunState.PAUSED)
-        .pauseTime(DateTime.now())
+        .pausedTime(DateTime.now())
         .build(repairRun.getId());
     storage.updateRepairRun(updatedRun);
     return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();
@@ -264,7 +271,6 @@ public class RepairRunResource {
     LOG.info("Resuming run {}", repairRun.getId());
     RepairRun updatedRun = repairRun.with()
         .runState(RepairRun.RunState.RUNNING)
-        .pauseTime(null)
         .build(repairRun.getId());
     storage.updateRepairRun(updatedRun);
     return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();

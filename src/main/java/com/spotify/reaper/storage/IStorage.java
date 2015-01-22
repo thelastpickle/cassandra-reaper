@@ -21,6 +21,7 @@ import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
 
 import java.util.Collection;
+import java.util.Set;
 
 /**
  * API definition for cassandra-reaper.
@@ -53,18 +54,16 @@ public interface IStorage {
 
   /**
    * Get a stored RepairUnit targeting the given tables in the given keyspace.
-   * Tables must be always defined, so targeting the whole keyspace requires
-   * first getting all the column family names from the keyspace.
    *
    * @param cluster           Cluster name for the RepairUnit.
    * @param keyspace          Keyspace name for the RepairUnit.
-   * @param columnFamilyNames List of column families targeted by the RepairUnit.
+   * @param columnFamilyNames Set of column families targeted by the RepairUnit.
    * @return Instance of a RepairUnit matching the parameters, or null if not found.
    */
   Optional<RepairUnit> getRepairUnit(String cluster, String keyspace,
-      Collection<String> columnFamilyNames);
+      Set<String> columnFamilyNames);
 
-  boolean addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId);
+  void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId);
 
   boolean updateRepairSegment(RepairSegment newRepairSegment);
 
