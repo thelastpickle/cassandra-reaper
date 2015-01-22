@@ -116,7 +116,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       mbeanServerConn.addNotificationListener(ssMbeanName, proxy, null, null);
       LOG.info(String.format("JMX connection to %s properly connected.", host));
       return proxy;
-    } catch (IOException | InstanceNotFoundException | MalformedObjectNameException e) {
+    } catch (IOException | InstanceNotFoundException e) {
       LOG.error("Failed to establish JMX connection");
       throw new ReaperException("Failure when establishing JMX connection", e);
     }
@@ -187,9 +187,9 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     return ssProxy.getKeyspaces();
   }
 
-  public List<String> getTableNamesForKeyspace(String keyspace) throws ReaperException {
-    List<String> tableNames = new ArrayList<>();
-    Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> proxies = null;
+  public Set<String> getTableNamesForKeyspace(String keyspace) throws ReaperException {
+    Set<String> tableNames = new HashSet<>();
+    Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> proxies;
     try {
       proxies = ColumnFamilyStoreMBeanIterator.getColumnFamilyStoreMBeanProxies(mbeanServer);
     } catch (IOException | MalformedObjectNameException e) {

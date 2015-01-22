@@ -63,8 +63,13 @@ public class ClusterResource {
   @Path("/{cluster_name}")
   public Response getCluster(@PathParam("cluster_name") String clusterName) {
     LOG.info("get cluster called with cluster_name: {}", clusterName);
-    Cluster cluster = storage.getCluster(clusterName);
-    return viewCluster(cluster, Optional.<URI>absent());
+    Optional<Cluster> cluster = storage.getCluster(clusterName);
+    if (cluster.isPresent()) {
+      return viewCluster(cluster.get(), Optional.<URI>absent());
+    } else {
+      return Response.status(Response.Status.NOT_FOUND)
+          .entity("cluster with name \"" + clusterName + "\" not found").build();
+    }
   }
 
   @POST
@@ -84,15 +89,15 @@ public class ClusterResource {
       return Response.status(400)
           .entity("failed to create cluster with seed host: " + seedHost.get()).build();
     }
-    Cluster existingCluster = storage.getCluster(newCluster.getName());
-    if (existingCluster == null) {
-      LOG.info("creating new cluster based on given seed host: {}", newCluster);
-      storage.addCluster(newCluster);
-    } else {
+    Optional<Cluster> existingCluster = storage.getCluster(newCluster.getName());
+    if (existingCluster.isPresent()) {
       LOG.info("cluster already stored with this name: {}", existingCluster);
       return Response.status(403)
-          .entity(String.format("cluster \"%s\" already exists", existingCluster.getName()))
+          .entity(String.format("cluster \"%s\" already exists", existingCluster.get().getName()))
           .build();
+    } else {
+      LOG.info("creating new cluster based on given seed host: {}", newCluster);
+      storage.addCluster(newCluster);
     }
 
     URI createdURI;
