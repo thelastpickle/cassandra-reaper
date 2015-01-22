@@ -33,7 +33,7 @@ import java.util.Iterator;
 
 /**
  * JDBI based PostgreSQL interface.
- * 
+ *
  * See following specification for more info: http://jdbi.org/sql_object_api_dml/
  */
 public interface IStoragePostgreSQL {

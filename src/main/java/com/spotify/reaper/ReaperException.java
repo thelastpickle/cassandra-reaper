@@ -24,6 +24,6 @@ public class ReaperException extends Exception {
   }
 
   public ReaperException(String s, Exception e) {
-    super(s,e);
+    super(s, e);
   }
 }

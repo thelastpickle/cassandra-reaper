@@ -29,11 +29,10 @@ import org.skife.jdbi.v2.Handle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Implements the StorageAPI using PostgreSQL database.
@@ -192,7 +191,7 @@ public class PostgresStorage implements IStorage {
 
   @Override
   public Optional<RepairUnit> getRepairUnit(String clusterName, String keyspaceName,
-      Collection<String> columnFamilies) {
+      Set<String> columnFamilies) {
     RepairUnit result;
     try (Handle h = jdbi.open()) {
       IStoragePostgreSQL storage = getPostgresStorage(h);
@@ -227,7 +226,7 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public  Optional<RepairSegment> getRepairSegment(long id) {
+  public Optional<RepairSegment> getRepairSegment(long id) {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairSegment(id);

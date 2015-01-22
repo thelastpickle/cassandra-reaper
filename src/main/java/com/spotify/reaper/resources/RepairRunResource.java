@@ -260,7 +260,7 @@ public class RepairRunResource {
     LOG.info("Pausing run {}", repairRun.getId());
     RepairRun updatedRun = repairRun.with()
         .runState(RepairRun.RunState.PAUSED)
-        .pausedTime(DateTime.now())
+        .pauseTime(DateTime.now())
         .build(repairRun.getId());
     storage.updateRepairRun(updatedRun);
     return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();

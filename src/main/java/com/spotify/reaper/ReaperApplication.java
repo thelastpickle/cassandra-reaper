@@ -13,28 +13,24 @@
  */
 package com.spotify.reaper;
 
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
 import com.spotify.reaper.resources.ReaperHealthCheck;
 import com.spotify.reaper.resources.RepairRunResource;
-import com.spotify.reaper.resources.TableResource;
-import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
-
+import io.dropwizard.Application;
+import io.dropwizard.setup.Bootstrap;
+import io.dropwizard.setup.Environment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 import java.util.concurrent.TimeUnit;
-
-import io.dropwizard.Application;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
 
 public class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
@@ -62,7 +58,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   @Override
   public void run(ReaperApplicationConfiguration config,
-                  Environment environment) throws ReaperException {
+      Environment environment) throws ReaperException {
     checkConfiguration(config);
 
     addSignalHandlers(); // SIGHUP, etc.
@@ -88,9 +84,6 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     final ClusterResource addClusterResource = new ClusterResource(storage, jmxConnectionFactory);
     environment.jersey().register(addClusterResource);
 
-    final TableResource addTableResource = new TableResource(config, storage);
-    environment.jersey().register(addTableResource);
-
     final RepairRunResource addRepairRunResource = new RepairRunResource(config, storage);
     environment.jersey().register(addRepairRunResource);
 
@@ -101,7 +94,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config,
-                                     Environment environment) throws ReaperException {
+      Environment environment) throws ReaperException {
     IStorage storage;
     if (config.getStorageType().equalsIgnoreCase("memory")) {
       storage = new MemoryStorage();
