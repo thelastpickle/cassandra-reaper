@@ -93,7 +93,7 @@ public class RepairRunner implements Runnable {
     this.repairRunId = repairRunId;
     this.jmxConnectionFactory = jmxConnectionFactory;
     jmxConnection = this.jmxConnectionFactory.connectAny(
-        storage.getCluster(storage.getRepairRun(repairRunId).getClusterName()));
+        storage.getCluster(storage.getRepairRun(repairRunId).get().getClusterName()).get());
   }
 
   /**
@@ -104,7 +104,7 @@ public class RepairRunner implements Runnable {
     // TODO: just like SegmentRunner, RepairRunner should probably be blocking.
     // TODO: the best way to do that is probably to remove the Runnable interface and do everything
     // TODO: in a while loop.
-    RepairRun.RunState state = storage.getRepairRun(repairRunId).getRunState();
+    RepairRun.RunState state = storage.getRepairRun(repairRunId).get().getRunState();
     LOG.debug("run() called for repair run #{} with run state {}", repairRunId, state);
     switch (state) {
       case NOT_STARTED:
@@ -127,7 +127,7 @@ public class RepairRunner implements Runnable {
    */
   private void start() {
     LOG.info("Repairs for repair run #{} starting", repairRunId);
-    RepairRun repairRun = storage.getRepairRun(repairRunId);
+    RepairRun repairRun = storage.getRepairRun(repairRunId).get();
     storage.updateRepairRun(repairRun.with()
         .runState(RepairRun.RunState.RUNNING)
         .startTime(DateTime.now())
