@@ -13,15 +13,14 @@
  */
 package com.spotify.reaper.storage;
 
+import com.google.common.base.Optional;
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
 
 import java.util.Collection;
-
-import javax.annotation.Nullable;
 
 /**
  * API definition for cassandra-reaper.
@@ -32,17 +31,17 @@ public interface IStorage {
 
   Collection<Cluster> getClusters();
 
-  Cluster addCluster(Cluster cluster);
+  boolean addCluster(Cluster cluster);
 
   boolean updateCluster(Cluster newCluster);
 
-  Cluster getCluster(String clusterName);
+  Optional<Cluster> getCluster(String clusterName);
 
   RepairRun addRepairRun(RepairRun.Builder repairRun);
 
   boolean updateRepairRun(RepairRun repairRun);
 
-  RepairRun getRepairRun(long id);
+  Optional<RepairRun> getRepairRun(long id);
 
   Collection<RepairRun> getRepairRunsForCluster(String clusterName);
 
@@ -50,29 +49,33 @@ public interface IStorage {
 
   RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit);
 
-  RepairUnit getRepairUnit(long id);
+  Optional<RepairUnit> getRepairUnit(long id);
 
-  RepairUnit getRepairUnit(String cluster, String keyspace, String table);
+  /**
+   * Get a stored RepairUnit targeting the given tables in the given keyspace.
+   * Tables must be always defined, so targeting the whole keyspace requires
+   * first getting all the column family names from the keyspace.
+   *
+   * @param cluster           Cluster name for the RepairUnit.
+   * @param keyspace          Keyspace name for the RepairUnit.
+   * @param columnFamilyNames List of column families targeted by the RepairUnit.
+   * @return Instance of a RepairUnit matching the parameters, or null if not found.
+   */
+  Optional<RepairUnit> getRepairUnit(String cluster, String keyspace,
+      Collection<String> columnFamilyNames);
 
-  void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId);
+  boolean addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId);
 
   boolean updateRepairSegment(RepairSegment newRepairSegment);
 
-  RepairSegment getRepairSegment(long id);
+  Optional<RepairSegment> getRepairSegment(long id);
 
-  RepairSegment getNextFreeSegment(long runId);
+  Optional<RepairSegment> getNextFreeSegment(long runId);
 
-  RepairSegment getNextFreeSegmentInRange(long runId, RingRange range);
+  Optional<RepairSegment> getNextFreeSegmentInRange(long runId, RingRange range);
 
-  /**
-   * If RepairRun is running, there should always be only one running segment at a time.
-   * TODO: what if we have parallel repair run on one ring?
-   *
-   * @param runId The RepairRun id that should be running to have one running segment.
-   * @return The running segment, or null in case there is none.
-   */
-  @Nullable
-  RepairSegment getTheRunningSegment(long runId);
+  Collection<RepairSegment> getSegmentsWithStateForRun(long runId,
+      RepairSegment.State segmentState);
 
   Collection<Long> getRepairRunIdsForCluster(String clusterName);
 
