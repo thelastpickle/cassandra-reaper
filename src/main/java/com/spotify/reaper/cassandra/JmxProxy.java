@@ -51,7 +51,7 @@ import javax.management.remote.JMXServiceURL;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class JmxProxy implements NotificationListener, Serializable, AutoCloseable {
+public class JmxProxy implements NotificationListener, AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(JmxProxy.class);
 
