@@ -23,11 +23,10 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
-import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
@@ -414,10 +413,7 @@ public class RepairRunResource {
           repairUnit.getId());
       repairSegmentBuilders.add(repairSegment);
     }
-    boolean success = storage.addRepairSegments(repairSegmentBuilders, repairRun.getId());
-    if (!success) {
-      throw new ReaperException("failed adding repair segments to storage");
-    }
+    storage.addRepairSegments(repairSegmentBuilders, repairRun.getId());
     if (repairUnit.getSegmentCount() != tokenSegments.size()) {
       LOG.debug("created segment amount differs from expected default {} != {}",
           repairUnit.getSegmentCount(), tokenSegments.size());

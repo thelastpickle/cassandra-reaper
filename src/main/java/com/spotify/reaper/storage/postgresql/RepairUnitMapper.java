@@ -13,6 +13,7 @@
  */
 package com.spotify.reaper.storage.postgresql;
 
+import com.google.common.collect.Sets;
 import com.spotify.reaper.core.RepairUnit;
 
 import org.skife.jdbi.v2.StatementContext;
@@ -21,11 +22,12 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class ColumnFamilyMapper implements ResultSetMapper<RepairUnit> {
+public class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
 
   public RepairUnit map(int index, ResultSet r, StatementContext ctx) throws SQLException {
+    String[] columnFamilies = (String[]) r.getArray("column_families").getArray();
     RepairUnit.Builder builder = new RepairUnit.Builder(r.getString("cluster_name"),
-        r.getString("keyspace_name"), r.getString("name"), r.getInt("segment_count"),
+        r.getString("keyspace_name"), Sets.newHashSet(columnFamilies), r.getInt("segment_count"),
         r.getBoolean("snapshot_repair"));
     return builder.build(r.getLong("id"));
   }

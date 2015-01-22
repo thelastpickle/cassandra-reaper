@@ -30,6 +30,9 @@ CREATE TABLE IF NOT EXISTS "repair_unit" (
   "segment_count" INT NOT NULL,
   "snapshot_repair" BOOLEAN NOT NULL
 );
+-- Using GIN index to make @> (contains) type of array operations faster
+CREATE INDEX repair_unit_column_families_gin_idx
+  ON repair_unit USING GIN (column_families);
 
 CREATE TABLE IF NOT EXISTS "repair_run" (
   "id" SERIAL PRIMARY KEY,

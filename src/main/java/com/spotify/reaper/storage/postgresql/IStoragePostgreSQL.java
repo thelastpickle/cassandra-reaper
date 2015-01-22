@@ -33,7 +33,7 @@ import java.util.Iterator;
 
 /**
  * JDBI based PostgreSQL interface.
- *
+ * 
  * See following specification for more info: http://jdbi.org/sql_object_api_dml/
  */
 public interface IStoragePostgreSQL {
@@ -51,7 +51,7 @@ public interface IStoragePostgreSQL {
       "SELECT " + SQL_CLUSTER_ALL_FIELDS + " FROM cluster WHERE name = :name";
 
   static final String SQL_INSERT_CLUSTER = "INSERT INTO cluster (" + SQL_CLUSTER_ALL_FIELDS +
-                                           ") VALUES (:name, :partitioner, :seedHosts)";
+      ") VALUES (:name, :partitioner, :seedHosts)";
 
   static final String SQL_UPDATE_CLUSTER =
       "UPDATE cluster SET partitioner = :partitioner, seed_hosts = :seedHosts WHERE name = :name";
@@ -74,18 +74,19 @@ public interface IStoragePostgreSQL {
   //
   static final String SQL_REPAIR_RUN_ALL_FIELDS_NO_ID =
       "cluster_name, column_family_id, cause, owner, state, creation_time, "
-      + "start_time, end_time, intensity";
+          + "start_time, end_time, pause_time, intensity";
 
   static final String SQL_REPAIR_RUN_ALL_FIELDS = "id, " + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID;
 
   static final String SQL_INSERT_REPAIR_RUN =
       "INSERT INTO repair_run (" + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID + ") VALUES "
-      + "(:clusterName, :columnFamilyId, :cause, :owner, :runState, :creationTime, "
-      + ":startTime, :endTime, :intensity)";
+          + "(:clusterName, :columnFamilyId, :cause, :owner, :runState, :creationTime, "
+          + ":startTime, :endTime, :pauseTime, :intensity)";
 
   static final String SQL_UPDATE_REPAIR_RUN =
       "UPDATE repair_run SET cause = :cause, owner = :owner, state = :runState, "
-      + "start_time = :startTime, end_time = :endTime, intensity = :intensity WHERE id = :id";
+          + "start_time = :startTime, end_time = :endTime, pause_time = :pauseTime, "
+          + "intensity = :intensity WHERE id = :id";
 
   static final String SQL_GET_REPAIR_RUN =
       "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS + " FROM repair_run WHERE id = :id";
@@ -117,35 +118,36 @@ public interface IStoragePostgreSQL {
 
   // RepairUnit
   //
-  static final String SQL_COLUMN_FAMILY_ALL_FIELDS_NO_ID =
-      "cluster_name, keyspace_name, name, segment_count, snapshot_repair";
+  static final String SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID =
+      "cluster_name, keyspace_name, column_families, segment_count, snapshot_repair";
 
-  static final String SQL_COLUMN_FAMILY_ALL_FIELDS = "id, " + SQL_COLUMN_FAMILY_ALL_FIELDS_NO_ID;
+  static final String SQL_REPAIR_UNIT_ALL_FIELDS = "id, " + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID;
 
-  static final String SQL_INSERT_COLUMN_FAMILY =
-      "INSERT INTO column_family (" + SQL_COLUMN_FAMILY_ALL_FIELDS_NO_ID + ") VALUES "
-      + "(:clusterName, :keyspaceName, :name, :segmentCount, :snapshotRepair)";
+  static final String SQL_INSERT_REPAIR_UNIT =
+      "INSERT INTO column_family (" + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID + ") VALUES "
+          + "(:clusterName, :keyspaceName, :columnFamilies, :segmentCount, :snapshotRepair)";
 
-  static final String SQL_GET_COLUMN_FAMILY =
-      "SELECT " + SQL_COLUMN_FAMILY_ALL_FIELDS + " FROM column_family WHERE id = :id";
+  static final String SQL_GET_REPAIR_UNIT =
+      "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM column_family WHERE id = :id";
 
-  static final String SQL_GET_COLUMN_FAMILY_BY_CLUSTER_AND_NAME =
-      "SELECT " + SQL_COLUMN_FAMILY_ALL_FIELDS + " FROM column_family "
-      + "WHERE cluster_name = :clusterName AND keyspace_name = :keyspaceName AND name = :name";
+  static final String SQL_GET_REPAIR_UNIT_BY_CLUSTER_AND_TABLES =
+      "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM column_family "
+          + "WHERE cluster_name = :clusterName AND keyspace_name = :keyspaceName "
+          + "AND column_families @> :columnFamilies AND column_families <@ :columnFamilies";
 
-  @SqlQuery(SQL_GET_COLUMN_FAMILY)
-  @Mapper(ColumnFamilyMapper.class)
-  public RepairUnit getColumnFamily(@Bind("id") long columnFamilyId);
+  @SqlQuery(SQL_GET_REPAIR_UNIT)
+  @Mapper(RepairUnitMapper.class)
+  public RepairUnit getRepairUnit(@Bind("id") long columnFamilyId);
 
-  @SqlQuery(SQL_GET_COLUMN_FAMILY_BY_CLUSTER_AND_NAME)
-  @Mapper(ColumnFamilyMapper.class)
-  public RepairUnit getColumnFamilyByClusterAndName(@Bind("clusterName") String clusterName,
-                                                      @Bind("keyspaceName") String keyspaceName,
-                                                      @Bind("name") String tableName);
+  @SqlQuery(SQL_GET_REPAIR_UNIT_BY_CLUSTER_AND_TABLES)
+  @Mapper(RepairUnitMapper.class)
+  public RepairUnit getRepairUnitByClusterAndTables(@Bind("clusterName") String clusterName,
+      @Bind("keyspaceName") String keyspaceName,
+      @Bind("columnFamilies") Collection<String> columnFamilies);
 
-  @SqlUpdate(SQL_INSERT_COLUMN_FAMILY)
+  @SqlUpdate(SQL_INSERT_REPAIR_UNIT)
   @GetGeneratedKeys
-  public long insertColumnFamily(@BindBean RepairUnit newRepairUnit);
+  public long insertRepairUnit(@BindBean RepairUnit newRepairUnit);
 
   // RepairSegment
   //
@@ -156,29 +158,29 @@ public interface IStoragePostgreSQL {
 
   static final String SQL_INSERT_REPAIR_SEGMENT =
       "INSERT INTO repair_segment (" + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID + ") VALUES "
-      + "(:columnFamilyId, :runId, :startToken, :endToken, :state, :startTime, :endTime, "
-      + ":failCount)";
+          + "(:columnFamilyId, :runId, :startToken, :endToken, :state, :startTime, :endTime, "
+          + ":failCount)";
 
   static final String SQL_UPDATE_REPAIR_SEGMENT =
       "UPDATE repair_segment SET column_family_id = :columnFamilyId, run_id = :runId, "
-      + "start_token = :startToken, end_token = :endToken, state = :state, "
-      + "start_time = :startTime, end_time = :endTime, fail_count = :failCount WHERE id = :id";
+          + "start_token = :startToken, end_token = :endToken, state = :state, "
+          + "start_time = :startTime, end_time = :endTime, fail_count = :failCount WHERE id = :id";
 
   static final String SQL_GET_REPAIR_SEGMENT =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE id = :id";
 
   static final String SQL_GET_REPAIR_SEGMENT_FOR_RUN_WITH_STATE =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE "
-      + "run_id = :runId AND state = :state";
+          + "run_id = :runId AND state = :state";
 
   static final String SQL_GET_NEXT_FREE_REPAIR_SEGMENT =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE run_id = :runId "
-      + "AND state = 0 ORDER BY fail_count ASC, start_token ASC LIMIT 1";
+          + "AND state = 0 ORDER BY fail_count ASC, start_token ASC LIMIT 1";
 
   static final String SQL_GET_NEXT_FREE_REPAIR_SEGMENT_ON_RANGE =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE "
-      + "run_id = :runId AND state = 0 AND start_token >= :startToken "
-      + "AND end_token < :endToken ORDER BY fail_count ASC, start_token ASC LIMIT 1";
+          + "run_id = :runId AND state = 0 AND start_token >= :startToken "
+          + "AND end_token < :endToken ORDER BY fail_count ASC, start_token ASC LIMIT 1";
 
   @SqlBatch(SQL_INSERT_REPAIR_SEGMENT)
   @BatchChunkSize(500)
@@ -194,8 +196,8 @@ public interface IStoragePostgreSQL {
   @SqlQuery(SQL_GET_REPAIR_SEGMENT_FOR_RUN_WITH_STATE)
   @Mapper(RepairSegmentMapper.class)
   public Collection<RepairSegment> getRepairSegmentForRunWithState(@Bind("runId") long runId,
-                                                                   @Bind("state")
-                                                                   RepairSegment.State state);
+      @Bind("state")
+      RepairSegment.State state);
 
   @SqlQuery(SQL_GET_NEXT_FREE_REPAIR_SEGMENT)
   @Mapper(RepairSegmentMapper.class)
@@ -204,8 +206,8 @@ public interface IStoragePostgreSQL {
   @SqlQuery(SQL_GET_NEXT_FREE_REPAIR_SEGMENT_ON_RANGE)
   @Mapper(RepairSegmentMapper.class)
   public RepairSegment getNextFreeRepairSegmentOnRange(@Bind("runId") long runId,
-                                                       @Bind("startToken") BigInteger startToken,
-                                                       @Bind("endToken") BigInteger endToken);
+      @Bind("startToken") BigInteger startToken,
+      @Bind("endToken") BigInteger endToken);
 
   // Utility methods
   //
@@ -215,11 +217,11 @@ public interface IStoragePostgreSQL {
   static final String SQL_SEGMENTS_AMOUNT_FOR_REPAIR_RUN =
       "SELECT count(*) FROM repair_segment WHERE run_id = :runId AND state = :state";
 
-  @SqlQuery(SQL_GET_REPAIR_RUN_IDS_FOR_CLUSTER)
-  Collection<Long> getRepairRunIdsForCluster(@Bind("clusterName") String clusterName);
+  @SqlQuery(SQL_GET_REPAIR_RUN_IDS_FOR_CLUSTER) Collection<Long> getRepairRunIdsForCluster(
+      @Bind("clusterName") String clusterName);
 
-  @SqlQuery(SQL_SEGMENTS_AMOUNT_FOR_REPAIR_RUN)
-  int getSegmentAmountForRepairRun(@Bind("runId") long runId,
-                                   @Bind("state") RepairSegment.State state);
+  @SqlQuery(SQL_SEGMENTS_AMOUNT_FOR_REPAIR_RUN) int getSegmentAmountForRepairRun(
+      @Bind("runId") long runId,
+      @Bind("state") RepairSegment.State state);
 
 }
