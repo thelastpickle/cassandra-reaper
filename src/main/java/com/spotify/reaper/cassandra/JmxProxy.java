@@ -32,7 +32,6 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import java.io.IOException;
-import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.util.*;
@@ -257,10 +256,11 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * @return Repair command number, or 0 if nothing to repair
    */
   public int triggerRepair(BigInteger beginToken, BigInteger endToken, String keyspace,
-      String columnFamily) {
+      Collection<String> columnFamilies) {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    String msg = String.format("Triggering repair of range (%s,%s] for %s.%s via host %s",
-        beginToken.toString(), endToken.toString(), keyspace, columnFamily, this.host);
+    String msg = String.format("Triggering repair of range (%s,%s] for keyspace \"%s\" on "
+            + "host %s, for column families: %s",
+        beginToken.toString(), endToken.toString(), keyspace, this.host, columnFamilies);
     LOG.info(msg);
     return ssProxy.forceRepairRangeAsync(
         beginToken.toString(),
@@ -268,7 +268,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
         keyspace,
         false,                      // isSequential - if true, do "snapshot repairs"
         false,                      // isLocal - if false, repair all DCs
-        columnFamily);
+        columnFamilies.toArray(new String[columnFamilies.size()]));
   }
 
   /**
@@ -325,6 +325,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
   }
 }
+
 
 /**
  * This code is copied and adjusted from from NodeProbe.java from Cassandra source.

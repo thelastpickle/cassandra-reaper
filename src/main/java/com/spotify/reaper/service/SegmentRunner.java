@@ -76,11 +76,10 @@ public final class SegmentRunner implements RepairStatusHandler {
 
   private void runRepair(Collection<String> potentialCoordinators,
       JmxConnectionFactory jmxConnectionFactory, long timeoutMillis) {
-    final RepairSegment segment = storage.getRepairSegment(segmentId);
+    final RepairSegment segment = storage.getRepairSegment(segmentId).get();
     try (JmxProxy jmxConnection = jmxConnectionFactory
         .connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators)) {
-      RepairUnit repairUnit =
-          storage.getColumnFamily(segment.getRepairUnitId());
+      RepairUnit repairUnit = storage.getRepairUnit(segment.getRepairUnitId()).get();
       String keyspace = repairUnit.getKeyspaceName();
 
       if (!canRepair(jmxConnection, segment)) {
@@ -89,9 +88,8 @@ public final class SegmentRunner implements RepairStatusHandler {
       }
 
       synchronized (condition) {
-        commandId = jmxConnection
-            .triggerRepair(segment.getStartToken(), segment.getEndToken(), keyspace,
-                repairUnit.getName());
+        commandId = jmxConnection.triggerRepair(segment.getStartToken(), segment.getEndToken(),
+            keyspace, repairUnit.getColumnFamilies());
         LOG.debug("Triggered repair with command id {}", commandId);
         storage.updateRepairSegment(segment.with()
             .state(RepairSegment.State.RUNNING)
@@ -105,7 +103,7 @@ public final class SegmentRunner implements RepairStatusHandler {
         } catch (InterruptedException e) {
           LOG.warn("Repair command {} on segment {} interrupted", commandId, segmentId);
         } finally {
-          RepairSegment resultingSegment = storage.getRepairSegment(segmentId);
+          RepairSegment resultingSegment = storage.getRepairSegment(segmentId).get();
           LOG.info("Repair command {} on segment {} exited with state {}", commandId, segmentId,
               resultingSegment.getState());
           if (resultingSegment.getState().equals(RepairSegment.State.RUNNING)) {
@@ -164,7 +162,7 @@ public final class SegmentRunner implements RepairStatusHandler {
         return;
       }
 
-      RepairSegment currentSegment = storage.getRepairSegment(segmentId);
+      RepairSegment currentSegment = storage.getRepairSegment(segmentId).get();
       // See status explanations from: https://wiki.apache.org/cassandra/RepairAsyncAPI
       switch (status) {
         case STARTED:
