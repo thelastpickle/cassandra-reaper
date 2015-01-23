@@ -130,6 +130,11 @@ public final class SegmentRunner implements RepairStatusHandler {
             host.getHost());
         return false;
       }
+      if (host.isRepairRunning()) {
+        LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) was "
+                + "already involved in a repair", segmentId, host.getHost());
+        return false;
+      }
     }
     return true;
   }
