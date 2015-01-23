@@ -13,10 +13,14 @@
  */
 package com.spotify.reaper.cassandra;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
+
+import com.google.common.collect.Lists;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 
 public class JmxConnectionFactory {
@@ -38,5 +42,14 @@ public class JmxConnectionFactory {
   public final JmxProxy connectAny(Cluster cluster)
       throws ReaperException {
     return connectAny(Optional.<RepairStatusHandler>absent(), cluster.getSeedHosts());
+  }
+
+  public final Collection<JmxProxy> connectAll(Collection<String> hosts)
+      throws ReaperException {
+    Collection<JmxProxy> connections = Lists.newArrayList();
+    for (String host : hosts) {
+      connections.add(create(host));
+    }
+    return connections;
   }
 }

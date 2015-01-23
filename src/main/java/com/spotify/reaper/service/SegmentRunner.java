@@ -77,23 +77,23 @@ public final class SegmentRunner implements RepairStatusHandler {
   private void runRepair(Collection<String> potentialCoordinators,
       JmxConnectionFactory jmxConnectionFactory, long timeoutMillis) {
     final RepairSegment segment = storage.getRepairSegment(segmentId).get();
-    try (JmxProxy jmxConnection = jmxConnectionFactory
+    try (JmxProxy coordinator = jmxConnectionFactory
         .connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators)) {
       RepairUnit repairUnit = storage.getRepairUnit(segment.getRepairUnitId()).get();
       String keyspace = repairUnit.getKeyspaceName();
 
-      if (!canRepair(jmxConnection, segment)) {
+      if (!canRepair(segment, keyspace, coordinator, jmxConnectionFactory)) {
         postpone(segment);
         return;
       }
 
       synchronized (condition) {
-        commandId = jmxConnection.triggerRepair(segment.getStartToken(), segment.getEndToken(),
+        commandId = coordinator.triggerRepair(segment.getStartToken(), segment.getEndToken(),
             keyspace, repairUnit.getColumnFamilies());
         LOG.debug("Triggered repair with command id {}", commandId);
         storage.updateRepairSegment(segment.with()
             .state(RepairSegment.State.RUNNING)
-            .coordinatorHost(jmxConnection.getHost())
+            .coordinatorHost(coordinator.getHost())
             .repairCommandId(commandId)
             .build(segmentId));
         LOG.info("Repair for segment {} started", segmentId);
@@ -109,7 +109,7 @@ public final class SegmentRunner implements RepairStatusHandler {
           if (resultingSegment.getState().equals(RepairSegment.State.RUNNING)) {
             LOG.info("Repair command {} on segment {} has been cancelled while running", commandId,
                 segmentId);
-            abort(resultingSegment, jmxConnection);
+            abort(resultingSegment, coordinator);
           }
         }
       }
@@ -119,16 +119,17 @@ public final class SegmentRunner implements RepairStatusHandler {
     }
   }
 
-  boolean canRepair(JmxProxy jmx, RepairSegment segment) {
-    if (segment.getState().equals(RepairSegment.State.RUNNING)) {
-      LOG.error("Repair segment {} was already marked as started when SegmentRunner was "
-          + "asked to trigger repair", segmentId);
-      return false;
-    }
-    if (jmx.getPendingCompactions() > MAX_PENDING_COMPACTIONS) {
-      LOG.warn("SegmentRunner declined to repair segment {} because of too many pending "
-          + "compactions (> {})", segmentId, MAX_PENDING_COMPACTIONS);
-      return false;
+  boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator,
+      JmxConnectionFactory factory) throws ReaperException {
+    Collection<JmxProxy> allHosts = factory.connectAll(
+        coordinator.tokenRangeToEndpoint(keyspace, segment.getTokenRange()));
+    for (JmxProxy host : allHosts) {
+      if (host.getPendingCompactions() > MAX_PENDING_COMPACTIONS) {
+        LOG.warn("SegmentRunner declined to repair segment {} because of too many pending "
+            + "compactions (> {}) on host \"{}\"", segmentId, MAX_PENDING_COMPACTIONS,
+            host.getHost());
+        return false;
+      }
     }
     return true;
   }
