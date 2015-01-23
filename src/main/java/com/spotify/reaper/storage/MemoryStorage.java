@@ -16,20 +16,13 @@ package com.spotify.reaper.storage;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -49,6 +42,7 @@ public class MemoryStorage implements IStorage {
   private ConcurrentMap<Long, RepairSegment> repairSegments = Maps.newConcurrentMap();
   private ConcurrentMap<Long, LinkedHashMap<Long, RepairSegment>> repairSegmentsByRunId =
       Maps.newConcurrentMap();
+
 
   public static class RepairUnitKey {
 
@@ -161,7 +155,8 @@ public class MemoryStorage implements IStorage {
     } else {
       RepairUnit newRepairUnit = repairUnit.build(REPAIR_UNIT_ID.incrementAndGet());
       repairUnits.put(newRepairUnit.getId(), newRepairUnit);
-      RepairUnitKey unitTables = new RepairUnitKey(newRepairUnit.getClusterName(), newRepairUnit.getKeyspaceName(), newRepairUnit.getColumnFamilies());
+      RepairUnitKey unitTables = new RepairUnitKey(newRepairUnit.getClusterName(),
+          newRepairUnit.getKeyspaceName(), newRepairUnit.getColumnFamilies());
       repairUnitsByKey.put(unitTables, newRepairUnit);
       return newRepairUnit;
     }

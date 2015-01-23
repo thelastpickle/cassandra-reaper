@@ -15,17 +15,16 @@ package com.spotify.reaper.service;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-
+import com.google.common.collect.Sets;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
-import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
-
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.joda.time.DateTime;
@@ -52,15 +51,14 @@ public class SegmentRunnerTest {
   @Test
   public void timeoutTest() throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
-    RepairUnit cf =
-        storage.addColumnFamily(new RepairUnit.Builder("reaper", "reaper", "reaper", 1, false));
+    RepairUnit cf = storage.addRepairUnit(
+        new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), 1, false));
     RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder("reaper", cf.getId(), DateTime.now(),
-            0.5));
+        new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5));
     storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO),
             cf.getId())), run.getId());
-    final long segmentId = storage.getNextFreeSegment(run.getId()).getId();
+    final long segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -76,19 +74,19 @@ public class SegmentRunnerTest {
             when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
                 .thenReturn(Lists.newArrayList(""));
             when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-                anyString()))
+                Sets.newHashSet(anyString())))
                 .then(new Answer<Integer>() {
                   @Override
                   public Integer answer(InvocationOnMock invocation) {
                     assertEquals(RepairSegment.State.NOT_STARTED,
-                        storage.getRepairSegment(segmentId).getState());
+                        storage.getRepairSegment(segmentId).get().getState());
                     future.setValue(executor.submit(new Thread() {
                       @Override
                       public void run() {
                         handler.get().handle(1, ActiveRepairService.Status.STARTED,
                             "Repair command 1 has started");
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(segmentId).getState());
+                            storage.getRepairSegment(segmentId).get().getState());
                       }
                     }));
                     return 1;
@@ -102,21 +100,22 @@ public class SegmentRunnerTest {
     future.getValue().get();
     executor.shutdown();
 
-    assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(segmentId).getState());
-    assertEquals(1, storage.getRepairSegment(segmentId).getFailCount());
+    assertEquals(RepairSegment.State.NOT_STARTED,
+        storage.getRepairSegment(segmentId).get().getState());
+    assertEquals(1, storage.getRepairSegment(segmentId).get().getFailCount());
   }
 
   @Test
   public void successTest() throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
-    RepairUnit cf =
-        storage.addColumnFamily(new RepairUnit.Builder("reaper", "reaper", "reaper", 1, false));
+    RepairUnit cf = storage.addRepairUnit(
+        new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), 1, false));
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5));
     storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO),
             cf.getId())), run.getId());
-    final long segmentId = storage.getNextFreeSegment(run.getId()).getId();
+    final long segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -132,30 +131,30 @@ public class SegmentRunnerTest {
             when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
                 .thenReturn(Lists.newArrayList(""));
             when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-                anyString()))
+                Sets.newHashSet(anyString())))
                 .then(new Answer<Integer>() {
                   @Override
                   public Integer answer(InvocationOnMock invocation) {
                     assertEquals(RepairSegment.State.NOT_STARTED,
-                        storage.getRepairSegment(segmentId).getState());
+                        storage.getRepairSegment(segmentId).get().getState());
                     future.setValue(executor.submit(new Runnable() {
                       @Override
                       public void run() {
                         handler.get().handle(1, ActiveRepairService.Status.STARTED,
                             "Repair command 1 has started");
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(segmentId).getState());
+                            storage.getRepairSegment(segmentId).get().getState());
                         // report about an unrelated repair. Shouldn't affect anything.
                         handler.get().handle(2, ActiveRepairService.Status.SESSION_FAILED,
                             "Repair command 2 has failed");
                         handler.get().handle(1, ActiveRepairService.Status.SESSION_SUCCESS,
                             "Repair session succeeded in command 1");
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(segmentId).getState());
+                            storage.getRepairSegment(segmentId).get().getState());
                         handler.get().handle(1, ActiveRepairService.Status.FINISHED,
                             "Repair command 1 has finished");
                         assertEquals(RepairSegment.State.DONE,
-                            storage.getRepairSegment(segmentId).getState());
+                            storage.getRepairSegment(segmentId).get().getState());
                       }
                     }));
                     return 1;
@@ -169,21 +168,22 @@ public class SegmentRunnerTest {
     future.getValue().get();
     executor.shutdown();
 
-    assertEquals(RepairSegment.State.DONE, storage.getRepairSegment(segmentId).getState());
-    assertEquals(0, storage.getRepairSegment(segmentId).getFailCount());
+    assertEquals(RepairSegment.State.DONE, storage.getRepairSegment(segmentId).get().getState());
+    assertEquals(0, storage.getRepairSegment(segmentId).get().getFailCount());
   }
 
   @Test
   public void failureTest() throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
     RepairUnit cf =
-        storage.addColumnFamily(new RepairUnit.Builder("reaper", "reaper", "reaper", 1, false));
+        storage.addRepairUnit(
+            new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), 1, false));
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5));
     storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO),
             cf.getId())), run.getId());
-    final long segmentId = storage.getNextFreeSegment(run.getId()).getId();
+    final long segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -199,27 +199,27 @@ public class SegmentRunnerTest {
             when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
                 .thenReturn(Lists.newArrayList(""));
             when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-                anyString()))
+                Sets.newHashSet(anyString())))
                 .then(new Answer<Integer>() {
                   @Override
                   public Integer answer(InvocationOnMock invocation) {
                     assertEquals(RepairSegment.State.NOT_STARTED,
-                        storage.getRepairSegment(segmentId).getState());
+                        storage.getRepairSegment(segmentId).get().getState());
                     future.setValue(executor.submit(new Runnable() {
                       @Override
                       public void run() {
                         handler.get().handle(1, ActiveRepairService.Status.STARTED,
                             "Repair command 1 has started");
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(segmentId).getState());
+                            storage.getRepairSegment(segmentId).get().getState());
                         handler.get().handle(1, ActiveRepairService.Status.SESSION_SUCCESS,
                             "Repair session succeeded in command 1");
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(segmentId).getState());
+                            storage.getRepairSegment(segmentId).get().getState());
                         handler.get().handle(1, ActiveRepairService.Status.SESSION_FAILED,
                             "Repair command 1 has failed");
                         assertEquals(RepairSegment.State.NOT_STARTED,
-                            storage.getRepairSegment(segmentId).getState());
+                            storage.getRepairSegment(segmentId).get().getState());
                       }
                     }));
 
@@ -234,7 +234,8 @@ public class SegmentRunnerTest {
     future.getValue().get();
     executor.shutdown();
 
-    assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(segmentId).getState());
-    assertEquals(1, storage.getRepairSegment(segmentId).getFailCount());
+    assertEquals(RepairSegment.State.NOT_STARTED,
+        storage.getRepairSegment(segmentId).get().getState());
+    assertEquals(1, storage.getRepairSegment(segmentId).get().getFailCount());
   }
 }

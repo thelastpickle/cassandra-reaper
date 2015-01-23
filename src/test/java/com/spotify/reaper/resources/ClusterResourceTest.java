@@ -4,19 +4,18 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Sets;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.net.URI;
-
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.net.URI;
 
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 import static org.junit.Assert.assertEquals;
@@ -50,7 +49,8 @@ public class ClusterResourceTest {
     when(proxy.getPartitioner()).thenReturn(PARTITIONER);
     factory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy create(Optional<RepairStatusHandler> handler, String host) throws ReaperException {
+      public JmxProxy create(Optional<RepairStatusHandler> handler, String host)
+          throws ReaperException {
         return proxy;
       }
     };
@@ -64,7 +64,7 @@ public class ClusterResourceTest {
     assertEquals(201, response.getStatus());
     assertEquals(1, storage.getClusters().size());
 
-    Cluster cluster = storage.getCluster(CLUSTER_NAME);
+    Cluster cluster = storage.getCluster(CLUSTER_NAME).get();
     assertNotNull(cluster, "Did not find expected cluster");
     assertEquals(0, storage.getRepairRunsForCluster(cluster.getName()).size());
     assertEquals(CLUSTER_NAME, cluster.getName());

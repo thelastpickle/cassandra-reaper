@@ -4,7 +4,7 @@ repairIntensity: 0.75
 repairRunThreadCount: 15
 
 # storageType is either "database" or "memory"
-storageType: database
+storageType: memory
 
 logging:
   level: DEBUG
