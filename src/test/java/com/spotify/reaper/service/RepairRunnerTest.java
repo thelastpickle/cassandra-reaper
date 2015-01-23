@@ -82,7 +82,7 @@ public class RepairRunnerTest {
     // start the repair
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
     RepairRunner.initializeThreadPool(1, 3, TimeUnit.HOURS, 30, TimeUnit.SECONDS);
-    RepairRunner.startNewRepairRun(storage, RUN_ID, new JmxConnectionFactory() {
+    RepairRunner.startRepairRun(storage, RUN_ID, new JmxConnectionFactory() {
       @Override
       public JmxProxy create(Optional<RepairStatusHandler> handler, String host)
           throws ReaperException {
@@ -128,7 +128,7 @@ public class RepairRunnerTest {
     RepairRunner.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     assertEquals(storage.getRepairSegment(SEGMENT_ID).getState(), RepairSegment.State.NOT_STARTED);
-    RepairRunner.startNewRepairRun(storage, RUN_ID, new JmxConnectionFactory() {
+    RepairRunner.startRepairRun(storage, RUN_ID, new JmxConnectionFactory() {
       final AtomicInteger repairAttempts = new AtomicInteger(0);
 
       @Override

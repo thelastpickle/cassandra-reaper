@@ -69,11 +69,11 @@ public class RepairRunner implements Runnable {
           SegmentRunner.postpone(storage, runningSegment);
         }
       }
-      RepairRunner.startNewRepairRun(storage, repairRun.getId(), jmxConnectionFactory);
+      RepairRunner.startRepairRun(storage, repairRun.getId(), jmxConnectionFactory);
     }
   }
 
-  public static void startNewRepairRun(IStorage storage, long repairRunID,
+  public static void startRepairRun(IStorage storage, long repairRunID,
       JmxConnectionFactory jmxConnectionFactory) {
     // TODO: make sure that no more than one RepairRunner is created per RepairRun
     assert null != executor : "you need to initialize the thread pool first";
@@ -91,8 +91,7 @@ public class RepairRunner implements Runnable {
   private final JmxConnectionFactory jmxConnectionFactory;
   private JmxProxy jmxConnection;
 
-  @VisibleForTesting
-  RepairRunner(IStorage storage, long repairRunId, JmxConnectionFactory jmxConnectionFactory)
+  private RepairRunner(IStorage storage, long repairRunId, JmxConnectionFactory jmxConnectionFactory)
       throws ReaperException {
     this.storage = storage;
     this.repairRunId = repairRunId;
@@ -106,9 +105,6 @@ public class RepairRunner implements Runnable {
    */
   @Override
   public void run() {
-    // TODO: just like SegmentRunner, RepairRunner should probably be blocking.
-    // TODO: the best way to do that is probably to remove the Runnable interface and do everything
-    // TODO: in a while loop.
     RepairRun.RunState state = storage.getRepairRun(repairRunId).getRunState();
     LOG.debug("run() called for repair run #{} with run state {}", repairRunId, state);
     switch (state) {
@@ -119,10 +115,10 @@ public class RepairRunner implements Runnable {
         startNextSegment();
         break;
       case PAUSED:
-        // Do nothing
+        executor.schedule(this, retryDelayMillis, TimeUnit.MILLISECONDS);
         break;
       case DONE:
-        // Do nothing
+        // We're done. Let go of thread.
         break;
     }
   }
