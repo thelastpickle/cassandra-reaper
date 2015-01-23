@@ -209,7 +209,7 @@ public class MemoryStorage implements IStorage {
         return Optional.of(segment);
       }
     }
-    return null;
+    return Optional.absent();
   }
 
   @Override
@@ -220,7 +220,7 @@ public class MemoryStorage implements IStorage {
         return Optional.of(segment);
       }
     }
-    return null;
+    return Optional.absent();
   }
 
   @Override
