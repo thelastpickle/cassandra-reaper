@@ -55,26 +55,16 @@ public class RepairRunner implements Runnable {
   public static void resumeRunningRepairRuns(IStorage storage,
       JmxConnectionFactory jmxConnectionFactory) {
     for (RepairRun repairRun : storage.getAllRunningRepairRuns()) {
-      while (true) {
-        Collection<RepairSegment> runningSegments =
-            storage.getSegmentsWithStateForRun(repairRun.getId(), RepairSegment.State.RUNNING);
-        if (runningSegments.size() < 1) {
-          break;
-        }
-        if (runningSegments.size() > 1) {
-          LOG.error("there is more than one running segment on run with id {}, which is not "
-              + "supported currently", runningSegments.size());
-          break;
-        }
-
-        RepairSegment runningSegment = runningSegments.iterator().next();
+      Collection<RepairSegment> runningSegments =
+          storage.getSegmentsWithStateForRun(repairRun.getId(), RepairSegment.State.RUNNING);
+      for (RepairSegment segment : runningSegments) {
         try {
-          SegmentRunner.abort(storage, runningSegment,
-              jmxConnectionFactory.create(runningSegment.getCoordinatorHost()));
+          SegmentRunner.abort(storage, segment,
+              jmxConnectionFactory.create(segment.getCoordinatorHost()));
         } catch (ReaperException e) {
           LOG.debug("Tried to abort repair on segment {} marked as RUNNING, but the host was down"
-              + " (so abortion won't be needed)", runningSegment.getId());
-          SegmentRunner.postpone(storage, runningSegment);
+              + " (so abortion won't be needed)", segment.getId());
+          SegmentRunner.postpone(storage, segment);
         }
       }
       RepairRunner.startRepairRun(storage, repairRun.getId(), jmxConnectionFactory);
@@ -169,7 +159,6 @@ public class RepairRunner implements Runnable {
     // Currently not allowing parallel repairs.
     assert storage.getSegmentAmountForRepairRun(repairRunId, RepairSegment.State.RUNNING) == 0;
     Optional<RepairSegment> nextSegment = storage.getNextFreeSegment(repairRunId);
-    LOG.debug("starting next segment: {}", nextSegment);
     if (nextSegment.isPresent()) {
       repairSegment(nextSegment.get().getId(), nextSegment.get().getTokenRange());
     } else {
@@ -193,8 +182,7 @@ public class RepairRunner implements Runnable {
       try {
         LOG.debug("reestablishing JMX proxy for repair runner on run id: {}", repairRunId);
         Cluster cluster = storage.getCluster(repairUnit.getClusterName()).get();
-        jmxConnection = jmxConnectionFactory.connectAny(Optional.<RepairStatusHandler>absent(),
-            cluster.getSeedHosts());
+        jmxConnection = jmxConnectionFactory.connectAny(cluster);
       } catch (ReaperException e) {
         e.printStackTrace();
         LOG.warn("Failed to reestablish JMX connection in runner #{}, reattempting in {} seconds",
