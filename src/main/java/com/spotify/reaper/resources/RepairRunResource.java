@@ -45,11 +45,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -83,13 +79,13 @@ public class RepairRunResource {
    * Endpoint used to create a repair run. Does not allow triggering the run. triggerRepairRun()
    * must be called to initiate the repair. Creating a repair run includes generating repair
    * segments.
-   *
+   * <p/>
    * Notice that query parameter "tables" can be a single String, or a comma-separated list
    * of table names. If the "tables" parameter is omitted, and only the keyspace is defined,
    * then created repair run will target all the tables in the keyspace.
    *
    * @return repair run ID in case of everything going well,
-   *         and a status code 500 in case of errors.
+   * and a status code 500 in case of errors.
    */
   @POST
   public Response addRepairRun(
@@ -226,8 +222,8 @@ public class RepairRunResource {
     if (isResuming(oldState, newState)) {
       return resumeRun(repairRun.get(), repairUnit.get());
     }
-    String errMsg = String.format("Transition %s->%s not supported.", newState.toString(),
-        oldState.toString());
+    String errMsg = String.format("Transition %s->%s not supported.", oldState.toString(),
+        newState.toString());
     LOG.error(errMsg);
     return Response.status(501).entity(errMsg).build();
   }
@@ -250,8 +246,10 @@ public class RepairRunResource {
         .runState(RepairRun.RunState.RUNNING)
         .startTime(DateTime.now())
         .build(repairRun.getId());
-    storage.updateRepairRun(updatedRun);
-    RepairRunner.startNewRepairRun(storage, repairRun.getId(), jmxFactory);
+    if (!storage.updateRepairRun(updatedRun)) {
+      throw new RuntimeException("failed updating repair run " + updatedRun.getId());
+    }
+    RepairRunner.startRepairRun(storage, repairRun.getId(), jmxFactory);
     return Response.status(Response.Status.OK).entity(new RepairRunStatus(repairRun, repairUnit))
         .build();
   }
@@ -262,7 +260,9 @@ public class RepairRunResource {
         .runState(RepairRun.RunState.PAUSED)
         .pauseTime(DateTime.now())
         .build(repairRun.getId());
-    storage.updateRepairRun(updatedRun);
+    if (!storage.updateRepairRun(updatedRun)) {
+      throw new RuntimeException("failed updating repair run " + updatedRun.getId());
+    }
     return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();
   }
 
@@ -271,7 +271,9 @@ public class RepairRunResource {
     RepairRun updatedRun = repairRun.with()
         .runState(RepairRun.RunState.RUNNING)
         .build(repairRun.getId());
-    storage.updateRepairRun(updatedRun);
+    if (!storage.updateRepairRun(updatedRun)) {
+      throw new RuntimeException("failed updating repair run " + updatedRun.getId());
+    }
     return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();
   }
 
