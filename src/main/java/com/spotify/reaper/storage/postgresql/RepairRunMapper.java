@@ -36,6 +36,7 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
         .cause(r.getString("cause"))
         .startTime(getDateTimeOrNull(r, "start_time"))
         .endTime(getDateTimeOrNull(r, "end_time"))
+        .pauseTime(getDateTimeOrNull(r, "pause_time"))
         .build(r.getLong("id"));
   }
 

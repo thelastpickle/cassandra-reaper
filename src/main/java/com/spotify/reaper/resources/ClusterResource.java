@@ -14,34 +14,25 @@
 package com.spotify.reaper.resources;
 
 import com.google.common.base.Optional;
-
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.resources.view.ClusterStatus;
-import com.spotify.reaper.service.JmxConnectionFactory;
 import com.spotify.reaper.storage.IStorage;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.net.URI;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 @Path("/cluster")
 @Produces(MediaType.APPLICATION_JSON)
@@ -52,9 +43,9 @@ public class ClusterResource {
   private final JmxConnectionFactory jmxFactory;
   private final IStorage storage;
 
-  public ClusterResource(IStorage storage, JmxConnectionFactory factory) {
+  public ClusterResource(IStorage storage, JmxConnectionFactory jmxFactory) {
     this.storage = storage;
-    this.jmxFactory = factory;
+    this.jmxFactory = jmxFactory;
   }
 
   @GET
@@ -72,10 +63,13 @@ public class ClusterResource {
   @Path("/{cluster_name}")
   public Response getCluster(@PathParam("cluster_name") String clusterName) {
     LOG.info("get cluster called with cluster_name: {}", clusterName);
-    Cluster cluster = storage.getCluster(clusterName);
-    ClusterStatus view = new ClusterStatus(cluster);
-    view.setRepairRunIds(storage.getRepairRunIdsForCluster(cluster.getName()));
-    return Response.ok().entity(view).build();
+    Optional<Cluster> cluster = storage.getCluster(clusterName);
+    if (cluster.isPresent()) {
+      return viewCluster(cluster.get(), Optional.<URI>absent());
+    } else {
+      return Response.status(Response.Status.NOT_FOUND)
+          .entity("cluster with name \"" + clusterName + "\" not found").build();
+    }
   }
 
   @POST
@@ -90,23 +84,23 @@ public class ClusterResource {
 
     Cluster newCluster;
     try {
-      newCluster = createClusterWithSeedHost(seedHost.get(), jmxFactory);
+      newCluster = ResourceUtils.createClusterWithSeedHost(seedHost.get(), jmxFactory);
     } catch (ReaperException e) {
       return Response.status(400)
           .entity("failed to create cluster with seed host: " + seedHost.get()).build();
     }
-    Cluster existingCluster = storage.getCluster(newCluster.getName());
-    if (existingCluster == null) {
-      LOG.info("creating new cluster based on given seed host: {}", newCluster);
-      storage.addCluster(newCluster);
-    } else {
+    Optional<Cluster> existingCluster = storage.getCluster(newCluster.getName());
+    if (existingCluster.isPresent()) {
       LOG.info("cluster already stored with this name: {}", existingCluster);
       return Response.status(403)
-          .entity(String.format("cluster \"%s\" already exists", existingCluster.getName()))
+          .entity(String.format("cluster \"%s\" already exists", existingCluster.get().getName()))
           .build();
+    } else {
+      LOG.info("creating new cluster based on given seed host: {}", newCluster);
+      storage.addCluster(newCluster);
     }
 
-    URI createdURI = null;
+    URI createdURI;
     try {
       createdURI = (new URL(uriInfo.getAbsolutePath().toURL(), newCluster.getName())).toURI();
     } catch (Exception e) {
@@ -116,24 +110,26 @@ public class ClusterResource {
       return Response.status(400).entity(errMsg).build();
     }
 
-    return Response.created(createdURI).entity(new ClusterStatus(newCluster)).build();
+    return viewCluster(newCluster, Optional.of(createdURI));
   }
 
-  public static Cluster createClusterWithSeedHost(String seedHost, JmxConnectionFactory factory)
-      throws ReaperException {
-    String clusterName;
-    String partitioner;
+  private Response viewCluster(Cluster cluster, Optional<URI> createdURI) {
+    ClusterStatus view = new ClusterStatus(cluster);
+    view.setRepairRunIds(storage.getRepairRunIdsForCluster(cluster.getName()));
     try {
-      JmxProxy jmxProxy = factory.create(seedHost);
-      clusterName = jmxProxy.getClusterName();
-      partitioner = jmxProxy.getPartitioner();
-      jmxProxy.close();
+      JmxProxy jmx = this.jmxFactory.connectAny(cluster);
+      view.setKeyspaces(jmx.getKeyspaces());
+      jmx.close();
     } catch (ReaperException e) {
-      LOG.error("failed to create cluster with seed host: " + seedHost);
       e.printStackTrace();
-      throw e;
+      LOG.error("failed connecting JMX", e);
+      return Response.status(500).entity("failed connecting given clusters JMX endpoint").build();
     }
-    return new Cluster(clusterName, partitioner, Collections.singleton(seedHost));
+    if (createdURI.isPresent()) {
+      return Response.created(createdURI.get()).entity(view).build();
+    } else {
+      return Response.ok().entity(view).build();
+    }
   }
 
 }

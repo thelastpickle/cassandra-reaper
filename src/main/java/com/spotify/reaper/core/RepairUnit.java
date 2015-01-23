@@ -13,12 +13,14 @@
  */
 package com.spotify.reaper.core;
 
-public class ColumnFamily {
+import java.util.Set;
+
+public class RepairUnit {
 
   private final long id;
   private final String clusterName;
   private final String keyspaceName;
-  private final String name;
+  private final Set<String> columnFamilies;
   private final int segmentCount;
   private final boolean snapshotRepair;
 
@@ -34,8 +36,8 @@ public class ColumnFamily {
     return keyspaceName;
   }
 
-  public String getName() {
-    return name;
+  public Set<String> getColumnFamilies() {
+    return columnFamilies;
   }
 
   public int getSegmentCount() {
@@ -46,11 +48,11 @@ public class ColumnFamily {
     return snapshotRepair;
   }
 
-  private ColumnFamily(Builder builder, long id) {
+  private RepairUnit(Builder builder, long id) {
     this.id = id;
     this.clusterName = builder.clusterName;
     this.keyspaceName = builder.keyspaceName;
-    this.name = builder.name;
+    this.columnFamilies = builder.columnFamilies;
     this.segmentCount = builder.segmentCount;
     this.snapshotRepair = builder.snapshotRepair;
   }
@@ -63,23 +65,23 @@ public class ColumnFamily {
 
     public final String clusterName;
     public final String keyspaceName;
-    public final String name;
+    public final Set<String> columnFamilies;
     private int segmentCount;
     private boolean snapshotRepair;
 
-    public Builder(String clusterName, String keyspaceName, String name, int segmentCount,
-        boolean snapshotRepair) {
+    public Builder(String clusterName, String keyspaceName, Set<String> columnFamilies,
+        int segmentCount, boolean snapshotRepair) {
       this.clusterName = clusterName;
       this.keyspaceName = keyspaceName;
-      this.name = name;
+      this.columnFamilies = columnFamilies;
       this.segmentCount = segmentCount;
       this.snapshotRepair = snapshotRepair;
     }
 
-    private Builder(ColumnFamily original) {
+    private Builder(RepairUnit original) {
       clusterName = original.clusterName;
       keyspaceName = original.keyspaceName;
-      name = original.name;
+      columnFamilies = original.columnFamilies;
       segmentCount = original.segmentCount;
       snapshotRepair = original.snapshotRepair;
     }
@@ -94,8 +96,8 @@ public class ColumnFamily {
       return this;
     }
 
-    public ColumnFamily build(long id) {
-      return new ColumnFamily(this, id);
+    public RepairUnit build(long id) {
+      return new RepairUnit(this, id);
     }
   }
 }

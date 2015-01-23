@@ -15,19 +15,14 @@ package com.spotify.reaper.service;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-
 import com.spotify.reaper.ReaperException;
-
 import org.junit.Test;
 
+import javax.annotation.Nullable;
 import java.math.BigInteger;
 import java.util.List;
 
-import javax.annotation.Nullable;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class SegmentGeneratorTest {
 
@@ -41,7 +36,7 @@ public class SegmentGeneratorTest {
         new Function<String, BigInteger>() {
           @Nullable
           @Override
-          public BigInteger apply(@Nullable String s) {
+          public BigInteger apply(String s) {
             return new BigInteger(s);
           }
         }
@@ -51,11 +46,12 @@ public class SegmentGeneratorTest {
     List<RingRange> segments = generator.generateSegments(10, tokens);
     assertEquals(15, segments.size());
     assertEquals("(0,1]",
-                 segments.get(0).toString());
+        segments.get(0).toString());
     assertEquals("(56713727820156410577229101238628035242,56713727820156410577229101238628035243]",
-                 segments.get(5).toString());
-    assertEquals("(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
-                 segments.get(10).toString());
+        segments.get(5).toString());
+    assertEquals(
+        "(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
+        segments.get(10).toString());
 
 
     tokens = Lists.transform(
@@ -66,7 +62,7 @@ public class SegmentGeneratorTest {
         new Function<String, BigInteger>() {
           @Nullable
           @Override
-          public BigInteger apply(@Nullable String s) {
+          public BigInteger apply(String s) {
             return new BigInteger(s);
           }
         }
@@ -75,14 +71,15 @@ public class SegmentGeneratorTest {
     segments = generator.generateSegments(10, tokens);
     assertEquals(15, segments.size());
     assertEquals("(5,6]",
-                 segments.get(0).toString());
+        segments.get(0).toString());
     assertEquals("(56713727820156410577229101238628035242,56713727820156410577229101238628035243]",
-                 segments.get(5).toString());
-    assertEquals("(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
-                 segments.get(10).toString());
+        segments.get(5).toString());
+    assertEquals(
+        "(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
+        segments.get(10).toString());
   }
 
-  @Test(expected=ReaperException.class)
+  @Test(expected = ReaperException.class)
   public void testZeroSizeRange() throws Exception {
     List<String> tokenStrings = Lists.newArrayList(
         "0", "1",
@@ -91,7 +88,7 @@ public class SegmentGeneratorTest {
     List<BigInteger> tokens = Lists.transform(tokenStrings, new Function<String, BigInteger>() {
       @Nullable
       @Override
-      public BigInteger apply(@Nullable String s) {
+      public BigInteger apply(String s) {
         return new BigInteger(s);
       }
     });
@@ -109,7 +106,7 @@ public class SegmentGeneratorTest {
     List<BigInteger> tokens = Lists.transform(tokenStrings, new Function<String, BigInteger>() {
       @Nullable
       @Override
-      public BigInteger apply(@Nullable String s) {
+      public BigInteger apply(String s) {
         return new BigInteger(s);
       }
     });
@@ -117,15 +114,16 @@ public class SegmentGeneratorTest {
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
     List<RingRange> segments = generator.generateSegments(10, tokens);
     assertEquals(15, segments.size());
-    assertEquals("(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
-                 segments.get(4).toString());
+    assertEquals(
+        "(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
+        segments.get(4).toString());
     assertEquals("(5,6]",
-                 segments.get(9).toString());
+        segments.get(9).toString());
     assertEquals("(56713727820156410577229101238628035242,56713727820156410577229101238628035243]",
-                 segments.get(14).toString());
+        segments.get(14).toString());
   }
 
-  @Test(expected=ReaperException.class)
+  @Test(expected = ReaperException.class)
   public void testDisorderedRing() throws Exception {
     List<String> tokenStrings = Lists.newArrayList(
         "0", "113427455640312821154458202477256070485", "1",
@@ -134,7 +132,7 @@ public class SegmentGeneratorTest {
     List<BigInteger> tokens = Lists.transform(tokenStrings, new Function<String, BigInteger>() {
       @Nullable
       @Override
-      public BigInteger apply(@Nullable String s) {
+      public BigInteger apply(String s) {
         return new BigInteger(s);
       }
     });

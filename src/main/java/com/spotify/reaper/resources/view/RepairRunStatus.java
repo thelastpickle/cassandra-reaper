@@ -15,11 +15,12 @@ package com.spotify.reaper.resources.view;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
-
+import com.spotify.reaper.core.RepairUnit;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+
+import java.util.Collection;
 
 /**
  * Contains the data to be shown when querying repair run status.
@@ -28,18 +29,20 @@ public class RepairRunStatus {
 
   public static final String TIMESTAMP_ISO8601_YODA_TEMPLATE = "YYYY-MM-dd'T'HH:mm:ss'Z'";
 
+  @JsonProperty
   private final String cause;
 
+  @JsonProperty
   private final String owner;
 
-  @JsonProperty("id")
+  @JsonProperty
   private final long id;
 
   @JsonProperty("cluster_name")
   private final String clusterName;
 
-  @JsonProperty("table_name")
-  private final String columnFamilyName;
+  @JsonProperty("column_families")
+  private final Collection<String> columnFamilies;
 
   @JsonProperty("keyspace_name")
   private final String keyspaceName;
@@ -56,6 +59,7 @@ public class RepairRunStatus {
   @JsonIgnore
   private final DateTime endTime;
 
+  @JsonProperty
   private final double intensity;
 
   @JsonProperty("segment_count")
@@ -88,6 +92,9 @@ public class RepairRunStatus {
     return endTime.toDateTime(DateTimeZone.UTC).toString(TIMESTAMP_ISO8601_YODA_TEMPLATE);
   }
 
+  @JsonProperty("snapshot_repair")
+  private final boolean snapshotRepair;
+
   public void setSegmentsRepaired(int segmentsRepaired) {
     this.segmentsRepaired = segmentsRepaired;
   }
@@ -100,18 +107,19 @@ public class RepairRunStatus {
     return this.runState;
   }
 
-  public RepairRunStatus(RepairRun repairRun, ColumnFamily columnFamily) {
+  public RepairRunStatus(RepairRun repairRun, RepairUnit repairUnit) {
     this.id = repairRun.getId();
     this.cause = repairRun.getCause();
     this.owner = repairRun.getOwner();
     this.clusterName = repairRun.getClusterName();
-    this.columnFamilyName = columnFamily.getName();
-    this.keyspaceName = columnFamily.getKeyspaceName();
+    this.columnFamilies = repairUnit.getColumnFamilies();
+    this.keyspaceName = repairUnit.getKeyspaceName();
     this.runState = repairRun.getRunState().name();
     this.creationTime = repairRun.getCreationTime();
     this.startTime = repairRun.getStartTime();
     this.endTime = repairRun.getEndTime();
     this.intensity = repairRun.getIntensity();
-    this.segmentCount = columnFamily.getSegmentCount();
+    this.segmentCount = repairUnit.getSegmentCount();
+    this.snapshotRepair = repairUnit.isSnapshotRepair();
   }
 }
