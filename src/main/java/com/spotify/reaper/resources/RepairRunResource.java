@@ -30,7 +30,6 @@ import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
 import com.spotify.reaper.storage.IStorage;
 
-import org.apache.cassandra.db.Column;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -168,8 +167,8 @@ public class RepairRunResource {
       if (isResuming(oldState, newState)) {
         return resumeRun(repairRun, table);
       }
-      String errMsg = String.format("Transition %s->%s not supported.", newState.toString(),
-        oldState.toString());
+      String errMsg = String.format("Transition %s->%s not supported.", oldState.toString(),
+        newState.toString());
       LOG.error(errMsg);
       return Response.status(501).entity(errMsg).build();
     } catch (ReaperException e) {
@@ -198,7 +197,7 @@ public class RepairRunResource {
       .startTime(DateTime.now())
       .build(repairRun.getId());
     storage.updateRepairRun(updatedRun);
-    RepairRunner.startNewRepairRun(storage, repairRun.getId(), jmxFactory);
+    RepairRunner.startRepairRun(storage, repairRun.getId(), jmxFactory);
     return Response.status(Response.Status.OK).entity(new RepairRunStatus(repairRun, table))
       .build();
   }
