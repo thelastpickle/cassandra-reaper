@@ -37,6 +37,7 @@ public class RingRange {
 
   /**
    * Returns the size of this range
+   *
    * @return size of the range, max - range, in case of wrap
    */
   public BigInteger span(BigInteger ringSize) {
@@ -54,15 +55,12 @@ public class RingRange {
     if (!this.isWrapping() && !other.isWrapping()) {
       return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
           SegmentGenerator.lowerThanOrEqual(other.end, end);
-    }
-    else if (!this.isWrapping() && other.isWrapping()) {
+    } else if (!this.isWrapping() && other.isWrapping()) {
       return false;
-    }
-    else if (this.isWrapping() && !other.isWrapping()) {
+    } else if (this.isWrapping() && !other.isWrapping()) {
       return SegmentGenerator.greaterThanOrEqual(other.start, start) ||
           SegmentGenerator.lowerThanOrEqual(other.end, end);
-    }
-    else { // if (this.isWrapping() && other.isWrapping())
+    } else { // if (this.isWrapping() && other.isWrapping())
       return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
           SegmentGenerator.lowerThanOrEqual(other.end, end);
     }

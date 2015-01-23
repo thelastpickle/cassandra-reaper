@@ -13,19 +13,17 @@
  */
 package com.spotify.reaper.storage;
 
+import com.google.common.base.Optional;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
-import com.spotify.reaper.storage.postgresql.BigIntegerArgumentFactory;
-import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
-import com.spotify.reaper.storage.postgresql.PostgresArrayArgumentFactory;
-import com.spotify.reaper.storage.postgresql.RunStateArgumentFactory;
-import com.spotify.reaper.storage.postgresql.StateArgumentFactory;
-
+import com.spotify.reaper.storage.postgresql.*;
+import io.dropwizard.jdbi.DBIFactory;
+import io.dropwizard.setup.Environment;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.slf4j.Logger;
@@ -34,11 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import javax.annotation.Nullable;
-
-import io.dropwizard.jdbi.DBIFactory;
-import io.dropwizard.setup.Environment;
+import java.util.Set;
 
 /**
  * Implements the StorageAPI using PostgreSQL database.
@@ -69,12 +63,12 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Cluster getCluster(String clusterName) {
+  public Optional<Cluster> getCluster(String clusterName) {
     Cluster result;
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getCluster(clusterName);
     }
-    return result;
+    return result == null ? Optional.<Cluster>absent() : Optional.of(result);
   }
 
   @Override
@@ -99,7 +93,7 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Cluster addCluster(Cluster newCluster) {
+  public boolean addCluster(Cluster newCluster) {
     Cluster result = null;
     try (Handle h = jdbi.open()) {
       int rowsAdded = getPostgresStorage(h).insertCluster(newCluster);
@@ -109,7 +103,7 @@ public class PostgresStorage implements IStorage {
         result = newCluster; // no created id, as cluster name used for primary key
       }
     }
-    return result;
+    return result != null;
   }
 
   @Override
@@ -127,12 +121,12 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public RepairRun getRepairRun(long id) {
+  public Optional<RepairRun> getRepairRun(long id) {
     RepairRun result;
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairRun(id);
     }
-    return result;
+    return result == null ? Optional.<RepairRun>absent() : Optional.of(result);
   }
 
   @Override
@@ -178,32 +172,32 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public ColumnFamily addColumnFamily(ColumnFamily.Builder newColumnFamily) {
-    ColumnFamily result;
+  public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
+    long insertedId;
     try (Handle h = jdbi.open()) {
-      long insertedId = getPostgresStorage(h).insertColumnFamily(newColumnFamily.build(-1));
-      result = newColumnFamily.build(insertedId);
+      insertedId = getPostgresStorage(h).insertRepairUnit(newRepairUnit.build(-1));
     }
-    return result;
+    return newRepairUnit.build(insertedId);
   }
 
   @Override
-  public ColumnFamily getColumnFamily(long id) {
-    ColumnFamily result;
+  public Optional<RepairUnit> getRepairUnit(long id) {
+    RepairUnit result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getColumnFamily(id);
+      result = getPostgresStorage(h).getRepairUnit(id);
     }
-    return result;
+    return result == null ? Optional.<RepairUnit>absent() : Optional.of(result);
   }
 
   @Override
-  public ColumnFamily getColumnFamily(String clusterName, String keyspaceName, String tableName) {
-    ColumnFamily result;
+  public Optional<RepairUnit> getRepairUnit(String clusterName, String keyspaceName,
+      Set<String> columnFamilies) {
+    RepairUnit result;
     try (Handle h = jdbi.open()) {
       IStoragePostgreSQL storage = getPostgresStorage(h);
-      result = storage.getColumnFamilyByClusterAndName(clusterName, keyspaceName, tableName);
+      result = storage.getRepairUnitByClusterAndTables(clusterName, keyspaceName, columnFamilies);
     }
-    return result;
+    return result == null ? Optional.<RepairUnit>absent() : Optional.of(result);
   }
 
   @Override
@@ -232,48 +226,36 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public RepairSegment getRepairSegment(long id) {
+  public Optional<RepairSegment> getRepairSegment(long id) {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairSegment(id);
     }
-    return result;
+    return result == null ? Optional.<RepairSegment>absent() : Optional.of(result);
   }
 
   @Override
-  public RepairSegment getNextFreeSegment(long runId) {
+  public Optional<RepairSegment> getNextFreeSegment(long runId) {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getNextFreeRepairSegment(runId);
     }
-    return result;
+    return result == null ? Optional.<RepairSegment>absent() : Optional.of(result);
   }
 
   @Override
-  public RepairSegment getNextFreeSegmentInRange(long runId, RingRange range) {
+  public Optional<RepairSegment> getNextFreeSegmentInRange(long runId, RingRange range) {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
       IStoragePostgreSQL storage = getPostgresStorage(h);
       result = storage.getNextFreeRepairSegmentOnRange(runId, range.getStart(), range.getEnd());
     }
-    return result;
+    return result == null ? Optional.<RepairSegment>absent() : Optional.of(result);
   }
 
-  @Nullable
-  @Override
-  public RepairSegment getTheRunningSegment(long runId) {
-    RepairSegment result = null;
-    try (Handle h = jdbi.open()) {
-      Collection<RepairSegment> segments = getPostgresStorage(h)
-          .getRepairSegmentForRunWithState(runId, RepairSegment.State.RUNNING);
-      if (null != segments) {
-        assert segments.size() < 2 : "there are more than one RUNNING segment on run: " + runId;
-        if (segments.size() == 1) {
-          result = segments.iterator().next();
-        }
-      }
-    }
-    return result;
+  @Override public Collection<RepairSegment> getSegmentsWithStateForRun(long runId,
+      RepairSegment.State segmentState) {
+    return null;
   }
 
   @Override

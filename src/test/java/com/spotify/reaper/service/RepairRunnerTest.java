@@ -15,17 +15,17 @@ package com.spotify.reaper.service;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-
+import com.google.common.collect.Sets;
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.ColumnFamily;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
-
 import org.apache.cassandra.service.ActiveRepairService;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -36,13 +36,11 @@ import org.mockito.stubbing.Answer;
 
 import java.math.BigInteger;
 import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -92,12 +90,12 @@ public class RepairRunnerTest {
     Thread.sleep(200);
 
     // check if the start time was properly set
-    DateTime startTime = storage.getRepairRun(RUN_ID).getStartTime();
+    DateTime startTime = storage.getRepairRun(RUN_ID).get().getStartTime();
     assertNotNull(startTime);
     assertEquals(TIME_START, startTime.getMillis());
 
     // end time will also be set immediately
-    DateTime endTime = storage.getRepairRun(RUN_ID).getEndTime();
+    DateTime endTime = storage.getRepairRun(RUN_ID).get().getEndTime();
     assertNotNull(endTime);
     assertEquals(TIME_START, endTime.getMillis());
   }
@@ -106,7 +104,7 @@ public class RepairRunnerTest {
   public void testHangingRepair() throws ReaperException, InterruptedException {
     final String CLUSTER_NAME = "reaper";
     final String KS_NAME = "reaper";
-    final String CF_NAME = "reaper";
+    final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final long TIME_RUN = 41l;
     final long TIME_RERUN = 42l;
     final double INTENSITY = 0.5f;
@@ -114,8 +112,8 @@ public class RepairRunnerTest {
     final IStorage storage = new MemoryStorage();
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
-    ColumnFamily cf =
-        storage.addColumnFamily(new ColumnFamily.Builder(CLUSTER_NAME, KS_NAME, CF_NAME, 1, false));
+    RepairUnit cf =
+        storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, 1, false));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY));
@@ -123,11 +121,12 @@ public class RepairRunnerTest {
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE),
             cf.getId())), run.getId());
     final long RUN_ID = run.getId();
-    final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).getId();
+    final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
     RepairRunner.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    assertEquals(storage.getRepairSegment(SEGMENT_ID).getState(), RepairSegment.State.NOT_STARTED);
+    assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
+        RepairSegment.State.NOT_STARTED);
     RepairRunner.startRepairRun(storage, RUN_ID, new JmxConnectionFactory() {
       final AtomicInteger repairAttempts = new AtomicInteger(0);
 
@@ -140,12 +139,12 @@ public class RepairRunnerTest {
         when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
             .thenReturn(Lists.newArrayList(""));
         when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-            anyString())).then(
+            Sets.newHashSet(anyString()))).then(
             new Answer<Integer>() {
               @Override
               public Integer answer(InvocationOnMock invocation) throws Throwable {
                 assertEquals(RepairSegment.State.NOT_STARTED,
-                    storage.getRepairSegment(SEGMENT_ID).getState());
+                    storage.getRepairSegment(SEGMENT_ID).get().getState());
 
                 final int repairNumber = repairAttempts.getAndIncrement();
                 switch (repairNumber) {
@@ -156,7 +155,7 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, ActiveRepairService.Status.STARTED, null);
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(SEGMENT_ID).getState());
+                            storage.getRepairSegment(SEGMENT_ID).get().getState());
                       }
                     }.start();
                     break;
@@ -167,11 +166,11 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, ActiveRepairService.Status.STARTED, null);
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(SEGMENT_ID).getState());
+                            storage.getRepairSegment(SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, ActiveRepairService.Status.SESSION_SUCCESS, null);
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(SEGMENT_ID).getState());
+                            storage.getRepairSegment(SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, ActiveRepairService.Status.FINISHED, null);
                       }
@@ -190,14 +189,14 @@ public class RepairRunnerTest {
     // TODO: refactor so that we can properly wait for the repair runner to finish rather than
     // TODO: using this sleep().
     Thread.sleep(600);
-    assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).getRunState());
+    assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }
 
   @Test
   public void testResumeRepair() throws InterruptedException {
     final String CLUSTER_NAME = "reaper";
     final String KS_NAME = "reaper";
-    final String CF_NAME = "reaper";
+    final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final long TIME_RUN = 41l;
     final long TIME_RERUN = 42l;
     final double INTENSITY = 0.5f;
@@ -205,23 +204,24 @@ public class RepairRunnerTest {
     final IStorage storage = new MemoryStorage();
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
-    long cf =
-        storage.addColumnFamily(new ColumnFamily.Builder(CLUSTER_NAME, KS_NAME, CF_NAME, 1, false))
-            .getId();
+    long cf = storage.addRepairUnit(
+        new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, 1, false)).getId();
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY));
     storage.addRepairSegments(Lists.newArrayList(
-        new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE), cf).state(
-            RepairSegment.State.RUNNING).startTime(DateTime.now()).coordinatorHost("reaper").repairCommandId(1337),
+        new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE), cf)
+            .state(RepairSegment.State.RUNNING).startTime(DateTime.now()).coordinatorHost("reaper")
+            .repairCommandId(1337),
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO), cf)
     ), run.getId());
     final long RUN_ID = run.getId();
-    final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).getId();
+    final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
     RepairRunner.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    assertEquals(storage.getRepairSegment(SEGMENT_ID).getState(), RepairSegment.State.NOT_STARTED);
+    assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
+        RepairSegment.State.NOT_STARTED);
     JmxConnectionFactory factory = new JmxConnectionFactory() {
       @Override
       public JmxProxy create(final Optional<RepairStatusHandler> handler, String host)
@@ -232,12 +232,12 @@ public class RepairRunnerTest {
         when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
             .thenReturn(Lists.newArrayList(""));
         when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-            anyString())).then(
+            Sets.newHashSet(anyString()))).then(
             new Answer<Integer>() {
               @Override
               public Integer answer(InvocationOnMock invocation) throws Throwable {
                 assertEquals(RepairSegment.State.NOT_STARTED,
-                    storage.getRepairSegment(SEGMENT_ID).getState());
+                    storage.getRepairSegment(SEGMENT_ID).get().getState());
                 new Thread() {
                   @Override
                   public void run() {
@@ -253,12 +253,12 @@ public class RepairRunnerTest {
       }
     };
 
-    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).getRunState());
+    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
     RepairRunner.resumeRunningRepairRuns(storage, factory);
-    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).getRunState());
+    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
     storage.updateRepairRun(run.with().runState(RepairRun.RunState.RUNNING).build(RUN_ID));
     RepairRunner.resumeRunningRepairRuns(storage, factory);
     Thread.sleep(100);
-    assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).getRunState());
+    assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }
 }

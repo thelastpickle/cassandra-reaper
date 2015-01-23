@@ -16,7 +16,6 @@ package com.spotify.reaper.service;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.spotify.reaper.ReaperException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,6 +160,5 @@ public class SegmentGenerator {
   public static boolean greaterThanOrEqual(BigInteger a, BigInteger b) {
     return a.compareTo(b) >= 0;
   }
-
 
 }

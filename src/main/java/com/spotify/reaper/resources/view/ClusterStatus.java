@@ -35,6 +35,9 @@ public class ClusterStatus {
   @JsonProperty("repair_run_ids")
   private Collection<Long> repairRunIds;
 
+  @JsonProperty()
+  private Collection<String> keyspaces;
+
   public ClusterStatus(Cluster cluster) {
     this.clusterName = cluster.getName();
     this.partitioner = cluster.getPartitioner();
@@ -59,5 +62,9 @@ public class ClusterStatus {
 
   public void setRepairRunIds(Collection<Long> repairRunIds) {
     this.repairRunIds = repairRunIds;
+  }
+
+  public void setKeyspaces(Collection<String> keyspaces) {
+    this.keyspaces = keyspaces;
   }
 }

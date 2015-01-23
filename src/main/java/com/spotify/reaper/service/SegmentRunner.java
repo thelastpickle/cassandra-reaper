@@ -16,9 +16,10 @@ package com.spotify.reaper.service;
 import com.google.common.base.Optional;
 
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
-import com.spotify.reaper.core.ColumnFamily;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.storage.IStorage;
 
@@ -75,12 +76,11 @@ public final class SegmentRunner implements RepairStatusHandler {
 
   private void runRepair(Collection<String> potentialCoordinators,
       JmxConnectionFactory jmxConnectionFactory, long timeoutMillis) {
-    final RepairSegment segment = storage.getRepairSegment(segmentId);
+    final RepairSegment segment = storage.getRepairSegment(segmentId).get();
     try (JmxProxy jmxConnection = jmxConnectionFactory
         .connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators)) {
-      ColumnFamily columnFamily =
-          storage.getColumnFamily(segment.getColumnFamilyId());
-      String keyspace = columnFamily.getKeyspaceName();
+      RepairUnit repairUnit = storage.getRepairUnit(segment.getRepairUnitId()).get();
+      String keyspace = repairUnit.getKeyspaceName();
 
       if (!canRepair(jmxConnection, segment)) {
         postpone(segment);
@@ -88,9 +88,8 @@ public final class SegmentRunner implements RepairStatusHandler {
       }
 
       synchronized (condition) {
-        commandId = jmxConnection
-            .triggerRepair(segment.getStartToken(), segment.getEndToken(), keyspace,
-                columnFamily.getName());
+        commandId = jmxConnection.triggerRepair(segment.getStartToken(), segment.getEndToken(),
+            keyspace, repairUnit.getColumnFamilies());
         LOG.debug("Triggered repair with command id {}", commandId);
         storage.updateRepairSegment(segment.with()
             .state(RepairSegment.State.RUNNING)
@@ -104,7 +103,7 @@ public final class SegmentRunner implements RepairStatusHandler {
         } catch (InterruptedException e) {
           LOG.warn("Repair command {} on segment {} interrupted", commandId, segmentId);
         } finally {
-          RepairSegment resultingSegment = storage.getRepairSegment(segmentId);
+          RepairSegment resultingSegment = storage.getRepairSegment(segmentId).get();
           LOG.info("Repair command {} on segment {} exited with state {}", commandId, segmentId,
               resultingSegment.getState());
           if (resultingSegment.getState().equals(RepairSegment.State.RUNNING)) {
@@ -163,7 +162,7 @@ public final class SegmentRunner implements RepairStatusHandler {
         return;
       }
 
-      RepairSegment currentSegment = storage.getRepairSegment(segmentId);
+      RepairSegment currentSegment = storage.getRepairSegment(segmentId).get();
       // See status explanations from: https://wiki.apache.org/cassandra/RepairAsyncAPI
       switch (status) {
         case STARTED:
