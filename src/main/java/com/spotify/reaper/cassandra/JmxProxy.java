@@ -45,6 +45,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private static final int JMX_PORT = 7199;
   private static final String JMX_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
   private static final String SS_OBJECT_NAME = "org.apache.cassandra.db:type=StorageService";
+  private static final String AES_OBJECT_NAME =
+      "org.apache.cassandra.internal:type=AntiEntropySessions";
 
   private final JMXConnector jmxConnector;
   private final ObjectName ssMbeanName;
@@ -108,8 +110,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
           JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean.class);
       CompactionManagerMBean cmProxy =
           JMX.newMBeanProxy(mbeanServerConn, cmMbeanName, CompactionManagerMBean.class);
-      JmxProxy proxy = new JmxProxy(handler, host, jmxConn, ssProxy, ssMbeanName,
-          mbeanServerConn, cmProxy);
+      JmxProxy proxy =
+          new JmxProxy(handler, host, jmxConn, ssProxy, ssMbeanName, mbeanServerConn, cmProxy);
       // registering a listener throws bunch of exceptions, so we do it here rather than in the
       // constructor
       mbeanServerConn.addNotificationListener(ssMbeanName, proxy, null, null);
@@ -212,6 +214,31 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   public int getPendingCompactions() {
     checkNotNull(cmProxy, "Looks like the proxy is not connected");
     return cmProxy.getPendingTasks();
+  }
+
+  /**
+   * @return true if any repairs are running on the node.
+   */
+  public boolean isRepairRunning() {
+    // Check if AntiEntropySession is actually running on the node
+    try {
+      ObjectName name = new ObjectName(AES_OBJECT_NAME);
+      int activeCount = (Integer) mbeanServer.getAttribute(name, "ActiveCount");
+      long pendingCount = (Long) mbeanServer.getAttribute(name, "PendingTasks");
+      return activeCount + pendingCount != 0;
+    } catch (IOException ignored) {
+      LOG.warn("Failed to connect to " + host + " using JMX");
+    } catch (MalformedObjectNameException ignored) {
+      LOG.error("Internal error, malformed name");
+    } catch (InstanceNotFoundException e) {
+      // This happens if no repair has yet been run on the node
+      // The AntiEntropySessions object is created on the first repair
+      return false;
+    } catch (Exception e) {
+      LOG.error("Error getting attribute from JMX", e);
+    }
+    // If uncertain, assume it's running
+    return true;
   }
 
   /**
