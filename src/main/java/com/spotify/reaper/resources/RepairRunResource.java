@@ -78,7 +78,7 @@ public class RepairRunResource {
 
   /**
    * Endpoint used to create a repair run. Does not allow triggering the run. triggerRepairRun()
-   * must be called to initiate the repair. Creating a repair run includes generating repair
+   * must be called to initiate the repair. Creating a repair run includes generating the repair
    * segments.
    * <p/>
    * Notice that query parameter "tables" can be a single String, or a comma-separated list
@@ -148,6 +148,8 @@ public class RepairRunResource {
           LOG.warn("stored repair unit already exists, and segment count given, "
               + "which is thus ignored");
         }
+        LOG.info("use existing repair unit for cluster '{}', keyspace '{}', and column families: {}",
+                 clusterName.get(), keyspace.get(), tableNames);
         theRepairUnit = storedRepairUnit.get();
       } else {
         int segments = config.getSegmentCount();
@@ -217,16 +219,18 @@ public class RepairRunResource {
     if (isStarting(oldState, newState)) {
       return startRun(repairRun.get(), repairUnit.get());
     }
-    if (isPausing(oldState, newState)) {
+    else if (isPausing(oldState, newState)) {
       return pauseRun(repairRun.get(), repairUnit.get());
     }
-    if (isResuming(oldState, newState)) {
+    else if (isResuming(oldState, newState)) {
       return resumeRun(repairRun.get(), repairUnit.get());
     }
-    String errMsg = String.format("Transition %s->%s not supported.", oldState.toString(),
-        newState.toString());
-    LOG.error(errMsg);
-    return Response.status(501).entity(errMsg).build();
+    else {
+      String errMsg = String.format("Transition %s->%s not supported.", oldState.toString(),
+                                    newState.toString());
+      LOG.error(errMsg);
+      return Response.status(Response.Status.BAD_REQUEST).entity(errMsg).build();
+    }
   }
 
   private boolean isStarting(RepairRun.RunState oldState, RepairRun.RunState newState) {

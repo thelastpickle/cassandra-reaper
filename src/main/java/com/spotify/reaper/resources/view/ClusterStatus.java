@@ -32,8 +32,8 @@ public class ClusterStatus {
   @JsonProperty("seed_hosts")
   private final Collection<String> seedHosts;
 
-  @JsonProperty("repair_run_ids")
-  private Collection<Long> repairRunIds;
+  @JsonProperty("repair_runs")
+  private Collection<Collection<Object>> repairRuns;
 
   @JsonProperty()
   private Collection<String> keyspaces;
@@ -56,12 +56,12 @@ public class ClusterStatus {
     return seedHosts;
   }
 
-  public Collection<Long> getRepairRunIds() {
-    return repairRunIds;
+  public Collection<Collection<Object>> getRepairRuns() {
+    return repairRuns;
   }
 
-  public void setRepairRunIds(Collection<Long> repairRunIds) {
-    this.repairRunIds = repairRunIds;
+  public void setRepairRunIds(Collection<Collection<Object>> repairRuns) {
+    this.repairRuns = repairRuns;
   }
 
   public void setKeyspaces(Collection<String> keyspaces) {

@@ -14,9 +14,9 @@
 package com.spotify.reaper.storage.postgresql;
 
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.core.RepairUnit;
 
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.BindBean;
@@ -73,14 +73,14 @@ public interface IStoragePostgreSQL {
   // RepairRun
   //
   static final String SQL_REPAIR_RUN_ALL_FIELDS_NO_ID =
-      "cluster_name, column_family_id, cause, owner, state, creation_time, "
+      "cluster_name, repair_unit_id, cause, owner, state, creation_time, "
           + "start_time, end_time, pause_time, intensity";
 
   static final String SQL_REPAIR_RUN_ALL_FIELDS = "id, " + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID;
 
   static final String SQL_INSERT_REPAIR_RUN =
       "INSERT INTO repair_run (" + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID + ") VALUES "
-          + "(:clusterName, :columnFamilyId, :cause, :owner, :runState, :creationTime, "
+          + "(:clusterName, :repairUnitId, :cause, :owner, :runState, :creationTime, "
           + ":startTime, :endTime, :pauseTime, :intensity)";
 
   static final String SQL_UPDATE_REPAIR_RUN =
@@ -124,20 +124,20 @@ public interface IStoragePostgreSQL {
   static final String SQL_REPAIR_UNIT_ALL_FIELDS = "id, " + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID;
 
   static final String SQL_INSERT_REPAIR_UNIT =
-      "INSERT INTO column_family (" + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID + ") VALUES "
+      "INSERT INTO repair_unit (" + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID + ") VALUES "
           + "(:clusterName, :keyspaceName, :columnFamilies, :segmentCount, :snapshotRepair)";
 
   static final String SQL_GET_REPAIR_UNIT =
-      "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM column_family WHERE id = :id";
+      "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM repair_unit WHERE id = :id";
 
   static final String SQL_GET_REPAIR_UNIT_BY_CLUSTER_AND_TABLES =
-      "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM column_family "
+      "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM repair_unit "
           + "WHERE cluster_name = :clusterName AND keyspace_name = :keyspaceName "
           + "AND column_families @> :columnFamilies AND column_families <@ :columnFamilies";
 
   @SqlQuery(SQL_GET_REPAIR_UNIT)
   @Mapper(RepairUnitMapper.class)
-  public RepairUnit getRepairUnit(@Bind("id") long columnFamilyId);
+  public RepairUnit getRepairUnit(@Bind("id") long repairUnitId);
 
   @SqlQuery(SQL_GET_REPAIR_UNIT_BY_CLUSTER_AND_TABLES)
   @Mapper(RepairUnitMapper.class)
@@ -152,17 +152,17 @@ public interface IStoragePostgreSQL {
   // RepairSegment
   //
   static final String SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID =
-      "column_family_id, run_id, start_token, end_token, state, start_time, end_time, fail_count";
+      "repair_unit_id, run_id, start_token, end_token, state, start_time, end_time, fail_count";
 
   static final String SQL_REPAIR_SEGMENT_ALL_FIELDS = "id, " + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID;
 
   static final String SQL_INSERT_REPAIR_SEGMENT =
       "INSERT INTO repair_segment (" + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID + ") VALUES "
-          + "(:columnFamilyId, :runId, :startToken, :endToken, :state, :startTime, :endTime, "
+          + "(:repairUnitId, :runId, :startToken, :endToken, :state, :startTime, :endTime, "
           + ":failCount)";
 
   static final String SQL_UPDATE_REPAIR_SEGMENT =
-      "UPDATE repair_segment SET column_family_id = :columnFamilyId, run_id = :runId, "
+      "UPDATE repair_segment SET repair_unit_id = :repairUnitId, run_id = :runId, "
           + "start_token = :startToken, end_token = :endToken, state = :state, "
           + "start_time = :startTime, end_time = :endTime, fail_count = :failCount WHERE id = :id";
 

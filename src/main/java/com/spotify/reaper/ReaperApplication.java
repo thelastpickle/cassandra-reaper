@@ -118,7 +118,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   void reloadConfiguration() {
     // TODO: reload configuration, but how?
-    LOG.warn("SIGHUP signal dropped, missing implementation");
+    LOG.warn("SIGHUP signal dropped, missing implementation for configuration reload");
   }
 
   private void addSignalHandlers() {

@@ -46,7 +46,7 @@ public interface IStorage {
 
   Collection<RepairRun> getRepairRunsForCluster(String clusterName);
 
-  Collection<RepairRun> getAllRunningRepairRuns();
+  Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState);
 
   RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit);
 
@@ -73,8 +73,7 @@ public interface IStorage {
 
   Optional<RepairSegment> getNextFreeSegmentInRange(long runId, RingRange range);
 
-  Collection<RepairSegment> getSegmentsWithStateForRun(long runId,
-      RepairSegment.State segmentState);
+  Collection<RepairSegment> getSegmentsWithState(long runId, RepairSegment.State segmentState);
 
   Collection<Long> getRepairRunIdsForCluster(String clusterName);
 

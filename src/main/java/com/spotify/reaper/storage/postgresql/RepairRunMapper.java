@@ -28,7 +28,7 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
   public RepairRun map(int index, ResultSet r, StatementContext ctx) throws SQLException {
     RepairRun.RunState runState = RepairRun.RunState.valueOf(r.getString("state"));
     RepairRun.Builder repairRunBuilder = new RepairRun.Builder(r.getString("cluster_name"),
-        r.getLong("column_family_id"), getDateTimeOrNull(r, "creation_time"),
+        r.getLong("repair_unit_id"), getDateTimeOrNull(r, "creation_time"),
         r.getFloat("intensity"));
     return repairRunBuilder
         .runState(runState)
@@ -40,8 +40,8 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
         .build(r.getLong("id"));
   }
 
-  static DateTime getDateTimeOrNull(ResultSet r, String columnName) throws SQLException {
-    Timestamp timestamp = r.getTimestamp(columnName);
+  static DateTime getDateTimeOrNull(ResultSet r, String dbColumnName) throws SQLException {
+    Timestamp timestamp = r.getTimestamp(dbColumnName);
     DateTime result = null;
     if (null != timestamp) {
       result = new DateTime(timestamp);

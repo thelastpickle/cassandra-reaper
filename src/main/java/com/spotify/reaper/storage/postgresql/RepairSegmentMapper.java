@@ -28,7 +28,7 @@ public class RepairSegmentMapper implements ResultSetMapper<RepairSegment> {
     RingRange range = new RingRange(r.getBigDecimal("start_token").toBigInteger(),
         r.getBigDecimal("end_token").toBigInteger());
     RepairSegment.Builder repairSegmentBuilder =
-        new RepairSegment.Builder(r.getLong("run_id"), range, r.getLong("column_family_id"));
+        new RepairSegment.Builder(r.getLong("run_id"), range, r.getLong("repair_unit_id"));
     return repairSegmentBuilder
         .state(RepairSegment.State.values()[r.getInt("state")])
         .startTime(RepairRunMapper.getDateTimeOrNull(r, "start_time"))

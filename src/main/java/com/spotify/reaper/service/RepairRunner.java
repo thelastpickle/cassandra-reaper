@@ -14,15 +14,16 @@
 package com.spotify.reaper.service;
 
 import com.google.common.base.Optional;
+
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
-import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.storage.IStorage;
+
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,9 +55,9 @@ public class RepairRunner implements Runnable {
    */
   public static void resumeRunningRepairRuns(IStorage storage,
       JmxConnectionFactory jmxConnectionFactory) {
-    for (RepairRun repairRun : storage.getAllRunningRepairRuns()) {
+    for (RepairRun repairRun : storage.getRepairRunsWithState(RepairRun.RunState.RUNNING)) {
       Collection<RepairSegment> runningSegments =
-          storage.getSegmentsWithStateForRun(repairRun.getId(), RepairSegment.State.RUNNING);
+          storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
       for (RepairSegment segment : runningSegments) {
         try {
           SegmentRunner.abort(storage, segment,
@@ -68,6 +69,9 @@ public class RepairRunner implements Runnable {
         }
       }
       RepairRunner.startRepairRun(storage, repairRun.getId(), jmxConnectionFactory);
+    }
+    for (RepairRun pausedRepairRun : storage.getRepairRunsWithState(RepairRun.RunState.PAUSED)) {
+      RepairRunner.startRepairRun(storage, pausedRepairRun.getId(), jmxConnectionFactory);
     }
   }
 
@@ -214,7 +218,7 @@ public class RepairRunner implements Runnable {
   private void handleResult(long segmentId) {
     RepairSegment segment = storage.getRepairSegment(segmentId).get();
     RepairSegment.State state = segment.getState();
-    LOG.debug("In repair run #{}, triggerRepair on segment {} terminated with state {}",
+    LOG.debug("In repair run #{}, triggerRepair on segment {} ended with state {}",
         repairRunId, segmentId, state);
     switch (state) {
       case NOT_STARTED:

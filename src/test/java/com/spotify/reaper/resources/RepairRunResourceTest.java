@@ -292,7 +292,7 @@ public class RepairRunResourceTest {
         Optional.of(RepairRun.RunState.PAUSED.toString()));
     Thread.sleep(200);
 
-    assertEquals(501, response.getStatus());
+    assertEquals(400, response.getStatus());
     RepairRun repairRun = storage.getRepairRun(runId).get();
     // the run should be paused
     assertEquals(RepairRun.RunState.NOT_STARTED, repairRun.getRunState());
@@ -306,7 +306,7 @@ public class RepairRunResourceTest {
     Response response = resource.modifyRunState(uriInfo, 42l,
         Optional.of(RepairRun.RunState.PAUSED.toString()));
     assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
-    assertEquals(0, storage.getAllRunningRepairRuns().size());
+    assertEquals(0, storage.getRepairRunsWithState(RepairRun.RunState.RUNNING).size());
   }
 
 }

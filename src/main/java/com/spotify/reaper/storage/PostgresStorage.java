@@ -14,6 +14,8 @@
 package com.spotify.reaper.storage;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
@@ -21,9 +23,12 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
-import com.spotify.reaper.storage.postgresql.*;
-import io.dropwizard.jdbi.DBIFactory;
-import io.dropwizard.setup.Environment;
+import com.spotify.reaper.storage.postgresql.BigIntegerArgumentFactory;
+import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
+import com.spotify.reaper.storage.postgresql.PostgresArrayArgumentFactory;
+import com.spotify.reaper.storage.postgresql.RunStateArgumentFactory;
+import com.spotify.reaper.storage.postgresql.StateArgumentFactory;
+
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.slf4j.Logger;
@@ -33,6 +38,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+
+import io.dropwizard.jdbi.DBIFactory;
+import io.dropwizard.setup.Environment;
 
 /**
  * Implements the StorageAPI using PostgreSQL database.
@@ -89,7 +97,7 @@ public class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getClusters();
     }
-    return result;
+    return result != null ? result : Lists.<Cluster>newArrayList();
   }
 
   @Override
@@ -135,16 +143,16 @@ public class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairRunsForCluster(clusterName);
     }
-    return result;
+    return result == null ? Lists.<RepairRun>newArrayList() : result;
   }
 
   @Override
-  public Collection<RepairRun> getAllRunningRepairRuns() {
+  public Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState) {
     Collection<RepairRun> result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getRepairRunsWithState(RepairRun.RunState.RUNNING);
+      result = getPostgresStorage(h).getRepairRunsWithState(runState);
     }
-    return result;
+    return result == null ? Lists.<RepairRun>newArrayList() : result;
   }
 
   @Override
@@ -191,7 +199,7 @@ public class PostgresStorage implements IStorage {
 
   @Override
   public Optional<RepairUnit> getRepairUnit(String clusterName, String keyspaceName,
-      Set<String> columnFamilies) {
+                                            Set<String> columnFamilies) {
     RepairUnit result;
     try (Handle h = jdbi.open()) {
       IStoragePostgreSQL storage = getPostgresStorage(h);
@@ -253,9 +261,14 @@ public class PostgresStorage implements IStorage {
     return result == null ? Optional.<RepairSegment>absent() : Optional.of(result);
   }
 
-  @Override public Collection<RepairSegment> getSegmentsWithStateForRun(long runId,
-      RepairSegment.State segmentState) {
-    return null;
+  @Override
+  public Collection<RepairSegment> getSegmentsWithState(long runId,
+                                                        RepairSegment.State segmentState) {
+    Collection<RepairSegment> result;
+    try (Handle h = jdbi.open()) {
+      result = getPostgresStorage(h).getRepairSegmentForRunWithState(runId, segmentState);
+    }
+    return result;
   }
 
   @Override
