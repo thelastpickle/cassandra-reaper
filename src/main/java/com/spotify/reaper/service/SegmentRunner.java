@@ -96,7 +96,8 @@ public final class SegmentRunner implements RepairStatusHandler {
             .coordinatorHost(coordinator.getHost())
             .repairCommandId(commandId)
             .build(segmentId));
-        LOG.info("Repair for segment {} started", segmentId);
+        LOG.info("Repair for segment {} started, status wait will timeout in {} millis",
+                 segmentId, timeoutMillis);
 
         try {
           condition.await(timeoutMillis, TimeUnit.MILLISECONDS);
@@ -121,19 +122,21 @@ public final class SegmentRunner implements RepairStatusHandler {
 
   boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator,
       JmxConnectionFactory factory) throws ReaperException {
-    Collection<JmxProxy> allHosts = factory.connectAll(
-        coordinator.tokenRangeToEndpoint(keyspace, segment.getTokenRange()));
-    for (JmxProxy host : allHosts) {
-      if (host.getPendingCompactions() > MAX_PENDING_COMPACTIONS) {
-        LOG.warn("SegmentRunner declined to repair segment {} because of too many pending "
-            + "compactions (> {}) on host \"{}\"", segmentId, MAX_PENDING_COMPACTIONS,
-            host.getHost());
-        return false;
-      }
-      if (host.isRepairRunning()) {
-        LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) was "
-                + "already involved in a repair", segmentId, host.getHost());
-        return false;
+    Collection<String> allHosts =
+        coordinator.tokenRangeToEndpoint(keyspace, segment.getTokenRange());
+    for (String hostName : allHosts) {
+      try (JmxProxy hostProxy = factory.connect(hostName)) {
+        if (hostProxy.getPendingCompactions() > MAX_PENDING_COMPACTIONS) {
+          LOG.warn("SegmentRunner declined to repair segment {} because of too many pending "
+                   + "compactions (> {}) on host \"{}\"", segmentId, MAX_PENDING_COMPACTIONS,
+                   hostProxy.getHost());
+          return false;
+        }
+        if (hostProxy.isRepairRunning()) {
+          LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) was "
+                   + "already involved in a repair", segmentId, hostProxy.getHost());
+          return false;
+        }
       }
     }
     return true;
@@ -179,6 +182,8 @@ public final class SegmentRunner implements RepairStatusHandler {
           // We already set the state of the segment to RUNNING.
           break;
         case SESSION_FAILED:
+          LOG.warn("repair session failed for segment with id '{}' and repair number '{}'",
+                   segmentId, repairNumber);
           postpone(currentSegment);
           condition.signalAll();
           break;

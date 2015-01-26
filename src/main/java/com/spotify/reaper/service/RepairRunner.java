@@ -61,7 +61,7 @@ public class RepairRunner implements Runnable {
       for (RepairSegment segment : runningSegments) {
         try {
           SegmentRunner.abort(storage, segment,
-              jmxConnectionFactory.create(segment.getCoordinatorHost()));
+              jmxConnectionFactory.connect(segment.getCoordinatorHost()));
         } catch (ReaperException e) {
           LOG.debug("Tried to abort repair on segment {} marked as RUNNING, but the host was down"
               + " (so abortion won't be needed)", segment.getId());

@@ -91,7 +91,7 @@ public class RepairRunResourceTest {
         Collections.singletonList(""));
     factory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy create(Optional<RepairStatusHandler> handler, String host)
+      public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
           throws ReaperException {
         return proxy;
       }

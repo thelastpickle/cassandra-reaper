@@ -117,7 +117,7 @@ public class RepairRunResource {
             "no cluster found with name '" + clusterName + "'").build();
       }
 
-      JmxProxy jmxProxy = jmxFactory.create(cluster.get().getSeedHosts().iterator().next());
+      JmxProxy jmxProxy = jmxFactory.connect(cluster.get().getSeedHosts().iterator().next());
       Set<String> knownTables = jmxProxy.getTableNamesForKeyspace(keyspace.get());
       if (knownTables.size() == 0) {
         LOG.debug("no known tables for keyspace {} in cluster {}", keyspace.get(),
@@ -367,7 +367,7 @@ public class RepairRunResource {
     }
     for (String host : seedHosts) {
       try {
-        JmxProxy jmxProxy = jmxFactory.create(host);
+        JmxProxy jmxProxy = jmxFactory.connect(host);
         List<BigInteger> tokens = jmxProxy.getTokens();
         segments = sg.generateSegments(repairUnit.getSegmentCount(), tokens);
         jmxProxy.close();

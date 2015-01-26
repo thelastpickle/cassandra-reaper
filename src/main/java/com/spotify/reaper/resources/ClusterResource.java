@@ -144,7 +144,7 @@ public class ClusterResource {
       throws ReaperException {
     String clusterName;
     String partitioner;
-    try (JmxProxy jmxProxy = jmxFactory.create(seedHost)) {
+    try (JmxProxy jmxProxy = jmxFactory.connect(seedHost)) {
       clusterName = jmxProxy.getClusterName();
       partitioner = jmxProxy.getPartitioner();
     } catch (ReaperException e) {

@@ -64,8 +64,10 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     addSignalHandlers(); // SIGHUP, etc.
 
     LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
-    RepairRunner.initializeThreadPool(config.getRepairRunThreadCount(),
-        config.getHangingRepairTimeoutMins(), TimeUnit.MINUTES, 30, TimeUnit.SECONDS);
+    RepairRunner.initializeThreadPool(
+        config.getRepairRunThreadCount(),
+        config.getHangingRepairTimeoutMins(), TimeUnit.MINUTES,
+        30, TimeUnit.SECONDS);
     JmxConnectionFactory jmxConnectionFactory = new JmxConnectionFactory();
 
     LOG.info("initializing storage of type: {}", config.getStorageType());
