@@ -58,6 +58,8 @@ public class RepairRunnerTest {
 
   @Before
   public void setUp() throws Exception {
+    RepairRunner.repairRunners.clear();
+    SegmentRunner.segmentRunners.clear();
     storage = new MemoryStorage();
   }
 

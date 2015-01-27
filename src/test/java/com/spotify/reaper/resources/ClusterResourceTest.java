@@ -72,7 +72,6 @@ public class ClusterResourceTest {
     assertEquals(SEED_HOST, cluster.getSeedHosts().iterator().next());
   }
 
-
   @Test
   public void testAddExistingCluster() throws Exception {
     Cluster cluster = new Cluster(CLUSTER_NAME, PARTITIONER, Sets.newHashSet(SEED_HOST));

@@ -16,10 +16,12 @@ import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.RingRange;
+import com.spotify.reaper.service.SegmentRunner;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 
 import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.cassandra.service.ActiveRepairService;
 import org.joda.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -74,6 +76,9 @@ public class RepairRunResourceTest {
 
   @Before
   public void setUp() throws Exception {
+    RepairRunner.repairRunners.clear();
+    SegmentRunner.segmentRunners.clear();
+
     storage = new MemoryStorage();
     Cluster cluster = new Cluster(CLUSTER_NAME, PARTITIONER, Sets.newHashSet(SEED_HOST));
     storage.addCluster(cluster);
@@ -116,16 +121,15 @@ public class RepairRunResourceTest {
 
   private Response addRepairRun(RepairRunResource resource, UriInfo uriInfo,
                                 String clusterName, String keyspace, Set<String> columnFamilies,
-                                String owner,
-                                String cause, Integer segments) {
+                                String owner, String cause, Integer segments) {
     return resource.addRepairRun(uriInfo,
                                  clusterName == null ? Optional.<String>absent()
                                                      : Optional.of(clusterName),
                                  keyspace == null ? Optional.<String>absent()
                                                   : Optional.of(keyspace),
-                                 columnFamilies == null ?
-                                 Optional.<String>absent() :
-                                 Optional.of(columnFamilies.iterator().next()),
+                                 columnFamilies == null ? Optional.<String>absent()
+                                                        : Optional
+                                     .of(columnFamilies.iterator().next()),
                                  owner == null ? Optional.<String>absent() : Optional.of(owner),
                                  cause == null ? Optional.<String>absent() : Optional.of(cause),
                                  segments == null ? Optional.<Integer>absent()
@@ -188,7 +192,13 @@ public class RepairRunResourceTest {
     assertEquals(RepairRun.RunState.NOT_STARTED.name(), repairRunStatus.getRunState());
 
     // give the executor some time to actually start the run
-    Thread.sleep(200);
+    Thread.sleep(50);
+    RepairRunner repairRunner = RepairRunner.repairRunners.get(runId);
+    SegmentRunner segmentRunner =
+        SegmentRunner.segmentRunners.get(repairRunner.getCurrentlyRunningSegmentId());
+    segmentRunner.handle(segmentRunner.getCurrentCommandId(), ActiveRepairService.Status.STARTED,
+                         "sent a STARTED event from a test");
+    Thread.sleep(50);
 
     RepairRun repairRun = storage.getRepairRun(runId).get();
     assertEquals(RepairRun.RunState.RUNNING, repairRun.getRunState());
@@ -272,12 +282,18 @@ public class RepairRunResourceTest {
     Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
     resource.modifyRunState(uriInfo, runId, newState);
 
-    Thread.sleep(200);
+    Thread.sleep(50);
+    RepairRunner repairRunner = RepairRunner.repairRunners.get(runId);
+    SegmentRunner segmentRunner =
+        SegmentRunner.segmentRunners.get(repairRunner.getCurrentlyRunningSegmentId());
+    segmentRunner.handle(segmentRunner.getCurrentCommandId(), ActiveRepairService.Status.STARTED,
+                         "sent a STARTED event from a test");
+    Thread.sleep(50);
 
     // now pause it
     response = resource.modifyRunState(uriInfo, runId,
                                        Optional.of(RepairRun.RunState.PAUSED.toString()));
-    Thread.sleep(200);
+    Thread.sleep(50);
 
     assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
     RepairRun repairRun = storage.getRepairRun(runId).get();

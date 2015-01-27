@@ -13,7 +13,9 @@
  */
 package com.spotify.reaper.service;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.collect.Maps;
 
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
@@ -30,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -45,6 +48,11 @@ public class RepairRunner implements Runnable {
   private final long repairRunId;
   private final JmxConnectionFactory jmxConnectionFactory;
   private JmxProxy jmxConnection;
+  private Long currentlyRunningSegmentId;
+
+  // Caching all active RepairRunners.
+  @VisibleForTesting
+  public static Map<Long, RepairRunner> repairRunners = Maps.newConcurrentMap();
 
   private RepairRunner(IStorage storage, long repairRunId,
                        JmxConnectionFactory jmxConnectionFactory)
@@ -93,15 +101,24 @@ public class RepairRunner implements Runnable {
 
   public static void startRepairRun(IStorage storage, long repairRunID,
                                     JmxConnectionFactory jmxConnectionFactory) {
-    // TODO: make sure that no more than one RepairRunner is created per RepairRun
     assert null != executor : "you need to initialize the thread pool first";
     LOG.info("scheduling repair for repair run #{}", repairRunID);
     try {
-      executor.submit(new RepairRunner(storage, repairRunID, jmxConnectionFactory));
+      if (repairRunners.containsKey(repairRunID)) {
+        throw new ReaperException("RepairRunner for repair run " + repairRunID + " already exists");
+      }
+      RepairRunner newRunner = new RepairRunner(storage, repairRunID, jmxConnectionFactory);
+      repairRunners.put(repairRunID, newRunner);
+      executor.submit(newRunner);
     } catch (ReaperException e) {
       e.printStackTrace();
       LOG.warn("Failed to schedule repair for repair run #{}", repairRunID);
     }
+  }
+
+  @VisibleForTesting
+  public Long getCurrentlyRunningSegmentId() {
+    return this.currentlyRunningSegmentId;
   }
 
   /**
@@ -109,28 +126,40 @@ public class RepairRunner implements Runnable {
    */
   @Override
   public void run() {
-    RepairRun.RunState state = storage.getRepairRun(repairRunId).get().getRunState();
-    LOG.debug("run() called for repair run #{} with run state {}", repairRunId, state);
-    switch (state) {
-      case NOT_STARTED:
-        start();
-        break;
-      case RUNNING:
-        startNextSegment();
-        break;
-      case PAUSED:
-        executor.schedule(this, retryDelayMillis, TimeUnit.MILLISECONDS);
-        break;
-      case DONE:
-        // We're done. Let go of thread.
-        break;
+    RepairRun repairRun = storage.getRepairRun(repairRunId).get();
+    try {
+      RepairRun.RunState state = repairRun.getRunState();
+      LOG.debug("run() called for repair run #{} with run state {}", repairRunId, state);
+      switch (state) {
+        case NOT_STARTED:
+          start();
+          break;
+        case RUNNING:
+          startNextSegment();
+          break;
+        case PAUSED:
+          executor.schedule(this, retryDelayMillis, TimeUnit.MILLISECONDS);
+          break;
+        case DONE:
+          // We're done. Let go of thread.
+          repairRunners.remove(repairRunId);
+          break;
+      }
+    } catch (ReaperException e) {
+      LOG.error("RepairRun FAILURE");
+      e.printStackTrace();
+      storage.updateRepairRun(repairRun.with()
+                                  .runState(RepairRun.RunState.ERROR)
+                                  .endTime(DateTime.now())
+                                  .build(repairRun.getId()));
+      repairRunners.remove(repairRunId);
     }
   }
 
   /**
    * Starts the repair run.
    */
-  private void start() {
+  private void start() throws ReaperException {
     LOG.info("Repairs for repair run #{} starting", repairRunId);
     RepairRun repairRun = storage.getRepairRun(repairRunId).get();
     boolean success = storage.updateRepairRun(repairRun.with()
@@ -161,7 +190,7 @@ public class RepairRunner implements Runnable {
   /**
    * Get the next segment and repair it. If there is none, we're done.
    */
-  private void startNextSegment() {
+  private void startNextSegment() throws ReaperException {
     // Currently not allowing parallel repairs.
     assert storage.getSegmentAmountForRepairRun(repairRunId, RepairSegment.State.RUNNING) == 0;
     Optional<RepairSegment> nextSegment = storage.getNextFreeSegment(repairRunId);
@@ -178,7 +207,7 @@ public class RepairRunner implements Runnable {
    * @param segmentId  id of the segment to repair.
    * @param tokenRange token range of the segment to repair.
    */
-  private void repairSegment(long segmentId, RingRange tokenRange) {
+  private void repairSegment(long segmentId, RingRange tokenRange) throws ReaperException {
     RepairRun repairRun = storage.getRepairRun(repairRunId).get();
     RepairUnit repairUnit = storage.getRepairUnit(repairRun.getRepairUnitId()).get();
     String keyspace = repairUnit.getKeyspaceName();
@@ -211,6 +240,7 @@ public class RepairRunner implements Runnable {
       return;
     }
 
+    this.currentlyRunningSegmentId = Long.valueOf(segmentId);
     SegmentRunner.triggerRepair(storage, segmentId, potentialCoordinators, repairTimeoutMillis,
                                 jmxConnectionFactory);
 

@@ -13,7 +13,9 @@
  */
 package com.spotify.reaper.service;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.collect.Maps;
 
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
@@ -31,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
@@ -44,17 +47,29 @@ public final class SegmentRunner implements RepairStatusHandler {
   private final Condition condition = new SimpleCondition();
   private int commandId;
 
+  // Caching all active SegmentRunners.
+  @VisibleForTesting
+  public static Map<Long, SegmentRunner> segmentRunners = Maps.newConcurrentMap();
 
   private SegmentRunner(IStorage storage, long segmentId) {
     this.storage = storage;
     this.segmentId = segmentId;
   }
 
+  /**
+   * Triggers a repair for a segment. Is blocking call.
+   * @throws ReaperException
+   */
   public static void triggerRepair(IStorage storage, long segmentId,
                                    Collection<String> potentialCoordinators, long timeoutMillis,
-                                   JmxConnectionFactory jmxConnectionFactory) {
-    new SegmentRunner(storage, segmentId)
-        .runRepair(potentialCoordinators, jmxConnectionFactory, timeoutMillis);
+                                   JmxConnectionFactory jmxConnectionFactory)
+      throws ReaperException {
+    if (segmentRunners.containsKey(segmentId)) {
+      throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
+    }
+    SegmentRunner newSegmentRunner = new SegmentRunner(storage, segmentId);
+    segmentRunners.put(segmentId, newSegmentRunner);
+    newSegmentRunner.runRepair(potentialCoordinators, jmxConnectionFactory, timeoutMillis);
   }
 
   public static void postpone(IStorage storage, RepairSegment segment) {
@@ -66,12 +81,18 @@ public final class SegmentRunner implements RepairStatusHandler {
                                     .startTime(null)
                                     .failCount(segment.getFailCount() + 1)
                                     .build(segment.getId()));
+    segmentRunners.remove(segment.getId());
   }
 
   public static void abort(IStorage storage, RepairSegment segment, JmxProxy jmxConnection) {
     postpone(storage, segment);
     LOG.warn("Aborting command {} on segment {}", segment.getRepairCommandId(), segment.getId());
     jmxConnection.cancelAllRepairs();
+  }
+
+  @VisibleForTesting
+  public int getCurrentCommandId() {
+    return this.commandId;
   }
 
   private void runRepair(Collection<String> potentialCoordinators,
@@ -116,6 +137,7 @@ public final class SegmentRunner implements RepairStatusHandler {
                       resultingSegment.getId(),
                       Seconds.secondsBetween(resultingSegment.getEndTime(),
                                              resultingSegment.getStartTime()));
+            segmentRunners.remove(resultingSegment.getId());
           }
         }
       }
@@ -156,7 +178,6 @@ public final class SegmentRunner implements RepairStatusHandler {
   private void abort(RepairSegment segment, JmxProxy jmxConnection) {
     abort(storage, segment, jmxConnection);
   }
-
 
   /**
    * Called when there is an event coming either from JMX or this runner regarding on-going
