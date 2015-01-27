@@ -17,6 +17,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairUnit;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -59,14 +60,35 @@ public class RepairRunStatus {
   @JsonIgnore
   private final DateTime endTime;
 
+  @JsonIgnore
+  private final DateTime pauseTime;
+
   @JsonProperty
   private final double intensity;
 
   @JsonProperty("segment_count")
   private final int segmentCount;
-
+  @JsonProperty("repair_parallelism")
+  private final String repairParallelism;
   @JsonProperty("segments_repaired")
   private int segmentsRepaired = 0;
+
+  public RepairRunStatus(RepairRun repairRun, RepairUnit repairUnit) {
+    this.id = repairRun.getId();
+    this.cause = repairRun.getCause();
+    this.owner = repairRun.getOwner();
+    this.clusterName = repairRun.getClusterName();
+    this.columnFamilies = repairUnit.getColumnFamilies();
+    this.keyspaceName = repairUnit.getKeyspaceName();
+    this.runState = repairRun.getRunState().name();
+    this.creationTime = repairRun.getCreationTime();
+    this.startTime = repairRun.getStartTime();
+    this.endTime = repairRun.getEndTime();
+    this.pauseTime = repairRun.getPauseTime();
+    this.intensity = repairRun.getIntensity();
+    this.segmentCount = repairUnit.getSegmentCount();
+    this.repairParallelism = repairUnit.getRepairParallelism().name().toLowerCase();
+  }
 
   @JsonProperty("creation_time")
   public String getCreationTimeISO8601() {
@@ -92,8 +114,13 @@ public class RepairRunStatus {
     return endTime.toDateTime(DateTimeZone.UTC).toString(TIMESTAMP_ISO8601_YODA_TEMPLATE);
   }
 
-  @JsonProperty("snapshot_repair")
-  private final boolean snapshotRepair;
+  @JsonProperty("pause_time")
+  public String getPauseTimeISO8601() {
+    if (pauseTime == null) {
+      return null;
+    }
+    return pauseTime.toDateTime(DateTimeZone.UTC).toString(TIMESTAMP_ISO8601_YODA_TEMPLATE);
+  }
 
   public void setSegmentsRepaired(int segmentsRepaired) {
     this.segmentsRepaired = segmentsRepaired;
@@ -105,21 +132,5 @@ public class RepairRunStatus {
 
   public String getRunState() {
     return this.runState;
-  }
-
-  public RepairRunStatus(RepairRun repairRun, RepairUnit repairUnit) {
-    this.id = repairRun.getId();
-    this.cause = repairRun.getCause();
-    this.owner = repairRun.getOwner();
-    this.clusterName = repairRun.getClusterName();
-    this.columnFamilies = repairUnit.getColumnFamilies();
-    this.keyspaceName = repairUnit.getKeyspaceName();
-    this.runState = repairRun.getRunState().name();
-    this.creationTime = repairRun.getCreationTime();
-    this.startTime = repairRun.getStartTime();
-    this.endTime = repairRun.getEndTime();
-    this.intensity = repairRun.getIntensity();
-    this.segmentCount = repairUnit.getSegmentCount();
-    this.snapshotRepair = repairUnit.isSnapshotRepair();
   }
 }

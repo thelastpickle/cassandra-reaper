@@ -19,6 +19,7 @@ import java.math.BigInteger;
 
 // TODO: Check if this duplicates org.apache.cassandra.dht.Range.
 public class RingRange {
+
   private final BigInteger start;
   private final BigInteger end;
 
@@ -54,15 +55,15 @@ public class RingRange {
   public boolean encloses(RingRange other) {
     if (!this.isWrapping() && !other.isWrapping()) {
       return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
-          SegmentGenerator.lowerThanOrEqual(other.end, end);
+             SegmentGenerator.lowerThanOrEqual(other.end, end);
     } else if (!this.isWrapping() && other.isWrapping()) {
       return false;
     } else if (this.isWrapping() && !other.isWrapping()) {
       return SegmentGenerator.greaterThanOrEqual(other.start, start) ||
-          SegmentGenerator.lowerThanOrEqual(other.end, end);
+             SegmentGenerator.lowerThanOrEqual(other.end, end);
     } else { // if (this.isWrapping() && other.isWrapping())
       return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
-          SegmentGenerator.lowerThanOrEqual(other.end, end);
+             SegmentGenerator.lowerThanOrEqual(other.end, end);
     }
   }
 

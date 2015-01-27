@@ -21,6 +21,12 @@ public class Cluster {
   private final String partitioner; // Full name of the partitioner class
   private final Set<String> seedHosts;
 
+  public Cluster(String name, String partitioner, Set<String> seedHosts) {
+    this.name = name;
+    this.partitioner = partitioner;
+    this.seedHosts = seedHosts;
+  }
+
   public String getName() {
     return name;
   }
@@ -31,11 +37,5 @@ public class Cluster {
 
   public Set<String> getSeedHosts() {
     return seedHosts;
-  }
-
-  public Cluster(String name, String partitioner, Set<String> seedHosts) {
-    this.name = name;
-    this.partitioner = partitioner;
-    this.seedHosts = seedHosts;
   }
 }

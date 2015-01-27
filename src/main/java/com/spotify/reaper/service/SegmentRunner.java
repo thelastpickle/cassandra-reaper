@@ -19,8 +19,8 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
-import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.storage.IStorage;
 
 import org.apache.cassandra.service.ActiveRepairService;
@@ -40,14 +40,18 @@ public final class SegmentRunner implements RepairStatusHandler {
 
   private final IStorage storage;
   private final long segmentId;
+  private final Condition condition = new SimpleCondition();
   private int commandId;
 
-  private final Condition condition = new SimpleCondition();
 
+  private SegmentRunner(IStorage storage, long segmentId) {
+    this.storage = storage;
+    this.segmentId = segmentId;
+  }
 
   public static void triggerRepair(IStorage storage, long segmentId,
-      Collection<String> potentialCoordinators, long timeoutMillis,
-      JmxConnectionFactory jmxConnectionFactory) {
+                                   Collection<String> potentialCoordinators, long timeoutMillis,
+                                   JmxConnectionFactory jmxConnectionFactory) {
     new SegmentRunner(storage, segmentId)
         .runRepair(potentialCoordinators, jmxConnectionFactory, timeoutMillis);
   }
@@ -55,12 +59,12 @@ public final class SegmentRunner implements RepairStatusHandler {
   public static void postpone(IStorage storage, RepairSegment segment) {
     LOG.warn("Postponing segment {}", segment.getId());
     storage.updateRepairSegment(segment.with()
-        .state(RepairSegment.State.NOT_STARTED)
-        .coordinatorHost(null)
-        .repairCommandId(null)
-        .startTime(null)
-        .failCount(segment.getFailCount() + 1)
-        .build(segment.getId()));
+                                    .state(RepairSegment.State.NOT_STARTED)
+                                    .coordinatorHost(null)
+                                    .repairCommandId(null)
+                                    .startTime(null)
+                                    .failCount(segment.getFailCount() + 1)
+                                    .build(segment.getId()));
   }
 
   public static void abort(IStorage storage, RepairSegment segment, JmxProxy jmxConnection) {
@@ -69,13 +73,8 @@ public final class SegmentRunner implements RepairStatusHandler {
     jmxConnection.cancelAllRepairs();
   }
 
-  private SegmentRunner(IStorage storage, long segmentId) {
-    this.storage = storage;
-    this.segmentId = segmentId;
-  }
-
   private void runRepair(Collection<String> potentialCoordinators,
-      JmxConnectionFactory jmxConnectionFactory, long timeoutMillis) {
+                         JmxConnectionFactory jmxConnectionFactory, long timeoutMillis) {
     final RepairSegment segment = storage.getRepairSegment(segmentId).get();
     try (JmxProxy coordinator = jmxConnectionFactory
         .connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators)) {
@@ -89,14 +88,15 @@ public final class SegmentRunner implements RepairStatusHandler {
 
       synchronized (condition) {
         commandId = coordinator.triggerRepair(segment.getStartToken(), segment.getEndToken(),
-            keyspace, repairUnit.getColumnFamilies());
+                                              keyspace, repairUnit.getColumnFamilies());
         LOG.debug("Triggered repair with command id {}", commandId);
         storage.updateRepairSegment(segment.with()
-            .state(RepairSegment.State.RUNNING)
-            .coordinatorHost(coordinator.getHost())
-            .repairCommandId(commandId)
-            .build(segmentId));
-        LOG.info("Repair for segment {} started", segmentId);
+                                        .state(RepairSegment.State.RUNNING)
+                                        .coordinatorHost(coordinator.getHost())
+                                        .repairCommandId(commandId)
+                                        .build(segmentId));
+        LOG.info("Repair for segment {} started, status wait will timeout in {} millis",
+                 segmentId, timeoutMillis);
 
         try {
           condition.await(timeoutMillis, TimeUnit.MILLISECONDS);
@@ -105,10 +105,10 @@ public final class SegmentRunner implements RepairStatusHandler {
         } finally {
           RepairSegment resultingSegment = storage.getRepairSegment(segmentId).get();
           LOG.info("Repair command {} on segment {} exited with state {}", commandId, segmentId,
-              resultingSegment.getState());
+                   resultingSegment.getState());
           if (resultingSegment.getState().equals(RepairSegment.State.RUNNING)) {
             LOG.info("Repair command {} on segment {} has been cancelled while running", commandId,
-                segmentId);
+                     segmentId);
             abort(resultingSegment, coordinator);
           }
         }
@@ -120,20 +120,22 @@ public final class SegmentRunner implements RepairStatusHandler {
   }
 
   boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator,
-      JmxConnectionFactory factory) throws ReaperException {
-    Collection<JmxProxy> allHosts = factory.connectAll(
-        coordinator.tokenRangeToEndpoint(keyspace, segment.getTokenRange()));
-    for (JmxProxy host : allHosts) {
-      if (host.getPendingCompactions() > MAX_PENDING_COMPACTIONS) {
-        LOG.warn("SegmentRunner declined to repair segment {} because of too many pending "
-            + "compactions (> {}) on host \"{}\"", segmentId, MAX_PENDING_COMPACTIONS,
-            host.getHost());
-        return false;
-      }
-      if (host.isRepairRunning()) {
-        LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) was "
-                + "already involved in a repair", segmentId, host.getHost());
-        return false;
+                    JmxConnectionFactory factory) throws ReaperException {
+    Collection<String> allHosts =
+        coordinator.tokenRangeToEndpoint(keyspace, segment.getTokenRange());
+    for (String hostName : allHosts) {
+      try (JmxProxy hostProxy = factory.connect(hostName)) {
+        if (hostProxy.getPendingCompactions() > MAX_PENDING_COMPACTIONS) {
+          LOG.warn("SegmentRunner declined to repair segment {} because of too many pending "
+                   + "compactions (> {}) on host \"{}\"", segmentId, MAX_PENDING_COMPACTIONS,
+                   hostProxy.getHost());
+          return false;
+        }
+        if (hostProxy.isRepairRunning()) {
+          LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) was "
+                   + "already involved in a repair", segmentId, hostProxy.getHost());
+          return false;
+        }
       }
     }
     return true;
@@ -164,7 +166,7 @@ public final class SegmentRunner implements RepairStatusHandler {
           repairNumber, status, message);
       if (repairNumber != commandId) {
         LOG.debug("Handler for command id {} not handling message with number {}",
-            commandId, repairNumber);
+                  commandId, repairNumber);
         return;
       }
 
@@ -174,11 +176,13 @@ public final class SegmentRunner implements RepairStatusHandler {
         case STARTED:
           DateTime now = DateTime.now();
           storage.updateRepairSegment(currentSegment.with()
-              .startTime(now)
-              .build(segmentId));
+                                          .startTime(now)
+                                          .build(segmentId));
           // We already set the state of the segment to RUNNING.
           break;
         case SESSION_FAILED:
+          LOG.warn("repair session failed for segment with id '{}' and repair number '{}'",
+                   segmentId, repairNumber);
           postpone(currentSegment);
           condition.signalAll();
           break;
@@ -187,9 +191,9 @@ public final class SegmentRunner implements RepairStatusHandler {
           break;
         case FINISHED:
           storage.updateRepairSegment(currentSegment.with()
-              .state(RepairSegment.State.DONE)
-              .endTime(DateTime.now())
-              .build(segmentId));
+                                          .state(RepairSegment.State.DONE)
+                                          .endTime(DateTime.now())
+                                          .build(segmentId));
           condition.signalAll();
           break;
       }

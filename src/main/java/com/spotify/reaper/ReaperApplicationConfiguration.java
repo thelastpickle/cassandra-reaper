@@ -14,24 +14,36 @@
 package com.spotify.reaper;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.dropwizard.Configuration;
-import io.dropwizard.db.DataSourceFactory;
+
 import org.hibernate.validator.constraints.NotEmpty;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
+import io.dropwizard.Configuration;
+import io.dropwizard.db.DataSourceFactory;
+
 public class ReaperApplicationConfiguration extends Configuration {
 
-  private int segmentCount;
+  @JsonProperty
+  @NotNull
+  private Integer segmentCount;
 
-  private boolean snapshotRepair;
+  @JsonProperty
+  @NotNull
+  private String repairParallelism;
 
-  private double repairIntensity;
+  @JsonProperty
+  @NotNull
+  private Double repairIntensity;
 
-  private int repairRunThreadCount;
+  @JsonProperty
+  @NotNull
+  private Integer repairRunThreadCount;
 
-  private int hangingRepairTimeoutMins;
+  @JsonProperty
+  @NotNull
+  private Integer hangingRepairTimeoutMins;
 
   @NotEmpty
   private String storageType;
@@ -41,63 +53,50 @@ public class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   private DataSourceFactory database = new DataSourceFactory();
 
-  @JsonProperty
   public int getSegmentCount() {
     return segmentCount;
   }
 
-  @JsonProperty
   public void setSegmentCount(int segmentCount) {
     this.segmentCount = segmentCount;
   }
 
-  @JsonProperty
-  public boolean getSnapshotRepair() {
-    return snapshotRepair;
+  public String getRepairParallelism() {
+    return repairParallelism;
   }
 
-  @JsonProperty
-  public void setSnapshotRepair(boolean snapshotRepair) {
-    this.snapshotRepair = snapshotRepair;
+  public void setRepairParallelism(String repairParallelism) {
+    this.repairParallelism = repairParallelism;
   }
 
-
-  @JsonProperty
   public double getRepairIntensity() {
     return repairIntensity;
   }
 
-  @JsonProperty
   public void setRepairIntensity(double repairIntensity) {
     this.repairIntensity = repairIntensity;
   }
 
-  @JsonProperty
   public int getRepairRunThreadCount() {
     return repairRunThreadCount;
   }
 
-  @JsonProperty
   public void setRepairRunThreadCount(int repairRunThreadCount) {
     this.repairRunThreadCount = repairRunThreadCount;
   }
 
-  @JsonProperty
-  public void setStorageType(String storageType) {
-    this.storageType = storageType;
-  }
-
-  @JsonProperty
   public String getStorageType() {
     return storageType;
   }
 
-  @JsonProperty
+  public void setStorageType(String storageType) {
+    this.storageType = storageType;
+  }
+
   public DataSourceFactory getDataSourceFactory() {
     return database;
   }
 
-  @JsonProperty
   public int getHangingRepairTimeoutMins() {
     return hangingRepairTimeoutMins;
   }

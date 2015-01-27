@@ -25,11 +25,22 @@ import java.sql.Timestamp;
 
 public class RepairRunMapper implements ResultSetMapper<RepairRun> {
 
+  static DateTime getDateTimeOrNull(ResultSet r, String dbColumnName) throws SQLException {
+    Timestamp timestamp = r.getTimestamp(dbColumnName);
+    DateTime result = null;
+    if (null != timestamp) {
+      result = new DateTime(timestamp);
+    }
+    return result;
+  }
+
   public RepairRun map(int index, ResultSet r, StatementContext ctx) throws SQLException {
     RepairRun.RunState runState = RepairRun.RunState.valueOf(r.getString("state"));
-    RepairRun.Builder repairRunBuilder = new RepairRun.Builder(r.getString("cluster_name"),
-        r.getLong("column_family_id"), getDateTimeOrNull(r, "creation_time"),
-        r.getFloat("intensity"));
+    RepairRun.Builder repairRunBuilder =
+        new RepairRun.Builder(r.getString("cluster_name"),
+                              r.getLong("repair_unit_id"),
+                              getDateTimeOrNull(r, "creation_time"),
+                              r.getFloat("intensity"));
     return repairRunBuilder
         .runState(runState)
         .owner(r.getString("owner"))
@@ -38,15 +49,6 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
         .endTime(getDateTimeOrNull(r, "end_time"))
         .pauseTime(getDateTimeOrNull(r, "pause_time"))
         .build(r.getLong("id"));
-  }
-
-  static DateTime getDateTimeOrNull(ResultSet r, String columnName) throws SQLException {
-    Timestamp timestamp = r.getTimestamp(columnName);
-    DateTime result = null;
-    if (null != timestamp) {
-      result = new DateTime(timestamp);
-    }
-    return result;
   }
 
 }

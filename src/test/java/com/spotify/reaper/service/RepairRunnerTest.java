@@ -16,6 +16,7 @@ package com.spotify.reaper.service;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
@@ -26,6 +27,7 @@ import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
+
 import org.apache.cassandra.service.ActiveRepairService;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -73,7 +75,7 @@ public class RepairRunnerTest {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATION);
     RepairRun.Builder runBuilder =
         new RepairRun.Builder(TEST_CLUSTER, CF_ID, DateTime.now(),
-            INTENSITY);
+                              INTENSITY);
     storage.addRepairRun(runBuilder);
     storage.addRepairSegments(Collections.<RepairSegment.Builder>emptySet(), RUN_ID);
 
@@ -82,7 +84,7 @@ public class RepairRunnerTest {
     RepairRunner.initializeThreadPool(1, 3, TimeUnit.HOURS, 30, TimeUnit.SECONDS);
     RepairRunner.startRepairRun(storage, RUN_ID, new JmxConnectionFactory() {
       @Override
-      public JmxProxy create(Optional<RepairStatusHandler> handler, String host)
+      public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
           throws ReaperException {
         return null;
       }
@@ -113,25 +115,26 @@ public class RepairRunnerTest {
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
     RepairUnit cf =
-        storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, 1, false));
+        storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, 1,
+                                                     RepairUnit.RepairParallelism.PARALLEL));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY));
     storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE),
-            cf.getId())), run.getId());
+                                  cf.getId())), run.getId());
     final long RUN_ID = run.getId();
     final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
     RepairRunner.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
-        RepairSegment.State.NOT_STARTED);
+                 RepairSegment.State.NOT_STARTED);
     RepairRunner.startRepairRun(storage, RUN_ID, new JmxConnectionFactory() {
       final AtomicInteger repairAttempts = new AtomicInteger(0);
 
       @Override
-      public JmxProxy create(final Optional<RepairStatusHandler> handler, String host)
+      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host)
           throws ReaperException {
         final JmxProxy jmx = mock(JmxProxy.class);
         when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
@@ -139,12 +142,12 @@ public class RepairRunnerTest {
         when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
             .thenReturn(Lists.newArrayList(""));
         when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-            Sets.newHashSet(anyString()))).then(
+                               Sets.newHashSet(anyString()))).then(
             new Answer<Integer>() {
               @Override
               public Integer answer(InvocationOnMock invocation) throws Throwable {
                 assertEquals(RepairSegment.State.NOT_STARTED,
-                    storage.getRepairSegment(SEGMENT_ID).get().getState());
+                             storage.getRepairSegment(SEGMENT_ID).get().getState());
 
                 final int repairNumber = repairAttempts.getAndIncrement();
                 switch (repairNumber) {
@@ -155,7 +158,7 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, ActiveRepairService.Status.STARTED, null);
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(SEGMENT_ID).get().getState());
+                                     storage.getRepairSegment(SEGMENT_ID).get().getState());
                       }
                     }.start();
                     break;
@@ -166,11 +169,11 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, ActiveRepairService.Status.STARTED, null);
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(SEGMENT_ID).get().getState());
+                                     storage.getRepairSegment(SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, ActiveRepairService.Status.SESSION_SUCCESS, null);
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(SEGMENT_ID).get().getState());
+                                     storage.getRepairSegment(SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, ActiveRepairService.Status.FINISHED, null);
                       }
@@ -205,7 +208,8 @@ public class RepairRunnerTest {
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
     long cf = storage.addRepairUnit(
-        new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, 1, false)).getId();
+        new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, 1,
+                               RepairUnit.RepairParallelism.PARALLEL)).getId();
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY));
@@ -221,10 +225,10 @@ public class RepairRunnerTest {
     RepairRunner.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
-        RepairSegment.State.NOT_STARTED);
+                 RepairSegment.State.NOT_STARTED);
     JmxConnectionFactory factory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy create(final Optional<RepairStatusHandler> handler, String host)
+      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host)
           throws ReaperException {
         final JmxProxy jmx = mock(JmxProxy.class);
         when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
@@ -232,12 +236,12 @@ public class RepairRunnerTest {
         when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
             .thenReturn(Lists.newArrayList(""));
         when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-            Sets.newHashSet(anyString()))).then(
+                               Sets.newHashSet(anyString()))).then(
             new Answer<Integer>() {
               @Override
               public Integer answer(InvocationOnMock invocation) throws Throwable {
                 assertEquals(RepairSegment.State.NOT_STARTED,
-                    storage.getRepairSegment(SEGMENT_ID).get().getState());
+                             storage.getRepairSegment(SEGMENT_ID).get().getState());
                 new Thread() {
                   @Override
                   public void run() {

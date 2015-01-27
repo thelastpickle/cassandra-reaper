@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS "repair_unit" (
   "keyspace_name" TEXT NOT NULL,
   "column_families" TEXT[] NOT NULL,
   "segment_count" INT NOT NULL,
-  "snapshot_repair" BOOLEAN NOT NULL
+  "repair_parallelism" TEXT NOT NULL
 );
 -- Using GIN index to make @> (contains) type of array operations faster
 CREATE INDEX repair_unit_column_families_gin_idx

@@ -14,6 +14,7 @@
 package com.spotify.reaper.core;
 
 import com.spotify.reaper.service.RingRange;
+
 import org.joda.time.DateTime;
 
 import java.math.BigInteger;
@@ -30,6 +31,19 @@ public class RepairSegment {
   private final Integer repairCommandId; // received when triggering repair in Cassandra
   private final DateTime startTime;
   private final DateTime endTime;
+
+  private RepairSegment(Builder builder, long id) {
+    this.id = id;
+    this.runId = builder.runId;
+    this.repairUnitId = builder.repairUnitId;
+    this.tokenRange = builder.tokenRange;
+    this.failCount = builder.failCount;
+    this.state = builder.state;
+    this.coordinatorHost = builder.coordinatorHost;
+    this.repairCommandId = builder.repairCommandId;
+    this.startTime = builder.startTime;
+    this.endTime = builder.endTime;
+  }
 
   public long getId() {
     return id;
@@ -59,7 +73,7 @@ public class RepairSegment {
     return failCount;
   }
 
-  public State getState() {
+  public RepairSegment.State getState() {
     return state;
   }
 
@@ -79,34 +93,21 @@ public class RepairSegment {
     return endTime;
   }
 
+  public Builder with() {
+    return new Builder(this);
+  }
+
   public enum State {
     NOT_STARTED,
     RUNNING,
     DONE
   }
 
-  private RepairSegment(Builder builder, long id) {
-    this.id = id;
-    this.runId = builder.runId;
-    this.repairUnitId = builder.repairUnitId;
-    this.tokenRange = builder.tokenRange;
-    this.failCount = builder.failCount;
-    this.state = builder.state;
-    this.coordinatorHost = builder.coordinatorHost;
-    this.repairCommandId = builder.repairCommandId;
-    this.startTime = builder.startTime;
-    this.endTime = builder.endTime;
-  }
-
-  public Builder with() {
-    return new Builder(this);
-  }
-
   public static class Builder {
 
     public final long runId;
-    private final long repairUnitId;
     public final RingRange tokenRange;
+    private final long repairUnitId;
     private int failCount;
     private State state;
     private String coordinatorHost;

@@ -60,10 +60,15 @@ The Reaper service specific configuration values are:
   Defines the amount of repair segments to create for newly registered Cassandra column families
   (token rings). When running a repair run by the Reaper, each segment is repaired separately
   by the Reaper process, until all the segments in a token ring are repaired.
+  The count might be slightly off the definite value, as clusters with multiple data centers
+  require additional small token ranges in addition to the expected.
 
-* snapshotRepair:
+* repairParallelism:
 
-  Whether to use a snapshot repair by default when triggering repairs for repair segments.
+  Repair parallelism value must be one of: "parallel", "sequential", or "dc_parallel".
+  Defines the type of parallelism to use for repairs by default. For Cassandra 1.x the default is
+  "parallel", for 2.x versions "sequential", and in versions after 2.12, there is a third
+  option called "dc_parallel".
 
 * repairIntensity:
 
@@ -92,21 +97,26 @@ Using "*" as bind value won't work.
 REST API
 --------
 
-## Ping
+## Ping Resource
 
 * GET     /ping (com.spotify.reaper.resources.PingResource)
   * Expected query parameters: *None*
   * Simple ping resource that can be used to check whether the reaper is running.
 
-## Manipulating clusters
+## Cluster Resource
 
 * GET     /cluster (com.spotify.reaper.resources.ClusterResource)
   * Expected query parameters: *None*
   * Returns a list of registered cluster names in the service.
 
-* GET     /cluster/{name} (com.spotify.reaper.resources.ClusterResource)
+* GET     /cluster/{cluster_name} (com.spotify.reaper.resources.ClusterResource)
   * Expected query parameters: *None*
-  * Returns a cluster resource identified by the given "name" path parameter.
+  * Returns a cluster resource identified by the given "cluster_name" path parameter.
+
+* GET     /cluster/{cluster_name}/{keyspace_name} (com.spotify.reaper.resources.ClusterResource)
+  * Expected query parameters: *None*
+  * Returns keyspace information identified by the given "cluster_name" and
+    "keyspace_name" path parameters.
 
 * POST    /cluster (com.spotify.reaper.resources.ClusterResource)
   * Expected query parameters:
@@ -115,20 +125,7 @@ REST API
   * Adds a new cluster to the service, and returns the newly added cluster resource,
     if the operation was successful.
 
-## Manipulating tables
-
-* GET     /table/{clusterName}/{keyspace}/{table} (com.spotify.reaper.resources.TableResource)
-  * Expected query parameters: *None*
-  * Returns a table resource identified by the given "clusterName", "keyspace", and "table"
-    path parameters.
-
-* POST    /table (com.spotify.reaper.resources.TableResource)
-  * Expected query parameters:
-    * *clusterName*: Name of the Cassandra cluster.
-    * *keyspace*: The name of the table keyspace.
-    * *table*: The name of the table (column family).
-
-## Manipulating repair runs
+## Repair Run Resource
 
 * GET     /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)
   * Expected query parameters: *None*
@@ -144,13 +141,11 @@ REST API
     * *keyspace*: The name of the table keyspace.
     * *table*: The name of the table (column family).
     * *owner*: Owner name for the table. This could be any string identifying the owner.
-    * *cause*: Identifies the process, or cause the repair was started. 
-
-* POST    /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)
-  * Expected query parameters: *None*
-  * Triggers a repair run identified by the "id" path parameter.
+    * *cause*: Identifies the process, or cause the repair was started.
+    * *segmentCount*: Defines the amount of segments to create for repair run. (Optional)
 
 * PUT    /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)
   * Expected query parameters:
-    * *state*: new value for the state of the repair run, e.g. "PAUSED"
-  * Pauses a repair run identified by the "id" path parameter.
+    * *state*: New value for the state of the repair run.
+      Possible values for given state are: "PAUSED" or "RUNNING".
+  * Starts, pauses, or resumes a repair run identified by the "id" path parameter.

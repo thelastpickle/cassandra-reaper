@@ -34,7 +34,7 @@ public class PostgresArrayArgumentFactory implements ArgumentFactory<Collection<
 
   @Override
   public Argument build(Class<?> expectedType, final Collection<String> value,
-      StatementContext ctx) {
+                        StatementContext ctx) {
     return new Argument() {
       public void apply(int position, PreparedStatement statement, StatementContext ctx)
           throws SQLException {

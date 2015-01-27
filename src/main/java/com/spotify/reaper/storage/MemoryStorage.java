@@ -16,13 +16,20 @@ package com.spotify.reaper.storage;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -42,33 +49,6 @@ public class MemoryStorage implements IStorage {
   private ConcurrentMap<Long, RepairSegment> repairSegments = Maps.newConcurrentMap();
   private ConcurrentMap<Long, LinkedHashMap<Long, RepairSegment>> repairSegmentsByRunId =
       Maps.newConcurrentMap();
-
-
-  public static class RepairUnitKey {
-
-    public final String cluster;
-    public final String keyspace;
-    public final Set<String> tables;
-
-    public RepairUnitKey(String cluster, String keyspace, Set<String> tables) {
-      this.cluster = cluster;
-      this.keyspace = keyspace;
-      this.tables = tables;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      return other instanceof RepairUnitKey &&
-          cluster.equals(((RepairUnitKey) other).cluster) &&
-          keyspace.equals(((RepairUnitKey) other).keyspace) &&
-          tables.equals(((RepairUnitKey) other).tables);
-    }
-
-    @Override
-    public int hashCode() {
-      return cluster.hashCode() ^ keyspace.hashCode() ^ tables.hashCode();
-    }
-  }
 
   @Override
   public boolean isStorageConnected() {
@@ -136,10 +116,10 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Collection<RepairRun> getAllRunningRepairRuns() {
+  public Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState) {
     List<RepairRun> foundRepairRuns = new ArrayList<>();
     for (RepairRun repairRun : repairRuns.values()) {
-      if (repairRun.getRunState() == RepairRun.RunState.RUNNING) {
+      if (repairRun.getRunState() == runState) {
         foundRepairRuns.add(repairRun);
       }
     }
@@ -156,7 +136,8 @@ public class MemoryStorage implements IStorage {
       RepairUnit newRepairUnit = repairUnit.build(REPAIR_UNIT_ID.incrementAndGet());
       repairUnits.put(newRepairUnit.getId(), newRepairUnit);
       RepairUnitKey unitTables = new RepairUnitKey(newRepairUnit.getClusterName(),
-          newRepairUnit.getKeyspaceName(), newRepairUnit.getColumnFamilies());
+                                                   newRepairUnit.getKeyspaceName(),
+                                                   newRepairUnit.getColumnFamilies());
       repairUnitsByKey.put(unitTables, newRepairUnit);
       return newRepairUnit;
     }
@@ -224,8 +205,8 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Collection<RepairSegment> getSegmentsWithStateForRun(long runId,
-      RepairSegment.State segmentState) {
+  public Collection<RepairSegment> getSegmentsWithState(long runId,
+                                                        RepairSegment.State segmentState) {
     List<RepairSegment> segments = Lists.newArrayList();
     for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
       if (segment.getState() == segmentState) {
@@ -258,6 +239,32 @@ public class MemoryStorage implements IStorage {
       }
     }
     return amount;
+  }
+
+  public static class RepairUnitKey {
+
+    public final String cluster;
+    public final String keyspace;
+    public final Set<String> tables;
+
+    public RepairUnitKey(String cluster, String keyspace, Set<String> tables) {
+      this.cluster = cluster;
+      this.keyspace = keyspace;
+      this.tables = tables;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return other instanceof RepairUnitKey &&
+             cluster.equals(((RepairUnitKey) other).cluster) &&
+             keyspace.equals(((RepairUnitKey) other).keyspace) &&
+             tables.equals(((RepairUnitKey) other).tables);
+    }
+
+    @Override
+    public int hashCode() {
+      return cluster.hashCode() ^ keyspace.hashCode() ^ tables.hashCode();
+    }
   }
 
 }
