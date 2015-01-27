@@ -60,10 +60,15 @@ The Reaper service specific configuration values are:
   Defines the amount of repair segments to create for newly registered Cassandra column families
   (token rings). When running a repair run by the Reaper, each segment is repaired separately
   by the Reaper process, until all the segments in a token ring are repaired.
+  The count might be slightly off the definite value, as clusters with multiple data centers
+  require additional small token ranges in addition to the expected.
 
-* snapshotRepair:
+* repairParallelism:
 
-  Whether to use a snapshot repair by default when triggering repairs for repair segments.
+  Repair parallelism value must be one of: "parallel", "sequential", or "dc_parallel".
+  Defines the type of parallelism to use for repairs by default. For Cassandra 1.x the default is
+  "parallel", for 2.x versions "sequential", and in versions after 2.12, there is a third
+  option called "dc_parallel".
 
 * repairIntensity:
 

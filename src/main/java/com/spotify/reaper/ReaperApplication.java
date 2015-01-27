@@ -22,15 +22,19 @@ import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
-import io.dropwizard.Application;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+
+import io.dropwizard.Application;
+import io.dropwizard.setup.Bootstrap;
+import io.dropwizard.setup.Environment;
 
 public class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
@@ -58,7 +62,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   @Override
   public void run(ReaperApplicationConfiguration config,
-      Environment environment) throws ReaperException {
+                  Environment environment) throws ReaperException {
     checkConfiguration(config);
 
     addSignalHandlers(); // SIGHUP, etc.
@@ -96,7 +100,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config,
-      Environment environment) throws ReaperException {
+                                     Environment environment) throws ReaperException {
     IStorage storage;
     if (config.getStorageType().equalsIgnoreCase("memory")) {
       storage = new MemoryStorage();
@@ -112,9 +116,14 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   private void checkConfiguration(ReaperApplicationConfiguration config) throws ReaperException {
     LOG.debug("repairIntensity: " + config.getRepairIntensity());
+    assert config.getRepairIntensity() > 0.0 && config.getRepairIntensity() <= 1.0 :
+        "repairIntensity must be a value between 0.0 and 1.0, but not 0.";
     LOG.debug("repairRunThreadCount: " + config.getRepairRunThreadCount());
     LOG.debug("segmentCount: " + config.getSegmentCount());
-    LOG.debug("snapshotRepair: " + config.getSnapshotRepair());
+    LOG.debug("repairParallelism: " + config.getRepairParallelism());
+    assert Arrays.asList(new String[]{"sequential", "parallel", "dc_parallel"})
+        .contains(config.getRepairParallelism()) :
+        "invalid repairParallelism given: " + config.getRepairParallelism();
     LOG.debug("hangingRepairTimeoutMins: " + config.getHangingRepairTimeoutMins());
   }
 

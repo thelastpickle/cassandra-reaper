@@ -21,7 +21,7 @@ public class StateArgumentFactory implements ArgumentFactory<RepairSegment.State
 
   @Override
   public Argument build(Class<?> expectedType, final RepairSegment.State value,
-      StatementContext ctx) {
+                        StatementContext ctx) {
     return new Argument() {
       public void apply(int position, PreparedStatement statement, StatementContext ctx)
           throws SQLException {

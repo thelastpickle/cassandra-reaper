@@ -22,9 +22,10 @@ public interface RepairStatusHandler {
    *
    * Implementation of this method is intended to persist the repair state change in Reaper's
    * state.
+   *
    * @param repairNumber repair sequence number, obtained when triggering a repair
-   * @param status new status of the repair
-   * @param message additional information about the repair
+   * @param status       new status of the repair
+   * @param message      additional information about the repair
    */
   public void handle(int repairNumber, ActiveRepairService.Status status, String message);
 

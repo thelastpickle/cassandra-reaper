@@ -14,6 +14,7 @@
 package com.spotify.reaper.storage;
 
 import com.google.common.base.Optional;
+
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
@@ -61,7 +62,7 @@ public interface IStorage {
    * @return Instance of a RepairUnit matching the parameters, or null if not found.
    */
   Optional<RepairUnit> getRepairUnit(String cluster, String keyspace,
-      Set<String> columnFamilyNames);
+                                     Set<String> columnFamilyNames);
 
   void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId);
 

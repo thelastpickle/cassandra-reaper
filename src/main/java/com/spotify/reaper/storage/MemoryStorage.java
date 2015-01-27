@@ -50,33 +50,6 @@ public class MemoryStorage implements IStorage {
   private ConcurrentMap<Long, LinkedHashMap<Long, RepairSegment>> repairSegmentsByRunId =
       Maps.newConcurrentMap();
 
-
-  public static class RepairUnitKey {
-
-    public final String cluster;
-    public final String keyspace;
-    public final Set<String> tables;
-
-    public RepairUnitKey(String cluster, String keyspace, Set<String> tables) {
-      this.cluster = cluster;
-      this.keyspace = keyspace;
-      this.tables = tables;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      return other instanceof RepairUnitKey &&
-             cluster.equals(((RepairUnitKey) other).cluster) &&
-             keyspace.equals(((RepairUnitKey) other).keyspace) &&
-             tables.equals(((RepairUnitKey) other).tables);
-    }
-
-    @Override
-    public int hashCode() {
-      return cluster.hashCode() ^ keyspace.hashCode() ^ tables.hashCode();
-    }
-  }
-
   @Override
   public boolean isStorageConnected() {
     // Just assuming the MemoryStorage is always functional when instantiated.
@@ -266,6 +239,32 @@ public class MemoryStorage implements IStorage {
       }
     }
     return amount;
+  }
+
+  public static class RepairUnitKey {
+
+    public final String cluster;
+    public final String keyspace;
+    public final Set<String> tables;
+
+    public RepairUnitKey(String cluster, String keyspace, Set<String> tables) {
+      this.cluster = cluster;
+      this.keyspace = keyspace;
+      this.tables = tables;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return other instanceof RepairUnitKey &&
+             cluster.equals(((RepairUnitKey) other).cluster) &&
+             keyspace.equals(((RepairUnitKey) other).keyspace) &&
+             tables.equals(((RepairUnitKey) other).tables);
+    }
+
+    @Override
+    public int hashCode() {
+      return cluster.hashCode() ^ keyspace.hashCode() ^ tables.hashCode();
+    }
   }
 
 }

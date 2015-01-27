@@ -29,7 +29,9 @@ public class ReaperApplicationConfiguration extends Configuration {
   @NotNull
   private Integer segmentCount;
 
-  private boolean snapshotRepair;
+  @JsonProperty
+  @NotNull
+  private String repairParallelism;
 
   @JsonProperty
   @NotNull
@@ -83,12 +85,12 @@ public class ReaperApplicationConfiguration extends Configuration {
     this.repairRunThreadCount = repairRunThreadCount;
   }
 
-  public void setStorageType(String storageType) {
-    this.storageType = storageType;
-  }
-
   public String getStorageType() {
     return storageType;
+  }
+
+  public void setStorageType(String storageType) {
+    this.storageType = storageType;
   }
 
   public DataSourceFactory getDataSourceFactory() {

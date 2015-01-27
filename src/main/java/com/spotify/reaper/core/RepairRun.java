@@ -34,6 +34,20 @@ public class RepairRun {
   private final DateTime pauseTime;
   private final double intensity;
 
+  private RepairRun(Builder builder, long id) {
+    this.id = id;
+    this.clusterName = builder.clusterName;
+    this.repairUnitId = builder.repairUnitId;
+    this.cause = builder.cause;
+    this.owner = builder.owner;
+    this.runState = builder.runState;
+    this.creationTime = builder.creationTime;
+    this.startTime = builder.startTime;
+    this.endTime = builder.endTime;
+    this.pauseTime = builder.pauseTime;
+    this.intensity = builder.intensity;
+  }
+
   public long getId() {
     return id;
   }
@@ -78,30 +92,16 @@ public class RepairRun {
     return intensity;
   }
 
+  public Builder with() {
+    return new Builder(this);
+  }
+
   public enum RunState {
     NOT_STARTED,
     RUNNING,
     ERROR,
     DONE,
     PAUSED
-  }
-
-  private RepairRun(Builder builder, long id) {
-    this.id = id;
-    this.clusterName = builder.clusterName;
-    this.repairUnitId = builder.repairUnitId;
-    this.cause = builder.cause;
-    this.owner = builder.owner;
-    this.runState = builder.runState;
-    this.creationTime = builder.creationTime;
-    this.startTime = builder.startTime;
-    this.endTime = builder.endTime;
-    this.pauseTime = builder.pauseTime;
-    this.intensity = builder.intensity;
-  }
-
-  public Builder with() {
-    return new Builder(this);
   }
 
   public static class Builder {
@@ -118,7 +118,7 @@ public class RepairRun {
     private DateTime pauseTime;
 
     public Builder(String clusterName, long repairUnitId, DateTime creationTime,
-        double intensity) {
+                   double intensity) {
       this.clusterName = clusterName;
       this.repairUnitId = repairUnitId;
       this.runState = RunState.NOT_STARTED;

@@ -22,7 +22,16 @@ public class RepairUnit {
   private final String keyspaceName;
   private final Set<String> columnFamilies;
   private final int segmentCount;
-  private final boolean snapshotRepair;
+  private final RepairParallelism repairParallelism;
+
+  private RepairUnit(Builder builder, long id) {
+    this.id = id;
+    this.clusterName = builder.clusterName;
+    this.keyspaceName = builder.keyspaceName;
+    this.columnFamilies = builder.columnFamilies;
+    this.segmentCount = builder.segmentCount;
+    this.repairParallelism = builder.repairParallelism;
+  }
 
   public long getId() {
     return id;
@@ -44,21 +53,18 @@ public class RepairUnit {
     return segmentCount;
   }
 
-  public boolean isSnapshotRepair() {
-    return snapshotRepair;
-  }
-
-  private RepairUnit(Builder builder, long id) {
-    this.id = id;
-    this.clusterName = builder.clusterName;
-    this.keyspaceName = builder.keyspaceName;
-    this.columnFamilies = builder.columnFamilies;
-    this.segmentCount = builder.segmentCount;
-    this.snapshotRepair = builder.snapshotRepair;
+  public RepairParallelism getRepairParallelism() {
+    return repairParallelism;
   }
 
   public Builder with() {
     return new Builder(this);
+  }
+
+  public enum RepairParallelism {
+    PARALLEL,   // run repairs in parallel on all nodes for a token range
+    SEQUENTIAL, // run repairs in one node at the time for a token range
+    DC_PARALLEL // run repairs one node at a time per data center
   }
 
   public static class Builder {
@@ -67,15 +73,15 @@ public class RepairUnit {
     public final String keyspaceName;
     public final Set<String> columnFamilies;
     private int segmentCount;
-    private boolean snapshotRepair;
+    private RepairParallelism repairParallelism;
 
     public Builder(String clusterName, String keyspaceName, Set<String> columnFamilies,
-        int segmentCount, boolean snapshotRepair) {
+                   int segmentCount, RepairParallelism repairParallelism) {
       this.clusterName = clusterName;
       this.keyspaceName = keyspaceName;
       this.columnFamilies = columnFamilies;
       this.segmentCount = segmentCount;
-      this.snapshotRepair = snapshotRepair;
+      this.repairParallelism = repairParallelism;
     }
 
     private Builder(RepairUnit original) {
@@ -83,7 +89,7 @@ public class RepairUnit {
       keyspaceName = original.keyspaceName;
       columnFamilies = original.columnFamilies;
       segmentCount = original.segmentCount;
-      snapshotRepair = original.snapshotRepair;
+      repairParallelism = original.repairParallelism;
     }
 
     public Builder segmentCount(int segmentCount) {
@@ -91,8 +97,8 @@ public class RepairUnit {
       return this;
     }
 
-    public Builder snapshotRepair(boolean snapshotRepair) {
-      this.snapshotRepair = snapshotRepair;
+    public Builder repairParallelism(RepairParallelism repairParallelism) {
+      this.repairParallelism = repairParallelism;
       return this;
     }
 

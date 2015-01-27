@@ -161,7 +161,8 @@ public class ClusterResource {
     for (Long repairRunId : storage.getRepairRunIdsForCluster(cluster.getName())) {
       Optional<RepairRun> repairRun = storage.getRepairRun(repairRunId);
       if (repairRun.isPresent()) {
-        runIdTuples.add(Lists.newArrayList(new Object[] {repairRunId, repairRun.get().getRunState()}));
+        runIdTuples
+            .add(Lists.newArrayList(new Object[]{repairRunId, repairRun.get().getRunState()}));
       }
     }
     view.setRepairRunIds(runIdTuples);

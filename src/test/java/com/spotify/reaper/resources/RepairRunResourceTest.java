@@ -57,7 +57,7 @@ public class RepairRunResourceTest {
 
   int SEGMENT_CNT = 6;
   double REPAIR_INTENSITY = 0.5f;
-  boolean IS_SNAPSHOT_REPAIR = false;
+  RepairUnit.RepairParallelism REPAIR_PARALLELISM = RepairUnit.RepairParallelism.SEQUENTIAL;
   List<BigInteger> TOKENS = Lists.newArrayList(BigInteger.valueOf(0l), BigInteger.valueOf(100l),
       BigInteger.valueOf(200l));
 
@@ -98,7 +98,7 @@ public class RepairRunResourceTest {
     };
 
     RepairUnit.Builder repairUnitBuilder = new RepairUnit.Builder(CLUSTER_NAME,
-        KEYSPACE, TABLES, SEGMENT_CNT, IS_SNAPSHOT_REPAIR);
+        KEYSPACE, TABLES, SEGMENT_CNT, REPAIR_PARALLELISM);
     storage.addRepairUnit(repairUnitBuilder);
   }
 
@@ -232,9 +232,8 @@ public class RepairRunResourceTest {
     RepairRunResource resource = new RepairRunResource(config, storage, factory);
     Response response = addRepairRun(resource, uriInfo, CLUSTER_NAME, null,
         TABLES, OWNER, null, SEGMENTS);
-    assertEquals(500, response.getStatus());
+    assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
-    assertTrue(response.getEntity().toString().contains("argument missing"));
   }
 
   @Test
@@ -244,9 +243,8 @@ public class RepairRunResourceTest {
     RepairRunResource resource = new RepairRunResource(config, storage, factory);
     Response response = addRepairRun(resource, uriInfo, CLUSTER_NAME, null, TABLES, OWNER,
         null, SEGMENTS);
-    assertEquals(500, response.getStatus());
+    assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
-    assertTrue(response.getEntity().toString().contains("argument missing"));
   }
 
   @Test
