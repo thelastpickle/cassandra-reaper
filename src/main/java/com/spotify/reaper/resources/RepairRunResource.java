@@ -177,7 +177,7 @@ public class RepairRunResource {
         theRepairUnit = storage.addRepairUnit(
             new RepairUnit.Builder(clusterName.get(), keyspace.get(), tableNames, segments,
                                    RepairUnit.RepairParallelism.valueOf(
-                                       config.getRepairParallelism())));
+                                       config.getRepairParallelism().toUpperCase())));
       }
       RepairRun newRepairRun = registerRepairRun(cluster.get(), theRepairUnit, cause, owner.get());
       return Response.created(buildRepairRunURI(uriInfo, newRepairRun))

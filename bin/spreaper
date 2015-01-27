@@ -62,6 +62,9 @@ class ReaperCaller(object):
             assert False, "invalid HTTP method: {0}".format(http_method)
         log.info("HTTP %s return code %s with content of length %s",
                  http_method, r.status_code, len(str(r.text)))
+        log.debug("Response content:\n%s", r.text)
+        if not str(r.status_code).startswith("2"):
+            print r.text
         r.raise_for_status()
         return r.text
 
@@ -223,7 +226,12 @@ class ReaperCLI(object):
             print REAPER_USAGE
             exit(1)
         # use dispatch pattern to invoke method with same name as given command
-        getattr(self, command)()
+        try:
+            getattr(self, command)()
+        except requests.exceptions.HTTPError, err:
+            print ""
+            print "# HTTP request failed with err: {}".format(err)
+            exit(2)
 
     @staticmethod
     def prepare_reaper(command, description, usage=None, extra_arguments=None):
