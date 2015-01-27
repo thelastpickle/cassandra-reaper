@@ -26,6 +26,7 @@ import com.spotify.reaper.storage.IStorage;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.SimpleCondition;
 import org.joda.time.DateTime;
+import org.joda.time.Seconds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,10 +89,10 @@ public final class SegmentRunner implements RepairStatusHandler {
 
       synchronized (condition) {
         commandId = coordinator.triggerRepair(segment.getStartToken(), segment.getEndToken(),
-                                              keyspace, repairUnit.getColumnFamilies());
+                                              keyspace, repairUnit.getRepairParallelism(),
+                                              repairUnit.getColumnFamilies());
         LOG.debug("Triggered repair with command id {}", commandId);
         storage.updateRepairSegment(segment.with()
-                                        .state(RepairSegment.State.RUNNING)
                                         .coordinatorHost(coordinator.getHost())
                                         .repairCommandId(commandId)
                                         .build(segmentId));
@@ -104,12 +105,17 @@ public final class SegmentRunner implements RepairStatusHandler {
           LOG.warn("Repair command {} on segment {} interrupted", commandId, segmentId);
         } finally {
           RepairSegment resultingSegment = storage.getRepairSegment(segmentId).get();
-          LOG.info("Repair command {} on segment {} exited with state {}", commandId, segmentId,
+          LOG.info("Repair command {} on segment {} returned with state {}", commandId, segmentId,
                    resultingSegment.getState());
           if (resultingSegment.getState().equals(RepairSegment.State.RUNNING)) {
             LOG.info("Repair command {} on segment {} has been cancelled while running", commandId,
                      segmentId);
             abort(resultingSegment, coordinator);
+          } else if (resultingSegment.getState().equals(RepairSegment.State.DONE)) {
+            LOG.debug("Repair segment with id '{}' was repaired in {} seconds",
+                      resultingSegment.getId(),
+                      Seconds.secondsBetween(resultingSegment.getEndTime(),
+                                             resultingSegment.getStartTime()));
           }
         }
       }
@@ -125,6 +131,8 @@ public final class SegmentRunner implements RepairStatusHandler {
         coordinator.tokenRangeToEndpoint(keyspace, segment.getTokenRange());
     for (String hostName : allHosts) {
       try (JmxProxy hostProxy = factory.connect(hostName)) {
+        LOG.debug("checking host '{}' for pending compactions and other repairs (can repair?)",
+                  hostName);
         if (hostProxy.getPendingCompactions() > MAX_PENDING_COMPACTIONS) {
           LOG.warn("SegmentRunner declined to repair segment {} because of too many pending "
                    + "compactions (> {}) on host \"{}\"", segmentId, MAX_PENDING_COMPACTIONS,
@@ -176,9 +184,9 @@ public final class SegmentRunner implements RepairStatusHandler {
         case STARTED:
           DateTime now = DateTime.now();
           storage.updateRepairSegment(currentSegment.with()
+                                          .state(RepairSegment.State.RUNNING)
                                           .startTime(now)
                                           .build(segmentId));
-          // We already set the state of the segment to RUNNING.
           break;
         case SESSION_FAILED:
           LOG.warn("repair session failed for segment with id '{}' and repair number '{}'",

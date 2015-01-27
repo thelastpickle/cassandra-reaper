@@ -45,6 +45,7 @@ public class RepairRunner implements Runnable {
   private final long repairRunId;
   private final JmxConnectionFactory jmxConnectionFactory;
   private JmxProxy jmxConnection;
+
   private RepairRunner(IStorage storage, long repairRunId,
                        JmxConnectionFactory jmxConnectionFactory)
       throws ReaperException {

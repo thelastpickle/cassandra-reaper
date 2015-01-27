@@ -27,10 +27,12 @@ import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 
+import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.joda.time.DateTime;
 import org.junit.Test;
+import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -55,7 +57,7 @@ public class SegmentRunnerTest {
     final IStorage storage = new MemoryStorage();
     RepairUnit cf = storage.addRepairUnit(
         new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), 1,
-                               RepairUnit.RepairParallelism.PARALLEL));
+                               RepairParallelism.PARALLEL));
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5));
     storage.addRepairSegments(Collections.singleton(
@@ -77,7 +79,7 @@ public class SegmentRunnerTest {
             when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
                 .thenReturn(Lists.newArrayList(""));
             when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-                                   Sets.newHashSet(anyString())))
+                                   Matchers.<RepairParallelism>any(), Sets.newHashSet(anyString())))
                 .then(new Answer<Integer>() {
                   @Override
                   public Integer answer(InvocationOnMock invocation) {
@@ -113,7 +115,7 @@ public class SegmentRunnerTest {
     final IStorage storage = new MemoryStorage();
     RepairUnit cf = storage.addRepairUnit(
         new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), 1,
-                               RepairUnit.RepairParallelism.PARALLEL));
+                               RepairParallelism.PARALLEL));
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5));
     storage.addRepairSegments(Collections.singleton(
@@ -135,7 +137,7 @@ public class SegmentRunnerTest {
             when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
                 .thenReturn(Lists.newArrayList(""));
             when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-                                   Sets.newHashSet(anyString())))
+                                   Matchers.<RepairParallelism>any(), Sets.newHashSet(anyString())))
                 .then(new Answer<Integer>() {
                   @Override
                   public Integer answer(InvocationOnMock invocation) {
@@ -182,7 +184,7 @@ public class SegmentRunnerTest {
     RepairUnit cf =
         storage.addRepairUnit(
             new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), 1,
-                                   RepairUnit.RepairParallelism.PARALLEL));
+                                   RepairParallelism.PARALLEL));
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5));
     storage.addRepairSegments(Collections.singleton(
@@ -204,7 +206,7 @@ public class SegmentRunnerTest {
             when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
                 .thenReturn(Lists.newArrayList(""));
             when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-                                   Sets.newHashSet(anyString())))
+                                   Matchers.<RepairParallelism>any(), Sets.newHashSet(anyString())))
                 .then(new Answer<Integer>() {
                   @Override
                   public Integer answer(InvocationOnMock invocation) {

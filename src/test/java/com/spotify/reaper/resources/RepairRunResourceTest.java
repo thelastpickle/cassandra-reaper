@@ -3,6 +3,7 @@ package com.spotify.reaper.resources;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
@@ -17,12 +18,12 @@ import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
+
+import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import java.math.BigInteger;
 import java.net.URI;
 import java.util.Collections;
@@ -30,7 +31,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -57,9 +63,9 @@ public class RepairRunResourceTest {
 
   int SEGMENT_CNT = 6;
   double REPAIR_INTENSITY = 0.5f;
-  RepairUnit.RepairParallelism REPAIR_PARALLELISM = RepairUnit.RepairParallelism.SEQUENTIAL;
+  RepairParallelism REPAIR_PARALLELISM = RepairParallelism.SEQUENTIAL;
   List<BigInteger> TOKENS = Lists.newArrayList(BigInteger.valueOf(0l), BigInteger.valueOf(100l),
-      BigInteger.valueOf(200l));
+                                               BigInteger.valueOf(200l));
 
   IStorage storage;
   ReaperApplicationConfiguration config;
@@ -98,27 +104,32 @@ public class RepairRunResourceTest {
     };
 
     RepairUnit.Builder repairUnitBuilder = new RepairUnit.Builder(CLUSTER_NAME,
-        KEYSPACE, TABLES, SEGMENT_CNT, REPAIR_PARALLELISM);
+                                                                  KEYSPACE, TABLES, SEGMENT_CNT,
+                                                                  REPAIR_PARALLELISM);
     storage.addRepairUnit(repairUnitBuilder);
   }
 
   private Response addDefaultRepairRun(RepairRunResource resource) {
     return addRepairRun(resource, uriInfo, CLUSTER_NAME, KEYSPACE, TABLES,
-        OWNER, null, SEGMENTS);
+                        OWNER, null, SEGMENTS);
   }
 
   private Response addRepairRun(RepairRunResource resource, UriInfo uriInfo,
-      String clusterName, String keyspace, Set<String> columnFamilies, String owner,
-      String cause, Integer segments) {
+                                String clusterName, String keyspace, Set<String> columnFamilies,
+                                String owner,
+                                String cause, Integer segments) {
     return resource.addRepairRun(uriInfo,
-        clusterName == null ? Optional.<String>absent() : Optional.of(clusterName),
-        keyspace == null ? Optional.<String>absent() : Optional.of(keyspace),
-        columnFamilies == null ?
-            Optional.<String>absent() :
-            Optional.of(columnFamilies.iterator().next()),
-        owner == null ? Optional.<String>absent() : Optional.of(owner),
-        cause == null ? Optional.<String>absent() : Optional.of(cause),
-        segments == null ? Optional.<Integer>absent() : Optional.of(segments));
+                                 clusterName == null ? Optional.<String>absent()
+                                                     : Optional.of(clusterName),
+                                 keyspace == null ? Optional.<String>absent()
+                                                  : Optional.of(keyspace),
+                                 columnFamilies == null ?
+                                 Optional.<String>absent() :
+                                 Optional.of(columnFamilies.iterator().next()),
+                                 owner == null ? Optional.<String>absent() : Optional.of(owner),
+                                 cause == null ? Optional.<String>absent() : Optional.of(cause),
+                                 segments == null ? Optional.<Integer>absent()
+                                                  : Optional.of(segments));
   }
 
   @Test
@@ -144,7 +155,7 @@ public class RepairRunResourceTest {
 
     // apparently, tokens [0, 100, 200] and 6 requested segments causes generating 8 RepairSegments
     assertEquals(8, storage.getSegmentAmountForRepairRun(run.getId(),
-        RepairSegment.State.NOT_STARTED));
+                                                         RepairSegment.State.NOT_STARTED));
 
     // adding another repair run should work as well
     response = addDefaultRepairRun(resource);
@@ -160,7 +171,7 @@ public class RepairRunResourceTest {
   public void testTriggerRepairRun() throws Exception {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
     RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S,
-        TimeUnit.SECONDS);
+                                      TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(config, storage, factory);
     Response response = addDefaultRepairRun(resource);
     RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
@@ -203,7 +214,7 @@ public class RepairRunResourceTest {
   public void testTriggerAlreadyRunningRun() throws InterruptedException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
     RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S,
-        TimeUnit.SECONDS);
+                                      TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(config, storage, factory);
     Response response = addDefaultRepairRun(resource);
     RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
@@ -231,7 +242,7 @@ public class RepairRunResourceTest {
   public void testAddRunMissingArgument() {
     RepairRunResource resource = new RepairRunResource(config, storage, factory);
     Response response = addRepairRun(resource, uriInfo, CLUSTER_NAME, null,
-        TABLES, OWNER, null, SEGMENTS);
+                                     TABLES, OWNER, null, SEGMENTS);
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
   }
@@ -239,10 +250,10 @@ public class RepairRunResourceTest {
   @Test
   public void testTriggerRunMissingArgument() {
     RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S,
-        TimeUnit.SECONDS);
+                                      TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(config, storage, factory);
     Response response = addRepairRun(resource, uriInfo, CLUSTER_NAME, null, TABLES, OWNER,
-        null, SEGMENTS);
+                                     null, SEGMENTS);
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
   }
@@ -252,7 +263,7 @@ public class RepairRunResourceTest {
     // first trigger a run
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
     RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S,
-        TimeUnit.SECONDS);
+                                      TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(config, storage, factory);
     Response response = addDefaultRepairRun(resource);
     RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
@@ -265,7 +276,7 @@ public class RepairRunResourceTest {
 
     // now pause it
     response = resource.modifyRunState(uriInfo, runId,
-        Optional.of(RepairRun.RunState.PAUSED.toString()));
+                                       Optional.of(RepairRun.RunState.PAUSED.toString()));
     Thread.sleep(200);
 
     assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -280,14 +291,14 @@ public class RepairRunResourceTest {
   public void testPauseNotRunningRun() throws InterruptedException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
     RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S,
-        TimeUnit.SECONDS);
+                                      TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(config, storage, factory);
     Response response = addDefaultRepairRun(resource);
     RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
     long runId = repairRunStatus.getId();
 
     response = resource.modifyRunState(uriInfo, runId,
-        Optional.of(RepairRun.RunState.PAUSED.toString()));
+                                       Optional.of(RepairRun.RunState.PAUSED.toString()));
     Thread.sleep(200);
 
     assertEquals(400, response.getStatus());
@@ -302,7 +313,7 @@ public class RepairRunResourceTest {
   public void testPauseNotExistingRun() throws InterruptedException {
     RepairRunResource resource = new RepairRunResource(config, storage, factory);
     Response response = resource.modifyRunState(uriInfo, 42l,
-        Optional.of(RepairRun.RunState.PAUSED.toString()));
+                                                Optional.of(RepairRun.RunState.PAUSED.toString()));
     assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
     assertEquals(0, storage.getRepairRunsWithState(RepairRun.RunState.RUNNING).size());
   }

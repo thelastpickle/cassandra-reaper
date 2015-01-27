@@ -65,10 +65,12 @@ The Reaper service specific configuration values are:
 
 * repairParallelism:
 
-  Repair parallelism value must be one of: "parallel", "sequential", or "dc_parallel".
+  Repair parallelism value must be one of: "sequential", "parallel", or "datacenter_aware".
   Defines the type of parallelism to use for repairs by default. For Cassandra 1.x the default is
   "parallel", for 2.x versions "sequential", and in versions after 2.12, there is a third
-  option called "dc_parallel".
+  option called "datacenter_aware".
+  If you try to use "datacenter_aware" in clusters that don't support it yet, Reaper will fall
+  back to using "sequential" for those clusters.
 
 * repairIntensity:
 

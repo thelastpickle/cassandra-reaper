@@ -23,6 +23,7 @@ import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
 
+import org.apache.cassandra.repair.RepairParallelism;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,9 +122,13 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     LOG.debug("repairRunThreadCount: " + config.getRepairRunThreadCount());
     LOG.debug("segmentCount: " + config.getSegmentCount());
     LOG.debug("repairParallelism: " + config.getRepairParallelism());
-    assert Arrays.asList(new String[]{"sequential", "parallel", "dc_parallel"})
-        .contains(config.getRepairParallelism()) :
-        "invalid repairParallelism given: " + config.getRepairParallelism();
+    try {
+      RepairParallelism.valueOf(config.getRepairParallelism().toUpperCase());
+    } catch (java.lang.IllegalArgumentException ex) {
+      throw new ReaperException(
+          "invalid repair parallelism given \"" + config.getRepairParallelism()
+          + "\", must be one of: " + Arrays.toString(RepairParallelism.values()));
+    }
     LOG.debug("hangingRepairTimeoutMins: " + config.getHangingRepairTimeoutMins());
   }
 

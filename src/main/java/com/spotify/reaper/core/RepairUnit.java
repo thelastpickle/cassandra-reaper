@@ -13,6 +13,8 @@
  */
 package com.spotify.reaper.core;
 
+import org.apache.cassandra.repair.RepairParallelism;
+
 import java.util.Set;
 
 public class RepairUnit {
@@ -59,12 +61,6 @@ public class RepairUnit {
 
   public Builder with() {
     return new Builder(this);
-  }
-
-  public enum RepairParallelism {
-    PARALLEL,   // run repairs in parallel on all nodes for a token range
-    SEQUENTIAL, // run repairs in one node at the time for a token range
-    DC_PARALLEL // run repairs one node at a time per data center
   }
 
   public static class Builder {

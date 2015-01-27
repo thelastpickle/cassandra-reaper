@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS "repair_segment" (
   "end_token" NUMERIC(50) NOT NULL,
   -- see (Java) RepairSegment.State for state values
   "state" SMALLINT NOT NULL,
+  "coordinator_host" TEXT DEFAULT NULL,
   "start_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "end_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "fail_count" INT NOT NULL DEFAULT 0

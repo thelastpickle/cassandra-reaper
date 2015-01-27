@@ -23,6 +23,7 @@ import com.spotify.reaper.service.RingRange;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
 import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.compaction.CompactionManagerMBean;
+import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.service.StorageServiceMBean;
 import org.slf4j.Logger;
@@ -132,7 +133,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       // registering a listener throws bunch of exceptions, so we do it here rather than in the
       // constructor
       mbeanServerConn.addNotificationListener(ssMbeanName, proxy, null, null);
-      LOG.info(String.format("JMX connection to %s properly connected.", host));
+      LOG.debug(String.format("JMX connection to %s properly connected.", host));
       return proxy;
     } catch (IOException | InstanceNotFoundException e) {
       LOG.error("Failed to establish JMX connection");
@@ -299,20 +300,35 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * @return Repair command number, or 0 if nothing to repair
    */
   public int triggerRepair(BigInteger beginToken, BigInteger endToken, String keyspace,
-                           Collection<String> columnFamilies) {
+                           RepairParallelism repairParallelism, Collection<String> columnFamilies) {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
+    String cassandraVersion = ssProxy.getReleaseVersion();
+    boolean canUseDatacenterAware = versionCompare(cassandraVersion, "2.0.12") >= 0;
     String msg = String.format("Triggering repair of range (%s,%s] for keyspace \"%s\" on "
-                               + "host %s, for column families: %s",
+                               + "host %s, with repair parallelism %s, in cluster with Cassandra "
+                               + "version '%s' (can use DATACENTER_AWARE '%s'), "
+                               + "for column families: %s",
                                beginToken.toString(), endToken.toString(), keyspace, this.host,
+                               repairParallelism, cassandraVersion, canUseDatacenterAware,
                                columnFamilies);
     LOG.info(msg);
-    return ssProxy.forceRepairRangeAsync(
-        beginToken.toString(),
-        endToken.toString(),
-        keyspace,
-        false,                      // isSequential - if true, do "snapshot repairs"
-        false,                      // isLocal - if false, repair all DCs
-        columnFamilies.toArray(new String[columnFamilies.size()]));
+    if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
+      if (canUseDatacenterAware) {
+        return ssProxy.forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
+                                             repairParallelism.ordinal(), null, null,
+                                             columnFamilies
+                                                 .toArray(new String[columnFamilies.size()]));
+      } else {
+        LOG.info("Cannot use DATACENTER_AWARE repair policy for Cassandra cluster with version {},"
+                 + " falling back to SEQUENTIAL repair.",
+                 cassandraVersion);
+        repairParallelism = RepairParallelism.SEQUENTIAL;
+      }
+    }
+    boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
+    return ssProxy.forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
+                                         snapshotRepair, false,
+                                         columnFamilies.toArray(new String[columnFamilies.size()]));
   }
 
   /**
@@ -326,7 +342,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   public void handleNotification(Notification notification, Object handback) {
     // we're interested in "repair"
     String type = notification.getType();
-    LOG.debug(String.format("Received notification: %s", notification.toString()));
+    LOG.debug("Received notification: {}", notification.toString());
     if (repairStatusHandler.isPresent() && type.equals("repair")) {
       int[] data = (int[]) notification.getUserData();
       // get the repair sequence number
@@ -366,6 +382,42 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       throw new ReaperException(e);
     }
   }
+
+  /**
+   * NOTICE: This code is copied from StackOverflow answer:
+   * http://stackoverflow.com/questions/6701948/efficient-way-to-compare-version-strings-in-java
+   *
+   * Compares two version strings.
+   *
+   * Use this instead of String.compareTo() for a non-lexicographical
+   * comparison that works for version strings. e.g. "1.10".compareTo("1.6").
+   *
+   * @param str1 a string of ordinal numbers separated by decimal points.
+   * @param str2 a string of ordinal numbers separated by decimal points.
+   * @return The result is a negative integer if str1 is _numerically_ less than str2.
+   * The result is a positive integer if str1 is _numerically_ greater than str2.
+   * The result is zero if the strings are _numerically_ equal.
+   * @note It does not work if "1.10" is supposed to be equal to "1.10.0".
+   */
+  public static Integer versionCompare(String str1, String str2) {
+    String[] vals1 = str1.split("\\.");
+    String[] vals2 = str2.split("\\.");
+    int i = 0;
+    // set index to first non-equal ordinal or length of shortest version string
+    while (i < vals1.length && i < vals2.length && vals1[i].equals(vals2[i])) {
+      i++;
+    }
+    // compare first non-equal ordinal number
+    if (i < vals1.length && i < vals2.length) {
+      int diff = Integer.valueOf(vals1[i]).compareTo(Integer.valueOf(vals2[i]));
+      return Integer.signum(diff);
+    }
+    // the strings are equal or one string is a substring of the other
+    // e.g. "1.2.3" = "1.2.3" or "1.2.3" < "1.2.3.4"
+    else {
+      return Integer.signum(vals1.length - vals2.length);
+    }
+  }
 }
 
 
@@ -377,6 +429,7 @@ class ColumnFamilyStoreMBeanIterator
 
   private Iterator<ObjectName> resIter;
   private MBeanServerConnection mbeanServerConn;
+
   public ColumnFamilyStoreMBeanIterator(MBeanServerConnection mbeanServerConn)
       throws MalformedObjectNameException, NullPointerException, IOException {
     ObjectName query = new ObjectName("org.apache.cassandra.db:type=ColumnFamilies,*");

@@ -33,6 +33,7 @@ import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
 import com.spotify.reaper.storage.IStorage;
 
+import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -176,8 +177,7 @@ public class RepairRunResource {
                  clusterName.get(), keyspace.get(), tableNames);
         theRepairUnit = storage.addRepairUnit(
             new RepairUnit.Builder(clusterName.get(), keyspace.get(), tableNames, segments,
-                                   RepairUnit.RepairParallelism.valueOf(
-                                       config.getRepairParallelism().toUpperCase())));
+                                   RepairParallelism.valueOf(config.getRepairParallelism().toUpperCase())));
       }
       RepairRun newRepairRun = registerRepairRun(cluster.get(), theRepairUnit, cause, owner.get());
       return Response.created(buildRepairRunURI(uriInfo, newRepairRun))

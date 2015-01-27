@@ -91,16 +91,18 @@ public interface IStoragePostgreSQL {
   // RepairSegment
   //
   static final String SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID =
-      "repair_unit_id, run_id, start_token, end_token, state, start_time, end_time, fail_count";
+      "repair_unit_id, run_id, start_token, end_token, state, coordinator_host, start_time, "
+      + "end_time, fail_count";
   static final String SQL_REPAIR_SEGMENT_ALL_FIELDS = "id, " + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID;
   static final String SQL_INSERT_REPAIR_SEGMENT =
       "INSERT INTO repair_segment (" + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID + ") VALUES "
-      + "(:repairUnitId, :runId, :startToken, :endToken, :state, :startTime, :endTime, "
-      + ":failCount)";
+      + "(:repairUnitId, :runId, :startToken, :endToken, :state, :coordinatorHost, :startTime, "
+      + ":endTime, :failCount)";
   static final String SQL_UPDATE_REPAIR_SEGMENT =
       "UPDATE repair_segment SET repair_unit_id = :repairUnitId, run_id = :runId, "
       + "start_token = :startToken, end_token = :endToken, state = :state, "
-      + "start_time = :startTime, end_time = :endTime, fail_count = :failCount WHERE id = :id";
+      + "coordinator_host = :coordinatorHost, start_time = :startTime, end_time = :endTime, "
+      + "fail_count = :failCount WHERE id = :id";
   static final String SQL_GET_REPAIR_SEGMENT =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE id = :id";
   static final String SQL_GET_REPAIR_SEGMENT_FOR_RUN_WITH_STATE =

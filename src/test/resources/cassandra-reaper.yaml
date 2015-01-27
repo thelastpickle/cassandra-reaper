@@ -2,13 +2,13 @@
 # This configuration is used mainly for testing.
 # See the README.md file for explanations of configuration keys.
 #
-segmentCount: 100
+segmentCount: 200
 
-# repairParallelism can be one of: "parallel", "sequential", or "dc_parallel"
-repairParallelism: sequential
+# repairParallelism can be one of: "SEQUENTIAL", "PARALLEL", or "DATACENTER_AWARE"
+repairParallelism: DATACENTER_AWARE
 
 # repairIntensity must be a value between 0.0 and 1.0, but not 0.
-repairIntensity: 0.75
+repairIntensity: 0.9
 
 repairRunThreadCount: 15
 
