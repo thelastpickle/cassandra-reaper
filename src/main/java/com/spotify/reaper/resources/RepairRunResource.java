@@ -87,13 +87,13 @@ public class RepairRunResource {
   }
 
   /**
-   * Endpoint used to create a repair run. Does not allow triggering the run. triggerRepairRun()
-   * must be called to initiate the repair. Creating a repair run includes generating the repair
-   * segments.
-   * <p/>
-   * Notice that query parameter "tables" can be a single String, or a comma-separated list
-   * of table names. If the "tables" parameter is omitted, and only the keyspace is defined,
-   * then created repair run will target all the tables in the keyspace.
+   * Endpoint used to create a repair run. Does not allow triggering the run.
+   * triggerRepairRun() must be called to initiate the repair.
+   * Creating a repair run includes generating the repair segments.
+   *
+   * Notice that query parameter "tables" can be a single String, or a
+   * comma-separated list of table names. If the "tables" parameter is omitted, and only the
+   * keyspace is defined, then created repair run will target all the tables in the keyspace.
    *
    * @return repair run ID in case of everything going well,
    * and a status code 500 in case of errors.
@@ -327,14 +327,14 @@ public class RepairRunResource {
   }
 
   /**
-   * Creates a repair run but does not trigger it.
-   * <p/>
+   * Creates a repair run but does not start it immediately.
+   *
    * Creating a repair run involves:
    * 1) split token range into segments
    * 2) create a RepairRun instance
-   * 3) create RepairSegment instances linked to RepairRun. these are directly stored in storage
+   * 3) create RepairSegment instances linked to RepairRun.
    *
-   * @throws ReaperException if repair run fails to be stored in Reaper's storage
+   * @throws ReaperException if repair run fails to be stored into Reaper's storage.
    */
   private RepairRun registerRepairRun(Cluster cluster, RepairUnit repairUnit,
                                       Optional<String> cause, String owner) throws ReaperException {
@@ -364,8 +364,8 @@ public class RepairRunResource {
    * Splits a token range for given table into segments
    *
    * @return the created segments
-   * @throws ReaperException when fails to discover seeds for the cluster or fails to connect to any
-   *                         of the nodes in the Cluster.
+   * @throws ReaperException when fails to discover seeds for the cluster or fails to connect to
+   * any of the nodes in the Cluster.
    */
   private List<RingRange> generateSegments(Cluster targetCluster, RepairUnit repairUnit)
       throws ReaperException {
@@ -439,7 +439,8 @@ public class RepairRunResource {
     if (repairUnit.getSegmentCount() != tokenSegments.size()) {
       LOG.debug("created segment amount differs from expected default {} != {}",
                 repairUnit.getSegmentCount(), tokenSegments.size());
-      // TODO: update the RepairUnit with new segment count
+      storage.updateRepairUnit(
+          repairUnit.with().segmentCount(tokenSegments.size()).build(repairUnit.getId()));
     }
   }
 

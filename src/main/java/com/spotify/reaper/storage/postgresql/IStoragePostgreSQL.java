@@ -78,6 +78,9 @@ public interface IStoragePostgreSQL {
   static final String SQL_INSERT_REPAIR_UNIT =
       "INSERT INTO repair_unit (" + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID + ") VALUES "
       + "(:clusterName, :keyspaceName, :columnFamilies, :segmentCount, :repairParallelism)";
+  static final String SQL_UPDATE_REPAIR_UNIT =
+      "UPDATE repair_unit SET segment_count = :segmentCount, "
+      + "repair_parallelism = :repairParallelism WHERE id = :id";
   static final String SQL_GET_REPAIR_UNIT =
       "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM repair_unit WHERE id = :id";
   static final String SQL_GET_REPAIR_UNIT_BY_CLUSTER_AND_TABLES =
@@ -167,6 +170,9 @@ public interface IStoragePostgreSQL {
   @SqlUpdate(SQL_INSERT_REPAIR_UNIT)
   @GetGeneratedKeys
   public long insertRepairUnit(@BindBean RepairUnit newRepairUnit);
+
+  @SqlUpdate(SQL_UPDATE_REPAIR_UNIT)
+  public int updateRepairUnit(@BindBean RepairUnit newRepairUnit);
 
   @SqlBatch(SQL_INSERT_REPAIR_SEGMENT)
   @BatchChunkSize(500)

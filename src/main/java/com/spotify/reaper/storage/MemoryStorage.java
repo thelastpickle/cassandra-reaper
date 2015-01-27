@@ -155,6 +155,20 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
+  public boolean updateRepairUnit(RepairUnit newRepairUnit) {
+    if (repairUnits.containsKey(newRepairUnit.getId())) {
+      repairUnits.put(newRepairUnit.getId(), newRepairUnit);
+      RepairUnitKey unitTables = new RepairUnitKey(newRepairUnit.getClusterName(),
+                                                   newRepairUnit.getKeyspaceName(),
+                                                   newRepairUnit.getColumnFamilies());
+      repairUnitsByKey.put(unitTables, newRepairUnit);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  @Override
   public void addRepairSegments(Collection<RepairSegment.Builder> segments, long runId) {
     LinkedHashMap<Long, RepairSegment> newSegments = Maps.newLinkedHashMap();
     for (RepairSegment.Builder segment : segments) {
