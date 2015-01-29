@@ -133,7 +133,8 @@ public class RepairRunResourceTest {
                                  owner == null ? Optional.<String>absent() : Optional.of(owner),
                                  cause == null ? Optional.<String>absent() : Optional.of(cause),
                                  segments == null ? Optional.<Integer>absent()
-                                                  : Optional.of(segments));
+                                                  : Optional.of(segments),
+                                 Optional.of(REPAIR_PARALLELISM.name()));
   }
 
   @Test

@@ -66,13 +66,10 @@ The Reaper service specific configuration values are:
 
 * repairParallelism:
 
+  Defines the default type of parallelism to use for repairs.
   Repair parallelism value must be one of: "sequential", "parallel", or "datacenter_aware".
-  Defines the default type of parallelism to use for repairs. For Cassandra 1.x the default is
-  "parallel", for 2.x versions "sequential", and in versions after 2.12, there is a third
-  option called "datacenter_aware". You can override this setting when calling the Reaper
-  per repair run.
-  If you try to use "datacenter_aware" in clusters that don't support it yet, Reaper will fall
-  back to using "sequential" for those clusters.
+  If you try to use "datacenter_aware" in clusters that don't support it yet (older than 2.0.12),
+  Reaper will fall back into using "sequential" for those clusters.
 
 * repairIntensity:
 
@@ -88,6 +85,12 @@ The Reaper service specific configuration values are:
 
   The amount of threads to use for handling the Reaper tasks. Have this big enough not to cause
   blocking in cause some thread is waiting for I/O, like calling a Cassandra cluster through JMX.
+
+* hangingRepairTimeoutMins:
+
+  The amount of time in minutes to wait for a single repair to finish. If this timeout is reached,
+  the repair segment in question will be cancelled, if possible, and then scheduled for later
+  repair again within the same repair run process.
 
 * storageType:
 
