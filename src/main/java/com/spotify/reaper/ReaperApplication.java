@@ -122,14 +122,19 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     LOG.debug("repairRunThreadCount: " + config.getRepairRunThreadCount());
     LOG.debug("segmentCount: " + config.getSegmentCount());
     LOG.debug("repairParallelism: " + config.getRepairParallelism());
+    LOG.debug("hangingRepairTimeoutMins: " + config.getHangingRepairTimeoutMins());
+    checkRepairParallelismString(config.getRepairParallelism());
+  }
+
+  public static void checkRepairParallelismString(String givenRepairParallelism)
+      throws ReaperException {
     try {
-      RepairParallelism.valueOf(config.getRepairParallelism().toUpperCase());
+      RepairParallelism.valueOf(givenRepairParallelism.toUpperCase());
     } catch (java.lang.IllegalArgumentException ex) {
       throw new ReaperException(
-          "invalid repair parallelism given \"" + config.getRepairParallelism()
+          "invalid repair parallelism given \"" + givenRepairParallelism
           + "\", must be one of: " + Arrays.toString(RepairParallelism.values()));
     }
-    LOG.debug("hangingRepairTimeoutMins: " + config.getHangingRepairTimeoutMins());
   }
 
   void reloadConfiguration() {

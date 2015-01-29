@@ -19,6 +19,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
@@ -107,7 +108,8 @@ public class RepairRunResource {
       @QueryParam("tables") Optional<String> tableNamesParam,
       @QueryParam("owner") Optional<String> owner,
       @QueryParam("cause") Optional<String> cause,
-      @QueryParam("segmentCount") Optional<Integer> segmentCount
+      @QueryParam("segmentCount") Optional<Integer> segmentCount,
+      @QueryParam("repairParallelism") Optional<String> repairParallelism
   ) {
     LOG.info("add repair run called with: clusterName = {}, keyspace = {}, tables = {}, owner = {},"
              + " cause = {}", clusterName, keyspace, tableNamesParam, owner, cause);
@@ -123,6 +125,13 @@ public class RepairRunResource {
       if (!owner.isPresent()) {
         return Response.status(Response.Status.BAD_REQUEST).entity(
             "missing query parameter \"owner\"").build();
+      }
+      if (repairParallelism.isPresent()) {
+        try {
+          ReaperApplication.checkRepairParallelismString(repairParallelism.get());
+        } catch (ReaperException ex) {
+          return Response.status(Response.Status.BAD_REQUEST).entity(ex.getMessage()).build();
+        }
       }
 
       Optional<Cluster> cluster = storage.getCluster(clusterName.get());
@@ -158,8 +167,13 @@ public class RepairRunResource {
           storage.getRepairUnit(clusterName.get(), keyspace.get(), tableNames);
       RepairUnit theRepairUnit;
       if (storedRepairUnit.isPresent()) {
+        // TODO: should we drop the RepairUnit not to get these issues with existing values?
         if (segmentCount.isPresent()) {
           LOG.warn("stored repair unit already exists, and segment count given, "
+                   + "which is thus ignored");
+        }
+        if (repairParallelism.isPresent()) {
+          LOG.warn("stored repair unit already exists, and repair parallelism given, "
                    + "which is thus ignored");
         }
         LOG.info(
@@ -173,11 +187,17 @@ public class RepairRunResource {
                     segmentCount.get(), config.getSegmentCount());
           segments = segmentCount.get();
         }
+        String repairParallelismStr = config.getRepairParallelism();
+        if (repairParallelism.isPresent()) {
+          LOG.debug("using given repair parallelism {} instead of configured value {}",
+                    repairParallelism.get(), config.getRepairParallelism());
+          repairParallelismStr = repairParallelism.get();
+        }
         LOG.info("create new repair unit for cluster '{}', keyspace '{}', and column families: {}",
                  clusterName.get(), keyspace.get(), tableNames);
         theRepairUnit = storage.addRepairUnit(
             new RepairUnit.Builder(clusterName.get(), keyspace.get(), tableNames, segments,
-                                   RepairParallelism.valueOf(config.getRepairParallelism().toUpperCase())));
+                                   RepairParallelism.valueOf(repairParallelismStr.toUpperCase())));
       }
       RepairRun newRepairRun = registerRepairRun(cluster.get(), theRepairUnit, cause, owner.get());
       return Response.created(buildRepairRunURI(uriInfo, newRepairRun))

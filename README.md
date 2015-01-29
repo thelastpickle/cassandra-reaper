@@ -57,20 +57,19 @@ The Reaper service specific configuration values are:
 
 * segmentCount:
 
-  Defines the amount of repair segments to create for newly registered Cassandra column families
-  (token rings). When running a repair run by the Reaper, each segment is repaired separately
-  by the Reaper process, until all the segments in a token ring are repaired.
-  The count might be slightly off the definite value, as clusters with multiple data centers
-  require additional small token ranges in addition to the expected.
+  Defines the default amount of repair segments to create for newly registered Cassandra
+  repair runs (token rings). When running a repair run by the Reaper, each segment is
+  repaired separately by the Reaper process, until all the segments in a token ring
+  are repaired. The count might be slightly off the defined value, as clusters residing
+  in multiple data centers require additional small token ranges in addition to the expected.
+  You can overwrite this value per repair run, when calling the Reaper.
 
 * repairParallelism:
 
+  Defines the default type of parallelism to use for repairs.
   Repair parallelism value must be one of: "sequential", "parallel", or "datacenter_aware".
-  Defines the type of parallelism to use for repairs by default. For Cassandra 1.x the default is
-  "parallel", for 2.x versions "sequential", and in versions after 2.12, there is a third
-  option called "datacenter_aware".
-  If you try to use "datacenter_aware" in clusters that don't support it yet, Reaper will fall
-  back to using "sequential" for those clusters.
+  If you try to use "datacenter_aware" in clusters that don't support it yet (older than 2.0.12),
+  Reaper will fall back into using "sequential" for those clusters.
 
 * repairIntensity:
 
@@ -80,16 +79,26 @@ The Reaper service specific configuration values are:
   and otherwise the sleep time is defined by how much time it took to repair the last segment
   divided by the intensity value. 0.5 means half of the time is spent sleeping, and half running.
   Intensity 0.75 means that 25% of the total time is used sleeping and 75% running.
+  This value can also be overwritten per repair run when invoking repairs.
 
 * repairRunThreadCount:
 
   The amount of threads to use for handling the Reaper tasks. Have this big enough not to cause
   blocking in cause some thread is waiting for I/O, like calling a Cassandra cluster through JMX.
 
+* hangingRepairTimeoutMins:
+
+  The amount of time in minutes to wait for a single repair to finish. If this timeout is reached,
+  the repair segment in question will be cancelled, if possible, and then scheduled for later
+  repair again within the same repair run process.
+
 * storageType:
 
   Whether to use database or memory based storage for storing the system state.
   Value can be either "memory" or "database".
+  If you are using the recommended (persistent) storage type "database", you need to define
+  the database client parameters in a database section in the configuration file. See the example
+  settings in provided testing configuration in *src/test/resources/cassandra-reaper.yaml*.
 
 Notice that in the *server* section of the configuration, if you want to bind the service
 to all interfaces, use value "0.0.0.0", or just leave the *bindHost* line away completely.

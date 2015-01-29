@@ -86,7 +86,8 @@ public final class SegmentRunner implements RepairStatusHandler {
 
   public static void abort(IStorage storage, RepairSegment segment, JmxProxy jmxConnection) {
     postpone(storage, segment);
-    LOG.warn("Aborting command {} on segment {}", segment.getRepairCommandId(), segment.getId());
+    LOG.info("Aborting repair on segment with id {} on coordinator {}",
+             segment.getId(), segment.getCoordinatorHost());
     jmxConnection.cancelAllRepairs();
   }
 

@@ -397,7 +397,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * @return The result is a negative integer if str1 is _numerically_ less than str2.
    * The result is a positive integer if str1 is _numerically_ greater than str2.
    * The result is zero if the strings are _numerically_ equal.
-   * @note It does not work if "1.10" is supposed to be equal to "1.10.0".
+   * It does not work if "1.10" is supposed to be equal to "1.10.0".
    */
   public static Integer versionCompare(String str1, String str2) {
     String[] vals1 = str1.split("\\.");

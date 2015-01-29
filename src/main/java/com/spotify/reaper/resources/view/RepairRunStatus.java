@@ -68,8 +68,10 @@ public class RepairRunStatus {
 
   @JsonProperty("segment_count")
   private final int segmentCount;
+
   @JsonProperty("repair_parallelism")
   private final String repairParallelism;
+
   @JsonProperty("segments_repaired")
   private int segmentsRepaired = 0;
 
@@ -85,7 +87,7 @@ public class RepairRunStatus {
     this.startTime = repairRun.getStartTime();
     this.endTime = repairRun.getEndTime();
     this.pauseTime = repairRun.getPauseTime();
-    this.intensity = repairRun.getIntensity();
+    this.intensity = Math.round(repairRun.getIntensity() * 10000) / 10000;
     this.segmentCount = repairUnit.getSegmentCount();
     this.repairParallelism = repairUnit.getRepairParallelism().name().toLowerCase();
   }
