@@ -30,6 +30,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -149,6 +150,8 @@ public class RepairRunner implements Runnable {
       }
     } catch (ReaperException e) {
       LOG.error("RepairRun FAILURE");
+      LOG.error(e.getMessage());
+      LOG.error(Arrays.toString(e.getStackTrace()));
       e.printStackTrace();
       storage.updateRepairRun(repairRun.with()
                                   .runState(RepairRun.RunState.ERROR)
