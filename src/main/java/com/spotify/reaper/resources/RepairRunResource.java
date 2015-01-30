@@ -308,6 +308,7 @@ public class RepairRunResource {
     LOG.info("Resuming run {}", repairRun.getId());
     RepairRun updatedRun = repairRun.with()
         .runState(RepairRun.RunState.RUNNING)
+        .pauseTime(null)
         .build(repairRun.getId());
     if (!storage.updateRepairRun(updatedRun)) {
       throw new RuntimeException("failed updating repair run " + updatedRun.getId());
