@@ -134,17 +134,18 @@ public class RepairRunResource {
         }
       }
 
-      Optional<Cluster> cluster = storage.getCluster(clusterName.get());
+      Optional<Cluster> cluster = storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
       if (!cluster.isPresent()) {
         return Response.status(Response.Status.NOT_FOUND).entity(
-            "no cluster found with name '" + clusterName + "'").build();
+            "No cluster found with name \"" + clusterName.get()
+            + "\", did you register your cluster first?").build();
       }
 
       JmxProxy jmxProxy = jmxFactory.connect(cluster.get().getSeedHosts().iterator().next());
       Set<String> knownTables = jmxProxy.getTableNamesForKeyspace(keyspace.get());
       if (knownTables.size() == 0) {
         LOG.debug("no known tables for keyspace {} in cluster {}", keyspace.get(),
-                  clusterName.get());
+                  cluster.get().getName());
         return Response.status(Response.Status.NOT_FOUND).entity(
             "no column families found for keyspace").build();
       }
@@ -164,7 +165,7 @@ public class RepairRunResource {
       }
 
       Optional<RepairUnit> storedRepairUnit =
-          storage.getRepairUnit(clusterName.get(), keyspace.get(), tableNames);
+          storage.getRepairUnit(cluster.get().getName(), keyspace.get(), tableNames);
       RepairUnit theRepairUnit;
       if (storedRepairUnit.isPresent()) {
         // TODO: should we drop the RepairUnit not to get these issues with existing values?
@@ -178,7 +179,7 @@ public class RepairRunResource {
         }
         LOG.info(
             "use existing repair unit for cluster '{}', keyspace '{}', and column families: {}",
-            clusterName.get(), keyspace.get(), tableNames);
+            cluster.get().getName(), keyspace.get(), tableNames);
         theRepairUnit = storedRepairUnit.get();
       } else {
         int segments = config.getSegmentCount();
@@ -194,9 +195,9 @@ public class RepairRunResource {
           repairParallelismStr = repairParallelism.get();
         }
         LOG.info("create new repair unit for cluster '{}', keyspace '{}', and column families: {}",
-                 clusterName.get(), keyspace.get(), tableNames);
+                 cluster.get().getName(), keyspace.get(), tableNames);
         theRepairUnit = storage.addRepairUnit(
-            new RepairUnit.Builder(clusterName.get(), keyspace.get(), tableNames, segments,
+            new RepairUnit.Builder(cluster.get().getName(), keyspace.get(), tableNames, segments,
                                    RepairParallelism.valueOf(repairParallelismStr.toUpperCase())));
       }
       RepairRun newRepairRun = registerRepairRun(cluster.get(), theRepairUnit, cause, owner.get());

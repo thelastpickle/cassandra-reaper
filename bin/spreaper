@@ -192,6 +192,10 @@ SPREAPER_DESCRIPTION = \
     tool for running Cassandra repairs for multi-site clusters.
     This CLI tool is used to control the Cassandra Reaper service through
     its REST API.
+
+    First register your cluster with "add-cluster" command,
+    and then start repairing the cluster with "repair" command
+    giving the cluster name registered in the Reaper.
     """
 
 REAPER_USAGE = SPREAPER_DESCRIPTION + """
@@ -204,7 +208,8 @@ Usage: spreaper [<global_args>] <command> [<command_args>]
     status-keyspace Show status of a keyspace in a cluster.
     status-repair   Show status of a repair run.
     add-cluster     Register a cluster.
-    repair          Create a repair run, optionally starting it.
+    repair          Create a repair run, optionally starting it. You need to register
+                    a cluster into Reaper (add-cluster) before calling repair."
     start           Start a repair run, or resume paused repair run.
     pause           Pause a repair run.
     ping            Test connectivity to the Reaper service.
@@ -311,7 +316,8 @@ class ReaperCLI(object):
     def repair(self):
         reaper, args = ReaperCLI.prepare_reaper(
             "repair",
-            "Create a repair run, optionally starting it.",
+            "Create a repair run, optionally starting it. You need to register a cluster "
+            "into Reaper (add-cluster) before calling this.",
             extra_arguments=_arguments_for_repair
         )
         if not args.keyspace_name or not args.cluster_name:

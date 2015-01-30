@@ -141,10 +141,6 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
   }
 
-  public static String toSymbolicName(String s) {
-    return s.toLowerCase().replaceAll("[^a-z0-9_]", "");
-  }
-
   public String getHost() {
     return host;
   }
@@ -195,7 +191,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    */
   public String getClusterName() {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    return toSymbolicName(ssProxy.getClusterName());
+    return ssProxy.getClusterName();
   }
 
   /**
