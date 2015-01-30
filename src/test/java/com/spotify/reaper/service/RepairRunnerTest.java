@@ -70,7 +70,7 @@ public class RepairRunnerTest {
     final double INTENSITY = 0.5f;
     final long TIME_CREATION = 41l;
     final long TIME_START = 42l;
-    final String TEST_CLUSTER = "TestCluster";
+    final String TEST_CLUSTER = "testcluster";
 
     IStorage storage = new MemoryStorage();
 
@@ -80,8 +80,7 @@ public class RepairRunnerTest {
     // place a dummy repair run into the storage
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATION);
     RepairRun.Builder runBuilder =
-        new RepairRun.Builder(TEST_CLUSTER, CF_ID, DateTime.now(),
-                              INTENSITY);
+        new RepairRun.Builder(TEST_CLUSTER, CF_ID, DateTime.now(), INTENSITY);
     storage.addRepairRun(runBuilder);
     storage.addRepairSegments(Collections.<RepairSegment.Builder>emptySet(), RUN_ID);
 

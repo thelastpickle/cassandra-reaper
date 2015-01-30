@@ -60,8 +60,10 @@ public class RepairRunner implements Runnable {
     this.storage = storage;
     this.repairRunId = repairRunId;
     this.jmxConnectionFactory = jmxConnectionFactory;
+    Optional<RepairRun> repairRun = storage.getRepairRun(repairRunId);
+    assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
     jmxConnection = this.jmxConnectionFactory.connectAny(
-        storage.getCluster(storage.getRepairRun(repairRunId).get().getClusterName()).get());
+        storage.getCluster(repairRun.get().getClusterName()).get());
   }
 
   public static void initializeThreadPool(int threadAmount, long repairTimeout,
