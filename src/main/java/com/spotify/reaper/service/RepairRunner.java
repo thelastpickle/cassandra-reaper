@@ -213,7 +213,7 @@ public class RepairRunner implements Runnable {
     RepairRun repairRun = storage.getRepairRun(repairRunId).get();
     RepairUnit repairUnit = storage.getRepairUnit(repairRun.getRepairUnitId()).get();
     String keyspace = repairUnit.getKeyspaceName();
-    LOG.debug("repairing segment {} on run with id {}", segmentId, repairRun.getId());
+    LOG.debug("preparing to repair segment {} on run with id {}", segmentId, repairRun.getId());
 
     if (!jmxConnection.isConnectionAlive()) {
       try {
