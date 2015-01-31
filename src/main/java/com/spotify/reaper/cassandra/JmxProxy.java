@@ -141,10 +141,6 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
   }
 
-  public static String toSymbolicName(String s) {
-    return s.toLowerCase().replaceAll("[^a-z0-9_]", "");
-  }
-
   public String getHost() {
     return host;
   }
@@ -195,7 +191,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    */
   public String getClusterName() {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    return toSymbolicName(ssProxy.getClusterName());
+    return ssProxy.getClusterName();
   }
 
   /**
@@ -303,7 +299,12 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
                            RepairParallelism repairParallelism, Collection<String> columnFamilies) {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     String cassandraVersion = ssProxy.getReleaseVersion();
-    boolean canUseDatacenterAware = versionCompare(cassandraVersion, "2.0.12") >= 0;
+    boolean canUseDatacenterAware = false;
+    try {
+      canUseDatacenterAware = versionCompare(cassandraVersion, "2.0.12") >= 0;
+    } catch (ReaperException e) {
+      LOG.warn("failed on version comparison, not using dc aware repairs by default");
+    }
     String msg = String.format("Triggering repair of range (%s,%s] for keyspace \"%s\" on "
                                + "host %s, with repair parallelism %s, in cluster with Cassandra "
                                + "version '%s' (can use DATACENTER_AWARE '%s'), "
@@ -399,23 +400,30 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * The result is zero if the strings are _numerically_ equal.
    * It does not work if "1.10" is supposed to be equal to "1.10.0".
    */
-  public static Integer versionCompare(String str1, String str2) {
-    String[] vals1 = str1.split("\\.");
-    String[] vals2 = str2.split("\\.");
-    int i = 0;
-    // set index to first non-equal ordinal or length of shortest version string
-    while (i < vals1.length && i < vals2.length && vals1[i].equals(vals2[i])) {
-      i++;
-    }
-    // compare first non-equal ordinal number
-    if (i < vals1.length && i < vals2.length) {
-      int diff = Integer.valueOf(vals1[i]).compareTo(Integer.valueOf(vals2[i]));
-      return Integer.signum(diff);
-    }
-    // the strings are equal or one string is a substring of the other
-    // e.g. "1.2.3" = "1.2.3" or "1.2.3" < "1.2.3.4"
-    else {
-      return Integer.signum(vals1.length - vals2.length);
+  public static Integer versionCompare(String str1, String str2) throws ReaperException {
+    try {
+      str1 = str1.split(" ")[0].replaceAll("[^0-9.]", "");
+      str2 = str2.split(" ")[0].replaceAll("[^0-9.]", "");;
+      String[] vals1 = str1.split("\\.");
+      String[] vals2 = str2.split("\\.");
+      int i = 0;
+      // set index to first non-equal ordinal or length of shortest version string
+      while (i < vals1.length && i < vals2.length && vals1[i].equals(vals2[i])) {
+        i++;
+      }
+      // compare first non-equal ordinal number
+      if (i < vals1.length && i < vals2.length) {
+        int diff = Integer.valueOf(vals1[i]).compareTo(Integer.valueOf(vals2[i]));
+        return Integer.signum(diff);
+      }
+      // the strings are equal or one string is a substring of the other
+      // e.g. "1.2.3" = "1.2.3" or "1.2.3" < "1.2.3.4"
+      else {
+        return Integer.signum(vals1.length - vals2.length);
+      }
+    } catch (Exception ex) {
+      LOG.error("failed comparing strings for versions: '{}' '{}'", str1, str2);
+      throw new ReaperException(ex);
     }
   }
 }

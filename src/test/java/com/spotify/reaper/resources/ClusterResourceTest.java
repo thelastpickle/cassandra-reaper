@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 
 public class ClusterResourceTest {
 
-  String CLUSTER_NAME = "TestCluster";
+  String CLUSTER_NAME = "testcluster";
   String PARTITIONER = "org.apache.cassandra.dht.RandomPartitioner";
   String SEED_HOST = "TestHost";
   URI SAMPLE_URI = URI.create("http://test");

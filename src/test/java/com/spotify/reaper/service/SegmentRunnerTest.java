@@ -31,6 +31,7 @@ import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.joda.time.DateTime;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
@@ -51,6 +52,12 @@ import static org.mockito.Mockito.when;
 
 public class SegmentRunnerTest {
   // TODO: Clean up tests. There's a lot of code duplication across these tests.
+
+  @Before
+  public void setUp() throws Exception {
+    RepairRunner.repairRunners.clear();
+    SegmentRunner.segmentRunners.clear();
+  }
 
   @Test
   public void timeoutTest() throws InterruptedException, ReaperException, ExecutionException {

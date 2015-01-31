@@ -30,6 +30,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -60,8 +61,10 @@ public class RepairRunner implements Runnable {
     this.storage = storage;
     this.repairRunId = repairRunId;
     this.jmxConnectionFactory = jmxConnectionFactory;
+    Optional<RepairRun> repairRun = storage.getRepairRun(repairRunId);
+    assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
     jmxConnection = this.jmxConnectionFactory.connectAny(
-        storage.getCluster(storage.getRepairRun(repairRunId).get().getClusterName()).get());
+        storage.getCluster(repairRun.get().getClusterName()).get());
   }
 
   public static void initializeThreadPool(int threadAmount, long repairTimeout,
@@ -147,6 +150,8 @@ public class RepairRunner implements Runnable {
       }
     } catch (ReaperException e) {
       LOG.error("RepairRun FAILURE");
+      LOG.error(e.getMessage());
+      LOG.error(Arrays.toString(e.getStackTrace()));
       e.printStackTrace();
       storage.updateRepairRun(repairRun.with()
                                   .runState(RepairRun.RunState.ERROR)
@@ -211,7 +216,7 @@ public class RepairRunner implements Runnable {
     RepairRun repairRun = storage.getRepairRun(repairRunId).get();
     RepairUnit repairUnit = storage.getRepairUnit(repairRun.getRepairUnitId()).get();
     String keyspace = repairUnit.getKeyspaceName();
-    LOG.debug("repairing segment {} on run with id {}", segmentId, repairRun.getId());
+    LOG.debug("preparing to repair segment {} on run with id {}", segmentId, repairRun.getId());
 
     if (!jmxConnection.isConnectionAlive()) {
       try {

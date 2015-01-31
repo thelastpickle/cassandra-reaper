@@ -55,7 +55,7 @@ public class RepairRunResourceTest {
 
   URI SAMPLE_URI = URI.create("http://test");
 
-  static final String CLUSTER_NAME = "TestCluster";
+  static final String CLUSTER_NAME = "testcluster";
   static final String PARTITIONER = "org.apache.cassandra.dht.RandomPartitioner";
   static final String SEED_HOST = "TestHost";
   static final String KEYSPACE = "testKeyspace";
@@ -246,7 +246,6 @@ public class RepairRunResourceTest {
     Response response = addDefaultRepairRun(resource);
     assertEquals(404, response.getStatus());
     assertTrue(response.getEntity() instanceof String);
-    assertTrue(response.getEntity().toString().contains("no cluster found"));
   }
 
   @Test

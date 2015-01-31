@@ -21,8 +21,13 @@ public class Cluster {
   private final String partitioner; // Full name of the partitioner class
   private final Set<String> seedHosts;
 
+  public static String toSymbolicName(String s) {
+    assert s != null : "cannot turn null into symbolic name";
+    return s.toLowerCase().replaceAll("[^a-z0-9_]", "");
+  }
+
   public Cluster(String name, String partitioner, Set<String> seedHosts) {
-    this.name = name;
+    this.name = toSymbolicName(name);
     this.partitioner = partitioner;
     this.seedHosts = seedHosts;
   }

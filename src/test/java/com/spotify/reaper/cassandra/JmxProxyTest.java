@@ -13,6 +13,9 @@
  */
 package com.spotify.reaper.cassandra;
 
+import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.core.Cluster;
+
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -20,8 +23,15 @@ import static org.junit.Assert.assertEquals;
 public class JmxProxyTest {
 
   @Test
-  public void testGetSymbolicName() {
-    assertEquals("example2cluster", JmxProxy.toSymbolicName("Example2 Cluster"));
-    assertEquals("example2_cluster", JmxProxy.toSymbolicName("Example2_Cluster"));
+  public void testVersionCompare() throws ReaperException {
+    assertEquals(Integer.valueOf(0), JmxProxy.versionCompare("1.0", "1.0"));
+    assertEquals(Integer.valueOf(0), JmxProxy.versionCompare("1000.999", "1000.999"));
+    assertEquals(Integer.valueOf(-1), JmxProxy.versionCompare("1.0", "1.1"));
+    assertEquals(Integer.valueOf(-1), JmxProxy.versionCompare("1.2", "2.1"));
+    assertEquals(Integer.valueOf(1), JmxProxy.versionCompare("10.0.0", "1.0"));
+    assertEquals(Integer.valueOf(1), JmxProxy.versionCompare("99.0.0", "9.0"));
+    assertEquals(Integer.valueOf(1), JmxProxy.versionCompare("99.0.10", "99.0.1"));
+    assertEquals(Integer.valueOf(-1), JmxProxy.versionCompare("99.0.10~1", "99.0.10~2"));
   }
+
 }
