@@ -148,9 +148,9 @@ public class RepairRunner implements Runnable {
           repairRunners.remove(repairRunId);
           break;
       }
-    } catch (ReaperException e) {
+    } catch (ReaperException | RuntimeException e) {
       LOG.error("RepairRun FAILURE");
-      LOG.error(e.getMessage());
+      LOG.error(e.toString());
       LOG.error(Arrays.toString(e.getStackTrace()));
       e.printStackTrace();
       storage.updateRepairRun(repairRun.with()
