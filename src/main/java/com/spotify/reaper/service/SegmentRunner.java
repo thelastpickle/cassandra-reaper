@@ -154,8 +154,8 @@ public final class SegmentRunner implements RepairStatusHandler {
         coordinator.tokenRangeToEndpoint(keyspace, segment.getTokenRange());
     for (String hostName : allHosts) {
       try (JmxProxy hostProxy = factory.connect(hostName)) {
-        LOG.debug("checking host '{}' for pending compactions and other repairs (can repair?)",
-                  hostName);
+        LOG.debug("checking host '{}' for pending compactions and other repairs (can repair?)"
+                  + " Run id '{}'", hostName, segment.getRunId());
         if (hostProxy.getPendingCompactions() > MAX_PENDING_COMPACTIONS) {
           LOG.warn("SegmentRunner declined to repair segment {} because of too many pending "
                    + "compactions (> {}) on host \"{}\"", segmentId, MAX_PENDING_COMPACTIONS,
@@ -169,6 +169,8 @@ public final class SegmentRunner implements RepairStatusHandler {
         }
       }
     }
+    LOG.info("It is ok to repair segment '{}' om repair run with id '{}'",
+             segment.getId(), segment.getRunId());
     return true;
   }
 
