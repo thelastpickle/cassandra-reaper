@@ -32,6 +32,8 @@ public class JmxProxyTest {
     assertEquals(Integer.valueOf(1), JmxProxy.versionCompare("99.0.0", "9.0"));
     assertEquals(Integer.valueOf(1), JmxProxy.versionCompare("99.0.10", "99.0.1"));
     assertEquals(Integer.valueOf(-1), JmxProxy.versionCompare("99.0.10~1", "99.0.10~2"));
+    assertEquals(Integer.valueOf(0), JmxProxy.versionCompare("1.2.18-1~1.2.15.219.gec18fb4.9",
+                                                             "1.2.18-1~1.2.15.219.gec17fb4.10"));
   }
 
 }
