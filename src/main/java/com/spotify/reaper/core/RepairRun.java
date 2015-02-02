@@ -33,6 +33,7 @@ public class RepairRun {
   private final DateTime endTime;
   private final DateTime pauseTime;
   private final double intensity;
+  private final String lastEvent;
 
   private RepairRun(Builder builder, long id) {
     this.id = id;
@@ -46,6 +47,7 @@ public class RepairRun {
     this.endTime = builder.endTime;
     this.pauseTime = builder.pauseTime;
     this.intensity = builder.intensity;
+    this.lastEvent = builder.lastEvent;
   }
 
   public long getId() {
@@ -92,6 +94,10 @@ public class RepairRun {
     return intensity;
   }
 
+  public String getLastEvent() {
+    return lastEvent;
+  }
+
   public Builder with() {
     return new Builder(this);
   }
@@ -116,6 +122,7 @@ public class RepairRun {
     private DateTime startTime;
     private DateTime endTime;
     private DateTime pauseTime;
+    private String lastEvent = "Nothing happened yet";
 
     public Builder(String clusterName, long repairUnitId, DateTime creationTime,
                    double intensity) {
@@ -137,6 +144,7 @@ public class RepairRun {
       startTime = original.startTime;
       endTime = original.endTime;
       pauseTime = original.pauseTime;
+      lastEvent = original.lastEvent;
     }
 
     public Builder runState(RunState runState) {
@@ -176,6 +184,11 @@ public class RepairRun {
 
     public Builder pauseTime(DateTime pauseTime) {
       this.pauseTime = pauseTime;
+      return this;
+    }
+
+    public Builder lastEvent(String event) {
+      this.lastEvent = event;
       return this;
     }
 
