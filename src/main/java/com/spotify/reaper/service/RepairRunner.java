@@ -121,7 +121,7 @@ public class RepairRunner implements Runnable {
 
   @VisibleForTesting
   public Long getCurrentlyRunningSegmentId() {
-    return this.currentlyRunningSegmentId;
+    return currentlyRunningSegmentId;
   }
 
   /**
@@ -245,9 +245,10 @@ public class RepairRunner implements Runnable {
       return;
     }
 
-    this.currentlyRunningSegmentId = Long.valueOf(segmentId);
+    currentlyRunningSegmentId = segmentId;
     SegmentRunner.triggerRepair(storage, segmentId, potentialCoordinators, repairTimeoutMillis,
                                 jmxConnectionFactory);
+    currentlyRunningSegmentId = null;
 
     handleResult(segmentId);
   }
