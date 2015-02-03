@@ -11,10 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.spotify.reaper.cassandra;
+package com.spotify.reaper.unit.cassandra;
 
 import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.cassandra.JmxProxy;
 
 import org.junit.Test;
 

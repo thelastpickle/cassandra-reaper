@@ -14,12 +14,12 @@
 package com.spotify.reaper.cassandra;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
 
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 
 import java.util.Collection;
+import java.util.Set;
 
 public class JmxConnectionFactory {
 
@@ -34,20 +34,18 @@ public class JmxConnectionFactory {
 
   public final JmxProxy connectAny(Optional<RepairStatusHandler> handler, Collection<String> hosts)
       throws ReaperException {
+    if (hosts == null || hosts.isEmpty()) {
+      throw new ReaperException("no hosts given for connectAny");
+    }
     return connect(handler, hosts.iterator().next());
   }
 
   public final JmxProxy connectAny(Cluster cluster)
       throws ReaperException {
-    return connectAny(Optional.<RepairStatusHandler>absent(), cluster.getSeedHosts());
-  }
-
-  public final Collection<JmxProxy> connectAll(Collection<String> hosts)
-      throws ReaperException {
-    Collection<JmxProxy> connections = Lists.newArrayList();
-    for (String host : hosts) {
-      connections.add(connect(host));
+    Set<String> hosts = cluster.getSeedHosts();
+    if (hosts == null || hosts.isEmpty()) {
+      throw new ReaperException("no seeds in cluster with name: " + cluster.getName());
     }
-    return connections;
+    return connectAny(Optional.<RepairStatusHandler>absent(), hosts);
   }
 }

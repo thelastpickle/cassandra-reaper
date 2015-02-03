@@ -156,11 +156,7 @@ public class SegmentGenerator {
   }
 
   protected boolean inRange(BigInteger token) {
-    if (lowerThan(token, RANGE_MIN) || greaterThan(token, RANGE_MAX)) {
-      return false;
-    } else {
-      return true;
-    }
+    return !(lowerThan(token, RANGE_MIN) || greaterThan(token, RANGE_MAX));
   }
 
 }

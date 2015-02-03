@@ -11,12 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.spotify.reaper.service;
+package com.spotify.reaper.unit.service;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
@@ -25,6 +26,9 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.service.RepairRunner;
+import com.spotify.reaper.service.RingRange;
+import com.spotify.reaper.service.SegmentRunner;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 
@@ -54,13 +58,10 @@ import static org.mockito.Mockito.when;
 
 public class RepairRunnerTest {
 
-  IStorage storage;
-
   @Before
   public void setUp() throws Exception {
     RepairRunner.repairRunners.clear();
     SegmentRunner.segmentRunners.clear();
-    storage = new MemoryStorage();
   }
 
   @Test
@@ -72,37 +73,33 @@ public class RepairRunnerTest {
     final long TIME_START = 42l;
     final String TEST_CLUSTER = "testcluster";
 
-    IStorage storage = new MemoryStorage();
+    AppContext context = new AppContext();
+    context.storage = new MemoryStorage();
+    context.jmxConnectionFactory = new JmxConnectionFactory();
 
     // place a dummy cluster into storage
-    storage.addCluster(new Cluster(TEST_CLUSTER, null, Collections.<String>singleton(null)));
+    context.storage.addCluster(new Cluster(TEST_CLUSTER, null, Collections.<String>singleton(null)));
 
     // place a dummy repair run into the storage
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATION);
     RepairRun.Builder runBuilder =
         new RepairRun.Builder(TEST_CLUSTER, CF_ID, DateTime.now(), INTENSITY);
-    storage.addRepairRun(runBuilder);
-    storage.addRepairSegments(Collections.<RepairSegment.Builder>emptySet(), RUN_ID);
+    context.storage.addRepairRun(runBuilder);
+    context.storage.addRepairSegments(Collections.<RepairSegment.Builder>emptySet(), RUN_ID);
 
     // start the repair
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
     RepairRunner.initializeThreadPool(1, 3, TimeUnit.HOURS, 30, TimeUnit.SECONDS);
-    RepairRunner.startRepairRun(storage, RUN_ID, new JmxConnectionFactory() {
-      @Override
-      public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
-          throws ReaperException {
-        return null;
-      }
-    });
+    RepairRunner.startRepairRun(context, RUN_ID);
     Thread.sleep(200);
 
     // check if the start time was properly set
-    DateTime startTime = storage.getRepairRun(RUN_ID).get().getStartTime();
+    DateTime startTime = context.storage.getRepairRun(RUN_ID).get().getStartTime();
     assertNotNull(startTime);
     assertEquals(TIME_START, startTime.getMillis());
 
     // end time will also be set immediately
-    DateTime endTime = storage.getRepairRun(RUN_ID).get().getEndTime();
+    DateTime endTime = context.storage.getRepairRun(RUN_ID).get().getEndTime();
     assertNotNull(endTime);
     assertEquals(TIME_START, endTime.getMillis());
   }
@@ -134,7 +131,9 @@ public class RepairRunnerTest {
 
     assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
-    RepairRunner.startRepairRun(storage, RUN_ID, new JmxConnectionFactory() {
+    AppContext context = new AppContext();
+    context.storage = storage;
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
       final AtomicInteger repairAttempts = new AtomicInteger(0);
 
       @Override
@@ -192,7 +191,8 @@ public class RepairRunnerTest {
             });
         return jmx;
       }
-    });
+    };
+    RepairRunner.startRepairRun(context, RUN_ID);
 
     // TODO: refactor so that we can properly wait for the repair runner to finish rather than
     // TODO: using this sleep().
@@ -209,6 +209,8 @@ public class RepairRunnerTest {
     final double INTENSITY = 0.5f;
 
     final IStorage storage = new MemoryStorage();
+    AppContext context = new AppContext();
+    context.storage = storage;
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
     long cf = storage.addRepairUnit(
@@ -230,7 +232,7 @@ public class RepairRunnerTest {
 
     assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
-    JmxConnectionFactory factory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
       public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host)
           throws ReaperException {
@@ -263,10 +265,10 @@ public class RepairRunnerTest {
     };
 
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
-    RepairRunner.resumeRunningRepairRuns(storage, factory);
+    RepairRunner.resumeRunningRepairRuns(context);
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
     storage.updateRepairRun(run.with().runState(RepairRun.RunState.RUNNING).build(RUN_ID));
-    RepairRunner.resumeRunningRepairRuns(storage, factory);
+    RepairRunner.resumeRunningRepairRuns(context);
     Thread.sleep(100);
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }

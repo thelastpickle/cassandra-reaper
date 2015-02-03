@@ -1,5 +1,6 @@
 package com.spotify.reaper.resources;
 
+import com.spotify.reaper.AppContext;
 import com.spotify.reaper.storage.IStorage;
 
 /**
@@ -7,16 +8,16 @@ import com.spotify.reaper.storage.IStorage;
  */
 public class ReaperHealthCheck extends com.codahale.metrics.health.HealthCheck {
 
-  private IStorage storage;
+  private AppContext context;
 
-  public ReaperHealthCheck(IStorage storage) {
-    this.storage = storage;
+  public ReaperHealthCheck(AppContext context) {
+    this.context = context;
   }
 
   @Override
   protected Result check() throws Exception {
     // Should check some other pre-conditions here for a healthy Reaper instance?
-    if (storage.isStorageConnected()) {
+    if (context.storage.isStorageConnected()) {
       return Result.healthy();
     }
     return Result.unhealthy("storage not connected");
