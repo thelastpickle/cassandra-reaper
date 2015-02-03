@@ -53,16 +53,16 @@ public interface IStoragePostgreSQL {
   //
   static final String SQL_REPAIR_RUN_ALL_FIELDS_NO_ID =
       "cluster_name, repair_unit_id, cause, owner, state, creation_time, "
-      + "start_time, end_time, pause_time, intensity";
+      + "start_time, end_time, pause_time, intensity, last_event";
   static final String SQL_REPAIR_RUN_ALL_FIELDS = "id, " + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID;
   static final String SQL_INSERT_REPAIR_RUN =
       "INSERT INTO repair_run (" + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID + ") VALUES "
       + "(:clusterName, :repairUnitId, :cause, :owner, :runState, :creationTime, "
-      + ":startTime, :endTime, :pauseTime, :intensity)";
+      + ":startTime, :endTime, :pauseTime, :intensity, :lastEvent)";
   static final String SQL_UPDATE_REPAIR_RUN =
       "UPDATE repair_run SET cause = :cause, owner = :owner, state = :runState, "
       + "start_time = :startTime, end_time = :endTime, pause_time = :pauseTime, "
-      + "intensity = :intensity WHERE id = :id";
+      + "intensity = :intensity, last_event = :lastEvent WHERE id = :id";
   static final String SQL_GET_REPAIR_RUN =
       "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS + " FROM repair_run WHERE id = :id";
   static final String SQL_GET_REPAIR_RUNS_FOR_CLUSTER =

@@ -32,13 +32,13 @@ database:
   driverClass: org.postgresql.Driver
 
   # the username
-  user: reaper
+  user: reaper-user
 
   # the password
-  password: murmur3partitioner
+  password: reaper-secret
 
   # the JDBC URL
-  url: jdbc:postgresql://awseu3-reaperdbtest-a1.bases.cloud.spotify.net/reaper_db
+  url: jdbc:postgresql://127.0.0.1:5432/reaper_db
 
   # any properties specific to your JDBC driver:
   properties:
