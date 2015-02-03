@@ -11,15 +11,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.spotify.reaper;
+package com.spotify.reaper.unit.core;
+
+import com.spotify.reaper.core.Cluster;
 
 import org.junit.Test;
 
-public class IntegrationTest {
+import static org.junit.Assert.assertEquals;
+
+public class ClusterTest {
 
   @Test
-  public void testService() {
-    // TODO
+  public void testGetSymbolicName() {
+    assertEquals("example2cluster", Cluster.toSymbolicName("Example2 Cluster"));
+    assertEquals("example2_cluster", Cluster.toSymbolicName("Example2_Cluster"));
   }
-
 }

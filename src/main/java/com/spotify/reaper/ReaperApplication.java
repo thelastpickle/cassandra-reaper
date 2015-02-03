@@ -13,7 +13,8 @@
  */
 package com.spotify.reaper;
 
-import com.spotify.reaper.cassandra.JmxConnectionFactory;
+import com.google.common.annotations.VisibleForTesting;
+
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
 import com.spotify.reaper.resources.ReaperHealthCheck;
@@ -41,6 +42,21 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
 
+  private static AppContext context;
+
+  public ReaperApplication() {
+    super();
+    LOG.info("default ReaperApplication constructor called");
+    ReaperApplication.context = new AppContext();
+  }
+
+  @VisibleForTesting
+  public ReaperApplication(AppContext context) {
+    super();
+    LOG.info("ReaperApplication constructor called with custom AppContext");
+    ReaperApplication.context = context;
+  }
+
   public static void main(String[] args) throws Exception {
     new ReaperApplication().run(args);
   }
@@ -65,6 +81,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   public void run(ReaperApplicationConfiguration config,
                   Environment environment) throws ReaperException {
     checkConfiguration(config);
+    context.config = config;
 
     addSignalHandlers(); // SIGHUP, etc.
 
@@ -73,14 +90,17 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
         config.getRepairRunThreadCount(),
         config.getHangingRepairTimeoutMins(), TimeUnit.MINUTES,
         30, TimeUnit.SECONDS);
-    JmxConnectionFactory jmxConnectionFactory = new JmxConnectionFactory();
 
-    LOG.info("initializing storage of type: {}", config.getStorageType());
-    IStorage storage = initializeStorage(config, environment);
+    if (context.storage == null) {
+      LOG.info("initializing storage of type: {}", config.getStorageType());
+      context.storage = initializeStorage(config, environment);
+    } else {
+      LOG.info("storage already given in context, not initializing a new one");
+    }
 
     LOG.info("creating and registering health checks");
     // Notice that health checks are registered under the admin application on /healthcheck
-    final ReaperHealthCheck healthCheck = new ReaperHealthCheck(storage);
+    final ReaperHealthCheck healthCheck = new ReaperHealthCheck(context);
     environment.healthChecks().register("reaper", healthCheck);
     environment.jersey().register(healthCheck);
 
@@ -88,16 +108,16 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     final PingResource pingResource = new PingResource();
     environment.jersey().register(pingResource);
 
-    final ClusterResource addClusterResource = new ClusterResource(storage, jmxConnectionFactory);
+    final ClusterResource addClusterResource = new ClusterResource(context);
     environment.jersey().register(addClusterResource);
 
-    final RepairRunResource addRepairRunResource = new RepairRunResource(config, storage);
+    final RepairRunResource addRepairRunResource = new RepairRunResource(context);
     environment.jersey().register(addRepairRunResource);
 
     LOG.info("Reaper is ready to accept connections");
 
     LOG.info("resuming pending repair runs");
-    RepairRunner.resumeRunningRepairRuns(storage, jmxConnectionFactory);
+    RepairRunner.resumeRunningRepairRuns(context);
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config,

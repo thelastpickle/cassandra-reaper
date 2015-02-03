@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS "cluster" (
   "partitioner" TEXT NOT NULL,
   "seed_hosts" TEXT[] NOT NULL
 );
-
+§
 -- Repair unit is basically a keyspace with a set of column families.
 -- Cassandra supports repairing multiple column families in one go.
 --
