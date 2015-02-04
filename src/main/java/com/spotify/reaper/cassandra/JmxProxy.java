@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
-import java.text.NumberFormat;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashSet;
@@ -76,8 +75,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 
   private JmxProxy(Optional<RepairStatusHandler> handler, String host, JMXConnector jmxConnector,
                    StorageServiceMBean ssProxy, ObjectName ssMbeanName,
-                   MBeanServerConnection mbeanServer,
-                   CompactionManagerMBean cmProxy) {
+                   MBeanServerConnection mbeanServer, CompactionManagerMBean cmProxy) {
     this.host = host;
     this.jmxConnector = jmxConnector;
     this.ssMbeanName = ssMbeanName;
@@ -95,6 +93,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    */
   public static JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
       throws ReaperException {
+    assert null != host : "null host given to JmxProxy.connect()";
     String[] parts = host.split(":");
     if (parts.length == 2) {
       return connect(handler, parts[0], Integer.valueOf(parts[1]));
@@ -164,7 +163,6 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   /**
    * @return all hosts owning a range of tokens
    */
-  @Nullable
   public List<String> tokenRangeToEndpoint(String keyspace, RingRange tokenRange) {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     Set<Map.Entry<List<String>, List<String>>> entries =
@@ -176,7 +174,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
         return entry.getValue();
       }
     }
-    return null;
+    return Lists.newArrayList();
   }
 
   /**
@@ -417,7 +415,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
           if (i == 0) {
             throw ex; // just comparing two non-version strings should fail
           }
-          // first non integer part, so let's just stop comparison here and ignore this part
+          // first non integer part, so let's just stop comparison here and ignore the rest
           i--;
           break;
         }

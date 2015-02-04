@@ -1,4 +1,6 @@
-package com.spotify.reaper.service;
+package com.spotify.reaper.unit.service;
+
+import com.spotify.reaper.service.RingRange;
 
 import org.junit.Test;
 
@@ -77,7 +79,6 @@ public class RingRangeTest {
     assertFalse(r_5_15.encloses(r_0_0));
     assertFalse(r_190_0.encloses(r_0_0));
   }
-
 
   @Test
   public void isWrappingTest() {

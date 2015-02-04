@@ -71,7 +71,7 @@ public class RingRange {
    * @return true if 0 is inside of this range. Note that if start == end, then wrapping is true
    */
   @VisibleForTesting
-  protected boolean isWrapping() {
+  public boolean isWrapping() {
     return SegmentGenerator.greaterThanOrEqual(start, end);
   }
 

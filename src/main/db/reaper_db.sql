@@ -46,7 +46,8 @@ CREATE TABLE IF NOT EXISTS "repair_run" (
   "start_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "end_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "pause_time" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-  "intensity" REAL NOT NULL
+  "intensity" REAL NOT NULL,
+  "last_event" TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "repair_segment" (

@@ -16,14 +16,13 @@ package com.spotify.reaper.resources;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
+import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.resources.view.ClusterStatus;
 import com.spotify.reaper.resources.view.KeyspaceStatus;
-import com.spotify.reaper.storage.IStorage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,18 +51,16 @@ public class ClusterResource {
 
   private static final Logger LOG = LoggerFactory.getLogger(ClusterResource.class);
 
-  private final JmxConnectionFactory jmxFactory;
-  private final IStorage storage;
+  private final AppContext context;
 
-  public ClusterResource(IStorage storage, JmxConnectionFactory jmxFactory) {
-    this.storage = storage;
-    this.jmxFactory = jmxFactory;
+  public ClusterResource(AppContext context) {
+    this.context = context;
   }
 
   @GET
   public Response getClusterList() {
     LOG.info("get cluster list called");
-    Collection<Cluster> clusters = storage.getClusters();
+    Collection<Cluster> clusters = context.storage.getClusters();
     List<String> clusterNames = new ArrayList<>();
     for (Cluster cluster : clusters) {
       clusterNames.add(cluster.getName());
@@ -75,7 +72,7 @@ public class ClusterResource {
   @Path("/{cluster_name}")
   public Response getCluster(@PathParam("cluster_name") String clusterName) {
     LOG.info("get cluster called with cluster_name: {}", clusterName);
-    Optional<Cluster> cluster = storage.getCluster(clusterName);
+    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
     if (cluster.isPresent()) {
       return viewCluster(cluster.get(), Optional.<URI>absent());
     } else {
@@ -90,7 +87,7 @@ public class ClusterResource {
                              @PathParam("keyspace_name") String keyspaceName) {
     LOG.info("get cluster/keyspace called with cluster_name: {}, and keyspace_name: {}",
              clusterName, keyspaceName);
-    Optional<Cluster> cluster = storage.getCluster(clusterName);
+    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
     if (cluster.isPresent()) {
       return viewKeyspace(cluster.get(), keyspaceName);
     } else {
@@ -116,7 +113,7 @@ public class ClusterResource {
       return Response.status(400)
           .entity("failed to create cluster with seed host: " + seedHost.get()).build();
     }
-    Optional<Cluster> existingCluster = storage.getCluster(newCluster.getName());
+    Optional<Cluster> existingCluster = context.storage.getCluster(newCluster.getName());
     if (existingCluster.isPresent()) {
       LOG.info("cluster already stored with this name: {}", existingCluster);
       return Response.status(403)
@@ -124,7 +121,7 @@ public class ClusterResource {
           .build();
     } else {
       LOG.info("creating new cluster based on given seed host: {}", newCluster);
-      storage.addCluster(newCluster);
+      context.storage.addCluster(newCluster);
     }
 
     URI createdURI;
@@ -144,7 +141,7 @@ public class ClusterResource {
       throws ReaperException {
     String clusterName;
     String partitioner;
-    try (JmxProxy jmxProxy = jmxFactory.connect(seedHost)) {
+    try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost)) {
       clusterName = jmxProxy.getClusterName();
       partitioner = jmxProxy.getPartitioner();
     } catch (ReaperException e) {
@@ -158,15 +155,15 @@ public class ClusterResource {
   private Response viewCluster(Cluster cluster, Optional<URI> createdURI) {
     ClusterStatus view = new ClusterStatus(cluster);
     Collection<Collection<Object>> runIdTuples = Lists.newArrayList();
-    for (Long repairRunId : storage.getRepairRunIdsForCluster(cluster.getName())) {
-      Optional<RepairRun> repairRun = storage.getRepairRun(repairRunId);
+    for (Long repairRunId : context.storage.getRepairRunIdsForCluster(cluster.getName())) {
+      Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
       if (repairRun.isPresent()) {
         runIdTuples
             .add(Lists.newArrayList(new Object[]{repairRunId, repairRun.get().getRunState()}));
       }
     }
     view.setRepairRunIds(runIdTuples);
-    try (JmxProxy jmx = this.jmxFactory.connectAny(cluster)) {
+    try (JmxProxy jmx = context.jmxConnectionFactory.connectAny(cluster)) {
       view.setKeyspaces(jmx.getKeyspaces());
     } catch (ReaperException e) {
       e.printStackTrace();
@@ -182,7 +179,7 @@ public class ClusterResource {
 
   private Response viewKeyspace(Cluster cluster, String keyspaceName) {
     KeyspaceStatus view = new KeyspaceStatus(cluster);
-    try (JmxProxy jmx = this.jmxFactory.connectAny(cluster)) {
+    try (JmxProxy jmx = context.jmxConnectionFactory.connectAny(cluster)) {
       if (jmx.getKeyspaces().contains(keyspaceName)) {
         view.setTables(jmx.getTableNamesForKeyspace(keyspaceName));
       } else {

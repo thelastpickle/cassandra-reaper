@@ -11,18 +11,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.spotify.reaper.service;
+package com.spotify.reaper.unit.service;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.service.RingRange;
+import com.spotify.reaper.service.SegmentGenerator;
+
 import org.junit.Test;
 
-import javax.annotation.Nullable;
 import java.math.BigInteger;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import javax.annotation.Nullable;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class SegmentGeneratorTest {
 
@@ -46,13 +53,12 @@ public class SegmentGeneratorTest {
     List<RingRange> segments = generator.generateSegments(10, tokens);
     assertEquals(15, segments.size());
     assertEquals("(0,1]",
-        segments.get(0).toString());
+                 segments.get(0).toString());
     assertEquals("(56713727820156410577229101238628035242,56713727820156410577229101238628035243]",
-        segments.get(5).toString());
+                 segments.get(5).toString());
     assertEquals(
         "(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
         segments.get(10).toString());
-
 
     tokens = Lists.transform(
         Lists.newArrayList(
@@ -71,9 +77,9 @@ public class SegmentGeneratorTest {
     segments = generator.generateSegments(10, tokens);
     assertEquals(15, segments.size());
     assertEquals("(5,6]",
-        segments.get(0).toString());
+                 segments.get(0).toString());
     assertEquals("(56713727820156410577229101238628035242,56713727820156410577229101238628035243]",
-        segments.get(5).toString());
+                 segments.get(5).toString());
     assertEquals(
         "(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
         segments.get(10).toString());
@@ -118,9 +124,9 @@ public class SegmentGeneratorTest {
         "(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
         segments.get(4).toString());
     assertEquals("(5,6]",
-        segments.get(9).toString());
+                 segments.get(9).toString());
     assertEquals("(56713727820156410577229101238628035242,56713727820156410577229101238628035243]",
-        segments.get(14).toString());
+                 segments.get(14).toString());
   }
 
   @Test(expected = ReaperException.class)
