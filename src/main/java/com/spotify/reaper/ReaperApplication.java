@@ -15,6 +15,7 @@ package com.spotify.reaper;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
 import com.spotify.reaper.resources.ReaperHealthCheck;
@@ -96,6 +97,11 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
       context.storage = initializeStorage(config, environment);
     } else {
       LOG.info("storage already given in context, not initializing a new one");
+    }
+
+    if (context.jmxConnectionFactory == null) {
+      LOG.info("no JMX connection factory given in context, creating default");
+      context.jmxConnectionFactory = new JmxConnectionFactory();
     }
 
     LOG.info("creating and registering health checks");
