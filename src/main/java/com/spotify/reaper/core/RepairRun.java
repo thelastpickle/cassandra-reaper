@@ -13,6 +13,7 @@
  */
 package com.spotify.reaper.core;
 
+import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 
 public class RepairRun {
@@ -34,6 +35,8 @@ public class RepairRun {
   private final DateTime pauseTime;
   private final double intensity;
   private final String lastEvent;
+  private final int segmentCount;
+  private final RepairParallelism repairParallelism;
 
   private RepairRun(Builder builder, long id) {
     this.id = id;
@@ -48,6 +51,8 @@ public class RepairRun {
     this.pauseTime = builder.pauseTime;
     this.intensity = builder.intensity;
     this.lastEvent = builder.lastEvent;
+    this.segmentCount = builder.segmentCount;
+    this.repairParallelism = builder.repairParallelism;
   }
 
   public long getId() {
@@ -98,6 +103,14 @@ public class RepairRun {
     return lastEvent;
   }
 
+  public int getSegmentCount() {
+    return segmentCount;
+  }
+
+  public RepairParallelism getRepairParallelism() {
+    return repairParallelism;
+  }
+
   public Builder with() {
     return new Builder(this);
   }
@@ -122,15 +135,19 @@ public class RepairRun {
     private DateTime startTime;
     private DateTime endTime;
     private DateTime pauseTime;
-    private String lastEvent = "Nothing happened yet";
+    private String lastEvent = "no events";
+    private int segmentCount;
+    private RepairParallelism repairParallelism;
 
     public Builder(String clusterName, long repairUnitId, DateTime creationTime,
-                   double intensity) {
+                   double intensity, int segmentCount, RepairParallelism repairParallelism) {
       this.clusterName = clusterName;
       this.repairUnitId = repairUnitId;
       this.runState = RunState.NOT_STARTED;
       this.creationTime = creationTime;
       this.intensity = intensity;
+      this.segmentCount = segmentCount;
+      this.repairParallelism = repairParallelism;
     }
 
     private Builder(RepairRun original) {
@@ -145,6 +162,8 @@ public class RepairRun {
       endTime = original.endTime;
       pauseTime = original.pauseTime;
       lastEvent = original.lastEvent;
+      segmentCount = original.segmentCount;
+      repairParallelism = original.repairParallelism;
     }
 
     public Builder runState(RunState runState) {
@@ -189,6 +208,16 @@ public class RepairRun {
 
     public Builder lastEvent(String event) {
       this.lastEvent = event;
+      return this;
+    }
+
+    public Builder segmentCount(int segmentCount) {
+      this.segmentCount = segmentCount;
+      return this;
+    }
+
+    public Builder repairParallelism(RepairParallelism repairParallelism) {
+      this.repairParallelism = repairParallelism;
       return this;
     }
 

@@ -83,7 +83,8 @@ public class RepairRunnerTest {
     // place a dummy repair run into the storage
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATION);
     RepairRun.Builder runBuilder =
-        new RepairRun.Builder(TEST_CLUSTER, CF_ID, DateTime.now(), INTENSITY);
+        new RepairRun.Builder(TEST_CLUSTER, CF_ID, DateTime.now(), INTENSITY, 1,
+                              RepairParallelism.SEQUENTIAL);
     context.storage.addRepairRun(runBuilder);
     context.storage.addRepairSegments(Collections.<RepairSegment.Builder>emptySet(), RUN_ID);
 
@@ -116,11 +117,11 @@ public class RepairRunnerTest {
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
     RepairUnit cf =
-        storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, 1,
-                                                     RepairParallelism.PARALLEL));
+        storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY));
+        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1,
+                              RepairParallelism.PARALLEL));
     storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE),
                                   cf.getId())), run.getId());
@@ -214,11 +215,11 @@ public class RepairRunnerTest {
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
     long cf = storage.addRepairUnit(
-        new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, 1,
-                               RepairParallelism.PARALLEL)).getId();
+        new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES)).getId();
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY));
+        new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY, 1,
+                              RepairParallelism.PARALLEL));
     storage.addRepairSegments(Lists.newArrayList(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE), cf)
             .state(RepairSegment.State.RUNNING).startTime(DateTime.now()).coordinatorHost("reaper")

@@ -44,8 +44,9 @@ public interface IStoragePostgreSQL {
   static final String SQL_GET_ALL_CLUSTERS = "SELECT " + SQL_CLUSTER_ALL_FIELDS + " FROM cluster";
   static final String SQL_GET_CLUSTER =
       "SELECT " + SQL_CLUSTER_ALL_FIELDS + " FROM cluster WHERE name = :name";
-  static final String SQL_INSERT_CLUSTER = "INSERT INTO cluster (" + SQL_CLUSTER_ALL_FIELDS +
-                                           ") VALUES (:name, :partitioner, :seedHosts)";
+  static final String SQL_INSERT_CLUSTER =
+      "INSERT INTO cluster (" + SQL_CLUSTER_ALL_FIELDS
+      + ") VALUES (:name, :partitioner, :seedHosts)";
   static final String SQL_UPDATE_CLUSTER =
       "UPDATE cluster SET partitioner = :partitioner, seed_hosts = :seedHosts WHERE name = :name";
 
@@ -53,16 +54,19 @@ public interface IStoragePostgreSQL {
   //
   static final String SQL_REPAIR_RUN_ALL_FIELDS_NO_ID =
       "cluster_name, repair_unit_id, cause, owner, state, creation_time, "
-      + "start_time, end_time, pause_time, intensity, last_event";
+      + "start_time, end_time, pause_time, intensity, last_event, "
+      + "segment_count, repair_parallelism";
   static final String SQL_REPAIR_RUN_ALL_FIELDS = "id, " + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID;
   static final String SQL_INSERT_REPAIR_RUN =
       "INSERT INTO repair_run (" + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID + ") VALUES "
       + "(:clusterName, :repairUnitId, :cause, :owner, :runState, :creationTime, "
-      + ":startTime, :endTime, :pauseTime, :intensity, :lastEvent)";
+      + ":startTime, :endTime, :pauseTime, :intensity, :lastEvent, :segmentCount, "
+      + ":repairParallelism)";
   static final String SQL_UPDATE_REPAIR_RUN =
       "UPDATE repair_run SET cause = :cause, owner = :owner, state = :runState, "
       + "start_time = :startTime, end_time = :endTime, pause_time = :pauseTime, "
-      + "intensity = :intensity, last_event = :lastEvent WHERE id = :id";
+      + "intensity = :intensity, last_event = :lastEvent, segment_count = :segmentCount, "
+      + "repair_parallelism = :repairParallelism WHERE id = :id";
   static final String SQL_GET_REPAIR_RUN =
       "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS + " FROM repair_run WHERE id = :id";
   static final String SQL_GET_REPAIR_RUNS_FOR_CLUSTER =
@@ -73,14 +77,11 @@ public interface IStoragePostgreSQL {
   // RepairUnit
   //
   static final String SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID =
-      "cluster_name, keyspace_name, column_families, segment_count, repair_parallelism";
+      "cluster_name, keyspace_name, column_families";
   static final String SQL_REPAIR_UNIT_ALL_FIELDS = "id, " + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID;
   static final String SQL_INSERT_REPAIR_UNIT =
       "INSERT INTO repair_unit (" + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID + ") VALUES "
-      + "(:clusterName, :keyspaceName, :columnFamilies, :segmentCount, :repairParallelism)";
-  static final String SQL_UPDATE_REPAIR_UNIT =
-      "UPDATE repair_unit SET segment_count = :segmentCount, "
-      + "repair_parallelism = :repairParallelism WHERE id = :id";
+      + "(:clusterName, :keyspaceName, :columnFamilies)";
   static final String SQL_GET_REPAIR_UNIT =
       "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM repair_unit WHERE id = :id";
   static final String SQL_GET_REPAIR_UNIT_BY_CLUSTER_AND_TABLES =
@@ -172,9 +173,6 @@ public interface IStoragePostgreSQL {
   @SqlUpdate(SQL_INSERT_REPAIR_UNIT)
   @GetGeneratedKeys
   public long insertRepairUnit(@BindBean RepairUnit newRepairUnit);
-
-  @SqlUpdate(SQL_UPDATE_REPAIR_UNIT)
-  public int updateRepairUnit(@BindBean RepairUnit newRepairUnit);
 
   @SqlBatch(SQL_INSERT_REPAIR_SEGMENT)
   @BatchChunkSize(500)
