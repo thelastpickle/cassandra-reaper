@@ -4,6 +4,10 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 
 import com.spotify.reaper.AppContext;
+import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
+import com.spotify.reaper.cassandra.JmxProxy;
+import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.sun.jersey.api.client.ClientResponse;
 
 import java.util.Map;
@@ -17,6 +21,8 @@ import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Basic acceptance test (Cucumber) steps.
@@ -26,6 +32,15 @@ public class BasicSteps {
   @Before
   public static void setup() throws Exception {
     AppContext context = new AppContext();
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
+      @Override
+      public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
+          throws ReaperException {
+        JmxProxy jmx = mock(JmxProxy.class);
+        when(jmx.getClusterName()).thenReturn("testcluster");
+        return jmx;
+      }
+    };
     ReaperTestJettyRunner.setup(context);
   }
 
