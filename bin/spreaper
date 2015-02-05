@@ -160,6 +160,9 @@ def _arguments_for_repair(parser):
     parser.add_argument("--repair-parallelism", default=None,
                         help=("the repair parallelism level to use for new repair run, "
                               "or use the configured default if not given"))
+    parser.add_argument("--intensity", default=None,
+                        help=("repair intensity float value (between 0.0 and 1.0), "
+                              "or use the configured default if not given"))
 
 
 def _arguments_for_start(parser):
@@ -331,7 +334,8 @@ class ReaperCLI(object):
                                 keyspace=args.keyspace_name, tables=args.tables,
                                 owner=args.owner, cause=args.cause,
                                 segmentCount=args.segment_count,
-                                repairParallelism=args.repair_parallelism)
+                                repairParallelism=args.repair_parallelism,
+                                intensity=args.intensity)
         else:
             print ("# Registering repair run for cluster '{0}', and keyspace '{1}', "
                    "targeting all tables in the keyspace").format(args.cluster_name,
@@ -339,7 +343,8 @@ class ReaperCLI(object):
             reply = reaper.post("repair_run", clusterName=args.cluster_name,
                                 keyspace=args.keyspace_name, owner=args.owner, cause=args.cause,
                                 segmentCount=args.segment_count,
-                                repairParallelism=args.repair_parallelism)
+                                repairParallelism=args.repair_parallelism,
+                                intensity=args.intensity)
         repair_run = json.loads(reply)
         print "# Repair run with id={0} created:".format(repair_run.get('id'))
         print json.dumps(repair_run, indent=2, sort_keys=True)

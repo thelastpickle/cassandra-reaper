@@ -1,7 +1,6 @@
 package com.spotify.reaper.resources;
 
 import com.spotify.reaper.AppContext;
-import com.spotify.reaper.storage.IStorage;
 
 /**
  * Provides an endpoint to check the health of the running Reaper instance.

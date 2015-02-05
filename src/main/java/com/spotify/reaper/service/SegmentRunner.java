@@ -109,7 +109,7 @@ public final class SegmentRunner implements RepairStatusHandler {
 
       synchronized (condition) {
         commandId = coordinator.triggerRepair(segment.getStartToken(), segment.getEndToken(),
-                                              keyspace, repairUnit.getRepairParallelism(),
+                                              keyspace, repairRun.getRepairParallelism(),
                                               repairUnit.getColumnFamilies());
         LOG.debug("Triggered repair with command id {}", commandId);
         context.storage.updateRepairSegment(segment.with()

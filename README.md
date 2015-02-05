@@ -150,10 +150,13 @@ REST API
   * Expected query parameters:
     * *clusterName*: Name of the Cassandra cluster.
     * *keyspace*: The name of the table keyspace.
-    * *table*: The name of the table (column family).
+    * *tables*: The name of the targeted tables (column families) as comma separated list.
+                If no tables given, then the whole keyspace is targeted. (Optional)
     * *owner*: Owner name for the table. This could be any string identifying the owner.
-    * *cause*: Identifies the process, or cause the repair was started.
+    * *cause*: Identifies the process, or cause the repair was started. (Optional)
     * *segmentCount*: Defines the amount of segments to create for repair run. (Optional)
+    * *repairParallelism*: Defines the used repair parallelism for repair run. (Optional)
+    * *intensity*: Defines the repair intensity for repair run. (Optional)
 
 * PUT    /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)
   * Expected query parameters:

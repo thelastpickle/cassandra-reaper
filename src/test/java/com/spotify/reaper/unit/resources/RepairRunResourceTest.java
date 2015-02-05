@@ -53,7 +53,6 @@ public class RepairRunResourceTest {
   static final String KEYSPACE = "testKeyspace";
   static final Set<String> TABLES = Sets.newHashSet("testTable");
   static final String OWNER = "test";
-  static final Integer SEGMENTS = 100;
   int THREAD_CNT = 1;
   int REPAIR_TIMEOUT_S = 60;
   int RETRY_DELAY_S = 10;
@@ -104,15 +103,13 @@ public class RepairRunResourceTest {
       }
     };
 
-    RepairUnit.Builder repairUnitBuilder = new RepairUnit.Builder(CLUSTER_NAME,
-                                                                  KEYSPACE, TABLES, SEGMENT_CNT,
-                                                                  REPAIR_PARALLELISM);
+    RepairUnit.Builder repairUnitBuilder = new RepairUnit.Builder(CLUSTER_NAME, KEYSPACE, TABLES);
     context.storage.addRepairUnit(repairUnitBuilder);
   }
 
   private Response addDefaultRepairRun(RepairRunResource resource) {
     return addRepairRun(resource, uriInfo, CLUSTER_NAME, KEYSPACE, TABLES,
-                        OWNER, null, SEGMENTS);
+                        OWNER, null, SEGMENT_CNT);
   }
 
   private Response addRepairRun(RepairRunResource resource, UriInfo uriInfo,
@@ -130,7 +127,8 @@ public class RepairRunResourceTest {
                                  cause == null ? Optional.<String>absent() : Optional.of(cause),
                                  segments == null ? Optional.<Integer>absent()
                                                   : Optional.of(segments),
-                                 Optional.of(REPAIR_PARALLELISM.name()));
+                                 Optional.of(REPAIR_PARALLELISM.name()),
+                                 Optional.<String>absent());
   }
 
   @Test
@@ -250,7 +248,7 @@ public class RepairRunResourceTest {
   public void testAddRunMissingArgument() {
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addRepairRun(resource, uriInfo, CLUSTER_NAME, null,
-                                     TABLES, OWNER, null, SEGMENTS);
+                                     TABLES, OWNER, null, SEGMENT_CNT);
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
   }
@@ -261,7 +259,7 @@ public class RepairRunResourceTest {
                                       TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addRepairRun(resource, uriInfo, CLUSTER_NAME, null, TABLES, OWNER,
-                                     null, SEGMENTS);
+                                     null, SEGMENT_CNT);
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
   }

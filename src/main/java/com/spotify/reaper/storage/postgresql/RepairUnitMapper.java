@@ -17,7 +17,6 @@ import com.google.common.collect.Sets;
 
 import com.spotify.reaper.core.RepairUnit;
 
-import org.apache.cassandra.repair.RepairParallelism;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -28,14 +27,9 @@ public class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
 
   public RepairUnit map(int index, ResultSet r, StatementContext ctx) throws SQLException {
     String[] columnFamilies = (String[]) r.getArray("column_families").getArray();
-    RepairParallelism repairParallelism = RepairParallelism
-        .valueOf(r.getString("repair_parallelism"));
-    RepairUnit.Builder builder =
-        new RepairUnit.Builder(r.getString("cluster_name"),
-                               r.getString("keyspace_name"),
-                               Sets.newHashSet(columnFamilies),
-                               r.getInt("segment_count"),
-                               repairParallelism);
+    RepairUnit.Builder builder = new RepairUnit.Builder(r.getString("cluster_name"),
+                                                        r.getString("keyspace_name"),
+                                                        Sets.newHashSet(columnFamilies));
     return builder.build(r.getLong("id"));
   }
 

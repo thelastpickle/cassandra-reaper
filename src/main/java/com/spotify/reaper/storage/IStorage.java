@@ -64,8 +64,6 @@ public interface IStorage {
   Optional<RepairUnit> getRepairUnit(String cluster, String keyspace,
                                      Set<String> columnFamilyNames);
 
-  boolean updateRepairUnit(RepairUnit newRepairUnit);
-
   void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId);
 
   boolean updateRepairSegment(RepairSegment newRepairSegment);

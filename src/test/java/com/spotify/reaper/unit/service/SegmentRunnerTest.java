@@ -68,10 +68,10 @@ public class SegmentRunnerTest {
     final AppContext context = new AppContext();
     context.storage = new MemoryStorage();
     RepairUnit cf = context.storage.addRepairUnit(
-        new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), 1,
-                               RepairParallelism.PARALLEL));
+        new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper")));
     RepairRun run = context.storage.addRepairRun(
-        new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5));
+        new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5, 1,
+                              RepairParallelism.PARALLEL));
     context.storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO),
                                   cf.getId())), run.getId());
@@ -126,10 +126,10 @@ public class SegmentRunnerTest {
   public void successTest() throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
     RepairUnit cf = storage.addRepairUnit(
-        new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), 1,
-                               RepairParallelism.PARALLEL));
+        new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper")));
     RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5));
+        new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5, 1,
+                              RepairParallelism.PARALLEL));
     storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO),
                                   cf.getId())), run.getId());
@@ -197,10 +197,10 @@ public class SegmentRunnerTest {
     final IStorage storage = new MemoryStorage();
     RepairUnit cf =
         storage.addRepairUnit(
-            new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), 1,
-                                   RepairParallelism.PARALLEL));
+            new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper")));
     RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5));
+        new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5, 1,
+                              RepairParallelism.PARALLEL));
     storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO),
                                   cf.getId())), run.getId());

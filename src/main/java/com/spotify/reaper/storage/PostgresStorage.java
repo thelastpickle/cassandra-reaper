@@ -211,20 +211,6 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public boolean updateRepairUnit(RepairUnit newRepairUnit) {
-    boolean result = false;
-    try (Handle h = jdbi.open()) {
-      int rowsAdded = getPostgresStorage(h).updateRepairUnit(newRepairUnit);
-      if (rowsAdded < 1) {
-        LOG.warn("failed updating repair unit with id: {}", newRepairUnit.getId());
-      } else {
-        result = true;
-      }
-    }
-    return result;
-  }
-
-  @Override
   public void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId) {
     List<RepairSegment> insertableSegments = new ArrayList<>();
     for (RepairSegment.Builder segment : newSegments) {
