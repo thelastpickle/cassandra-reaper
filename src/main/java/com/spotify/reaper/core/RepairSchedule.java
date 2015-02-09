@@ -13,12 +13,8 @@
  */
 package com.spotify.reaper.core;
 
-import com.google.common.collect.Lists;
-
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
-
-import java.util.List;
 
 public class RepairSchedule {
 
@@ -28,11 +24,12 @@ public class RepairSchedule {
   private final State state;
   private final int daysBetween;
   private final DateTime nextActivation;
-  private final List<Long> runHistory;
+  private final long[] runHistory;
   private final int segmentCount;
   private final RepairParallelism repairParallelism;
-  private final String owner;
+  private final double intensity;
   private final DateTime creationTime;
+  private final String owner;
   private final DateTime pauseTime;
   private final String lastEvent;
   private final double intensity;
@@ -46,8 +43,9 @@ public class RepairSchedule {
     this.runHistory = builder.runHistory;
     this.segmentCount = builder.segmentCount;
     this.repairParallelism = builder.repairParallelism;
-    this.owner = builder.owner;
+    this.intensity = builder.intensity;
     this.creationTime = builder.creationTime;
+    this.owner = builder.owner;
     this.pauseTime = builder.pauseTime;
     this.lastEvent = builder.lastEvent;
     this.intensity = builder.intensity;
@@ -77,7 +75,7 @@ public class RepairSchedule {
     return nextActivation;
   }
 
-  public List<Long> getRunHistory() {
+  public long[] getRunHistory() {
     return runHistory;
   }
 
@@ -89,12 +87,16 @@ public class RepairSchedule {
     return repairParallelism;
   }
 
-  public String getOwner() {
-    return owner;
+  public double getIntensity() {
+    return intensity;
   }
 
   public DateTime getCreationTime() {
     return creationTime;
+  }
+
+  public String getOwner() {
+    return owner;
   }
 
   public DateTime getPauseTime() {
@@ -118,28 +120,34 @@ public class RepairSchedule {
     PAUSED
   }
 
+
   public static class Builder {
 
     public final long repairUnitId;
     private State state;
     private int daysBetween;
     private DateTime nextActivation;
-    private List<Long> runHistory;
+    private long[] runHistory;
     private int segmentCount;
     private RepairParallelism repairParallelism;
-    private String owner;
+    private double intensity;
     private DateTime creationTime;
+    private String owner;
     private DateTime pauseTime;
     private String lastEvent = "no events";
     private double intensity;
 
-    public Builder(long repairUnitId, State initialState, DateTime creationTime,
-                   int segmentCount, RepairParallelism repairParallelism) {
+    public Builder(long repairUnitId, State state, int daysBetween, DateTime nextActivation,
+        long[] runHistory, int segmentCount, RepairParallelism repairParallelism, double intensity,
+        DateTime creationTime) {
       this.repairUnitId = repairUnitId;
-      this.state = initialState;
-      this.runHistory = Lists.newArrayList();
+      this.state = state;
+      this.daysBetween = daysBetween;
+      this.nextActivation = nextActivation;
+      this.runHistory = runHistory;
       this.segmentCount = segmentCount;
       this.repairParallelism = repairParallelism;
+      this.intensity = intensity;
       this.creationTime = creationTime;
     }
 
@@ -151,8 +159,9 @@ public class RepairSchedule {
       runHistory = original.runHistory;
       segmentCount = original.segmentCount;
       repairParallelism = original.repairParallelism;
-      owner = original.owner;
+      intensity = original.intensity;
       creationTime = original.creationTime;
+      owner = original.owner;
       pauseTime = original.pauseTime;
       lastEvent = original.lastEvent;
       intensity = original.intensity;
@@ -173,8 +182,8 @@ public class RepairSchedule {
       return this;
     }
 
-    public Builder addRun(Long newRunId) {
-      runHistory.add(newRunId);
+    public Builder runHistory(long[] runHistory) {
+      this.runHistory = runHistory;
       return this;
     }
 
@@ -188,13 +197,18 @@ public class RepairSchedule {
       return this;
     }
 
-    public Builder owner(String owner) {
-      this.owner = owner;
+    public Builder intensity(long intensity) {
+      this.intensity = intensity;
       return this;
     }
 
     public Builder creationTime(DateTime creationTime) {
       this.creationTime = creationTime;
+      return this;
+    }
+
+    public Builder owner(String owner) {
+      this.owner = owner;
       return this;
     }
 

@@ -15,6 +15,7 @@ package com.spotify.reaper.storage.postgresql;
 
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 
@@ -117,6 +118,26 @@ public interface IStoragePostgreSQL {
       + "run_id = :runId AND state = 0 AND start_token >= :startToken "
       + "AND end_token < :endToken ORDER BY fail_count ASC, start_token ASC LIMIT 1";
 
+  // RepairSchedule
+  //
+  static final String SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID =
+      "repair_unit_id, state, days_between, next_activation, run_history, segment_count, "
+      + "repair_parallelism, intensity, creation_time, owner, pause_time, last_event";
+  static final String SQL_REPAIR_SCHEDULE_ALL_FIELDS =
+      "id, " + SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID;
+  static final String SQL_INSERT_REPAIR_SCHEDULE =
+      "INSERT INTO repair_schedule (" + SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID + ") VALUES "
+      + "(:repairUnitId, :state, :daysBetween, :nextActivation, :runHistory, :segmentCount, "
+      + ":repairParallelism, :intensity, :creationTime, :owner, :pauseTime, :lastEvent)";
+  static final String SQL_UPDATE_REPAIR_SCHEDULE =
+      "UPDATE repair_run SET repair_unit_id = :repairUnitId, state = :state, "
+      + "days_between = :daysBetween, next_activation = :nextActivation, "
+      + "run_history = :runHistory, segment_count = :segmentCount, "
+      + "repair_parallelism = :repairParallelism, creation_time = :creationTime, owner = :owner, "
+      + "pause_time = :pauseTime, last_event = :lastEvent WHERE id = :id";
+  static final String SQL_GET_ALL_REPAIR_SCHEDULES =
+      "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedules";
+
   // Utility methods
   //
   static final String SQL_GET_REPAIR_RUN_IDS_FOR_CLUSTER =
@@ -200,6 +221,17 @@ public interface IStoragePostgreSQL {
   public RepairSegment getNextFreeRepairSegmentOnRange(@Bind("runId") long runId,
                                                        @Bind("startToken") BigInteger startToken,
                                                        @Bind("endToken") BigInteger endToken);
+
+  @SqlQuery(SQL_INSERT_REPAIR_SCHEDULE)
+  @GetGeneratedKeys
+  public long insertRepairSchedule(@BindBean RepairSchedule newRepairSchedule);
+
+  @SqlUpdate(SQL_UPDATE_REPAIR_SCHEDULE)
+  public int updateRepairSchedule(@BindBean RepairSchedule newRepairSchedule);
+
+  @SqlQuery(SQL_GET_ALL_REPAIR_SCHEDULES)
+  @Mapper(RepairScheduleMapper.class)
+  public Collection<RepairSchedule> getAllRepairSchedules();
 
   @SqlQuery(SQL_GET_REPAIR_RUN_IDS_FOR_CLUSTER)
   Collection<Long> getRepairRunIdsForCluster(

@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS "repair_run" (
   "owner"              TEXT NOT NULL,
 -- see (Java) RepairRun.RunState for state values
   "state"              TEXT NOT NULL,
-  "creation_time"      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "creation_time"      TIMESTAMP WITH TIME ZONE NOT NULL,
   "start_time"         TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "end_time"           TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "pause_time"         TIMESTAMP WITH TIME ZONE DEFAULT NULL,
@@ -71,11 +71,20 @@ CREATE INDEX "repair_segment_state_idx"
 ON "repair_segment" USING BTREE ("state");
 
 CREATE TABLE IF NOT EXISTS "repair_schedule" (
-  "id"              SERIAL PRIMARY KEY,
-  "run_id"          INT                      NOT NULL REFERENCES "repair_run" ("id"),
-  "next_activation" TIMESTAMP WITH TIME ZONE NOT NULL,
-  "last_activation" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-  "days_between"    INT                      NOT NULL
+  "id"                 SERIAL PRIMARY KEY,
+  "repair_unit_id"     INT                      NOT NULL REFERENCES "repair_unit" ("id"),
+-- see (Java) RepairSchedule.State for state values
+  "state"              TEXT                     NOT NULL,
+  "days_between"       SMALLINT                 NOT NULL,
+  "next_activation"    TIMESTAMP WITH TIME ZONE NOT NULL,
+  "run_history"        BIGINT []                NOT NULL,
+  "segment_count"      INT                      NOT NULL,
+  "repair_parallelism" TEXT                     NOT NULL,
+  "intensity"          REAL                     NOT NULL,
+  "creation_time"      TIMESTAMP WITH TIME ZONE NOT NULL,
+  "owner"              TEXT                     NOT NULL,
+  "pause_time"         TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+  "last_event"         TEXT                     NOT NULL
 );
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE cluster TO reaper;

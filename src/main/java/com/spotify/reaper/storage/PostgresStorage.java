@@ -299,14 +299,34 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
+  public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
+    long insertedId;
+    try (Handle h = jdbi.open()) {
+      insertedId = getPostgresStorage(h).insertRepairSchedule(repairSchedule.build(-1));
+    }
+    return repairSchedule.build(insertedId);
+  }
+
+  @Override
   public Collection<RepairSchedule> getAllRepairSchedules() {
-    //TODO: implementation
-    return null;
+    Collection<RepairSchedule> result;
+    try (Handle h = jdbi.open()) {
+      result = getPostgresStorage(h).getAllRepairSchedules();
+    }
+    return result;
   }
 
   @Override
   public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
-    //TODO: implementation
-    return false;
+    boolean result = false;
+    try (Handle h = jdbi.open()) {
+      int rowsAdded = getPostgresStorage(h).updateRepairSchedule(newRepairSchedule);
+      if (rowsAdded < 1) {
+        LOG.warn("failed updating repair schedule with id: {}", newRepairSchedule.getId());
+      } else {
+        result = true;
+      }
+    }
+    return result;
   }
 }

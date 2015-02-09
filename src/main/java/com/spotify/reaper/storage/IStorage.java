@@ -66,7 +66,7 @@ public interface IStorage {
    * @return Instance of a RepairUnit matching the parameters, or null if not found.
    */
   Optional<RepairUnit> getRepairUnit(String cluster, String keyspace,
-                                     Set<String> columnFamilyNames);
+      Set<String> columnFamilyNames);
 
   void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId);
 
@@ -83,6 +83,8 @@ public interface IStorage {
   Collection<Long> getRepairRunIdsForCluster(String clusterName);
 
   int getSegmentAmountForRepairRun(long runId, RepairSegment.State state);
+
+  RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule);
 
   Collection<RepairSchedule> getAllRepairSchedules();
 

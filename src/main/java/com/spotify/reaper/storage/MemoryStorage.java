@@ -42,14 +42,16 @@ public class MemoryStorage implements IStorage {
   private final AtomicInteger REPAIR_RUN_ID = new AtomicInteger(0);
   private final AtomicInteger REPAIR_UNIT_ID = new AtomicInteger(0);
   private final AtomicInteger SEGMENT_ID = new AtomicInteger(0);
+  private final AtomicInteger REPAIR_SCHEDULE_ID = new AtomicInteger(0);
 
-  private ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
-  private ConcurrentMap<Long, RepairRun> repairRuns = Maps.newConcurrentMap();
-  private ConcurrentMap<Long, RepairUnit> repairUnits = Maps.newConcurrentMap();
-  private ConcurrentMap<RepairUnitKey, RepairUnit> repairUnitsByKey = Maps.newConcurrentMap();
-  private ConcurrentMap<Long, RepairSegment> repairSegments = Maps.newConcurrentMap();
-  private ConcurrentMap<Long, LinkedHashMap<Long, RepairSegment>> repairSegmentsByRunId =
+  private final ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
+  private final ConcurrentMap<Long, RepairRun> repairRuns = Maps.newConcurrentMap();
+  private final ConcurrentMap<Long, RepairUnit> repairUnits = Maps.newConcurrentMap();
+  private final ConcurrentMap<RepairUnitKey, RepairUnit> repairUnitsByKey = Maps.newConcurrentMap();
+  private final ConcurrentMap<Long, RepairSegment> repairSegments = Maps.newConcurrentMap();
+  private final ConcurrentMap<Long, LinkedHashMap<Long, RepairSegment>> repairSegmentsByRunId =
       Maps.newConcurrentMap();
+  private final ConcurrentMap<Long, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
 
   @Override
   public boolean isStorageConnected() {
@@ -92,7 +94,7 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public boolean updateRepairRun(RepairRun repairRun) {
-    if (getRepairRun(repairRun.getId()) == null) {
+    if (!getRepairRun(repairRun.getId()).isPresent()) {
       return false;
     } else {
       repairRuns.put(repairRun.getId(), repairRun);
@@ -248,16 +250,27 @@ public class MemoryStorage implements IStorage {
     return amount;
   }
 
+
+  @Override
+  public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
+    RepairSchedule newRepairSchedule = repairSchedule.build(REPAIR_SCHEDULE_ID.incrementAndGet());
+    repairSchedules.put(newRepairSchedule.getId(), newRepairSchedule);
+    return newRepairSchedule;
+  }
+
   @Override
   public Collection<RepairSchedule> getAllRepairSchedules() {
-    //TODO: implementation
-    return null;
+    return repairSchedules.values();
   }
 
   @Override
   public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
-    //TODO: implementation
-    return false;
+    if (repairSchedules.get(newRepairSchedule.getId()) == null) {
+      return false;
+    } else {
+      repairSchedules.put(newRepairSchedule.getId(), newRepairSchedule);
+      return true;
+    }
   }
 
   public static class RepairUnitKey {
