@@ -13,8 +13,12 @@
  */
 package com.spotify.reaper.core;
 
+import com.google.common.collect.Lists;
+
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
+
+import java.util.List;
 
 public class RepairSchedule {
 
@@ -24,6 +28,7 @@ public class RepairSchedule {
   private final State state;
   private final int daysBetween;
   private final DateTime nextActivation;
+  private final List<Long> runHistory;
   private final int segmentCount;
   private final RepairParallelism repairParallelism;
   private final String owner;
@@ -37,6 +42,7 @@ public class RepairSchedule {
     this.state = builder.state;
     this.daysBetween = builder.daysBetween;
     this.nextActivation = builder.nextActivation;
+    this.runHistory = builder.runHistory;
     this.segmentCount = builder.segmentCount;
     this.repairParallelism = builder.repairParallelism;
     this.owner = builder.owner;
@@ -67,6 +73,10 @@ public class RepairSchedule {
 
   public DateTime getNextActivation() {
     return nextActivation;
+  }
+
+  public List<Long> getRunHistory() {
+    return runHistory;
   }
 
   public int getSegmentCount() {
@@ -108,6 +118,7 @@ public class RepairSchedule {
     private State state;
     private int daysBetween;
     private DateTime nextActivation;
+    private List<Long> runHistory;
     private int segmentCount;
     private RepairParallelism repairParallelism;
     private String owner;
@@ -119,20 +130,24 @@ public class RepairSchedule {
                    int segmentCount, RepairParallelism repairParallelism) {
       this.repairUnitId = repairUnitId;
       this.state = initialState;
-      this.creationTime = creationTime;
+      this.runHistory = Lists.newArrayList();
       this.segmentCount = segmentCount;
       this.repairParallelism = repairParallelism;
+      this.creationTime = creationTime;
     }
 
     private Builder(RepairSchedule original) {
       repairUnitId = original.repairUnitId;
       state = original.state;
-      creationTime = original.creationTime;
-      owner = original.owner;
-      pauseTime = original.pauseTime;
-      lastEvent = original.lastEvent;
+      daysBetween = original.daysBetween;
+      nextActivation = original.nextActivation;
+      runHistory = original.runHistory;
       segmentCount = original.segmentCount;
       repairParallelism = original.repairParallelism;
+      owner = original.owner;
+      creationTime = original.creationTime;
+      pauseTime = original.pauseTime;
+      lastEvent = original.lastEvent;
     }
 
     public Builder runState(State state) {
@@ -147,6 +162,11 @@ public class RepairSchedule {
 
     public Builder nextActivation(DateTime nextActivation) {
       this.nextActivation = nextActivation;
+      return this;
+    }
+
+    public Builder addRun(Long newRunId) {
+      runHistory.add(newRunId);
       return this;
     }
 
