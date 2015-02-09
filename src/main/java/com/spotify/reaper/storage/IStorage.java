@@ -17,9 +17,11 @@ import com.google.common.base.Optional;
 
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
+import com.spotify.reaper.service.SchedulingManager;
 
 import java.util.Collection;
 import java.util.Set;
@@ -46,6 +48,8 @@ public interface IStorage {
   Optional<RepairRun> getRepairRun(long id);
 
   Collection<RepairRun> getRepairRunsForCluster(String clusterName);
+
+  Collection<RepairRun> getRepairRunsForUnit(RepairUnit repairUnit);
 
   Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState);
 
@@ -79,4 +83,9 @@ public interface IStorage {
   Collection<Long> getRepairRunIdsForCluster(String clusterName);
 
   int getSegmentAmountForRepairRun(long runId, RepairSegment.State state);
+
+  Collection<RepairSchedule> getAllRepairSchedules();
+
+  boolean updateRepairSchedule(RepairSchedule newRepairSchedule);
+
 }

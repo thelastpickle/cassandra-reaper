@@ -205,7 +205,7 @@ public class RepairRunResource {
         repairParallelismStr = repairParallelism.get();
       }
       RepairRun newRepairRun = registerRepairRun(
-          cluster.get(), theRepairUnit, cause, owner.get(), segments,
+          context, cluster.get(), theRepairUnit, cause, owner.get(), segments,
           RepairParallelism.valueOf(repairParallelismStr.toUpperCase()), intensity);
 
       return Response.created(buildRepairRunURI(uriInfo, newRepairRun))
@@ -367,19 +367,20 @@ public class RepairRunResource {
    *
    * @throws ReaperException if repair run fails to be stored into Reaper's storage.
    */
-  private RepairRun registerRepairRun(Cluster cluster, RepairUnit repairUnit,
-                                      Optional<String> cause, String owner, int segments,
-                                      RepairParallelism repairParallelism, Double intensity)
+  public static RepairRun registerRepairRun(AppContext context, Cluster cluster,
+                                            RepairUnit repairUnit, Optional<String> cause,
+                                            String owner, int segments,
+                                            RepairParallelism repairParallelism, Double intensity)
       throws ReaperException {
 
     // preparing a repair run involves several steps
 
     // the first step is to generate token segments
-    List<RingRange> tokenSegments = generateSegments(cluster, segments);
+    List<RingRange> tokenSegments = generateSegments(context, cluster, segments);
     checkNotNull(tokenSegments, "failed generating repair segments");
 
     // the next step is to prepare a repair run object
-    RepairRun repairRun = storeNewRepairRun(cluster, repairUnit, cause, owner, segments,
+    RepairRun repairRun = storeNewRepairRun(context, cluster, repairUnit, cause, owner, segments,
                                             repairParallelism, intensity);
     checkNotNull(repairRun, "failed preparing repair run");
 
@@ -388,7 +389,7 @@ public class RepairRunResource {
     // However, RepairSegment has a pointer to the RepairRun it lives in
 
     // the last preparation step is to generate actual repair segments
-    storeNewRepairSegments(tokenSegments, repairRun, repairUnit);
+    storeNewRepairSegments(context, tokenSegments, repairRun, repairUnit);
 
     // now we're done and can return
     return repairRun;
@@ -401,7 +402,8 @@ public class RepairRunResource {
    * @throws ReaperException when fails to discover seeds for the cluster or fails to connect to
    * any of the nodes in the Cluster.
    */
-  private List<RingRange> generateSegments(Cluster targetCluster, int segmentCount)
+  public static List<RingRange> generateSegments(AppContext context, Cluster targetCluster,
+                                                 int segmentCount)
       throws ReaperException {
     List<RingRange> segments = null;
     SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
@@ -436,9 +438,10 @@ public class RepairRunResource {
    * @return the new, just stored RepairRun instance
    * @throws ReaperException when fails to store the RepairRun.
    */
-  private RepairRun storeNewRepairRun(Cluster cluster, RepairUnit repairUnit,
-                                      Optional<String> cause, String owner, int segments,
-                                      RepairParallelism repairParallelism, Double intensity)
+  private static RepairRun storeNewRepairRun(AppContext context, Cluster cluster,
+                                             RepairUnit repairUnit, Optional<String> cause,
+                                             String owner, int segments,
+                                             RepairParallelism repairParallelism, Double intensity)
       throws ReaperException {
     RepairRun.Builder runBuilder = new RepairRun.Builder(cluster.getName(), repairUnit.getId(),
                                                          DateTime.now(), intensity,
@@ -461,8 +464,9 @@ public class RepairRunResource {
    * Creates the repair runs linked to given RepairRun and stores them directly in the storage
    * backend.
    */
-  private void storeNewRepairSegments(List<RingRange> tokenSegments, RepairRun repairRun,
-                                      RepairUnit repairUnit) throws ReaperException {
+  private static void storeNewRepairSegments(AppContext context, List<RingRange> tokenSegments,
+                                             RepairRun repairRun, RepairUnit repairUnit)
+      throws ReaperException {
     List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
     for (RingRange range : tokenSegments) {
       RepairSegment.Builder repairSegment = new RepairSegment.Builder(repairRun.getId(), range,

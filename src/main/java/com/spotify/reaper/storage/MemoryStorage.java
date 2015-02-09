@@ -19,6 +19,7 @@ import com.google.common.collect.Maps;
 
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
@@ -113,6 +114,12 @@ public class MemoryStorage implements IStorage {
       }
     }
     return foundRepairRuns;
+  }
+
+  @Override
+  public Collection<RepairRun> getRepairRunsForUnit(RepairUnit repairUnit) {
+    // TODO: implementation
+    return null;
   }
 
   @Override
@@ -239,6 +246,18 @@ public class MemoryStorage implements IStorage {
       }
     }
     return amount;
+  }
+
+  @Override
+  public Collection<RepairSchedule> getAllRepairSchedules() {
+    //TODO: implementation
+    return null;
+  }
+
+  @Override
+  public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
+    //TODO: implementation
+    return false;
   }
 
   public static class RepairUnitKey {

@@ -20,6 +20,7 @@ import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
@@ -146,6 +147,12 @@ public class PostgresStorage implements IStorage {
       result = getPostgresStorage(h).getRepairRunsForCluster(clusterName);
     }
     return result == null ? Lists.<RepairRun>newArrayList() : result;
+  }
+
+  @Override
+  public Collection<RepairRun> getRepairRunsForUnit(RepairUnit repairUnit) {
+    // TODO: implementation
+    return null;
   }
 
   @Override
@@ -289,5 +296,17 @@ public class PostgresStorage implements IStorage {
       result = getPostgresStorage(h).getSegmentAmountForRepairRun(runId, state);
     }
     return result;
+  }
+
+  @Override
+  public Collection<RepairSchedule> getAllRepairSchedules() {
+    //TODO: implementation
+    return null;
+  }
+
+  @Override
+  public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
+    //TODO: implementation
+    return false;
   }
 }

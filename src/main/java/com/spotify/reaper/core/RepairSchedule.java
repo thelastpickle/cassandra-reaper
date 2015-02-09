@@ -18,6 +18,8 @@ import org.joda.time.DateTime;
 
 public class RepairSchedule {
 
+  private final long id;
+
   private final long repairUnitId;
   private final State state;
   private final int daysBetween;
@@ -29,7 +31,8 @@ public class RepairSchedule {
   private final DateTime pauseTime;
   private final String lastEvent;
 
-  private RepairSchedule(Builder builder) {
+  private RepairSchedule(Builder builder, long id) {
+    this.id = id;
     this.repairUnitId = builder.repairUnitId;
     this.state = builder.state;
     this.daysBetween = builder.daysBetween;
@@ -42,6 +45,10 @@ public class RepairSchedule {
     this.lastEvent = builder.lastEvent;
   }
 
+  public long getId() {
+    return id;
+  }
+
   public long getRepairUnitId() {
     return repairUnitId;
   }
@@ -52,6 +59,10 @@ public class RepairSchedule {
 
   public int getDaysBetween() {
     return daysBetween;
+  }
+
+  public DateTime getFollowingActivation() {
+    return getNextActivation().plusDays(getDaysBetween());
   }
 
   public DateTime getNextActivation() {
@@ -105,7 +116,7 @@ public class RepairSchedule {
     private String lastEvent = "no events";
 
     public Builder(long repairUnitId, State initialState, DateTime creationTime,
-        int segmentCount, RepairParallelism repairParallelism) {
+                   int segmentCount, RepairParallelism repairParallelism) {
       this.repairUnitId = repairUnitId;
       this.state = initialState;
       this.creationTime = creationTime;
@@ -169,8 +180,8 @@ public class RepairSchedule {
       return this;
     }
 
-    public RepairSchedule build() {
-      return new RepairSchedule(this);
+    public RepairSchedule build(long id) {
+      return new RepairSchedule(this, id);
     }
   }
 }
