@@ -1,6 +1,10 @@
 package com.spotify.reaper.service;
 
+import com.google.common.base.Optional;
+
 import com.spotify.reaper.AppContext;
+import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairUnit;
@@ -74,7 +78,7 @@ public class SchedulingManager extends TimerTask {
       }
 
       if (canStartNewRun) {
-        startNewRunForUnit(repairUnit);
+        startNewRunForUnit(schedule, repairUnit);
         context.storage.updateRepairSchedule(schedule.with()
                                                  .nextActivation(schedule.getFollowingActivation())
                                                  .build(schedule.getId()));
@@ -91,11 +95,14 @@ public class SchedulingManager extends TimerTask {
     }
   }
 
-  private void startNewRunForUnit(RepairUnit repairUnit) {
-    //RepairRunResource.registerRepairRun(context, cluster, repairUnit, "scheduled run", owner,
-    //                                    segmentCount, repairParallelism, intensity);
-    // TODO: create new segments
-    // TODO: create new run
+  private void startNewRunForUnit(RepairSchedule schedule, RepairUnit repairUnit)
+      throws ReaperException {
+    Cluster cluster = context.storage.getCluster(repairUnit.getClusterName()).get();
+    RepairRun newRepairRun = RepairRunFactory.registerRepairRun(
+        context, cluster, repairUnit, Optional.of("scheduled run"),
+        schedule.getOwner(), schedule.getSegmentCount(), schedule.getRepairParallelism(),
+        schedule.getIntensity());
+    RepairRunner.startRepairRun(context, newRepairRun);
   }
 
 }

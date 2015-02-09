@@ -41,7 +41,7 @@ public class RepairRunner implements Runnable {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunner.class);
 
-  private static ScheduledExecutorService executor = null;
+  private static ScheduledExecutorService executor;
   private static long repairTimeoutMillis;
   private static long retryDelayMillis;
   private final AppContext context;
@@ -93,32 +93,73 @@ public class RepairRunner implements Runnable {
           SegmentRunner.postpone(context, segment);
         }
       }
-      RepairRunner.startRepairRun(context, repairRun.getId());
+      RepairRunner.startRepairRun(context, repairRun);
     }
     Collection<RepairRun> paused =
         context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED);
     for (RepairRun pausedRepairRun : paused) {
-      RepairRunner.startRepairRun(context, pausedRepairRun.getId());
+      RepairRunner.startRepairRun(context, pausedRepairRun);
     }
   }
 
-  public static void startRepairRun(AppContext context, long repairRunID) {
+  public static void startRepairRun(AppContext context, RepairRun runToBeStarted) {
     assert null != executor : "you need to initialize the thread pool first";
-    LOG.info("scheduling repair for repair run #{}", repairRunID);
-    try {
-      if (repairRunners.containsKey(repairRunID)) {
-        throw new ReaperException("RepairRunner for repair run " + repairRunID + " already exists");
+    long runId = runToBeStarted.getId();
+    LOG.info("changing state RUNNING for run with id #{} with current state '{}'",
+             runId, runToBeStarted.getRunState());
+    RepairRun updatedRun;
+    if (runToBeStarted.getRunState() == RepairRun.RunState.NOT_STARTED) {
+      updatedRun = runToBeStarted.with()
+          .runState(RepairRun.RunState.RUNNING)
+          .startTime(DateTime.now())
+          .build(runToBeStarted.getId());
+      if (!context.storage.updateRepairRun(updatedRun)) {
+        throw new RuntimeException("failed updating repair run " + updatedRun.getId());
       }
-      RepairRunner newRunner = new RepairRunner(context, repairRunID);
-      repairRunners.put(repairRunID, newRunner);
-      executor.submit(newRunner);
-    } catch (ReaperException e) {
-      e.printStackTrace();
-      LOG.warn("Failed to schedule repair for repair run #{}", repairRunID);
+    } else if (runToBeStarted.getRunState() == RepairRun.RunState.PAUSED) {
+      updatedRun = runToBeStarted.with()
+          .runState(RepairRun.RunState.RUNNING)
+          .pauseTime(null)
+          .build(runToBeStarted.getId());
+      if (!context.storage.updateRepairRun(updatedRun)) {
+        throw new RuntimeException("failed updating repair run " + updatedRun.getId());
+      }
+    } else if (runToBeStarted.getRunState() == RepairRun.RunState.RUNNING) {
+      assert !repairRunners.containsKey(runId) :
+          "trying to re-schedule run that is already running, with id " + runId;
+      LOG.info("re-scheduling a running run after restart, with id " + runId);
+    } else {
+      throw new RuntimeException("cannot start run with state: " + runId);
+    }
+    if (!repairRunners.containsKey(runId)) {
+      LOG.info("scheduling repair for repair run #{}", runId);
+      try {
+        RepairRunner newRunner = new RepairRunner(context, runId);
+        repairRunners.put(runId, newRunner);
+        executor.submit(newRunner);
+      } catch (ReaperException e) {
+        e.printStackTrace();
+        LOG.warn("Failed to schedule repair for repair run #{}", runId);
+      }
+    } else {
+      LOG.info("there is already a repair runner for run with id {}, so not scheduling new runner",
+               runId);
+      assert runToBeStarted.getRunState() == RepairRun.RunState.PAUSED :
+          "only paused run should not be scheduled for run already...";
     }
   }
 
-  @VisibleForTesting
+  public static void pauseRepairRun(AppContext context, RepairRun runToBePaused) {
+    RepairRun updatedRun = runToBePaused.with()
+        .runState(RepairRun.RunState.PAUSED)
+        .pauseTime(DateTime.now())
+        .build(runToBePaused.getId());
+    if (!context.storage.updateRepairRun(updatedRun)) {
+      throw new RuntimeException("failed updating repair run " + updatedRun.getId());
+    }
+  }
+
+    @VisibleForTesting
   public Long getCurrentlyRunningSegmentId() {
     return currentlyRunningSegmentId;
   }
@@ -183,10 +224,10 @@ public class RepairRunner implements Runnable {
     LOG.info("Repairs for repair run #{} done", repairRunId);
     RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
     boolean success = context.storage.updateRepairRun(repairRun.with()
-        .runState(RepairRun.RunState.DONE)
-        .endTime(DateTime.now())
-        .lastEvent("All done")
-        .build(repairRun.getId()));
+                                                          .runState(RepairRun.RunState.DONE)
+                                                          .endTime(DateTime.now())
+                                                          .lastEvent("All done")
+                                                          .build(repairRun.getId()));
     if (!success) {
       LOG.error("failed updating repair run " + repairRun.getId());
     }

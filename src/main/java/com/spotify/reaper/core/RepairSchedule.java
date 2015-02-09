@@ -35,6 +35,7 @@ public class RepairSchedule {
   private final DateTime creationTime;
   private final DateTime pauseTime;
   private final String lastEvent;
+  private final double intensity;
 
   private RepairSchedule(Builder builder, long id) {
     this.id = id;
@@ -49,6 +50,7 @@ public class RepairSchedule {
     this.creationTime = builder.creationTime;
     this.pauseTime = builder.pauseTime;
     this.lastEvent = builder.lastEvent;
+    this.intensity = builder.intensity;
   }
 
   public long getId() {
@@ -103,6 +105,10 @@ public class RepairSchedule {
     return lastEvent;
   }
 
+  public double getIntensity() {
+    return intensity;
+  }
+
   public Builder with() {
     return new Builder(this);
   }
@@ -125,6 +131,7 @@ public class RepairSchedule {
     private DateTime creationTime;
     private DateTime pauseTime;
     private String lastEvent = "no events";
+    private double intensity;
 
     public Builder(long repairUnitId, State initialState, DateTime creationTime,
                    int segmentCount, RepairParallelism repairParallelism) {
@@ -148,6 +155,7 @@ public class RepairSchedule {
       creationTime = original.creationTime;
       pauseTime = original.pauseTime;
       lastEvent = original.lastEvent;
+      intensity = original.intensity;
     }
 
     public Builder runState(State state) {
@@ -197,6 +205,11 @@ public class RepairSchedule {
 
     public Builder lastEvent(String lastEvent) {
       this.lastEvent = lastEvent;
+      return this;
+    }
+
+    public Builder intensity(double intensity) {
+      this.intensity = intensity;
       return this;
     }
 
