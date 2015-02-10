@@ -13,6 +13,8 @@
  */
 package com.spotify.reaper.core;
 
+import com.google.common.collect.ImmutableList;
+
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 
@@ -24,7 +26,7 @@ public class RepairSchedule {
   private final State state;
   private final int daysBetween;
   private final DateTime nextActivation;
-  private final long[] runHistory;
+  private final ImmutableList<Long> runHistory;
   private final int segmentCount;
   private final RepairParallelism repairParallelism;
   private final double intensity;
@@ -73,7 +75,7 @@ public class RepairSchedule {
     return nextActivation;
   }
 
-  public long[] getRunHistory() {
+  public ImmutableList<Long> getRunHistory() {
     return runHistory;
   }
 
@@ -121,7 +123,7 @@ public class RepairSchedule {
     private State state;
     private int daysBetween;
     private DateTime nextActivation;
-    private long[] runHistory;
+    private ImmutableList<Long> runHistory;
     private int segmentCount;
     private RepairParallelism repairParallelism;
     private double intensity;
@@ -131,8 +133,8 @@ public class RepairSchedule {
     private String lastEvent = "no events";
 
     public Builder(long repairUnitId, State state, int daysBetween, DateTime nextActivation,
-        long[] runHistory, int segmentCount, RepairParallelism repairParallelism, double intensity,
-        DateTime creationTime) {
+        ImmutableList<Long> runHistory, int segmentCount, RepairParallelism repairParallelism,
+        double intensity, DateTime creationTime) {
       this.repairUnitId = repairUnitId;
       this.state = state;
       this.daysBetween = daysBetween;
@@ -175,7 +177,7 @@ public class RepairSchedule {
       return this;
     }
 
-    public Builder runHistory(long[] runHistory) {
+    public Builder runHistory(ImmutableList<Long> runHistory) {
       this.runHistory = runHistory;
       return this;
     }

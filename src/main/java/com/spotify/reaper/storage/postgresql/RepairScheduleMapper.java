@@ -13,9 +13,12 @@
  */
 package com.spotify.reaper.storage.postgresql;
 
+import com.google.common.collect.ImmutableList;
+
 import com.spotify.reaper.core.RepairSchedule;
 
 import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.commons.lang.ArrayUtils;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -31,7 +34,7 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
         RepairSchedule.State.valueOf(r.getString("state")),
         r.getInt("days_between"),
         RepairRunMapper.getDateTimeOrNull(r, "next_activation"),
-        (long[]) r.getArray("run_history").getArray(),
+        ImmutableList.copyOf(ArrayUtils.toObject((long[]) r.getArray("run_history").getArray())),
         r.getInt("segment_count"),
         RepairParallelism.valueOf(r.getString("repair_parallelism")),
         r.getDouble("intensity"),
