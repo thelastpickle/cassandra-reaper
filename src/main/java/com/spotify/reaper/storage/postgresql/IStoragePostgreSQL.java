@@ -122,19 +122,19 @@ public interface IStoragePostgreSQL {
   //
   static final String SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID =
       "repair_unit_id, state, days_between, next_activation, run_history, segment_count, "
-      + "repair_parallelism, intensity, creation_time, owner, pause_time, last_event";
+      + "repair_parallelism, intensity, creation_time, owner, pause_time";
   static final String SQL_REPAIR_SCHEDULE_ALL_FIELDS =
       "id, " + SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID;
   static final String SQL_INSERT_REPAIR_SCHEDULE =
       "INSERT INTO repair_schedule (" + SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID + ") VALUES "
       + "(:repairUnitId, :state, :daysBetween, :nextActivation, :runHistory, :segmentCount, "
-      + ":repairParallelism, :intensity, :creationTime, :owner, :pauseTime, :lastEvent)";
+      + ":repairParallelism, :intensity, :creationTime, :owner, :pauseTime)";
   static final String SQL_UPDATE_REPAIR_SCHEDULE =
       "UPDATE repair_run SET repair_unit_id = :repairUnitId, state = :state, "
       + "days_between = :daysBetween, next_activation = :nextActivation, "
       + "run_history = :runHistory, segment_count = :segmentCount, "
       + "repair_parallelism = :repairParallelism, creation_time = :creationTime, owner = :owner, "
-      + "pause_time = :pauseTime, last_event = :lastEvent WHERE id = :id";
+      + "pause_time = :pauseTime WHERE id = :id";
   static final String SQL_GET_ALL_REPAIR_SCHEDULES =
       "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedules";
 

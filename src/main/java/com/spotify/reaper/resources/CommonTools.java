@@ -1,30 +1,40 @@
-package com.spotify.reaper.service;
+package com.spotify.reaper.resources;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.service.RingRange;
+import com.spotify.reaper.service.SegmentGenerator;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class RepairRunFactory {
+public class CommonTools {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RepairRunFactory.class);
+  public static final String TIMESTAMP_ISO8601_YODA_TEMPLATE = "YYYY-MM-dd'T'HH:mm:ss'Z'";
+
+  private static final Logger LOG = LoggerFactory.getLogger(CommonTools.class);
 
   /**
    * Creates a repair run but does not start it immediately.
@@ -73,7 +83,7 @@ public class RepairRunFactory {
    * any of the nodes in the Cluster.
    */
   private static List<RingRange> generateSegments(AppContext context, Cluster targetCluster,
-                                                 int segmentCount)
+                                                  int segmentCount)
       throws ReaperException {
     List<RingRange> segments = null;
     SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
@@ -152,5 +162,89 @@ public class RepairRunFactory {
     }
   }
 
+  /**
+   * Instantiates a RepairSchedule and stores it in the storage backend.
+   *
+   * @return the new, just stored RepairSchedule instance
+   * @throws ReaperException when fails to store the RepairSchedule.
+   */
+  public static RepairSchedule storeNewRepairSchedule(
+      AppContext context,
+      Cluster cluster,
+      RepairUnit repairUnit,
+      int daysBetween,
+      DateTime nextActivation,
+      String owner,
+      int segments,
+      RepairParallelism repairParallelism,
+      Double intensity)
+      throws ReaperException {
+    RepairSchedule.Builder scheduleBuilder =
+        new RepairSchedule.Builder(repairUnit.getId(), RepairSchedule.State.RUNNING, daysBetween,
+                                   nextActivation, null, segments, repairParallelism, intensity,
+                                   DateTime.now());
+    scheduleBuilder.owner(owner);
+    RepairSchedule newRepairSchedule = context.storage.addRepairSchedule(scheduleBuilder);
+    if (newRepairSchedule == null) {
+      String errMsg = String.format("failed storing repair schedule for cluster \"%s\", "
+                                    + "keyspace \"%s\", and column families: %s",
+                                    cluster.getName(), repairUnit.getKeyspaceName(),
+                                    repairUnit.getColumnFamilies());
+      LOG.error(errMsg);
+      throw new ReaperException(errMsg);
+    }
+    return newRepairSchedule;
+  }
+
+  public static final Splitter COMMA_SEPARATED_LIST_SPLITTER =
+      Splitter.on(',').trimResults(CharMatcher.anyOf(" ()[]\"'")).omitEmptyStrings();
+
+  public static Set<String> getTableNamesBasedOnParam(
+      AppContext context, Cluster cluster, String keyspace, Optional<String> tableNamesParam)
+      throws ReaperException {
+    Set<String> knownTables;
+    try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(cluster)) {
+      knownTables = jmxProxy.getTableNamesForKeyspace(keyspace);
+      if (knownTables.isEmpty()) {
+        LOG.debug("no known tables for keyspace {} in cluster {}", keyspace, cluster.getName());
+        throw new IllegalArgumentException("no column families found for keyspace");
+      }
+    }
+    Set<String> tableNames;
+    if (tableNamesParam.isPresent() && !tableNamesParam.get().isEmpty()) {
+      tableNames = Sets.newHashSet(COMMA_SEPARATED_LIST_SPLITTER.split(tableNamesParam.get()));
+      for (String name : tableNames) {
+        if (!knownTables.contains(name)) {
+          throw new IllegalArgumentException("keyspace doesn't contain a table named \""
+                                             + name + "\"");
+        }
+      }
+    } else {
+      tableNames = Collections.emptySet();
+    }
+    return tableNames;
+  }
+
+  public static RepairUnit getNewOrExistingRepairUnit(AppContext context, Cluster cluster,
+                                                      String keyspace, Set<String> tableNames) {
+    Optional<RepairUnit> storedRepairUnit =
+        context.storage.getRepairUnit(cluster.getName(), keyspace, tableNames);
+    RepairUnit theRepairUnit;
+    if (storedRepairUnit.isPresent()) {
+      LOG.info("use existing repair unit for cluster '{}', keyspace '{}', and column families: {}",
+               cluster.getName(), keyspace, tableNames);
+      theRepairUnit = storedRepairUnit.get();
+    } else {
+      LOG.info("create new repair unit for cluster '{}', keyspace '{}', and column families: {}",
+               cluster.getName(), keyspace, tableNames);
+      theRepairUnit = context.storage.addRepairUnit(
+          new RepairUnit.Builder(cluster.getName(), keyspace, tableNames));
+    }
+    return theRepairUnit;
+  }
+
+  public static String dateTimeToISO8601(DateTime dateTime) {
+    return dateTime.toDateTime(DateTimeZone.UTC).toString(TIMESTAMP_ISO8601_YODA_TEMPLATE);
+  }
 
 }

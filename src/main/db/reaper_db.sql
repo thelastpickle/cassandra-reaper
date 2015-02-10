@@ -34,20 +34,20 @@ CREATE INDEX repair_unit_column_families_gin_idx ON repair_unit USING GIN (colum
 
 CREATE TABLE IF NOT EXISTS "repair_run" (
   "id"                 SERIAL PRIMARY KEY,
-  "cluster_name"       TEXT NOT NULL REFERENCES "cluster" ("name"),
-  "repair_unit_id"     INT  NOT NULL REFERENCES "repair_unit" ("id"),
-  "cause"              TEXT NOT NULL,
-  "owner"              TEXT NOT NULL,
+  "cluster_name"       TEXT                     NOT NULL REFERENCES "cluster" ("name"),
+  "repair_unit_id"     INT                      NOT NULL REFERENCES "repair_unit" ("id"),
+  "cause"              TEXT                     NOT NULL,
+  "owner"              TEXT                     NOT NULL,
 -- see (Java) RepairRun.RunState for state values
-  "state"              TEXT NOT NULL,
+  "state"              TEXT                     NOT NULL,
   "creation_time"      TIMESTAMP WITH TIME ZONE NOT NULL,
   "start_time"         TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "end_time"           TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "pause_time"         TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-  "intensity"          REAL NOT NULL,
-  "last_event"         TEXT NOT NULL,
-  "segment_count"      INT  NOT NULL,
-  "repair_parallelism" TEXT NOT NULL
+  "intensity"          REAL                     NOT NULL,
+  "last_event"         TEXT                     NOT NULL,
+  "segment_count"      INT                      NOT NULL,
+  "repair_parallelism" TEXT                     NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "repair_segment" (
@@ -77,14 +77,13 @@ CREATE TABLE IF NOT EXISTS "repair_schedule" (
   "state"              TEXT                     NOT NULL,
   "days_between"       SMALLINT                 NOT NULL,
   "next_activation"    TIMESTAMP WITH TIME ZONE NOT NULL,
-  "run_history"        BIGINT []                NOT NULL,
+  "run_history"        INT []                   NOT NULL,
   "segment_count"      INT                      NOT NULL,
   "repair_parallelism" TEXT                     NOT NULL,
   "intensity"          REAL                     NOT NULL,
   "creation_time"      TIMESTAMP WITH TIME ZONE NOT NULL,
   "owner"              TEXT                     NOT NULL,
-  "pause_time"         TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-  "last_event"         TEXT                     NOT NULL
+  "pause_time"         TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE cluster TO reaper;

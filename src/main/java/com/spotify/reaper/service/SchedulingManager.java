@@ -8,6 +8,7 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.resources.CommonTools;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,7 +99,7 @@ public class SchedulingManager extends TimerTask {
   private void startNewRunForUnit(RepairSchedule schedule, RepairUnit repairUnit)
       throws ReaperException {
     Cluster cluster = context.storage.getCluster(repairUnit.getClusterName()).get();
-    RepairRun newRepairRun = RepairRunFactory.registerRepairRun(
+    RepairRun newRepairRun = CommonTools.registerRepairRun(
         context, cluster, repairUnit, Optional.of("scheduled run"),
         schedule.getOwner(), schedule.getSegmentCount(), schedule.getRepairParallelism(),
         schedule.getIntensity());

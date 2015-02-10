@@ -41,7 +41,6 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
         RepairRunMapper.getDateTimeOrNull(r, "creation_time"))
         .owner(r.getString("owner"))
         .pauseTime(RepairRunMapper.getDateTimeOrNull(r, "pause_time"))
-        .lastEvent(r.getString("last_event"))
         .build(r.getLong("id"));
   }
 }

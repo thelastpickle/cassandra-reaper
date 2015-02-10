@@ -33,7 +33,6 @@ public class RepairSchedule {
   private final DateTime creationTime;
   private final String owner;
   private final DateTime pauseTime;
-  private final String lastEvent;
 
   private RepairSchedule(Builder builder, long id) {
     this.id = id;
@@ -48,7 +47,6 @@ public class RepairSchedule {
     this.creationTime = builder.creationTime;
     this.owner = builder.owner;
     this.pauseTime = builder.pauseTime;
-    this.lastEvent = builder.lastEvent;
   }
 
   public long getId() {
@@ -103,10 +101,6 @@ public class RepairSchedule {
     return pauseTime;
   }
 
-  public String getLastEvent() {
-    return lastEvent;
-  }
-
   public Builder with() {
     return new Builder(this);
   }
@@ -130,11 +124,11 @@ public class RepairSchedule {
     private DateTime creationTime;
     private String owner;
     private DateTime pauseTime;
-    private String lastEvent = "no events";
 
     public Builder(long repairUnitId, State state, int daysBetween, DateTime nextActivation,
-        ImmutableList<Long> runHistory, int segmentCount, RepairParallelism repairParallelism,
-        double intensity, DateTime creationTime) {
+                   ImmutableList<Long> runHistory, int segmentCount,
+                   RepairParallelism repairParallelism,
+                   double intensity, DateTime creationTime) {
       this.repairUnitId = repairUnitId;
       this.state = state;
       this.daysBetween = daysBetween;
@@ -158,7 +152,6 @@ public class RepairSchedule {
       creationTime = original.creationTime;
       owner = original.owner;
       pauseTime = original.pauseTime;
-      lastEvent = original.lastEvent;
       intensity = original.intensity;
     }
 
@@ -209,11 +202,6 @@ public class RepairSchedule {
 
     public Builder pauseTime(DateTime pauseTime) {
       this.pauseTime = pauseTime;
-      return this;
-    }
-
-    public Builder lastEvent(String lastEvent) {
-      this.lastEvent = lastEvent;
       return this;
     }
 
