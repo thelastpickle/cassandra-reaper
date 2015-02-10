@@ -58,8 +58,8 @@ public class SchedulingManager extends TimerTask {
     }
   }
 
-  private void manageSchedule(RepairSchedule schedule) throws Exception {
-    if (schedule.getNextActivation().isAfterNow()) {
+  private void manageSchedule(RepairSchedule schedule) throws ReaperException {
+    if (schedule.getNextActivation().isBeforeNow()) {
       LOG.info("repair unit '{}' should be repaired based on RepairSchedule with id '{}'",
                schedule.getRepairUnitId(), schedule.getId());
 
