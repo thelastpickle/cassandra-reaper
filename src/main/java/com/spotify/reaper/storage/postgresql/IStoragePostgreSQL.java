@@ -138,12 +138,12 @@ public interface IStoragePostgreSQL {
       + "repair_parallelism = :repairParallelism, creation_time = :creationTime, owner = :owner, "
       + "pause_time = :pauseTime WHERE id = :id";
   static final String SQL_GET_REPAIR_SCHEDULE =
-      "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedules WHERE id = :id";
+      "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedule WHERE id = :id";
   static final String SQL_GET_REPAIR_SCHEDULES_FOR_CLUSTER =
-      "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedules "
+      "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedule "
       + "WHERE cluster_name = :clusterName";
   static final String SQL_GET_ALL_REPAIR_SCHEDULES =
-      "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedules";
+      "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedule";
 
   // Utility methods
   //
