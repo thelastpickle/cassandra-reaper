@@ -10,6 +10,7 @@ import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.CommonTools;
 
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,26 @@ public class SchedulingManager extends TimerTask {
       timer.schedule(schedulingManager, 1000, 1000 * 60); // activate once per minute
     } else {
       LOG.warn("there is already one instance of SchedulingManager running, not starting new");
+    }
+  }
+
+  public static void pauseRepairSchedule(AppContext context, RepairSchedule schedule) {
+    RepairSchedule updatedSchedule = schedule.with()
+        .state(RepairSchedule.State.PAUSED)
+        .pauseTime(DateTime.now())
+        .build(schedule.getId());
+    if (!context.storage.updateRepairSchedule(updatedSchedule)) {
+      throw new RuntimeException("failed updating repair schedule " + updatedSchedule.getId());
+    }
+  }
+
+  public static void resumeRepairSchedule(AppContext context, RepairSchedule schedule) {
+    RepairSchedule updatedSchedule = schedule.with()
+        .state(RepairSchedule.State.RUNNING)
+        .pauseTime(null)
+        .build(schedule.getId());
+    if (!context.storage.updateRepairSchedule(updatedSchedule)) {
+      throw new RuntimeException("failed updating repair schedule " + updatedSchedule.getId());
     }
   }
 
@@ -68,6 +89,10 @@ public class SchedulingManager extends TimerTask {
       Collection<RepairRun> repairRuns = context.storage.getRepairRunsForUnit(repairUnit);
 
       boolean canStartNewRun = true;
+
+      if (schedule.getState() == RepairSchedule.State.PAUSED)
+        canStartNewRun = false;
+
       for (RepairRun repairRun : repairRuns) {
         RepairRun.RunState state = repairRun.getRunState();
         if (state != RepairRun.RunState.DONE && state != RepairRun.RunState.NOT_STARTED) {
@@ -84,15 +109,15 @@ public class SchedulingManager extends TimerTask {
                                                  .nextActivation(schedule.getFollowingActivation())
                                                  .build(schedule.getId()));
       } else {
-        LOG.warn("skip scheduling, next activation for repair unit '{}' will be: {}",
-                 repairUnit.getId(), schedule.getFollowingActivation());
+        LOG.warn("skip scheduling, next activation for repair schedule '{}' will be: {}",
+                 schedule.getId(), schedule.getFollowingActivation());
         context.storage.updateRepairSchedule(schedule.with()
                                                  .nextActivation(schedule.getFollowingActivation())
                                                  .build(schedule.getId()));
       }
     } else {
-      LOG.debug("not scheduling new repairs yet for repair unit '{}', next activation: {}",
-                schedule.getRepairUnitId(), schedule.getNextActivation());
+      LOG.debug("not scheduling new repairs yet for repair schedule '{}', next activation: {}",
+          schedule.getId(), schedule.getNextActivation());
     }
   }
 

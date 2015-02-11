@@ -21,6 +21,7 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
+import com.spotify.reaper.service.SchedulingManager;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
@@ -37,6 +38,7 @@ import java.util.Set;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -163,6 +165,83 @@ public class RepairScheduleResource {
       e.printStackTrace();
       return Response.status(500).entity(e.getMessage()).build();
     }
+  }
+
+  /**
+   * Modifies a state of the repair schedule. <p/> Currently supports PAUSED -> RUNNING and
+   * RUNNING -> PAUSED.
+   *
+   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 501
+   * (NOT_IMPLEMENTED) if transition is not supported.
+   */
+  @PUT
+  @Path("/{id}")
+  public Response modifyState(
+      @Context UriInfo uriInfo,
+      @PathParam("id") Long repairScheduleId,
+      @QueryParam("state") Optional<String> state) {
+
+    LOG.info("modify repair schedule state called with: id = {}, state = {}",
+        repairScheduleId, state);
+
+    if (!state.isPresent()) {
+      return Response.status(Response.Status.BAD_REQUEST.getStatusCode())
+          .entity("\"state\" argument missing").build();
+    }
+
+    Optional<RepairSchedule> repairSchedule = context.storage.getRepairSchedule(repairScheduleId);
+    if (!repairSchedule.isPresent()) {
+      return Response.status(Response.Status.NOT_FOUND).entity("repair schedule with id "
+          + repairScheduleId + " not found")
+          .build();
+    }
+
+    Optional<RepairUnit> repairUnit =
+        context.storage.getRepairUnit(repairSchedule.get().getRepairUnitId());
+    if (!repairUnit.isPresent()) {
+      String errMsg =
+          "repair unit with id " + repairSchedule.get().getRepairUnitId() + " not found";
+      LOG.error(errMsg);
+      return Response.status(Response.Status.NOT_FOUND).entity(errMsg).build();
+    }
+
+    RepairSchedule.State newState = RepairSchedule.State.valueOf(state.get());
+    RepairSchedule.State oldState = repairSchedule.get().getState();
+
+    if (oldState == newState) {
+      return Response.ok("given \"state\" is same as the current state").build();
+    }
+
+    if (isPausing(oldState, newState)) {
+      return pauseSchedule(repairSchedule.get(), repairUnit.get());
+    } else if (isResuming(oldState, newState)) {
+      return resumeSchedule(repairSchedule.get(), repairUnit.get());
+    } else {
+      String errMsg = String.format("Transition %s->%s not supported.", oldState.toString(),
+          newState.toString());
+      LOG.error(errMsg);
+      return Response.status(Response.Status.BAD_REQUEST).entity(errMsg).build();
+    }
+  }
+
+  private static boolean isPausing(RepairSchedule.State oldState, RepairSchedule.State newState) {
+    return oldState == RepairSchedule.State.RUNNING && newState == RepairSchedule.State.PAUSED;
+  }
+
+  private static boolean isResuming(RepairSchedule.State oldState, RepairSchedule.State newState) {
+    return oldState == RepairSchedule.State.PAUSED && newState == RepairSchedule.State.RUNNING;
+  }
+
+  private Response pauseSchedule(RepairSchedule repairSchedule, RepairUnit repairUnit) {
+    LOG.info("Pausing schedule {}", repairSchedule.getId());
+    SchedulingManager.pauseRepairSchedule(context, repairSchedule);
+    return Response.ok().entity(new RepairScheduleStatus(repairSchedule, repairUnit)).build();
+  }
+
+  private Response resumeSchedule(RepairSchedule repairSchedule, RepairUnit repairUnit) {
+    LOG.info("Resuming schedule {}", repairSchedule.getId());
+    SchedulingManager.resumeRepairSchedule(context, repairSchedule);
+    return Response.ok().entity(new RepairScheduleStatus(repairSchedule, repairUnit)).build();
   }
 
   /**

@@ -155,7 +155,7 @@ public class RepairSchedule {
       intensity = original.intensity;
     }
 
-    public Builder runState(State state) {
+    public Builder state(State state) {
       this.state = state;
       return this;
     }
