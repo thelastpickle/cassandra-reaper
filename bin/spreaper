@@ -309,7 +309,7 @@ class ReaperCLI(object):
         print "# Listing registered repair schedules for cluster '{0}'".format(args.cluster_name)
         schedules_data = json.loads(
             reaper.get("repair_schedule/cluster/{0}".format(args.cluster_name)))
-        print "# Found {0} schedules for cluster:".format(len(schedules_data))
+        print "# Found {0} schedules:".format(len(schedules_data))
         print json.dumps(schedules_data, indent=2, sort_keys=True)
 
     def status_cluster(self):

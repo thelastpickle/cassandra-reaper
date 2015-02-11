@@ -102,4 +102,5 @@ GRANT USAGE, SELECT ON SEQUENCE repair_schedule_id_seq TO reaper;
 -- alter table repair_run add column segment_count INT NOT NULL DEFAULT 200;
 -- update repair_run set segment_count = (select segment_count from repair_unit where id = repair_unit_id);
 -- alter table repair_run add column repair_parallelism TEXT NOT NULL DEFAULT 'SEQUENTIAL';
--- alter table repair_unit drop column segment_count, drop column column_families;
+-- update repair_run set repair_parallelism = (select repair_parallelism from repair_unit where id = repair_unit_id);
+-- alter table repair_unit drop column segment_count, drop column repair_parallelism;

@@ -57,7 +57,8 @@ public interface IStoragePostgreSQL {
       "cluster_name, repair_unit_id, cause, owner, state, creation_time, "
       + "start_time, end_time, pause_time, intensity, last_event, "
       + "segment_count, repair_parallelism";
-  static final String SQL_REPAIR_RUN_ALL_FIELDS = "id, " + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID;
+  static final String SQL_REPAIR_RUN_ALL_FIELDS =
+      "repair_run.id, " + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID;
   static final String SQL_INSERT_REPAIR_RUN =
       "INSERT INTO repair_run (" + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID + ") VALUES "
       + "(:clusterName, :repairUnitId, :cause, :owner, :runState, :creationTime, "
@@ -81,7 +82,8 @@ public interface IStoragePostgreSQL {
   //
   static final String SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID =
       "cluster_name, keyspace_name, column_families";
-  static final String SQL_REPAIR_UNIT_ALL_FIELDS = "id, " + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID;
+  static final String SQL_REPAIR_UNIT_ALL_FIELDS =
+      "repair_unit.id, " + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID;
   static final String SQL_INSERT_REPAIR_UNIT =
       "INSERT INTO repair_unit (" + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID + ") VALUES "
       + "(:clusterName, :keyspaceName, :columnFamilies)";
@@ -97,7 +99,8 @@ public interface IStoragePostgreSQL {
   static final String SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID =
       "repair_unit_id, run_id, start_token, end_token, state, coordinator_host, start_time, "
       + "end_time, fail_count";
-  static final String SQL_REPAIR_SEGMENT_ALL_FIELDS = "id, " + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID;
+  static final String SQL_REPAIR_SEGMENT_ALL_FIELDS =
+      "repair_segment.id, " + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID;
   static final String SQL_INSERT_REPAIR_SEGMENT =
       "INSERT INTO repair_segment (" + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID + ") VALUES "
       + "(:repairUnitId, :runId, :startToken, :endToken, :state, :coordinatorHost, :startTime, "
@@ -126,7 +129,7 @@ public interface IStoragePostgreSQL {
       "repair_unit_id, state, days_between, next_activation, run_history, segment_count, "
       + "repair_parallelism, intensity, creation_time, owner, pause_time";
   static final String SQL_REPAIR_SCHEDULE_ALL_FIELDS =
-      "id, " + SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID;
+      "repair_schedule.id, " + SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID;
   static final String SQL_INSERT_REPAIR_SCHEDULE =
       "INSERT INTO repair_schedule (" + SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID + ") VALUES "
       + "(:repairUnitId, :state, :daysBetween, :nextActivation, :runHistory, :segmentCount, "
@@ -140,8 +143,8 @@ public interface IStoragePostgreSQL {
   static final String SQL_GET_REPAIR_SCHEDULE =
       "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedule WHERE id = :id";
   static final String SQL_GET_REPAIR_SCHEDULES_FOR_CLUSTER =
-      "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedule "
-      + "WHERE cluster_name = :clusterName";
+      "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedule, repair_unit "
+      + "WHERE repair_schedule.repair_unit_id = repair_unit.id AND cluster_name = :clusterName";
   static final String SQL_GET_ALL_REPAIR_SCHEDULES =
       "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedule";
 

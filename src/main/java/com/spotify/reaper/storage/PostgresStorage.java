@@ -29,6 +29,7 @@ import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
 import com.spotify.reaper.storage.postgresql.PostgresArrayArgumentFactory;
 import com.spotify.reaper.storage.postgresql.RepairParallelismArgumentFactory;
 import com.spotify.reaper.storage.postgresql.RunStateArgumentFactory;
+import com.spotify.reaper.storage.postgresql.ScheduleStateArgumentFactory;
 import com.spotify.reaper.storage.postgresql.StateArgumentFactory;
 
 import org.skife.jdbi.v2.DBI;
@@ -70,6 +71,7 @@ public class PostgresStorage implements IStorage {
     h.registerArgumentFactory(new RepairParallelismArgumentFactory());
     h.registerArgumentFactory(new StateArgumentFactory());
     h.registerArgumentFactory(new BigIntegerArgumentFactory());
+    h.registerArgumentFactory(new ScheduleStateArgumentFactory());
     return h.attach(IStoragePostgreSQL.class);
   }
 
