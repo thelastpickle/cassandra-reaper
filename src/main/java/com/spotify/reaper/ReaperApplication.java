@@ -20,12 +20,14 @@ import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
 import com.spotify.reaper.resources.ReaperHealthCheck;
 import com.spotify.reaper.resources.RepairRunResource;
+import com.spotify.reaper.resources.RepairScheduleResource;
 import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
 
 import org.apache.cassandra.repair.RepairParallelism;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +83,9 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   @Override
   public void run(ReaperApplicationConfiguration config,
                   Environment environment) throws ReaperException {
+    // Using UTC times everywhere as default. Affects only Yoda time.
+    DateTimeZone.setDefault(DateTimeZone.UTC);
+
     checkConfiguration(config);
     context.config = config;
 
@@ -119,6 +124,9 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
     final RepairRunResource addRepairRunResource = new RepairRunResource(context);
     environment.jersey().register(addRepairRunResource);
+
+    final RepairScheduleResource addRepairScheduleResource = new RepairScheduleResource(context);
+    environment.jersey().register(addRepairScheduleResource);
 
     LOG.info("Reaper is ready to accept connections");
 

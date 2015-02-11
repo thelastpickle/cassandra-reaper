@@ -269,6 +269,18 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
+  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
+    Collection<RepairSchedule> foundRepairSchedules = new ArrayList<>();
+    for (RepairSchedule repairSchedule : repairSchedules.values()) {
+      RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId()).get();
+      if (repairUnit.getClusterName().equals(clusterName)) {
+        foundRepairSchedules.add(repairSchedule);
+      }
+    }
+    return foundRepairSchedules;
+  }
+
+  @Override
   public Collection<RepairSchedule> getAllRepairSchedules() {
     return repairSchedules.values();
   }

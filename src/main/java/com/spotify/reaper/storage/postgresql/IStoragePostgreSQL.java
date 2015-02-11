@@ -139,6 +139,9 @@ public interface IStoragePostgreSQL {
       + "pause_time = :pauseTime WHERE id = :id";
   static final String SQL_GET_REPAIR_SCHEDULE =
       "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedules WHERE id = :id";
+  static final String SQL_GET_REPAIR_SCHEDULES_FOR_CLUSTER =
+      "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedules "
+      + "WHERE cluster_name = :clusterName";
   static final String SQL_GET_ALL_REPAIR_SCHEDULES =
       "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedules";
 
@@ -240,6 +243,11 @@ public interface IStoragePostgreSQL {
 
   @SqlUpdate(SQL_UPDATE_REPAIR_SCHEDULE)
   public int updateRepairSchedule(@BindBean RepairSchedule newRepairSchedule);
+
+  @SqlQuery(SQL_GET_REPAIR_SCHEDULES_FOR_CLUSTER)
+  @Mapper(RepairScheduleMapper.class)
+  public Collection<RepairSchedule> getRepairSchedulesForCluster(
+      @Bind("clusterName") String clusterName);
 
   @SqlQuery(SQL_GET_ALL_REPAIR_SCHEDULES)
   @Mapper(RepairScheduleMapper.class)

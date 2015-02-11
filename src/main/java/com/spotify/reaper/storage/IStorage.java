@@ -88,6 +88,8 @@ public interface IStorage {
 
   Optional<RepairSchedule> getRepairSchedule(long repairScheduleId);
 
+  Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName);
+
   Collection<RepairSchedule> getAllRepairSchedules();
 
   boolean updateRepairSchedule(RepairSchedule newRepairSchedule);

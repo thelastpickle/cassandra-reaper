@@ -31,6 +31,8 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Set;
 
 import javax.ws.rs.GET;
@@ -177,6 +179,22 @@ public class RepairScheduleResource {
       return Response.status(404).entity(
           "repair schedule with id " + repairScheduleId + " doesn't exist").build();
     }
+  }
+
+  /**
+   * @return all know repair schedules for a cluster.
+   */
+  @GET
+  @Path("/cluster/{cluster_name}")
+  public Response getRepairSchedulesForCluster(@PathParam("cluster_name") String clusterName) {
+    LOG.info("get repair schedules for cluster called with: cluster_name = {}", clusterName);
+    Collection<RepairSchedule> repairSchedules =
+        context.storage.getRepairSchedulesForCluster(clusterName);
+    Collection<RepairScheduleStatus> repairScheduleViews = new ArrayList<>();
+    for (RepairSchedule repairSchedule : repairSchedules) {
+      repairScheduleViews.add(getRepairScheduleStatus(repairSchedule));
+    }
+    return Response.ok().entity(repairScheduleViews).build();
   }
 
   /**

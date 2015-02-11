@@ -76,15 +76,10 @@ public class RepairScheduleStatus {
     this.creationTime = repairSchedule.getCreationTime();
     this.nextActivation = repairSchedule.getNextActivation();
     this.pauseTime = repairSchedule.getPauseTime();
-    this.intensity = roundIntensity(repairSchedule.getIntensity());
+    this.intensity = CommonTools.roundDoubleNicely(repairSchedule.getIntensity());
     this.segmentCount = repairSchedule.getSegmentCount();
     this.repairParallelism = repairSchedule.getRepairParallelism().name().toLowerCase();
     this.daysBetween = repairSchedule.getDaysBetween();
-  }
-
-  @VisibleForTesting
-  protected static double roundIntensity(double intensity) {
-    return Math.round(intensity * 10000f) / 10000f;
   }
 
   @JsonProperty("creation_time")

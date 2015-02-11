@@ -2,7 +2,7 @@
 # Copyright (c) 2014 Spotify AB
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
+# you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
 #
 #      http://www.apache.org/licenses/LICENSE-2.0
@@ -18,11 +18,17 @@ import getpass
 import json
 import logging
 import os
-import sys
 import urlparse
 
+import sys
 import requests
 
+
+# The following monkey-patching is required to get json.dumps float rounding nicer,
+# for intensity 0.9 we got 0.8999999761581421, but now we get 0.900
+from json import encoder
+
+encoder.FLOAT_REPR = lambda o: format(o, '.3f')
 
 USER = getpass.getuser()
 DEFAULT_CAUSE = "manual spreaper run"
@@ -80,6 +86,7 @@ class ReaperCaller(object):
         the_url = urlparse.urljoin(self.base_url, endpoint)
         return self._http_req("PUT", the_url, params)
 
+
 # === Arguments for commands ============================================================
 
 
@@ -134,8 +141,6 @@ def _arguments_for_add_cluster(parser):
 
 
 def _arguments_for_repair_and_start(parser):
-    parser.add_argument("--owner", default=USER,
-                        help="name of local user calling the Reaper [\"{0}\"]".format(USER))
     parser.add_argument("--cause", default=DEFAULT_CAUSE,
                         help="cause string used for logging and auditing "
                              "purposes [\"{0}\"]".format(DEFAULT_CAUSE))
@@ -143,6 +148,7 @@ def _arguments_for_repair_and_start(parser):
 
 def _arguments_for_repair(parser):
     _arguments_for_repair_and_schedule(parser)
+    _arguments_for_repair_and_start(parser)
     parser.add_argument("--start-repair", action='store_true',
                         help="start the repair run immediately after registering it")
 
@@ -158,7 +164,8 @@ def _arguments_for_repair_and_schedule(parser):
     parser.add_argument("--tables", default=None,
                         help=("a comma separated list of tables within a keyspace "
                               "in the Cassandra cluster (do not use spaces after commas)"))
-    _arguments_for_repair_and_start(parser)
+    parser.add_argument("--owner", default=USER,
+                        help="name of local user calling the Reaper [\"{0}\"]".format(USER))
     parser.add_argument("--segment-count", default=None,
                         help=("amount of segments to create for the repair run, "
                               "or use the configured default if not given"))
@@ -218,7 +225,8 @@ REAPER_USAGE = SPREAPER_DESCRIPTION + """
 Usage: spreaper [<global_args>] <command> [<command_args>]
 
 <command> can be:
-    list-clusters   List registered Cassandra clusters.
+    list-clusters   List all registered Cassandra clusters.
+    list-schedules  List registered repair schedules for a cluster.
     status-cluster  Show status of a Cassandra cluster,
                     and any existing repair runs for the cluster.
     status-keyspace Show status of a keyspace in a cluster.
@@ -281,7 +289,7 @@ class ReaperCLI(object):
     def list_clusters(self):
         reaper, args = ReaperCLI.prepare_reaper(
             "list-clusters",
-            "List registered Cassandra clusters."
+            "List all registered Cassandra clusters."
         )
         print "# Listing all registered Cassandra clusters"
         cluster_names = json.loads(reaper.get("cluster"))
@@ -291,6 +299,18 @@ class ReaperCLI(object):
                 print cluster_name
         else:
             print "# No registered clusters found"
+
+    def list_schedules(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "list-schedules",
+            "List registered repair schedules for a cluster.",
+            extra_arguments=_arguments_for_status_cluster
+        )
+        print "# Listing registered repair schedules for cluster '{0}'".format(args.cluster_name)
+        schedules_data = json.loads(
+            reaper.get("repair_schedule/cluster/{0}".format(args.cluster_name)))
+        print "# Found {0} schedules for cluster:".format(len(schedules_data))
+        print json.dumps(schedules_data, indent=2, sort_keys=True)
 
     def status_cluster(self):
         reaper, args = ReaperCLI.prepare_reaper(

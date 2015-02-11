@@ -320,6 +320,15 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
+  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
+    Collection<RepairSchedule> result;
+    try (Handle h = jdbi.open()) {
+      result = getPostgresStorage(h).getRepairSchedulesForCluster(clusterName);
+    }
+    return result;
+  }
+
+  @Override
   public Collection<RepairSchedule> getAllRepairSchedules() {
     Collection<RepairSchedule> result;
     try (Handle h = jdbi.open()) {

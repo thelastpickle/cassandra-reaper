@@ -247,4 +247,8 @@ public class CommonTools {
     return dateTime.toDateTime(DateTimeZone.UTC).toString(TIMESTAMP_ISO8601_YODA_TEMPLATE);
   }
 
+  public static double roundDoubleNicely(double intensity) {
+    return Math.round(intensity * 10000f) / 10000f;
+  }
+
 }

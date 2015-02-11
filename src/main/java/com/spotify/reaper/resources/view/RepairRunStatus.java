@@ -13,8 +13,6 @@
  */
 package com.spotify.reaper.resources.view;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.reaper.core.RepairRun;
@@ -90,15 +88,10 @@ public class RepairRunStatus {
     this.startTime = repairRun.getStartTime();
     this.endTime = repairRun.getEndTime();
     this.pauseTime = repairRun.getPauseTime();
-    this.intensity = roundIntensity(repairRun.getIntensity());
+    this.intensity = CommonTools.roundDoubleNicely(repairRun.getIntensity());
     this.segmentCount = repairRun.getSegmentCount();
     this.repairParallelism = repairRun.getRepairParallelism().name().toLowerCase();
     this.lastEvent = repairRun.getLastEvent();
-  }
-
-  @VisibleForTesting
-  protected static double roundIntensity(double intensity) {
-    return Math.round(intensity * 10000f) / 10000f;
   }
 
   @JsonProperty("creation_time")
