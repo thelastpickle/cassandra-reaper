@@ -86,6 +86,8 @@ public interface IStorage {
 
   RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule);
 
+  Optional<RepairSchedule> getRepairSchedule(long repairScheduleId);
+
   Collection<RepairSchedule> getAllRepairSchedules();
 
   boolean updateRepairSchedule(RepairSchedule newRepairSchedule);

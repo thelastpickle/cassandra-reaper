@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS "repair_schedule" (
   "state"              TEXT                     NOT NULL,
   "days_between"       SMALLINT                 NOT NULL,
   "next_activation"    TIMESTAMP WITH TIME ZONE NOT NULL,
+-- run_history contains repair run ids, with latest scheduled run in the end
   "run_history"        INT []                   NOT NULL,
   "segment_count"      INT                      NOT NULL,
   "repair_parallelism" TEXT                     NOT NULL,

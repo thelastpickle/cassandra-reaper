@@ -79,7 +79,7 @@ public class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getCluster(clusterName);
     }
-    return result == null ? Optional.<Cluster>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -91,7 +91,7 @@ public class PostgresStorage implements IStorage {
         LOG.debug("connected postgresql version: {}", postgresVersion);
       }
     }
-    return null != postgresVersion && postgresVersion.trim().length() > 0;
+    return null != postgresVersion && !postgresVersion.trim().isEmpty();
   }
 
   @Override
@@ -137,7 +137,7 @@ public class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairRun(id);
     }
-    return result == null ? Optional.<RepairRun>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -151,8 +151,11 @@ public class PostgresStorage implements IStorage {
 
   @Override
   public Collection<RepairRun> getRepairRunsForUnit(RepairUnit repairUnit) {
-    // TODO: implementation
-    return null;
+    Collection<RepairRun> result;
+    try (Handle h = jdbi.open()) {
+      result = getPostgresStorage(h).getRepairRunsForUnit(repairUnit.getId());
+    }
+    return result == null ? Lists.<RepairRun>newArrayList() : result;
   }
 
   @Override
@@ -203,7 +206,7 @@ public class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairUnit(id);
     }
-    return result == null ? Optional.<RepairUnit>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -214,7 +217,7 @@ public class PostgresStorage implements IStorage {
       IStoragePostgreSQL storage = getPostgresStorage(h);
       result = storage.getRepairUnitByClusterAndTables(clusterName, keyspaceName, columnFamilies);
     }
-    return result == null ? Optional.<RepairUnit>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -248,7 +251,7 @@ public class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairSegment(id);
     }
-    return result == null ? Optional.<RepairSegment>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -257,7 +260,7 @@ public class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getNextFreeRepairSegment(runId);
     }
-    return result == null ? Optional.<RepairSegment>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -267,7 +270,7 @@ public class PostgresStorage implements IStorage {
       IStoragePostgreSQL storage = getPostgresStorage(h);
       result = storage.getNextFreeRepairSegmentOnRange(runId, range.getStart(), range.getEnd());
     }
-    return result == null ? Optional.<RepairSegment>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -305,6 +308,15 @@ public class PostgresStorage implements IStorage {
       insertedId = getPostgresStorage(h).insertRepairSchedule(repairSchedule.build(-1));
     }
     return repairSchedule.build(insertedId);
+  }
+
+  @Override
+  public Optional<RepairSchedule> getRepairSchedule(long repairScheduleId) {
+    RepairSchedule result;
+    try (Handle h = jdbi.open()) {
+      result = getPostgresStorage(h).getRepairSchedule(repairScheduleId);
+    }
+    return Optional.fromNullable(result);
   }
 
   @Override

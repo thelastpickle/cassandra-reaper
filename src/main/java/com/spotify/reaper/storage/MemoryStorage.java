@@ -120,8 +120,13 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public Collection<RepairRun> getRepairRunsForUnit(RepairUnit repairUnit) {
-    // TODO: implementation
-    return null;
+    List<RepairRun> foundRepairRuns = new ArrayList<>();
+    for (RepairRun repairRun : repairRuns.values()) {
+      if (repairRun.getRepairUnitId() == repairUnit.getId()) {
+        foundRepairRuns.add(repairRun);
+      }
+    }
+    return foundRepairRuns;
   }
 
   @Override
@@ -256,6 +261,11 @@ public class MemoryStorage implements IStorage {
     RepairSchedule newRepairSchedule = repairSchedule.build(REPAIR_SCHEDULE_ID.incrementAndGet());
     repairSchedules.put(newRepairSchedule.getId(), newRepairSchedule);
     return newRepairSchedule;
+  }
+
+  @Override
+  public Optional<RepairSchedule> getRepairSchedule(long id) {
+    return Optional.fromNullable(repairSchedules.get(id));
   }
 
   @Override

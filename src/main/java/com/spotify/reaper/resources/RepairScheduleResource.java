@@ -33,8 +33,10 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Set;
 
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
@@ -73,17 +75,16 @@ public class RepairScheduleResource {
       @QueryParam("keyspace") Optional<String> keyspace,
       @QueryParam("tables") Optional<String> tableNamesParam,
       @QueryParam("owner") Optional<String> owner,
-      @QueryParam("cause") Optional<String> cause,
       @QueryParam("segmentCount") Optional<Integer> segmentCount,
       @QueryParam("repairParallelism") Optional<String> repairParallelism,
       @QueryParam("intensity") Optional<String> intensityStr,
-      @QueryParam("schedule_days_between") Optional<Integer> scheduleDaysBetween,
-      @QueryParam("schedule_trigger_time") Optional<String> scheduleTriggerTime
+      @QueryParam("scheduleDaysBetween") Optional<Integer> scheduleDaysBetween,
+      @QueryParam("scheduleTriggerTime") Optional<String> scheduleTriggerTime
   ) {
     LOG.info("add repair schedule called with: clusterName = {}, keyspace = {}, tables = {}, "
-             + "owner = {}, cause = {}, segmentCount = {}, repairParallelism = {}, "
+             + "owner = {}, segmentCount = {}, repairParallelism = {}, "
              + "intensity = {}, scheduleDaysBetween = {}, scheduleTriggerTime = {}",
-             clusterName, keyspace, tableNamesParam, owner, cause, segmentCount, repairParallelism,
+             clusterName, keyspace, tableNamesParam, owner, segmentCount, repairParallelism,
              intensityStr, scheduleDaysBetween, scheduleTriggerTime);
     try {
       Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
@@ -160,6 +161,33 @@ public class RepairScheduleResource {
       e.printStackTrace();
       return Response.status(500).entity(e.getMessage()).build();
     }
+  }
+
+  /**
+   * @return detailed information about a repair schedule.
+   */
+  @GET
+  @Path("/{id}")
+  public Response getRepairSchedule(@PathParam("id") Long repairScheduleId) {
+    LOG.info("get repair_schedule called with: id = {}", repairScheduleId);
+    Optional<RepairSchedule> repairSchedule = context.storage.getRepairSchedule(repairScheduleId);
+    if (repairSchedule.isPresent()) {
+      return Response.ok().entity(getRepairScheduleStatus(repairSchedule.get())).build();
+    } else {
+      return Response.status(404).entity(
+          "repair schedule with id " + repairScheduleId + " doesn't exist").build();
+    }
+  }
+
+  /**
+   * @return RepairSchedule status for viewing
+   */
+  private RepairScheduleStatus getRepairScheduleStatus(RepairSchedule repairSchedule) {
+    Optional<RepairUnit> repairUnit =
+        context.storage.getRepairUnit(repairSchedule.getRepairUnitId());
+    assert repairUnit.isPresent() : "no repair unit found with id: "
+                                    + repairSchedule.getRepairUnitId();
+    return new RepairScheduleStatus(repairSchedule, repairUnit.get());
   }
 
   /**

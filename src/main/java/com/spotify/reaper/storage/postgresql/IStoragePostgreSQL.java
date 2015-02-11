@@ -74,6 +74,8 @@ public interface IStoragePostgreSQL {
       "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS + " FROM repair_run WHERE cluster_name = :clusterName";
   static final String SQL_GET_REPAIR_RUNS_WITH_STATE =
       "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS + " FROM repair_run WHERE state = :state";
+  static final String SQL_GET_REPAIR_RUNS_FOR_UNIT =
+      "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS + " FROM repair_run WHERE repair_unit_id = :unitId";
 
   // RepairUnit
   //
@@ -130,11 +132,13 @@ public interface IStoragePostgreSQL {
       + "(:repairUnitId, :state, :daysBetween, :nextActivation, :runHistory, :segmentCount, "
       + ":repairParallelism, :intensity, :creationTime, :owner, :pauseTime)";
   static final String SQL_UPDATE_REPAIR_SCHEDULE =
-      "UPDATE repair_run SET repair_unit_id = :repairUnitId, state = :state, "
+      "UPDATE repair_schedule SET repair_unit_id = :repairUnitId, state = :state, "
       + "days_between = :daysBetween, next_activation = :nextActivation, "
       + "run_history = :runHistory, segment_count = :segmentCount, "
       + "repair_parallelism = :repairParallelism, creation_time = :creationTime, owner = :owner, "
       + "pause_time = :pauseTime WHERE id = :id";
+  static final String SQL_GET_REPAIR_SCHEDULE =
+      "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedules WHERE id = :id";
   static final String SQL_GET_ALL_REPAIR_SCHEDULES =
       "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedules";
 
@@ -173,6 +177,10 @@ public interface IStoragePostgreSQL {
   @SqlQuery(SQL_GET_REPAIR_RUNS_WITH_STATE)
   @Mapper(RepairRunMapper.class)
   public Collection<RepairRun> getRepairRunsWithState(@Bind("state") RepairRun.RunState state);
+
+  @SqlQuery(SQL_GET_REPAIR_RUNS_FOR_UNIT)
+  @Mapper(RepairRunMapper.class)
+  public Collection<RepairRun> getRepairRunsForUnit(@Bind("unitId") long unitId);
 
   @SqlUpdate(SQL_INSERT_REPAIR_RUN)
   @GetGeneratedKeys
@@ -221,6 +229,10 @@ public interface IStoragePostgreSQL {
   public RepairSegment getNextFreeRepairSegmentOnRange(@Bind("runId") long runId,
                                                        @Bind("startToken") BigInteger startToken,
                                                        @Bind("endToken") BigInteger endToken);
+
+  @SqlQuery(SQL_GET_REPAIR_SCHEDULE)
+  @Mapper(RepairScheduleMapper.class)
+  public RepairSchedule getRepairSchedule(@Bind("id") long repairScheduleId);
 
   @SqlQuery(SQL_INSERT_REPAIR_SCHEDULE)
   @GetGeneratedKeys
