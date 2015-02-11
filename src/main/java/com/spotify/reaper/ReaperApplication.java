@@ -22,6 +22,7 @@ import com.spotify.reaper.resources.ReaperHealthCheck;
 import com.spotify.reaper.resources.RepairRunResource;
 import com.spotify.reaper.resources.RepairScheduleResource;
 import com.spotify.reaper.service.RepairRunner;
+import com.spotify.reaper.service.SchedulingManager;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
@@ -82,7 +83,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   @Override
   public void run(ReaperApplicationConfiguration config,
-                  Environment environment) throws ReaperException {
+                  Environment environment) throws Exception {
     // Using UTC times everywhere as default. Affects only Yoda time.
     DateTimeZone.setDefault(DateTimeZone.UTC);
 
@@ -127,8 +128,9 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
     final RepairScheduleResource addRepairScheduleResource = new RepairScheduleResource(context);
     environment.jersey().register(addRepairScheduleResource);
+    Thread.sleep(1000);
 
-    LOG.info("Reaper is ready to accept connections");
+    SchedulingManager.start(context);
 
     LOG.info("resuming pending repair runs");
     RepairRunner.resumeRunningRepairRuns(context);
@@ -137,9 +139,9 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   private IStorage initializeStorage(ReaperApplicationConfiguration config,
                                      Environment environment) throws ReaperException {
     IStorage storage;
-    if (config.getStorageType().equalsIgnoreCase("memory")) {
+    if ("memory".equalsIgnoreCase(config.getStorageType())) {
       storage = new MemoryStorage();
-    } else if (config.getStorageType().equalsIgnoreCase("database")) {
+    } else if ("database".equalsIgnoreCase(config.getStorageType())) {
       storage = new PostgresStorage(config, environment);
     } else {
       LOG.error("invalid storageType: {}", config.getStorageType());

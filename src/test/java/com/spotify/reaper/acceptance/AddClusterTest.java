@@ -23,4 +23,5 @@ import cucumber.api.junit.Cucumber;
     features = "classpath:com.spotify.reaper.acceptance/basic_reaper_functionality.feature"
 )
 public class AddClusterTest {
+
 }

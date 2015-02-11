@@ -49,7 +49,9 @@ public class ReaperTestJettyRunner {
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
         public void run() {
-          runnerInstance.stop();
+          if (runnerInstance != null) {
+            runnerInstance.stop();
+          }
         }
       });
     }
@@ -140,6 +142,7 @@ public class ReaperTestJettyRunner {
     if (null != jettyServer) {
       try {
         jettyServer.stop();
+        jettyServer.join();
       } catch (Exception e) {
         e.printStackTrace();
       }
