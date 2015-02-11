@@ -15,6 +15,8 @@ package com.spotify.reaper.core;
 
 import com.google.common.collect.ImmutableList;
 
+import com.spotify.reaper.storage.postgresql.LongCollectionSQLType;
+
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 
@@ -75,6 +77,14 @@ public class RepairSchedule {
 
   public ImmutableList<Long> getRunHistory() {
     return runHistory;
+  }
+
+  /**
+   * Required for JDBI mapping into database.
+   * Generic collection type would be hard to map into Postgres array types.
+   */
+  public LongCollectionSQLType getRunHistorySQL() {
+    return new LongCollectionSQLType(runHistory);
   }
 
   public int getSegmentCount() {

@@ -24,6 +24,11 @@ import java.util.Collection;
 
 /**
  * Provides JDBI a method to map String Collection to an SQL Array type.
+ *
+ * NOTICE: this is very non-generic and ugly due to not being able to have different generic types
+ * except Strings when using Collections with JDBI here.
+ * Should probably use own collection types without generics to solve this.
+ * See LongCollectionSQLType for example, if this becomes a problem.
  */
 public class PostgresArrayArgumentFactory implements ArgumentFactory<Collection<String>> {
 

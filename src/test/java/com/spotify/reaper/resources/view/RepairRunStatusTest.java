@@ -1,8 +1,12 @@
 package com.spotify.reaper.resources.view;
 
+import com.google.common.collect.Lists;
+
 import com.spotify.reaper.resources.CommonTools;
 
 import org.junit.Test;
+
+import java.util.Collection;
 
 import static org.junit.Assert.*;
 

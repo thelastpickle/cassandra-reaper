@@ -132,12 +132,12 @@ public interface IStoragePostgreSQL {
       "repair_schedule.id, " + SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID;
   static final String SQL_INSERT_REPAIR_SCHEDULE =
       "INSERT INTO repair_schedule (" + SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID + ") VALUES "
-      + "(:repairUnitId, :state, :daysBetween, :nextActivation, :runHistory, :segmentCount, "
+      + "(:repairUnitId, :state, :daysBetween, :nextActivation, :runHistorySQL, :segmentCount, "
       + ":repairParallelism, :intensity, :creationTime, :owner, :pauseTime)";
   static final String SQL_UPDATE_REPAIR_SCHEDULE =
       "UPDATE repair_schedule SET repair_unit_id = :repairUnitId, state = :state, "
       + "days_between = :daysBetween, next_activation = :nextActivation, "
-      + "run_history = :runHistory, segment_count = :segmentCount, "
+      + "run_history = :runHistorySQL, segment_count = :segmentCount, "
       + "repair_parallelism = :repairParallelism, creation_time = :creationTime, owner = :owner, "
       + "pause_time = :pauseTime WHERE id = :id";
   static final String SQL_GET_REPAIR_SCHEDULE =

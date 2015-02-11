@@ -26,6 +26,7 @@ import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.postgresql.BigIntegerArgumentFactory;
 import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
+import com.spotify.reaper.storage.postgresql.LongCollectionSQLTypeArgumentFactory;
 import com.spotify.reaper.storage.postgresql.PostgresArrayArgumentFactory;
 import com.spotify.reaper.storage.postgresql.RepairParallelismArgumentFactory;
 import com.spotify.reaper.storage.postgresql.RunStateArgumentFactory;
@@ -66,6 +67,7 @@ public class PostgresStorage implements IStorage {
   }
 
   private static IStoragePostgreSQL getPostgresStorage(Handle h) {
+    h.registerArgumentFactory(new LongCollectionSQLTypeArgumentFactory());
     h.registerArgumentFactory(new PostgresArrayArgumentFactory());
     h.registerArgumentFactory(new RunStateArgumentFactory());
     h.registerArgumentFactory(new RepairParallelismArgumentFactory());
