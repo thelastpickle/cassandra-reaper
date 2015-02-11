@@ -29,13 +29,22 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
 
   @Override
   public RepairSchedule map(int index, ResultSet r, StatementContext ctx) throws SQLException {
-    Long[] runHistory = ArrayUtils.toObject((long[]) r.getArray("run_history").getArray());
+    Integer[] runHistory = ArrayUtils.toObject((int[]) r.getArray("run_history").getArray());
+    Long[] runHistoryLong;
+    if (null != runHistory && runHistory.length > 0) {
+      runHistoryLong = new Long[runHistory.length];
+      for (int i = 0; i < runHistory.length; i++) {
+        runHistoryLong[i] = runHistory[i].longValue();
+      }
+    } else {
+      runHistoryLong = new Long[0];
+    }
     return new RepairSchedule.Builder(
         r.getLong("repair_unit_id"),
         RepairSchedule.State.valueOf(r.getString("state")),
         r.getInt("days_between"),
         RepairRunMapper.getDateTimeOrNull(r, "next_activation"),
-        runHistory != null ? ImmutableList.copyOf(runHistory) : ImmutableList.<Long>of(),
+        ImmutableList.copyOf(runHistoryLong),
         r.getInt("segment_count"),
         RepairParallelism.valueOf(r.getString("repair_parallelism")),
         r.getDouble("intensity"),
