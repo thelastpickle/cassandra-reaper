@@ -85,13 +85,13 @@ public class RepairRunnerTest {
     RepairRun.Builder runBuilder =
         new RepairRun.Builder(TEST_CLUSTER, CF_ID, DateTime.now(), INTENSITY, 1,
                               RepairParallelism.SEQUENTIAL);
-    context.storage.addRepairRun(runBuilder);
+    RepairRun repairRun = context.storage.addRepairRun(runBuilder);
     context.storage.addRepairSegments(Collections.<RepairSegment.Builder>emptySet(), RUN_ID);
 
     // start the repair
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
     RepairRunner.initializeThreadPool(1, 3, TimeUnit.HOURS, 30, TimeUnit.SECONDS);
-    RepairRunner.startRepairRun(context, RUN_ID);
+    RepairRunner.startRepairRun(context, repairRun);
     Thread.sleep(200);
 
     // check if the start time was properly set
@@ -193,7 +193,7 @@ public class RepairRunnerTest {
         return jmx;
       }
     };
-    RepairRunner.startRepairRun(context, RUN_ID);
+    RepairRunner.startRepairRun(context, run);
 
     // TODO: refactor so that we can properly wait for the repair runner to finish rather than
     // TODO: using this sleep().

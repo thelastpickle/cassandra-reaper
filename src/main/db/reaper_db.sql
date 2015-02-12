@@ -28,25 +28,26 @@ CREATE TABLE IF NOT EXISTS "repair_unit" (
   "keyspace_name"   TEXT    NOT NULL,
   "column_families" TEXT [] NOT NULL
 );
+
 -- Using GIN index to make @> (contains) type of array operations faster
 CREATE INDEX repair_unit_column_families_gin_idx ON repair_unit USING GIN (column_families);
 
 CREATE TABLE IF NOT EXISTS "repair_run" (
   "id"                 SERIAL PRIMARY KEY,
-  "cluster_name"       TEXT NOT NULL REFERENCES "cluster" ("name"),
-  "repair_unit_id"     INT  NOT NULL REFERENCES "repair_unit" ("id"),
-  "cause"              TEXT NOT NULL,
-  "owner"              TEXT NOT NULL,
+  "cluster_name"       TEXT                     NOT NULL REFERENCES "cluster" ("name"),
+  "repair_unit_id"     INT                      NOT NULL REFERENCES "repair_unit" ("id"),
+  "cause"              TEXT                     NOT NULL,
+  "owner"              TEXT                     NOT NULL,
 -- see (Java) RepairRun.RunState for state values
-  "state"              TEXT NOT NULL,
-  "creation_time"      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  "state"              TEXT                     NOT NULL,
+  "creation_time"      TIMESTAMP WITH TIME ZONE NOT NULL,
   "start_time"         TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "end_time"           TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "pause_time"         TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-  "intensity"          REAL NOT NULL,
-  "last_event"         TEXT NOT NULL,
-  "segment_count"      INT  NOT NULL,
-  "repair_parallelism" TEXT NOT NULL
+  "intensity"          REAL                     NOT NULL,
+  "last_event"         TEXT                     NOT NULL,
+  "segment_count"      INT                      NOT NULL,
+  "repair_parallelism" TEXT                     NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "repair_segment" (
@@ -62,8 +63,29 @@ CREATE TABLE IF NOT EXISTS "repair_segment" (
   "end_time"         TIMESTAMP WITH TIME ZONE DEFAULT NULL,
   "fail_count"       INT         NOT NULL     DEFAULT 0
 );
-CREATE INDEX "repair_segment_run_id_fail_count_idx" ON "repair_segment" USING BTREE ("run_id" ASC, "fail_count" ASC);
-CREATE INDEX "repair_segment_state_idx" ON "repair_segment" USING BTREE ("state");
+
+CREATE INDEX "repair_segment_run_id_fail_count_idx"
+ON "repair_segment" USING BTREE ("run_id" ASC, "fail_count" ASC);
+
+CREATE INDEX "repair_segment_state_idx"
+ON "repair_segment" USING BTREE ("state");
+
+CREATE TABLE IF NOT EXISTS "repair_schedule" (
+  "id"                 SERIAL PRIMARY KEY,
+  "repair_unit_id"     INT                      NOT NULL REFERENCES "repair_unit" ("id"),
+-- see (Java) RepairSchedule.State for state values
+  "state"              TEXT                     NOT NULL,
+  "days_between"       SMALLINT                 NOT NULL,
+  "next_activation"    TIMESTAMP WITH TIME ZONE NOT NULL,
+-- run_history contains repair run ids, with latest scheduled run in the end
+  "run_history"        INT []                   NOT NULL,
+  "segment_count"      INT                      NOT NULL,
+  "repair_parallelism" TEXT                     NOT NULL,
+  "intensity"          REAL                     NOT NULL,
+  "creation_time"      TIMESTAMP WITH TIME ZONE NOT NULL,
+  "owner"              TEXT                     NOT NULL,
+  "pause_time"         TIMESTAMP WITH TIME ZONE DEFAULT NULL
+);
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE cluster TO reaper;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_unit TO reaper;
@@ -72,3 +94,13 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_run TO reaper;
 GRANT USAGE, SELECT ON SEQUENCE repair_run_id_seq TO reaper;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_segment TO reaper;
 GRANT USAGE, SELECT ON SEQUENCE repair_segment_id_seq TO reaper;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_schedule TO reaper;
+GRANT USAGE, SELECT ON SEQUENCE repair_schedule_id_seq TO reaper;
+
+
+-- alter table repair_run add column last_event TEXT NOT NULL DEFAULT 'no events';
+-- alter table repair_run add column segment_count INT NOT NULL DEFAULT 200;
+-- update repair_run set segment_count = (select segment_count from repair_unit where id = repair_unit_id);
+-- alter table repair_run add column repair_parallelism TEXT NOT NULL DEFAULT 'SEQUENTIAL';
+-- update repair_run set repair_parallelism = (select repair_parallelism from repair_unit where id = repair_unit_id);
+-- alter table repair_unit drop column segment_count, drop column repair_parallelism;

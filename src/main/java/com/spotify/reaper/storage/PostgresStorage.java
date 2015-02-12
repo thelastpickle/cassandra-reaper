@@ -20,14 +20,17 @@ import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.postgresql.BigIntegerArgumentFactory;
 import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
+import com.spotify.reaper.storage.postgresql.LongCollectionSQLTypeArgumentFactory;
 import com.spotify.reaper.storage.postgresql.PostgresArrayArgumentFactory;
 import com.spotify.reaper.storage.postgresql.RepairParallelismArgumentFactory;
 import com.spotify.reaper.storage.postgresql.RunStateArgumentFactory;
+import com.spotify.reaper.storage.postgresql.ScheduleStateArgumentFactory;
 import com.spotify.reaper.storage.postgresql.StateArgumentFactory;
 
 import org.skife.jdbi.v2.DBI;
@@ -64,11 +67,13 @@ public class PostgresStorage implements IStorage {
   }
 
   private static IStoragePostgreSQL getPostgresStorage(Handle h) {
+    h.registerArgumentFactory(new LongCollectionSQLTypeArgumentFactory());
     h.registerArgumentFactory(new PostgresArrayArgumentFactory());
     h.registerArgumentFactory(new RunStateArgumentFactory());
     h.registerArgumentFactory(new RepairParallelismArgumentFactory());
     h.registerArgumentFactory(new StateArgumentFactory());
     h.registerArgumentFactory(new BigIntegerArgumentFactory());
+    h.registerArgumentFactory(new ScheduleStateArgumentFactory());
     return h.attach(IStoragePostgreSQL.class);
   }
 
@@ -78,7 +83,7 @@ public class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getCluster(clusterName);
     }
-    return result == null ? Optional.<Cluster>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -90,7 +95,7 @@ public class PostgresStorage implements IStorage {
         LOG.debug("connected postgresql version: {}", postgresVersion);
       }
     }
-    return null != postgresVersion && postgresVersion.trim().length() > 0;
+    return null != postgresVersion && !postgresVersion.trim().isEmpty();
   }
 
   @Override
@@ -136,7 +141,7 @@ public class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairRun(id);
     }
-    return result == null ? Optional.<RepairRun>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -144,6 +149,15 @@ public class PostgresStorage implements IStorage {
     Collection<RepairRun> result;
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairRunsForCluster(clusterName);
+    }
+    return result == null ? Lists.<RepairRun>newArrayList() : result;
+  }
+
+  @Override
+  public Collection<RepairRun> getRepairRunsForUnit(RepairUnit repairUnit) {
+    Collection<RepairRun> result;
+    try (Handle h = jdbi.open()) {
+      result = getPostgresStorage(h).getRepairRunsForUnit(repairUnit.getId());
     }
     return result == null ? Lists.<RepairRun>newArrayList() : result;
   }
@@ -196,7 +210,7 @@ public class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairUnit(id);
     }
-    return result == null ? Optional.<RepairUnit>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -207,7 +221,7 @@ public class PostgresStorage implements IStorage {
       IStoragePostgreSQL storage = getPostgresStorage(h);
       result = storage.getRepairUnitByClusterAndTables(clusterName, keyspaceName, columnFamilies);
     }
-    return result == null ? Optional.<RepairUnit>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -241,7 +255,7 @@ public class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairSegment(id);
     }
-    return result == null ? Optional.<RepairSegment>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -250,7 +264,7 @@ public class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getNextFreeRepairSegment(runId);
     }
-    return result == null ? Optional.<RepairSegment>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -260,7 +274,7 @@ public class PostgresStorage implements IStorage {
       IStoragePostgreSQL storage = getPostgresStorage(h);
       result = storage.getNextFreeRepairSegmentOnRange(runId, range.getStart(), range.getEnd());
     }
-    return result == null ? Optional.<RepairSegment>absent() : Optional.of(result);
+    return Optional.fromNullable(result);
   }
 
   @Override
@@ -287,6 +301,56 @@ public class PostgresStorage implements IStorage {
     int result;
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getSegmentAmountForRepairRun(runId, state);
+    }
+    return result;
+  }
+
+  @Override
+  public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
+    long insertedId;
+    try (Handle h = jdbi.open()) {
+      insertedId = getPostgresStorage(h).insertRepairSchedule(repairSchedule.build(-1));
+    }
+    return repairSchedule.build(insertedId);
+  }
+
+  @Override
+  public Optional<RepairSchedule> getRepairSchedule(long repairScheduleId) {
+    RepairSchedule result;
+    try (Handle h = jdbi.open()) {
+      result = getPostgresStorage(h).getRepairSchedule(repairScheduleId);
+    }
+    return Optional.fromNullable(result);
+  }
+
+  @Override
+  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
+    Collection<RepairSchedule> result;
+    try (Handle h = jdbi.open()) {
+      result = getPostgresStorage(h).getRepairSchedulesForCluster(clusterName);
+    }
+    return result;
+  }
+
+  @Override
+  public Collection<RepairSchedule> getAllRepairSchedules() {
+    Collection<RepairSchedule> result;
+    try (Handle h = jdbi.open()) {
+      result = getPostgresStorage(h).getAllRepairSchedules();
+    }
+    return result;
+  }
+
+  @Override
+  public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
+    boolean result = false;
+    try (Handle h = jdbi.open()) {
+      int rowsAdded = getPostgresStorage(h).updateRepairSchedule(newRepairSchedule);
+      if (rowsAdded < 1) {
+        LOG.warn("failed updating repair schedule with id: {}", newRepairSchedule.getId());
+      } else {
+        result = true;
+      }
     }
     return result;
   }

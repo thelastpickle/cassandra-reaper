@@ -13,9 +13,11 @@
  */
 package com.spotify.reaper.resources.view;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.CommonTools;
 
@@ -23,19 +25,13 @@ import org.joda.time.DateTime;
 
 import java.util.Collection;
 
-/**
- * Contains the data to be shown when querying repair run status.
- */
-public class RepairRunStatus {
-
-  @JsonProperty
-  private final String cause;
-
-  @JsonProperty
-  private final String owner;
+public class RepairScheduleStatus {
 
   @JsonProperty
   private final long id;
+
+  @JsonProperty
+  private final String owner;
 
   @JsonProperty("cluster_name")
   private final String clusterName;
@@ -46,17 +42,14 @@ public class RepairRunStatus {
   @JsonProperty("keyspace_name")
   private final String keyspaceName;
 
-  @JsonProperty("run_state")
-  private final String runState;
+  @JsonProperty("state")
+  private final String state;
 
   @JsonIgnore
   private final DateTime creationTime;
 
   @JsonIgnore
-  private final DateTime startTime;
-
-  @JsonIgnore
-  private final DateTime endTime;
+  private final DateTime nextActivation;
 
   @JsonIgnore
   private final DateTime pauseTime;
@@ -70,28 +63,23 @@ public class RepairRunStatus {
   @JsonProperty("repair_parallelism")
   private final String repairParallelism;
 
-  @JsonProperty("segments_repaired")
-  private int segmentsRepaired = 0;
+  @JsonProperty("schedule_days_between")
+  private final int daysBetween;
 
-  @JsonProperty("last_event")
-  private final String lastEvent;
-
-  public RepairRunStatus(RepairRun repairRun, RepairUnit repairUnit) {
-    this.id = repairRun.getId();
-    this.cause = repairRun.getCause();
-    this.owner = repairRun.getOwner();
-    this.clusterName = repairRun.getClusterName();
+  public RepairScheduleStatus(RepairSchedule repairSchedule, RepairUnit repairUnit) {
+    this.id = repairSchedule.getId();
+    this.state = repairSchedule.getState().name();
+    this.owner = repairSchedule.getOwner();
+    this.clusterName = repairUnit.getClusterName();
     this.columnFamilies = repairUnit.getColumnFamilies();
     this.keyspaceName = repairUnit.getKeyspaceName();
-    this.runState = repairRun.getRunState().name();
-    this.creationTime = repairRun.getCreationTime();
-    this.startTime = repairRun.getStartTime();
-    this.endTime = repairRun.getEndTime();
-    this.pauseTime = repairRun.getPauseTime();
-    this.intensity = CommonTools.roundDoubleNicely(repairRun.getIntensity());
-    this.segmentCount = repairRun.getSegmentCount();
-    this.repairParallelism = repairRun.getRepairParallelism().name().toLowerCase();
-    this.lastEvent = repairRun.getLastEvent();
+    this.creationTime = repairSchedule.getCreationTime();
+    this.nextActivation = repairSchedule.getNextActivation();
+    this.pauseTime = repairSchedule.getPauseTime();
+    this.intensity = CommonTools.roundDoubleNicely(repairSchedule.getIntensity());
+    this.segmentCount = repairSchedule.getSegmentCount();
+    this.repairParallelism = repairSchedule.getRepairParallelism().name().toLowerCase();
+    this.daysBetween = repairSchedule.getDaysBetween();
   }
 
   @JsonProperty("creation_time")
@@ -102,20 +90,12 @@ public class RepairRunStatus {
     return CommonTools.dateTimeToISO8601(creationTime);
   }
 
-  @JsonProperty("start_time")
-  public String getStartTimeISO8601() {
-    if (startTime == null) {
+  @JsonProperty("next_activation")
+  public String getNextActivationISO8601() {
+    if (nextActivation == null) {
       return null;
     }
-    return CommonTools.dateTimeToISO8601(startTime);
-  }
-
-  @JsonProperty("end_time")
-  public String getEndTimeISO8601() {
-    if (endTime == null) {
-      return null;
-    }
-    return CommonTools.dateTimeToISO8601(endTime);
+    return CommonTools.dateTimeToISO8601(nextActivation);
   }
 
   @JsonProperty("pause_time")
@@ -126,15 +106,12 @@ public class RepairRunStatus {
     return CommonTools.dateTimeToISO8601(pauseTime);
   }
 
-  public void setSegmentsRepaired(int segmentsRepaired) {
-    this.segmentsRepaired = segmentsRepaired;
-  }
-
   public long getId() {
     return this.id;
   }
 
-  public String getRunState() {
-    return this.runState;
+  public String getState() {
+    return this.state;
   }
+
 }

@@ -2,7 +2,7 @@
 # Copyright (c) 2014 Spotify AB
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
+# you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
 #
 #      http://www.apache.org/licenses/LICENSE-2.0
@@ -18,11 +18,17 @@ import getpass
 import json
 import logging
 import os
-import sys
 import urlparse
 
+import sys
 import requests
 
+
+# The following monkey-patching is required to get json.dumps float rounding nicer,
+# for intensity 0.9 we got 0.8999999761581421, but now we get 0.900
+from json import encoder
+
+encoder.FLOAT_REPR = lambda o: format(o, '.3f')
 
 USER = getpass.getuser()
 DEFAULT_CAUSE = "manual spreaper run"
@@ -80,12 +86,12 @@ class ReaperCaller(object):
         the_url = urlparse.urljoin(self.base_url, endpoint)
         return self._http_req("PUT", the_url, params)
 
+
 # === Arguments for commands ============================================================
 
 
 def _global_arguments(parser, command):
-    """Arguments relevant for every CLI command
-    """
+    """Arguments relevant for every CLI command"""
     if 'REAPER_HOST' in os.environ:
         default_reaper_host = os.environ.get('REAPER_HOST')
     else:
@@ -109,40 +115,47 @@ def _global_arguments(parser, command):
 
 
 def _arguments_for_status_cluster(parser):
-    """Arguments relevant for querying cluster status
-    """
+    """Arguments relevant for querying cluster status"""
     parser.add_argument("cluster_name", help="the cluster name")
 
 
 def _arguments_for_status_keyspace(parser):
-    """Arguments relevant for querying cluster keyspace status
-    """
+    """Arguments relevant for querying cluster keyspace status"""
     parser.add_argument("cluster_name", help="the cluster name")
     parser.add_argument("keyspace_name", help="the keyspace name")
 
 
 def _arguments_for_status_repair(parser):
-    """Arguments relevant for querying a repair status
-    """
+    """Arguments relevant for querying a repair status"""
     parser.add_argument("run_id", help="identifier of the run to fetch more info about")
 
 
+def _arguments_for_status_schedule(parser):
+    """Arguments relevant for querying a repair schedule status"""
+    parser.add_argument("schedule_id", help="identifier of the schedule to fetch more info about")
+
+
 def _arguments_for_add_cluster(parser):
-    """Arguments relevant for registering a cluster
-    """
+    """Arguments relevant for registering a cluster"""
     parser.add_argument("seed_host", help="the seed host of the Cassandra cluster to be registered")
 
 
 def _arguments_for_repair_and_start(parser):
-    parser.add_argument("--owner", default=USER,
-                        help="name of local user calling the Reaper [\"{0}\"]".format(USER))
     parser.add_argument("--cause", default=DEFAULT_CAUSE,
                         help="cause string used for logging and auditing "
                              "purposes [\"{0}\"]".format(DEFAULT_CAUSE))
 
 
 def _arguments_for_repair(parser):
-    """Arguments relevant for registering a repair and optionally triggering it
+    _arguments_for_repair_and_schedule(parser)
+    _arguments_for_repair_and_start(parser)
+    parser.add_argument("--start-repair", action='store_true',
+                        help="start the repair run immediately after registering it")
+
+
+def _arguments_for_repair_and_schedule(parser):
+    """Arguments relevant for registering a repair and optionally triggering it,
+    either immediately or in scheduled manner.
     """
     parser.add_argument("cluster_name",
                         help="the name of the target Cassandra cluster")
@@ -151,9 +164,8 @@ def _arguments_for_repair(parser):
     parser.add_argument("--tables", default=None,
                         help=("a comma separated list of tables within a keyspace "
                               "in the Cassandra cluster (do not use spaces after commas)"))
-    _arguments_for_repair_and_start(parser)
-    parser.add_argument("--start-repair", action='store_true',
-                        help="start the repair run immediately after registering it")
+    parser.add_argument("--owner", default=USER,
+                        help="name of local user calling the Reaper [\"{0}\"]".format(USER))
     parser.add_argument("--segment-count", default=None,
                         help=("amount of segments to create for the repair run, "
                               "or use the configured default if not given"))
@@ -165,22 +177,29 @@ def _arguments_for_repair(parser):
                               "or use the configured default if not given"))
 
 
+def _arguments_for_scheduling(parser):
+    """Arguments relevant to scheduling repair runs."""
+    _arguments_for_repair_and_schedule(parser)
+    parser.add_argument("--schedule-days-between", default=None,
+                        help="how many days between repair triggerings, e.g. 7 for weekly schedule")
+    parser.add_argument("--schedule-trigger-time", default=None,
+                        help="at which time to trigger the first repair (UTC), "
+                             "e.g. \"2015-02-10T15:00:00\"")
+
+
 def _arguments_for_start(parser):
-    """Arguments relevant for starting a repair
-    """
+    """Arguments relevant for starting a repair"""
     _arguments_for_repair_and_start(parser)
     parser.add_argument("run_id", help="ID of the repair run to start or resume")
 
 
 def _arguments_for_pause(parser):
-    """Arguments needed for pausing or resuming a repair
-    """
+    """Arguments needed for pausing or resuming a repair"""
     parser.add_argument("run_id", help="ID of the repair run to pause")
 
 
 def _parse_arguments(command, description, usage=None, extra_arguments=None):
-    """Generic argument parsing done by every command
-    """
+    """Generic argument parsing done by every command"""
     parser = argparse.ArgumentParser(description=description, usage=usage)
     _global_arguments(parser, command)
     if extra_arguments:
@@ -199,20 +218,26 @@ SPREAPER_DESCRIPTION = \
     First register your cluster with "add-cluster" command,
     and then start repairing the cluster with "repair" command
     giving the cluster name registered in the Reaper.
+    You can also schedule regular repairs for registered clusters.
     """
 
 REAPER_USAGE = SPREAPER_DESCRIPTION + """
 Usage: spreaper [<global_args>] <command> [<command_args>]
 
 <command> can be:
-    list-clusters   List registered Cassandra clusters.
+    list-clusters   List all registered Cassandra clusters.
+    list-schedules  List registered repair schedules for a cluster.
     status-cluster  Show status of a Cassandra cluster,
                     and any existing repair runs for the cluster.
     status-keyspace Show status of a keyspace in a cluster.
     status-repair   Show status of a repair run.
+    status-schedule Show status of a repair schedule.
     add-cluster     Register a cluster.
     repair          Create a repair run, optionally starting it. You need to register
-                    a cluster into Reaper (add-cluster) before calling repair."
+                    a cluster into Reaper (add-cluster) before calling repair.
+    schedule        Create a repair schedule, choosing the first activation time and days
+                    between repair activations. You need to register a cluster into
+                    Reaper (add-cluster) before calling this.
     start           Start a repair run, or resume paused repair run.
     pause           Pause a repair run.
     ping            Test connectivity to the Reaper service.
@@ -264,7 +289,7 @@ class ReaperCLI(object):
     def list_clusters(self):
         reaper, args = ReaperCLI.prepare_reaper(
             "list-clusters",
-            "List registered Cassandra clusters."
+            "List all registered Cassandra clusters."
         )
         print "# Listing all registered Cassandra clusters"
         cluster_names = json.loads(reaper.get("cluster"))
@@ -274,6 +299,18 @@ class ReaperCLI(object):
                 print cluster_name
         else:
             print "# No registered clusters found"
+
+    def list_schedules(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "list-schedules",
+            "List registered repair schedules for a cluster.",
+            extra_arguments=_arguments_for_status_cluster
+        )
+        print "# Listing registered repair schedules for cluster '{0}'".format(args.cluster_name)
+        schedules_data = json.loads(
+            reaper.get("repair_schedule/cluster/{0}".format(args.cluster_name)))
+        print "# Found {0} schedules:".format(len(schedules_data))
+        print json.dumps(schedules_data, indent=2, sort_keys=True)
 
     def status_cluster(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -304,6 +341,16 @@ class ReaperCLI(object):
         print "# Repair run with id '{0}':".format(args.run_id)
         repair_run_data = reaper.get("repair_run/{0}".format(args.run_id))
         print json.dumps(json.loads(repair_run_data), indent=2, sort_keys=True)
+
+    def status_schedule(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "status-schedule",
+            "Show status of a repair schedule.",
+            extra_arguments=_arguments_for_status_schedule
+        )
+        print "# Repair schedule with id '{0}':".format(args.schedule_id)
+        repair_schedule_data = reaper.get("repair_schedule/{0}".format(args.schedule_id))
+        print json.dumps(json.loads(repair_schedule_data), indent=2, sort_keys=True)
 
     def add_cluster(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -350,6 +397,50 @@ class ReaperCLI(object):
         print json.dumps(repair_run, indent=2, sort_keys=True)
         if args.start_repair:
             self._change_run_state(reaper, repair_run.get('id'), args, "RUNNING")
+
+    def schedule(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "schedule",
+            "Create a repair schedule, choosing the first activation time and days between "
+            "repair activations. You need to register a cluster into Reaper (add-cluster) "
+            "before calling this.", extra_arguments=_arguments_for_scheduling
+        )
+        if not args.keyspace_name or not args.cluster_name:
+            print "# Please specify a cluster, and a keyspace"
+            exit(1)
+        if not args.schedule_days_between:
+            print "# Please specify repair schedule by giving at least value for " \
+                  "schedule-days-between parameter"
+            exit(1)
+        if args.tables:
+            print ("# Registering repair schedule for cluster '{0}', and keyspace '{1}', "
+                   "targeting tables: '{2}', with scheduled days between triggerings '{3}', "
+                   "and triggering time: {4}").format(
+                args.cluster_name, args.keyspace_name, ",".join(args.tables.split(',')),
+                args.schedule_days_between, args.schedule_trigger_time)
+            reply = reaper.post("repair_schedule", clusterName=args.cluster_name,
+                                keyspace=args.keyspace_name, tables=args.tables,
+                                owner=args.owner, segmentCount=args.segment_count,
+                                repairParallelism=args.repair_parallelism,
+                                intensity=args.intensity,
+                                scheduleDaysBetween=args.schedule_days_between,
+                                scheduleTriggerTime=args.schedule_trigger_time)
+        else:
+            print ("# Registering repair schedule for cluster '{0}', and keyspace '{1}', "
+                   "targeting all tables in the keyspace, with scheduled days between "
+                   "triggerings '{2}', and triggering time: {3}").format(
+                args.cluster_name, args.keyspace_name,
+                args.schedule_days_between, args.schedule_trigger_time)
+            reply = reaper.post("repair_schedule", clusterName=args.cluster_name,
+                                keyspace=args.keyspace_name, owner=args.owner,
+                                segmentCount=args.segment_count,
+                                repairParallelism=args.repair_parallelism,
+                                intensity=args.intensity,
+                                scheduleDaysBetween=args.schedule_days_between,
+                                scheduleTriggerTime=args.schedule_trigger_time)
+        repair_schedule = json.loads(reply)
+        print "# Repair schedule with id={0} created:".format(repair_schedule.get('id'))
+        print json.dumps(repair_schedule, indent=2, sort_keys=True)
 
     def start(self):
         reaper, args = ReaperCLI.prepare_reaper(

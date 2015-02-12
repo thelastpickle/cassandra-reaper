@@ -122,7 +122,7 @@ REST API
 
 * GET     /cluster/{cluster_name} (com.spotify.reaper.resources.ClusterResource)
   * Expected query parameters: *None*
-  * Returns a cluster resource identified by the given "cluster_name" path parameter.
+  * Returns a cluster object identified by the given "cluster_name" path parameter.
 
 * GET     /cluster/{cluster_name}/{keyspace_name} (com.spotify.reaper.resources.ClusterResource)
   * Expected query parameters: *None*
@@ -133,14 +133,14 @@ REST API
   * Expected query parameters:
       * *seedHost*: Host name or IP address of the added Cassandra
         clusters seed host.
-  * Adds a new cluster to the service, and returns the newly added cluster resource,
+  * Adds a new cluster to the service, and returns the newly added cluster object,
     if the operation was successful.
 
 ## Repair Run Resource
 
 * GET     /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)
   * Expected query parameters: *None*
-  * Returns a repair run resource identified by the given "id" path parameter.
+  * Returns a repair run object identified by the given "id" path parameter.
 
 * GET     /repair_run/cluster/{cluster_name} (com.spotify.reaper.resources.RepairRunResource)
   * Expected query parameters: *None*
@@ -152,7 +152,7 @@ REST API
     * *keyspace*: The name of the table keyspace.
     * *tables*: The name of the targeted tables (column families) as comma separated list.
                 If no tables given, then the whole keyspace is targeted. (Optional)
-    * *owner*: Owner name for the table. This could be any string identifying the owner.
+    * *owner*: Owner name for the run. This could be any string identifying the owner.
     * *cause*: Identifies the process, or cause the repair was started. (Optional)
     * *segmentCount*: Defines the amount of segments to create for repair run. (Optional)
     * *repairParallelism*: Defines the used repair parallelism for repair run. (Optional)
@@ -163,3 +163,25 @@ REST API
     * *state*: New value for the state of the repair run.
       Possible values for given state are: "PAUSED" or "RUNNING".
   * Starts, pauses, or resumes a repair run identified by the "id" path parameter.
+
+## Repair Schedule Resource
+
+* GET     /repair_schedule/{id} (com.spotify.reaper.resources.RepairScheduleResource)
+  * Expected query parameters: *None*
+  * Returns a repair schedule object identified by the given "id" path parameter.
+
+* POST    /repair_schedule (com.spotify.reaper.resources.RepairScheduleResource)
+  * Expected query parameters:
+    * *clusterName*: Name of the Cassandra cluster.
+    * *keyspace*: The name of the table keyspace.
+    * *tables*: The name of the targeted tables (column families) as comma separated list.
+                If no tables given, then the whole keyspace is targeted. (Optional)
+    * *owner*: Owner name for the schedule. This could be any string identifying the owner.
+    * *segmentCount*: Defines the amount of segments to create for scheduled repair runs. (Optional)
+    * *repairParallelism*: Defines the used repair parallelism for scheduled repair runs. (Optional)
+    * *intensity*: Defines the repair intensity for scheduled repair runs. (Optional)
+    * *scheduleDaysBetween*: Defines the amount of days to wait between scheduling new repairs.
+                             For example, use value 7 for weekly schedule.
+    * *scheduleTriggerTime*: Defines the time for first scheduled trigger for the run.
+                             If you don't give this value, it will be next mid-night (UTC).
+                             Give date values in ISO format, e.g. "2015-02-11T01:00:00". (Optional)

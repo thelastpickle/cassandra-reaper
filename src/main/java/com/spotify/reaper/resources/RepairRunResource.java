@@ -13,41 +13,31 @@
  */
 package com.spotify.reaper.resources;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.service.RepairRunner;
-import com.spotify.reaper.service.RingRange;
-import com.spotify.reaper.service.SegmentGenerator;
 
 import org.apache.cassandra.repair.RepairParallelism;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -65,9 +55,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Path("/repair_run")
 @Produces(MediaType.APPLICATION_JSON)
 public class RepairRunResource {
-
-  public static final Splitter COMMA_SEPARATED_LIST_SPLITTER =
-      Splitter.on(',').trimResults(CharMatcher.anyOf(" ()[]\"'")).omitEmptyStrings();
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunResource.class);
 
@@ -106,90 +93,18 @@ public class RepairRunResource {
              clusterName, keyspace, tableNamesParam, owner, cause, segmentCount, repairParallelism,
              intensityStr);
     try {
-      if (!clusterName.isPresent()) {
-        return Response.status(Response.Status.BAD_REQUEST).entity(
-            "missing query parameter \"clusterName\"").build();
-      }
-      if (!keyspace.isPresent()) {
-        return Response.status(Response.Status.BAD_REQUEST).entity(
-            "missing query parameter \"keyspace\"").build();
-      }
-      if (!owner.isPresent()) {
-        return Response.status(Response.Status.BAD_REQUEST).entity(
-            "missing query parameter \"owner\"").build();
-      }
-      if (repairParallelism.isPresent()) {
-        try {
-          ReaperApplication.checkRepairParallelismString(repairParallelism.get());
-        } catch (ReaperException ex) {
-          return Response.status(Response.Status.BAD_REQUEST).entity(ex.getMessage()).build();
-        }
-      }
-      Double intensity = null;
-      if (intensityStr.isPresent()) {
-        try {
-          intensity = Double.parseDouble(intensityStr.get());
-          if (intensity <= 0.0 || intensity > 1.0) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(
-                "query parameter \"intensity\" must be in half closed range (0.0, 1.0]: "
-                + intensityStr.get()).build();
-          }
-        } catch (NumberFormatException ex) {
-          return Response.status(Response.Status.BAD_REQUEST).entity(
-              "invalid value for query parameter \"intensity\": " + intensityStr.get()).build();
-        }
+      Response possibleFailedResponse = RepairRunResource.checkRequestForAddRepair(
+          context, clusterName, keyspace, owner, segmentCount, repairParallelism, intensityStr);
+      if (null != possibleFailedResponse) {
+        return possibleFailedResponse;
       }
 
-      if (intensity == null) {
+      Double intensity;
+      if (intensityStr.isPresent()) {
+        intensity = Double.parseDouble(intensityStr.get());
+      } else {
         intensity = context.config.getRepairIntensity();
         LOG.debug("no intensity given, so using default value: " + intensity);
-      }
-
-      Optional<Cluster> cluster =
-          context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
-      if (!cluster.isPresent()) {
-        return Response.status(Response.Status.NOT_FOUND).entity(
-            "No cluster found with name \"" + clusterName.get()
-            + "\", did you register your cluster first?").build();
-      }
-
-      Set<String> knownTables;
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(cluster.get())) {
-        knownTables = jmxProxy.getTableNamesForKeyspace(keyspace.get());
-        if (knownTables.isEmpty()) {
-          LOG.debug("no known tables for keyspace {} in cluster {}", keyspace.get(),
-                    cluster.get().getName());
-          return Response.status(Response.Status.NOT_FOUND).entity(
-              "no column families found for keyspace").build();
-        }
-      }
-
-      Set<String> tableNames;
-      if (tableNamesParam.isPresent() && !tableNamesParam.get().isEmpty()) {
-        tableNames = Sets.newHashSet(COMMA_SEPARATED_LIST_SPLITTER.split(tableNamesParam.get()));
-        for (String name : tableNames) {
-          if (!knownTables.contains(name)) {
-            return Response.status(Response.Status.NOT_FOUND).entity(
-                "keyspace doesn't contain a table named \"" + name + "\"").build();
-          }
-        }
-      } else {
-        tableNames = Collections.emptySet();
-      }
-
-      Optional<RepairUnit> storedRepairUnit =
-          context.storage.getRepairUnit(cluster.get().getName(), keyspace.get(), tableNames);
-      RepairUnit theRepairUnit;
-      if (storedRepairUnit.isPresent()) {
-        LOG.info(
-            "use existing repair unit for cluster '{}', keyspace '{}', and column families: {}",
-            cluster.get().getName(), keyspace.get(), tableNames);
-        theRepairUnit = storedRepairUnit.get();
-      } else {
-        LOG.info("create new repair unit for cluster '{}', keyspace '{}', and column families: {}",
-                 cluster.get().getName(), keyspace.get(), tableNames);
-        theRepairUnit = context.storage.addRepairUnit(
-            new RepairUnit.Builder(cluster.get().getName(), keyspace.get(), tableNames));
       }
 
       int segments = context.config.getSegmentCount();
@@ -198,14 +113,28 @@ public class RepairRunResource {
                   segmentCount.get(), context.config.getSegmentCount());
         segments = segmentCount.get();
       }
+
+      Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get())).get();
+      Set<String> tableNames;
+      try {
+        tableNames = CommonTools.getTableNamesBasedOnParam(context, cluster,
+                                                           keyspace.get(), tableNamesParam);
+      } catch (IllegalArgumentException ex) {
+        return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
+      }
+
+      RepairUnit theRepairUnit =
+          CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace.get(), tableNames);
+
       String repairParallelismStr = context.config.getRepairParallelism();
       if (repairParallelism.isPresent()) {
         LOG.debug("using given repair parallelism {} instead of configured value {}",
                   repairParallelism.get(), context.config.getRepairParallelism());
         repairParallelismStr = repairParallelism.get();
       }
-      RepairRun newRepairRun = registerRepairRun(
-          cluster.get(), theRepairUnit, cause, owner.get(), segments,
+
+      RepairRun newRepairRun = CommonTools.registerRepairRun(
+          context, cluster, theRepairUnit, cause, owner.get(), segments,
           RepairParallelism.valueOf(repairParallelismStr.toUpperCase()), intensity);
 
       return Response.created(buildRepairRunURI(uriInfo, newRepairRun))
@@ -216,6 +145,62 @@ public class RepairRunResource {
       e.printStackTrace();
       return Response.status(500).entity(e.getMessage()).build();
     }
+  }
+
+  /**
+   * @return Response instance in case there is a problem, or null if everything is ok.
+   * @throws ReaperException if concrete server error happens, but not in normal check failures.
+   */
+  @Nullable
+  public static Response checkRequestForAddRepair(
+      AppContext context, Optional<String> clusterName, Optional<String> keyspace,
+      Optional<String> owner, Optional<Integer> segmentCount,
+      Optional<String> repairParallelism, Optional<String> intensityStr
+  ) throws ReaperException {
+    if (!clusterName.isPresent()) {
+      return Response.status(Response.Status.BAD_REQUEST).entity(
+          "missing query parameter \"clusterName\"").build();
+    }
+    if (!keyspace.isPresent()) {
+      return Response.status(Response.Status.BAD_REQUEST).entity(
+          "missing query parameter \"keyspace\"").build();
+    }
+    if (!owner.isPresent()) {
+      return Response.status(Response.Status.BAD_REQUEST).entity(
+          "missing query parameter \"owner\"").build();
+    }
+    if (segmentCount.isPresent() && (segmentCount.get() < 1 || segmentCount.get() > 100000)) {
+      return Response.status(Response.Status.BAD_REQUEST).entity(
+          "invalid query parameter \"segmentCount\", maximum value is 100000").build();
+    }
+    if (repairParallelism.isPresent()) {
+      try {
+        ReaperApplication.checkRepairParallelismString(repairParallelism.get());
+      } catch (ReaperException ex) {
+        return Response.status(Response.Status.BAD_REQUEST).entity(ex.getMessage()).build();
+      }
+    }
+    if (intensityStr.isPresent()) {
+      try {
+        Double intensity = Double.parseDouble(intensityStr.get());
+        if (intensity <= 0.0 || intensity > 1.0) {
+          return Response.status(Response.Status.BAD_REQUEST).entity(
+              "query parameter \"intensity\" must be in half closed range (0.0, 1.0]: "
+              + intensityStr.get()).build();
+        }
+      } catch (NumberFormatException ex) {
+        return Response.status(Response.Status.BAD_REQUEST).entity(
+            "invalid value for query parameter \"intensity\": " + intensityStr.get()).build();
+      }
+    }
+    Optional<Cluster> cluster =
+        context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
+    if (!cluster.isPresent()) {
+      return Response.status(Response.Status.NOT_FOUND).entity(
+          "No cluster found with name \"" + clusterName.get()
+          + "\", did you register your cluster first?").build();
+    }
+    return null;
   }
 
   /**
@@ -290,39 +275,20 @@ public class RepairRunResource {
 
   private Response startRun(RepairRun repairRun, RepairUnit repairUnit) {
     LOG.info("Starting run {}", repairRun.getId());
-    RepairRun updatedRun = repairRun.with()
-        .runState(RepairRun.RunState.RUNNING)
-        .startTime(DateTime.now())
-        .build(repairRun.getId());
-    if (!context.storage.updateRepairRun(updatedRun)) {
-      throw new RuntimeException("failed updating repair run " + updatedRun.getId());
-    }
-    RepairRunner.startRepairRun(context, repairRun.getId());
+    RepairRunner.startRepairRun(context, repairRun);
     return Response.status(Response.Status.OK).entity(new RepairRunStatus(repairRun, repairUnit))
         .build();
   }
 
   private Response pauseRun(RepairRun repairRun, RepairUnit repairUnit) {
     LOG.info("Pausing run {}", repairRun.getId());
-    RepairRun updatedRun = repairRun.with()
-        .runState(RepairRun.RunState.PAUSED)
-        .pauseTime(DateTime.now())
-        .build(repairRun.getId());
-    if (!context.storage.updateRepairRun(updatedRun)) {
-      throw new RuntimeException("failed updating repair run " + updatedRun.getId());
-    }
+    RepairRunner.pauseRepairRun(context, repairRun);
     return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();
   }
 
   private Response resumeRun(RepairRun repairRun, RepairUnit repairUnit) {
     LOG.info("Resuming run {}", repairRun.getId());
-    RepairRun updatedRun = repairRun.with()
-        .runState(RepairRun.RunState.RUNNING)
-        .pauseTime(null)
-        .build(repairRun.getId());
-    if (!context.storage.updateRepairRun(updatedRun)) {
-      throw new RuntimeException("failed updating repair run " + updatedRun.getId());
-    }
+    RepairRunner.startRepairRun(context, repairRun);
     return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();
   }
 
@@ -355,127 +321,6 @@ public class RepairRunResource {
       repairRunViews.add(getRepairRunStatus(repairRun));
     }
     return Response.ok().entity(repairRunViews).build();
-  }
-
-  /**
-   * Creates a repair run but does not start it immediately.
-   *
-   * Creating a repair run involves:
-   * 1) split token range into segments
-   * 2) create a RepairRun instance
-   * 3) create RepairSegment instances linked to RepairRun.
-   *
-   * @throws ReaperException if repair run fails to be stored into Reaper's storage.
-   */
-  private RepairRun registerRepairRun(Cluster cluster, RepairUnit repairUnit,
-                                      Optional<String> cause, String owner, int segments,
-                                      RepairParallelism repairParallelism, Double intensity)
-      throws ReaperException {
-
-    // preparing a repair run involves several steps
-
-    // the first step is to generate token segments
-    List<RingRange> tokenSegments = generateSegments(cluster, segments);
-    checkNotNull(tokenSegments, "failed generating repair segments");
-
-    // the next step is to prepare a repair run object
-    RepairRun repairRun = storeNewRepairRun(cluster, repairUnit, cause, owner, segments,
-                                            repairParallelism, intensity);
-    checkNotNull(repairRun, "failed preparing repair run");
-
-    // Notice that our RepairRun core object doesn't contain pointer to
-    // the set of RepairSegments in the run, as they are accessed separately.
-    // However, RepairSegment has a pointer to the RepairRun it lives in
-
-    // the last preparation step is to generate actual repair segments
-    storeNewRepairSegments(tokenSegments, repairRun, repairUnit);
-
-    // now we're done and can return
-    return repairRun;
-  }
-
-  /**
-   * Splits a token range for given table into segments
-   *
-   * @return the created segments
-   * @throws ReaperException when fails to discover seeds for the cluster or fails to connect to
-   * any of the nodes in the Cluster.
-   */
-  private List<RingRange> generateSegments(Cluster targetCluster, int segmentCount)
-      throws ReaperException {
-    List<RingRange> segments = null;
-    SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
-    Set<String> seedHosts = targetCluster.getSeedHosts();
-    if (seedHosts.isEmpty()) {
-      String errMsg = String.format("didn't get any seed hosts for cluster \"%s\"",
-                                    targetCluster.getName());
-      LOG.error(errMsg);
-      throw new ReaperException(errMsg);
-    }
-    for (String host : seedHosts) {
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host)) {
-        List<BigInteger> tokens = jmxProxy.getTokens();
-        segments = sg.generateSegments(segmentCount, tokens);
-        break;
-      } catch (ReaperException e) {
-        LOG.warn("couldn't connect to host: {}, will try next one", host);
-      }
-    }
-    if (segments == null) {
-      String errMsg = String.format("failed to generate repair segments for cluster \"%s\"",
-                                    targetCluster.getName());
-      LOG.error(errMsg);
-      throw new ReaperException(errMsg);
-    }
-    return segments;
-  }
-
-  /**
-   * Instantiates a RepairRun and stores it in the storage backend.
-   *
-   * @return the new, just stored RepairRun instance
-   * @throws ReaperException when fails to store the RepairRun.
-   */
-  private RepairRun storeNewRepairRun(Cluster cluster, RepairUnit repairUnit,
-                                      Optional<String> cause, String owner, int segments,
-                                      RepairParallelism repairParallelism, Double intensity)
-      throws ReaperException {
-    RepairRun.Builder runBuilder = new RepairRun.Builder(cluster.getName(), repairUnit.getId(),
-                                                         DateTime.now(), intensity,
-                                                         segments, repairParallelism);
-    runBuilder.cause(cause.isPresent() ? cause.get() : "no cause specified");
-    runBuilder.owner(owner);
-    RepairRun newRepairRun = context.storage.addRepairRun(runBuilder);
-    if (newRepairRun == null) {
-      String errMsg = String.format("failed storing repair run for cluster \"%s\", "
-                                    + "keyspace \"%s\", and column families: %s",
-                                    cluster.getName(), repairUnit.getKeyspaceName(),
-                                    repairUnit.getColumnFamilies());
-      LOG.error(errMsg);
-      throw new ReaperException(errMsg);
-    }
-    return newRepairRun;
-  }
-
-  /**
-   * Creates the repair runs linked to given RepairRun and stores them directly in the storage
-   * backend.
-   */
-  private void storeNewRepairSegments(List<RingRange> tokenSegments, RepairRun repairRun,
-                                      RepairUnit repairUnit) throws ReaperException {
-    List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
-    for (RingRange range : tokenSegments) {
-      RepairSegment.Builder repairSegment = new RepairSegment.Builder(repairRun.getId(), range,
-                                                                      repairUnit.getId());
-      repairSegmentBuilders.add(repairSegment);
-    }
-    context.storage.addRepairSegments(repairSegmentBuilders, repairRun.getId());
-    if (repairRun.getSegmentCount() != tokenSegments.size()) {
-      LOG.debug("created segment amount differs from expected default {} != {}",
-                repairRun.getSegmentCount(), tokenSegments.size());
-      context.storage.updateRepairRun(
-          repairRun.with().segmentCount(tokenSegments.size()).build(repairRun.getId()));
-    }
   }
 
   /**

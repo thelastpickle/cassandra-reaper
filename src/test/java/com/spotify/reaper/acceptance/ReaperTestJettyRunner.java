@@ -49,7 +49,9 @@ public class ReaperTestJettyRunner {
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
         public void run() {
-          runnerInstance.stop();
+          if (runnerInstance != null) {
+            runnerInstance.stop();
+          }
         }
       });
     }
@@ -74,9 +76,9 @@ public class ReaperTestJettyRunner {
       }
     }
     ClientResponse response;
-    if (httpMethod.equalsIgnoreCase("GET")) {
+    if ("GET".equalsIgnoreCase(httpMethod)) {
       response = resource.get(ClientResponse.class);
-    } else if (httpMethod.equalsIgnoreCase("POST")) {
+    } else if ("POST".equalsIgnoreCase(httpMethod)) {
       response = resource.post(ClientResponse.class);
     } else {
       throw new RuntimeException("Invalid HTTP method: " + httpMethod);
@@ -140,6 +142,7 @@ public class ReaperTestJettyRunner {
     if (null != jettyServer) {
       try {
         jettyServer.stop();
+        jettyServer.join();
       } catch (Exception e) {
         e.printStackTrace();
       }
