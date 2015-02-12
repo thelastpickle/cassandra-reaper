@@ -240,7 +240,7 @@ public interface IStoragePostgreSQL {
   @Mapper(RepairScheduleMapper.class)
   public RepairSchedule getRepairSchedule(@Bind("id") long repairScheduleId);
 
-  @SqlQuery(SQL_INSERT_REPAIR_SCHEDULE)
+  @SqlUpdate(SQL_INSERT_REPAIR_SCHEDULE)
   @GetGeneratedKeys
   public long insertRepairSchedule(@BindBean RepairSchedule newRepairSchedule);
 

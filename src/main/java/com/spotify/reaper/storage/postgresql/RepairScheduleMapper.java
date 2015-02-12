@@ -18,7 +18,6 @@ import com.google.common.collect.ImmutableList;
 import com.spotify.reaper.core.RepairSchedule;
 
 import org.apache.cassandra.repair.RepairParallelism;
-import org.apache.commons.lang.ArrayUtils;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -29,7 +28,7 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
 
   @Override
   public RepairSchedule map(int index, ResultSet r, StatementContext ctx) throws SQLException {
-    Integer[] runHistory = ArrayUtils.toObject((int[]) r.getArray("run_history").getArray());
+    Integer[] runHistory = (Integer[]) r.getArray("run_history").getArray();
     Long[] runHistoryLong;
     if (null != runHistory && runHistory.length > 0) {
       runHistoryLong = new Long[runHistory.length];
@@ -53,4 +52,5 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
         .pauseTime(RepairRunMapper.getDateTimeOrNull(r, "pause_time"))
         .build(r.getLong("id"));
   }
+
 }
