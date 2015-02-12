@@ -18,6 +18,8 @@ import java.util.Collection;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import javax.annotation.Nullable;
+
 public class SchedulingManager extends TimerTask {
 
   private static final Logger LOG = LoggerFactory.getLogger(SchedulingManager.class);
@@ -57,6 +59,10 @@ public class SchedulingManager extends TimerTask {
 
   private AppContext context;
 
+  /* nextActivatedSchedule used for nicer logging only */
+  @Nullable
+  private RepairSchedule nextActivatedSchedule;
+
   private SchedulingManager(AppContext context) {
     this.context = context;
   }
@@ -66,13 +72,21 @@ public class SchedulingManager extends TimerTask {
    */
   @Override
   public void run() {
-    LOG.debug("SchedulingManager activated");
+    LOG.debug("SchedulingManager checking for repair schedules...");
     long lastId = -1;
     try {
       Collection<RepairSchedule> schedules = context.storage.getAllRepairSchedules();
+      boolean anyRunStarted = false;
       for (RepairSchedule schedule : schedules) {
         lastId = schedule.getId();
-        manageSchedule(schedule);
+        boolean runStarted = manageSchedule(schedule);
+        if (runStarted) {
+          anyRunStarted = true;
+        }
+      }
+      if (!anyRunStarted && nextActivatedSchedule != null) {
+        LOG.debug("not scheduling new repairs yet, next activation is '{}' for schedule id '{}'",
+                  nextActivatedSchedule.getNextActivation(), nextActivatedSchedule.getId());
       }
     } catch (Exception ex) {
       LOG.error("failed managing schedule for run with id: {}", lastId);
@@ -80,30 +94,38 @@ public class SchedulingManager extends TimerTask {
     }
   }
 
-  private void manageSchedule(RepairSchedule schedule) throws ReaperException {
+  /**
+   * Manage, i.e. check whether a new repair run should be started with this schedule.
+   * @param schedule The schedule to be checked for activation.
+   * @return boolean indicating whether a new RepairRun instance was created and started.
+   * @throws ReaperException
+   */
+  private boolean manageSchedule(RepairSchedule schedule) throws ReaperException {
+    boolean startNewRun = false;
     if (schedule.getNextActivation().isBeforeNow()) {
+      startNewRun = true;
       LOG.info("repair unit '{}' should be repaired based on RepairSchedule with id '{}'",
                schedule.getRepairUnitId(), schedule.getId());
 
-      RepairUnit repairUnit = context.storage.getRepairUnit(schedule.getRepairUnitId()).get();
-      Collection<RepairRun> repairRuns = context.storage.getRepairRunsForUnit(repairUnit);
-
-      boolean canStartNewRun = true;
-
-      if (schedule.getState() == RepairSchedule.State.PAUSED)
-        canStartNewRun = false;
-
-      for (RepairRun repairRun : repairRuns) {
-        RepairRun.RunState state = repairRun.getRunState();
-        if (state != RepairRun.RunState.DONE && state != RepairRun.RunState.NOT_STARTED) {
-          LOG.info("there is repair (id {}) in state '{}' for repair unit '{}', "
-                   + "postponing current schedule trigger until next scheduling",
-                   repairRun.getId(), repairRun.getRunState(), repairUnit.getId());
-          canStartNewRun = false;
+      RepairUnit repairUnit = null;
+      if (schedule.getState() == RepairSchedule.State.PAUSED) {
+        LOG.info("Repair schedule '{}' is paused", schedule.getId());
+        startNewRun = false;
+      } else {
+        repairUnit = context.storage.getRepairUnit(schedule.getRepairUnitId()).get();
+        Collection<RepairRun> repairRuns = context.storage.getRepairRunsForUnit(repairUnit);
+        for (RepairRun repairRun : repairRuns) {
+          RepairRun.RunState state = repairRun.getRunState();
+          if (state != RepairRun.RunState.DONE && state != RepairRun.RunState.NOT_STARTED) {
+            LOG.info("there is repair (id {}) in state '{}' for repair unit '{}', "
+                     + "postponing current schedule trigger until next scheduling",
+                     repairRun.getId(), repairRun.getRunState(), repairUnit.getId());
+            startNewRun = false;
+          }
         }
       }
 
-      if (canStartNewRun) {
+      if (startNewRun) {
         startNewRunForUnit(schedule, repairUnit);
         context.storage.updateRepairSchedule(schedule.with()
                                                  .nextActivation(schedule.getFollowingActivation())
@@ -116,9 +138,13 @@ public class SchedulingManager extends TimerTask {
                                                  .build(schedule.getId()));
       }
     } else {
-      LOG.debug("not scheduling new repairs yet for repair schedule '{}', next activation: {}",
-          schedule.getId(), schedule.getNextActivation());
+      if (nextActivatedSchedule == null) {
+        nextActivatedSchedule = schedule;
+      } else if (nextActivatedSchedule.getNextActivation().isAfter(schedule.getNextActivation())) {
+        nextActivatedSchedule = schedule;
+      }
     }
+    return startNewRun;
   }
 
   private void startNewRunForUnit(RepairSchedule schedule, RepairUnit repairUnit)
