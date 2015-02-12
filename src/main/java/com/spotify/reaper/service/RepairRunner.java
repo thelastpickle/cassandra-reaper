@@ -105,11 +105,10 @@ public class RepairRunner implements Runnable {
   public static void startRepairRun(AppContext context, RepairRun runToBeStarted) {
     assert null != executor : "you need to initialize the thread pool first";
     long runId = runToBeStarted.getId();
-    LOG.info("changing state RUNNING for run with id #{} with current state '{}'",
+    LOG.info("Starting a run with id #{} with current state '{}'",
              runId, runToBeStarted.getRunState());
-    RepairRun updatedRun;
     if (runToBeStarted.getRunState() == RepairRun.RunState.NOT_STARTED) {
-      updatedRun = runToBeStarted.with()
+      RepairRun updatedRun = runToBeStarted.with()
           .runState(RepairRun.RunState.RUNNING)
           .startTime(DateTime.now())
           .build(runToBeStarted.getId());
@@ -117,7 +116,7 @@ public class RepairRunner implements Runnable {
         throw new RuntimeException("failed updating repair run " + updatedRun.getId());
       }
     } else if (runToBeStarted.getRunState() == RepairRun.RunState.PAUSED) {
-      updatedRun = runToBeStarted.with()
+      RepairRun updatedRun = runToBeStarted.with()
           .runState(RepairRun.RunState.RUNNING)
           .pauseTime(null)
           .build(runToBeStarted.getId());

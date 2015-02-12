@@ -139,7 +139,7 @@ public final class SegmentRunner implements RepairStatusHandler {
                       resultingSegment.getId(),
                       Seconds.secondsBetween(
                           resultingSegment.getStartTime(),
-                          resultingSegment.getEndTime()));
+                          resultingSegment.getEndTime()).getSeconds());
             segmentRunners.remove(resultingSegment.getId());
           }
         }
