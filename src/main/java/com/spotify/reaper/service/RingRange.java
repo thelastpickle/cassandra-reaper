@@ -53,17 +53,21 @@ public class RingRange {
    * @return true if other is enclosed in this range.
    */
   public boolean encloses(RingRange other) {
-    if (!this.isWrapping() && !other.isWrapping()) {
-      return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
-             SegmentGenerator.lowerThanOrEqual(other.end, end);
-    } else if (!this.isWrapping() && other.isWrapping()) {
-      return false;
-    } else if (this.isWrapping() && !other.isWrapping()) {
-      return SegmentGenerator.greaterThanOrEqual(other.start, start) ||
-             SegmentGenerator.lowerThanOrEqual(other.end, end);
-    } else { // if (this.isWrapping() && other.isWrapping())
-      return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
-             SegmentGenerator.lowerThanOrEqual(other.end, end);
+    if (this.isWrapping()) {
+      if (other.isWrapping()) {
+        return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
+               SegmentGenerator.lowerThanOrEqual(other.end, end);
+      } else {
+        return SegmentGenerator.greaterThanOrEqual(other.start, start) ||
+               SegmentGenerator.lowerThanOrEqual(other.end, end);
+      }
+    } else {
+      if (other.isWrapping()) {
+        return false;
+      } else {
+        return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
+               SegmentGenerator.lowerThanOrEqual(other.end, end);
+      }
     }
   }
 
