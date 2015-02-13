@@ -1,3 +1,10 @@
+cassandra-reaper (0.1.0-1) stable; urgency=low
+
+  * First working release
+  * Added scheduling funtionality
+
+ -- Hannu Varjoranta <varjo@spotify.com>  Fri, 13 Feb 2015 12:34:03 +0100
+
 cassandra-reaper (0.0.2-1) unstable; urgency=low
 
   * Initial working version
