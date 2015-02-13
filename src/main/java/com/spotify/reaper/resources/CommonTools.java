@@ -3,6 +3,7 @@ package com.spotify.reaper.resources;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -181,7 +182,7 @@ public class CommonTools {
       throws ReaperException {
     RepairSchedule.Builder scheduleBuilder =
         new RepairSchedule.Builder(repairUnit.getId(), RepairSchedule.State.RUNNING, daysBetween,
-                                   nextActivation, null, segments, repairParallelism, intensity,
+                                   nextActivation, ImmutableList.<Long>of(), segments, repairParallelism, intensity,
                                    DateTime.now());
     scheduleBuilder.owner(owner);
     RepairSchedule newRepairSchedule = context.storage.addRepairSchedule(scheduleBuilder);
