@@ -1,6 +1,7 @@
 package com.spotify.reaper.service;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
@@ -126,8 +127,11 @@ public class SchedulingManager extends TimerTask {
       }
 
       if (startNewRun) {
-        startNewRunForUnit(schedule, repairUnit);
+        RepairRun startedRun = startNewRunForUnit(schedule, repairUnit);
+        ImmutableList<Long> newRunHistory = new ImmutableList.Builder<Long>()
+            .addAll(schedule.getRunHistory()).add(startedRun.getId()).build();
         context.storage.updateRepairSchedule(schedule.with()
+                                                 .runHistory(newRunHistory)
                                                  .nextActivation(schedule.getFollowingActivation())
                                                  .build(schedule.getId()));
       } else {
@@ -147,7 +151,7 @@ public class SchedulingManager extends TimerTask {
     return startNewRun;
   }
 
-  private void startNewRunForUnit(RepairSchedule schedule, RepairUnit repairUnit)
+  private RepairRun startNewRunForUnit(RepairSchedule schedule, RepairUnit repairUnit)
       throws ReaperException {
     Cluster cluster = context.storage.getCluster(repairUnit.getClusterName()).get();
     RepairRun newRepairRun = CommonTools.registerRepairRun(
@@ -155,6 +159,7 @@ public class SchedulingManager extends TimerTask {
         schedule.getOwner(), schedule.getSegmentCount(), schedule.getRepairParallelism(),
         schedule.getIntensity());
     RepairRunner.startRepairRun(context, newRepairRun);
+    return newRepairRun;
   }
 
 }
