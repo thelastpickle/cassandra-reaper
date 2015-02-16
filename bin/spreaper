@@ -140,7 +140,12 @@ def _arguments_for_add_cluster(parser):
     parser.add_argument("seed_host", help="the seed host of the Cassandra cluster to be registered")
 
 
-def _arguments_for_repair_and_start(parser):
+def _argument_owner(parser):
+    parser.add_argument("--owner", default=USER,
+                        help="name of local user calling the Reaper [\"{0}\"]".format(USER))
+
+
+def _argument_cause(parser):
     parser.add_argument("--cause", default=DEFAULT_CAUSE,
                         help="cause string used for logging and auditing "
                              "purposes [\"{0}\"]".format(DEFAULT_CAUSE))
@@ -148,9 +153,10 @@ def _arguments_for_repair_and_start(parser):
 
 def _arguments_for_repair(parser):
     _arguments_for_repair_and_schedule(parser)
-    _arguments_for_repair_and_start(parser)
     parser.add_argument("--start-repair", action='store_true',
                         help="start the repair run immediately after registering it")
+    _argument_owner(parser)
+    _argument_cause(parser)
 
 
 def _arguments_for_repair_and_schedule(parser):
@@ -164,8 +170,6 @@ def _arguments_for_repair_and_schedule(parser):
     parser.add_argument("--tables", default=None,
                         help=("a comma separated list of tables within a keyspace "
                               "in the Cassandra cluster (do not use spaces after commas)"))
-    parser.add_argument("--owner", default=USER,
-                        help="name of local user calling the Reaper [\"{0}\"]".format(USER))
     parser.add_argument("--segment-count", default=None,
                         help=("amount of segments to create for the repair run, "
                               "or use the configured default if not given"))
@@ -185,11 +189,11 @@ def _arguments_for_scheduling(parser):
     parser.add_argument("--schedule-trigger-time", default=None,
                         help="at which time to trigger the first repair (UTC), "
                              "e.g. \"2015-02-10T15:00:00\"")
+    _argument_owner(parser)
 
 
 def _arguments_for_start(parser):
     """Arguments relevant for starting a repair"""
-    _arguments_for_repair_and_start(parser)
     parser.add_argument("run_id", help="ID of the repair run to start or resume")
 
 
@@ -462,7 +466,7 @@ class ReaperCLI(object):
 
     def _change_run_state(self, reaper, run_id, args, st):
         print "# Starting a repair run with id: {0}".format(run_id)
-        reaper.put("repair_run/{0}".format(run_id), owner=args.owner, cause=args.cause, state=st)
+        reaper.put("repair_run/{0}".format(run_id), state=st)
         print "# Run '{0}' started".format(run_id)
 
 
