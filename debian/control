@@ -10,5 +10,10 @@ Standards-Version: 3.7.2
 
 Package: cassandra-reaper
 Architecture: all
-Depends: java7-runtime, python-requests
+Depends: java7-runtime
 Description: Software to run automated (anti-entropy) repairs of Cassandra cluster data
+
+Package: cassandra-reaper-cli
+Architecture: all
+Depends: python-requests
+Description: Python based CLI tool for calling the Reaper service
