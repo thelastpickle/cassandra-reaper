@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import javax.swing.text.html.Option;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
@@ -332,4 +333,23 @@ public class RepairRunResourceTest {
     assertEquals(0, context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING).size());
   }
 
+
+  @Test
+  public void testSplitStateParam() {
+    RepairRunResource resource = new RepairRunResource(context);
+    Optional<String> stateParam = Optional.of("RUNNING");
+    assertEquals(Sets.newHashSet("RUNNING"), resource.splitStateParam(stateParam));
+    stateParam = Optional.of("PAUSED,RUNNING");
+    assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), resource.splitStateParam(stateParam));
+    stateParam = Optional.of("NOT_EXISTING");
+    assertEquals(null, resource.splitStateParam(stateParam));
+    stateParam = Optional.of("NOT_EXISTING,RUNNING");
+    assertEquals(null, resource.splitStateParam(stateParam));
+    stateParam = Optional.of("RUNNING,PAUSED,");
+    assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), resource.splitStateParam(stateParam));
+    stateParam = Optional.of(",RUNNING,PAUSED,");
+    assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), resource.splitStateParam(stateParam));
+    stateParam = Optional.of("PAUSED ,RUNNING");
+    assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), resource.splitStateParam(stateParam));
+  }
 }

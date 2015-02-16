@@ -153,6 +153,12 @@ REST API
 
 ## Repair Run Resource
 
+* GET     /
+  * Optional query parameters:
+    * *state*: Comma separated list of repair run state names. Only names found in 
+    com.spotify.reaper.core.RunState are accepted.
+  * Returns a list of repair runs, optionally fetching only the ones with *state* state.
+
 * GET     /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)
   * Expected query parameters: *None*
   * Returns a repair run object identified by the given "id" path parameter.
@@ -181,6 +187,9 @@ REST API
 
 ## Repair Schedule Resource
 
+* GET     /
+  * Expected query parameters: *None*
+  * Returns all repair schedules present in the Reaper
 * GET     /repair_schedule/{id} (com.spotify.reaper.resources.RepairScheduleResource)
   * Expected query parameters: *None*
   * Returns a repair schedule object identified by the given "id" path parameter.

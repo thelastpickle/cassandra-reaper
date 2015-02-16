@@ -13,8 +13,13 @@
  */
 package com.spotify.reaper.resources;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperException;
@@ -35,6 +40,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -354,6 +360,60 @@ public class RepairRunResource {
     }
     checkNotNull(runUri, "failed to build repair run uri");
     return runUri;
+  }
+
+  /**
+   * @param state comma-separated list of states to return. These states must match names of
+   * {@link com.spotify.reaper.core.RepairRun.RunState}.
+   * @return All repair runs in the system if the param is absent, repair runs with state included
+   *   in the state parameter otherwise. If the state parameter contains non-existing run states,
+   *   BAD_REQUEST response is returned.
+   */
+  @GET
+  public Response listRepairRuns(@QueryParam("state") Optional<String> state) {
+    Set desiredStates = splitStateParam(state);
+    if (desiredStates == null) {
+      return Response.status(Response.Status.BAD_REQUEST).build();
+    }
+    Collection<RepairRun> runs;
+    List<RepairRunStatus> runStatuses = Lists.newArrayList();
+    Collection<Cluster> clusters = context.storage.getClusters();
+    for (Cluster cluster : clusters) {
+      runs = context.storage.getRepairRunsForCluster(cluster.getName());
+      for (RepairRun run : runs) {
+        if (!desiredStates.isEmpty() && !desiredStates.contains(run.getRunState().name())) {
+          continue;
+        }
+        Optional<RepairUnit> runsUnit = context.storage.getRepairUnit(run.getRepairUnitId());
+        if (runsUnit.isPresent()) {
+          runStatuses.add(new RepairRunStatus(run, runsUnit.get()));
+        } else {
+          String errMsg =
+              String.format("Found repair run %d with no associated repair unit", run.getId());
+          LOG.error(errMsg);
+          return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+      }
+    }
+    return Response.status(Response.Status.OK).entity(runStatuses).build();
+  }
+
+  @VisibleForTesting
+  public Set splitStateParam(Optional<String> state) {
+    if (state.isPresent()) {
+      Iterable<String> chunks = CommonTools.COMMA_SEPARATED_LIST_SPLITTER.split(state.get());
+      for (String chunk : chunks) {
+        try {
+          RepairRun.RunState.valueOf(chunk);
+        } catch (IllegalArgumentException e) {
+          LOG.warn("Listing repair runs called with erroneous states: {}", state.get());
+          return null;
+        }
+      }
+      return Sets.newHashSet(chunks);
+    } else {
+      return Sets.newHashSet();
+    }
   }
 
 }

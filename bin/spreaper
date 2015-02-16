@@ -18,6 +18,7 @@ import getpass
 import json
 import logging
 import os
+import urllib
 import urlparse
 
 import sys
@@ -119,6 +120,14 @@ def _arguments_for_status_cluster(parser):
     parser.add_argument("cluster_name", help="the cluster name")
 
 
+def _arguments_for_list_schedules(parser):
+    """Arguments relevant for listing repair schedules. Almost the same as args for status cluster,
+    but allows cluster name to not be present
+    """
+    # It was impossible to reuse this for listing all schedules without making cluster name optional
+    parser.add_argument("cluster_name", nargs='?', default=None, help="the cluster name")
+
+
 def _arguments_for_status_keyspace(parser):
     """Arguments relevant for querying cluster keyspace status"""
     parser.add_argument("cluster_name", help="the cluster name")
@@ -202,6 +211,11 @@ def _arguments_for_pause(parser):
     parser.add_argument("run_id", help="ID of the repair run to pause")
 
 
+def _arguments_for_list_runs(parser):
+    """Arguments needed to filter what repair runs are listed"""
+    parser.add_argument("--state", help="Comma separated states used to filter returned runs")
+
+
 def _parse_arguments(command, description, usage=None, extra_arguments=None):
     """Generic argument parsing done by every command"""
     parser = argparse.ArgumentParser(description=description, usage=usage)
@@ -230,6 +244,7 @@ Usage: spreaper [<global_args>] <command> [<command_args>]
 
 <command> can be:
     list-clusters   List all registered Cassandra clusters.
+    list-runs       List repair runs.
     list-schedules  List registered repair schedules for a cluster.
     status-cluster  Show status of a Cassandra cluster,
                     and any existing repair runs for the cluster.
@@ -308,13 +323,16 @@ class ReaperCLI(object):
         reaper, args = ReaperCLI.prepare_reaper(
             "list-schedules",
             "List registered repair schedules for a cluster.",
-            extra_arguments=_arguments_for_status_cluster
+            extra_arguments=_arguments_for_list_schedules
         )
-        print "# Listing registered repair schedules for cluster '{0}'".format(args.cluster_name)
-        schedules_data = json.loads(
-            reaper.get("repair_schedule/cluster/{0}".format(args.cluster_name)))
-        print "# Found {0} schedules:".format(len(schedules_data))
-        print json.dumps(schedules_data, indent=2, sort_keys=True)
+        if args.cluster_name:
+            print "# Listing repair schedules for cluster '{0}'".format(args.cluster_name)
+            data = json.loads(reaper.get("repair_schedule/cluster/{0}".format(args.cluster_name)))
+        else:
+            print "# Listing repair schedules for all clusters"
+            data = json.loads(reaper.get("repair_schedule"))
+        print "# Found {0} schedules:".format(len(data))
+        print json.dumps(data, indent=2, sort_keys=True)
 
     def status_cluster(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -469,6 +487,19 @@ class ReaperCLI(object):
         reaper.put("repair_run/{0}".format(run_id), state=st)
         print "# Run '{0}' started".format(run_id)
 
+    def list_runs(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "list-runs",
+            "List repair runs.",
+            extra_arguments=_arguments_for_list_runs
+        )
+        print "# Listing repair runs"
+        endpoint = 'repair_run'
+        if args.state is not None:
+            endpoint = '{0}?{1}'.format(endpoint, urllib.urlencode({'state': args.state}))
+        repair_runs = json.loads(reaper.get(endpoint))
+        print "# Found {0} repair runs".format(len(repair_runs))
+        print json.dumps(repair_runs, indent=2, sort_keys=True)
 
 if __name__ == '__main__':
     print("# Report improvements/bugs at https://github.com/spotify/cassandra-reaper/issues")

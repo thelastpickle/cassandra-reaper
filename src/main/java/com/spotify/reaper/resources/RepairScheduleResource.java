@@ -15,6 +15,7 @@ package com.spotify.reaper.resources;
 
 import com.google.common.base.Optional;
 
+import com.google.common.collect.Lists;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
@@ -34,6 +35,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.GET;
@@ -303,6 +305,27 @@ public class RepairScheduleResource {
     }
     checkNotNull(scheduleUri, "failed to build repair schedule uri");
     return scheduleUri;
+  }
+
+  /**
+   * @return All schedules in the system.
+   */
+  @GET
+  public Response listSchedules() {
+    List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
+    Collection<RepairSchedule> schedules = context.storage.getAllRepairSchedules();
+    for (RepairSchedule schedule : schedules) {
+      Optional<RepairUnit> unit = context.storage.getRepairUnit(schedule.getRepairUnitId());
+      if (unit.isPresent()) {
+        scheduleStatuses.add(new RepairScheduleStatus(schedule, unit.get()));
+      } else {
+        String errMsg = String.format(
+            "Found repair schedule %d with no associated repair unit", schedule.getId());
+        LOG.error(errMsg);
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+      }
+    }
+    return Response.status(Response.Status.OK).entity(scheduleStatuses).build();
   }
 
 }
