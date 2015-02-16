@@ -14,17 +14,22 @@
 package com.spotify.reaper.cassandra;
 
 import com.google.common.base.Optional;
-
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 public class JmxConnectionFactory {
 
+  private Map<String, Integer> jmxPorts;
+
   public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
       throws ReaperException {
+    // use configured jmx port for host if provided
+    if(jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":"))
+        host = host + ":" + jmxPorts.get(host);
     return JmxProxy.connect(handler, host);
   }
 
@@ -47,5 +52,9 @@ public class JmxConnectionFactory {
       throw new ReaperException("no seeds in cluster with name: " + cluster.getName());
     }
     return connectAny(Optional.<RepairStatusHandler>absent(), hosts);
+  }
+
+  public void setJmxPorts(Map<String, Integer> jmxPorts) {
+    this.jmxPorts = jmxPorts;
   }
 }
