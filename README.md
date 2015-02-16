@@ -115,6 +115,12 @@ The Reaper service specific configuration values are:
   the database client parameters in a database section in the configuration file. See the example
   settings in provided testing configuration in *src/test/resources/cassandra-reaper.yaml*.
 
+* jmxPorts:
+
+  Optional mapping of custom JMX ports to use for individual hosts. Can be ignored in case the standard
+  JMX port is being used. [CCM](https://github.com/pcmanus/ccm) users will find IP and port number to add
+  in `~/.ccm/<cluster>/*/node.conf` or by running `ccm <node> show`.
+
 Notice that in the *server* section of the configuration, if you want to bind the service
 to all interfaces, use value "0.0.0.0", or just leave the *bindHost* line away completely.
 Using "*" as bind value won't work.
