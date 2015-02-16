@@ -4,6 +4,17 @@ cassandra-reaper
 Cassandra Reaper is a centralized, stateful, and highly configurable tool for running Cassandra
 repairs for multi-site clusters.
 
+Cassandra Reaper is still in heavy development phase, although the first functional release has been
+already made. Current version supports basic Cassandra cluster repair in segmented manner with
+configurable intensity. There is also basic repair scheduling functionality available.
+
+Next steps in development will add functionality on maintaining repairs and schedules, improve
+the packaging and making installing easier, and also improve usability by introducing a simple
+web based GUI.
+
+Please see the [Issues](https://github.com/spotify/cassandra-reaper/issues) section for more
+information on planned development, and known issues.
+
 
 System Overview
 ---------------
@@ -31,6 +42,10 @@ To run Cassandra Reaper you need to simply build a project package using Maven, 
 then execute the created Java jar file, and give a path to the system configuration file
 as the first and only argument. You can also use the provided *bin/cassandra-reaper* script
 to run the service.
+
+When using database based storage, you must setup a PostgreSQL database yourself and configure
+Reaper to use it. You need to prepare the database using the given schema in:
+*src/main/db/reaper_db.sql*
 
 For configuring the service, see the available configuration options in later section
 of this readme document.
