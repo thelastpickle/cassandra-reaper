@@ -14,6 +14,7 @@
 package com.spotify.reaper.cassandra;
 
 import com.google.common.base.Optional;
+
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 
@@ -28,8 +29,9 @@ public class JmxConnectionFactory {
   public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
       throws ReaperException {
     // use configured jmx port for host if provided
-    if(jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":"))
-        host = host + ":" + jmxPorts.get(host);
+    if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
+      host = host + ":" + jmxPorts.get(host);
+    }
     return JmxProxy.connect(handler, host);
   }
 

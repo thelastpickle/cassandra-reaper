@@ -13,11 +13,11 @@
  */
 package com.spotify.reaper;
 
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.hibernate.validator.constraints.NotEmpty;
+
+import java.util.Map;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -57,8 +57,8 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   private Map<String, Integer> jmxPorts;
-  
-  
+
+
   public int getSegmentCount() {
     return segmentCount;
   }
@@ -119,5 +119,5 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setJmxPorts(Map<String, Integer> jmxPorts) {
     this.jmxPorts = jmxPorts;
   }
-  
+
 }

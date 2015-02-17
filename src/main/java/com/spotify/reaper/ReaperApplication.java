@@ -14,6 +14,7 @@
 package com.spotify.reaper;
 
 import com.google.common.annotations.VisibleForTesting;
+
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
@@ -109,12 +110,12 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
       LOG.info("no JMX connection factory given in context, creating default");
       context.jmxConnectionFactory = new JmxConnectionFactory();
     }
-    
+
     // read jmx host/port mapping from config and provide to jmx con.factory
     Map<String, Integer> jmxPorts = config.getJmxPorts();
-    if(jmxPorts != null) {
-        LOG.debug("Using JMX ports mapping: " + jmxPorts);
-        context.jmxConnectionFactory.setJmxPorts(jmxPorts);
+    if (jmxPorts != null) {
+      LOG.debug("using JMX ports mapping: " + jmxPorts);
+      context.jmxConnectionFactory.setJmxPorts(jmxPorts);
     }
 
     LOG.info("creating and registering health checks");
@@ -166,6 +167,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     LOG.debug("segmentCount: " + config.getSegmentCount());
     LOG.debug("repairParallelism: " + config.getRepairParallelism());
     LOG.debug("hangingRepairTimeoutMins: " + config.getHangingRepairTimeoutMins());
+    LOG.debug("jmxPorts: " + config.getJmxPorts());
     checkRepairParallelismString(config.getRepairParallelism());
   }
 
