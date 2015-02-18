@@ -129,28 +129,30 @@ Using "*" as bind value won't work.
 REST API
 --------
 
+Source code for all the REST resources can be found from package com.spotify.reaper.resources.
+
 ## Ping Resource
 
-* GET     /ping (com.spotify.reaper.resources.PingResource)
+* GET     /ping
   * Expected query parameters: *None*
   * Simple ping resource that can be used to check whether the reaper is running.
 
 ## Cluster Resource
 
-* GET     /cluster (com.spotify.reaper.resources.ClusterResource)
+* GET     /cluster
   * Expected query parameters: *None*
   * Returns a list of registered cluster names in the service.
 
-* GET     /cluster/{cluster_name} (com.spotify.reaper.resources.ClusterResource)
+* GET     /cluster/{cluster_name}
   * Expected query parameters: *None*
   * Returns a cluster object identified by the given "cluster_name" path parameter.
 
-* GET     /cluster/{cluster_name}/{keyspace_name} (com.spotify.reaper.resources.ClusterResource)
+* GET     /cluster/{cluster_name}/{keyspace_name}
   * Expected query parameters: *None*
   * Returns keyspace information identified by the given "cluster_name" and
     "keyspace_name" path parameters.
 
-* POST    /cluster (com.spotify.reaper.resources.ClusterResource)
+* POST    /cluster
   * Expected query parameters:
       * *seedHost*: Host name or IP address of the added Cassandra
         clusters seed host.
@@ -159,13 +161,13 @@ REST API
 
 ## Repair Run Resource
 
-* GET     /
+* GET     /repair_run
   * Optional query parameters:
-    * *state*: Comma separated list of repair run state names. Only names found in 
+    * *state*: Comma separated list of repair run state names. Only names found in
     com.spotify.reaper.core.RunState are accepted.
   * Returns a list of repair runs, optionally fetching only the ones with *state* state.
 
-* GET     /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)
+* GET     /repair_run/{id}
   * Expected query parameters: *None*
   * Returns a repair run object identified by the given "id" path parameter.
 
@@ -173,7 +175,7 @@ REST API
   * Expected query parameters: *None*
   * Returns a list of all repair run statuses found for the given "cluster_name" path parameter.
 
-* POST    /repair_run (com.spotify.reaper.resources.RepairRunResource)
+* POST    /repair_run
   * Expected query parameters:
     * *clusterName*: Name of the Cassandra cluster.
     * *keyspace*: The name of the table keyspace.
@@ -185,7 +187,7 @@ REST API
     * *repairParallelism*: Defines the used repair parallelism for repair run. (Optional)
     * *intensity*: Defines the repair intensity for repair run. (Optional)
 
-* PUT    /repair_run/{id} (com.spotify.reaper.resources.RepairRunResource)
+* PUT    /repair_run/{id}
   * Expected query parameters:
     * *state*: New value for the state of the repair run.
       Possible values for given state are: "PAUSED" or "RUNNING".
@@ -193,14 +195,15 @@ REST API
 
 ## Repair Schedule Resource
 
-* GET     /
+* GET     /repair_schedule
   * Expected query parameters: *None*
   * Returns all repair schedules present in the Reaper
-* GET     /repair_schedule/{id} (com.spotify.reaper.resources.RepairScheduleResource)
+
+* GET     /repair_schedule/{id}
   * Expected query parameters: *None*
   * Returns a repair schedule object identified by the given "id" path parameter.
 
-* POST    /repair_schedule (com.spotify.reaper.resources.RepairScheduleResource)
+* POST    /repair_schedule
   * Expected query parameters:
     * *clusterName*: Name of the Cassandra cluster.
     * *keyspace*: The name of the table keyspace.
