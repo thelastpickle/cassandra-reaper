@@ -31,7 +31,7 @@ public class SchedulingManager extends TimerTask {
     if (null == schedulingManager) {
       LOG.info("Starting new SchedulingManager instance");
       schedulingManager = new SchedulingManager(context);
-      Timer timer = new Timer();
+      Timer timer = new Timer("SchedulingManagerTimer");
       timer.schedule(schedulingManager, 1000, 1000 * 60); // activate once per minute
     } else {
       LOG.warn("there is already one instance of SchedulingManager running, not starting new");
@@ -73,7 +73,7 @@ public class SchedulingManager extends TimerTask {
    */
   @Override
   public void run() {
-    LOG.debug("SchedulingManager checking for repair schedules...");
+    LOG.debug("Checking for repair schedules...");
     long lastId = -1;
     try {
       Collection<RepairSchedule> schedules = context.storage.getAllRepairSchedules();

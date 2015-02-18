@@ -25,6 +25,7 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 
+import org.apache.cassandra.concurrent.NamedThreadFactory;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +68,7 @@ public class RepairRunner implements Runnable {
   public static void initializeThreadPool(int threadAmount, long repairTimeout,
                                           TimeUnit repairTimeoutTimeUnit, long retryDelay,
                                           TimeUnit retryDelayTimeUnit) {
-    executor = Executors.newScheduledThreadPool(threadAmount);
+    executor = Executors.newScheduledThreadPool(threadAmount, new NamedThreadFactory("RepairRunner"));
     repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
     retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
   }
