@@ -158,7 +158,7 @@ public class SchedulingManager extends TimerTask {
         context, cluster, repairUnit, Optional.of("scheduled run"),
         schedule.getOwner(), schedule.getSegmentCount(), schedule.getRepairParallelism(),
         schedule.getIntensity());
-    RepairRunner.startRepairRun(context, newRepairRun);
+    context.repairManager.startRepairRun(context, newRepairRun);
     return newRepairRun;
   }
 

@@ -16,6 +16,7 @@ import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.RepairRunResource;
 import com.spotify.reaper.resources.view.RepairRunStatus;
+import com.spotify.reaper.service.RepairManager;
 import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentRunner;
@@ -34,7 +35,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import javax.swing.text.html.Option;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
@@ -71,10 +71,10 @@ public class RepairRunResourceTest {
 
   @Before
   public void setUp() throws Exception {
-    RepairRunner.repairRunners.clear();
     SegmentRunner.segmentRunners.clear();
 
     context = new AppContext();
+    context.repairManager = new RepairManager();
     context.storage = new MemoryStorage();
     Cluster cluster = new Cluster(CLUSTER_NAME, PARTITIONER, Sets.newHashSet(SEED_HOST));
     context.storage.addCluster(cluster);
@@ -170,8 +170,9 @@ public class RepairRunResourceTest {
   @Test
   public void testTriggerRepairRun() throws Exception {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
-    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S,
-                                      TimeUnit.SECONDS);
+    context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
+                                               RETRY_DELAY_S,
+                                               TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);
     RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
@@ -189,7 +190,7 @@ public class RepairRunResourceTest {
 
     // give the executor some time to actually start the run
     Thread.sleep(50);
-    RepairRunner repairRunner = RepairRunner.repairRunners.get(runId);
+    RepairRunner repairRunner = context.repairManager.repairRunners.get(runId);
     SegmentRunner segmentRunner =
         SegmentRunner.segmentRunners.get(repairRunner.getCurrentlyRunningSegmentId());
     segmentRunner.handle(segmentRunner.getCurrentCommandId(), ActiveRepairService.Status.STARTED,
@@ -221,8 +222,8 @@ public class RepairRunResourceTest {
   @Test
   public void testTriggerAlreadyRunningRun() throws InterruptedException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
-    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S,
-                                      TimeUnit.SECONDS);
+    context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
+                                               RETRY_DELAY_S, TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);
     RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
@@ -256,8 +257,8 @@ public class RepairRunResourceTest {
 
   @Test
   public void testTriggerRunMissingArgument() {
-    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S,
-                                      TimeUnit.SECONDS);
+    context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
+                                               RETRY_DELAY_S, TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addRepairRun(resource, uriInfo, CLUSTER_NAME, null, TABLES, OWNER,
                                      null, SEGMENT_CNT);
@@ -269,8 +270,8 @@ public class RepairRunResourceTest {
   public void testPauseRunningRun() throws InterruptedException {
     // first trigger a run
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
-    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S,
-                                      TimeUnit.SECONDS);
+    context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
+                                               RETRY_DELAY_S, TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);
     RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
@@ -280,7 +281,7 @@ public class RepairRunResourceTest {
     resource.modifyRunState(uriInfo, runId, newState);
 
     Thread.sleep(50);
-    RepairRunner repairRunner = RepairRunner.repairRunners.get(runId);
+    RepairRunner repairRunner = context.repairManager.repairRunners.get(runId);
     SegmentRunner segmentRunner =
         SegmentRunner.segmentRunners.get(repairRunner.getCurrentlyRunningSegmentId());
     segmentRunner.handle(segmentRunner.getCurrentCommandId(), ActiveRepairService.Status.STARTED,
@@ -304,8 +305,8 @@ public class RepairRunResourceTest {
   @Test
   public void testPauseNotRunningRun() throws InterruptedException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
-    RepairRunner.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S,
-                                      TimeUnit.SECONDS);
+    context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
+                                               RETRY_DELAY_S, TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);
     RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();

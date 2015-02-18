@@ -15,7 +15,6 @@ package com.spotify.reaper.service;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
-import com.google.common.collect.Maps;
 
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
@@ -25,36 +24,23 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 
-import org.apache.cassandra.concurrent.NamedThreadFactory;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class RepairRunner implements Runnable {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunner.class);
 
-  private static ScheduledExecutorService executor;
-  private static long repairTimeoutMillis;
-  private static long retryDelayMillis;
   private final AppContext context;
   private final long repairRunId;
   private JmxProxy jmxConnection;
   private Long currentlyRunningSegmentId;
 
-  // Caching all active RepairRunners.
-  @VisibleForTesting
-  public static Map<Long, RepairRunner> repairRunners = Maps.newConcurrentMap();
-
-  private RepairRunner(AppContext context, long repairRunId)
+  public RepairRunner(AppContext context, long repairRunId)
       throws ReaperException {
     this.context = context;
     this.repairRunId = repairRunId;
@@ -65,101 +51,11 @@ public class RepairRunner implements Runnable {
                                  + " found from storage";
   }
 
-  public static void initializeThreadPool(int threadAmount, long repairTimeout,
-                                          TimeUnit repairTimeoutTimeUnit, long retryDelay,
-                                          TimeUnit retryDelayTimeUnit) {
-    executor = Executors.newScheduledThreadPool(threadAmount, new NamedThreadFactory("RepairRunner"));
-    repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
-    retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
+  public long getRepairRunId() {
+    return repairRunId;
   }
 
-  /**
-   * Consult storage to see if any repairs are running, and resume those repair runs.
-   *
-   * @param context Reaper's application context.
-   */
-  public static void resumeRunningRepairRuns(AppContext context) {
-    Collection<RepairRun> running =
-        context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
-    for (RepairRun repairRun : running) {
-      Collection<RepairSegment> runningSegments =
-          context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
-      for (RepairSegment segment : runningSegments) {
-        try {
-          SegmentRunner.abort(context, segment,
-                              context.jmxConnectionFactory.connect(segment.getCoordinatorHost()));
-        } catch (ReaperException e) {
-          LOG.debug("Tried to abort repair on segment {} marked as RUNNING, but the host was down"
-                    + " (so abortion won't be needed)", segment.getId());
-          SegmentRunner.postpone(context, segment);
-        }
-      }
-      RepairRunner.startRepairRun(context, repairRun);
-    }
-    Collection<RepairRun> paused =
-        context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED);
-    for (RepairRun pausedRepairRun : paused) {
-      RepairRunner.startRepairRun(context, pausedRepairRun);
-    }
-  }
-
-  public static void startRepairRun(AppContext context, RepairRun runToBeStarted) {
-    assert null != executor : "you need to initialize the thread pool first";
-    long runId = runToBeStarted.getId();
-    LOG.info("Starting a run with id #{} with current state '{}'",
-             runId, runToBeStarted.getRunState());
-    if (runToBeStarted.getRunState() == RepairRun.RunState.NOT_STARTED) {
-      RepairRun updatedRun = runToBeStarted.with()
-          .runState(RepairRun.RunState.RUNNING)
-          .startTime(DateTime.now())
-          .build(runToBeStarted.getId());
-      if (!context.storage.updateRepairRun(updatedRun)) {
-        throw new RuntimeException("failed updating repair run " + updatedRun.getId());
-      }
-    } else if (runToBeStarted.getRunState() == RepairRun.RunState.PAUSED) {
-      RepairRun updatedRun = runToBeStarted.with()
-          .runState(RepairRun.RunState.RUNNING)
-          .pauseTime(null)
-          .build(runToBeStarted.getId());
-      if (!context.storage.updateRepairRun(updatedRun)) {
-        throw new RuntimeException("failed updating repair run " + updatedRun.getId());
-      }
-    } else if (runToBeStarted.getRunState() == RepairRun.RunState.RUNNING) {
-      assert !repairRunners.containsKey(runId) :
-          "trying to re-schedule run that is already running, with id " + runId;
-      LOG.info("re-scheduling a running run after restart, with id " + runId);
-    } else {
-      throw new RuntimeException("cannot start run with state: " + runId);
-    }
-    if (!repairRunners.containsKey(runId)) {
-      LOG.info("scheduling repair for repair run #{}", runId);
-      try {
-        RepairRunner newRunner = new RepairRunner(context, runId);
-        repairRunners.put(runId, newRunner);
-        executor.submit(newRunner);
-      } catch (ReaperException e) {
-        e.printStackTrace();
-        LOG.warn("Failed to schedule repair for repair run #{}", runId);
-      }
-    } else {
-      LOG.info("there is already a repair runner for run with id {}, so not scheduling new runner",
-               runId);
-      assert runToBeStarted.getRunState() == RepairRun.RunState.PAUSED :
-          "only paused run should not be scheduled for run already...";
-    }
-  }
-
-  public static void pauseRepairRun(AppContext context, RepairRun runToBePaused) {
-    RepairRun updatedRun = runToBePaused.with()
-        .runState(RepairRun.RunState.PAUSED)
-        .pauseTime(DateTime.now())
-        .build(runToBePaused.getId());
-    if (!context.storage.updateRepairRun(updatedRun)) {
-      throw new RuntimeException("failed updating repair run " + updatedRun.getId());
-    }
-  }
-
-    @VisibleForTesting
+  @VisibleForTesting
   public Long getCurrentlyRunningSegmentId() {
     return currentlyRunningSegmentId;
   }
@@ -181,11 +77,11 @@ public class RepairRunner implements Runnable {
           startNextSegment();
           break;
         case PAUSED:
-          executor.schedule(this, retryDelayMillis, TimeUnit.MILLISECONDS);
+          context.repairManager.scheduleRetry(this);
           break;
         case DONE:
           // We're done. Let go of thread.
-          repairRunners.remove(repairRunId);
+          context.repairManager.removeRunner(this);
           break;
       }
     } catch (ReaperException | RuntimeException e) {
@@ -197,7 +93,7 @@ public class RepairRunner implements Runnable {
                                           .runState(RepairRun.RunState.ERROR)
                                           .endTime(DateTime.now())
                                           .build(repairRun.getId()));
-      repairRunners.remove(repairRunId);
+      context.repairManager.removeRunner(this);
     }
   }
 
@@ -267,9 +163,9 @@ public class RepairRunner implements Runnable {
         jmxConnection = context.jmxConnectionFactory.connectAny(cluster);
       } catch (ReaperException e) {
         e.printStackTrace();
-        LOG.warn("Failed to reestablish JMX connection in runner #{}, reattempting in {} seconds",
-                 repairRunId, retryDelayMillis);
-        executor.schedule(this, retryDelayMillis, TimeUnit.MILLISECONDS);
+        LOG.warn("Failed to reestablish JMX connection in runner #{}, retrying", repairRunId);
+
+        context.repairManager.scheduleRetry(this);
         return;
       }
       LOG.info("successfully reestablished JMX proxy for repair runner on run id: {}", repairRunId);
@@ -288,7 +184,8 @@ public class RepairRunner implements Runnable {
     }
 
     currentlyRunningSegmentId = segmentId;
-    SegmentRunner.triggerRepair(context, segmentId, potentialCoordinators, repairTimeoutMillis);
+    SegmentRunner.triggerRepair(context, segmentId, potentialCoordinators,
+                                context.repairManager.getRepairTimeoutMillis());
     currentlyRunningSegmentId = null;
 
     handleResult(segmentId);
@@ -302,12 +199,12 @@ public class RepairRunner implements Runnable {
     switch (state) {
       case NOT_STARTED:
         // Repair timed out
-        executor.schedule(this, retryDelayMillis, TimeUnit.MILLISECONDS);
+        context.repairManager.scheduleRetry(this);
         break;
       case DONE:
         // Successful repair
         long delay = intensityBasedDelayMillis(segment);
-        executor.schedule(this, delay, TimeUnit.MILLISECONDS);
+        context.repairManager.scheduleNextRun(this, delay);
         String event = String.format("Waiting %ds because of intensity based delay", delay / 1000);
         RepairRun updatedRepairRun =
             context.storage.getRepairRun(repairRunId).get().with().lastEvent(event)
