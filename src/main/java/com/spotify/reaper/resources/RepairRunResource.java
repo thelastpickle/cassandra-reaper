@@ -14,12 +14,10 @@
 package com.spotify.reaper.resources;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
-
-import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperException;
@@ -132,16 +130,16 @@ public class RepairRunResource {
       RepairUnit theRepairUnit =
           CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace.get(), tableNames);
 
-      String repairParallelismStr = context.config.getRepairParallelism();
+      RepairParallelism parallelism = context.config.getRepairParallelism();
       if (repairParallelism.isPresent()) {
         LOG.debug("using given repair parallelism {} instead of configured value {}",
                   repairParallelism.get(), context.config.getRepairParallelism());
-        repairParallelismStr = repairParallelism.get();
+        parallelism = RepairParallelism.valueOf(repairParallelism.get().toUpperCase());
       }
 
       RepairRun newRepairRun = CommonTools.registerRepairRun(
           context, cluster, theRepairUnit, cause, owner.get(), segments,
-          RepairParallelism.valueOf(repairParallelismStr.toUpperCase()), intensity);
+          parallelism, intensity);
 
       return Response.created(buildRepairRunURI(uriInfo, newRepairRun))
           .entity(new RepairRunStatus(newRepairRun, theRepairUnit)).build();

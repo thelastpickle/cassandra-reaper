@@ -15,11 +15,14 @@ package com.spotify.reaper;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.constraints.NotEmpty;
 
 import java.util.Map;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import io.dropwizard.Configuration;
@@ -33,10 +36,12 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   @NotNull
-  private String repairParallelism;
+  private RepairParallelism repairParallelism;
 
   @JsonProperty
   @NotNull
+  @Min(0)
+  @Max(1)
   private Double repairIntensity;
 
   @JsonProperty
@@ -67,11 +72,11 @@ public class ReaperApplicationConfiguration extends Configuration {
     this.segmentCount = segmentCount;
   }
 
-  public String getRepairParallelism() {
+  public RepairParallelism getRepairParallelism() {
     return repairParallelism;
   }
 
-  public void setRepairParallelism(String repairParallelism) {
+  public void setRepairParallelism(RepairParallelism repairParallelism) {
     this.repairParallelism = repairParallelism;
   }
 

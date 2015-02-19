@@ -161,14 +161,11 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   private void checkConfiguration(ReaperApplicationConfiguration config) throws ReaperException {
     LOG.debug("repairIntensity: " + config.getRepairIntensity());
-    assert config.getRepairIntensity() > 0.0 && config.getRepairIntensity() <= 1.0 :
-        "repairIntensity must be a value between 0.0 and 1.0, but not 0.";
     LOG.debug("repairRunThreadCount: " + config.getRepairRunThreadCount());
     LOG.debug("segmentCount: " + config.getSegmentCount());
     LOG.debug("repairParallelism: " + config.getRepairParallelism());
     LOG.debug("hangingRepairTimeoutMins: " + config.getHangingRepairTimeoutMins());
     LOG.debug("jmxPorts: " + config.getJmxPorts());
-    checkRepairParallelismString(config.getRepairParallelism());
   }
 
   public static void checkRepairParallelismString(String givenRepairParallelism)
