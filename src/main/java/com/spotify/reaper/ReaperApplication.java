@@ -47,19 +47,19 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
 
-  private static AppContext context;
+  private  AppContext context;
 
   public ReaperApplication() {
     super();
     LOG.info("default ReaperApplication constructor called");
-    ReaperApplication.context = new AppContext();
+    this.context = new AppContext();
   }
 
   @VisibleForTesting
   public ReaperApplication(AppContext context) {
     super();
     LOG.info("ReaperApplication constructor called with custom AppContext");
-    ReaperApplication.context = context;
+    this.context = context;
   }
 
   public static void main(String[] args) throws Exception {
