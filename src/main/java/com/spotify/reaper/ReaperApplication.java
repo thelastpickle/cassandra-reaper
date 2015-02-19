@@ -21,7 +21,7 @@ import com.spotify.reaper.resources.PingResource;
 import com.spotify.reaper.resources.ReaperHealthCheck;
 import com.spotify.reaper.resources.RepairRunResource;
 import com.spotify.reaper.resources.RepairScheduleResource;
-import com.spotify.reaper.service.RepairRunner;
+import com.spotify.reaper.service.RepairManager;
 import com.spotify.reaper.service.SchedulingManager;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
@@ -94,7 +94,8 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     addSignalHandlers(); // SIGHUP, etc.
 
     LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
-    RepairRunner.initializeThreadPool(
+    context.repairManager = new RepairManager();
+    context.repairManager.initializeThreadPool(
         config.getRepairRunThreadCount(),
         config.getHangingRepairTimeoutMins(), TimeUnit.MINUTES,
         30, TimeUnit.SECONDS);
@@ -141,7 +142,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     SchedulingManager.start(context);
 
     LOG.info("resuming pending repair runs");
-    RepairRunner.resumeRunningRepairRuns(context);
+    context.repairManager.resumeRunningRepairRuns(context);
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config,

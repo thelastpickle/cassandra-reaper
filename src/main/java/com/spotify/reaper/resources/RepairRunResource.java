@@ -14,12 +14,10 @@
 package com.spotify.reaper.resources;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
-
-import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperException;
@@ -28,7 +26,6 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
-import com.spotify.reaper.service.RepairRunner;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.slf4j.Logger;
@@ -281,20 +278,20 @@ public class RepairRunResource {
 
   private Response startRun(RepairRun repairRun, RepairUnit repairUnit) {
     LOG.info("Starting run {}", repairRun.getId());
-    RepairRunner.startRepairRun(context, repairRun);
+    context.repairManager.startRepairRun(context, repairRun);
     return Response.status(Response.Status.OK).entity(new RepairRunStatus(repairRun, repairUnit))
         .build();
   }
 
   private Response pauseRun(RepairRun repairRun, RepairUnit repairUnit) {
     LOG.info("Pausing run {}", repairRun.getId());
-    RepairRunner.pauseRepairRun(context, repairRun);
+    context.repairManager.pauseRepairRun(context, repairRun);
     return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();
   }
 
   private Response resumeRun(RepairRun repairRun, RepairUnit repairUnit) {
     LOG.info("Resuming run {}", repairRun.getId());
-    RepairRunner.startRepairRun(context, repairRun);
+    context.repairManager.startRepairRun(context, repairRun);
     return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();
   }
 

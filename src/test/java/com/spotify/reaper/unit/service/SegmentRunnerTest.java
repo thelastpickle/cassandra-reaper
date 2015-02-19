@@ -25,7 +25,6 @@ import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentRunner;
 import com.spotify.reaper.storage.IStorage;
@@ -59,7 +58,6 @@ public class SegmentRunnerTest {
 
   @Before
   public void setUp() throws Exception {
-    RepairRunner.repairRunners.clear();
     SegmentRunner.segmentRunners.clear();
   }
 

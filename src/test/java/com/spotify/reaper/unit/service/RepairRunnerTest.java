@@ -26,7 +26,7 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.service.RepairRunner;
+import com.spotify.reaper.service.RepairManager;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentRunner;
 import com.spotify.reaper.storage.IStorage;
@@ -60,7 +60,6 @@ public class RepairRunnerTest {
 
   @Before
   public void setUp() throws Exception {
-    RepairRunner.repairRunners.clear();
     SegmentRunner.segmentRunners.clear();
   }
 
@@ -76,6 +75,7 @@ public class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = new MemoryStorage();
     context.jmxConnectionFactory = new JmxConnectionFactory();
+    context.repairManager = new RepairManager();
 
     // place a dummy cluster into storage
     context.storage.addCluster(new Cluster(TEST_CLUSTER, null, Collections.<String>singleton(null)));
@@ -90,8 +90,8 @@ public class RepairRunnerTest {
 
     // start the repair
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
-    RepairRunner.initializeThreadPool(1, 3, TimeUnit.HOURS, 30, TimeUnit.SECONDS);
-    RepairRunner.startRepairRun(context, repairRun);
+    context.repairManager.initializeThreadPool(1, 3, TimeUnit.HOURS, 30, TimeUnit.SECONDS);
+    context.repairManager.startRepairRun(context, repairRun);
     Thread.sleep(200);
 
     // check if the start time was properly set
@@ -128,12 +128,13 @@ public class RepairRunnerTest {
     final long RUN_ID = run.getId();
     final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
-    RepairRunner.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
-
     assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
     context.storage = storage;
+    context.repairManager = new RepairManager();
+    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
+
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       final AtomicInteger repairAttempts = new AtomicInteger(0);
 
@@ -193,7 +194,7 @@ public class RepairRunnerTest {
         return jmx;
       }
     };
-    RepairRunner.startRepairRun(context, run);
+    context.repairManager.startRepairRun(context, run);
 
     // TODO: refactor so that we can properly wait for the repair runner to finish rather than
     // TODO: using this sleep().
@@ -212,6 +213,7 @@ public class RepairRunnerTest {
     final IStorage storage = new MemoryStorage();
     AppContext context = new AppContext();
     context.storage = storage;
+    context.repairManager = new RepairManager();
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
     long cf = storage.addRepairUnit(
@@ -229,7 +231,7 @@ public class RepairRunnerTest {
     final long RUN_ID = run.getId();
     final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
-    RepairRunner.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
+    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
@@ -266,10 +268,10 @@ public class RepairRunnerTest {
     };
 
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
-    RepairRunner.resumeRunningRepairRuns(context);
+    context.repairManager.resumeRunningRepairRuns(context);
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
     storage.updateRepairRun(run.with().runState(RepairRun.RunState.RUNNING).build(RUN_ID));
-    RepairRunner.resumeRunningRepairRuns(context);
+    context.repairManager.resumeRunningRepairRuns(context);
     Thread.sleep(100);
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }
