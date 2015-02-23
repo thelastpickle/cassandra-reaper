@@ -118,7 +118,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       ssMbeanName = new ObjectName(SS_OBJECT_NAME);
       cmMbeanName = new ObjectName(CompactionManager.MBEAN_OBJECT_NAME);
     } catch (MalformedURLException | MalformedObjectNameException e) {
-      LOG.error("Failed to prepare the JMX connection");
+      LOG.error(String.format("Failed to prepare the JMX connection to %s:%s", host, port));
       throw new ReaperException("Failure during preparations for JMX connection", e);
     }
     try {
@@ -136,7 +136,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       LOG.debug(String.format("JMX connection to %s properly connected.", host));
       return proxy;
     } catch (IOException | InstanceNotFoundException e) {
-      LOG.error("Failed to establish JMX connection");
+      LOG.error(String.format("Failed to establish JMX connection to %s:%s", host, port));
       throw new ReaperException("Failure when establishing JMX connection", e);
     }
   }
