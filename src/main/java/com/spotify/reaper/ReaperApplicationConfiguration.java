@@ -21,8 +21,8 @@ import org.hibernate.validator.constraints.NotEmpty;
 import java.util.Map;
 
 import javax.validation.Valid;
+import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import io.dropwizard.Configuration;
@@ -40,7 +40,7 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   @NotNull
-  @Min(0)
+  @DecimalMin(value = "0", inclusive=false)
   @Max(1)
   private Double repairIntensity;
 
@@ -106,6 +106,10 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   public DataSourceFactory getDataSourceFactory() {
     return database;
+  }
+
+  public void setDataSourceFactory(DataSourceFactory database) {
+    this.database = database;
   }
 
   public int getHangingRepairTimeoutMins() {
