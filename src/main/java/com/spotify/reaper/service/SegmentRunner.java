@@ -102,7 +102,7 @@ public final class SegmentRunner implements RepairStatusHandler {
       RepairUnit repairUnit = context.storage.getRepairUnit(segment.getRepairUnitId()).get();
       String keyspace = repairUnit.getKeyspaceName();
 
-      if (!canRepair(segment, keyspace, coordinator)) {
+      if (!canRepair(segment, keyspace, coordinator, repairRun)) {
         postpone(segment);
         return;
       }
@@ -152,8 +152,8 @@ public final class SegmentRunner implements RepairStatusHandler {
     }
   }
 
-  boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator)
-      throws ReaperException {
+  boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator,
+      RepairRun repairRun) {
     Collection<String> allHosts =
         coordinator.tokenRangeToEndpoint(keyspace, segment.getTokenRange());
     for (String hostName : allHosts) {
@@ -166,8 +166,7 @@ public final class SegmentRunner implements RepairStatusHandler {
                    + "compactions (> {}) on host \"{}\"", segmentId, MAX_PENDING_COMPACTIONS,
                    hostProxy.getHost());
           String msg = String.format("Postponed due to pending compactions (%d)",
-                                     pendingCompactions);
-          RepairRun repairRun = context.storage.getRepairRun(segment.getRunId()).get();
+              pendingCompactions);
           context.storage.updateRepairRun(repairRun.with().lastEvent(msg).build(repairRun.getId()));
           return false;
         }
@@ -175,10 +174,15 @@ public final class SegmentRunner implements RepairStatusHandler {
           LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) was "
                    + "already involved in a repair", segmentId, hostProxy.getHost());
           String msg = String.format("Postponed due to affected hosts already doing repairs");
-          RepairRun repairRun = context.storage.getRepairRun(segment.getRunId()).get();
           context.storage.updateRepairRun(repairRun.with().lastEvent(msg).build(repairRun.getId()));
           return false;
         }
+      } catch (ReaperException e) {
+        LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) could "
+            + "not be connected with", segmentId, hostName);
+        String msg = String.format("Postponed due to inability to connect host %s", hostName);
+        context.storage.updateRepairRun(repairRun.with().lastEvent(msg).build(repairRun.getId()));
+        return false;
       }
     }
     LOG.info("It is ok to repair segment '{}' om repair run with id '{}'",
