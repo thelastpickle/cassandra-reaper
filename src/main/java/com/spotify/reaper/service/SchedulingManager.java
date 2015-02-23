@@ -38,7 +38,7 @@ public class SchedulingManager extends TimerTask {
     }
   }
 
-  public static void pauseRepairSchedule(AppContext context, RepairSchedule schedule) {
+  public static RepairSchedule pauseRepairSchedule(AppContext context, RepairSchedule schedule) {
     RepairSchedule updatedSchedule = schedule.with()
         .state(RepairSchedule.State.PAUSED)
         .pauseTime(DateTime.now())
@@ -46,9 +46,10 @@ public class SchedulingManager extends TimerTask {
     if (!context.storage.updateRepairSchedule(updatedSchedule)) {
       throw new RuntimeException("failed updating repair schedule " + updatedSchedule.getId());
     }
+    return updatedSchedule;
   }
 
-  public static void resumeRepairSchedule(AppContext context, RepairSchedule schedule) {
+  public static RepairSchedule resumeRepairSchedule(AppContext context, RepairSchedule schedule) {
     RepairSchedule updatedSchedule = schedule.with()
         .state(RepairSchedule.State.RUNNING)
         .pauseTime(null)
@@ -56,6 +57,7 @@ public class SchedulingManager extends TimerTask {
     if (!context.storage.updateRepairSchedule(updatedSchedule)) {
       throw new RuntimeException("failed updating repair schedule " + updatedSchedule.getId());
     }
+    return updatedSchedule;
   }
 
   private AppContext context;
