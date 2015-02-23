@@ -129,16 +129,16 @@ public class RepairRunResource {
       RepairUnit theRepairUnit =
           CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace.get(), tableNames);
 
-      String repairParallelismStr = context.config.getRepairParallelism();
+      RepairParallelism parallelism = context.config.getRepairParallelism();
       if (repairParallelism.isPresent()) {
         LOG.debug("using given repair parallelism {} instead of configured value {}",
                   repairParallelism.get(), context.config.getRepairParallelism());
-        repairParallelismStr = repairParallelism.get();
+        parallelism = RepairParallelism.valueOf(repairParallelism.get().toUpperCase());
       }
 
       RepairRun newRepairRun = CommonTools.registerRepairRun(
           context, cluster, theRepairUnit, cause, owner.get(), segments,
-          RepairParallelism.valueOf(repairParallelismStr.toUpperCase()), intensity);
+          parallelism, intensity);
 
       return Response.created(buildRepairRunURI(uriInfo, newRepairRun))
           .entity(new RepairRunStatus(newRepairRun, theRepairUnit)).build();

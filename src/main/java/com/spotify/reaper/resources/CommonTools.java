@@ -20,7 +20,7 @@ import com.spotify.reaper.service.SegmentGenerator;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
+import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,8 +32,6 @@ import java.util.Set;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CommonTools {
-
-  public static final String TIMESTAMP_ISO8601_YODA_TEMPLATE = "YYYY-MM-dd'T'HH:mm:ss'Z'";
 
   private static final Logger LOG = LoggerFactory.getLogger(CommonTools.class);
 
@@ -245,7 +243,7 @@ public class CommonTools {
   }
 
   public static String dateTimeToISO8601(DateTime dateTime) {
-    return dateTime.toDateTime(DateTimeZone.UTC).toString(TIMESTAMP_ISO8601_YODA_TEMPLATE);
+    return ISODateTimeFormat.dateTimeNoMillis().print(dateTime);
   }
 
   public static double roundDoubleNicely(double intensity) {

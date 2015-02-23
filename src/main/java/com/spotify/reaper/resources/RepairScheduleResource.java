@@ -148,16 +148,16 @@ public class RepairScheduleResource {
       RepairUnit theRepairUnit =
           CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace.get(), tableNames);
 
-      String repairParallelismStr = context.config.getRepairParallelism();
+      RepairParallelism parallelism = context.config.getRepairParallelism();
       if (repairParallelism.isPresent()) {
         LOG.debug("using given repair parallelism {} instead of configured value {}",
                   repairParallelism.get(), context.config.getRepairParallelism());
-        repairParallelismStr = repairParallelism.get();
+        parallelism = RepairParallelism.valueOf(repairParallelism.get().toUpperCase());
       }
 
       RepairSchedule newRepairSchedule = CommonTools.storeNewRepairSchedule(
           context, cluster, theRepairUnit, scheduleDaysBetween.get(), nextActivation, owner.get(),
-          segments, RepairParallelism.valueOf(repairParallelismStr.toUpperCase()), intensity);
+          segments, parallelism, intensity);
 
       return Response.created(buildRepairScheduleURI(uriInfo, newRepairSchedule))
           .entity(new RepairScheduleStatus(newRepairSchedule, theRepairUnit)).build();

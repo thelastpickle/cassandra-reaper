@@ -47,19 +47,19 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
 
-  private static AppContext context;
+  private  AppContext context;
 
   public ReaperApplication() {
     super();
     LOG.info("default ReaperApplication constructor called");
-    ReaperApplication.context = new AppContext();
+    this.context = new AppContext();
   }
 
   @VisibleForTesting
   public ReaperApplication(AppContext context) {
     super();
     LOG.info("ReaperApplication constructor called with custom AppContext");
-    ReaperApplication.context = context;
+    this.context = context;
   }
 
   public static void main(String[] args) throws Exception {
@@ -162,14 +162,11 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   private void checkConfiguration(ReaperApplicationConfiguration config) throws ReaperException {
     LOG.debug("repairIntensity: " + config.getRepairIntensity());
-    assert config.getRepairIntensity() > 0.0 && config.getRepairIntensity() <= 1.0 :
-        "repairIntensity must be a value between 0.0 and 1.0, but not 0.";
     LOG.debug("repairRunThreadCount: " + config.getRepairRunThreadCount());
     LOG.debug("segmentCount: " + config.getSegmentCount());
     LOG.debug("repairParallelism: " + config.getRepairParallelism());
     LOG.debug("hangingRepairTimeoutMins: " + config.getHangingRepairTimeoutMins());
     LOG.debug("jmxPorts: " + config.getJmxPorts());
-    checkRepairParallelismString(config.getRepairParallelism());
   }
 
   public static void checkRepairParallelismString(String givenRepairParallelism)
