@@ -278,21 +278,21 @@ public class RepairRunResource {
 
   private Response startRun(RepairRun repairRun, RepairUnit repairUnit) {
     LOG.info("Starting run {}", repairRun.getId());
-    context.repairManager.startRepairRun(context, repairRun);
-    return Response.status(Response.Status.OK).entity(new RepairRunStatus(repairRun, repairUnit))
+    RepairRun newRun = context.repairManager.startRepairRun(context, repairRun);
+    return Response.status(Response.Status.OK).entity(new RepairRunStatus(newRun, repairUnit))
         .build();
   }
 
   private Response pauseRun(RepairRun repairRun, RepairUnit repairUnit) {
     LOG.info("Pausing run {}", repairRun.getId());
-    context.repairManager.pauseRepairRun(context, repairRun);
-    return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();
+    RepairRun newRun = context.repairManager.pauseRepairRun(context, repairRun);
+    return Response.ok().entity(new RepairRunStatus(newRun, repairUnit)).build();
   }
 
   private Response resumeRun(RepairRun repairRun, RepairUnit repairUnit) {
     LOG.info("Resuming run {}", repairRun.getId());
-    context.repairManager.startRepairRun(context, repairRun);
-    return Response.ok().entity(new RepairRunStatus(repairRun, repairUnit)).build();
+    RepairRun newRun = context.repairManager.startRepairRun(context, repairRun);
+    return Response.ok().entity(new RepairRunStatus(newRun, repairUnit)).build();
   }
 
   /**

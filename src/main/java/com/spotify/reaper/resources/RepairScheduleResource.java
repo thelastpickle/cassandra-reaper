@@ -236,14 +236,14 @@ public class RepairScheduleResource {
 
   private Response pauseSchedule(RepairSchedule repairSchedule, RepairUnit repairUnit) {
     LOG.info("Pausing schedule {}", repairSchedule.getId());
-    SchedulingManager.pauseRepairSchedule(context, repairSchedule);
-    return Response.ok().entity(new RepairScheduleStatus(repairSchedule, repairUnit)).build();
+    RepairSchedule newSchedule = SchedulingManager.pauseRepairSchedule(context, repairSchedule);
+    return Response.ok().entity(new RepairScheduleStatus(newSchedule, repairUnit)).build();
   }
 
   private Response resumeSchedule(RepairSchedule repairSchedule, RepairUnit repairUnit) {
     LOG.info("Resuming schedule {}", repairSchedule.getId());
-    SchedulingManager.resumeRepairSchedule(context, repairSchedule);
-    return Response.ok().entity(new RepairScheduleStatus(repairSchedule, repairUnit)).build();
+    RepairSchedule newSchedule = SchedulingManager.resumeRepairSchedule(context, repairSchedule);
+    return Response.ok().entity(new RepairScheduleStatus(newSchedule, repairUnit)).build();
   }
 
   /**
