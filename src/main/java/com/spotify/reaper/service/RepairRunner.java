@@ -198,7 +198,7 @@ public class RepairRunner implements Runnable {
               repairRunId, segmentId, state);
     switch (state) {
       case NOT_STARTED:
-        // Repair timed out
+        // Unsuccessful repair
         context.repairManager.scheduleRetry(this);
         break;
       case DONE:
