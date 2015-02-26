@@ -111,6 +111,14 @@ public final class SegmentRunner implements RepairStatusHandler {
         commandId = coordinator.triggerRepair(segment.getStartToken(), segment.getEndToken(),
                                               keyspace, repairRun.getRepairParallelism(),
                                               repairUnit.getColumnFamilies());
+
+        if (commandId == 0) {
+          LOG.warn("Failed triggering repair on segment {}, in run {}", segmentId,
+              repairRun.getId());
+          postpone(segment);
+          return;
+        }
+
         LOG.debug("Triggered repair with command id {}", commandId);
         context.storage.updateRepairSegment(segment.with()
                                                 .coordinatorHost(coordinator.getHost())
