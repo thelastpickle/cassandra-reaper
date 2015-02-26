@@ -228,13 +228,23 @@ public class RepairRunner implements Runnable {
    * @return the delay in milliseconds.
    */
   long intensityBasedDelayMillis(RepairSegment repairSegment) {
-    RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
-    assert repairSegment.getEndTime() != null && repairSegment.getStartTime() != null;
-    long repairEnd = repairSegment.getEndTime().getMillis();
-    long repairStart = repairSegment.getStartTime().getMillis();
-    long repairDuration = repairEnd - repairStart;
-    long delay = (long) (repairDuration / repairRun.getIntensity() - repairDuration);
-    LOG.debug("Scheduling next runner run() with delay {} ms", delay);
-    return delay;
+    if (repairSegment.getEndTime() == null && repairSegment.getStartTime() == null) {
+      return 0;
+    }
+    else if (repairSegment.getEndTime() != null && repairSegment.getStartTime() != null) {
+      long repairEnd = repairSegment.getEndTime().getMillis();
+      long repairStart = repairSegment.getStartTime().getMillis();
+      long repairDuration = repairEnd - repairStart;
+      RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
+      long delay = (long) (repairDuration / repairRun.getIntensity() - repairDuration);
+      LOG.debug("Scheduling next runner run() with delay {} ms", delay);
+      return delay;
+    } else
+    {
+      LOG.error("Segment {} returned with startTime {} and endTime {}. This should not happen."
+              + "Intensity cannot apply, so next run will start immediately.",
+          repairSegment.getId(), repairSegment.getStartTime(), repairSegment.getEndTime());
+      return 0;
+    }
   }
 }
