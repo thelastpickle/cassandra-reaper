@@ -198,15 +198,10 @@ public class PostgresStorage implements IStorage {
       IStoragePostgreSQL pg = getPostgresStorage(h);
       RepairRun runToDelete = pg.getRepairRun(id);
       if (runToDelete != null) {
-        try {
-          pg.deleteRepairUnit(runToDelete.getRepairUnitId());
-        } catch (DBIException ex) {
-          LOG.info("cannot delete RepairUnit with id " + runToDelete.getRepairUnitId());
-          ex.printStackTrace();
-        }
         int segmentsRunning = pg.getSegmentAmountForRepairRun(id, RepairSegment.State.RUNNING);
         if (segmentsRunning == 0) {
           pg.deleteRepairSegmentsForRun(runToDelete.getId());
+          pg.deleteRepairRun(id);
           result = runToDelete.with().runState(RepairRun.RunState.DELETED).build(id);
         } else {
           LOG.warn("not deleting RepairRun \"{}\" as it has segments running: {}",
@@ -225,7 +220,22 @@ public class PostgresStorage implements IStorage {
         h.close();
       }
     }
+    if (result != null) {
+      tryDeletingRepairUnit(result.getRepairUnitId());
+    }
     return Optional.fromNullable(result);
+  }
+
+  private void tryDeletingRepairUnit(long id) {
+    Handle h = jdbi.open();
+    try {
+      IStoragePostgreSQL pg = getPostgresStorage(jdbi.open());
+      pg.deleteRepairUnit(id);
+    } catch (DBIException ex) {
+      LOG.info("cannot delete RepairUnit with id " + id);
+    } finally {
+      h.close();
+    }
   }
 
   @Override
@@ -424,6 +434,9 @@ public class PostgresStorage implements IStorage {
           result = scheduleToDel.with().state(RepairSchedule.State.DELETED).build(id);
         }
       }
+    }
+    if (result != null) {
+      tryDeletingRepairUnit(result.getRepairUnitId());
     }
     return Optional.fromNullable(result);
   }

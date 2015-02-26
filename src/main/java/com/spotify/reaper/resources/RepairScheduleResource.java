@@ -369,10 +369,15 @@ public class RepairScheduleResource {
           "Repair schedule with id \"" + repairScheduleId
           + "\" is not owned by the user you defined: " + owner.get()).build();
     }
+    // Need to get the RepairUnit before it's possibly deleted.
+    Optional<RepairUnit> possiblyDeletedUnit =
+        context.storage.getRepairUnit(scheduleToDelete.get().getRepairUnitId());
     Optional<RepairSchedule> deletedSchedule =
         context.storage.deleteRepairSchedule(repairScheduleId);
     if (deletedSchedule.isPresent()) {
-      return Response.ok().entity(getRepairScheduleStatus(deletedSchedule.get())).build();
+      RepairScheduleStatus scheduleStatus = new RepairScheduleStatus(deletedSchedule.get(),
+                                                                     possiblyDeletedUnit.get());
+      return Response.ok().entity(scheduleStatus).build();
     }
     return Response.serverError().entity("delete failed for schedule with id \""
                                          + repairScheduleId + "\"").build();

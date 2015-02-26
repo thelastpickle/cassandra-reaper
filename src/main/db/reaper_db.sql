@@ -10,6 +10,7 @@
 -- For cleaning up the database, just do first in the following order:
 -- DROP TABLE "repair_segment";
 -- DROP TABLE "repair_run";
+-- DROP TABLE "repair_schedule";
 -- DROP TABLE "repair_unit";
 -- DROP TABLE "cluster";
 
