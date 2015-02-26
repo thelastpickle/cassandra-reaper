@@ -1,3 +1,6 @@
+# This is a manifest file used internally at Spotify.
+# Please ignore.
+
 id: cassandra-reaper
 system: cassandra-reaper
 visibility: public
