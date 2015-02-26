@@ -215,7 +215,7 @@ public final class SegmentRunner implements RepairStatusHandler {
       }
 
       RepairSegment currentSegment = context.storage.getRepairSegment(segmentId).get();
-      // See status explanations from: https://wiki.apache.org/cassandra/RepairAsyncAPI
+      // See status explanations at: https://wiki.apache.org/cassandra/RepairAsyncAPI
       switch (status) {
         case STARTED:
           DateTime now = DateTime.now();
@@ -224,20 +224,23 @@ public final class SegmentRunner implements RepairStatusHandler {
                                                   .startTime(now)
                                                   .build(segmentId));
           break;
+        case SESSION_SUCCESS:
+          LOG.debug("repair session succeeded for segment with id '{}' and repair number '{}'",
+              segmentId, repairNumber);
+          context.storage.updateRepairSegment(currentSegment.with()
+              .state(RepairSegment.State.DONE)
+              .endTime(DateTime.now())
+              .build(segmentId));
+          break;
         case SESSION_FAILED:
           LOG.warn("repair session failed for segment with id '{}' and repair number '{}'",
-                   segmentId, repairNumber);
+              segmentId, repairNumber);
           postpone(currentSegment);
-          condition.signalAll();
-          break;
-        case SESSION_SUCCESS:
-          // Do nothing, wait for FINISHED.
           break;
         case FINISHED:
-          context.storage.updateRepairSegment(currentSegment.with()
-                                                  .state(RepairSegment.State.DONE)
-                                                  .endTime(DateTime.now())
-                                                  .build(segmentId));
+          // This gets called at the end regardless of succeeded or failed sessions.
+          LOG.debug("repair session finished for segment with id '{}' and repair number '{}'",
+              segmentId, repairNumber);
           condition.signalAll();
           break;
       }
