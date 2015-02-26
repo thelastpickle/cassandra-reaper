@@ -200,14 +200,24 @@ def _arguments_for_scheduling(parser):
     _argument_owner(parser)
 
 
-def _arguments_for_start(parser):
+def _arguments_for_start_repair(parser):
     """Arguments relevant for starting a repair"""
     parser.add_argument("run_id", help="ID of the repair run to start or resume")
 
 
-def _arguments_for_pause(parser):
+def _arguments_for_pause_repair(parser):
     """Arguments needed for pausing or resuming a repair"""
     parser.add_argument("run_id", help="ID of the repair run to pause")
+
+
+def _arguments_for_start_schedule(parser):
+    """Arguments relevant for resuming a repair schedule"""
+    parser.add_argument("schedule_id", help="ID of the repair schedule to resume")
+
+
+def _arguments_for_pause_schedule(parser):
+    """Arguments needed for pausing a repair schedule"""
+    parser.add_argument("schedule_id", help="ID of the repair schedule to pause")
 
 
 def _arguments_for_list_runs(parser):
@@ -256,8 +266,10 @@ Usage: spreaper [<global_args>] <command> [<command_args>]
     schedule        Create a repair schedule, choosing the first activation time and days
                     between repair activations. You need to register a cluster into
                     Reaper (add-cluster) before calling this.
-    start           Start a repair run, or resume paused repair run.
-    pause           Pause a repair run.
+    start-repair    Start a repair run, or resume paused repair run.
+    pause-repair    Pause a repair run.
+    start-schedule  Resume a paused repair schedule.
+    pause-schedule  Pause a repair schedule.
     ping            Test connectivity to the Reaper service.
 """
 
@@ -477,28 +489,45 @@ class ReaperCLI(object):
         print "# Repair schedule with id={0} created:".format(repair_schedule.get('id'))
         print json.dumps(repair_schedule, indent=2, sort_keys=True)
 
-    def start(self):
+    def start_repair(self):
         reaper, args = ReaperCLI.prepare_reaper(
-            "start",
+            "start-repair",
             "Start new repair run, or resume a paused repair run.",
-            extra_arguments=_arguments_for_start
+            extra_arguments=_arguments_for_start_repair
         )
-        self._change_run_state(reaper, args.run_id, args, "RUNNING")
+        print "# Starting a repair run with id: {0}".format(args.run_id)
+        reaper.put("repair_run/{0}".format(args.run_id), state="RUNNING")
+        print "# Run '{0}' started".format(args.run_id)
 
-    def pause(self):
+    def pause_repair(self):
         reaper, args = ReaperCLI.prepare_reaper(
-            "pause",
+            "pause-repair",
             "Pause a running repair run.",
-            extra_arguments=_arguments_for_pause
+            extra_arguments=_arguments_for_pause_repair
         )
         print "# Pausing a repair run with id: {0}".format(args.run_id)
         reaper.put("repair_run/{0}".format(args.run_id), state="PAUSED")
         print "# Repair run '{0}' paused".format(args.run_id)
 
-    def _change_run_state(self, reaper, run_id, args, st):
-        print "# Starting a repair run with id: {0}".format(run_id)
-        reaper.put("repair_run/{0}".format(run_id), state=st)
-        print "# Run '{0}' started".format(run_id)
+    def start_schedule(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "start-schedule",
+            "Resume a paused repair schedule.",
+            extra_arguments=_arguments_for_start_schedule
+        )
+        print "# Resuming a repair schedule with id: {0}".format(args.schedule_id)
+        reaper.put("repair_schedule/{0}".format(args.schedule_id), state="ACTIVE")
+        print "# Schedule '{0}' active".format(args.schedule_id)
+
+    def pause_schedule(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "pause-schedule",
+            "Pause a repair schedule.",
+            extra_arguments=_arguments_for_pause_schedule
+        )
+        print "# Pausing a repair schedule with id: {0}".format(args.schedule_id)
+        reaper.put("repair_schedule/{0}".format(args.schedule_id), state="PAUSED")
+        print "# Repair schedule '{0}' paused".format(args.schedule_id)
 
 
 if __name__ == '__main__':

@@ -116,10 +116,10 @@ public class RepairSchedule {
   }
 
   public enum State {
-    RUNNING,
-    PAUSED
+    ACTIVE,
+    PAUSED,
+    DELETED
   }
-
 
   public static class Builder {
 

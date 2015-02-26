@@ -35,6 +35,7 @@ import com.spotify.reaper.storage.postgresql.StateArgumentFactory;
 
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.exceptions.DBIException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +83,22 @@ public class PostgresStorage implements IStorage {
     Cluster result;
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getCluster(clusterName);
+    }
+    return Optional.fromNullable(result);
+  }
+
+  @Override
+  public Optional<Cluster> deleteCluster(String clusterName) {
+    Cluster result = null;
+    try (Handle h = jdbi.open()) {
+      IStoragePostgreSQL pg = getPostgresStorage(h);
+      Cluster clusterToDel = pg.getCluster(clusterName);
+      if (clusterToDel != null) {
+        int rowsDeleted = pg.deleteCluster(clusterName);
+        if (rowsDeleted > 0) {
+          result = clusterToDel;
+        }
+      }
     }
     return Optional.fromNullable(result);
   }
@@ -169,6 +186,56 @@ public class PostgresStorage implements IStorage {
       result = getPostgresStorage(h).getRepairRunsWithState(runState);
     }
     return result == null ? Lists.<RepairRun>newArrayList() : result;
+  }
+
+  @Override
+  public Optional<RepairRun> deleteRepairRun(long id) {
+    RepairRun result = null;
+    Handle h = null;
+    try {
+      h = jdbi.open();
+      h.begin();
+      IStoragePostgreSQL pg = getPostgresStorage(h);
+      RepairRun runToDelete = pg.getRepairRun(id);
+      if (runToDelete != null) {
+        int segmentsRunning = pg.getSegmentAmountForRepairRun(id, RepairSegment.State.RUNNING);
+        if (segmentsRunning == 0) {
+          pg.deleteRepairSegmentsForRun(runToDelete.getId());
+          pg.deleteRepairRun(id);
+          result = runToDelete.with().runState(RepairRun.RunState.DELETED).build(id);
+        } else {
+          LOG.warn("not deleting RepairRun \"{}\" as it has segments running: {}",
+                   id, segmentsRunning);
+        }
+      }
+      h.commit();
+    } catch (DBIException ex) {
+      LOG.warn("DELETE failed", ex);
+      ex.printStackTrace();
+      if (h != null) {
+        h.rollback();
+      }
+    } finally {
+      if (h != null) {
+        h.close();
+      }
+    }
+    if (result != null) {
+      tryDeletingRepairUnit(result.getRepairUnitId());
+    }
+    return Optional.fromNullable(result);
+  }
+
+  private void tryDeletingRepairUnit(long id) {
+    Handle h = jdbi.open();
+    try {
+      IStoragePostgreSQL pg = getPostgresStorage(jdbi.open());
+      pg.deleteRepairUnit(id);
+    } catch (DBIException ex) {
+      LOG.info("cannot delete RepairUnit with id " + id);
+    } finally {
+      h.close();
+    }
   }
 
   @Override
@@ -353,5 +420,24 @@ public class PostgresStorage implements IStorage {
       }
     }
     return result;
+  }
+
+  @Override
+  public Optional<RepairSchedule> deleteRepairSchedule(long id) {
+    RepairSchedule result = null;
+    try (Handle h = jdbi.open()) {
+      IStoragePostgreSQL pg = getPostgresStorage(h);
+      RepairSchedule scheduleToDel = pg.getRepairSchedule(id);
+      if (scheduleToDel != null) {
+        int rowsDeleted = pg.deleteRepairSchedule(scheduleToDel.getId());
+        if (rowsDeleted > 0) {
+          result = scheduleToDel.with().state(RepairSchedule.State.DELETED).build(id);
+        }
+      }
+    }
+    if (result != null) {
+      tryDeletingRepairUnit(result.getRepairUnitId());
+    }
+    return Optional.fromNullable(result);
   }
 }

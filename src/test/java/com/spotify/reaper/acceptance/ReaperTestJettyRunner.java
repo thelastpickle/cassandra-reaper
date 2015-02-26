@@ -8,9 +8,8 @@ import com.google.common.io.Resources;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperApplicationConfiguration;
-import com.sun.jersey.api.client.Client;
+import com.spotify.reaper.SimpleReaperClient;
 import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 
 import net.sourceforge.argparse4j.inf.Namespace;
 
@@ -19,8 +18,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
-import java.net.URL;
 import java.util.Map;
 
 import io.dropwizard.cli.ServerCommand;
@@ -38,6 +35,7 @@ public class ReaperTestJettyRunner {
   private static final Logger LOG = LoggerFactory.getLogger(ReaperTestJettyRunner.class);
 
   private static ReaperTestJettyRunner runnerInstance;
+  private static SimpleReaperClient reaperClientInstance;
 
   public static void setup(AppContext testContext) throws Exception {
     if (runnerInstance == null) {
@@ -45,7 +43,7 @@ public class ReaperTestJettyRunner {
       LOG.info("initializing ReaperTestJettyRunner with config in path: " + testConfigPath);
       runnerInstance = new ReaperTestJettyRunner(testConfigPath, testContext);
       runnerInstance.start();
-      // Stop the testing Reaper after tests are finished.
+      // Stop the testing Reaper service instance after tests are finished.
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
         public void run() {
@@ -60,30 +58,15 @@ public class ReaperTestJettyRunner {
   public static ClientResponse callReaper(String httpMethod, String urlPath,
                                           Optional<Map<String, String>> params) {
     assert runnerInstance != null : "service not initialized, call setup() first";
-    String reaperBase = "http://localhost:" + runnerInstance.getLocalPort() + "/";
-    URI uri;
-    try {
-      uri = new URL(new URL(reaperBase), urlPath).toURI();
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
+    return SimpleReaperClient.doHttpCall(httpMethod, "localhost", runnerInstance.getLocalPort(),
+                                         urlPath, params);
+  }
+
+  public static SimpleReaperClient getClient() {
+    if (reaperClientInstance == null) {
+      reaperClientInstance = new SimpleReaperClient("localhost", runnerInstance.getLocalPort());
     }
-    Client client = new Client();
-    WebResource resource = client.resource(uri);
-    LOG.info("calling reaper in resource: " + resource.getURI());
-    if (params.isPresent()) {
-      for (Map.Entry<String, String> entry : params.get().entrySet()) {
-        resource = resource.queryParam(entry.getKey(), entry.getValue());
-      }
-    }
-    ClientResponse response;
-    if ("GET".equalsIgnoreCase(httpMethod)) {
-      response = resource.get(ClientResponse.class);
-    } else if ("POST".equalsIgnoreCase(httpMethod)) {
-      response = resource.post(ClientResponse.class);
-    } else {
-      throw new RuntimeException("Invalid HTTP method: " + httpMethod);
-    }
-    return response;
+    return reaperClientInstance;
   }
 
   private final String configPath;

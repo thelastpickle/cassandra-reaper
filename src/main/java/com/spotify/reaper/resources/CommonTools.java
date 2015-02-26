@@ -85,6 +85,8 @@ public class CommonTools {
                                                   int segmentCount)
       throws ReaperException {
     List<RingRange> segments = null;
+    assert targetCluster.getPartitioner() != null :
+        "no partitioner for cluster: " + targetCluster.getName();
     SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
     Set<String> seedHosts = targetCluster.getSeedHosts();
     if (seedHosts.isEmpty()) {
@@ -179,8 +181,9 @@ public class CommonTools {
       Double intensity)
       throws ReaperException {
     RepairSchedule.Builder scheduleBuilder =
-        new RepairSchedule.Builder(repairUnit.getId(), RepairSchedule.State.RUNNING, daysBetween,
-                                   nextActivation, ImmutableList.<Long>of(), segments, repairParallelism, intensity,
+        new RepairSchedule.Builder(repairUnit.getId(), RepairSchedule.State.ACTIVE, daysBetween,
+                                   nextActivation, ImmutableList.<Long>of(), segments,
+                                   repairParallelism, intensity,
                                    DateTime.now());
     scheduleBuilder.owner(owner);
     RepairSchedule newRepairSchedule = context.storage.addRepairSchedule(scheduleBuilder);
@@ -243,6 +246,9 @@ public class CommonTools {
   }
 
   public static String dateTimeToISO8601(DateTime dateTime) {
+    if (null == dateTime) {
+      return null;
+    }
     return ISODateTimeFormat.dateTimeNoMillis().print(dateTime);
   }
 

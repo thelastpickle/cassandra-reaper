@@ -159,6 +159,12 @@ Source code for all the REST resources can be found from package com.spotify.rea
   * Adds a new cluster to the service, and returns the newly added cluster object,
     if the operation was successful.
 
+* DELETE  /cluster/{cluster_name}
+  * Expected query parameters: *None*
+  * Delete a cluster object identified by the given "cluster_name" path parameter.
+    Cluster will get deleted only if there are no schedules or repair runs for the cluster,
+    or the request will fail. Delete repair runs and schedules first before calling this.
+
 ## Repair Run Resource
 
 * GET     /repair_run
@@ -193,6 +199,13 @@ Source code for all the REST resources can be found from package com.spotify.rea
       Possible values for given state are: "PAUSED" or "RUNNING".
   * Starts, pauses, or resumes a repair run identified by the "id" path parameter.
 
+* DELETE  /repair_run/{id}
+  * Expected query parameters:
+    * *owner*: Owner name for the run. If the given owner does not match the stored owner,
+               the delete request will fail.
+  * Delete a repair run object identified by the given "id" path parameter.
+    Repair run and all the related repair segments will be deleted from the database.
+
 ## Repair Schedule Resource
 
 * GET     /repair_schedule
@@ -218,3 +231,11 @@ Source code for all the REST resources can be found from package com.spotify.rea
     * *scheduleTriggerTime*: Defines the time for first scheduled trigger for the run.
                              If you don't give this value, it will be next mid-night (UTC).
                              Give date values in ISO format, e.g. "2015-02-11T01:00:00". (Optional)
+
+* DELETE  /repair_schedule/{id}
+  * Expected query parameters:
+    * *owner*: Owner name for the schedule. If the given owner does not match the stored owner,
+               the delete request will fail.
+  * Delete a repair schedule object identified by the given "id" path parameter.
+    Repair schedule will get deleted only if there are no associated repair runs for the schedule.
+    Delete all the related repair runs before calling this endpoint.
