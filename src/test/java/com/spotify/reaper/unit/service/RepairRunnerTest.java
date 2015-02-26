@@ -45,6 +45,7 @@ import org.mockito.stubbing.Answer;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -53,6 +54,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -135,8 +137,10 @@ public class RepairRunnerTest {
     context.repairManager = new RepairManager();
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
+    final Semaphore mutex = new Semaphore(0);
+
     context.jmxConnectionFactory = new JmxConnectionFactory() {
-      final AtomicInteger repairAttempts = new AtomicInteger(0);
+      final AtomicInteger repairAttempts = new AtomicInteger(1);
 
       @Override
       public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host)
@@ -146,9 +150,10 @@ public class RepairRunnerTest {
         when(jmx.isConnectionAlive()).thenReturn(true);
         when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
             .thenReturn(Lists.newArrayList(""));
+        //doNothing().when(jmx).cancelAllRepairs();
         when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-                               Matchers.<RepairParallelism>any(),
-                               Sets.newHashSet(anyString()))).then(
+            Matchers.<RepairParallelism>any(),
+            Sets.newHashSet(anyString()))).then(
             new Answer<Integer>() {
               @Override
               public Integer answer(InvocationOnMock invocation) throws Throwable {
@@ -157,7 +162,7 @@ public class RepairRunnerTest {
 
                 final int repairNumber = repairAttempts.getAndIncrement();
                 switch (repairNumber) {
-                  case 0:
+                  case 1:
                     new Thread() {
                       @Override
                       public void run() {
@@ -168,20 +173,22 @@ public class RepairRunnerTest {
                       }
                     }.start();
                     break;
-                  case 1:
+                  case 2:
                     new Thread() {
                       @Override
                       public void run() {
                         handler.get()
                             .handle(repairNumber, ActiveRepairService.Status.STARTED, null);
                         assertEquals(RepairSegment.State.RUNNING,
-                                     storage.getRepairSegment(SEGMENT_ID).get().getState());
+                            storage.getRepairSegment(SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, ActiveRepairService.Status.SESSION_SUCCESS, null);
-                        assertEquals(RepairSegment.State.RUNNING,
-                                     storage.getRepairSegment(SEGMENT_ID).get().getState());
+                        assertEquals(RepairSegment.State.DONE,
+                            storage.getRepairSegment(SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, ActiveRepairService.Status.FINISHED, null);
+                        mutex.release();
+                        System.out.println("MUTEX RELEASED");
                       }
                     }.start();
                     break;
@@ -198,7 +205,9 @@ public class RepairRunnerTest {
 
     // TODO: refactor so that we can properly wait for the repair runner to finish rather than
     // TODO: using this sleep().
-    Thread.sleep(600);
+    mutex.acquire();
+    System.out.println("MUTEX ACQUIRED");
+    Thread.sleep(100);
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }
 

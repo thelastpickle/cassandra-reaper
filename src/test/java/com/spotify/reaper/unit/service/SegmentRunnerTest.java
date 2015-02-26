@@ -166,7 +166,7 @@ public class SegmentRunnerTest {
                                          "Repair command 2 has failed");
                     handler.get().handle(1, ActiveRepairService.Status.SESSION_SUCCESS,
                                          "Repair session succeeded in command 1");
-                    assertEquals(RepairSegment.State.RUNNING,
+                    assertEquals(RepairSegment.State.DONE,
                                  storage.getRepairSegment(segmentId).get().getState());
                     handler.get().handle(1, ActiveRepairService.Status.FINISHED,
                                          "Repair command 1 has finished");
@@ -232,14 +232,14 @@ public class SegmentRunnerTest {
                                          "Repair command 1 has started");
                     assertEquals(RepairSegment.State.RUNNING,
                                  storage.getRepairSegment(segmentId).get().getState());
-                    handler.get().handle(1, ActiveRepairService.Status.SESSION_SUCCESS,
-                                         "Repair session succeeded in command 1");
-                    assertEquals(RepairSegment.State.RUNNING,
-                                 storage.getRepairSegment(segmentId).get().getState());
                     handler.get().handle(1, ActiveRepairService.Status.SESSION_FAILED,
                                          "Repair command 1 has failed");
                     assertEquals(RepairSegment.State.NOT_STARTED,
                                  storage.getRepairSegment(segmentId).get().getState());
+                    handler.get().handle(1, ActiveRepairService.Status.FINISHED,
+                        "Repair command 1 has finished");
+                    assertEquals(RepairSegment.State.NOT_STARTED,
+                        storage.getRepairSegment(segmentId).get().getState());
                   }
                 }));
 

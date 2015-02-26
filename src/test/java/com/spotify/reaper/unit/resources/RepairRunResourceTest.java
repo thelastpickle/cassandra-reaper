@@ -42,6 +42,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Matchers.anyCollectionOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -96,6 +98,9 @@ public class RepairRunResourceTest {
     when(proxy.isConnectionAlive()).thenReturn(Boolean.TRUE);
     when(proxy.tokenRangeToEndpoint(anyString(), any(RingRange.class))).thenReturn(
         Collections.singletonList(""));
+    when(proxy.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
+        any(RepairParallelism.class), anyCollectionOf(String.class))).thenReturn(1);
+
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
       public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
