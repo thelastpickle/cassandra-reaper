@@ -50,6 +50,7 @@ public interface IStoragePostgreSQL {
       + ") VALUES (:name, :partitioner, :seedHosts)";
   static final String SQL_UPDATE_CLUSTER =
       "UPDATE cluster SET partitioner = :partitioner, seed_hosts = :seedHosts WHERE name = :name";
+  static final String SQL_DELETE_CLUSTER = "DELETE FROM cluster WHERE name = :name";
 
   // RepairRun
   //
@@ -77,6 +78,7 @@ public interface IStoragePostgreSQL {
       "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS + " FROM repair_run WHERE state = :state";
   static final String SQL_GET_REPAIR_RUNS_FOR_UNIT =
       "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS + " FROM repair_run WHERE repair_unit_id = :unitId";
+  static final String SQL_DELETE_REPAIR_RUN = "DELETE FROM repair_run WHERE id = :id";
 
   // RepairUnit
   //
@@ -93,6 +95,7 @@ public interface IStoragePostgreSQL {
       "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM repair_unit "
       + "WHERE cluster_name = :clusterName AND keyspace_name = :keyspaceName "
       + "AND column_families @> :columnFamilies AND column_families <@ :columnFamilies";
+  static final String SQL_DELETE_REPAIR_UNIT = "DELETE FROM repair_unit WHERE id = :id";
 
   // RepairSegment
   //
@@ -122,6 +125,8 @@ public interface IStoragePostgreSQL {
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE "
       + "run_id = :runId AND state = 0 AND start_token >= :startToken "
       + "AND end_token < :endToken ORDER BY fail_count ASC, start_token ASC LIMIT 1";
+  static final String SQL_DELETE_REPAIR_SEGMENTS_FOR_RUN =
+      "DELETE FROM repair_segment WHERE run_id = :runId";
 
   // RepairSchedule
   //
@@ -147,6 +152,7 @@ public interface IStoragePostgreSQL {
       + "WHERE repair_schedule.repair_unit_id = repair_unit.id AND cluster_name = :clusterName";
   static final String SQL_GET_ALL_REPAIR_SCHEDULES =
       "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedule";
+  static final String SQL_DELETE_REPAIR_SCHEDULE = "DELETE FROM repair_schedule WHERE id = :id";
 
   // Utility methods
   //
@@ -172,6 +178,9 @@ public interface IStoragePostgreSQL {
   @SqlUpdate(SQL_UPDATE_CLUSTER)
   public int updateCluster(@BindBean Cluster newCluster);
 
+  @SqlUpdate(SQL_DELETE_CLUSTER)
+  public int deleteCluster(@Bind("name") String clusterName);
+
   @SqlQuery(SQL_GET_REPAIR_RUN)
   @Mapper(RepairRunMapper.class)
   public RepairRun getRepairRun(@Bind("id") long repairRunId);
@@ -195,6 +204,9 @@ public interface IStoragePostgreSQL {
   @SqlUpdate(SQL_UPDATE_REPAIR_RUN)
   public int updateRepairRun(@BindBean RepairRun newRepairRun);
 
+  @SqlUpdate(SQL_DELETE_REPAIR_RUN)
+  public int deleteRepairRun(@Bind("id") long repairRunId);
+
   @SqlQuery(SQL_GET_REPAIR_UNIT)
   @Mapper(RepairUnitMapper.class)
   public RepairUnit getRepairUnit(@Bind("id") long repairUnitId);
@@ -208,6 +220,9 @@ public interface IStoragePostgreSQL {
   @SqlUpdate(SQL_INSERT_REPAIR_UNIT)
   @GetGeneratedKeys
   public long insertRepairUnit(@BindBean RepairUnit newRepairUnit);
+
+  @SqlUpdate(SQL_DELETE_REPAIR_UNIT)
+  public int deleteRepairUnit(@Bind("id") long repairUnitId);
 
   @SqlBatch(SQL_INSERT_REPAIR_SEGMENT)
   @BatchChunkSize(500)
@@ -236,6 +251,9 @@ public interface IStoragePostgreSQL {
                                                        @Bind("startToken") BigInteger startToken,
                                                        @Bind("endToken") BigInteger endToken);
 
+  @SqlUpdate(SQL_DELETE_REPAIR_SEGMENTS_FOR_RUN)
+  public int deleteRepairSegmentsForRun(@Bind("runId") long repairRunId);
+
   @SqlQuery(SQL_GET_REPAIR_SCHEDULE)
   @Mapper(RepairScheduleMapper.class)
   public RepairSchedule getRepairSchedule(@Bind("id") long repairScheduleId);
@@ -259,6 +277,9 @@ public interface IStoragePostgreSQL {
   @SqlQuery(SQL_GET_REPAIR_RUN_IDS_FOR_CLUSTER)
   Collection<Long> getRepairRunIdsForCluster(
       @Bind("clusterName") String clusterName);
+
+  @SqlUpdate(SQL_DELETE_REPAIR_SCHEDULE)
+  public int deleteRepairSchedule(@Bind("id") long repairScheduleId);
 
   @SqlQuery(SQL_SEGMENTS_AMOUNT_FOR_REPAIR_RUN)
   int getSegmentAmountForRepairRun(

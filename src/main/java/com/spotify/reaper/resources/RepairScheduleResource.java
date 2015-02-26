@@ -14,8 +14,8 @@
 package com.spotify.reaper.resources;
 
 import com.google.common.base.Optional;
-
 import com.google.common.collect.Lists;
+
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -170,11 +171,11 @@ public class RepairScheduleResource {
   }
 
   /**
-   * Modifies a state of the repair schedule. <p/> Currently supports PAUSED -> RUNNING and
-   * RUNNING -> PAUSED.
+   * Modifies a state of the repair schedule. <p/> Currently supports PAUSED -> ACTIVE and
+   * ACTIVE -> PAUSED.
    *
-   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 501
-   * (NOT_IMPLEMENTED) if transition is not supported.
+   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 400
+   * (BAD_REQUEST) if transition is not supported.
    */
   @PUT
   @Path("/{id}")
@@ -184,7 +185,7 @@ public class RepairScheduleResource {
       @QueryParam("state") Optional<String> state) {
 
     LOG.info("modify repair schedule state called with: id = {}, state = {}",
-        repairScheduleId, state);
+             repairScheduleId, state);
 
     if (!state.isPresent()) {
       return Response.status(Response.Status.BAD_REQUEST.getStatusCode())
@@ -194,7 +195,7 @@ public class RepairScheduleResource {
     Optional<RepairSchedule> repairSchedule = context.storage.getRepairSchedule(repairScheduleId);
     if (!repairSchedule.isPresent()) {
       return Response.status(Response.Status.NOT_FOUND).entity("repair schedule with id "
-          + repairScheduleId + " not found")
+                                                               + repairScheduleId + " not found")
           .build();
     }
 
@@ -207,7 +208,13 @@ public class RepairScheduleResource {
       return Response.status(Response.Status.NOT_FOUND).entity(errMsg).build();
     }
 
-    RepairSchedule.State newState = RepairSchedule.State.valueOf(state.get());
+    RepairSchedule.State newState;
+    try {
+      newState = RepairSchedule.State.valueOf(state.get().toUpperCase());
+    } catch (IllegalArgumentException ex) {
+      return Response.status(Response.Status.BAD_REQUEST.getStatusCode())
+          .entity("invalid \"state\" argument: " + state.get()).build();
+    }
     RepairSchedule.State oldState = repairSchedule.get().getState();
 
     if (oldState == newState) {
@@ -220,18 +227,18 @@ public class RepairScheduleResource {
       return resumeSchedule(repairSchedule.get(), repairUnit.get());
     } else {
       String errMsg = String.format("Transition %s->%s not supported.", oldState.toString(),
-          newState.toString());
+                                    newState.toString());
       LOG.error(errMsg);
       return Response.status(Response.Status.BAD_REQUEST).entity(errMsg).build();
     }
   }
 
   private static boolean isPausing(RepairSchedule.State oldState, RepairSchedule.State newState) {
-    return oldState == RepairSchedule.State.RUNNING && newState == RepairSchedule.State.PAUSED;
+    return oldState == RepairSchedule.State.ACTIVE && newState == RepairSchedule.State.PAUSED;
   }
 
   private static boolean isResuming(RepairSchedule.State oldState, RepairSchedule.State newState) {
-    return oldState == RepairSchedule.State.PAUSED && newState == RepairSchedule.State.RUNNING;
+    return oldState == RepairSchedule.State.PAUSED && newState == RepairSchedule.State.ACTIVE;
   }
 
   private Response pauseSchedule(RepairSchedule repairSchedule, RepairUnit repairUnit) {
@@ -326,6 +333,49 @@ public class RepairScheduleResource {
       }
     }
     return Response.status(Response.Status.OK).entity(scheduleStatuses).build();
+  }
+
+  /**
+   * Delete a RepairSchedule object with given id.
+   *
+   * Repair schedule can only be deleted when it is not active, so you must stop it first.
+   *
+   * @param repairScheduleId The id for the RepairSchedule instance to delete.
+   * @param owner            The assigned owner of the deleted resource. Must match the stored one.
+   * @return The deleted RepairSchedule instance, with state overwritten to string "DELETED".
+   */
+  @DELETE
+  @Path("/{id}")
+  public Response deleteRepairSchedule(@PathParam("id") Long repairScheduleId,
+                                       @QueryParam("owner") Optional<String> owner) {
+    LOG.info("delete repair schedule called with repairScheduleId: {}, and owner: {}",
+             repairScheduleId, owner);
+    if (!owner.isPresent()) {
+      return Response.status(Response.Status.BAD_REQUEST).entity(
+          "required query parameter \"owner\" is missing").build();
+    }
+    Optional<RepairSchedule> scheduleToDelete = context.storage.getRepairSchedule(repairScheduleId);
+    if (!scheduleToDelete.isPresent()) {
+      return Response.status(Response.Status.NOT_FOUND).entity(
+          "Repair schedule with id \"" + repairScheduleId + "\" not found").build();
+    }
+    if (scheduleToDelete.get().getState() == RepairSchedule.State.ACTIVE) {
+      return Response.status(Response.Status.FORBIDDEN).entity(
+          "Repair schedule with id \"" + repairScheduleId
+          + "\" is currently running, and must be stopped before deleting").build();
+    }
+    if (!scheduleToDelete.get().getOwner().equalsIgnoreCase(owner.get())) {
+      return Response.status(Response.Status.FORBIDDEN).entity(
+          "Repair schedule with id \"" + repairScheduleId
+          + "\" is not owned by the user you defined: " + owner.get()).build();
+    }
+    Optional<RepairSchedule> deletedSchedule =
+        context.storage.deleteRepairSchedule(repairScheduleId);
+    if (deletedSchedule.isPresent()) {
+      return Response.ok().entity(getRepairScheduleStatus(deletedSchedule.get())).build();
+    }
+    return Response.serverError().entity("delete failed for schedule with id \""
+                                         + repairScheduleId + "\"").build();
   }
 
 }

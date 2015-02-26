@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -193,6 +194,42 @@ public class ClusterResource {
       return Response.status(500).entity("failed connecting given clusters JMX endpoint").build();
     }
     return Response.ok().entity(view).build();
+  }
+
+  /**
+   * Delete a Cluster object with given name.
+   *
+   * Cluster can be only deleted when it hasn't any RepairRun or RepairSchedule instances under it,
+   * i.e. you must delete all repair runs and schedules first.
+   *
+   * @param clusterName  The name of the Cluster instance you are about to delete.
+   * @return The deleted RepairRun instance, with state overwritten to string "DELETED".
+   */
+  @DELETE
+  @Path("/{cluster_name}")
+  public Response deleteCluster(@PathParam("cluster_name") String clusterName) {
+    LOG.info("delete cluster called with clusterName: {}", clusterName);
+    Optional<Cluster> clusterToDelete = context.storage.getCluster(clusterName);
+    if (!clusterToDelete.isPresent()) {
+      return Response.status(Response.Status.NOT_FOUND).entity(
+          "cluster with name \"" + clusterName + "\" not found").build();
+    }
+    if (!context.storage.getRepairSchedulesForCluster(clusterName).isEmpty()) {
+      return Response.status(Response.Status.FORBIDDEN).entity(
+          "cluster with name \"" + clusterName + "\" cannot be deleted, as it "
+          + "has repair schedules").build();
+    }
+    if (!context.storage.getRepairRunsForCluster(clusterName).isEmpty()) {
+      return Response.status(Response.Status.FORBIDDEN).entity(
+          "cluster with name \"" + clusterName + "\" cannot be deleted, as it "
+          + "has repair runs").build();
+    }
+    Optional<Cluster> deletedCluster = context.storage.deleteCluster(clusterName);
+    if (deletedCluster.isPresent()) {
+      return Response.ok().entity(new ClusterStatus(deletedCluster.get())).build();
+    }
+    return Response.serverError().entity("delete failed for schedule with name \""
+                                         + clusterName + "\"").build();
   }
 
 }

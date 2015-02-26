@@ -86,6 +86,15 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
+  public Optional<Cluster> deleteCluster(String clusterName) {
+    if (getRepairSchedulesForCluster(clusterName).isEmpty()
+        && getRepairRunsForCluster(clusterName).isEmpty()) {
+      return Optional.fromNullable(clusters.remove(clusterName));
+    }
+    return Optional.absent();
+  }
+
+  @Override
   public RepairRun addRepairRun(RepairRun.Builder repairRun) {
     RepairRun newRepairRun = repairRun.build(REPAIR_RUN_ID.incrementAndGet());
     repairRuns.put(newRepairRun.getId(), newRepairRun);
@@ -140,6 +149,59 @@ public class MemoryStorage implements IStorage {
     return foundRepairRuns;
   }
 
+  /**
+   * Delete a RepairUnit instance from Storage, but only if no run or schedule is referencing it.
+   *
+   * @param repairUnitId The RepairUnit instance id to delete.
+   * @return The deleted RepairUnit instance, if delete succeeded.
+   */
+  private Optional<RepairUnit> deleteRepairUnit(long repairUnitId) {
+    RepairUnit deletedUnit = null;
+    boolean canDelete = true;
+    for (RepairRun repairRun : repairRuns.values()) {
+      if (repairRun.getRepairUnitId() == repairUnitId) {
+        canDelete = false;
+        break;
+      }
+    }
+    if (canDelete) {
+      for (RepairSchedule schedule : repairSchedules.values()) {
+        if (schedule.getRepairUnitId() == repairUnitId) {
+          canDelete = false;
+          break;
+        }
+      }
+    }
+    if (canDelete) {
+      deletedUnit = repairUnits.remove(repairUnitId);
+      repairUnitsByKey.remove(new RepairUnitKey(deletedUnit));
+    }
+    return Optional.fromNullable(deletedUnit);
+  }
+
+  private int deleteRepairSegmentsForRun(long runId) {
+    Map<Long, RepairSegment> segmentsMap = repairSegmentsByRunId.remove(runId);
+    if (null != segmentsMap) {
+      for (RepairSegment segment : segmentsMap.values()) {
+        repairSegments.remove(segment.getId());
+      }
+    }
+    return segmentsMap != null ? segmentsMap.size() : 0;
+  }
+
+  @Override
+  public Optional<RepairRun> deleteRepairRun(long id) {
+    RepairRun deletedRun = repairRuns.remove(id);
+    if (deletedRun != null) {
+      if (getSegmentAmountForRepairRun(id, RepairSegment.State.RUNNING) == 0) {
+        deleteRepairUnit(deletedRun.getRepairUnitId());
+        deleteRepairSegmentsForRun(id);
+        deletedRun = deletedRun.with().runState(RepairRun.RunState.DELETED).build(id);
+      }
+    }
+    return Optional.fromNullable(deletedRun);
+  }
+
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder repairUnit) {
     Optional<RepairUnit> existing =
@@ -149,10 +211,8 @@ public class MemoryStorage implements IStorage {
     } else {
       RepairUnit newRepairUnit = repairUnit.build(REPAIR_UNIT_ID.incrementAndGet());
       repairUnits.put(newRepairUnit.getId(), newRepairUnit);
-      RepairUnitKey unitTables = new RepairUnitKey(newRepairUnit.getClusterName(),
-                                                   newRepairUnit.getKeyspaceName(),
-                                                   newRepairUnit.getColumnFamilies());
-      repairUnitsByKey.put(unitTables, newRepairUnit);
+      RepairUnitKey unitKey = new RepairUnitKey(newRepairUnit);
+      repairUnitsByKey.put(unitKey, newRepairUnit);
       return newRepairUnit;
     }
   }
@@ -164,8 +224,8 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public Optional<RepairUnit> getRepairUnit(String cluster, String keyspace, Set<String> tables) {
-    return Optional
-        .fromNullable(repairUnitsByKey.get(new RepairUnitKey(cluster, keyspace, tables)));
+    return Optional.fromNullable(
+        repairUnitsByKey.get(new RepairUnitKey(cluster, keyspace, tables)));
   }
 
   @Override
@@ -295,11 +355,24 @@ public class MemoryStorage implements IStorage {
     }
   }
 
+  @Override
+  public Optional<RepairSchedule> deleteRepairSchedule(long id) {
+    RepairSchedule deletedSchedule = repairSchedules.remove(id);
+    if (deletedSchedule != null) {
+      deletedSchedule = deletedSchedule.with().state(RepairSchedule.State.DELETED).build(id);
+    }
+    return Optional.fromNullable(deletedSchedule);
+  }
+
   public static class RepairUnitKey {
 
     public final String cluster;
     public final String keyspace;
     public final Set<String> tables;
+
+    public RepairUnitKey(RepairUnit unit) {
+      this(unit.getClusterName(), unit.getKeyspaceName(), unit.getColumnFamilies());
+    }
 
     public RepairUnitKey(String cluster, String keyspace, Set<String> tables) {
       this.cluster = cluster;

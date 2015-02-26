@@ -120,7 +120,8 @@ public class RepairRun {
     RUNNING,
     ERROR,
     DONE,
-    PAUSED
+    PAUSED,
+    DELETED
   }
 
   public static class Builder {

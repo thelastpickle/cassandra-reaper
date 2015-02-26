@@ -38,9 +38,17 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
     } else {
       runHistoryLong = new Long[0];
     }
+
+    String stateStr = r.getString("state");
+    // For temporary backward compatibility reasons, supporting RUNNING state as ACTIVE.
+    if ("RUNNING".equalsIgnoreCase(stateStr)) {
+      stateStr = "ACTIVE";
+    }
+
+    RepairSchedule.State scheduleState = RepairSchedule.State.valueOf(stateStr);
     return new RepairSchedule.Builder(
         r.getLong("repair_unit_id"),
-        RepairSchedule.State.valueOf(r.getString("state")),
+        scheduleState,
         r.getInt("days_between"),
         RepairRunMapper.getDateTimeOrNull(r, "next_activation"),
         ImmutableList.copyOf(runHistoryLong),

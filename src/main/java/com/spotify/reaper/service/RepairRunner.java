@@ -65,9 +65,16 @@ public class RepairRunner implements Runnable {
    */
   @Override
   public void run() {
-    RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
+    Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     try {
-      RepairRun.RunState state = repairRun.getRunState();
+      if (!repairRun.isPresent()) {
+        // this might happen if a run is deleted while paused etc.
+        LOG.warn("RepairRun \"" + repairRunId + "\" does not exist. Killing "
+                 + "RepairRunner for this run instance.");
+        context.repairManager.removeRunner(this);
+        return;
+      }
+      RepairRun.RunState state = repairRun.get().getRunState();
       LOG.debug("run() called for repair run #{} with run state {}", repairRunId, state);
       switch (state) {
         case NOT_STARTED:
@@ -89,10 +96,12 @@ public class RepairRunner implements Runnable {
       LOG.error(e.toString());
       LOG.error(Arrays.toString(e.getStackTrace()));
       e.printStackTrace();
-      context.storage.updateRepairRun(repairRun.with()
-                                          .runState(RepairRun.RunState.ERROR)
-                                          .endTime(DateTime.now())
-                                          .build(repairRun.getId()));
+      if (repairRun.isPresent()) {
+        context.storage.updateRepairRun(repairRun.get().with()
+                                            .runState(RepairRun.RunState.ERROR)
+                                            .endTime(DateTime.now())
+                                            .build(repairRunId));
+      }
       context.repairManager.removeRunner(this);
     }
   }

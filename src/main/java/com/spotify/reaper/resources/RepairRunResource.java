@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -243,7 +244,13 @@ public class RepairRunResource {
       return Response.status(Response.Status.NOT_FOUND).entity(errMsg).build();
     }
 
-    RepairRun.RunState newState = RepairRun.RunState.valueOf(state.get());
+    RepairRun.RunState newState;
+    try {
+      newState = RepairRun.RunState.valueOf(state.get().toUpperCase());
+    } catch (IllegalArgumentException ex) {
+      return Response.status(Response.Status.BAD_REQUEST.getStatusCode())
+          .entity("invalid \"state\" argument: " + state.get()).build();
+    }
     RepairRun.RunState oldState = repairRun.get().getRunState();
 
     if (oldState == newState) {
@@ -401,7 +408,7 @@ public class RepairRunResource {
       Iterable<String> chunks = CommonTools.COMMA_SEPARATED_LIST_SPLITTER.split(state.get());
       for (String chunk : chunks) {
         try {
-          RepairRun.RunState.valueOf(chunk);
+          RepairRun.RunState.valueOf(chunk.toUpperCase());
         } catch (IllegalArgumentException e) {
           LOG.warn("Listing repair runs called with erroneous states: {}", state.get());
           return null;
@@ -411,6 +418,58 @@ public class RepairRunResource {
     } else {
       return Sets.newHashSet();
     }
+  }
+
+  /**
+   * Delete a RepairRun object with given id.
+   *
+   * Repair run can be only deleted when it is not running.
+   * When Repair run is deleted, all the related RepairSegment instances will be deleted also.
+   *
+   * @param runId  The id for the RepairRun instance to delete.
+   * @param owner  The assigned owner of the deleted resource. Must match the stored one.
+   * @return The deleted RepairRun instance, with state overwritten to string "DELETED".
+   */
+  @DELETE
+  @Path("/{id}")
+  public Response deleteRepairRun(@PathParam("id") Long runId,
+                                  @QueryParam("owner") Optional<String> owner) {
+    LOG.info("delete repair run called with runId: {}, and owner: {}", runId, owner);
+    if (!owner.isPresent()) {
+      return Response.status(Response.Status.BAD_REQUEST).entity(
+          "required query parameter \"owner\" is missing").build();
+    }
+    Optional<RepairRun> runToDelete = context.storage.getRepairRun(runId);
+    if (!runToDelete.isPresent()) {
+      return Response.status(Response.Status.NOT_FOUND).entity(
+          "Repair run with id \"" + runId + "\" not found").build();
+    }
+    if (runToDelete.get().getRunState() == RepairRun.RunState.RUNNING) {
+      return Response.status(Response.Status.FORBIDDEN).entity(
+          "Repair run with id \"" + runId
+          + "\" is currently running, and must be stopped before deleting").build();
+    }
+    if (!runToDelete.get().getOwner().equalsIgnoreCase(owner.get())) {
+      return Response.status(Response.Status.FORBIDDEN).entity(
+          "Repair run with id \"" + runId + "\" is not owned by the user you defined: "
+          + owner.get()).build();
+    }
+    if (context.storage.getSegmentAmountForRepairRun(runId, RepairSegment.State.RUNNING) > 0) {
+      return Response.status(Response.Status.FORBIDDEN).entity(
+          "Repair run with id \"" + runId
+          + "\" has a running segment, which must be waited to finish before deleting").build();
+    }
+    // Need to get the RepairUnit before it's possibly deleted.
+    Optional<RepairUnit> unitPossiblyDeleted =
+        context.storage.getRepairUnit(runToDelete.get().getRepairUnitId());
+    Optional<RepairRun> deletedRun = context.storage.deleteRepairRun(runId);
+    if (deletedRun.isPresent()) {
+      RepairRunStatus repairRunStatus = new RepairRunStatus(deletedRun.get(),
+                                                            unitPossiblyDeleted.get());
+      return Response.ok().entity(repairRunStatus).build();
+    }
+    return Response.serverError().entity("delete failed for repair run with id \""
+                                         + runId + "\"").build();
   }
 
 }

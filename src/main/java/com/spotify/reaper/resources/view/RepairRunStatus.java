@@ -20,6 +20,7 @@ import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.CommonTools;
 
 import org.joda.time.DateTime;
+import org.joda.time.format.ISODateTimeFormat;
 
 import java.util.Collection;
 
@@ -29,52 +30,58 @@ import java.util.Collection;
 public class RepairRunStatus {
 
   @JsonProperty
-  private final String cause;
+  private String cause;
 
   @JsonProperty
-  private final String owner;
+  private String owner;
 
   @JsonProperty
-  private final long id;
+  private long id;
 
   @JsonProperty("cluster_name")
-  private final String clusterName;
+  private String clusterName;
 
   @JsonProperty("column_families")
-  private final Collection<String> columnFamilies;
+  private Collection<String> columnFamilies;
 
   @JsonProperty("keyspace_name")
-  private final String keyspaceName;
+  private String keyspaceName;
 
   @JsonProperty("run_state")
-  private final String runState;
+  private String runState;
 
   @JsonIgnore
-  private final DateTime creationTime;
+  private DateTime creationTime;
 
   @JsonIgnore
-  private final DateTime startTime;
+  private DateTime startTime;
 
   @JsonIgnore
-  private final DateTime endTime;
+  private DateTime endTime;
 
   @JsonIgnore
-  private final DateTime pauseTime;
+  private DateTime pauseTime;
 
   @JsonProperty
-  private final double intensity;
+  private double intensity;
 
   @JsonProperty("segment_count")
-  private final int segmentCount;
+  private int segmentCount;
 
   @JsonProperty("repair_parallelism")
-  private final String repairParallelism;
+  private String repairParallelism;
 
   @JsonProperty("segments_repaired")
   private int segmentsRepaired = 0;
 
   @JsonProperty("last_event")
-  private final String lastEvent;
+  private String lastEvent;
+
+  /**
+   * Default public constructor Required for Jackson JSON parsing.
+   */
+  public RepairRunStatus() {
+  }
 
   public RepairRunStatus(RepairRun repairRun, RepairUnit repairUnit) {
     this.id = repairRun.getId();
@@ -102,12 +109,26 @@ public class RepairRunStatus {
     return CommonTools.dateTimeToISO8601(creationTime);
   }
 
+  @JsonProperty("creation_time")
+  public void setCreationTimeISO8601(String dateStr) {
+    if (null != dateStr) {
+      creationTime = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
+    }
+  }
+
   @JsonProperty("start_time")
   public String getStartTimeISO8601() {
     if (startTime == null) {
       return null;
     }
     return CommonTools.dateTimeToISO8601(startTime);
+  }
+
+  @JsonProperty("start_time")
+  public void setStartTimeISO8601(String dateStr) {
+    if (null != dateStr) {
+      startTime = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
+    }
   }
 
   @JsonProperty("end_time")
@@ -118,6 +139,13 @@ public class RepairRunStatus {
     return CommonTools.dateTimeToISO8601(endTime);
   }
 
+  @JsonProperty("end_time")
+  public void setEndTimeISO8601(String dateStr) {
+    if (null != dateStr) {
+      endTime = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
+    }
+  }
+
   @JsonProperty("pause_time")
   public String getPauseTimeISO8601() {
     if (pauseTime == null) {
@@ -126,15 +154,138 @@ public class RepairRunStatus {
     return CommonTools.dateTimeToISO8601(pauseTime);
   }
 
+  @JsonProperty("pause_time")
+  public void setPauseTimeISO8601(String dateStr) {
+    if (null != dateStr) {
+      pauseTime = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
+    }
+  }
+
+  public String getCause() {
+    return cause;
+  }
+
+  public void setCause(String cause) {
+    this.cause = cause;
+  }
+
+  public String getOwner() {
+    return owner;
+  }
+
+  public void setOwner(String owner) {
+    this.owner = owner;
+  }
+
+  public long getId() {
+    return id;
+  }
+
+  public void setId(long id) {
+    this.id = id;
+  }
+
+  public String getClusterName() {
+    return clusterName;
+  }
+
+  public void setClusterName(String clusterName) {
+    this.clusterName = clusterName;
+  }
+
+  public Collection<String> getColumnFamilies() {
+    return columnFamilies;
+  }
+
+  public void setColumnFamilies(Collection<String> columnFamilies) {
+    this.columnFamilies = columnFamilies;
+  }
+
+  public String getKeyspaceName() {
+    return keyspaceName;
+  }
+
+  public void setKeyspaceName(String keyspaceName) {
+    this.keyspaceName = keyspaceName;
+  }
+
+  public String getRunState() {
+    return runState;
+  }
+
+  public void setRunState(String runState) {
+    this.runState = runState;
+  }
+
+  public DateTime getCreationTime() {
+    return creationTime;
+  }
+
+  public void setCreationTime(DateTime creationTime) {
+    this.creationTime = creationTime;
+  }
+
+  public DateTime getStartTime() {
+    return startTime;
+  }
+
+  public void setStartTime(DateTime startTime) {
+    this.startTime = startTime;
+  }
+
+  public DateTime getEndTime() {
+    return endTime;
+  }
+
+  public void setEndTime(DateTime endTime) {
+    this.endTime = endTime;
+  }
+
+  public DateTime getPauseTime() {
+    return pauseTime;
+  }
+
+  public void setPauseTime(DateTime pauseTime) {
+    this.pauseTime = pauseTime;
+  }
+
+  public double getIntensity() {
+    return intensity;
+  }
+
+  public void setIntensity(double intensity) {
+    this.intensity = intensity;
+  }
+
+  public int getSegmentCount() {
+    return segmentCount;
+  }
+
+  public void setSegmentCount(int segmentCount) {
+    this.segmentCount = segmentCount;
+  }
+
+  public String getRepairParallelism() {
+    return repairParallelism;
+  }
+
+  public void setRepairParallelism(String repairParallelism) {
+    this.repairParallelism = repairParallelism;
+  }
+
+  public int getSegmentsRepaired() {
+    return segmentsRepaired;
+  }
+
   public void setSegmentsRepaired(int segmentsRepaired) {
     this.segmentsRepaired = segmentsRepaired;
   }
 
-  public long getId() {
-    return this.id;
+  public String getLastEvent() {
+    return lastEvent;
   }
 
-  public String getRunState() {
-    return this.runState;
+  public void setLastEvent(String lastEvent) {
+    this.lastEvent = lastEvent;
   }
 }

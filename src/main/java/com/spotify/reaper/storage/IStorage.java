@@ -21,7 +21,6 @@ import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
-import com.spotify.reaper.service.SchedulingManager;
 
 import java.util.Collection;
 import java.util.Set;
@@ -41,6 +40,15 @@ public interface IStorage {
 
   Optional<Cluster> getCluster(String clusterName);
 
+  /**
+   * Delete the Cluster instance identified by the given cluster name. Delete succeeds
+   * only if there are no repair runs for the targeted cluster.
+   *
+   * @param clusterName The name of the Cluster instance to delete.
+   * @return The deleted Cluster instance if delete succeeds, with state set to DELETED.
+   */
+  Optional<Cluster> deleteCluster(String clusterName);
+
   RepairRun addRepairRun(RepairRun.Builder repairRun);
 
   boolean updateRepairRun(RepairRun repairRun);
@@ -52,6 +60,15 @@ public interface IStorage {
   Collection<RepairRun> getRepairRunsForUnit(RepairUnit repairUnit);
 
   Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState);
+
+  /**
+   * Delete the RepairRun instance identified by the given id, and delete also
+   * all the related repair segments.
+   *
+   * @param id The id of the RepairRun instance to delete, and all segments for it.
+   * @return The deleted RepairRun instance, if delete succeeds, with state set to DELETED.
+   */
+  Optional<RepairRun> deleteRepairRun(long id);
 
   RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit);
 
@@ -66,7 +83,7 @@ public interface IStorage {
    * @return Instance of a RepairUnit matching the parameters, or null if not found.
    */
   Optional<RepairUnit> getRepairUnit(String cluster, String keyspace,
-      Set<String> columnFamilyNames);
+                                     Set<String> columnFamilyNames);
 
   void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId);
 
@@ -93,5 +110,14 @@ public interface IStorage {
   Collection<RepairSchedule> getAllRepairSchedules();
 
   boolean updateRepairSchedule(RepairSchedule newRepairSchedule);
+
+  /**
+   * Delete the RepairSchedule instance identified by the given id. Related repair runs
+   * or other resources tied to the schedule will not be deleted.
+   *
+   * @param id The id of the RepairSchedule instance to delete.
+   * @return The deleted RepairSchedule instance, if delete succeeds, with state set to DELETED.
+   */
+  Optional<RepairSchedule> deleteRepairSchedule(long id);
 
 }
