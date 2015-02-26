@@ -113,9 +113,15 @@ public final class SegmentRunner implements RepairStatusHandler {
                                               repairUnit.getColumnFamilies());
 
         if (commandId == 0) {
-          LOG.warn("Failed triggering repair on segment {}, in run {}", segmentId,
-              repairRun.getId());
-          postpone(segment);
+          // From cassandra source in "forceRepairAsync":
+          //if (ranges.isEmpty() || Keyspace.open(keyspace).getReplicationStrategy().getReplicationFactor() < 2)
+          //  return 0;
+          LOG.info("Nothing to repair for keyspace {}", keyspace);
+          context.storage.updateRepairSegment(segment.with()
+              .coordinatorHost(coordinator.getHost())
+              .state(RepairSegment.State.DONE)
+              .build(segmentId));
+          segmentRunners.remove(segment.getId());
           return;
         }
 
