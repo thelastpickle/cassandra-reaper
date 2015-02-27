@@ -1,3 +1,10 @@
+cassandra-reaper (0.1.1-1) stable; urgency=low
+
+  * Added deletion endpoints
+  * Fixed repair runner bugs
+
+ -- Björn Hegerfors <bj0rn@spotify.com>  Fri, 27 Feb 2015 11:35:26 +0100
+
 cassandra-reaper (0.1.0-1) stable; urgency=low
 
   * First working release
