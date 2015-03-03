@@ -16,6 +16,7 @@ package com.spotify.reaper.resources.view;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.CommonTools;
 
@@ -72,7 +73,7 @@ public class RepairRunStatus {
   private String repairParallelism;
 
   @JsonProperty("segments_repaired")
-  private int segmentsRepaired = 0;
+  private int segmentsRepaired;
 
   @JsonProperty("last_event")
   private String lastEvent;
@@ -83,7 +84,7 @@ public class RepairRunStatus {
   public RepairRunStatus() {
   }
 
-  public RepairRunStatus(RepairRun repairRun, RepairUnit repairUnit) {
+  public RepairRunStatus(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) {
     this.id = repairRun.getId();
     this.cause = repairRun.getCause();
     this.owner = repairRun.getOwner();
@@ -98,6 +99,7 @@ public class RepairRunStatus {
     this.intensity = CommonTools.roundDoubleNicely(repairRun.getIntensity());
     this.segmentCount = repairRun.getSegmentCount();
     this.repairParallelism = repairRun.getRepairParallelism().name().toLowerCase();
+    this.segmentsRepaired = segmentsRepaired;
     this.lastEvent = repairRun.getLastEvent();
   }
 
