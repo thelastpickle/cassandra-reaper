@@ -443,7 +443,7 @@ class ReaperCLI(object):
         print "# Repair run with id={0} created:".format(repair_run.get('id'))
         print json.dumps(repair_run, indent=2, sort_keys=True)
         if args.start_repair:
-            self._change_run_state(reaper, repair_run.get('id'), args, "RUNNING")
+            reaper.put("repair_run/{0}".format(repair_run.get('id')), state="RUNNING")
 
     def schedule(self):
         reaper, args = ReaperCLI.prepare_reaper(
