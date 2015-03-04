@@ -16,6 +16,9 @@ package com.spotify.reaper.resources;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
@@ -212,7 +215,14 @@ public class ClusterResource {
 
   private Response viewClusterHierarchy(Cluster cluster) {
     HCluster view = new HCluster(context.storage, cluster.getName());
-    return Response.ok().entity(view).build();
+    try {
+      ObjectMapper objectMapper = new ObjectMapper()
+          .setPropertyNamingStrategy(
+              PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
+      return Response.ok().entity(objectMapper.writeValueAsString(view)).build();
+    } catch (JsonProcessingException e) {
+      return Response.serverError().entity("JSON processing failed").build();
+    }
   }
 
   /**
