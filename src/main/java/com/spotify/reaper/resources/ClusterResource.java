@@ -25,7 +25,6 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.resources.view.hierarchy.ClusterOverview;
 import com.spotify.reaper.resources.view.ClusterStatus;
 import com.spotify.reaper.resources.view.KeyspaceStatus;
 import com.spotify.reaper.resources.view.hierarchy.HCluster;
@@ -100,19 +99,6 @@ public class ClusterResource {
     Optional<Cluster> cluster = context.storage.getCluster(clusterName);
     if (cluster.isPresent()) {
       return viewKeyspace(cluster.get(), keyspaceName);
-    } else {
-      return Response.status(Response.Status.NOT_FOUND)
-          .entity("cluster with name \"" + clusterName + "\" not found").build();
-    }
-  }
-
-  @GET
-  @Path("/{cluster_name}/overview")
-  public Response getClusterOverview(@PathParam("cluster_name") String clusterName) {
-    LOG.info("get cluster overview called with cluster_name: {}", clusterName);
-    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
-    if (cluster.isPresent()) {
-      return viewClusterOverview(cluster.get());
     } else {
       return Response.status(Response.Status.NOT_FOUND)
           .entity("cluster with name \"" + clusterName + "\" not found").build();
@@ -228,24 +214,6 @@ public class ClusterResource {
       LOG.error("failed connecting JMX", e);
       return Response.status(500).entity("failed connecting given clusters JMX endpoint").build();
     }
-    return Response.ok().entity(view).build();
-  }
-
-  private Response viewClusterOverview(Cluster cluster) {
-    Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(cluster.getName());
-    Collection<Pair<RepairRun, Pair<RepairUnit, Integer>>> runsWithUnitAndFinished = Collections2.transform(runs,
-        new Function<RepairRun, Pair<RepairRun, Pair<RepairUnit, Integer>>>() {
-          @Nullable
-          @Override
-          public Pair<RepairRun, Pair<RepairUnit, Integer>> apply(RepairRun input) {
-            RepairUnit unit = context.storage.getRepairUnit(input.getRepairUnitId()).get();
-            int segmentsRepaired = context.storage.getSegmentAmountForRepairRun(input.getId(),
-                RepairSegment.State.DONE);
-            return new Pair<>(input,
-                new Pair<>(unit, segmentsRepaired));
-          }
-        });
-    ClusterOverview view = new ClusterOverview(cluster, runsWithUnitAndFinished);
     return Response.ok().entity(view).build();
   }
 
