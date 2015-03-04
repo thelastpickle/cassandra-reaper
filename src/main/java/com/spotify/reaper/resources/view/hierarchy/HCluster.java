@@ -23,10 +23,12 @@ import org.joda.time.DateTime;
 
 import java.math.BigInteger;
 import java.util.Collection;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
 public class HCluster {
+
   public static void main(String[] args) throws JsonProcessingException {
     IStorage storage = new MemoryStorage();
 
@@ -53,10 +55,15 @@ public class HCluster {
   }
 
   public final String name;
+  public final Set<String> seedHosts;
+  public final String partitioner;
+
   public final Collection<HUnit> units;
 
   public HCluster(Cluster cluster, Collection<HUnit> units) {
     name = cluster.getName();
+    seedHosts = cluster.getSeedHosts();
+    partitioner = cluster.getPartitioner();
     this.units = units;
   }
 

@@ -18,16 +18,24 @@ import javax.annotation.Nullable;
 public class HUnit {
 
   public final long id;
+  public final String clusterName;
+  public final String keyspaceName;
+  public final Set<String> columnFamilies;
+
   // Bj0rn: Couldn't figure out how to use GuavaOptionalSerializer, so the conversion to Set is
   // just a temporary fix.
   private final Optional<HSchedule> schedule;
   public Set<HSchedule> getSchedule() {
     return schedule.asSet();
   }
+
   public final Collection<HRun> unscheduled;
 
   public HUnit(RepairUnit unit, Optional<HSchedule> schedule, Collection<HRun> unscheduled) {
     id = unit.getId();
+    clusterName = unit.getClusterName();
+    keyspaceName = unit.getKeyspaceName();
+    columnFamilies = unit.getColumnFamilies();
     this.schedule = schedule;
     this.unscheduled = unscheduled;
   }
