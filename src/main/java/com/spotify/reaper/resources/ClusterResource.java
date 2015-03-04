@@ -13,9 +13,7 @@
  */
 package com.spotify.reaper.resources;
 
-import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 
 import com.spotify.reaper.AppContext;
@@ -23,8 +21,6 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.core.RepairSegment;
-import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.ClusterStatus;
 import com.spotify.reaper.resources.view.KeyspaceStatus;
 import com.spotify.reaper.resources.view.hierarchy.HCluster;
@@ -39,7 +35,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import javax.annotation.Nullable;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -51,8 +46,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-
-import javafx.util.Pair;
 
 @Path("/cluster")
 @Produces(MediaType.APPLICATION_JSON)
