@@ -28,6 +28,7 @@ import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.hierarchy.ClusterOverview;
 import com.spotify.reaper.resources.view.ClusterStatus;
 import com.spotify.reaper.resources.view.KeyspaceStatus;
+import com.spotify.reaper.resources.view.hierarchy.HCluster;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,6 +113,19 @@ public class ClusterResource {
     Optional<Cluster> cluster = context.storage.getCluster(clusterName);
     if (cluster.isPresent()) {
       return viewClusterOverview(cluster.get());
+    } else {
+      return Response.status(Response.Status.NOT_FOUND)
+          .entity("cluster with name \"" + clusterName + "\" not found").build();
+    }
+  }
+
+  @GET
+  @Path("/{cluster_name}/hierarchy")
+  public Response getClusterHierarchy(@PathParam("cluster_name") String clusterName) {
+    LOG.info("get cluster overview called with cluster_name: {}", clusterName);
+    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
+    if (cluster.isPresent()) {
+      return viewClusterHierarchy(cluster.get());
     } else {
       return Response.status(Response.Status.NOT_FOUND)
           .entity("cluster with name \"" + clusterName + "\" not found").build();
@@ -232,6 +246,11 @@ public class ClusterResource {
           }
         });
     ClusterOverview view = new ClusterOverview(cluster, runsWithUnitAndFinished);
+    return Response.ok().entity(view).build();
+  }
+
+  private Response viewClusterHierarchy(Cluster cluster) {
+    HCluster view = new HCluster(context.storage, cluster.getName());
     return Response.ok().entity(view).build();
   }
 

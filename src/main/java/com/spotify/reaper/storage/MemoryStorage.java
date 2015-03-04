@@ -128,10 +128,10 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Collection<RepairRun> getRepairRunsForUnit(RepairUnit repairUnit) {
+  public Collection<RepairRun> getRepairRunsForUnit(long repairUnitId) {
     List<RepairRun> foundRepairRuns = new ArrayList<>();
     for (RepairRun repairRun : repairRuns.values()) {
-      if (repairRun.getRepairUnitId() == repairUnit.getId()) {
+      if (repairRun.getRepairUnitId() == repairUnitId) {
         foundRepairRuns.add(repairRun);
       }
     }

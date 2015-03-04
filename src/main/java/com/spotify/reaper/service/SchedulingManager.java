@@ -109,13 +109,15 @@ public class SchedulingManager extends TimerTask {
         LOG.info("Repair schedule '{}' is paused", schedule.getId());
         startNewRun = false;
       } else {
-        Optional<RepairUnit> fetchedUnit = context.storage.getRepairUnit(schedule.getRepairUnitId());
+        Optional<RepairUnit> fetchedUnit =
+            context.storage.getRepairUnit(schedule.getRepairUnitId());
         if (!fetchedUnit.isPresent()) {
           LOG.warn("RepairUnit with id " + schedule.getRepairUnitId() + " not found");
           return false;
         }
         repairUnit = fetchedUnit.get();
-        Collection<RepairRun> repairRuns = context.storage.getRepairRunsForUnit(repairUnit);
+        Collection<RepairRun> repairRuns =
+            context.storage.getRepairRunsForUnit(schedule.getRepairUnitId());
         for (RepairRun repairRun : repairRuns) {
           RepairRun.RunState state = repairRun.getRunState();
           if (state != RepairRun.RunState.DONE && state != RepairRun.RunState.NOT_STARTED) {

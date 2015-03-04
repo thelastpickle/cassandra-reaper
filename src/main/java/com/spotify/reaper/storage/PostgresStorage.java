@@ -171,10 +171,10 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Collection<RepairRun> getRepairRunsForUnit(RepairUnit repairUnit) {
+  public Collection<RepairRun> getRepairRunsForUnit(long repairUnitId) {
     Collection<RepairRun> result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getRepairRunsForUnit(repairUnit.getId());
+      result = getPostgresStorage(h).getRepairRunsForUnit(repairUnitId);
     }
     return result == null ? Lists.<RepairRun>newArrayList() : result;
   }

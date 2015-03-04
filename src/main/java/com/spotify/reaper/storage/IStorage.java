@@ -57,7 +57,7 @@ public interface IStorage {
 
   Collection<RepairRun> getRepairRunsForCluster(String clusterName);
 
-  Collection<RepairRun> getRepairRunsForUnit(RepairUnit repairUnit);
+  Collection<RepairRun> getRepairRunsForUnit(long repairUnitId);
 
   Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState);
 
