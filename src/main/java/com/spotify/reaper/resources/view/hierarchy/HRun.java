@@ -6,8 +6,10 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.resources.CommonTools;
 import com.spotify.reaper.storage.IStorage;
 
 import org.apache.cassandra.repair.RepairParallelism;
@@ -23,10 +25,22 @@ public class HRun {
   public final String clusterName;
   public final String owner;
   public final String cause;
-  public final DateTime creationTime;
-  public final DateTime startTime;
-  public final DateTime endTime;
-  public final DateTime pauseTime;
+  private final DateTime creationTime;
+  public String getCreationTime() {
+    return CommonTools.dateTimeToISO8601(creationTime);
+  }
+  private final DateTime startTime;
+  public String getStartTime() {
+    return CommonTools.dateTimeToISO8601(startTime);
+  }
+  private final DateTime endTime;
+  public String getEndTime() {
+    return CommonTools.dateTimeToISO8601(endTime);
+  }
+  private final DateTime pauseTime;
+  public String getPauseTime() {
+    return CommonTools.dateTimeToISO8601(pauseTime);
+  }
   public final RepairRun.RunState runState;
   public final int segmentCount;
   public final RepairParallelism repairParallelism;
