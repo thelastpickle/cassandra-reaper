@@ -71,7 +71,7 @@ public class RepairManager {
     Collection<RepairRun> paused =
         context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED);
     for (RepairRun pausedRepairRun : paused) {
-      startRepairRun(context, pausedRepairRun);
+      startRunner(context, pausedRepairRun.getId());
     }
   }
 
