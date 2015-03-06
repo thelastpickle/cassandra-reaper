@@ -18,6 +18,7 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.resources.view.ClusterRun;
 
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.BindBean;
@@ -31,6 +32,7 @@ import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * JDBI based PostgreSQL interface.
@@ -115,7 +117,9 @@ public interface IStoragePostgreSQL {
       + "fail_count = :failCount WHERE id = :id";
   static final String SQL_GET_REPAIR_SEGMENT =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE id = :id";
-  static final String SQL_GET_REPAIR_SEGMENT_FOR_RUN_WITH_STATE =
+  static final String SQL_GET_REPAIR_SEGMENTS_FOR_RUN =
+      "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE run_id = :runId";
+  static final String SQL_GET_REPAIR_SEGMENTS_FOR_RUN_WITH_STATE =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE "
       + "run_id = :runId AND state = :state";
   static final String SQL_GET_NEXT_FREE_REPAIR_SEGMENT =
@@ -158,8 +162,23 @@ public interface IStoragePostgreSQL {
   //
   static final String SQL_GET_REPAIR_RUN_IDS_FOR_CLUSTER =
       "SELECT id FROM repair_run WHERE cluster_name = :clusterName";
-  static final String SQL_SEGMENTS_AMOUNT_FOR_REPAIR_RUN =
+  static final String SQL_SEGMENT_AMOUNT_FOR_REPAIR_RUN =
+      "SELECT count(*) FROM repair_segment WHERE run_id = :runId";
+  static final String SQL_SEGMENT_AMOUNT_FOR_REPAIR_RUN_WITH_STATE =
       "SELECT count(*) FROM repair_segment WHERE run_id = :runId AND state = :state";
+
+  // View-specific queries
+  //
+  static final String SQL_CLUSTER_RUN_OVERVIEW =
+      "SELECT repair_run.id, repair_unit.cluster_name, keyspace_name, column_families, "
+          + "COUNT(repair_segment.id), segment_count, repair_run.state, repair_run.start_time, "
+          + "repair_run.end_time, cause, owner, last_event\n"
+          + "FROM repair_run "
+          + "JOIN repair_segment ON run_id = repair_run.id "
+          + "JOIN repair_unit ON repair_run.repair_unit_id = repair_unit.id\n"
+          + "WHERE repair_unit.cluster_name = :clusterName AND repair_segment.state = 2\n"
+          + "GROUP BY repair_run.id, repair_unit.id\n"
+          + "LIMIT :limit";
 
   @SqlQuery("SELECT version()")
   public String getVersion();
@@ -235,11 +254,16 @@ public interface IStoragePostgreSQL {
   @Mapper(RepairSegmentMapper.class)
   public RepairSegment getRepairSegment(@Bind("id") long repairSegmentId);
 
-  @SqlQuery(SQL_GET_REPAIR_SEGMENT_FOR_RUN_WITH_STATE)
+  @SqlQuery(SQL_GET_REPAIR_SEGMENTS_FOR_RUN)
   @Mapper(RepairSegmentMapper.class)
-  public Collection<RepairSegment> getRepairSegmentForRunWithState(@Bind("runId") long runId,
-                                                                   @Bind("state")
-                                                                   RepairSegment.State state);
+  public Collection<RepairSegment> getRepairSegmentsForRun(
+      @Bind("runId") long runId);
+
+  @SqlQuery(SQL_GET_REPAIR_SEGMENTS_FOR_RUN_WITH_STATE)
+  @Mapper(RepairSegmentMapper.class)
+  public Collection<RepairSegment> getRepairSegmentsForRunWithState(
+      @Bind("runId") long runId,
+      @Bind("state") RepairSegment.State state);
 
   @SqlQuery(SQL_GET_NEXT_FREE_REPAIR_SEGMENT)
   @Mapper(RepairSegmentMapper.class)
@@ -281,9 +305,20 @@ public interface IStoragePostgreSQL {
   @SqlUpdate(SQL_DELETE_REPAIR_SCHEDULE)
   public int deleteRepairSchedule(@Bind("id") long repairScheduleId);
 
-  @SqlQuery(SQL_SEGMENTS_AMOUNT_FOR_REPAIR_RUN)
+  @SqlQuery(SQL_SEGMENT_AMOUNT_FOR_REPAIR_RUN)
   int getSegmentAmountForRepairRun(
+      @Bind("runId") long runId);
+
+  @SqlQuery(SQL_SEGMENT_AMOUNT_FOR_REPAIR_RUN_WITH_STATE)
+  int getSegmentAmountForRepairRunWithState(
       @Bind("runId") long runId,
       @Bind("state") RepairSegment.State state);
 
+
+
+  @SqlQuery(SQL_CLUSTER_RUN_OVERVIEW)
+  @Mapper(ClusterRun.Mapper.class)
+  List<ClusterRun> getClusterRunOverview(
+      @Bind("clusterName") String clusterName,
+      @Bind("limit") int limit);
 }

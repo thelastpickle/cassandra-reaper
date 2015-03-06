@@ -144,7 +144,8 @@ public class RepairRunner implements Runnable {
   private void startNextSegment() throws ReaperException {
     // Currently not allowing parallel repairs.
     assert
-        context.storage.getSegmentAmountForRepairRun(repairRunId, RepairSegment.State.RUNNING) == 0;
+        context.storage.getSegmentAmountForRepairRunWithState(repairRunId,
+            RepairSegment.State.RUNNING) == 0;
     Optional<RepairSegment> nextSegment = context.storage.getNextFreeSegment(repairRunId);
     if (nextSegment.isPresent()) {
       repairSegment(nextSegment.get().getId(), nextSegment.get().getTokenRange());

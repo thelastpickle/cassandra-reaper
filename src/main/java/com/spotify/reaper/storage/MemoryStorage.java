@@ -193,7 +193,7 @@ public class MemoryStorage implements IStorage {
   public Optional<RepairRun> deleteRepairRun(long id) {
     RepairRun deletedRun = repairRuns.remove(id);
     if (deletedRun != null) {
-      if (getSegmentAmountForRepairRun(id, RepairSegment.State.RUNNING) == 0) {
+      if (getSegmentAmountForRepairRunWithState(id, RepairSegment.State.RUNNING) == 0) {
         deleteRepairUnit(deletedRun.getRepairUnitId());
         deleteRepairSegmentsForRun(id);
         deletedRun = deletedRun.with().runState(RepairRun.RunState.DELETED).build(id);
@@ -258,6 +258,11 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
+  public Collection<RepairSegment> getRepairSegmentsForRun(long runId) {
+    return repairSegmentsByRunId.get(runId).values();
+  }
+
+  @Override
   public Optional<RepairSegment> getNextFreeSegment(long runId) {
     for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
       if (segment.getState() == RepairSegment.State.NOT_STARTED) {
@@ -302,7 +307,13 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public int getSegmentAmountForRepairRun(long runId, RepairSegment.State state) {
+  public int getSegmentAmountForRepairRun(long runId) {
+    Map<Long, RepairSegment> segmentsMap = repairSegmentsByRunId.get(runId);
+    return segmentsMap == null ? 0 : segmentsMap.size();
+  }
+
+  @Override
+  public int getSegmentAmountForRepairRunWithState(long runId, RepairSegment.State state) {
     Map<Long, RepairSegment> segmentsMap = repairSegmentsByRunId.get(runId);
     int amount = 0;
     if (null != segmentsMap) {

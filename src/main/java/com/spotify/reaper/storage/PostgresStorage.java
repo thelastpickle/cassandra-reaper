@@ -23,6 +23,7 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.resources.view.ClusterRun;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.postgresql.BigIntegerArgumentFactory;
 import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
@@ -198,7 +199,8 @@ public class PostgresStorage implements IStorage {
       IStoragePostgreSQL pg = getPostgresStorage(h);
       RepairRun runToDelete = pg.getRepairRun(id);
       if (runToDelete != null) {
-        int segmentsRunning = pg.getSegmentAmountForRepairRun(id, RepairSegment.State.RUNNING);
+        int segmentsRunning = pg.getSegmentAmountForRepairRunWithState(id,
+            RepairSegment.State.RUNNING);
         if (segmentsRunning == 0) {
           pg.deleteRepairSegmentsForRun(runToDelete.getId());
           pg.deleteRepairRun(id);
@@ -326,6 +328,13 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
+  public Collection<RepairSegment> getRepairSegmentsForRun(long runId) {
+    try (Handle h = jdbi.open()) {
+      return getPostgresStorage(h).getRepairSegmentsForRun(runId);
+    }
+  }
+
+  @Override
   public Optional<RepairSegment> getNextFreeSegment(long runId) {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
@@ -349,7 +358,7 @@ public class PostgresStorage implements IStorage {
                                                         RepairSegment.State segmentState) {
     Collection<RepairSegment> result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getRepairSegmentForRunWithState(runId, segmentState);
+      result = getPostgresStorage(h).getRepairSegmentsForRunWithState(runId, segmentState);
     }
     return result;
   }
@@ -364,10 +373,17 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public int getSegmentAmountForRepairRun(long runId, RepairSegment.State state) {
+  public int getSegmentAmountForRepairRun(long runId) {
+    try (Handle h = jdbi.open()) {
+      return getPostgresStorage(h).getSegmentAmountForRepairRun(runId);
+    }
+  }
+
+  @Override
+  public int getSegmentAmountForRepairRunWithState(long runId, RepairSegment.State state) {
     int result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getSegmentAmountForRepairRun(runId, state);
+      result = getPostgresStorage(h).getSegmentAmountForRepairRunWithState(runId, state);
     }
     return result;
   }
@@ -439,5 +455,11 @@ public class PostgresStorage implements IStorage {
       tryDeletingRepairUnit(result.getRepairUnitId());
     }
     return Optional.fromNullable(result);
+  }
+
+  public Collection<ClusterRun> getClusterRunOverview(String clusterName, int limit) {
+    try (Handle h = jdbi.open()) {
+      return getPostgresStorage(h).getClusterRunOverview(clusterName, limit);
+    }
   }
 }

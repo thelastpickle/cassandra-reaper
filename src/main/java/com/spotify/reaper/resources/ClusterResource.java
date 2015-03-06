@@ -19,20 +19,28 @@ import com.google.common.collect.Lists;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.resources.view.ClusterRun;
 import com.spotify.reaper.resources.view.ClusterStatus;
 import com.spotify.reaper.resources.view.KeyspaceStatus;
 import com.spotify.reaper.resources.view.hierarchy.HCluster;
+import com.spotify.reaper.storage.PostgresStorage;
 
+import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sun.nio.cs.ISO_8859_2;
+
 import java.net.URI;
 import java.net.URL;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -111,6 +119,27 @@ public class ClusterResource {
     } else {
       return Response.status(Response.Status.NOT_FOUND)
           .entity("cluster with name \"" + clusterName + "\" not found").build();
+    }
+  }
+
+  @GET
+  @Path("/{cluster_name}/runs")
+  public Response getClusterRunOverview(
+      @PathParam("cluster_name") String clusterName,
+      @QueryParam("limit") Optional<Integer> limit) {
+    PostgresStorage ps = (PostgresStorage) context.storage;
+
+    Collection<ClusterRun> view =
+        ps.getClusterRunOverview(clusterName, limit.or(10));
+
+    ObjectMapper objectMapper = new ObjectMapper()
+        .setPropertyNamingStrategy(
+            PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES)
+        .registerModule(new JodaModule());
+    try {
+      return Response.ok().entity(objectMapper.writeValueAsString(view)).build();
+    } catch (JsonProcessingException e) {
+      return Response.serverError().entity("JSON processing failed").build();
     }
   }
 

@@ -91,6 +91,8 @@ public interface IStorage {
 
   Optional<RepairSegment> getRepairSegment(long id);
 
+  Collection<RepairSegment> getRepairSegmentsForRun(long runId);
+
   Optional<RepairSegment> getNextFreeSegment(long runId);
 
   Optional<RepairSegment> getNextFreeSegmentInRange(long runId, RingRange range);
@@ -99,7 +101,9 @@ public interface IStorage {
 
   Collection<Long> getRepairRunIdsForCluster(String clusterName);
 
-  int getSegmentAmountForRepairRun(long runId, RepairSegment.State state);
+  int getSegmentAmountForRepairRun(long runId);
+
+  int getSegmentAmountForRepairRunWithState(long runId, RepairSegment.State state);
 
   RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule);
 
