@@ -62,17 +62,18 @@ server:
 # database section will be ignored if storageType is set to "memory"
 #
 database:
-  # the name of your JDBC driver
+  
+  # PostgreSQL JDBC settings
   driverClass: org.postgresql.Driver
-
-  # the username
   user: pg-user
-
-  # the password
   password: iAMs00perSecrEET
-
-  # the JDBC URL
   url: jdbc:postgresql://db.example.com/db-prod
+  
+  # H2 JDBC settings
+  #driverClass: org.h2.Driver
+  #url: jdbc:h2:~/reaper-db/db;MODE=PostgreSQL
+  #user:
+  #password:
 
   # any properties specific to your JDBC driver:
   properties:

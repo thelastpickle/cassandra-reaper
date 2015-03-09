@@ -43,8 +43,16 @@ public class PostgresArrayArgumentFactory implements ArgumentFactory<Collection<
     return new Argument() {
       public void apply(int position, PreparedStatement statement, StatementContext ctx)
           throws SQLException {
-        Array sqlArray = ctx.getConnection().createArrayOf("text", value.toArray());
-        statement.setArray(position, sqlArray);
+        try {
+          Array sqlArray = ctx.getConnection().createArrayOf("text", value.toArray());
+          statement.setArray(position, sqlArray);
+        } catch(SQLException e) {
+          // H2 DB feature not supported: "createArray" error
+          if(e.getErrorCode() != 50100) {
+            throw e;
+          }
+          statement.setObject(position, value.toArray());
+        }
       }
     };
   }

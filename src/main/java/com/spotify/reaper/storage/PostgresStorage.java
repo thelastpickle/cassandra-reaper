@@ -16,8 +16,6 @@ package com.spotify.reaper.storage;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
-import com.spotify.reaper.ReaperApplicationConfiguration;
-import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
@@ -47,8 +45,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import io.dropwizard.jdbi.DBIFactory;
-import io.dropwizard.setup.Environment;
 
 /**
  * Implements the StorageAPI using PostgreSQL database.
@@ -59,15 +55,8 @@ public class PostgresStorage implements IStorage {
 
   private final DBI jdbi;
 
-  public PostgresStorage(ReaperApplicationConfiguration config, Environment environment)
-      throws ReaperException {
-    try {
-      final DBIFactory factory = new DBIFactory();
-      jdbi = factory.build(environment, config.getDataSourceFactory(), "postgresql");
-    } catch (ClassNotFoundException ex) {
-      LOG.error("failed creating database connection: {}", ex);
-      throw new ReaperException(ex);
-    }
+  public PostgresStorage(DBI jdbi) {
+    this.jdbi = jdbi;
   }
 
   private static IStoragePostgreSQL getPostgresStorage(Handle h) {

@@ -14,31 +14,43 @@
 package com.spotify.reaper.storage.postgresql;
 
 import com.google.common.collect.ImmutableList;
-
 import com.spotify.reaper.core.RepairSchedule;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
+import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 
 public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
 
   @Override
   public RepairSchedule map(int index, ResultSet r, StatementContext ctx) throws SQLException {
-    Integer[] runHistory = (Integer[]) r.getArray("run_history").getArray();
-    Long[] runHistoryLong;
-    if (null != runHistory && runHistory.length > 0) {
-      runHistoryLong = new Long[runHistory.length];
-      for (int i = 0; i < runHistory.length; i++) {
-        runHistoryLong[i] = runHistory[i].longValue();
+    
+    Long[] runHistoryLong = new Long[0];
+    
+    Integer[] runHistory = null;
+    Array av = r.getArray("run_history");
+    if(null != av) {
+      Object obj = av.getArray();
+      if(obj instanceof Integer[]) {
+        runHistory = (Integer[])obj;
+      } else if(obj instanceof Object[]) {
+        Object[] ol = (Object[])obj;
+        runHistory = Arrays.copyOf(ol, ol.length, Integer[].class);
       }
-    } else {
-      runHistoryLong = new Long[0];
-    }
-
+      
+      if (null != runHistory && runHistory.length > 0) {
+        runHistoryLong = new Long[runHistory.length];
+        for (int i = 0; i < runHistory.length; i++) {
+          runHistoryLong[i] = runHistory[i].longValue();
+        }
+      }
+    }  
+    
     String stateStr = r.getString("state");
     // For temporary backward compatibility reasons, supporting RUNNING state as ACTIVE.
     if ("RUNNING".equalsIgnoreCase(stateStr)) {
