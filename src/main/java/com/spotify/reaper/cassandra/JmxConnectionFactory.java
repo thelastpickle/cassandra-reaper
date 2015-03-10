@@ -14,7 +14,7 @@
 package com.spotify.reaper.cassandra;
 
 import com.google.common.base.Optional;
-
+import com.spotify.reaper.ReaperApplicationConfiguration.JmxCredentials;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 
@@ -25,6 +25,7 @@ import java.util.Set;
 public class JmxConnectionFactory {
 
   private Map<String, Integer> jmxPorts;
+  private JmxCredentials jmxAuth;
 
   public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
       throws ReaperException {
@@ -32,7 +33,13 @@ public class JmxConnectionFactory {
     if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
       host = host + ":" + jmxPorts.get(host);
     }
-    return JmxProxy.connect(handler, host);
+    String username = null;
+    String password = null;
+    if(jmxAuth != null) {
+      username = jmxAuth.getUsername();
+      password = jmxAuth.getPassword();
+    }
+    return JmxProxy.connect(handler, host, username, password);
   }
 
   public final JmxProxy connect(String host) throws ReaperException {
@@ -58,5 +65,9 @@ public class JmxConnectionFactory {
 
   public void setJmxPorts(Map<String, Integer> jmxPorts) {
     this.jmxPorts = jmxPorts;
+  }
+
+  public void setJmxAuth(JmxCredentials jmxAuth) {
+    this.jmxAuth = jmxAuth;
   }
 }

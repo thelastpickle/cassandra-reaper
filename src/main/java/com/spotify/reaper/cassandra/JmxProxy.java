@@ -16,7 +16,6 @@ package com.spotify.reaper.cassandra;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.service.RingRange;
@@ -35,13 +34,13 @@ import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.util.AbstractMap;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.Nullable;
 import javax.management.InstanceNotFoundException;
 import javax.management.JMX;
 import javax.management.ListenerNotFoundException;
@@ -88,30 +87,33 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     this.clusterName = Cluster.toSymbolicName(ssProxy.getClusterName());
   }
 
+  
   /**
-   * Connect to JMX interface on the given host and default JMX port.
-   *
-   * @param handler Implementation of {@link RepairStatusHandler} to process incoming notifications
-   *                of repair events.
+   * @see JmxProxy#connect(Optional, String, int, String, String)
    */
-  public static JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
+  static JmxProxy connect(Optional<RepairStatusHandler> handler, String host, String username, String password)
       throws ReaperException {
     assert null != host : "null host given to JmxProxy.connect()";
     String[] parts = host.split(":");
     if (parts.length == 2) {
-      return connect(handler, parts[0], Integer.valueOf(parts[1]));
+      return connect(handler, parts[0], Integer.valueOf(parts[1]), username, password);
     } else {
-      return connect(handler, host, JMX_PORT);
+      return connect(handler, host, JMX_PORT, username, password);
     }
   }
 
+  
   /**
    * Connect to JMX interface on the given host and port.
    *
    * @param handler Implementation of {@link RepairStatusHandler} to process incoming notifications
    *                of repair events.
+   * @param host hostname or ip address of Cassandra node
+   * @param port port number to use for JMX connection
+   * @param username username to use for JMX authentication
+   * @param password password to use for JMX authentication
    */
-  public static JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int port)
+  static JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int port, String username, String password)
       throws ReaperException {
     JMXServiceURL jmxUrl;
     ObjectName ssMbeanName;
@@ -125,7 +127,12 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       throw new ReaperException("Failure during preparations for JMX connection", e);
     }
     try {
-      JMXConnector jmxConn = JMXConnectorFactory.connect(jmxUrl);
+      Map<String, Object> env = new HashMap<String, Object>();
+      if(username != null && password != null) {
+        String[] creds = {username, password};
+        env.put(JMXConnector.CREDENTIALS, creds);
+      }
+      JMXConnector jmxConn = JMXConnectorFactory.connect(jmxUrl, env);
       MBeanServerConnection mbeanServerConn = jmxConn.getMBeanServerConnection();
       StorageServiceMBean ssProxy =
           JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean.class);
