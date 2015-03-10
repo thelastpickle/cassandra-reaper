@@ -14,6 +14,8 @@
 package com.spotify.reaper;
 
 import com.google.common.annotations.VisibleForTesting;
+
+import com.spotify.reaper.ReaperApplicationConfiguration.JmxCredentials;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
@@ -52,7 +54,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
 
-  private  AppContext context;
+  private AppContext context;
 
   public ReaperApplication() {
     super();
@@ -89,7 +91,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
   @Override
   public void run(ReaperApplicationConfiguration config,
-                  Environment environment) throws Exception {
+      Environment environment) throws Exception {
     // Using UTC times everywhere as default. Affects only Yoda time.
     DateTimeZone.setDefault(DateTimeZone.UTC);
 
@@ -125,12 +127,19 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     }
 
     // enable cross-origin requests for testing cassandra-reaper-ui
-    if(System.getProperty("enableCrossOrigin") != null) {
-	    final FilterRegistration.Dynamic cors = environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);
-	    cors.setInitParameter("allowedOrigins", "*");
-	    cors.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin");
-	    cors.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD");
-	    cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
+    if (System.getProperty("enableCrossOrigin") != null) {
+      final FilterRegistration.Dynamic cors =
+          environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);
+      cors.setInitParameter("allowedOrigins", "*");
+      cors.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin");
+      cors.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD");
+      cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
+    }
+
+    JmxCredentials jmxAuth = config.getJmxAuth();
+    if (jmxAuth != null) {
+      LOG.debug("using specified JMX credentials for authentication");
+      context.jmxConnectionFactory.setJmxAuth(jmxAuth);
     }
 
     LOG.info("creating and registering health checks");
@@ -160,7 +169,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config,
-                                     Environment environment) throws ReaperException {
+      Environment environment) throws ReaperException {
     IStorage storage;
     if ("memory".equalsIgnoreCase(config.getStorageType())) {
       storage = new MemoryStorage();

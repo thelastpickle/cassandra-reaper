@@ -62,6 +62,9 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   private Map<String, Integer> jmxPorts;
+  
+  @JsonProperty
+  private JmxCredentials jmxAuth;
 
 
   public int getSegmentCount() {
@@ -127,6 +130,30 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   public void setJmxPorts(Map<String, Integer> jmxPorts) {
     this.jmxPorts = jmxPorts;
+  }
+
+  public JmxCredentials getJmxAuth() {
+    return jmxAuth;
+  }
+
+  public void setJmxAuth(JmxCredentials jmxAuth) {
+    this.jmxAuth = jmxAuth;
+  }
+  
+  public static class JmxCredentials {
+    
+    @JsonProperty
+    private String username;
+    @JsonProperty
+    private String password;
+    
+    public String getUsername() {
+      return username;
+    }
+    public String getPassword() {
+      return password;
+    }
+    
   }
 
 }
