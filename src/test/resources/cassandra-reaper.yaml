@@ -23,6 +23,11 @@ storageType: memory
 #  127.0.0.2: 7200
 #  127.0.0.3: 7300
 
+# Use following credential for JMX authentication
+#jmxAuth:
+#    username: myuser
+#    password: mypassword
+
 logging:
   level: DEBUG
   loggers:
