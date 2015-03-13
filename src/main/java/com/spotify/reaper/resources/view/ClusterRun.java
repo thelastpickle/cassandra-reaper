@@ -28,7 +28,7 @@ import java.sql.SQLException;
 
 public class ClusterRun {
 
-  public final int runId;
+  public final long runId;
   public final String cluserName;
   public final String keyspaceName;
   public final String[] columnFamilies;
@@ -54,7 +54,7 @@ public class ClusterRun {
     return CommonTools.dateTimeToISO8601(estimatedTimeOfArrival);
   }
 
-  public ClusterRun(int runId, String clusterName, String keyspaceName, String[] columnFamilies,
+  public ClusterRun(long runId, String clusterName, String keyspaceName, String[] columnFamilies,
       int segmentsRepaired, int totalSegments, RepairRun.RunState state, DateTime startTime,
       DateTime endTime, String cause, String owner, String lastEvent) {
     this.runId = runId;
@@ -92,7 +92,7 @@ public class ClusterRun {
 
     @Override
     public ClusterRun map(int index, ResultSet r, StatementContext ctx) throws SQLException {
-      int runId = r.getInt("id");
+      long runId = r.getLong("id");
       String clusterName = r.getString("cluster_name");
       String keyspaceName = r.getString("keyspace_name");
       String[] columnFamilies = (String[]) r.getArray("column_families").getArray();

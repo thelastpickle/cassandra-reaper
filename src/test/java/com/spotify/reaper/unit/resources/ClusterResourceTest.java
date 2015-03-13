@@ -61,7 +61,8 @@ public class ClusterResourceTest {
   @Test
   public void testAddCluster() throws Exception {
     ClusterResource clusterResource = new ClusterResource(context);
-    Response response = clusterResource.addCluster(uriInfo, Optional.of(SEED_HOST));
+    Response response = clusterResource.addCluster(uriInfo, Optional.of(SEED_HOST),
+        Optional.<Integer>absent());
 
     assertEquals(201, response.getStatus());
     assertEquals(1, context.storage.getClusters().size());
@@ -80,7 +81,8 @@ public class ClusterResourceTest {
     context.storage.addCluster(cluster);
 
     ClusterResource clusterResource = new ClusterResource(context);
-    Response response = clusterResource.addCluster(uriInfo, Optional.of(SEED_HOST));
+    Response response = clusterResource.addCluster(uriInfo, Optional.of(SEED_HOST),
+        Optional.<Integer>absent());
     assertEquals(403, response.getStatus());
     assertTrue(response.getEntity() instanceof String);
     String msg = response.getEntity().toString();
