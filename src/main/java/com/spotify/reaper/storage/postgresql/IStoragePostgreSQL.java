@@ -169,6 +169,9 @@ public interface IStoragePostgreSQL {
 
   // View-specific queries
   //
+
+  // TODO: segment_count may not be exactly the actual amount of segments
+  // It would be possible to query specifically for it.
   static final String SQL_CLUSTER_RUN_OVERVIEW =
       "SELECT repair_run.id, repair_unit.cluster_name, keyspace_name, column_families, "
           + "COUNT(repair_segment.id), segment_count, repair_run.state, repair_run.start_time, "
