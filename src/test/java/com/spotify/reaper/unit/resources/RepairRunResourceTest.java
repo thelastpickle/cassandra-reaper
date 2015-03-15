@@ -190,7 +190,7 @@ public class RepairRunResourceTest {
     assertTrue(response.getEntity() instanceof RepairRunStatus);
     // the thing we get as a reply from the endpoint is a not started run. This is because the
     // executor didn't have time to start the run
-    assertEquals(RepairRun.RunState.NOT_STARTED.name(), repairRunStatus.getRunState());
+    assertEquals(RepairRun.RunState.NOT_STARTED, repairRunStatus.getState());
 
     // give the executor some time to actually start the run
     Thread.sleep(50);

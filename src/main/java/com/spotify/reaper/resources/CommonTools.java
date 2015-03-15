@@ -29,6 +29,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CommonTools {
@@ -245,7 +247,8 @@ public class CommonTools {
     return theRepairUnit;
   }
 
-  public static String dateTimeToISO8601(DateTime dateTime) {
+  @Nullable
+  public static String dateTimeToISO8601(@Nullable DateTime dateTime) {
     if (null == dateTime) {
       return null;
     }
