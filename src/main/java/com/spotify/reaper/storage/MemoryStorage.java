@@ -22,7 +22,7 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.resources.view.ClusterRun;
+import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.service.RingRange;
 
 import java.util.ArrayList;
@@ -377,27 +377,25 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Collection<ClusterRun> getClusterRunOverview(String clusterName, int limit) {
+  public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
     Optional<Cluster> cluster = getCluster(clusterName);
     if (!cluster.isPresent()) {
       return null;
     } else {
-      List<ClusterRun> clusterRuns = Lists.newArrayList();
-      Collection<RepairRun> runs = getRepairRunsForCluster(clusterName);
-      for (RepairRun run : runs) {
+      List<RepairRunStatus> runStatuses = Lists.newArrayList();
+      for (RepairRun run : getRepairRunsForCluster(clusterName)) {
         RepairUnit unit = getRepairUnit(run.getRepairUnitId()).get();
-        String[] tables =
-            unit.getColumnFamilies().toArray(new String[unit.getColumnFamilies().size()]);
         int segmentsRepaired =
             getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
         int totalSegments = getSegmentAmountForRepairRun(run.getId());
-        clusterRuns.add(new ClusterRun(
-            run.getId(), clusterName, unit.getKeyspaceName(),
-            tables, segmentsRepaired, totalSegments,
-            run.getRunState(), run.getStartTime(), run.getEndTime(), run.getCause(),
-            run.getOwner(), run.getLastEvent()));
+        runStatuses.add(new RepairRunStatus(
+            run.getId(), clusterName, unit.getKeyspaceName(), unit.getColumnFamilies(),
+            segmentsRepaired, totalSegments, run.getRunState(), run.getStartTime(),
+            run.getEndTime(), run.getCause(), run.getOwner(), run.getLastEvent(),
+            run.getCreationTime(), run.getPauseTime(), run.getIntensity(),
+            run.getRepairParallelism()));
       }
-      return clusterRuns;
+      return runStatuses;
     }
   }
 

@@ -15,15 +15,11 @@ package com.spotify.reaper.resources;
 
 import com.google.common.base.Optional;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.resources.view.ClusterRun;
+import com.spotify.reaper.resources.view.RepairRunStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,27 +77,18 @@ public class ClusterResource {
 
   private Response viewCluster(String clusterName, Optional<Integer> limit,
       Optional<URI> createdURI) {
-    Collection<ClusterRun> view = context.storage.getClusterRunOverview(clusterName, limit.or(10));
+    Collection<RepairRunStatus> view =
+        context.storage.getClusterRunStatuses(clusterName, limit.or(10));
 
     if (view == null) {
       return Response.status(Response.Status.NOT_FOUND)
           .entity("cluster with name \"" + clusterName + "\" not found").build();
+    } else if (createdURI.isPresent()) {
+      return Response.created(createdURI.get())
+          .entity(view).build();
     } else {
-      ObjectMapper objectMapper = new ObjectMapper()
-          .setPropertyNamingStrategy(
-              PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES)
-          .registerModule(new JodaModule());
-      try {
-        if (createdURI.isPresent()) {
-          return Response.created(createdURI.get())
-              .entity(objectMapper.writeValueAsString(view)).build();
-        } else {
-          return Response.ok()
-              .entity(objectMapper.writeValueAsString(view)).build();
-        }
-      } catch (JsonProcessingException e) {
-        return Response.serverError().entity("JSON processing failed").build();
-      }
+      return Response.ok()
+          .entity(view).build();
     }
   }
 
