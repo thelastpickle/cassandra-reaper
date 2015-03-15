@@ -92,23 +92,27 @@ public class RepairRunStatus {
   public RepairRunStatus() {
   }
 
-  public RepairRunStatus(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) {
-    this.id = repairRun.getId();
-    this.cause = repairRun.getCause();
-    this.owner = repairRun.getOwner();
-    this.clusterName = repairRun.getClusterName();
-    this.columnFamilies = repairUnit.getColumnFamilies();
-    this.keyspaceName = repairUnit.getKeyspaceName();
-    this.state = repairRun.getRunState();
-    this.creationTime = repairRun.getCreationTime();
-    this.startTime = repairRun.getStartTime();
-    this.endTime = repairRun.getEndTime();
-    this.pauseTime = repairRun.getPauseTime();
-    this.intensity = CommonTools.roundDoubleNicely(repairRun.getIntensity());
-    this.totalSegments = repairRun.getSegmentCount();
-    this.repairParallelism = repairRun.getRepairParallelism();
+  public RepairRunStatus(long runId, String clusterName, String keyspaceName,
+      Collection<String> columnFamilies, int segmentsRepaired, int totalSegments,
+      RepairRun.RunState state, DateTime startTime, DateTime endTime, String cause, String owner,
+      String lastEvent, DateTime creationTime, DateTime pauseTime, double intensity,
+      RepairParallelism repairParallelism) {
+    this.id = runId;
+    this.cause = cause;
+    this.owner = owner;
+    this.clusterName = clusterName;
+    this.columnFamilies = columnFamilies;
+    this.keyspaceName = keyspaceName;
+    this.state = state;
+    this.creationTime = creationTime;
+    this.startTime = startTime;
+    this.endTime = endTime;
+    this.pauseTime = pauseTime;
+    this.intensity = CommonTools.roundDoubleNicely(intensity);
+    this.totalSegments = totalSegments;
+    this.repairParallelism = repairParallelism;
     this.segmentsRepaired = segmentsRepaired;
-    this.lastEvent = repairRun.getLastEvent();
+    this.lastEvent = lastEvent;
 
     if (startTime == null || endTime == null) {
       duration = null;
@@ -134,6 +138,27 @@ public class RepairRunStatus {
         estimatedTimeOfArrival = new DateTime(now + millisecondsPerSegment * segmentsLeft);
       }
     }
+  }
+
+  public RepairRunStatus(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) {
+    this(
+        repairRun.getId(),
+        repairRun.getClusterName(),
+        repairUnit.getKeyspaceName(),
+        repairUnit.getColumnFamilies(),
+        segmentsRepaired,
+        repairRun.getSegmentCount(),
+        repairRun.getRunState(),
+        repairRun.getStartTime(),
+        repairRun.getEndTime(),
+        repairRun.getCause(),
+        repairRun.getOwner(),
+        repairRun.getLastEvent(),
+        repairRun.getCreationTime(),
+        repairRun.getPauseTime(),
+        repairRun.getIntensity(),
+        repairRun.getRepairParallelism()
+    );
   }
 
   @JsonProperty("creation_time")
