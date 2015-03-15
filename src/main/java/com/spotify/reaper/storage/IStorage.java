@@ -20,7 +20,7 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.resources.view.ClusterRun;
+import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.service.RingRange;
 
 import java.util.Collection;
@@ -125,5 +125,5 @@ public interface IStorage {
    */
   Optional<RepairSchedule> deleteRepairSchedule(long id);
 
-  Collection<ClusterRun> getClusterRunOverview(String clusterName, int limit);
+Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit);
 }

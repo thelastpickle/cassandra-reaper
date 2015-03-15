@@ -18,7 +18,7 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.resources.view.ClusterRun;
+import com.spotify.reaper.resources.view.RepairRunStatus;
 
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.BindBean;
@@ -175,7 +175,8 @@ public interface IStoragePostgreSQL {
   static final String SQL_CLUSTER_RUN_OVERVIEW =
       "SELECT repair_run.id, repair_unit.cluster_name, keyspace_name, column_families, "
           + "COUNT(repair_segment.id), segment_count, repair_run.state, repair_run.start_time, "
-          + "repair_run.end_time, cause, owner, last_event\n"
+          + "repair_run.end_time, cause, owner, last_event, "
+          + "creation_time, pause_time, intensity, repair_parallelism\n"
           + "FROM repair_run "
           + "JOIN repair_segment ON run_id = repair_run.id "
           + "JOIN repair_unit ON repair_run.repair_unit_id = repair_unit.id\n"
@@ -320,8 +321,8 @@ public interface IStoragePostgreSQL {
 
 
   @SqlQuery(SQL_CLUSTER_RUN_OVERVIEW)
-  @Mapper(ClusterRun.Mapper.class)
-  List<ClusterRun> getClusterRunOverview(
+  @Mapper(RepairRunStatusMapper.class)
+  List<RepairRunStatus> getClusterRunOverview(
       @Bind("clusterName") String clusterName,
       @Bind("limit") int limit);
 }

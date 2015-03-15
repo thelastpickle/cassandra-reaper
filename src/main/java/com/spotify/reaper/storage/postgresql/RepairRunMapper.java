@@ -26,7 +26,7 @@ import java.sql.Timestamp;
 
 public class RepairRunMapper implements ResultSetMapper<RepairRun> {
 
-  public static DateTime getDateTimeOrNull(ResultSet r, String dbColumnName) throws SQLException {
+  static DateTime getDateTimeOrNull(ResultSet r, String dbColumnName) throws SQLException {
     Timestamp timestamp = r.getTimestamp(dbColumnName);
     DateTime result = null;
     if (null != timestamp) {
