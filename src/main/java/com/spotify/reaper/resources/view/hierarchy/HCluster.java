@@ -29,31 +29,6 @@ import javax.annotation.Nullable;
 
 public class HCluster {
 
-  public static void main(String[] args) throws JsonProcessingException {
-    IStorage storage = new MemoryStorage();
-
-    Cluster cluster = new Cluster("example", "ExamplePartitioner",
-        Sets.newHashSet("host1", "host1"));
-    storage.addCluster(cluster);
-    RepairUnit unit = storage.addRepairUnit(new RepairUnit.Builder(cluster.getName(), "exampleKS",
-        Sets.newHashSet("exampleCF1", "exampleCF2")));
-    RepairRun run = storage.addRepairRun(new RepairRun.Builder(cluster.getName(), unit.getId(),
-        DateTime.now(), 0.1337, 1, RepairParallelism.DATACENTER_AWARE));
-    RepairSchedule schedule = storage.addRepairSchedule(new RepairSchedule.Builder(unit.getId(),
-        RepairSchedule.State.PAUSED, 8, DateTime.now(), ImmutableList.of(run.getId()), 1,
-        RepairParallelism.PARALLEL, 0.99, DateTime.now()));
-
-    storage.addRepairSegments(Lists.newArrayList(
-        new RepairSegment.Builder(
-            run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE), unit.getId())
-    ), run.getId());
-
-    Object hObj = new HCluster(storage, cluster.getName());
-    System.out.println(new ObjectMapper()
-        .setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES)
-        .writeValueAsString(hObj));
-  }
-
   public final String name;
   public final Set<String> seedHosts;
   public final String partitioner;

@@ -95,8 +95,7 @@ public class ClusterResource {
   @POST
   public Response addCluster(
       @Context UriInfo uriInfo,
-      @QueryParam("seedHost") Optional<String> seedHost,
-      @QueryParam("limit") Optional<Integer> limit) {
+      @QueryParam("seedHost") Optional<String> seedHost) {
     if (!seedHost.isPresent()) {
       LOG.error("POST on cluster resource called without seedHost");
       return Response.status(400).entity("query parameter \"seedHost\" required").build();
@@ -131,7 +130,7 @@ public class ClusterResource {
       return Response.status(400).entity(errMsg).build();
     }
 
-    return viewCluster(newCluster.getName(), limit, Optional.of(createdURI));
+    return viewCluster(newCluster.getName(), Optional.<Integer>absent(), Optional.of(createdURI));
   }
 
   public Cluster createClusterWithSeedHost(String seedHost)
@@ -161,8 +160,7 @@ public class ClusterResource {
   @DELETE
   @Path("/{cluster_name}")
   public Response deleteCluster(
-      @PathParam("cluster_name") String clusterName,
-      @QueryParam("limit") Optional<Integer> limit) {
+      @PathParam("cluster_name") String clusterName) {
     LOG.info("delete cluster called with clusterName: {}", clusterName);
     Optional<Cluster> clusterToDelete = context.storage.getCluster(clusterName);
     if (!clusterToDelete.isPresent()) {

@@ -176,12 +176,12 @@ public interface IStoragePostgreSQL {
       "SELECT repair_run.id, repair_unit.cluster_name, keyspace_name, column_families, "
           + "COUNT(repair_segment.id), segment_count, repair_run.state, repair_run.start_time, "
           + "repair_run.end_time, cause, owner, last_event, "
-          + "creation_time, pause_time, intensity, repair_parallelism\n"
+          + "creation_time, pause_time, intensity, repair_parallelism "
           + "FROM repair_run "
           + "JOIN repair_segment ON run_id = repair_run.id "
-          + "JOIN repair_unit ON repair_run.repair_unit_id = repair_unit.id\n"
-          + "WHERE repair_unit.cluster_name = :clusterName AND repair_segment.state = 2\n"
-          + "GROUP BY repair_run.id, repair_unit.id\n"
+          + "JOIN repair_unit ON repair_run.repair_unit_id = repair_unit.id "
+          + "WHERE repair_unit.cluster_name = :clusterName AND repair_segment.state = 2 "
+          + "GROUP BY repair_run.id, repair_unit.id "
           + "LIMIT :limit";
 
   @SqlQuery("SELECT version()")
