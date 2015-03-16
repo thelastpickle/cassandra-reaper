@@ -19,6 +19,7 @@ import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.resources.view.ClusterStatus;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 
 import org.slf4j.Logger;
@@ -77,10 +78,10 @@ public class ClusterResource {
 
   private Response viewCluster(String clusterName, Optional<Integer> limit,
       Optional<URI> createdURI) {
-    Collection<RepairRunStatus> view =
-        context.storage.getClusterRunStatuses(clusterName, limit.or(10));
+    ClusterStatus view =
+        new ClusterStatus(context.storage.getClusterRunStatuses(clusterName, limit.or(10)));
 
-    if (view == null) {
+    if (view.repairRuns == null) {
       return Response.status(Response.Status.NOT_FOUND)
           .entity("cluster with name \"" + clusterName + "\" not found").build();
     } else if (createdURI.isPresent()) {
@@ -179,7 +180,7 @@ public class ClusterResource {
     }
     Optional<Cluster> deletedCluster = context.storage.deleteCluster(clusterName);
     if (deletedCluster.isPresent()) {
-      return Response.ok().build();
+      return Response.ok(new ClusterStatus(Collections.<RepairRunStatus>emptyList())).build();
     }
     return Response.serverError().entity("delete failed for schedule with name \""
                                          + clusterName + "\"").build();
