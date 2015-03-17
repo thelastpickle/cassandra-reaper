@@ -144,13 +144,9 @@ Source code for all the REST resources can be found from package com.spotify.rea
   * Returns a list of registered cluster names in the service.
 
 * GET     /cluster/{cluster_name}
-  * Expected query parameters: *None*
+  * Expected query parameters:
+    * *limit*: limit the number of repair runs returned. Recent runs are prioritized. (Optional)
   * Returns a cluster object identified by the given "cluster_name" path parameter.
-
-* GET     /cluster/{cluster_name}/{keyspace_name}
-  * Expected query parameters: *None*
-  * Returns keyspace information identified by the given "cluster_name" and
-    "keyspace_name" path parameters.
 
 * POST    /cluster
   * Expected query parameters:
