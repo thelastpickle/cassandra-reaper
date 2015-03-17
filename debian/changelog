@@ -1,3 +1,11 @@
+cassandra-reaper (0.1.2-1) stable; urgency=low
+
+  * New response for cluster endpoint
+  * Fixed bug in spreaper's --start-repair flag
+  * Fixed bug where paused schedules would get resumed when starting up
+
+ -- Björn Hegerfors <bj0rn@spotify.com>  Tue, 17 Feb 2015 18:17:44 +0100
+
 cassandra-reaper (0.1.1-1) stable; urgency=low
 
   * Added deletion endpoints
