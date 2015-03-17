@@ -22,6 +22,7 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.service.RingRange;
 
 import java.util.ArrayList;
@@ -128,10 +129,10 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Collection<RepairRun> getRepairRunsForUnit(RepairUnit repairUnit) {
+  public Collection<RepairRun> getRepairRunsForUnit(long repairUnitId) {
     List<RepairRun> foundRepairRuns = new ArrayList<>();
     for (RepairRun repairRun : repairRuns.values()) {
-      if (repairRun.getRepairUnitId() == repairUnit.getId()) {
+      if (repairRun.getRepairUnitId() == repairUnitId) {
         foundRepairRuns.add(repairRun);
       }
     }
@@ -193,7 +194,7 @@ public class MemoryStorage implements IStorage {
   public Optional<RepairRun> deleteRepairRun(long id) {
     RepairRun deletedRun = repairRuns.remove(id);
     if (deletedRun != null) {
-      if (getSegmentAmountForRepairRun(id, RepairSegment.State.RUNNING) == 0) {
+      if (getSegmentAmountForRepairRunWithState(id, RepairSegment.State.RUNNING) == 0) {
         deleteRepairUnit(deletedRun.getRepairUnitId());
         deleteRepairSegmentsForRun(id);
         deletedRun = deletedRun.with().runState(RepairRun.RunState.DELETED).build(id);
@@ -258,6 +259,11 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
+  public Collection<RepairSegment> getRepairSegmentsForRun(long runId) {
+    return repairSegmentsByRunId.get(runId).values();
+  }
+
+  @Override
   public Optional<RepairSegment> getNextFreeSegment(long runId) {
     for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
       if (segment.getState() == RepairSegment.State.NOT_STARTED) {
@@ -302,7 +308,13 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public int getSegmentAmountForRepairRun(long runId, RepairSegment.State state) {
+  public int getSegmentAmountForRepairRun(long runId) {
+    Map<Long, RepairSegment> segmentsMap = repairSegmentsByRunId.get(runId);
+    return segmentsMap == null ? 0 : segmentsMap.size();
+  }
+
+  @Override
+  public int getSegmentAmountForRepairRunWithState(long runId, RepairSegment.State state) {
     Map<Long, RepairSegment> segmentsMap = repairSegmentsByRunId.get(runId);
     int amount = 0;
     if (null != segmentsMap) {
@@ -362,6 +374,29 @@ public class MemoryStorage implements IStorage {
       deletedSchedule = deletedSchedule.with().state(RepairSchedule.State.DELETED).build(id);
     }
     return Optional.fromNullable(deletedSchedule);
+  }
+
+  @Override
+  public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
+    Optional<Cluster> cluster = getCluster(clusterName);
+    if (!cluster.isPresent()) {
+      return null;
+    } else {
+      List<RepairRunStatus> runStatuses = Lists.newArrayList();
+      for (RepairRun run : getRepairRunsForCluster(clusterName)) {
+        RepairUnit unit = getRepairUnit(run.getRepairUnitId()).get();
+        int segmentsRepaired =
+            getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
+        int totalSegments = getSegmentAmountForRepairRun(run.getId());
+        runStatuses.add(new RepairRunStatus(
+            run.getId(), clusterName, unit.getKeyspaceName(), unit.getColumnFamilies(),
+            segmentsRepaired, totalSegments, run.getRunState(), run.getStartTime(),
+            run.getEndTime(), run.getCause(), run.getOwner(), run.getLastEvent(),
+            run.getCreationTime(), run.getPauseTime(), run.getIntensity(),
+            run.getRepairParallelism()));
+      }
+      return runStatuses;
+    }
   }
 
   public static class RepairUnitKey {

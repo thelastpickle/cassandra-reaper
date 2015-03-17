@@ -42,7 +42,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyCollectionOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -159,8 +158,8 @@ public class RepairRunResourceTest {
     assertNull(run.getEndTime());
 
     // apparently, tokens [0, 100, 200] and 6 requested segments causes generating 8 RepairSegments
-    assertEquals(8, context.storage.getSegmentAmountForRepairRun(run.getId(),
-                                                                 RepairSegment.State.NOT_STARTED));
+    assertEquals(8, context.storage.getSegmentAmountForRepairRunWithState(run.getId(),
+        RepairSegment.State.NOT_STARTED));
 
     // adding another repair run should work as well
     response = addDefaultRepairRun(resource);
@@ -191,7 +190,7 @@ public class RepairRunResourceTest {
     assertTrue(response.getEntity() instanceof RepairRunStatus);
     // the thing we get as a reply from the endpoint is a not started run. This is because the
     // executor didn't have time to start the run
-    assertEquals(RepairRun.RunState.NOT_STARTED.name(), repairRunStatus.getRunState());
+    assertEquals(RepairRun.RunState.NOT_STARTED, repairRunStatus.getState());
 
     // give the executor some time to actually start the run
     Thread.sleep(50);
@@ -209,9 +208,10 @@ public class RepairRunResourceTest {
     assertNull(repairRun.getEndTime());
     assertEquals(REPAIR_INTENSITY, repairRun.getIntensity(), 0.0f);
     assertEquals(1,
-                 context.storage.getSegmentAmountForRepairRun(runId, RepairSegment.State.RUNNING));
+                 context.storage.getSegmentAmountForRepairRunWithState(runId,
+                     RepairSegment.State.RUNNING));
     assertEquals(7, context.storage
-        .getSegmentAmountForRepairRun(runId, RepairSegment.State.NOT_STARTED));
+        .getSegmentAmountForRepairRunWithState(runId, RepairSegment.State.NOT_STARTED));
   }
 
   @Test
@@ -304,7 +304,8 @@ public class RepairRunResourceTest {
     assertEquals(RepairRun.RunState.PAUSED, repairRun.getRunState());
     // but the running segment should be untouched
     assertEquals(1,
-                 context.storage.getSegmentAmountForRepairRun(runId, RepairSegment.State.RUNNING));
+                 context.storage.getSegmentAmountForRepairRunWithState(runId,
+                     RepairSegment.State.RUNNING));
   }
 
   @Test
@@ -327,7 +328,8 @@ public class RepairRunResourceTest {
     assertEquals(RepairRun.RunState.NOT_STARTED, repairRun.getRunState());
     // but the running segment should be untouched
     assertEquals(0,
-                 context.storage.getSegmentAmountForRepairRun(runId, RepairSegment.State.RUNNING));
+                 context.storage.getSegmentAmountForRepairRunWithState(runId,
+                     RepairSegment.State.RUNNING));
   }
 
   @Test

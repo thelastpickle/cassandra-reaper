@@ -20,6 +20,7 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.service.RingRange;
 
 import java.util.Collection;
@@ -57,7 +58,7 @@ public interface IStorage {
 
   Collection<RepairRun> getRepairRunsForCluster(String clusterName);
 
-  Collection<RepairRun> getRepairRunsForUnit(RepairUnit repairUnit);
+  Collection<RepairRun> getRepairRunsForUnit(long repairUnitId);
 
   Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState);
 
@@ -91,6 +92,8 @@ public interface IStorage {
 
   Optional<RepairSegment> getRepairSegment(long id);
 
+  Collection<RepairSegment> getRepairSegmentsForRun(long runId);
+
   Optional<RepairSegment> getNextFreeSegment(long runId);
 
   Optional<RepairSegment> getNextFreeSegmentInRange(long runId, RingRange range);
@@ -99,7 +102,9 @@ public interface IStorage {
 
   Collection<Long> getRepairRunIdsForCluster(String clusterName);
 
-  int getSegmentAmountForRepairRun(long runId, RepairSegment.State state);
+  int getSegmentAmountForRepairRun(long runId);
+
+  int getSegmentAmountForRepairRunWithState(long runId, RepairSegment.State state);
 
   RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule);
 
@@ -120,4 +125,5 @@ public interface IStorage {
    */
   Optional<RepairSchedule> deleteRepairSchedule(long id);
 
+Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit);
 }

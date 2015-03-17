@@ -14,15 +14,13 @@
 package com.spotify.reaper.resources;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
 
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.resources.view.ClusterStatus;
-import com.spotify.reaper.resources.view.KeyspaceStatus;
+import com.spotify.reaper.resources.view.RepairRunStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,29 +69,27 @@ public class ClusterResource {
 
   @GET
   @Path("/{cluster_name}")
-  public Response getCluster(@PathParam("cluster_name") String clusterName) {
+  public Response getCluster(
+      @PathParam("cluster_name") String clusterName,
+      @QueryParam("limit") Optional<Integer> limit) {
     LOG.info("get cluster called with cluster_name: {}", clusterName);
-    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
-    if (cluster.isPresent()) {
-      return viewCluster(cluster.get(), Optional.<URI>absent());
-    } else {
-      return Response.status(Response.Status.NOT_FOUND)
-          .entity("cluster with name \"" + clusterName + "\" not found").build();
-    }
+    return viewCluster(clusterName, limit, Optional.<URI>absent());
   }
 
-  @GET
-  @Path("/{cluster_name}/{keyspace_name}")
-  public Response getCluster(@PathParam("cluster_name") String clusterName,
-                             @PathParam("keyspace_name") String keyspaceName) {
-    LOG.info("get cluster/keyspace called with cluster_name: {}, and keyspace_name: {}",
-             clusterName, keyspaceName);
-    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
-    if (cluster.isPresent()) {
-      return viewKeyspace(cluster.get(), keyspaceName);
-    } else {
+  private Response viewCluster(String clusterName, Optional<Integer> limit,
+      Optional<URI> createdURI) {
+    ClusterStatus view =
+        new ClusterStatus(context.storage.getClusterRunStatuses(clusterName, limit.or(10)));
+
+    if (view.repairRuns == null) {
       return Response.status(Response.Status.NOT_FOUND)
           .entity("cluster with name \"" + clusterName + "\" not found").build();
+    } else if (createdURI.isPresent()) {
+      return Response.created(createdURI.get())
+          .entity(view).build();
+    } else {
+      return Response.ok()
+          .entity(view).build();
     }
   }
 
@@ -127,7 +123,7 @@ public class ClusterResource {
 
     URI createdURI;
     try {
-      createdURI = (new URL(uriInfo.getAbsolutePath().toURL(), newCluster.getName())).toURI();
+      createdURI = new URL(uriInfo.getAbsolutePath().toURL(), newCluster.getName()).toURI();
     } catch (Exception e) {
       String errMsg = "failed creating target URI for cluster: " + newCluster.getName();
       LOG.error(errMsg);
@@ -135,7 +131,7 @@ public class ClusterResource {
       return Response.status(400).entity(errMsg).build();
     }
 
-    return viewCluster(newCluster, Optional.of(createdURI));
+    return viewCluster(newCluster.getName(), Optional.<Integer>absent(), Optional.of(createdURI));
   }
 
   public Cluster createClusterWithSeedHost(String seedHost)
@@ -153,49 +149,6 @@ public class ClusterResource {
     return new Cluster(clusterName, partitioner, Collections.singleton(seedHost));
   }
 
-  private Response viewCluster(Cluster cluster, Optional<URI> createdURI) {
-    ClusterStatus view = new ClusterStatus(cluster);
-    Collection<Collection<Object>> runIdTuples = Lists.newArrayList();
-    for (Long repairRunId : context.storage.getRepairRunIdsForCluster(cluster.getName())) {
-      Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
-      if (repairRun.isPresent()) {
-        runIdTuples
-            .add(Lists.newArrayList(new Object[]{repairRunId, repairRun.get().getRunState()}));
-      }
-    }
-    view.setRepairRunIds(runIdTuples);
-    try (JmxProxy jmx = context.jmxConnectionFactory.connectAny(cluster)) {
-      view.setKeyspaces(jmx.getKeyspaces());
-    } catch (ReaperException e) {
-      e.printStackTrace();
-      LOG.error("failed connecting JMX", e);
-      return Response.status(500).entity("failed connecting given clusters JMX endpoint").build();
-    }
-    if (createdURI.isPresent()) {
-      return Response.created(createdURI.get()).entity(view).build();
-    } else {
-      return Response.ok().entity(view).build();
-    }
-  }
-
-  private Response viewKeyspace(Cluster cluster, String keyspaceName) {
-    KeyspaceStatus view = new KeyspaceStatus(cluster);
-    try (JmxProxy jmx = context.jmxConnectionFactory.connectAny(cluster)) {
-      if (jmx.getKeyspaces().contains(keyspaceName)) {
-        view.setTables(jmx.getTableNamesForKeyspace(keyspaceName));
-      } else {
-        return Response.status(Response.Status.NOT_FOUND)
-            .entity("cluster with name \"" + cluster.getName() + "\" does not contain keyspace \""
-                    + keyspaceName + "\"").build();
-      }
-    } catch (ReaperException e) {
-      e.printStackTrace();
-      LOG.error("failed connecting JMX", e);
-      return Response.status(500).entity("failed connecting given clusters JMX endpoint").build();
-    }
-    return Response.ok().entity(view).build();
-  }
-
   /**
    * Delete a Cluster object with given name.
    *
@@ -207,7 +160,8 @@ public class ClusterResource {
    */
   @DELETE
   @Path("/{cluster_name}")
-  public Response deleteCluster(@PathParam("cluster_name") String clusterName) {
+  public Response deleteCluster(
+      @PathParam("cluster_name") String clusterName) {
     LOG.info("delete cluster called with clusterName: {}", clusterName);
     Optional<Cluster> clusterToDelete = context.storage.getCluster(clusterName);
     if (!clusterToDelete.isPresent()) {
@@ -226,7 +180,7 @@ public class ClusterResource {
     }
     Optional<Cluster> deletedCluster = context.storage.deleteCluster(clusterName);
     if (deletedCluster.isPresent()) {
-      return Response.ok().entity(new ClusterStatus(deletedCluster.get())).build();
+      return Response.ok(new ClusterStatus(Collections.<RepairRunStatus>emptyList())).build();
     }
     return Response.serverError().entity("delete failed for schedule with name \""
                                          + clusterName + "\"").build();

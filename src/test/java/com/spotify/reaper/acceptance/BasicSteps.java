@@ -223,7 +223,7 @@ public class BasicSteps {
   @And("^cluster called \"([^\"]*)\" is deleted$")
   public void cluster_called_is_deleted(String clusterName) throws Throwable {
     callAndExpect("DELETE", "/cluster/" + clusterName,
-                  EMPTY_PARAMS, Response.Status.OK, Optional.of("\"" + clusterName + "\""));
+        EMPTY_PARAMS, Response.Status.OK, Optional.<String>absent());
   }
 
   @Then("^reaper has no cluster called \"([^\"]*)\" in storage$")

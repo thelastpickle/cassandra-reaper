@@ -19,7 +19,10 @@ import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.CommonTools;
 
+import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.commons.lang.time.DurationFormatUtils;
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.joda.time.format.ISODateTimeFormat;
 
 import java.util.Collection;
@@ -47,8 +50,8 @@ public class RepairRunStatus {
   @JsonProperty("keyspace_name")
   private String keyspaceName;
 
-  @JsonProperty("run_state")
-  private String runState;
+  @JsonProperty
+  private RepairRun.RunState state;
 
   @JsonIgnore
   private DateTime creationTime;
@@ -65,17 +68,23 @@ public class RepairRunStatus {
   @JsonProperty
   private double intensity;
 
-  @JsonProperty("segment_count")
-  private int segmentCount;
+  @JsonProperty("total_segments")
+  private int totalSegments;
 
   @JsonProperty("repair_parallelism")
-  private String repairParallelism;
+  private RepairParallelism repairParallelism;
 
   @JsonProperty("segments_repaired")
-  private int segmentsRepaired = 0;
+  private int segmentsRepaired;
 
   @JsonProperty("last_event")
   private String lastEvent;
+
+  @JsonProperty
+  private String duration;
+
+  @JsonIgnore
+  private DateTime estimatedTimeOfArrival;
 
   /**
    * Default public constructor Required for Jackson JSON parsing.
@@ -83,29 +92,77 @@ public class RepairRunStatus {
   public RepairRunStatus() {
   }
 
-  public RepairRunStatus(RepairRun repairRun, RepairUnit repairUnit) {
-    this.id = repairRun.getId();
-    this.cause = repairRun.getCause();
-    this.owner = repairRun.getOwner();
-    this.clusterName = repairRun.getClusterName();
-    this.columnFamilies = repairUnit.getColumnFamilies();
-    this.keyspaceName = repairUnit.getKeyspaceName();
-    this.runState = repairRun.getRunState().name();
-    this.creationTime = repairRun.getCreationTime();
-    this.startTime = repairRun.getStartTime();
-    this.endTime = repairRun.getEndTime();
-    this.pauseTime = repairRun.getPauseTime();
-    this.intensity = CommonTools.roundDoubleNicely(repairRun.getIntensity());
-    this.segmentCount = repairRun.getSegmentCount();
-    this.repairParallelism = repairRun.getRepairParallelism().name().toLowerCase();
-    this.lastEvent = repairRun.getLastEvent();
+  public RepairRunStatus(long runId, String clusterName, String keyspaceName,
+      Collection<String> columnFamilies, int segmentsRepaired, int totalSegments,
+      RepairRun.RunState state, DateTime startTime, DateTime endTime, String cause, String owner,
+      String lastEvent, DateTime creationTime, DateTime pauseTime, double intensity,
+      RepairParallelism repairParallelism) {
+    this.id = runId;
+    this.cause = cause;
+    this.owner = owner;
+    this.clusterName = clusterName;
+    this.columnFamilies = columnFamilies;
+    this.keyspaceName = keyspaceName;
+    this.state = state;
+    this.creationTime = creationTime;
+    this.startTime = startTime;
+    this.endTime = endTime;
+    this.pauseTime = pauseTime;
+    this.intensity = CommonTools.roundDoubleNicely(intensity);
+    this.totalSegments = totalSegments;
+    this.repairParallelism = repairParallelism;
+    this.segmentsRepaired = segmentsRepaired;
+    this.lastEvent = lastEvent;
+
+    if (startTime == null || endTime == null) {
+      duration = null;
+    } else {
+      duration = DurationFormatUtils.formatDurationWords(
+          new Duration(startTime.toInstant(), endTime.toInstant()).getMillis(),
+          true, false);
+    }
+
+    if (startTime == null || endTime != null) {
+      estimatedTimeOfArrival = null;
+    } else {
+      if (state == RepairRun.RunState.ERROR || state == RepairRun.RunState.DELETED) {
+        estimatedTimeOfArrival = null;
+      } else if (segmentsRepaired == 0) {
+        estimatedTimeOfArrival = null;
+      }
+      else {
+        long now = DateTime.now().getMillis();
+        long currentDuration = now - startTime.getMillis();
+        long millisecondsPerSegment = currentDuration / segmentsRepaired;
+        int segmentsLeft = totalSegments - segmentsRepaired;
+        estimatedTimeOfArrival = new DateTime(now + millisecondsPerSegment * segmentsLeft);
+      }
+    }
+  }
+
+  public RepairRunStatus(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) {
+    this(
+        repairRun.getId(),
+        repairRun.getClusterName(),
+        repairUnit.getKeyspaceName(),
+        repairUnit.getColumnFamilies(),
+        segmentsRepaired,
+        repairRun.getSegmentCount(),
+        repairRun.getRunState(),
+        repairRun.getStartTime(),
+        repairRun.getEndTime(),
+        repairRun.getCause(),
+        repairRun.getOwner(),
+        repairRun.getLastEvent(),
+        repairRun.getCreationTime(),
+        repairRun.getPauseTime(),
+        repairRun.getIntensity(),
+        repairRun.getRepairParallelism()
+    );
   }
 
   @JsonProperty("creation_time")
   public String getCreationTimeISO8601() {
-    if (creationTime == null) {
-      return null;
-    }
     return CommonTools.dateTimeToISO8601(creationTime);
   }
 
@@ -118,9 +175,6 @@ public class RepairRunStatus {
 
   @JsonProperty("start_time")
   public String getStartTimeISO8601() {
-    if (startTime == null) {
-      return null;
-    }
     return CommonTools.dateTimeToISO8601(startTime);
   }
 
@@ -133,9 +187,6 @@ public class RepairRunStatus {
 
   @JsonProperty("end_time")
   public String getEndTimeISO8601() {
-    if (endTime == null) {
-      return null;
-    }
     return CommonTools.dateTimeToISO8601(endTime);
   }
 
@@ -148,9 +199,6 @@ public class RepairRunStatus {
 
   @JsonProperty("pause_time")
   public String getPauseTimeISO8601() {
-    if (pauseTime == null) {
-      return null;
-    }
     return CommonTools.dateTimeToISO8601(pauseTime);
   }
 
@@ -209,12 +257,12 @@ public class RepairRunStatus {
     this.keyspaceName = keyspaceName;
   }
 
-  public String getRunState() {
-    return runState;
+  public RepairRun.RunState getState() {
+    return state;
   }
 
-  public void setRunState(String runState) {
-    this.runState = runState;
+  public void setState(RepairRun.RunState runState) {
+    this.state = runState;
   }
 
   public DateTime getCreationTime() {
@@ -257,19 +305,19 @@ public class RepairRunStatus {
     this.intensity = intensity;
   }
 
-  public int getSegmentCount() {
-    return segmentCount;
+  public int getTotalSegments() {
+    return totalSegments;
   }
 
-  public void setSegmentCount(int segmentCount) {
-    this.segmentCount = segmentCount;
+  public void setTotalSegments(int segmentCount) {
+    this.totalSegments = segmentCount;
   }
 
-  public String getRepairParallelism() {
+  public RepairParallelism getRepairParallelism() {
     return repairParallelism;
   }
 
-  public void setRepairParallelism(String repairParallelism) {
+  public void setRepairParallelism(RepairParallelism repairParallelism) {
     this.repairParallelism = repairParallelism;
   }
 
@@ -287,5 +335,25 @@ public class RepairRunStatus {
 
   public void setLastEvent(String lastEvent) {
     this.lastEvent = lastEvent;
+  }
+
+  public String getDuration() {
+    return duration;
+  }
+
+  public void setDuration(String duration) {
+    this.duration = duration;
+  }
+
+  @JsonProperty("estimate_time_of_arrival")
+  public String getEstimatedTimeOfArrivalISO8601() {
+    return CommonTools.dateTimeToISO8601(estimatedTimeOfArrival);
+  }
+
+  @JsonProperty("estimate_time_of_arrival")
+  public void setEstimatedTimeOfArrivalISO8601(String dateStr) {
+    if (null != dateStr) {
+      estimatedTimeOfArrival = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
+    }
   }
 }
