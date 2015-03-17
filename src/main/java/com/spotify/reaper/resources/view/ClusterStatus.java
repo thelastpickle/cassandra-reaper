@@ -19,10 +19,13 @@ import java.util.Collection;
 
 public class ClusterStatus {
 
+  @JsonProperty
+  public final String name;
   @JsonProperty("repair_runs")
   public final Collection<RepairRunStatus> repairRuns;
 
-  public ClusterStatus(Collection<RepairRunStatus> repairRuns) {
+  public ClusterStatus(String name, Collection<RepairRunStatus> repairRuns) {
+    this.name = name;
     this.repairRuns = repairRuns;
   }
 }

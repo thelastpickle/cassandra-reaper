@@ -79,7 +79,7 @@ public class ClusterResource {
   private Response viewCluster(String clusterName, Optional<Integer> limit,
       Optional<URI> createdURI) {
     ClusterStatus view =
-        new ClusterStatus(context.storage.getClusterRunStatuses(clusterName, limit.or(10)));
+        new ClusterStatus(clusterName, context.storage.getClusterRunStatuses(clusterName, limit.or(10)));
 
     if (view.repairRuns == null) {
       return Response.status(Response.Status.NOT_FOUND)
@@ -180,7 +180,8 @@ public class ClusterResource {
     }
     Optional<Cluster> deletedCluster = context.storage.deleteCluster(clusterName);
     if (deletedCluster.isPresent()) {
-      return Response.ok(new ClusterStatus(Collections.<RepairRunStatus>emptyList())).build();
+      return Response.ok(new ClusterStatus(clusterName, Collections.<RepairRunStatus>emptyList()))
+          .build();
     }
     return Response.serverError().entity("delete failed for schedule with name \""
                                          + clusterName + "\"").build();
