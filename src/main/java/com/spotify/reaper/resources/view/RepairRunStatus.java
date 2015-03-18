@@ -345,12 +345,12 @@ public class RepairRunStatus {
     this.duration = duration;
   }
 
-  @JsonProperty("estimate_time_of_arrival")
+  @JsonProperty("estimated_time_of_arrival")
   public String getEstimatedTimeOfArrivalISO8601() {
     return CommonTools.dateTimeToISO8601(estimatedTimeOfArrival);
   }
 
-  @JsonProperty("estimate_time_of_arrival")
+  @JsonProperty("estimated_time_of_arrival")
   public void setEstimatedTimeOfArrivalISO8601(String dateStr) {
     if (null != dateStr) {
       estimatedTimeOfArrival = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
