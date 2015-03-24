@@ -79,7 +79,7 @@ public class ClusterResource {
   private Response viewCluster(String clusterName, Optional<Integer> limit,
       Optional<URI> createdURI) {
     ClusterStatus view =
-        new ClusterStatus(clusterName, context.storage.getClusterRunStatuses(clusterName, limit.or(10)));
+        new ClusterStatus(clusterName, context.storage.getClusterRunStatuses(clusterName, limit.or(Integer.MAX_VALUE)));
 
     if (view.repairRuns == null) {
       return Response.status(Response.Status.NOT_FOUND)
