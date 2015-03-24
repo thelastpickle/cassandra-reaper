@@ -179,6 +179,7 @@ public interface IStoragePostgreSQL {
           + "FROM repair_run "
           + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
           + "WHERE repair_unit.cluster_name = :clusterName "
+          + "ORDER BY end_time DESC, start_time DESC "
           + "LIMIT :limit";
 
   @SqlQuery("SELECT version()")
