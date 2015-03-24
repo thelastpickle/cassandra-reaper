@@ -14,6 +14,7 @@
 package com.spotify.reaper.storage;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -384,7 +385,9 @@ public class MemoryStorage implements IStorage {
       return Collections.emptyList();
     } else {
       List<RepairRunStatus> runStatuses = Lists.newArrayList();
-      for (RepairRun run : getRepairRunsForCluster(clusterName)) {
+      List<RepairRun> runs = getRepairRunsForCluster(clusterName);
+      Collections.sort(runs);
+      for (RepairRun run : Iterables.limit(runs, limit)) {
         RepairUnit unit = getRepairUnit(run.getRepairUnitId()).get();
         int segmentsRepaired =
             getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);

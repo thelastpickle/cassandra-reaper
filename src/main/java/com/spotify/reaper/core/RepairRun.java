@@ -15,8 +15,9 @@ package com.spotify.reaper.core;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeComparator;
 
-public class RepairRun {
+public class RepairRun implements Comparable<RepairRun> {
 
   private final long id;
 
@@ -113,6 +114,24 @@ public class RepairRun {
 
   public Builder with() {
     return new Builder(this);
+  }
+
+  /**
+   * Order RepairRun instances by time. Primarily endTime, secondarily startTime. Descending, i.e.
+   * latest first.
+   * @param other the RepairRun compared to
+   * @return negative if this RepairRun is later than the specified RepairRun. Positive if earlier.
+   *         0 if equal.
+   */
+  @Override
+  public int compareTo(RepairRun other) {
+    DateTimeComparator comparator = DateTimeComparator.getInstance();
+    int endTimeComparison = comparator.compare(endTime, other.endTime);
+    if (endTimeComparison != 0) {
+      return -endTimeComparison;
+    } else {
+      return -comparator.compare(startTime, other.startTime);
+    }
   }
 
   public enum RunState {
