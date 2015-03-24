@@ -80,8 +80,9 @@ public class ClusterResource {
       Optional<URI> createdURI) {
     ClusterStatus view =
         new ClusterStatus(clusterName, context.storage.getClusterRunStatuses(clusterName, limit.or(Integer.MAX_VALUE)));
+    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
 
-    if (view.repairRuns == null) {
+    if (!cluster.isPresent()) {
       return Response.status(Response.Status.NOT_FOUND)
           .entity("cluster with name \"" + clusterName + "\" not found").build();
     } else if (createdURI.isPresent()) {
