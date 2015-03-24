@@ -78,19 +78,22 @@ public class ClusterResource {
 
   private Response viewCluster(String clusterName, Optional<Integer> limit,
       Optional<URI> createdURI) {
-    ClusterStatus view =
-        new ClusterStatus(clusterName, context.storage.getClusterRunStatuses(clusterName, limit.or(Integer.MAX_VALUE)));
     Optional<Cluster> cluster = context.storage.getCluster(clusterName);
 
     if (!cluster.isPresent()) {
       return Response.status(Response.Status.NOT_FOUND)
           .entity("cluster with name \"" + clusterName + "\" not found").build();
-    } else if (createdURI.isPresent()) {
-      return Response.created(createdURI.get())
-          .entity(view).build();
     } else {
-      return Response.ok()
-          .entity(view).build();
+      ClusterStatus view =
+          new ClusterStatus(cluster.get(),
+              context.storage.getClusterRunStatuses(clusterName, limit.or(Integer.MAX_VALUE)));
+      if (createdURI.isPresent()) {
+        return Response.created(createdURI.get())
+            .entity(view).build();
+      } else {
+        return Response.ok()
+            .entity(view).build();
+      }
     }
   }
 
@@ -181,7 +184,8 @@ public class ClusterResource {
     }
     Optional<Cluster> deletedCluster = context.storage.deleteCluster(clusterName);
     if (deletedCluster.isPresent()) {
-      return Response.ok(new ClusterStatus(clusterName, Collections.<RepairRunStatus>emptyList()))
+      return Response.ok(new ClusterStatus(deletedCluster.get(),
+          Collections.<RepairRunStatus>emptyList()))
           .build();
     }
     return Response.serverError().entity("delete failed for schedule with name \""

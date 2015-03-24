@@ -14,6 +14,7 @@
 package com.spotify.reaper.resources.view;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.reaper.core.Cluster;
 
 import java.util.Collection;
 
@@ -24,8 +25,8 @@ public class ClusterStatus {
   @JsonProperty("repair_runs")
   public final Collection<RepairRunStatus> repairRuns;
 
-  public ClusterStatus(String name, Collection<RepairRunStatus> repairRuns) {
-    this.name = name;
+  public ClusterStatus(Cluster cluster, Collection<RepairRunStatus> repairRuns) {
+    this.name = cluster.getName();
     this.repairRuns = repairRuns;
   }
 }
