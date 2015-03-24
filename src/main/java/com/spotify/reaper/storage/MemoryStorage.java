@@ -14,6 +14,7 @@
 package com.spotify.reaper.storage;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -27,6 +28,7 @@ import com.spotify.reaper.service.RingRange;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -380,10 +382,12 @@ public class MemoryStorage implements IStorage {
   public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
     Optional<Cluster> cluster = getCluster(clusterName);
     if (!cluster.isPresent()) {
-      return null;
+      return Collections.emptyList();
     } else {
       List<RepairRunStatus> runStatuses = Lists.newArrayList();
-      for (RepairRun run : getRepairRunsForCluster(clusterName)) {
+      List<RepairRun> runs = getRepairRunsForCluster(clusterName);
+      Collections.sort(runs);
+      for (RepairRun run : Iterables.limit(runs, limit)) {
         RepairUnit unit = getRepairUnit(run.getRepairUnitId()).get();
         int segmentsRepaired =
             getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);

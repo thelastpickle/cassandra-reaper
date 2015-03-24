@@ -169,19 +169,17 @@ public interface IStoragePostgreSQL {
 
   // View-specific queries
   //
-
-  // TODO: segment_count may not be exactly the actual amount of segments
-  // It would be possible to query specifically for it.
   static final String SQL_CLUSTER_RUN_OVERVIEW =
       "SELECT repair_run.id, repair_unit.cluster_name, keyspace_name, column_families, "
-          + "COUNT(repair_segment.id), segment_count, repair_run.state, repair_run.start_time, "
+          + "(SELECT COUNT(case when state = 2 then 1 else null end) FROM repair_segment WHERE run_id = repair_run.id) AS segments_repaired, "
+          + "(SELECT COUNT(*) FROM repair_segment WHERE run_id = repair_run.id) AS segments_total, "
+          + "repair_run.state, repair_run.start_time, "
           + "repair_run.end_time, cause, owner, last_event, "
           + "creation_time, pause_time, intensity, repair_parallelism "
           + "FROM repair_run "
-          + "JOIN repair_segment ON run_id = repair_run.id "
-          + "JOIN repair_unit ON repair_run.repair_unit_id = repair_unit.id "
-          + "WHERE repair_unit.cluster_name = :clusterName AND repair_segment.state = 2 "
-          + "GROUP BY repair_run.id, repair_unit.id "
+          + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
+          + "WHERE repair_unit.cluster_name = :clusterName "
+          + "ORDER BY end_time DESC, start_time DESC "
           + "LIMIT :limit";
 
   @SqlQuery("SELECT version()")

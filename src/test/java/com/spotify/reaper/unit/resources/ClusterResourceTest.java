@@ -87,4 +87,22 @@ public class ClusterResourceTest {
     assertTrue(msg.contains("already exists"));
     assertEquals(1, context.storage.getClusters().size());
   }
+
+  @Test
+  public void testGetNonExistingCluster() {
+    ClusterResource clusterResource = new ClusterResource(context);
+    Response response = clusterResource.getCluster("i_dont_exist", Optional.<Integer>absent());
+    assertEquals(404, response.getStatus());
+  }
+
+  @Test
+  public void testGetExistingCluster() {
+    final String I_DO_EXIST = "i_do_exist";
+    Cluster cluster = new Cluster(I_DO_EXIST, PARTITIONER, Sets.newHashSet(SEED_HOST));
+    context.storage.addCluster(cluster);
+
+    ClusterResource clusterResource = new ClusterResource(context);
+    Response response = clusterResource.getCluster(I_DO_EXIST, Optional.<Integer>absent());
+    assertEquals(200, response.getStatus());
+  }
 }

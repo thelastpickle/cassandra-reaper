@@ -23,8 +23,8 @@ public class RepairRunStatusMapper implements ResultSetMapper<RepairRunStatus> {
     String keyspaceName = r.getString("keyspace_name");
     Collection<String> columnFamilies =
         ImmutableSet.copyOf((String[]) r.getArray("column_families").getArray());
-    int segmentsRepaired = (int)r.getLong("count");
-    int totalSegments = r.getInt("segment_count");
+    int segmentsRepaired = r.getInt("segments_repaired");
+    int totalSegments = r.getInt("segments_total");
     RepairRun.RunState state = RepairRun.RunState.valueOf(r.getString("state"));
     DateTime startTime = RepairRunMapper.getDateTimeOrNull(r, "start_time");
     DateTime endTime = RepairRunMapper.getDateTimeOrNull(r, "end_time");
@@ -36,6 +36,7 @@ public class RepairRunStatusMapper implements ResultSetMapper<RepairRunStatus> {
     Double intensity = r.getDouble("intensity");
     RepairParallelism repairParallelism =
         RepairParallelism.valueOf(r.getString("repair_parallelism"));
+
     return new RepairRunStatus(runId, clusterName, keyspaceName, columnFamilies, segmentsRepaired,
         totalSegments, state, startTime, endTime, cause, owner, lastEvent,
         creationTime, pauseTime, intensity, repairParallelism);
