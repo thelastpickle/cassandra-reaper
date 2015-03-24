@@ -26,6 +26,8 @@ import com.spotify.reaper.service.RingRange;
 import java.util.Collection;
 import java.util.Set;
 
+import javax.validation.constraints.NotNull;
+
 /**
  * API definition for cassandra-reaper.
  */
@@ -125,5 +127,6 @@ public interface IStorage {
    */
   Optional<RepairSchedule> deleteRepairSchedule(long id);
 
-Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit);
+  @NotNull
+  Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit);
 }

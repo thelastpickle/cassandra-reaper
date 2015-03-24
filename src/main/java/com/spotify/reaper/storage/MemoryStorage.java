@@ -27,6 +27,7 @@ import com.spotify.reaper.service.RingRange;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -380,7 +381,7 @@ public class MemoryStorage implements IStorage {
   public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
     Optional<Cluster> cluster = getCluster(clusterName);
     if (!cluster.isPresent()) {
-      return null;
+      return Collections.emptyList();
     } else {
       List<RepairRunStatus> runStatuses = Lists.newArrayList();
       for (RepairRun run : getRepairRunsForCluster(clusterName)) {
