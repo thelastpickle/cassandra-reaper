@@ -17,16 +17,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.reaper.core.Cluster;
 
 import java.util.Collection;
+import java.util.Set;
 
 public class ClusterStatus {
 
   @JsonProperty
   public final String name;
+  @JsonProperty("seed_hosts")
+  public final Set<String> seedHosts;
   @JsonProperty("repair_runs")
   public final Collection<RepairRunStatus> repairRuns;
 
   public ClusterStatus(Cluster cluster, Collection<RepairRunStatus> repairRuns) {
     this.name = cluster.getName();
+    this.seedHosts = cluster.getSeedHosts();
     this.repairRuns = repairRuns;
   }
 }
