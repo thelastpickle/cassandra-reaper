@@ -1,10 +1,17 @@
+cassandra-reaper (0.1.3-1) stable; urgency=low
+
+  * Fixed bug where cluster resource never returned 404
+  * Small tweaks to response from cluster resource
+
+ -- Björn Hegerfors <bj0rn@spotify.com>  Tue, 24 Mar 2015 18:00:00 +0100
+
 cassandra-reaper (0.1.2-1) stable; urgency=low
 
   * New response for cluster endpoint
   * Fixed bug in spreaper's --start-repair flag
   * Fixed bug where paused schedules would get resumed when starting up
 
- -- Björn Hegerfors <bj0rn@spotify.com>  Tue, 17 Feb 2015 18:17:44 +0100
+ -- Björn Hegerfors <bj0rn@spotify.com>  Tue, 17 Mar 2015 18:17:44 +0100
 
 cassandra-reaper (0.1.1-1) stable; urgency=low
 
