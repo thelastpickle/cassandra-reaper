@@ -72,6 +72,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private final StorageServiceMBean ssProxy;
   private final Optional<RepairStatusHandler> repairStatusHandler;
   private final String host;
+  private final String clusterName;
 
   private JmxProxy(Optional<RepairStatusHandler> handler, String host, JMXConnector jmxConnector,
                    StorageServiceMBean ssProxy, ObjectName ssMbeanName,
@@ -83,6 +84,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     this.ssProxy = ssProxy;
     this.repairStatusHandler = handler;
     this.cmProxy = cmProxy;
+    this.clusterName = handler.isPresent() ? handler.get().getClusterName() : "UnknownClusterName";
   }
 
   /**
@@ -340,6 +342,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    */
   @Override
   public void handleNotification(Notification notification, Object handback) {
+    Thread.currentThread().setName(this.clusterName);
     // we're interested in "repair"
     String type = notification.getType();
     LOG.debug("Received notification: {}", notification.toString());

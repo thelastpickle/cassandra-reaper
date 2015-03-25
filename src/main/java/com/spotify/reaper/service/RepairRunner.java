@@ -37,6 +37,7 @@ public class RepairRunner implements Runnable {
 
   private final AppContext context;
   private final long repairRunId;
+  private final String clusterName;
   private JmxProxy jmxConnection;
   private Long currentlyRunningSegmentId;
 
@@ -49,6 +50,7 @@ public class RepairRunner implements Runnable {
     Optional<Cluster> cluster = context.storage.getCluster(repairRun.get().getClusterName());
     assert cluster.isPresent() : "No Cluster with name " + repairRun.get().getClusterName()
                                  + " found from storage";
+    this.clusterName = cluster.get().getName();
   }
 
   public long getRepairRunId() {
@@ -65,6 +67,9 @@ public class RepairRunner implements Runnable {
    */
   @Override
   public void run() {
+
+    Thread.currentThread().setName(this.clusterName);
+
     Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     try {
       if (!repairRun.isPresent()) {
@@ -194,7 +199,7 @@ public class RepairRunner implements Runnable {
     }
 
     currentlyRunningSegmentId = segmentId;
-    SegmentRunner.triggerRepair(context, segmentId, potentialCoordinators,
+    SegmentRunner.triggerRepair(context, segmentId, clusterName, potentialCoordinators,
                                 context.repairManager.getRepairTimeoutMillis());
     currentlyRunningSegmentId = null;
 
