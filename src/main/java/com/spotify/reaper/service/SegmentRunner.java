@@ -45,29 +45,27 @@ public final class SegmentRunner implements RepairStatusHandler {
   private final AppContext context;
   private final long segmentId;
   private final Condition condition = new SimpleCondition();
-  private final String clusterName;
   private int commandId;
 
   // Caching all active SegmentRunners.
   @VisibleForTesting
   public static Map<Long, SegmentRunner> segmentRunners = Maps.newConcurrentMap();
 
-  private SegmentRunner(AppContext context, long segmentId, String clusterName) {
+  private SegmentRunner(AppContext context, long segmentId) {
     this.context = context;
     this.segmentId = segmentId;
-    this.clusterName = clusterName;
   }
 
   /**
    * Triggers a repair for a segment. Is blocking call.
    */
-  public static void triggerRepair(AppContext context, long segmentId, String clusterName,
+  public static void triggerRepair(AppContext context, long segmentId,
                                    Collection<String> potentialCoordinators, long timeoutMillis)
       throws ReaperException {
     if (segmentRunners.containsKey(segmentId)) {
       throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
     }
-    SegmentRunner newSegmentRunner = new SegmentRunner(context, segmentId, clusterName);
+    SegmentRunner newSegmentRunner = new SegmentRunner(context, segmentId);
     segmentRunners.put(segmentId, newSegmentRunner);
     newSegmentRunner.runRepair(potentialCoordinators, timeoutMillis);
   }
@@ -265,10 +263,5 @@ public final class SegmentRunner implements RepairStatusHandler {
           break;
       }
     }
-  }
-
-  @Override
-  public String getClusterName() {
-    return this.clusterName;
   }
 }

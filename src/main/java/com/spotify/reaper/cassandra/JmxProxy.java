@@ -18,6 +18,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.service.RingRange;
 
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
@@ -84,7 +85,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     this.ssProxy = ssProxy;
     this.repairStatusHandler = handler;
     this.cmProxy = cmProxy;
-    this.clusterName = handler.isPresent() ? handler.get().getClusterName() : "UnknownClusterName";
+    this.clusterName = Cluster.toSymbolicName(ssProxy.getClusterName());
   }
 
   /**
@@ -342,7 +343,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    */
   @Override
   public void handleNotification(Notification notification, Object handback) {
-    Thread.currentThread().setName(this.clusterName);
+    Thread.currentThread().setName(clusterName);
     // we're interested in "repair"
     String type = notification.getType();
     LOG.debug("Received notification: {}", notification.toString());

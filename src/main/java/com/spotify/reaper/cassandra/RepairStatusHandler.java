@@ -29,9 +29,4 @@ public interface RepairStatusHandler {
    */
   public void handle(int repairNumber, ActiveRepairService.Status status, String message);
 
-  /**
-   * @return name of the cluster (as recorded in the reaper) being repaired
-   */
-  public String getClusterName();
-
 }

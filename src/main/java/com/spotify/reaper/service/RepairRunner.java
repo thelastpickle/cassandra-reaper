@@ -199,7 +199,7 @@ public class RepairRunner implements Runnable {
     }
 
     currentlyRunningSegmentId = segmentId;
-    SegmentRunner.triggerRepair(context, segmentId, clusterName, potentialCoordinators,
+    SegmentRunner.triggerRepair(context, segmentId, potentialCoordinators,
                                 context.repairManager.getRepairTimeoutMillis());
     currentlyRunningSegmentId = null;
 
