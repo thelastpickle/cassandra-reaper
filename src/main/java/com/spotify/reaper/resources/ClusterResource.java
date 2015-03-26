@@ -121,7 +121,7 @@ public class ClusterResource {
           .entity(String.format("cluster \"%s\" already exists", existingCluster.get().getName()))
           .build();
     } else {
-      LOG.info("creating new cluster based on given seed host: {}", newCluster);
+      LOG.info("creating new cluster based on given seed host: {}", newCluster.getName());
       context.storage.addCluster(newCluster);
     }
 
