@@ -21,6 +21,7 @@ import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.resources.view.ClusterStatus;
 import com.spotify.reaper.resources.view.RepairRunStatus;
+import com.spotify.reaper.resources.view.RepairScheduleStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +87,8 @@ public class ClusterResource {
     } else {
       ClusterStatus view =
           new ClusterStatus(cluster.get(),
-              context.storage.getClusterRunStatuses(clusterName, limit.or(Integer.MAX_VALUE)));
+              context.storage.getClusterRunStatuses(clusterName, limit.or(Integer.MAX_VALUE)),
+              context.storage.getClusterScheduleStatuses(clusterName));
       if (createdURI.isPresent()) {
         return Response.created(createdURI.get())
             .entity(view).build();
@@ -185,7 +187,7 @@ public class ClusterResource {
     Optional<Cluster> deletedCluster = context.storage.deleteCluster(clusterName);
     if (deletedCluster.isPresent()) {
       return Response.ok(new ClusterStatus(deletedCluster.get(),
-          Collections.<RepairRunStatus>emptyList()))
+          Collections.<RepairRunStatus>emptyList(), Collections.<RepairScheduleStatus>emptyList()))
           .build();
     }
     return Response.serverError().entity("delete failed for schedule with name \""

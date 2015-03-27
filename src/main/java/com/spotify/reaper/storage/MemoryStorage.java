@@ -24,6 +24,7 @@ import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
+import com.spotify.reaper.resources.view.RepairScheduleStatus;
 import com.spotify.reaper.service.RingRange;
 
 import java.util.ArrayList;
@@ -400,6 +401,22 @@ public class MemoryStorage implements IStorage {
             run.getRepairParallelism()));
       }
       return runStatuses;
+    }
+  }
+
+  @Override
+  public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
+    Optional<Cluster> cluster = getCluster(clusterName);
+    if (!cluster.isPresent()) {
+      return Collections.emptyList();
+    } else {
+      List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
+      Collection<RepairSchedule> schedules = getRepairSchedulesForCluster(clusterName);
+      for (RepairSchedule schedule : schedules) {
+        RepairUnit unit = getRepairUnit(schedule.getRepairUnitId()).get();
+        scheduleStatuses.add(new RepairScheduleStatus(schedule, unit));
+      }
+      return scheduleStatuses;
     }
   }
 
