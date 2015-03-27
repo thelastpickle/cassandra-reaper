@@ -19,6 +19,7 @@ import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.CommonTools;
 
+import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 
@@ -35,14 +36,14 @@ public class RepairScheduleStatus {
   @JsonProperty("cluster_name")
   private String clusterName;
 
-  @JsonProperty("column_families")
-  private Collection<String> columnFamilies;
-
   @JsonProperty("keyspace_name")
   private String keyspaceName;
 
+  @JsonProperty("column_families")
+  private Collection<String> columnFamilies;
+
   @JsonProperty
-  private String state;
+  private RepairSchedule.State state;
 
   @JsonIgnore
   private DateTime creationTime;
@@ -60,7 +61,7 @@ public class RepairScheduleStatus {
   private int segmentCount;
 
   @JsonProperty("repair_parallelism")
-  private String repairParallelism;
+  private RepairParallelism repairParallelism;
 
   @JsonProperty("scheduled_days_between")
   private int daysBetween;
@@ -71,20 +72,42 @@ public class RepairScheduleStatus {
   public RepairScheduleStatus() {
   }
 
+  public RepairScheduleStatus(long id, String owner, String clusterName, String keyspaceName,
+      Collection<String> columnFamilies, RepairSchedule.State state,
+      DateTime creationTime, DateTime nextActivation,
+      DateTime pauseTime, double intensity, int segmentCount, RepairParallelism repairParallelism,
+      int daysBetween) {
+    this.id = id;
+    this.owner = owner;
+    this.clusterName = clusterName;
+    this.keyspaceName = keyspaceName;
+    this.columnFamilies = columnFamilies;
+    this.state = state;
+    this.creationTime = creationTime;
+    this.nextActivation = nextActivation;
+    this.pauseTime = pauseTime;
+    this.intensity = CommonTools.roundDoubleNicely(intensity);
+    this.segmentCount = segmentCount;
+    this.repairParallelism = repairParallelism;
+    this.daysBetween = daysBetween;
+  }
+
   public RepairScheduleStatus(RepairSchedule repairSchedule, RepairUnit repairUnit) {
-    this.id = repairSchedule.getId();
-    this.state = repairSchedule.getState().name();
-    this.owner = repairSchedule.getOwner();
-    this.clusterName = repairUnit.getClusterName();
-    this.columnFamilies = repairUnit.getColumnFamilies();
-    this.keyspaceName = repairUnit.getKeyspaceName();
-    this.creationTime = repairSchedule.getCreationTime();
-    this.nextActivation = repairSchedule.getNextActivation();
-    this.pauseTime = repairSchedule.getPauseTime();
-    this.intensity = CommonTools.roundDoubleNicely(repairSchedule.getIntensity());
-    this.segmentCount = repairSchedule.getSegmentCount();
-    this.repairParallelism = repairSchedule.getRepairParallelism().name().toLowerCase();
-    this.daysBetween = repairSchedule.getDaysBetween();
+    this(
+        repairSchedule.getId(),
+        repairSchedule.getOwner(),
+        repairUnit.getClusterName(),
+        repairUnit.getKeyspaceName(),
+        repairUnit.getColumnFamilies(),
+        repairSchedule.getState(),
+        repairSchedule.getCreationTime(),
+        repairSchedule.getNextActivation(),
+        repairSchedule.getPauseTime(),
+        repairSchedule.getIntensity(),
+        repairSchedule.getSegmentCount(),
+        repairSchedule.getRepairParallelism(),
+        repairSchedule.getDaysBetween()
+    );
   }
 
   public long getId() {
@@ -127,11 +150,11 @@ public class RepairScheduleStatus {
     this.keyspaceName = keyspaceName;
   }
 
-  public String getState() {
+  public RepairSchedule.State getState() {
     return state;
   }
 
-  public void setState(String state) {
+  public void setState(RepairSchedule.State state) {
     this.state = state;
   }
 
@@ -175,11 +198,11 @@ public class RepairScheduleStatus {
     this.segmentCount = segmentCount;
   }
 
-  public String getRepairParallelism() {
+  public RepairParallelism getRepairParallelism() {
     return repairParallelism;
   }
 
-  public void setRepairParallelism(String repairParallelism) {
+  public void setRepairParallelism(RepairParallelism repairParallelism) {
     this.repairParallelism = repairParallelism;
   }
 

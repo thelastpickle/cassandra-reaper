@@ -30,8 +30,8 @@ public class RepairScheduleStatusTest {
     data.setIntensity(0.75);
     data.setKeyspaceName("testKeyspace");
     data.setOwner("testuser");
-    data.setRepairParallelism(RepairParallelism.PARALLEL.name());
-    data.setState(RepairSchedule.State.ACTIVE.name());
+    data.setRepairParallelism(RepairParallelism.PARALLEL);
+    data.setState(RepairSchedule.State.ACTIVE);
 
     ObjectMapper mapper = new ObjectMapper();
     String dataAsJson = mapper.writeValueAsString(data);
