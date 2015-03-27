@@ -26,10 +26,10 @@ import java.util.Collection;
 
 public class RepairScheduleStatus {
 
-  @JsonProperty()
+  @JsonProperty
   private long id;
 
-  @JsonProperty()
+  @JsonProperty
   private String owner;
 
   @JsonProperty("cluster_name")
@@ -41,7 +41,7 @@ public class RepairScheduleStatus {
   @JsonProperty("keyspace_name")
   private String keyspaceName;
 
-  @JsonProperty()
+  @JsonProperty
   private String state;
 
   @JsonIgnore
@@ -53,7 +53,7 @@ public class RepairScheduleStatus {
   @JsonIgnore
   private DateTime pauseTime;
 
-  @JsonProperty()
+  @JsonProperty
   private double intensity;
 
   @JsonProperty("segment_count")
