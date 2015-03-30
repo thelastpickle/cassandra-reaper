@@ -161,8 +161,8 @@ def _argument_cause(parser):
 
 def _arguments_for_repair(parser):
     _arguments_for_repair_and_schedule(parser)
-    parser.add_argument("--start-repair", action='store_true',
-                        help="start the repair run immediately after registering it")
+    parser.add_argument("--dont-start-repair", action='store_true',
+                        help="don't start the repair run immediately after registering it")
     _argument_owner(parser)
     _argument_cause(parser)
 
@@ -200,9 +200,9 @@ def _arguments_for_scheduling(parser):
     _argument_owner(parser)
 
 
-def _arguments_for_start_repair(parser):
-    """Arguments relevant for starting a repair"""
-    parser.add_argument("run_id", help="ID of the repair run to start or resume")
+def _arguments_for_resume_repair(parser):
+    """Arguments relevant for resuming a repair"""
+    parser.add_argument("run_id", help="ID of the repair run to resume (or start)")
 
 
 def _arguments_for_pause_repair(parser):
@@ -266,7 +266,7 @@ Usage: spreaper [<global_args>] <command> [<command_args>]
     schedule        Create a repair schedule, choosing the first activation time and days
                     between repair activations. You need to register a cluster into
                     Reaper (add-cluster) before calling this.
-    start-repair    Start a repair run, or resume paused repair run.
+    resume-repair   Resume paused repair run (or start a not started one).
     pause-repair    Pause a repair run.
     start-schedule  Resume a paused repair schedule.
     pause-schedule  Pause a repair schedule.
@@ -440,10 +440,12 @@ class ReaperCLI(object):
                                 repairParallelism=args.repair_parallelism,
                                 intensity=args.intensity)
         repair_run = json.loads(reply)
-        print "# Repair run with id={0} created:".format(repair_run.get('id'))
-        print json.dumps(repair_run, indent=2, sort_keys=True)
-        if args.start_repair:
-            reaper.put("repair_run/{0}".format(repair_run.get('id')), state="RUNNING")
+        print "# Repair run with id={0} created".format(repair_run.get('id'))
+        if not args.dont_start_repair:
+            print "# Starting repair run with id={0}".format(repair_run.get('id'))
+            reply = reaper.put("repair_run/{0}".format(repair_run.get('id')), state="RUNNING")
+            repair_run = json.loads(reply)
+            print json.dumps(repair_run, indent=2, sort_keys=True)
 
     def schedule(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -489,15 +491,15 @@ class ReaperCLI(object):
         print "# Repair schedule with id={0} created:".format(repair_schedule.get('id'))
         print json.dumps(repair_schedule, indent=2, sort_keys=True)
 
-    def start_repair(self):
+    def resume_repair(self):
         reaper, args = ReaperCLI.prepare_reaper(
-            "start-repair",
-            "Start new repair run, or resume a paused repair run.",
-            extra_arguments=_arguments_for_start_repair
+            "resume-repair",
+            "Resume a paused repair run (or trigger a not started one).",
+            extra_arguments=_arguments_for_resume_repair
         )
-        print "# Starting a repair run with id: {0}".format(args.run_id)
+        print "# Resuming a repair run with id: {0}".format(args.run_id)
         reaper.put("repair_run/{0}".format(args.run_id), state="RUNNING")
-        print "# Run '{0}' started".format(args.run_id)
+        print "# Run '{0}' resumed".format(args.run_id)
 
     def pause_repair(self):
         reaper, args = ReaperCLI.prepare_reaper(
