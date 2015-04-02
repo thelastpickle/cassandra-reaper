@@ -265,6 +265,8 @@ public class RepairRunResource {
       return pauseRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
     } else if (isResuming(oldState, newState)) {
       return resumeRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
+    } else if (isAborting(oldState, newState)) {
+      return abortRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
     } else {
       String errMsg = String.format("Transition %s->%s not supported.", oldState.toString(),
                                     newState.toString());
@@ -285,6 +287,10 @@ public class RepairRunResource {
     return oldState == RepairRun.RunState.PAUSED && newState == RepairRun.RunState.RUNNING;
   }
 
+  private boolean isAborting(RepairRun.RunState oldState, RepairRun.RunState newState) {
+    return oldState != RepairRun.RunState.ERROR && newState == RepairRun.RunState.ABORTED;
+  }
+
   private Response startRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) {
     LOG.info("Starting run {}", repairRun.getId());
     RepairRun newRun = context.repairManager.startRepairRun(context, repairRun);
@@ -302,6 +308,12 @@ public class RepairRunResource {
   private Response resumeRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) {
     LOG.info("Resuming run {}", repairRun.getId());
     RepairRun newRun = context.repairManager.startRepairRun(context, repairRun);
+    return Response.ok().entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired)).build();
+  }
+
+  private Response abortRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) {
+    LOG.info("Aborting run {}", repairRun.getId());
+    RepairRun newRun = context.repairManager.abortRepairRun(context, repairRun);
     return Response.ok().entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired)).build();
   }
 
