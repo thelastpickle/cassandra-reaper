@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
-public final class SegmentRunner implements RepairStatusHandler {
+public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentRunner.class);
   private static final int MAX_PENDING_COMPACTIONS = 20;
@@ -45,29 +45,38 @@ public final class SegmentRunner implements RepairStatusHandler {
   private final AppContext context;
   private final long segmentId;
   private final Condition condition = new SimpleCondition();
+  private final Collection<String> potentialCoordinators;
+  private final long timeoutMillis;
+  private final double intensity;
   private int commandId;
 
   // Caching all active SegmentRunners.
   @VisibleForTesting
   public static Map<Long, SegmentRunner> segmentRunners = Maps.newConcurrentMap();
 
-  private SegmentRunner(AppContext context, long segmentId) {
+//  private SegmentRunner(AppContext context, long segmentId) {
+//    this.context = context;
+//    this.segmentId = segmentId;
+//  }
+
+  public SegmentRunner(AppContext context, long segmentId, Collection<String> potentialCoordinators,
+      long timeoutMillis, double intensity) throws ReaperException {
     this.context = context;
     this.segmentId = segmentId;
+    this.potentialCoordinators = potentialCoordinators;
+    this.timeoutMillis = timeoutMillis;
+    this.intensity = intensity;
   }
 
-  /**
-   * Triggers a repair for a segment. Is blocking call.
-   */
-  public static void triggerRepair(AppContext context, long segmentId,
-                                   Collection<String> potentialCoordinators, long timeoutMillis)
-      throws ReaperException {
-    if (segmentRunners.containsKey(segmentId)) {
-      throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
+  @Override
+  public void run() {
+    runRepair();
+    long delay = intensityBasedDelayMillis(intensity);
+    try {
+      Thread.sleep(delay);
+    } catch (InterruptedException e) {
+      LOG.warn("Slept shorter than intended delay.");
     }
-    SegmentRunner newSegmentRunner = new SegmentRunner(context, segmentId);
-    segmentRunners.put(segmentId, newSegmentRunner);
-    newSegmentRunner.runRepair(potentialCoordinators, timeoutMillis);
   }
 
   public static void postpone(AppContext context, RepairSegment segment) {
@@ -89,16 +98,18 @@ public final class SegmentRunner implements RepairStatusHandler {
     jmxConnection.cancelAllRepairs();
   }
 
-  @VisibleForTesting
-  public int getCurrentCommandId() {
-    return this.commandId;
-  }
-
-  private void runRepair(Collection<String> potentialCoordinators, long timeoutMillis) {
+  private void runRepair() {
     final RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
     final RepairRun repairRun = context.storage.getRepairRun(segment.getRunId()).get();
     try (JmxProxy coordinator = context.jmxConnectionFactory
         .connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators)) {
+
+      if (segmentRunners.containsKey(segmentId)) {
+        LOG.error("SegmentRunner already exists for segment with ID: " + segmentId);
+        throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
+      }
+      segmentRunners.put(segmentId, this);
+
       RepairUnit repairUnit = context.storage.getRepairUnit(segment.getRepairUnitId()).get();
       String keyspace = repairUnit.getKeyspaceName();
 
@@ -241,6 +252,7 @@ public final class SegmentRunner implements RepairStatusHandler {
                                                   .state(RepairSegment.State.RUNNING)
                                                   .startTime(now)
                                                   .build(segmentId));
+          LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
           break;
         case SESSION_SUCCESS:
           LOG.debug("repair session succeeded for segment with id '{}' and repair number '{}'",
@@ -264,4 +276,31 @@ public final class SegmentRunner implements RepairStatusHandler {
       }
     }
   }
+
+  /**
+   * Calculate the delay that should be used before starting the next repair segment.
+   *
+   * @return the delay in milliseconds.
+   */
+  long intensityBasedDelayMillis(double intensity) {
+    RepairSegment repairSegment = context.storage.getRepairSegment(segmentId).get();
+    if (repairSegment.getEndTime() == null && repairSegment.getStartTime() == null) {
+      return 0;
+    }
+    else if (repairSegment.getEndTime() != null && repairSegment.getStartTime() != null) {
+      long repairEnd = repairSegment.getEndTime().getMillis();
+      long repairStart = repairSegment.getStartTime().getMillis();
+      long repairDuration = repairEnd - repairStart;
+      long delay = (long) (repairDuration / intensity - repairDuration);
+      LOG.debug("Scheduling next runner run() with delay {} ms", delay);
+      return delay;
+    } else
+    {
+      LOG.error("Segment {} returned with startTime {} and endTime {}. This should not happen."
+              + "Intensity cannot apply, so next run will start immediately.",
+          repairSegment.getId(), repairSegment.getStartTime(), repairSegment.getEndTime());
+      return 0;
+    }
+  }
+
 }

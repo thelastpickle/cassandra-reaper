@@ -170,6 +170,11 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
         });
   }
 
+  public Map<List<String>, List<String>> getRangeToEndpointMap(String keyspace) {
+    checkNotNull(ssProxy, "Looks like the proxy is not connected");
+    return ssProxy.getRangeToEndpointMap(keyspace);
+  }
+
   /**
    * @return all hosts owning a range of tokens
    */

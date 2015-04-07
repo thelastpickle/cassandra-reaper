@@ -2,12 +2,13 @@ package com.spotify.reaper.service;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
-
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
-
 import org.apache.cassandra.concurrent.NamedThreadFactory;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -16,14 +17,14 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class RepairManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairManager.class);
 
-  private ScheduledExecutorService executor;
+  private ListeningScheduledExecutorService executor;
   private long repairTimeoutMillis;
   private long retryDelayMillis;
 
@@ -38,8 +39,8 @@ public class RepairManager {
   public void initializeThreadPool(int threadAmount, long repairTimeout,
                                           TimeUnit repairTimeoutTimeUnit, long retryDelay,
                                           TimeUnit retryDelayTimeUnit) {
-    executor = Executors
-        .newScheduledThreadPool(threadAmount, new NamedThreadFactory("RepairRunner"));
+    executor = MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(threadAmount,
+        new NamedThreadFactory("RepairRunner")));
     repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
     retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
   }
@@ -157,8 +158,12 @@ public class RepairManager {
     executor.schedule(runner, retryDelayMillis, TimeUnit.MILLISECONDS);
   }
 
-  public void scheduleNextRun(RepairRunner runner, long delay) {
-    executor.schedule(runner, delay, TimeUnit.MILLISECONDS);
+  public ListenableFuture<?> submitSegment(SegmentRunner runner) {
+    return executor.submit(runner);
+  }
+
+  public void submitNextRun(RepairRunner runner) {
+    executor.submit(runner);
   }
 
   public void removeRunner(RepairRunner runner) {

@@ -14,8 +14,14 @@
 package com.spotify.reaper.service;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
@@ -29,7 +35,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLongArray;
+
+import javax.annotation.Nullable;
 
 public class RepairRunner implements Runnable {
 
@@ -39,7 +51,9 @@ public class RepairRunner implements Runnable {
   private final long repairRunId;
   private final String clusterName;
   private JmxProxy jmxConnection;
-  private Long currentlyRunningSegmentId;
+//  private Long currentlyRunningSegmentId;
+  private final AtomicLongArray currentlyRunningSegments;
+  private final List<RingRange> parallelRanges;
 
   public RepairRunner(AppContext context, long repairRunId)
       throws ReaperException {
@@ -50,7 +64,30 @@ public class RepairRunner implements Runnable {
     Optional<Cluster> cluster = context.storage.getCluster(repairRun.get().getClusterName());
     assert cluster.isPresent() : "No Cluster with name " + repairRun.get().getClusterName()
                                  + " found from storage";
+    Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
+    assert repairUnit.isPresent() : "No RepairUnit with id " + repairRun.get().getRepairUnitId()
+                                 + " found in storage";
     this.clusterName = cluster.get().getName();
+    JmxProxy jmx = this.context.jmxConnectionFactory.connectAny(cluster.get());
+
+    int parallelRepairs =
+        getPossibleParallelRepairsCount(
+            jmx.getRangeToEndpointMap(repairUnit.get().getKeyspaceName()));
+    currentlyRunningSegments = new AtomicLongArray(parallelRepairs);
+    for(int i=0;i<parallelRepairs;i++) {
+      currentlyRunningSegments.set(i, -1);
+    }
+
+    parallelRanges = getParallelRanges(
+        parallelRepairs,
+        Lists.newArrayList(Collections2.transform(
+            context.storage.getRepairSegmentsForRun(repairRunId),
+            new Function<RepairSegment, RingRange>() {
+              @Override
+              public RingRange apply(RepairSegment input) {
+                return input.getTokenRange();
+              }
+            })));
   }
 
   public long getRepairRunId() {
@@ -58,8 +95,40 @@ public class RepairRunner implements Runnable {
   }
 
   @VisibleForTesting
-  public Long getCurrentlyRunningSegmentId() {
-    return currentlyRunningSegmentId;
+  public static int getPossibleParallelRepairsCount(Map<List<String>, List<String>> ranges)
+      throws ReaperException {
+    if (ranges.size() == 0) {
+      String msg = "Repairing 0-sized cluster.";
+      LOG.error(msg);
+      throw new ReaperException(msg);
+    }
+    return ranges.size() / ranges.values().iterator().next().size();
+  }
+
+  @VisibleForTesting
+  public static List<RingRange> getParallelRanges(int parallelRepairs, List<RingRange> segments)
+      throws ReaperException {
+    if (parallelRepairs == 0) {
+      String msg = "Can't repair anything with 0 threads";
+      LOG.error(msg);
+      throw new ReaperException(msg);
+    }
+
+    Collections.sort(segments, RingRange.startComparator);
+
+    List<RingRange> parallelRanges = Lists.newArrayList();
+    for (int i = 0; i < parallelRepairs - 1; i++) {
+      parallelRanges.add(new RingRange(
+          segments.get(i * segments.size() / parallelRepairs).getStart(),
+          segments.get((i + 1) * segments.size() / parallelRepairs).getStart()
+      ));
+    }
+    parallelRanges.add(new RingRange(
+        segments.get((parallelRepairs - 1) * segments.size() / parallelRepairs).getStart(),
+        segments.get(0).getStart()
+    ));
+
+    return parallelRanges;
   }
 
   /**
@@ -147,15 +216,36 @@ public class RepairRunner implements Runnable {
    * Get the next segment and repair it. If there is none, we're done.
    */
   private void startNextSegment() throws ReaperException {
-    // Currently not allowing parallel repairs.
-    assert
-        context.storage.getSegmentAmountForRepairRunWithState(repairRunId,
-            RepairSegment.State.RUNNING) == 0;
-    Optional<RepairSegment> nextSegment = context.storage.getNextFreeSegment(repairRunId);
-    if (nextSegment.isPresent()) {
-      repairSegment(nextSegment.get().getId(), nextSegment.get().getTokenRange());
-    } else {
-      end();
+    boolean noMoreSegments = true;
+    for (int rangeIndex = 0; rangeIndex < currentlyRunningSegments.length(); rangeIndex++) {
+      Optional<RepairSegment> nextRepairSegment =
+          context.storage.getNextFreeSegmentInRange(repairRunId, parallelRanges.get(rangeIndex));
+      if (!nextRepairSegment.isPresent()) {
+        LOG.debug("No repair segment available for range {}", parallelRanges.get(rangeIndex));
+        continue;
+      } else {
+        noMoreSegments = false;
+        long segmentId = nextRepairSegment.get().getId();
+        boolean wasSet = currentlyRunningSegments.compareAndSet(rangeIndex, -1, segmentId);
+        if (!wasSet) {
+          LOG.debug("Didn't set segment id `{}` to slot {} because it was busy", segmentId, rangeIndex);
+          continue;
+        } else {
+          LOG.debug("Did set segment id `{}` to slot {}", segmentId, rangeIndex);
+          repairSegment(rangeIndex, nextRepairSegment.get().getId(), nextRepairSegment.get().getTokenRange());
+        }
+      }
+    }
+    if (noMoreSegments) {
+      boolean allRangesDone = true;
+      for(int i=0;i<currentlyRunningSegments.length();i++) {
+        if (currentlyRunningSegments.get(i) != -1) {
+          allRangesDone = false;
+        }
+      }
+      if (allRangesDone) {
+        end();
+      }
     }
   }
 
@@ -165,7 +255,7 @@ public class RepairRunner implements Runnable {
    * @param segmentId  id of the segment to repair.
    * @param tokenRange token range of the segment to repair.
    */
-  private void repairSegment(long segmentId, RingRange tokenRange) throws ReaperException {
+  private void repairSegment(final int rangeIndex, final long segmentId, RingRange tokenRange) throws ReaperException {
     RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
     RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId()).get();
     String keyspace = repairUnit.getKeyspaceName();
@@ -179,11 +269,11 @@ public class RepairRunner implements Runnable {
       } catch (ReaperException e) {
         e.printStackTrace();
         LOG.warn("Failed to reestablish JMX connection in runner #{}, retrying", repairRunId);
-
+        currentlyRunningSegments.set(rangeIndex, -1);
         context.repairManager.scheduleRetry(this);
         return;
       }
-      LOG.info("successfully reestablished JMX proxy for repair runner on run id: {}", repairRunId);
+      LOG.debug("successfully reestablished JMX proxy for repair runner on run id: {}", repairRunId);
     }
 
     List<String> potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
@@ -198,12 +288,22 @@ public class RepairRunner implements Runnable {
       return;
     }
 
-    currentlyRunningSegmentId = segmentId;
-    SegmentRunner.triggerRepair(context, segmentId, potentialCoordinators,
-                                context.repairManager.getRepairTimeoutMillis());
-    currentlyRunningSegmentId = null;
+    SegmentRunner segmentRunner = new SegmentRunner(context, segmentId, potentialCoordinators,
+        context.repairManager.getRepairTimeoutMillis(), repairRun.getIntensity());
 
-    handleResult(segmentId);
+    ListenableFuture<?> segmentResult = context.repairManager.submitSegment(segmentRunner);
+    Futures.addCallback(segmentResult, new FutureCallback<Object>() {
+      @Override
+      public void onSuccess(Object ignored) {
+        handleResult(segmentId);
+        currentlyRunningSegments.set(rangeIndex, -1);
+      }
+      @Override
+      public void onFailure(Throwable t) {
+        currentlyRunningSegments.set(rangeIndex, -1);
+        LOG.error("Executing SegmentRunner failed: " + t.getMessage());
+      }
+    });
   }
 
   private void handleResult(long segmentId) {
@@ -218,13 +318,7 @@ public class RepairRunner implements Runnable {
         break;
       case DONE:
         // Successful repair
-        long delay = intensityBasedDelayMillis(segment);
-        context.repairManager.scheduleNextRun(this, delay);
-        String event = String.format("Waiting %ds because of intensity based delay", delay / 1000);
-        RepairRun updatedRepairRun =
-            context.storage.getRepairRun(repairRunId).get().with().lastEvent(event)
-                .build(repairRunId);
-        context.storage.updateRepairRun(updatedRepairRun);
+        context.repairManager.submitNextRun(this);
         break;
       default:
         // Another thread has started a new repair on this segment already
@@ -233,33 +327,6 @@ public class RepairRunner implements Runnable {
                      + " have after segmentRunner has tried a repair";
         LOG.error(msg);
         throw new RuntimeException(msg);
-    }
-  }
-
-  /**
-   * Calculate the delay that should be used before starting the next repair segment.
-   *
-   * @param repairSegment the last finished repair segment.
-   * @return the delay in milliseconds.
-   */
-  long intensityBasedDelayMillis(RepairSegment repairSegment) {
-    if (repairSegment.getEndTime() == null && repairSegment.getStartTime() == null) {
-      return 0;
-    }
-    else if (repairSegment.getEndTime() != null && repairSegment.getStartTime() != null) {
-      long repairEnd = repairSegment.getEndTime().getMillis();
-      long repairStart = repairSegment.getStartTime().getMillis();
-      long repairDuration = repairEnd - repairStart;
-      RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
-      long delay = (long) (repairDuration / repairRun.getIntensity() - repairDuration);
-      LOG.debug("Scheduling next runner run() with delay {} ms", delay);
-      return delay;
-    } else
-    {
-      LOG.error("Segment {} returned with startTime {} and endTime {}. This should not happen."
-              + "Intensity cannot apply, so next run will start immediately.",
-          repairSegment.getId(), repairSegment.getStartTime(), repairSegment.getEndTime());
-      return 0;
     }
   }
 }

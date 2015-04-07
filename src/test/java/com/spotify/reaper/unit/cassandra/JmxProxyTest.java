@@ -14,6 +14,7 @@
 package com.spotify.reaper.unit.cassandra;
 
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 
 import org.junit.Test;
