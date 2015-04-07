@@ -120,7 +120,7 @@ public class SchedulingManager extends TimerTask {
             context.storage.getRepairRunsForUnit(schedule.getRepairUnitId());
         for (RepairRun repairRun : repairRuns) {
           RepairRun.RunState state = repairRun.getRunState();
-          if (state != RepairRun.RunState.DONE && state != RepairRun.RunState.NOT_STARTED) {
+          if (state.isActive()) {
             LOG.info("there is repair (id {}) in state '{}' for repair unit '{}', "
                      + "postponing current schedule trigger until next scheduling",
                      repairRun.getId(), repairRun.getRunState(), repairUnit.getId());

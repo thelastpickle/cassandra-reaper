@@ -141,7 +141,11 @@ public class RepairRun implements Comparable<RepairRun> {
     DONE,
     PAUSED,
     ABORTED,
-    DELETED
+    DELETED;
+
+    public boolean isActive() {
+      return this == RUNNING || this == PAUSED;
+    }
   }
 
   public static class Builder {
