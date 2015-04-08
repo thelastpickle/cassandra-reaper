@@ -27,10 +27,14 @@ public class ClusterStatus {
   public final Set<String> seedHosts;
   @JsonProperty("repair_runs")
   public final Collection<RepairRunStatus> repairRuns;
+  @JsonProperty("repair_schedules")
+  public final Collection<RepairScheduleStatus> repairSchedules;
 
-  public ClusterStatus(Cluster cluster, Collection<RepairRunStatus> repairRuns) {
+  public ClusterStatus(Cluster cluster, Collection<RepairRunStatus> repairRuns,
+      Collection<RepairScheduleStatus> repairSchedules) {
     this.name = cluster.getName();
     this.seedHosts = cluster.getSeedHosts();
     this.repairRuns = repairRuns;
+    this.repairSchedules = repairSchedules;
   }
 }

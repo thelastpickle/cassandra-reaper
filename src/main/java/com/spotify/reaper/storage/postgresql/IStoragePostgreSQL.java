@@ -19,6 +19,7 @@ import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
+import com.spotify.reaper.resources.view.RepairScheduleStatus;
 
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.BindBean;
@@ -182,6 +183,14 @@ public interface IStoragePostgreSQL {
           + "ORDER BY end_time DESC, start_time DESC "
           + "LIMIT :limit";
 
+  static final String SQL_CLUSTER_SCHEDULE_OVERVIEW =
+      "SELECT repair_schedule.id, owner, cluster_name, keyspace_name, column_families, state, "
+          + "creation_time, next_activation, pause_time, intensity, segment_count, "
+          + "repair_parallelism, days_between "
+          + "FROM repair_schedule "
+          + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
+          + "WHERE cluster_name = :clusterName";
+
   @SqlQuery("SELECT version()")
   public String getVersion();
 
@@ -323,4 +332,9 @@ public interface IStoragePostgreSQL {
   List<RepairRunStatus> getClusterRunOverview(
       @Bind("clusterName") String clusterName,
       @Bind("limit") int limit);
+
+  @SqlQuery(SQL_CLUSTER_SCHEDULE_OVERVIEW)
+  @Mapper(RepairScheduleStatusMapper.class)
+  Collection<RepairScheduleStatus> getClusterScheduleOverview(
+      @Bind("clusterName") String clusterName);
 }
