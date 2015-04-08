@@ -262,7 +262,13 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    */
   public void cancelAllRepairs() {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    ssProxy.forceTerminateAllRepairSessions();
+    try {
+      ssProxy.forceTerminateAllRepairSessions();
+    } catch (RuntimeException e) {
+      // This can happen if the node is down (UndeclaredThrowableException),
+      // in which case repairs will be cancelled anyway...
+      LOG.warn("Failed to terminate all repair sessions; node down?", e);
+    }
   }
 
   /**
