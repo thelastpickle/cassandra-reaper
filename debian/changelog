@@ -1,3 +1,13 @@
+cassandra-reaper (0.1.4-1) stable; urgency=low
+
+  * Fixed bug that sometimes prevented scheduler from starting new runs
+  * Made it possible to manually abort a repair run
+  * Changed CLI to default to start a repair run when creating it
+  * Added scheduled status(es) to cluster run
+  * Improved logging
+
+ -- Jimmy Mårdell <yarin@spotify.com>  Tue, 8 Apr 2015 18:00:00 +0100
+
 cassandra-reaper (0.1.3-1) stable; urgency=low
 
   * Fixed bug where cluster resource never returned 404
