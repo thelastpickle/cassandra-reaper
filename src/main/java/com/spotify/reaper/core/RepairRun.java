@@ -140,6 +140,7 @@ public class RepairRun implements Comparable<RepairRun> {
     ERROR,
     DONE,
     PAUSED,
+    ABORTED,
     DELETED
   }
 

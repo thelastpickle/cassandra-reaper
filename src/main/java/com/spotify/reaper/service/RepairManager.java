@@ -142,6 +142,17 @@ public class RepairManager {
     return updatedRun;
   }
 
+  public RepairRun abortRepairRun(AppContext context, RepairRun runToBeAborted) {
+    RepairRun updatedRun = runToBeAborted.with()
+      .runState(RepairRun.RunState.ABORTED)
+      .pauseTime(DateTime.now())
+      .build(runToBeAborted.getId());
+    if (!context.storage.updateRepairRun(updatedRun)) {
+      throw new RuntimeException("failed updating repair run " + updatedRun.getId());
+    }
+    return updatedRun;
+  }
+
   public void scheduleRetry(RepairRunner runner) {
     executor.schedule(runner, retryDelayMillis, TimeUnit.MILLISECONDS);
   }
