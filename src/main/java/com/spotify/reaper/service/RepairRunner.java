@@ -295,7 +295,7 @@ public class RepairRunner implements Runnable {
     }
 
     SegmentRunner segmentRunner = new SegmentRunner(context, segmentId, potentialCoordinators,
-        context.repairManager.getRepairTimeoutMillis(), repairRun.getIntensity());
+        context.repairManager.getRepairTimeoutMillis(), repairRun.getIntensity(), clusterName);
 
     ListenableFuture<?> segmentResult = context.repairManager.submitSegment(segmentRunner);
     Futures.addCallback(segmentResult, new FutureCallback<Object>() {

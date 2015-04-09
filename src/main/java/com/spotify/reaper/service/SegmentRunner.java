@@ -48,6 +48,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final Collection<String> potentialCoordinators;
   private final long timeoutMillis;
   private final double intensity;
+  private String clusterName;
   private int commandId;
 
   // Caching all active SegmentRunners.
@@ -60,16 +61,20 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 //  }
 
   public SegmentRunner(AppContext context, long segmentId, Collection<String> potentialCoordinators,
-      long timeoutMillis, double intensity) throws ReaperException {
+      long timeoutMillis, double intensity, String clusterName) throws ReaperException {
     this.context = context;
     this.segmentId = segmentId;
     this.potentialCoordinators = potentialCoordinators;
     this.timeoutMillis = timeoutMillis;
     this.intensity = intensity;
+    this.clusterName = clusterName;
   }
 
   @Override
   public void run() {
+
+    Thread.currentThread().setName(this.clusterName);
+
     runRepair();
     long delay = intensityBasedDelayMillis(intensity);
     try {

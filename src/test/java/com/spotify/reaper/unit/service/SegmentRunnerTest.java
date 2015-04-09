@@ -110,7 +110,7 @@ public class SegmentRunnerTest {
         return jmx;
       }
     };
-    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 100, 0.5);
+    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 100, 0.5, "reaper");
     sr.run();
 
     future.getValue().get();
@@ -182,7 +182,7 @@ public class SegmentRunnerTest {
         return jmx;
       }
     };
-    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 1000, 0.5);
+    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 1000, 0.5, "reaper");
     sr.run();
 
     future.getValue().get();
@@ -252,7 +252,7 @@ public class SegmentRunnerTest {
         return jmx;
       }
     };
-    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 1000, 0.5);
+    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 1000, 0.5, "reaper");
     sr.run();
 
     future.getValue().get();
