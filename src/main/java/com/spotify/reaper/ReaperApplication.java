@@ -14,7 +14,6 @@
 package com.spotify.reaper;
 
 import com.google.common.annotations.VisibleForTesting;
-
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
@@ -28,6 +27,7 @@ import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
 
 import org.apache.cassandra.repair.RepairParallelism;
+import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +36,15 @@ import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.DispatcherType;
+import javax.servlet.FilterRegistration;
+
 import io.dropwizard.Application;
+import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 
@@ -79,7 +84,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
    */
   @Override
   public void initialize(Bootstrap<ReaperApplicationConfiguration> bootstrap) {
-    // nothing to initialize
+    bootstrap.addBundle(new AssetsBundle("/assets/", "/webui", "index.html"));
   }
 
   @Override
@@ -117,6 +122,15 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     if (jmxPorts != null) {
       LOG.debug("using JMX ports mapping: " + jmxPorts);
       context.jmxConnectionFactory.setJmxPorts(jmxPorts);
+    }
+
+    // enable cross-origin requests for testing cassandra-reaper-ui
+    if(System.getProperty("enableCrossOrigin") != null) {
+	    final FilterRegistration.Dynamic cors = environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);
+	    cors.setInitParameter("allowedOrigins", "*");
+	    cors.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin");
+	    cors.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD");
+	    cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
     }
 
     LOG.info("creating and registering health checks");
