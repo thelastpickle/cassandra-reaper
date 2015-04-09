@@ -244,7 +244,13 @@ public class RepairRunner implements Runnable {
         }
       }
       if (allRangesDone) {
-        end();
+        if (context.storage.getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE) ==
+            context.storage.getSegmentAmountForRepairRun(repairRunId)) {
+          end();
+        } else {
+          LOG.debug("No more segments to repair, but some still running");
+          context.repairManager.scheduleRetry(this);
+        }
       }
     }
   }
