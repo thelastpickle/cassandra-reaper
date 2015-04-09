@@ -128,12 +128,15 @@ public interface IStoragePostgreSQL {
       + "AND state = 0 ORDER BY fail_count ASC, start_token ASC LIMIT 1";
   static final String SQL_GET_NEXT_FREE_REPAIR_SEGMENT_IN_NON_WRAPPING_RANGE =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE "
-      + "run_id = :runId AND state = 0 AND (start_token > :startToken "
-      + "AND end_token <= :endToken) ORDER BY fail_count ASC, start_token ASC LIMIT 1";
+      + "run_id = :runId AND state = 0 AND start_token < end_token AND "
+      + "(start_token >= :startToken AND end_token <= :endToken) "
+      + "ORDER BY fail_count ASC, start_token ASC LIMIT 1";
   static final String SQL_GET_NEXT_FREE_REPAIR_SEGMENT_IN_WRAPPING_RANGE =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE "
-          + "run_id = :runId AND state = 0 AND (start_token > :startToken "
-          + "OR end_token <= :endToken) ORDER BY fail_count ASC, start_token ASC LIMIT 1";
+      + "run_id = :runId AND state = 0 AND "
+      + "((start_token < end_token AND (start_token >= :startToken OR end_token <= :endToken)) OR "
+      + "(start_token >= :startToken AND end_token <= :endToken)) "
+      + "ORDER BY fail_count ASC, start_token ASC LIMIT 1";
   static final String SQL_DELETE_REPAIR_SEGMENTS_FOR_RUN =
       "DELETE FROM repair_segment WHERE run_id = :runId";
 

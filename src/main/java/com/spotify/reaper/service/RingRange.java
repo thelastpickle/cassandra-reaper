@@ -61,21 +61,21 @@ public class RingRange {
    * @return true if other is enclosed in this range.
    */
   public boolean encloses(RingRange other) {
-    if (this.isWrapping()) {
-      if (other.isWrapping()) {
-        return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
-               SegmentGenerator.lowerThanOrEqual(other.end, end);
-      } else {
-        return SegmentGenerator.greaterThanOrEqual(other.start, start) ||
-               SegmentGenerator.lowerThanOrEqual(other.end, end);
-      }
+    if (!isWrapping()) {
+      return !other.isWrapping() &&
+          SegmentGenerator.greaterThanOrEqual(other.start, start)
+          && SegmentGenerator.lowerThanOrEqual(other.end, end);
     } else {
-      if (other.isWrapping()) {
-        return false;
-      } else {
-        return SegmentGenerator.greaterThanOrEqual(other.start, start) &&
-               SegmentGenerator.lowerThanOrEqual(other.end, end);
-      }
+      return
+          (!other.isWrapping() &&
+              (
+                  SegmentGenerator.greaterThanOrEqual(other.start, start) ||
+                  SegmentGenerator.lowerThanOrEqual(other.end, end)
+              )
+          ) || (
+              SegmentGenerator.greaterThanOrEqual(other.start, start) &&
+              SegmentGenerator.lowerThanOrEqual(other.end, end)
+          );
     }
   }
 
