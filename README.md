@@ -8,6 +8,9 @@ Current version supports running Cassandra cluster repairs in segmented manner, 
 opportunistically running multiple parallel repairs at the same time on different nodes
 within the cluster. Basic repair scheduling functionality is also supported.
 
+Cassandra Reaper does not come with a GUI, but please check 
+[this project](https://github.com/spodkowinski/cassandra-reaper-ui) if you'd like to use one.
+
 Please see the [Issues](https://github.com/spotify/cassandra-reaper/issues) section for more
 information on planned development, and known issues.
 
@@ -121,6 +124,10 @@ The Reaper service specific configuration values are:
   Optional setting for giving username and password credentials for the used JMX connections
   in case you are using password based JMX authentication with your Cassandra clusters.
 
+* enableCrossOrigin:
+
+  Optional setting which you can set to be "true", if you wish to enable the CORS headers
+  for running an external GUI application, like [this project](https://github.com/spodkowinski/cassandra-reaper-ui).
 
 Notice that in the *server* section of the configuration, if you want to bind the service
 to all interfaces, use value "0.0.0.0", or just leave the *bindHost* line away completely.

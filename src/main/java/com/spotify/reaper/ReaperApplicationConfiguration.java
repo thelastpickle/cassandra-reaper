@@ -55,6 +55,8 @@ public class ReaperApplicationConfiguration extends Configuration {
   @NotEmpty
   private String storageType;
 
+  private String enableCrossOrigin;
+
   @Valid
   @NotNull
   @JsonProperty
@@ -62,7 +64,7 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   private Map<String, Integer> jmxPorts;
-  
+
   @JsonProperty
   private JmxCredentials jmxAuth;
 
@@ -103,6 +105,18 @@ public class ReaperApplicationConfiguration extends Configuration {
     return storageType;
   }
 
+  public void setEnableCrossOrigin(String enableCrossOrigin) {
+    this.enableCrossOrigin = enableCrossOrigin;
+  }
+
+  public String getEnableCrossOrigin() {
+    return this.enableCrossOrigin;
+  }
+
+  public boolean isEnableCrossOrigin() {
+    return this.enableCrossOrigin != null && this.enableCrossOrigin.equalsIgnoreCase("true");
+  }
+
   public void setStorageType(String storageType) {
     this.storageType = storageType;
   }
@@ -139,21 +153,21 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setJmxAuth(JmxCredentials jmxAuth) {
     this.jmxAuth = jmxAuth;
   }
-  
+
   public static class JmxCredentials {
-    
+
     @JsonProperty
     private String username;
     @JsonProperty
     private String password;
-    
+
     public String getUsername() {
       return username;
     }
     public String getPassword() {
       return password;
     }
-    
+
   }
 
 }

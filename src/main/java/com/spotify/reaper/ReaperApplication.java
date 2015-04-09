@@ -126,10 +126,10 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
       context.jmxConnectionFactory.setJmxPorts(jmxPorts);
     }
 
-    // enable cross-origin requests for testing cassandra-reaper-ui
-    if (System.getProperty("enableCrossOrigin") != null) {
-      final FilterRegistration.Dynamic cors =
-          environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);
+    // Enable cross-origin requests for using external GUI applications.
+    if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {
+      final FilterRegistration.Dynamic cors = environment.servlets()
+          .addFilter("crossOriginRequests", CrossOriginFilter.class);
       cors.setInitParameter("allowedOrigins", "*");
       cors.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin");
       cors.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD");
