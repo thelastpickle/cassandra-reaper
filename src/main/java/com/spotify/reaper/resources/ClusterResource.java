@@ -112,6 +112,10 @@ public class ClusterResource {
     Cluster newCluster;
     try {
       newCluster = createClusterWithSeedHost(seedHost.get());
+    } catch (java.lang.SecurityException e) {
+      return Response.status(400)
+          .entity("seed host \"" + seedHost.get() + "\" JMX threw security exception: "
+                  + e.getMessage()).build();
     } catch (ReaperException e) {
       return Response.status(400)
           .entity("failed to create cluster with seed host: " + seedHost.get()).build();
