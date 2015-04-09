@@ -99,6 +99,14 @@ public interface IStorage {
 
   Optional<RepairSegment> getNextFreeSegment(long runId);
 
+  /**
+   *
+   * @param runId the run id that the segment belongs to.
+   * @param range a ring range. The start of the range may be greater than or equal to the end. This
+   *              case has to be handled. When start = end, consider that as a range that covers the
+   *              whole ring.
+   * @return a segment enclosed by the range with state NOT_STARTED, or nothing.
+   */
   Optional<RepairSegment> getNextFreeSegmentInRange(long runId, RingRange range);
 
   Collection<RepairSegment> getSegmentsWithState(long runId, RepairSegment.State segmentState);
