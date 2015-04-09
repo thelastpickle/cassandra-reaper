@@ -222,14 +222,12 @@ public class RepairRunner implements Runnable {
           context.storage.getNextFreeSegmentInRange(repairRunId, parallelRanges.get(rangeIndex));
       if (!nextRepairSegment.isPresent()) {
         LOG.debug("No repair segment available for range {}", parallelRanges.get(rangeIndex));
-        continue;
       } else {
         noMoreSegments = false;
         long segmentId = nextRepairSegment.get().getId();
         boolean wasSet = currentlyRunningSegments.compareAndSet(rangeIndex, -1, segmentId);
         if (!wasSet) {
           LOG.debug("Didn't set segment id `{}` to slot {} because it was busy", segmentId, rangeIndex);
-          continue;
         } else {
           LOG.debug("Did set segment id `{}` to slot {}", segmentId, rangeIndex);
           repairSegment(rangeIndex, nextRepairSegment.get().getId(), nextRepairSegment.get().getTokenRange());
