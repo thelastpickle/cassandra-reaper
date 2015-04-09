@@ -4,13 +4,9 @@ cassandra-reaper
 Cassandra Reaper is a centralized, stateful, and highly configurable tool for running Cassandra
 repairs for multi-site clusters.
 
-Cassandra Reaper is still in heavy development phase, although the first functional release has been
-already made. Current version supports basic Cassandra cluster repair in segmented manner with
-configurable intensity. There is also basic repair scheduling functionality available.
-
-Next steps in development will add functionality on maintaining repairs and schedules, improve
-the packaging and making installing easier, and also improve usability by introducing a simple
-web based GUI.
+Current version supports running Cassandra cluster repairs in segmented manner, with
+opportunistically running multiple parallel repairs at the same time on different nodes
+within the cluster. Basic repair scheduling functionality is also supported.
 
 Please see the [Issues](https://github.com/spotify/cassandra-reaper/issues) section for more
 information on planned development, and known issues.
@@ -27,9 +23,8 @@ Reaper system does not use internal caches for state changes regarding running r
 registered clusters, which means that any changes done to the storage will reflect to the running
 system dynamically.
 
-You can also run the Reaper with memory storage, which is not persistent, which means that all
-the registered clusters, column families, and repair runs will be lost upon service restart.
-The memory based storage is meant to be used for testing purposes only.
+You can also run the Reaper with memory storage, which is not persistent, and is meant to
+be used only for testing purposes.
 
 This project is built on top of Dropwizard:
 http://dropwizard.io/
@@ -117,9 +112,15 @@ The Reaper service specific configuration values are:
 
 * jmxPorts:
 
-  Optional mapping of custom JMX ports to use for individual hosts. Can be ignored in case the standard
-  JMX port is being used. [CCM](https://github.com/pcmanus/ccm) users will find IP and port number to add
-  in `~/.ccm/<cluster>/*/node.conf` or by running `ccm <node> show`.
+  Optional mapping of custom JMX ports to use for individual hosts. The used default JMX port
+  value is 7199. [CCM](https://github.com/pcmanus/ccm) users will find IP and port number
+  to add in `~/.ccm/<cluster>/*/node.conf` or by running `ccm <node> show`.
+
+* jmxAuth:
+
+  Optional setting for giving username and password credentials for the used JMX connections
+  in case you are using password based JMX authentication with your Cassandra clusters.
+
 
 Notice that in the *server* section of the configuration, if you want to bind the service
 to all interfaces, use value "0.0.0.0", or just leave the *bindHost* line away completely.
