@@ -137,7 +137,7 @@ public class RepairRunner implements Runnable {
   @Override
   public void run() {
 
-    Thread.currentThread().setName(this.clusterName);
+    Thread.currentThread().setName(clusterName + ":" + repairRunId);
 
     Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     try {

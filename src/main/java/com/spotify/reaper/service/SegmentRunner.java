@@ -72,8 +72,8 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   @Override
   public void run() {
-
-    Thread.currentThread().setName(this.clusterName);
+    final RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
+    Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
 
     runRepair();
     long delay = intensityBasedDelayMillis(intensity);
@@ -238,6 +238,9 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
    */
   @Override
   public void handle(int repairNumber, ActiveRepairService.Status status, String message) {
+    final RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
+    Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
+
     synchronized (condition) {
       LOG.debug(
           "handle called for repairCommandId {}, outcome {} and message: {}",
