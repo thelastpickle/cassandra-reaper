@@ -102,10 +102,12 @@ public class RepairRunner implements Runnable {
       LOG.error(Arrays.toString(e.getStackTrace()));
       e.printStackTrace();
       if (repairRun.isPresent()) {
-        context.storage.updateRepairRun(repairRun.get().with()
-                                            .runState(RepairRun.RunState.ERROR)
-                                            .endTime(DateTime.now())
-                                            .build(repairRunId));
+        context.storage.updateRepairRun(repairRun.get()
+            .with()
+            .runState(RepairRun.RunState.ERROR)
+            .lastEvent(String.format("Exception: %s", e.getMessage()))
+            .endTime(DateTime.now())
+            .build(repairRunId));
       }
       context.repairManager.removeRunner(this);
     }
@@ -189,9 +191,11 @@ public class RepairRunner implements Runnable {
     List<String> potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
     if (potentialCoordinators == null) {
       // This segment has a faulty token range. Abort the entire repair run.
-      boolean success = context.storage.updateRepairRun(repairRun.with()
-                                                            .runState(RepairRun.RunState.ERROR)
-                                                            .build(repairRun.getId()));
+      boolean success = context.storage.updateRepairRun(repairRun
+          .with()
+          .runState(RepairRun.RunState.ERROR)
+          .lastEvent(String.format("No coordinators for range %s", tokenRange.toString()))
+          .build(repairRun.getId()));
       if (!success) {
         LOG.error("failed updating repair run " + repairRun.getId());
       }
