@@ -191,6 +191,8 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       allHosts = coordinator.tokenRangeToEndpoint(keyspace, segment.getTokenRange());
     } catch (RuntimeException e) {
       LOG.warn("SegmentRunner couldn't get token ranges from coordinator: ", e);
+      String msg = String.format("SegmentRunner couldn't get token ranges from coordinator");
+      context.storage.updateRepairRun(repairRun.with().lastEvent(msg).build(repairRun.getId()));
       return false;
     }
 
