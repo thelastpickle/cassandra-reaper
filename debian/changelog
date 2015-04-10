@@ -1,3 +1,10 @@
+cassandra-reaper (0.2.0-1) stable; urgency=low
+
+  * Add parallel opportunistic repairs
+  * Add CORS headers for external GUI
+
+ -- Hannu Varjoranta <varjo@spotify.com>  Fri, 10 Apr 2015 14:00:00 +0200
+
 cassandra-reaper (0.1.4-1) stable; urgency=low
 
   * Fixed bug that sometimes prevented scheduler from starting new runs
