@@ -3,7 +3,6 @@ package com.spotify.reaper.unit.resources;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
@@ -17,13 +16,11 @@ import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.RepairRunResource;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.service.RepairManager;
-import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentRunner;
 import com.spotify.reaper.storage.MemoryStorage;
-
+import com.spotify.reaper.unit.service.RepairRunnerTest;
 import org.apache.cassandra.repair.RepairParallelism;
-import org.apache.cassandra.service.ActiveRepairService;
 import org.joda.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -97,6 +94,7 @@ public class RepairRunResourceTest {
     when(proxy.isConnectionAlive()).thenReturn(Boolean.TRUE);
     when(proxy.tokenRangeToEndpoint(anyString(), any(RingRange.class))).thenReturn(
         Collections.singletonList(""));
+    when(proxy.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
     when(proxy.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
         any(RepairParallelism.class), anyCollectionOf(String.class))).thenReturn(1);
 
@@ -113,8 +111,7 @@ public class RepairRunResourceTest {
   }
 
   private Response addDefaultRepairRun(RepairRunResource resource) {
-    return addRepairRun(resource, uriInfo, CLUSTER_NAME, KEYSPACE, TABLES,
-                        OWNER, null, SEGMENT_CNT);
+    return addRepairRun(resource, uriInfo, CLUSTER_NAME, KEYSPACE, TABLES, OWNER, "", SEGMENT_CNT);
   }
 
   private Response addRepairRun(RepairRunResource resource, UriInfo uriInfo,
@@ -169,49 +166,6 @@ public class RepairRunResourceTest {
 
     assertEquals(1, context.storage.getClusters().size());
     assertEquals(2, context.storage.getRepairRunsForCluster(CLUSTER_NAME).size());
-  }
-
-  @Test
-  public void testTriggerRepairRun() throws Exception {
-    DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
-    context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
-                                               RETRY_DELAY_S,
-                                               TimeUnit.SECONDS);
-    RepairRunResource resource = new RepairRunResource(context);
-    Response response = addDefaultRepairRun(resource);
-    RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
-    long runId = repairRunStatus.getId();
-
-    DateTimeUtils.setCurrentMillisFixed(TIME_START);
-    Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
-    response = resource.modifyRunState(uriInfo, runId, newState);
-
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    assertTrue(response.getEntity() instanceof RepairRunStatus);
-    // the thing we get as a reply from the endpoint is a not started run. This is because the
-    // executor didn't have time to start the run
-    assertEquals(RepairRun.RunState.NOT_STARTED, repairRunStatus.getState());
-
-    // give the executor some time to actually start the run
-    Thread.sleep(50);
-    RepairRunner repairRunner = context.repairManager.repairRunners.get(runId);
-    SegmentRunner segmentRunner =
-        SegmentRunner.segmentRunners.get(repairRunner.getCurrentlyRunningSegmentId());
-    segmentRunner.handle(segmentRunner.getCurrentCommandId(), ActiveRepairService.Status.STARTED,
-                         "sent a STARTED event from a test");
-    Thread.sleep(50);
-
-    RepairRun repairRun = context.storage.getRepairRun(runId).get();
-    assertEquals(RepairRun.RunState.RUNNING, repairRun.getRunState());
-    assertEquals(TIME_CREATE, repairRun.getCreationTime().getMillis());
-    assertEquals(TIME_START, repairRun.getStartTime().getMillis());
-    assertNull(repairRun.getEndTime());
-    assertEquals(REPAIR_INTENSITY, repairRun.getIntensity(), 0.0f);
-    assertEquals(1,
-                 context.storage.getSegmentAmountForRepairRunWithState(runId,
-                     RepairSegment.State.RUNNING));
-    assertEquals(7, context.storage
-        .getSegmentAmountForRepairRunWithState(runId, RepairSegment.State.NOT_STARTED));
   }
 
   @Test
@@ -272,43 +226,6 @@ public class RepairRunResourceTest {
   }
 
   @Test
-  public void testPauseRunningRun() throws InterruptedException {
-    // first trigger a run
-    DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
-    context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
-                                               RETRY_DELAY_S, TimeUnit.SECONDS);
-    RepairRunResource resource = new RepairRunResource(context);
-    Response response = addDefaultRepairRun(resource);
-    RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
-    long runId = repairRunStatus.getId();
-    DateTimeUtils.setCurrentMillisFixed(TIME_START);
-    Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
-    resource.modifyRunState(uriInfo, runId, newState);
-
-    Thread.sleep(50);
-    RepairRunner repairRunner = context.repairManager.repairRunners.get(runId);
-    SegmentRunner segmentRunner =
-        SegmentRunner.segmentRunners.get(repairRunner.getCurrentlyRunningSegmentId());
-    segmentRunner.handle(segmentRunner.getCurrentCommandId(), ActiveRepairService.Status.STARTED,
-                         "sent a STARTED event from a test");
-    Thread.sleep(50);
-
-    // now pause it
-    response = resource.modifyRunState(uriInfo, runId,
-                                       Optional.of(RepairRun.RunState.PAUSED.toString()));
-    Thread.sleep(50);
-
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    RepairRun repairRun = context.storage.getRepairRun(runId).get();
-    // the run should be paused
-    assertEquals(RepairRun.RunState.PAUSED, repairRun.getRunState());
-    // but the running segment should be untouched
-    assertEquals(1,
-                 context.storage.getSegmentAmountForRepairRunWithState(runId,
-                     RepairSegment.State.RUNNING));
-  }
-
-  @Test
   public void testPauseNotRunningRun() throws InterruptedException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
     context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
@@ -340,7 +257,6 @@ public class RepairRunResourceTest {
     assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
     assertEquals(0, context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING).size());
   }
-
 
   @Test
   public void testSplitStateParam() {

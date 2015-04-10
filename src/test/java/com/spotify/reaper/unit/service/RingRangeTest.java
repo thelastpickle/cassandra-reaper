@@ -1,10 +1,12 @@
 package com.spotify.reaper.unit.service;
 
+import com.google.common.collect.Lists;
 import com.spotify.reaper.service.RingRange;
 
 import org.junit.Test;
 
 import java.math.BigInteger;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -88,5 +90,16 @@ public class RingRangeTest {
     assertFalse(r_0_1.isWrapping());
     RingRange r_1_0 = new RingRange(BigInteger.valueOf(1l), BigInteger.valueOf(0l));
     assertTrue(r_1_0.isWrapping());
+  }
+
+  @Test
+  public void mergeTest() {
+    List<RingRange> ranges = Lists.newArrayList();
+    ranges.add(new RingRange(BigInteger.valueOf(30l), BigInteger.valueOf(50l)));
+    ranges.add(new RingRange(BigInteger.valueOf(10l), BigInteger.valueOf(30l)));
+    ranges.add(new RingRange(BigInteger.valueOf(80l), BigInteger.valueOf(10l)));
+    RingRange merged = RingRange.merge(ranges);
+    assertEquals("80", merged.getStart().toString());
+    assertEquals("50", merged.getEnd().toString());
   }
 }

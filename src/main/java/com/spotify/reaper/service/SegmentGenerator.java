@@ -32,9 +32,9 @@ public class SegmentGenerator {
   private static final Logger LOG = LoggerFactory.getLogger(SegmentGenerator.class);
 
   private final String partitioner;
-  private BigInteger RANGE_MIN;
-  private BigInteger RANGE_MAX;
-  private BigInteger RANGE_SIZE;
+  private final BigInteger RANGE_MIN;
+  private final BigInteger RANGE_MAX;
+  private final BigInteger RANGE_SIZE;
 
   public SegmentGenerator(String partitioner) throws ReaperException {
     if (partitioner.endsWith("RandomPartitioner")) {
@@ -48,6 +48,13 @@ public class SegmentGenerator {
     }
     RANGE_SIZE = RANGE_MAX.subtract(RANGE_MIN).add(BigInteger.ONE);
     this.partitioner = partitioner;
+  }
+
+  public SegmentGenerator(BigInteger rangeMin, BigInteger rangeMax) {
+    RANGE_MIN = rangeMin;
+    RANGE_MAX = rangeMax;
+    RANGE_SIZE = RANGE_MAX.subtract(RANGE_MIN).add(BigInteger.ONE);
+    partitioner = "(" + rangeMin + "," + rangeMax + ")";
   }
 
   @VisibleForTesting

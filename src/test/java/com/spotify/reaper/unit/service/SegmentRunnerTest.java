@@ -110,7 +110,8 @@ public class SegmentRunnerTest {
         return jmx;
       }
     };
-    SegmentRunner.triggerRepair(context, segmentId, Collections.singleton(""), 100);
+    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 100, 0.5, "reaper");
+    sr.run();
 
     future.getValue().get();
     executor.shutdown();
@@ -181,7 +182,8 @@ public class SegmentRunnerTest {
         return jmx;
       }
     };
-    SegmentRunner.triggerRepair(context, segmentId, Collections.singleton(""), 1000);
+    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 1000, 0.5, "reaper");
+    sr.run();
 
     future.getValue().get();
     executor.shutdown();
@@ -250,7 +252,8 @@ public class SegmentRunnerTest {
         return jmx;
       }
     };
-    SegmentRunner.triggerRepair(context, segmentId, Collections.singleton(""), 1000);
+    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 1000, 0.5, "reaper");
+    sr.run();
 
     future.getValue().get();
     executor.shutdown();

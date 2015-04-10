@@ -349,7 +349,13 @@ public class PostgresStorage implements IStorage {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
       IStoragePostgreSQL storage = getPostgresStorage(h);
-      result = storage.getNextFreeRepairSegmentOnRange(runId, range.getStart(), range.getEnd());
+      if (!range.isWrapping()) {
+        result = storage.getNextFreeRepairSegmentInNonWrappingRange(runId, range.getStart(),
+            range.getEnd());
+      } else {
+        result = storage.getNextFreeRepairSegmentInWrappingRange(runId, range.getStart(),
+            range.getEnd());
+      }
     }
     return Optional.fromNullable(result);
   }
