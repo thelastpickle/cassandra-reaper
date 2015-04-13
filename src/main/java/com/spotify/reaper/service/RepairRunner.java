@@ -16,7 +16,6 @@ package com.spotify.reaper.service;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
-
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.FutureCallback;
@@ -29,7 +28,6 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
-
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,10 +36,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLongArray;
-
-import javax.annotation.Nullable;
 
 public class RepairRunner implements Runnable {
 
@@ -51,7 +46,6 @@ public class RepairRunner implements Runnable {
   private final long repairRunId;
   private final String clusterName;
   private JmxProxy jmxConnection;
-//  private Long currentlyRunningSegmentId;
   private final AtomicLongArray currentlyRunningSegments;
   private final List<RingRange> parallelRanges;
 
@@ -70,9 +64,8 @@ public class RepairRunner implements Runnable {
     this.clusterName = cluster.get().getName();
     JmxProxy jmx = this.context.jmxConnectionFactory.connectAny(cluster.get());
 
-    int parallelRepairs =
-        getPossibleParallelRepairsCount(
-            jmx.getRangeToEndpointMap(repairUnit.get().getKeyspaceName()));
+    String keyspace = repairUnit.get().getKeyspaceName();
+    int parallelRepairs = getPossibleParallelRepairsCount(jmx.getRangeToEndpointMap(keyspace));
     currentlyRunningSegments = new AtomicLongArray(parallelRepairs);
     for(int i=0;i<parallelRepairs;i++) {
       currentlyRunningSegments.set(i, -1);
@@ -205,10 +198,10 @@ public class RepairRunner implements Runnable {
     LOG.info("Repairs for repair run #{} done", repairRunId);
     RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
     boolean success = context.storage.updateRepairRun(repairRun.with()
-                                                          .runState(RepairRun.RunState.DONE)
-                                                          .endTime(DateTime.now())
-                                                          .lastEvent("All done")
-                                                          .build(repairRun.getId()));
+        .runState(RepairRun.RunState.DONE)
+        .endTime(DateTime.now())
+        .lastEvent("All done")
+        .build(repairRun.getId()));
     if (!success) {
       LOG.error("failed updating repair run " + repairRun.getId());
     }
