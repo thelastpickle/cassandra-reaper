@@ -184,8 +184,18 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator,
       RepairRun repairRun) {
-    Collection<String> allHosts =
-        coordinator.tokenRangeToEndpoint(keyspace, segment.getTokenRange());
+    Collection<String> allHosts;
+    try {
+      // when hosts are coming up or going down, this method can throw an
+      //  UndeclaredThrowableException
+      allHosts = coordinator.tokenRangeToEndpoint(keyspace, segment.getTokenRange());
+    } catch (RuntimeException e) {
+      LOG.warn("SegmentRunner couldn't get token ranges from coordinator: ", e);
+      String msg = String.format("SegmentRunner couldn't get token ranges from coordinator");
+      context.storage.updateRepairRun(repairRun.with().lastEvent(msg).build(repairRun.getId()));
+      return false;
+    }
+
     for (String hostName : allHosts) {
       LOG.debug("checking host '{}' for pending compactions and other repairs (can repair?)"
           + " Run id '{}'", hostName, segment.getRunId());
@@ -211,6 +221,12 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) could "
             + "not be connected with", segmentId, hostName);
         String msg = String.format("Postponed due to inability to connect host %s", hostName);
+        context.storage.updateRepairRun(repairRun.with().lastEvent(msg).build(repairRun.getId()));
+        return false;
+      } catch (RuntimeException e) {
+        LOG.warn("SegmentRunner declined to repair segment {} because of an error collecting "
+            + "information from one of the hosts ({}): {}", segmentId, hostName, e);
+        String msg = String.format("Postponed due to inability to collect information from host %s", hostName);
         context.storage.updateRepairRun(repairRun.with().lastEvent(msg).build(repairRun.getId()));
         return false;
       }
