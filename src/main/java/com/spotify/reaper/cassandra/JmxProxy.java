@@ -170,9 +170,15 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
         });
   }
 
-  public Map<List<String>, List<String>> getRangeToEndpointMap(String keyspace) {
+  public Map<List<String>, List<String>> getRangeToEndpointMap(String keyspace)
+      throws ReaperException {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    return ssProxy.getRangeToEndpointMap(keyspace);
+    try {
+      return ssProxy.getRangeToEndpointMap(keyspace);
+    } catch (AssertionError e) {
+      LOG.error(e.getMessage());
+      throw new ReaperException(e.getMessage());
+    }
   }
 
   /**
