@@ -276,7 +276,7 @@ public class RepairRunner implements Runnable {
     }
 
     List<String> potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
-    if (potentialCoordinators == null) {
+    if (potentialCoordinators == null || potentialCoordinators.isEmpty()) {
       // This segment has a faulty token range. Abort the entire repair run.
       boolean success = context.storage.updateRepairRun(repairRun
           .with()
