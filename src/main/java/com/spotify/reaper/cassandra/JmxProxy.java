@@ -52,6 +52,7 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
+import javax.validation.constraints.NotNull;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -184,6 +185,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   /**
    * @return all hosts owning a range of tokens
    */
+  @NotNull
   public List<String> tokenRangeToEndpoint(String keyspace, RingRange tokenRange) {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     Set<Map.Entry<List<String>, List<String>>> entries =
