@@ -28,6 +28,8 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
+
+import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,8 +134,8 @@ public class RepairRunner implements Runnable {
 
     Thread.currentThread().setName(clusterName + ":" + repairRunId);
 
-    Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     try {
+      Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
       if (!repairRun.isPresent()) {
         // this might happen if a run is deleted while paused etc.
         LOG.warn("RepairRun \"" + repairRunId + "\" does not exist. Killing "
@@ -163,13 +165,16 @@ public class RepairRunner implements Runnable {
       LOG.error(e.toString());
       LOG.error(Arrays.toString(e.getStackTrace()));
       e.printStackTrace();
-      if (repairRun.isPresent()) {
-        context.storage.updateRepairRun(repairRun.get()
-            .with()
-            .runState(RepairRun.RunState.ERROR)
-            .lastEvent(String.format("Exception: %s", e.getMessage()))
-            .endTime(DateTime.now())
-            .build(repairRunId));
+      synchronized (this) {
+        Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+        if (repairRun.isPresent()) {
+          context.storage.updateRepairRun(repairRun.get()
+              .with()
+              .runState(RepairRun.RunState.ERROR)
+              .lastEvent(String.format("Exception: %s", e.getMessage()))
+              .endTime(DateTime.now())
+              .build(repairRunId));
+        }
       }
       context.repairManager.removeRunner(this);
     }
@@ -180,13 +185,12 @@ public class RepairRunner implements Runnable {
    */
   private void start() throws ReaperException {
     LOG.info("Repairs for repair run #{} starting", repairRunId);
-    RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
-    boolean success = context.storage.updateRepairRun(repairRun.with()
-                                                          .runState(RepairRun.RunState.RUNNING)
-                                                          .startTime(DateTime.now())
-                                                          .build(repairRun.getId()));
-    if (!success) {
-      LOG.error("failed updating repair run " + repairRun.getId());
+    synchronized (this) {
+      RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
+      context.storage.updateRepairRun(repairRun.with()
+          .runState(RepairRun.RunState.RUNNING)
+          .startTime(DateTime.now())
+          .build(repairRun.getId()));
     }
     startNextSegment();
   }
@@ -196,14 +200,13 @@ public class RepairRunner implements Runnable {
    */
   private void end() {
     LOG.info("Repairs for repair run #{} done", repairRunId);
-    RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
-    boolean success = context.storage.updateRepairRun(repairRun.with()
-        .runState(RepairRun.RunState.DONE)
-        .endTime(DateTime.now())
-        .lastEvent("All done")
-        .build(repairRun.getId()));
-    if (!success) {
-      LOG.error("failed updating repair run " + repairRun.getId());
+    synchronized (this) {
+      RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
+      context.storage.updateRepairRun(repairRun.with()
+          .runState(RepairRun.RunState.DONE)
+          .endTime(DateTime.now())
+          .lastEvent("All done")
+          .build(repairRun.getId()));
     }
   }
 
@@ -255,10 +258,19 @@ public class RepairRunner implements Runnable {
    * @param tokenRange token range of the segment to repair.
    */
   private void repairSegment(final int rangeIndex, final long segmentId, RingRange tokenRange) throws ReaperException {
-    RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
-    RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId()).get();
+    final long unitId;
+    final double intensity;
+    final RepairParallelism validationParallelism;
+    {
+      RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
+      unitId = repairRun.getRepairUnitId();
+      intensity = repairRun.getIntensity();
+      validationParallelism = repairRun.getRepairParallelism();
+    }
+
+    RepairUnit repairUnit = context.storage.getRepairUnit(unitId).get();
     String keyspace = repairUnit.getKeyspaceName();
-    LOG.debug("preparing to repair segment {} on run with id {}", segmentId, repairRun.getId());
+    LOG.debug("preparing to repair segment {} on run with id {}", segmentId, repairRunId);
 
     if (jmxConnection == null || !jmxConnection.isConnectionAlive()) {
       try {
@@ -278,20 +290,21 @@ public class RepairRunner implements Runnable {
     List<String> potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
     if (potentialCoordinators.isEmpty()) {
       // This segment has a faulty token range. Abort the entire repair run.
-      boolean success = context.storage.updateRepairRun(repairRun
-          .with()
-          .runState(RepairRun.RunState.ERROR)
-          .lastEvent(String.format("No coordinators for range %s", tokenRange.toString()))
-          .endTime(DateTime.now())
-          .build(repairRun.getId()));
-      if (!success) {
-        LOG.error("failed updating repair run " + repairRun.getId());
+      synchronized (this) {
+        RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
+        context.storage.updateRepairRun(repairRun
+            .with()
+            .runState(RepairRun.RunState.ERROR)
+            .lastEvent(String.format("No coordinators for range %s", tokenRange.toString()))
+            .endTime(DateTime.now())
+            .build(repairRunId));
       }
       return;
     }
 
     SegmentRunner segmentRunner = new SegmentRunner(context, segmentId, potentialCoordinators,
-        context.repairManager.getRepairTimeoutMillis(), repairRun.getIntensity(), clusterName);
+        context.repairManager.getRepairTimeoutMillis(), intensity, validationParallelism,
+        clusterName, this);
 
     ListenableFuture<?> segmentResult = context.repairManager.submitSegment(segmentRunner);
     Futures.addCallback(segmentResult, new FutureCallback<Object>() {
@@ -312,7 +325,7 @@ public class RepairRunner implements Runnable {
     RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
     RepairSegment.State state = segment.getState();
     LOG.debug("In repair run #{}, triggerRepair on segment {} ended with state {}",
-              repairRunId, segmentId, state);
+        repairRunId, segmentId, state);
     switch (state) {
       case NOT_STARTED:
         // Unsuccessful repair
@@ -329,6 +342,15 @@ public class RepairRunner implements Runnable {
                      + " have after segmentRunner has tried a repair";
         LOG.error(msg);
         throw new RuntimeException(msg);
+    }
+  }
+
+  public void updateLastEvent(String newEvent) {
+    synchronized (this) {
+      RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
+      context.storage.updateRepairRun(repairRun.with()
+          .lastEvent(newEvent)
+          .build(repairRunId));
     }
   }
 }
