@@ -25,6 +25,7 @@ import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.service.RepairRunner;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentRunner;
 import com.spotify.reaper.storage.IStorage;
@@ -69,7 +70,7 @@ public class SegmentRunnerTest {
         new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper")));
     RepairRun run = context.storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5, 1,
-                              RepairParallelism.PARALLEL));
+            RepairParallelism.PARALLEL));
     context.storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO),
                                   cf.getId())), run.getId());
@@ -110,7 +111,9 @@ public class SegmentRunnerTest {
         return jmx;
       }
     };
-    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 100, 0.5, "reaper");
+    RepairRunner rr = mock(RepairRunner.class);
+    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 100, 0.5,
+        RepairParallelism.PARALLEL, "reaper", rr);
     sr.run();
 
     future.getValue().get();
@@ -182,7 +185,9 @@ public class SegmentRunnerTest {
         return jmx;
       }
     };
-    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 1000, 0.5, "reaper");
+    RepairRunner rr = mock(RepairRunner.class);
+    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 1000, 0.5,
+        RepairParallelism.PARALLEL, "reaper", rr);
     sr.run();
 
     future.getValue().get();
@@ -252,7 +257,9 @@ public class SegmentRunnerTest {
         return jmx;
       }
     };
-    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 1000, 0.5, "reaper");
+    RepairRunner rr = mock(RepairRunner.class);
+    SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 1000, 0.5,
+        RepairParallelism.PARALLEL, "reaper", rr);
     sr.run();
 
     future.getValue().get();

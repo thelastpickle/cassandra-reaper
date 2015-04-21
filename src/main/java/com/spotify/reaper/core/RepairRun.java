@@ -146,6 +146,10 @@ public class RepairRun implements Comparable<RepairRun> {
     public boolean isActive() {
       return this == RUNNING || this == PAUSED;
     }
+
+    public boolean isTerminated() {
+      return this == DONE || this == ERROR || this == ABORTED || this == DELETED;
+    }
   }
 
   public static class Builder {

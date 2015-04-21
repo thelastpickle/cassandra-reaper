@@ -21,10 +21,10 @@ import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
-import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 
+import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.SimpleCondition;
 import org.joda.time.DateTime;
@@ -48,26 +48,26 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final Collection<String> potentialCoordinators;
   private final long timeoutMillis;
   private final double intensity;
-  private String clusterName;
+  private final RepairParallelism validationParallelism;
+  private final String clusterName;
+  private final RepairRunner repairRunner;
   private int commandId;
 
   // Caching all active SegmentRunners.
   @VisibleForTesting
   public static Map<Long, SegmentRunner> segmentRunners = Maps.newConcurrentMap();
 
-//  private SegmentRunner(AppContext context, long segmentId) {
-//    this.context = context;
-//    this.segmentId = segmentId;
-//  }
-
   public SegmentRunner(AppContext context, long segmentId, Collection<String> potentialCoordinators,
-      long timeoutMillis, double intensity, String clusterName) throws ReaperException {
+      long timeoutMillis, double intensity, RepairParallelism validationParallelism, String clusterName, RepairRunner repairRunner)
+      throws ReaperException {
     this.context = context;
     this.segmentId = segmentId;
     this.potentialCoordinators = potentialCoordinators;
     this.timeoutMillis = timeoutMillis;
     this.intensity = intensity;
+    this.validationParallelism = validationParallelism;
     this.clusterName = clusterName;
+    this.repairRunner = repairRunner;
   }
 
   @Override
@@ -105,7 +105,6 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private void runRepair() {
     final RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
-    final RepairRun repairRun = context.storage.getRepairRun(segment.getRunId()).get();
     try (JmxProxy coordinator = context.jmxConnectionFactory
         .connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators)) {
 
@@ -118,15 +117,14 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       RepairUnit repairUnit = context.storage.getRepairUnit(segment.getRepairUnitId()).get();
       String keyspace = repairUnit.getKeyspaceName();
 
-      if (!canRepair(segment, keyspace, coordinator, repairRun)) {
+      if (!canRepair(segment, keyspace, coordinator)) {
         postpone(segment);
         return;
       }
 
       synchronized (condition) {
         commandId = coordinator.triggerRepair(segment.getStartToken(), segment.getEndToken(),
-                                              keyspace, repairRun.getRepairParallelism(),
-                                              repairUnit.getColumnFamilies());
+            keyspace, validationParallelism, repairUnit.getColumnFamilies());
 
         if (commandId == 0) {
           // From cassandra source in "forceRepairAsync":
@@ -148,8 +146,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
                                                 .build(segmentId));
         String eventMsg = String.format("Triggered repair of segment %d via host %s",
                                         segment.getId(), coordinator.getHost());
-        context.storage.updateRepairRun(
-            repairRun.with().lastEvent(eventMsg).build(repairRun.getId()));
+        repairRunner.updateLastEvent(eventMsg);
         LOG.info("Repair for segment {} started, status wait will timeout in {} millis", segmentId,
                  timeoutMillis);
         try {
@@ -176,14 +173,13 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       }
     } catch (ReaperException e) {
       LOG.warn("Failed to connect to a coordinator node for segment {}", segmentId);
-      String msg = String.format("Postponed because couldn't any of the coordinators");
-      context.storage.updateRepairRun(repairRun.with().lastEvent(msg).build(repairRun.getId()));
+      String msg = String.format("Postponed a segment because no coordinator was reachable");
+      repairRunner.updateLastEvent(msg);
       postpone(segment);
     }
   }
 
-  boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator,
-      RepairRun repairRun) {
+  boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator) {
     Collection<String> allHosts;
     try {
       // when hosts are coming up or going down, this method can throw an
@@ -192,7 +188,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     } catch (RuntimeException e) {
       LOG.warn("SegmentRunner couldn't get token ranges from coordinator: ", e);
       String msg = String.format("SegmentRunner couldn't get token ranges from coordinator");
-      context.storage.updateRepairRun(repairRun.with().lastEvent(msg).build(repairRun.getId()));
+      repairRunner.updateLastEvent(msg);
       return false;
     }
 
@@ -207,27 +203,27 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
                    hostProxy.getHost());
           String msg = String.format("Postponed due to pending compactions (%d)",
               pendingCompactions);
-          context.storage.updateRepairRun(repairRun.with().lastEvent(msg).build(repairRun.getId()));
+          repairRunner.updateLastEvent(msg);
           return false;
         }
         if (hostProxy.isRepairRunning()) {
           LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) was "
                    + "already involved in a repair", segmentId, hostProxy.getHost());
           String msg = String.format("Postponed due to affected hosts already doing repairs");
-          context.storage.updateRepairRun(repairRun.with().lastEvent(msg).build(repairRun.getId()));
+          repairRunner.updateLastEvent(msg);
           return false;
         }
       } catch (ReaperException e) {
         LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) could "
             + "not be connected with", segmentId, hostName);
         String msg = String.format("Postponed due to inability to connect host %s", hostName);
-        context.storage.updateRepairRun(repairRun.with().lastEvent(msg).build(repairRun.getId()));
+        repairRunner.updateLastEvent(msg);
         return false;
       } catch (RuntimeException e) {
         LOG.warn("SegmentRunner declined to repair segment {} because of an error collecting "
             + "information from one of the hosts ({}): {}", segmentId, hostName, e);
         String msg = String.format("Postponed due to inability to collect information from host %s", hostName);
-        context.storage.updateRepairRun(repairRun.with().lastEvent(msg).build(repairRun.getId()));
+        repairRunner.updateLastEvent(msg);
         return false;
       }
     }
