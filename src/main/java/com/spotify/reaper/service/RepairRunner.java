@@ -136,7 +136,8 @@ public class RepairRunner implements Runnable {
 
     try {
       Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
-      if (!repairRun.isPresent()) {
+      if ((!repairRun.isPresent() || repairRun.get().getRunState().isTerminated()) &&
+          context.repairManager.repairRunners.containsKey(repairRunId)) {
         // this might happen if a run is deleted while paused etc.
         LOG.warn("RepairRun \"" + repairRunId + "\" does not exist. Killing "
                  + "RepairRunner for this run instance.");
@@ -155,10 +156,6 @@ public class RepairRunner implements Runnable {
         case PAUSED:
           context.repairManager.scheduleRetry(this);
           break;
-        case DONE:
-          // We're done. Let go of thread.
-          context.repairManager.removeRunner(this);
-          break;
       }
     } catch (ReaperException | RuntimeException e) {
       LOG.error("RepairRun FAILURE");
@@ -175,8 +172,8 @@ public class RepairRunner implements Runnable {
               .endTime(DateTime.now())
               .build(repairRunId));
         }
+        context.repairManager.removeRunner(this);
       }
-      context.repairManager.removeRunner(this);
     }
   }
 
@@ -207,6 +204,7 @@ public class RepairRunner implements Runnable {
           .endTime(DateTime.now())
           .lastEvent("All done")
           .build(repairRun.getId()));
+      context.repairManager.removeRunner(this);
     }
   }
 
@@ -298,6 +296,7 @@ public class RepairRunner implements Runnable {
             .lastEvent(String.format("No coordinators for range %s", tokenRange.toString()))
             .endTime(DateTime.now())
             .build(repairRunId));
+        context.repairManager.removeRunner(this);
       }
       return;
     }
