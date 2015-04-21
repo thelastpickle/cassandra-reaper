@@ -347,9 +347,14 @@ public class RepairRunner implements Runnable {
   public void updateLastEvent(String newEvent) {
     synchronized (this) {
       RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
-      context.storage.updateRepairRun(repairRun.with()
-          .lastEvent(newEvent)
-          .build(repairRunId));
+      if (repairRun.getRunState().isTerminated()) {
+        LOG.warn("Will not update lastEvent of run that has already terminated. The message was: "
+            + "\"{}\"", newEvent);
+      } else {
+        context.storage.updateRepairRun(repairRun.with()
+            .lastEvent(newEvent)
+            .build(repairRunId));
+      }
     }
   }
 }
