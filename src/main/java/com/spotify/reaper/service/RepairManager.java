@@ -109,6 +109,16 @@ public class RepairManager {
         LOG.info("re-trigger a running run after restart, with id " + runId);
         startRunner(context, runId);
         return runToBeStarted;
+      case ERROR:  {
+        RepairRun updatedRun = runToBeStarted.with()
+            .runState(RepairRun.RunState.RUNNING)
+            .build(runToBeStarted.getId());
+        if (!context.storage.updateRepairRun(updatedRun)) {
+          throw new RuntimeException("failed updating repair run " + updatedRun.getId());
+        }
+        startRunner(context, runId);
+        return updatedRun;
+      }
       default:
         throw new RuntimeException("cannot start run with state: " + runToBeStarted.getRunState());
     }

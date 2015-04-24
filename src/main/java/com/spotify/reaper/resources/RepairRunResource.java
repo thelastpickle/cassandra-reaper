@@ -265,6 +265,8 @@ public class RepairRunResource {
       return pauseRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
     } else if (isResuming(oldState, newState)) {
       return resumeRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
+    } else if (isRetrying(oldState, newState)) {
+      return resumeRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
     } else if (isAborting(oldState, newState)) {
       return abortRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
     } else {
@@ -285,6 +287,10 @@ public class RepairRunResource {
 
   private boolean isResuming(RepairRun.RunState oldState, RepairRun.RunState newState) {
     return oldState == RepairRun.RunState.PAUSED && newState == RepairRun.RunState.RUNNING;
+  }
+
+  private boolean isRetrying(RepairRun.RunState oldState, RepairRun.RunState newState) {
+    return oldState == RepairRun.RunState.ERROR && newState == RepairRun.RunState.RUNNING;
   }
 
   private boolean isAborting(RepairRun.RunState oldState, RepairRun.RunState newState) {
