@@ -98,9 +98,8 @@ public class SchedulingManager extends TimerTask {
    * @throws ReaperException
    */
   private boolean manageSchedule(RepairSchedule schedule) throws ReaperException {
-    boolean startNewRun = false;
     if (schedule.getNextActivation().isBeforeNow()) {
-      startNewRun = true;
+      boolean startNewRun = true;
       LOG.info("repair unit '{}' should be repaired based on RepairSchedule with id '{}'",
                schedule.getRepairUnitId(), schedule.getId());
 
@@ -130,19 +129,24 @@ public class SchedulingManager extends TimerTask {
       }
 
       if (startNewRun) {
-        RepairRun startedRun = startNewRunForUnit(schedule, repairUnit);
-        ImmutableList<Long> newRunHistory = new ImmutableList.Builder<Long>()
-            .addAll(schedule.getRunHistory()).add(startedRun.getId()).build();
-        context.storage.updateRepairSchedule(schedule.with()
-                                                 .runHistory(newRunHistory)
-                                                 .nextActivation(schedule.getFollowingActivation())
-                                                 .build(schedule.getId()));
+        try {
+          RepairRun startedRun = startNewRunForUnit(schedule, repairUnit);
+          ImmutableList<Long> newRunHistory = new ImmutableList.Builder<Long>()
+              .addAll(schedule.getRunHistory()).add(startedRun.getId()).build();
+          context.storage.updateRepairSchedule(schedule.with()
+              .runHistory(newRunHistory)
+              .nextActivation(schedule.getFollowingActivation())
+              .build(schedule.getId()));
+          return true;
+        } catch (ReaperException e) {
+          LOG.error(e.getMessage());
+          e.printStackTrace();
+          skipScheduling(schedule);
+          return false;
+        }
       } else {
-        LOG.warn("skip scheduling, next activation for repair schedule '{}' will be: {}",
-                 schedule.getId(), schedule.getFollowingActivation());
-        context.storage.updateRepairSchedule(schedule.with()
-                                                 .nextActivation(schedule.getFollowingActivation())
-                                                 .build(schedule.getId()));
+        skipScheduling(schedule);
+        return false;
       }
     } else {
       if (nextActivatedSchedule == null) {
@@ -151,7 +155,15 @@ public class SchedulingManager extends TimerTask {
         nextActivatedSchedule = schedule;
       }
     }
-    return startNewRun;
+    return false;
+  }
+
+  private void skipScheduling(RepairSchedule schedule) {
+    LOG.warn("skip scheduling, next activation for repair schedule '{}' will be: {}",
+        schedule.getId(), schedule.getFollowingActivation());
+    context.storage.updateRepairSchedule(schedule.with()
+        .nextActivation(schedule.getFollowingActivation())
+        .build(schedule.getId()));
   }
 
   private RepairRun startNewRunForUnit(RepairSchedule schedule, RepairUnit repairUnit)
