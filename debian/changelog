@@ -1,3 +1,12 @@
+cassandra-reaper (0.2.1-1) stable; urgency=low
+
+  * Fixed race condition bug with parallel repairs
+  * Fixed bug with failing repair schedule blocking all other schedules
+  * Catch exceptions to avoid unnecessarily putting runs in ERROR state
+  * Allow reattempting ERROR runs from where they left off
+
+ -- Björn Hegerfors <bj0rn@spotify.com>  Wed, 6 May 2015 15:10:06 +0200
+
 cassandra-reaper (0.2.0-1) stable; urgency=low
 
   * Add parallel opportunistic repairs
