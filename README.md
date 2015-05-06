@@ -8,7 +8,7 @@ Current version supports running Cassandra cluster repairs in segmented manner, 
 opportunistically running multiple parallel repairs at the same time on different nodes
 within the cluster. Basic repair scheduling functionality is also supported.
 
-Cassandra Reaper does not come with a GUI, but please check 
+Cassandra Reaper does not come with a GUI, but please check
 [this project](https://github.com/spodkowinski/cassandra-reaper-ui) if you'd like to use one.
 
 Please see the [Issues](https://github.com/spotify/cassandra-reaper/issues) section for more
@@ -202,6 +202,7 @@ Source code for all the REST resources can be found from package com.spotify.rea
     * *state*: New value for the state of the repair run.
       Possible values for given state are: "PAUSED" or "RUNNING".
   * Starts, pauses, or resumes a repair run identified by the "id" path parameter.
+  * Can also be used to reattempt a repair run in state "ERROR", picking up where it left off.
 
 * DELETE  /repair_run/{id}
   * Expected query parameters:

@@ -202,7 +202,7 @@ def _arguments_for_scheduling(parser):
 
 def _arguments_for_resume_repair(parser):
     """Arguments relevant for resuming a repair"""
-    parser.add_argument("run_id", help="ID of the repair run to resume (or start)")
+    parser.add_argument("run_id", help="ID of the repair run to resume, start or reattempt")
 
 
 def _arguments_for_pause_repair(parser):
@@ -271,7 +271,7 @@ Usage: spreaper [<global_args>] <command> [<command_args>]
     schedule        Create a repair schedule, choosing the first activation time and days
                     between repair activations. You need to register a cluster into
                     Reaper (add-cluster) before calling this.
-    resume-repair   Resume paused repair run (or start a not started one).
+    resume-repair   Resume a paused, start a not started or reattempt a failed repair run.
     pause-repair    Pause a repair run.
     abort-repair    Abort a repair run.
     start-schedule  Resume a paused repair schedule.
@@ -500,7 +500,7 @@ class ReaperCLI(object):
     def resume_repair(self):
         reaper, args = ReaperCLI.prepare_reaper(
             "resume-repair",
-            "Resume a paused repair run (or trigger a not started one).",
+            "Resume a paused, start a not started or reattempt a failed repair run.",
             extra_arguments=_arguments_for_resume_repair
         )
         print "# Resuming a repair run with id: {0}".format(args.run_id)
