@@ -244,3 +244,22 @@ Source code for all the REST resources can be found from package com.spotify.rea
   * Delete a repair schedule object identified by the given "id" path parameter.
     Repair schedule will get deleted only if there are no associated repair runs for the schedule.
     Delete all the related repair runs before calling this endpoint.
+
+
+Doing a Release (on this repository)
+------------------------------------
+
+1. Go to the root of the cassandra-reaper project on your local Git clone.
+2. In the pom.xml file, remove "-SNAPSHOT" from the version.
+3. Add a new entry to the top of debian/changelog. You may just copy the latest entry and edit (be careful with formatting, and make sure to get the right version number).
+4. Run "mvn clean verify".
+5. Commit the changes with message "release version X.Y.Z".
+6. Make a new tag called vX.Y.Z. Example: v0.1.1.
+7. Run "git push".
+8. Run "git push --tags".
+9. Make a (release) build of the package, if required. For example start a Jenkins build deploy.
+10. In the pom file, increment the version number and append "-SNAPSHOT".
+11. Commit the changes with message "start development on X.Y.Z", where the version matches your current snapshot version.
+12. Run "git push".
+13. Deploy the released packages (there's cassandra-reaper and cassandra-reaper-cli).
+14. Send a release note to users.
