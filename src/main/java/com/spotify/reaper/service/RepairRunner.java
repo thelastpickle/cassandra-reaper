@@ -50,6 +50,7 @@ public class RepairRunner implements Runnable {
   private JmxProxy jmxConnection;
   private final AtomicLongArray currentlyRunningSegments;
   private final List<RingRange> parallelRanges;
+  private final RepairUnit repairUnit;
 
   public RepairRunner(AppContext context, long repairRunId)
       throws ReaperException {
@@ -66,7 +67,8 @@ public class RepairRunner implements Runnable {
     this.clusterName = cluster.get().getName();
     JmxProxy jmx = this.context.jmxConnectionFactory.connectAny(cluster.get());
 
-    String keyspace = repairUnit.get().getKeyspaceName();
+    this.repairUnit = repairUnit.get();
+    String keyspace = this.repairUnit.getKeyspaceName();
     int parallelRepairs = getPossibleParallelRepairsCount(jmx.getRangeToEndpointMap(keyspace));
     currentlyRunningSegments = new AtomicLongArray(parallelRepairs);
     for(int i=0;i<parallelRepairs;i++) {
@@ -303,7 +305,7 @@ public class RepairRunner implements Runnable {
 
     SegmentRunner segmentRunner = new SegmentRunner(context, segmentId, potentialCoordinators,
         context.repairManager.getRepairTimeoutMillis(), intensity, validationParallelism,
-        clusterName, this);
+        clusterName, repairUnit, this);
 
     ListenableFuture<?> segmentResult = context.repairManager.submitSegment(segmentRunner);
     Futures.addCallback(segmentResult, new FutureCallback<Object>() {

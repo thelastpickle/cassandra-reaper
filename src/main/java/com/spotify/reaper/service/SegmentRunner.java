@@ -19,6 +19,7 @@ import com.google.common.collect.Maps;
 
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.RepairSegment;
@@ -36,11 +37,15 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentRunner.class);
   private static final int MAX_PENDING_COMPACTIONS = 20;
+  private static final Pattern REPAIR_UUID_PATTERN =
+      Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
   private final AppContext context;
   private final long segmentId;
@@ -51,6 +56,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final RepairParallelism validationParallelism;
   private final String clusterName;
   private final RepairRunner repairRunner;
+  private final RepairUnit repairUnit;
   private int commandId;
 
   // Caching all active SegmentRunners.
@@ -58,7 +64,8 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   public static Map<Long, SegmentRunner> segmentRunners = Maps.newConcurrentMap();
 
   public SegmentRunner(AppContext context, long segmentId, Collection<String> potentialCoordinators,
-      long timeoutMillis, double intensity, RepairParallelism validationParallelism, String clusterName, RepairRunner repairRunner)
+      long timeoutMillis, double intensity, RepairParallelism validationParallelism,
+      String clusterName, RepairUnit repairUnit, RepairRunner repairRunner)
       throws ReaperException {
     this.context = context;
     this.segmentId = segmentId;
@@ -67,6 +74,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     this.intensity = intensity;
     this.validationParallelism = validationParallelism;
     this.clusterName = clusterName;
+    this.repairUnit = repairUnit;
     this.repairRunner = repairRunner;
   }
 
@@ -285,6 +293,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         case SESSION_FAILED:
           LOG.warn("repair session failed for segment with id '{}' and repair number '{}'",
               segmentId, repairNumber);
+          tryClearSnapshots(message);
           postpone(currentSegment);
           break;
         case FINISHED:
@@ -294,6 +303,36 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
           condition.signalAll();
           break;
       }
+    }
+  }
+
+  /**
+   * Attempts to clear snapshots that are possibly left behind after failed repair sessions.
+   */
+  @VisibleForTesting
+  protected void tryClearSnapshots(String message) {
+    String keyspace = repairUnit.getKeyspaceName();
+    String repairId = parseRepairId(message);
+    if (repairId != null) {
+      for (String involvedNode : potentialCoordinators) {
+        try {
+          JmxProxy jmx = new JmxConnectionFactory().connect(involvedNode);
+          // there is no way of telling if the snapshot was cleared or not :(
+          jmx.clearSnapshot(repairId, keyspace);
+        } catch (ReaperException e) {
+          LOG.warn("Failed to clear snapshot after failed session for host {}, keyspace {}: {}",
+              involvedNode, keyspace, e.getMessage());
+        }
+      }
+    }
+  }
+
+  public static String parseRepairId(String message) {
+    Matcher uuidMatcher = REPAIR_UUID_PATTERN.matcher(message);
+    if (uuidMatcher.find()) {
+      return uuidMatcher.group();
+    } else {
+      return null;
     }
   }
 

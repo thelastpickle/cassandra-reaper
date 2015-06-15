@@ -112,8 +112,9 @@ public class SegmentRunnerTest {
       }
     };
     RepairRunner rr = mock(RepairRunner.class);
+    RepairUnit ru = mock(RepairUnit.class);
     SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 100, 0.5,
-        RepairParallelism.PARALLEL, "reaper", rr);
+        RepairParallelism.PARALLEL, "reaper", ru, rr);
     sr.run();
 
     future.getValue().get();
@@ -186,8 +187,9 @@ public class SegmentRunnerTest {
       }
     };
     RepairRunner rr = mock(RepairRunner.class);
+    RepairUnit ru = mock(RepairUnit.class);
     SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 1000, 0.5,
-        RepairParallelism.PARALLEL, "reaper", rr);
+        RepairParallelism.PARALLEL, "reaper", ru, rr);
     sr.run();
 
     future.getValue().get();
@@ -258,8 +260,9 @@ public class SegmentRunnerTest {
       }
     };
     RepairRunner rr = mock(RepairRunner.class);
+    RepairUnit ru = mock(RepairUnit.class);
     SegmentRunner sr = new SegmentRunner(context, segmentId, Collections.singleton(""), 1000, 0.5,
-        RepairParallelism.PARALLEL, "reaper", rr);
+        RepairParallelism.PARALLEL, "reaper", ru, rr);
     sr.run();
 
     future.getValue().get();
@@ -269,4 +272,20 @@ public class SegmentRunnerTest {
                  storage.getRepairSegment(segmentId).get().getState());
     assertEquals(1, storage.getRepairSegment(segmentId).get().getFailCount());
   }
+
+  @Test
+  public void parseRepairIdTest() {
+    String msg = "Repair session 883fd090-12f1-11e5-94c5-03d4762e50b7 for range (1,2] failed with";
+    assertEquals("883fd090-12f1-11e5-94c5-03d4762e50b7", SegmentRunner.parseRepairId(msg));
+    msg = "Two IDs: 883fd090-12f1-11e5-94c5-03d4762e50b7 883fd090-12f1-11e5-94c5-03d4762e50b7";
+    assertEquals("883fd090-12f1-11e5-94c5-03d4762e50b7", SegmentRunner.parseRepairId(msg));
+    msg = "No ID: foo bar baz";
+    assertEquals(null, SegmentRunner.parseRepairId(msg));
+    msg = "A message with bad ID 883fd090-fooo-11e5-94c5-03d4762e50b7";
+    assertEquals(null, SegmentRunner.parseRepairId(msg));
+    msg = "A message with good ID 883fd090-baad-11e5-94c5-03d4762e50b7";
+    assertEquals("883fd090-baad-11e5-94c5-03d4762e50b7", SegmentRunner.parseRepairId(msg));
+
+  }
+
 }

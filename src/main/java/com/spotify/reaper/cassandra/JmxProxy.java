@@ -470,8 +470,15 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       throw new ReaperException(ex);
     }
   }
-}
 
+  public void clearSnapshot(String repairId, String keyspaceName) throws ReaperException {
+    try {
+      ssProxy.clearSnapshot(repairId, keyspaceName);
+    } catch (IOException e) {
+      throw new ReaperException(e);
+    }
+  }
+}
 
 /**
  * This code is copied and adjusted from from NodeProbe.java from Cassandra source.
