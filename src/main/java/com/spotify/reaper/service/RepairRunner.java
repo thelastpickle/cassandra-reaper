@@ -311,8 +311,8 @@ public class RepairRunner implements Runnable {
     Futures.addCallback(segmentResult, new FutureCallback<Object>() {
       @Override
       public void onSuccess(Object ignored) {
-        handleResult(segmentId);
         currentlyRunningSegments.set(rangeIndex, -1);
+        handleResult(segmentId);
       }
       @Override
       public void onFailure(Throwable t) {
