@@ -157,6 +157,9 @@ public class RepairRunner implements Runnable {
         case PAUSED:
           context.repairManager.scheduleRetry(this);
           break;
+        case ERROR:
+          resumeAfterError();
+          break;
       }
     } catch (RuntimeException e) {
       LOG.error("RepairRun FAILURE");
@@ -188,6 +191,20 @@ public class RepairRunner implements Runnable {
       context.storage.updateRepairRun(repairRun.with()
           .runState(RepairRun.RunState.RUNNING)
           .startTime(DateTime.now())
+          .build(repairRun.getId()));
+    }
+    startNextSegment();
+  }
+
+  /**
+   * Resumes execution of a repair run. Does the same as {@code start()}, except setting start time.
+   */
+  private void resumeAfterError() {
+    LOG.info("Repairs for repair run #{} resuming after error", repairRunId);
+    synchronized (this) {
+      RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
+      context.storage.updateRepairRun(repairRun.with()
+          .runState(RepairRun.RunState.RUNNING)
           .build(repairRun.getId()));
     }
     startNextSegment();
