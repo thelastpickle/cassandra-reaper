@@ -79,7 +79,7 @@ public class BasicSteps {
 
   public void callAndExpect(String httpMethod, String callPath,
                             Optional<Map<String, String>> params, Response.Status expectedStatus,
-                            Optional<String> expectedDataInResponseData) throws ReaperException {
+                            Optional<String> expectedDataInResponseData) {
     ClientResponse response = ReaperTestJettyRunner.callReaper(httpMethod, callPath, params);
     String responseData = response.getEntity(String.class);
     LOG.info("Got response data: " + responseData);

@@ -28,7 +28,6 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
-
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -142,7 +141,7 @@ public class RepairRunner implements Runnable {
           context.repairManager.repairRunners.containsKey(repairRunId)) {
         // this might happen if a run is deleted while paused etc.
         LOG.warn("RepairRun \"" + repairRunId + "\" does not exist. Killing "
-                 + "RepairRunner for this run instance.");
+            + "RepairRunner for this run instance.");
         context.repairManager.removeRunner(this);
         return;
       }
@@ -159,7 +158,7 @@ public class RepairRunner implements Runnable {
           context.repairManager.scheduleRetry(this);
           break;
       }
-    } catch (ReaperException | RuntimeException e) {
+    } catch (RuntimeException e) {
       LOG.error("RepairRun FAILURE");
       LOG.error(e.toString());
       LOG.error(Arrays.toString(e.getStackTrace()));
@@ -182,7 +181,7 @@ public class RepairRunner implements Runnable {
   /**
    * Starts the repair run.
    */
-  private void start() throws ReaperException {
+  private void start() {
     LOG.info("Repairs for repair run #{} starting", repairRunId);
     synchronized (this) {
       RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
@@ -213,7 +212,7 @@ public class RepairRunner implements Runnable {
   /**
    * Get the next segment and repair it. If there is none, we're done.
    */
-  private void startNextSegment() throws ReaperException {
+  private void startNextSegment() {
     boolean noMoreSegments = true;
     for (int rangeIndex = 0; rangeIndex < currentlyRunningSegments.length(); rangeIndex++) {
       Optional<RepairSegment> nextRepairSegment =
@@ -257,7 +256,7 @@ public class RepairRunner implements Runnable {
    * @param segmentId  id of the segment to repair.
    * @param tokenRange token range of the segment to repair.
    */
-  private void repairSegment(final int rangeIndex, final long segmentId, RingRange tokenRange) throws ReaperException {
+  private void repairSegment(final int rangeIndex, final long segmentId, RingRange tokenRange) {
     final long unitId;
     final double intensity;
     final RepairParallelism validationParallelism;

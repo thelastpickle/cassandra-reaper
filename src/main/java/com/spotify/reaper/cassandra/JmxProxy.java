@@ -294,9 +294,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   /**
    * Checks if table exists in the cluster by instantiating a MBean for that table.
    *
-   * @throws ReaperException if the query fails, not when the table doesn't exist
    */
-  public boolean tableExists(String ks, String cf) throws ReaperException {
+  public boolean tableExists(String ks, String cf) {
     try {
       String type = cf.contains(".") ? "IndexColumnFamilies" : "ColumnFamilies";
       String nameStr = String.format("org.apache.cassandra.db:type=*%s,keyspace=%s,columnfamily=%s",

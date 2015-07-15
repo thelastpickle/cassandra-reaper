@@ -153,14 +153,12 @@ public class RepairRunResource {
 
   /**
    * @return Response instance in case there is a problem, or null if everything is ok.
-   * @throws ReaperException if concrete server error happens, but not in normal check failures.
    */
   @Nullable
   public static Response checkRequestForAddRepair(
       AppContext context, Optional<String> clusterName, Optional<String> keyspace,
       Optional<String> owner, Optional<Integer> segmentCount,
-      Optional<String> repairParallelism, Optional<String> intensityStr
-  ) throws ReaperException {
+      Optional<String> repairParallelism, Optional<String> intensityStr) {
     if (!clusterName.isPresent()) {
       return Response.status(Response.Status.BAD_REQUEST).entity(
           "missing query parameter \"clusterName\"").build();

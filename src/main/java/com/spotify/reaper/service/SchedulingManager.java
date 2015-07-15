@@ -95,9 +95,8 @@ public class SchedulingManager extends TimerTask {
    * Manage, i.e. check whether a new repair run should be started with this schedule.
    * @param schedule The schedule to be checked for activation.
    * @return boolean indicating whether a new RepairRun instance was created and started.
-   * @throws ReaperException
    */
-  private boolean manageSchedule(RepairSchedule schedule) throws ReaperException {
+  private boolean manageSchedule(RepairSchedule schedule) {
     if (schedule.getNextActivation().isBeforeNow()) {
       boolean startNewRun = true;
       LOG.info("repair unit '{}' should be repaired based on RepairSchedule with id '{}'",
@@ -166,8 +165,7 @@ public class SchedulingManager extends TimerTask {
         .build(schedule.getId()));
   }
 
-  private RepairRun startNewRunForUnit(RepairSchedule schedule, RepairUnit repairUnit)
-      throws ReaperException {
+  private RepairRun startNewRunForUnit(RepairSchedule schedule, RepairUnit repairUnit) throws ReaperException{
     Cluster cluster = context.storage.getCluster(repairUnit.getClusterName()).get();
     RepairRun newRepairRun = CommonTools.registerRepairRun(
         context, cluster, repairUnit, Optional.of("scheduled run"),

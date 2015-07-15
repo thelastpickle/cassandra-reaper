@@ -65,8 +65,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   public SegmentRunner(AppContext context, long segmentId, Collection<String> potentialCoordinators,
       long timeoutMillis, double intensity, RepairParallelism validationParallelism,
-      String clusterName, RepairUnit repairUnit, RepairRunner repairRunner)
-      throws ReaperException {
+      String clusterName, RepairUnit repairUnit, RepairRunner repairRunner) {
     this.context = context;
     this.segmentId = segmentId;
     this.potentialCoordinators = potentialCoordinators;

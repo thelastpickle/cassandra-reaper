@@ -70,7 +70,7 @@ public class RepairRunnerTest {
   }
 
   @Test
-  public void testHangingRepair() throws ReaperException, InterruptedException {
+  public void testHangingRepair() throws InterruptedException {
     final String CLUSTER_NAME = "reaper";
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
