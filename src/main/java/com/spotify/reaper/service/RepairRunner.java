@@ -157,27 +157,12 @@ public class RepairRunner implements Runnable {
         case PAUSED:
           context.repairManager.scheduleRetry(this);
           break;
-        case ERROR:
-          resumeAfterError();
-          break;
       }
     } catch (RuntimeException e) {
-      LOG.error("RepairRun FAILURE");
+      LOG.error("RepairRun FAILURE, scheduling retry");
       LOG.error(e.toString());
       LOG.error(Arrays.toString(e.getStackTrace()));
-      e.printStackTrace();
-      synchronized (this) {
-        Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
-        if (repairRun.isPresent()) {
-          context.storage.updateRepairRun(repairRun.get()
-              .with()
-              .runState(RepairRun.RunState.ERROR)
-              .lastEvent(String.format("Exception: %s", e.getMessage()))
-              .endTime(DateTime.now())
-              .build(repairRunId));
-        }
-        context.repairManager.removeRunner(this);
-      }
+      context.repairManager.scheduleRetry(this);
     }
   }
 
@@ -191,20 +176,6 @@ public class RepairRunner implements Runnable {
       context.storage.updateRepairRun(repairRun.with()
           .runState(RepairRun.RunState.RUNNING)
           .startTime(DateTime.now())
-          .build(repairRun.getId()));
-    }
-    startNextSegment();
-  }
-
-  /**
-   * Resumes execution of a repair run. Does the same as {@code start()}, except setting start time.
-   */
-  private void resumeAfterError() {
-    LOG.info("Repairs for repair run #{} resuming after error", repairRunId);
-    synchronized (this) {
-      RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
-      context.storage.updateRepairRun(repairRun.with()
-          .runState(RepairRun.RunState.RUNNING)
           .build(repairRun.getId()));
     }
     startNextSegment();
@@ -303,7 +274,14 @@ public class RepairRunner implements Runnable {
       LOG.debug("successfully reestablished JMX proxy for repair runner on run id: {}", repairRunId);
     }
 
-    List<String> potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
+    List<String> potentialCoordinators;
+    try {
+      potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
+    } catch (RuntimeException e) {
+      LOG.warn("Couldn't get token ranges from coordinator: ", e);
+      context.repairManager.scheduleRetry(this);
+      return;
+    }
     if (potentialCoordinators.isEmpty()) {
       // This segment has a faulty token range. Abort the entire repair run.
       synchronized (this) {

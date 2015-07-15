@@ -188,13 +188,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   @NotNull
   public List<String> tokenRangeToEndpoint(String keyspace, RingRange tokenRange) {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    Set<Map.Entry<List<String>, List<String>>> entries;
-    try {
-       entries = ssProxy.getRangeToEndpointMap(keyspace).entrySet();
-    } catch (Exception e) {
-      LOG.error("There was an unexpected error when doing a JMX call: " + e.getMessage());
-      return Lists.newArrayList();
-    }
+    Set<Map.Entry<List<String>, List<String>>> entries =
+        ssProxy.getRangeToEndpointMap(keyspace).entrySet();
     for (Map.Entry<List<String>, List<String>> entry : entries) {
       BigInteger rangeStart = new BigInteger(entry.getKey().get(0));
       BigInteger rangeEnd = new BigInteger(entry.getKey().get(1));
