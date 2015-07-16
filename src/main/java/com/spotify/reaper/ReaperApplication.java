@@ -183,7 +183,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     return storage;
   }
 
-  private void checkConfiguration(ReaperApplicationConfiguration config) throws ReaperException {
+  private void checkConfiguration(ReaperApplicationConfiguration config) {
     LOG.debug("repairIntensity: " + config.getRepairIntensity());
     LOG.debug("repairRunThreadCount: " + config.getRepairRunThreadCount());
     LOG.debug("segmentCount: " + config.getSegmentCount());

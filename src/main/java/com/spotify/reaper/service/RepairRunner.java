@@ -28,7 +28,6 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
-
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -142,7 +141,7 @@ public class RepairRunner implements Runnable {
           context.repairManager.repairRunners.containsKey(repairRunId)) {
         // this might happen if a run is deleted while paused etc.
         LOG.warn("RepairRun \"" + repairRunId + "\" does not exist. Killing "
-                 + "RepairRunner for this run instance.");
+            + "RepairRunner for this run instance.");
         context.repairManager.removeRunner(this);
         return;
       }
@@ -159,30 +158,18 @@ public class RepairRunner implements Runnable {
           context.repairManager.scheduleRetry(this);
           break;
       }
-    } catch (ReaperException | RuntimeException e) {
-      LOG.error("RepairRun FAILURE");
+    } catch (RuntimeException e) {
+      LOG.error("RepairRun FAILURE, scheduling retry");
       LOG.error(e.toString());
       LOG.error(Arrays.toString(e.getStackTrace()));
-      e.printStackTrace();
-      synchronized (this) {
-        Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
-        if (repairRun.isPresent()) {
-          context.storage.updateRepairRun(repairRun.get()
-              .with()
-              .runState(RepairRun.RunState.ERROR)
-              .lastEvent(String.format("Exception: %s", e.getMessage()))
-              .endTime(DateTime.now())
-              .build(repairRunId));
-        }
-        context.repairManager.removeRunner(this);
-      }
+      context.repairManager.scheduleRetry(this);
     }
   }
 
   /**
    * Starts the repair run.
    */
-  private void start() throws ReaperException {
+  private void start() {
     LOG.info("Repairs for repair run #{} starting", repairRunId);
     synchronized (this) {
       RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
@@ -213,7 +200,7 @@ public class RepairRunner implements Runnable {
   /**
    * Get the next segment and repair it. If there is none, we're done.
    */
-  private void startNextSegment() throws ReaperException {
+  private void startNextSegment() {
     boolean noMoreSegments = true;
     for (int rangeIndex = 0; rangeIndex < currentlyRunningSegments.length(); rangeIndex++) {
       Optional<RepairSegment> nextRepairSegment =
@@ -257,7 +244,7 @@ public class RepairRunner implements Runnable {
    * @param segmentId  id of the segment to repair.
    * @param tokenRange token range of the segment to repair.
    */
-  private void repairSegment(final int rangeIndex, final long segmentId, RingRange tokenRange) throws ReaperException {
+  private void repairSegment(final int rangeIndex, final long segmentId, RingRange tokenRange) {
     final long unitId;
     final double intensity;
     final RepairParallelism validationParallelism;
@@ -287,7 +274,14 @@ public class RepairRunner implements Runnable {
       LOG.debug("successfully reestablished JMX proxy for repair runner on run id: {}", repairRunId);
     }
 
-    List<String> potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
+    List<String> potentialCoordinators;
+    try {
+      potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
+    } catch (RuntimeException e) {
+      LOG.warn("Couldn't get token ranges from coordinator: ", e);
+      context.repairManager.scheduleRetry(this);
+      return;
+    }
     if (potentialCoordinators.isEmpty()) {
       // This segment has a faulty token range. Abort the entire repair run.
       synchronized (this) {
@@ -311,8 +305,8 @@ public class RepairRunner implements Runnable {
     Futures.addCallback(segmentResult, new FutureCallback<Object>() {
       @Override
       public void onSuccess(Object ignored) {
-        handleResult(segmentId);
         currentlyRunningSegments.set(rangeIndex, -1);
+        handleResult(segmentId);
       }
       @Override
       public void onFailure(Throwable t) {

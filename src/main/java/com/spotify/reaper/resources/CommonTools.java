@@ -148,8 +148,7 @@ public class CommonTools {
    * backend.
    */
   private static void storeNewRepairSegments(AppContext context, List<RingRange> tokenSegments,
-                                             RepairRun repairRun, RepairUnit repairUnit)
-      throws ReaperException {
+                                             RepairRun repairRun, RepairUnit repairUnit) {
     List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
     for (RingRange range : tokenSegments) {
       RepairSegment.Builder repairSegment = new RepairSegment.Builder(repairRun.getId(), range,

@@ -81,8 +81,7 @@ public class SegmentRunnerTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host)
-          throws ReaperException {
+      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host) {
         JmxProxy jmx = mock(JmxProxy.class);
         when(jmx.getClusterName()).thenReturn("reaper");
         when(jmx.isConnectionAlive()).thenReturn(true);
@@ -145,8 +144,7 @@ public class SegmentRunnerTest {
     context.storage = storage;
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host)
-          throws ReaperException {
+      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host) {
         JmxProxy jmx = mock(JmxProxy.class);
         when(jmx.getClusterName()).thenReturn("reaper");
         when(jmx.isConnectionAlive()).thenReturn(true);
@@ -220,8 +218,7 @@ public class SegmentRunnerTest {
     context.storage = storage;
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host)
-          throws ReaperException {
+      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host) {
         JmxProxy jmx = mock(JmxProxy.class);
         when(jmx.getClusterName()).thenReturn("reaper");
         when(jmx.isConnectionAlive()).thenReturn(true);
