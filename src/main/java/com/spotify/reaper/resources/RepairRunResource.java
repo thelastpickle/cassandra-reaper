@@ -204,9 +204,9 @@ public class RepairRunResource {
             "invalid value for query parameter \"intensity\": " + intensityStr.get()).build();
       }
     }
-    if (incrementalRepairStr.isPresent() && (!incrementalRepairStr.get().toUpperCase().contentEquals("YES" ) && !incrementalRepairStr.get().toUpperCase().contentEquals("NO")) ) {
+    if (incrementalRepairStr.isPresent() && (!incrementalRepairStr.get().toUpperCase().contentEquals("TRUE" ) && !incrementalRepairStr.get().toUpperCase().contentEquals("FALSE")) ) {
       return Response.status(Response.Status.BAD_REQUEST).entity(
-              "invalid query parameter \"incrementalRepair\", expecting [yes,no]").build();
+              "invalid query parameter \"incrementalRepair\", expecting [True,False]").build();
     }
     Optional<Cluster> cluster =
         context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
