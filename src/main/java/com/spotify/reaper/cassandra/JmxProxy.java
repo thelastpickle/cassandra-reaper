@@ -329,7 +329,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * @return Repair command number, or 0 if nothing to repair
    */
   public int triggerRepair(BigInteger beginToken, BigInteger endToken, String keyspace,
-      RepairParallelism repairParallelism, Collection<String> columnFamilies) {
+    	RepairParallelism repairParallelism, Collection<String> columnFamilies, boolean fullRepair) {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     String cassandraVersion = ssProxy.getReleaseVersion();
     boolean canUseDatacenterAware = false;
@@ -349,7 +349,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
       if (canUseDatacenterAware) {
         return ssProxy.forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-            repairParallelism.ordinal(), null, null,
+            repairParallelism.ordinal(), null, null, fullRepair,
             columnFamilies
                 .toArray(new String[columnFamilies.size()]));
       } else {
@@ -361,7 +361,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
     boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
     return ssProxy.forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-        snapshotRepair, false,
+        snapshotRepair, false, fullRepair,
         columnFamilies.toArray(new String[columnFamilies.size()]));
   }
 

@@ -35,6 +35,7 @@ public class ReaperApplicationConfigurationTest {
     config.setRepairRunThreadCount(1);
     config.setSegmentCount(1);
     config.setStorageType("foo");
+    config.setIncrementalRepair(false);
   }
 
   @Test

@@ -14,6 +14,8 @@ repairRunThreadCount: 15
 
 hangingRepairTimeoutMins: 30
 
+incrementalRepair: false
+
 # storageType is either "database" or "memory"
 storageType: memory
 

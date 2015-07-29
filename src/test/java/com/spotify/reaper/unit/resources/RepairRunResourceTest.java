@@ -41,6 +41,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollectionOf;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -50,6 +51,7 @@ public class RepairRunResourceTest {
   static final String PARTITIONER = "org.apache.cassandra.dht.RandomPartitioner";
   static final String SEED_HOST = "TestHost";
   static final String KEYSPACE = "testKeyspace";
+  static final Boolean INCREMENTAL = false;
   static final Set<String> TABLES = Sets.newHashSet("testTable");
   static final String OWNER = "test";
   int THREAD_CNT = 1;
@@ -96,7 +98,7 @@ public class RepairRunResourceTest {
         Collections.singletonList(""));
     when(proxy.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
     when(proxy.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-        any(RepairParallelism.class), anyCollectionOf(String.class))).thenReturn(1);
+        any(RepairParallelism.class), anyCollectionOf(String.class), anyBoolean())).thenReturn(1);
 
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
@@ -106,7 +108,7 @@ public class RepairRunResourceTest {
       }
     };
 
-    RepairUnit.Builder repairUnitBuilder = new RepairUnit.Builder(CLUSTER_NAME, KEYSPACE, TABLES);
+    RepairUnit.Builder repairUnitBuilder = new RepairUnit.Builder(CLUSTER_NAME, KEYSPACE, TABLES, INCREMENTAL);
     context.storage.addRepairUnit(repairUnitBuilder);
   }
 
@@ -130,6 +132,7 @@ public class RepairRunResourceTest {
                                  segments == null ? Optional.<Integer>absent()
                                                   : Optional.of(segments),
                                  Optional.of(REPAIR_PARALLELISM.name()),
+                                 Optional.<String>absent(),
                                  Optional.<String>absent());
   }
 

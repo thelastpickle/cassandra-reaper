@@ -229,7 +229,7 @@ public class CommonTools {
   }
 
   public static RepairUnit getNewOrExistingRepairUnit(AppContext context, Cluster cluster,
-                                                      String keyspace, Set<String> tableNames) {
+                                                      String keyspace, Set<String> tableNames, Boolean incrementalRepair) {
     Optional<RepairUnit> storedRepairUnit =
         context.storage.getRepairUnit(cluster.getName(), keyspace, tableNames);
     RepairUnit theRepairUnit;
@@ -241,7 +241,7 @@ public class CommonTools {
       LOG.info("create new repair unit for cluster '{}', keyspace '{}', and column families: {}",
                cluster.getName(), keyspace, tableNames);
       theRepairUnit = context.storage.addRepairUnit(
-          new RepairUnit.Builder(cluster.getName(), keyspace, tableNames));
+          new RepairUnit.Builder(cluster.getName(), keyspace, tableNames, incrementalRepair));
     }
     return theRepairUnit;
   }

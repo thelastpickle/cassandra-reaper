@@ -152,6 +152,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
       RepairUnit repairUnit = context.storage.getRepairUnit(segment.getRepairUnitId()).get();
       String keyspace = repairUnit.getKeyspaceName();
+      boolean fullRepair = !repairUnit.getIncrementalRepair();
 
       if (!canRepair(segment, keyspace, coordinator)) {
         postponeCurrentSegment();
@@ -161,7 +162,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       LOG.debug("Enter synchronized section with segment ID {}", segmentId);
       synchronized (condition) {
         commandId = coordinator.triggerRepair(segment.getStartToken(), segment.getEndToken(),
-            keyspace, validationParallelism, repairUnit.getColumnFamilies());
+            keyspace, validationParallelism, repairUnit.getColumnFamilies(), fullRepair);
 
         if (commandId == 0) {
           // From cassandra source in "forceRepairAsync":

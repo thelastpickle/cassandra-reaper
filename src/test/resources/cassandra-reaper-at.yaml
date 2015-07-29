@@ -6,6 +6,7 @@ repairIntensity: 0.95
 repairRunThreadCount: 15
 hangingRepairTimeoutMins: 1
 storageType: memory
+incrementalRepair: false
 
 logging:
   level: DEBUG

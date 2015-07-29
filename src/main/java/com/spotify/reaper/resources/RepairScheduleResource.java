@@ -85,17 +85,18 @@ public class RepairScheduleResource {
       @QueryParam("segmentCount") Optional<Integer> segmentCount,
       @QueryParam("repairParallelism") Optional<String> repairParallelism,
       @QueryParam("intensity") Optional<String> intensityStr,
+      @QueryParam("incrementalRepair") Optional<String> incrementalRepairStr,
       @QueryParam("scheduleDaysBetween") Optional<Integer> scheduleDaysBetween,
       @QueryParam("scheduleTriggerTime") Optional<String> scheduleTriggerTime
   ) {
     LOG.info("add repair schedule called with: clusterName = {}, keyspace = {}, tables = {}, "
              + "owner = {}, segmentCount = {}, repairParallelism = {}, "
-             + "intensity = {}, scheduleDaysBetween = {}, scheduleTriggerTime = {}",
+             + "intensity = {}, incrementalRepair = {}, scheduleDaysBetween = {}, scheduleTriggerTime = {}",
              clusterName, keyspace, tableNamesParam, owner, segmentCount, repairParallelism,
-             intensityStr, scheduleDaysBetween, scheduleTriggerTime);
+             intensityStr, incrementalRepairStr, scheduleDaysBetween, scheduleTriggerTime);
     try {
       Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
-          context, clusterName, keyspace, owner, segmentCount, repairParallelism, intensityStr);
+          context, clusterName, keyspace, owner, segmentCount, repairParallelism, intensityStr, incrementalRepairStr);
       if (null != possibleFailResponse) {
         return possibleFailResponse;
       }
@@ -129,6 +130,14 @@ public class RepairScheduleResource {
         intensity = context.config.getRepairIntensity();
         LOG.debug("no intensity given, so using default value: " + intensity);
       }
+      
+      Boolean incrementalRepair;
+      if (incrementalRepairStr.isPresent()) {
+    	  incrementalRepair = Boolean.parseBoolean(incrementalRepairStr.get());
+      } else {
+    	  incrementalRepair = context.config.getIncrementalRepair();
+        LOG.debug("no incremental repair given, so using default value: " + incrementalRepair);
+      }
 
       int segments = context.config.getSegmentCount();
       if (segmentCount.isPresent()) {
@@ -147,7 +156,7 @@ public class RepairScheduleResource {
       }
 
       RepairUnit theRepairUnit =
-          CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace.get(), tableNames);
+          CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace.get(), tableNames, incrementalRepair);
 
       RepairParallelism parallelism = context.config.getRepairParallelism();
       if (repairParallelism.isPresent()) {

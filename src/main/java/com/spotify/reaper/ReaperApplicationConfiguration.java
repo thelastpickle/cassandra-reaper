@@ -24,6 +24,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
+import javax.ws.rs.DefaultValue;
 
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
@@ -43,6 +44,11 @@ public class ReaperApplicationConfiguration extends Configuration {
   @DecimalMin(value = "0", inclusive=false)
   @Max(1)
   private Double repairIntensity;
+
+  @JsonProperty
+  @NotNull
+  @DefaultValue("false")
+  private Boolean incrementalRepair;
 
   @JsonProperty
   @NotNull
@@ -92,7 +98,15 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setRepairIntensity(double repairIntensity) {
     this.repairIntensity = repairIntensity;
   }
+  
+  public Boolean getIncrementalRepair() {
+	    return incrementalRepair;
+  }
 
+  public void setIncrementalRepair(Boolean incrementalRepair) {
+	    this.incrementalRepair = incrementalRepair;
+  }
+  
   public int getRepairRunThreadCount() {
     return repairRunThreadCount;
   }

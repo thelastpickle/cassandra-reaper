@@ -68,6 +68,9 @@ public class RepairRunStatus {
   @JsonProperty
   private double intensity;
 
+  @JsonProperty("incremental_repair")
+  private boolean incrementalRepair;
+  
   @JsonProperty("total_segments")
   private int totalSegments;
 
@@ -95,7 +98,7 @@ public class RepairRunStatus {
   public RepairRunStatus(long runId, String clusterName, String keyspaceName,
       Collection<String> columnFamilies, int segmentsRepaired, int totalSegments,
       RepairRun.RunState state, DateTime startTime, DateTime endTime, String cause, String owner,
-      String lastEvent, DateTime creationTime, DateTime pauseTime, double intensity,
+      String lastEvent, DateTime creationTime, DateTime pauseTime, double intensity, boolean incrementalRepair,
       RepairParallelism repairParallelism) {
     this.id = runId;
     this.cause = cause;
@@ -109,6 +112,7 @@ public class RepairRunStatus {
     this.endTime = endTime;
     this.pauseTime = pauseTime;
     this.intensity = CommonTools.roundDoubleNicely(intensity);
+    this.incrementalRepair = incrementalRepair;
     this.totalSegments = totalSegments;
     this.repairParallelism = repairParallelism;
     this.segmentsRepaired = segmentsRepaired;
@@ -158,6 +162,7 @@ public class RepairRunStatus {
         repairRun.getCreationTime(),
         repairRun.getPauseTime(),
         repairRun.getIntensity(),
+        repairUnit.getIncrementalRepair(),
         repairRun.getRepairParallelism()
     );
   }
@@ -305,7 +310,15 @@ public class RepairRunStatus {
   public void setIntensity(double intensity) {
     this.intensity = intensity;
   }
+  
+  public boolean getIncrementalRepair() {
+	return incrementalRepair;
+  }
 
+  public void setIncrementalRepair(boolean incrementalRepair) {
+	this.incrementalRepair = incrementalRepair;
+  }
+  
   public int getTotalSegments() {
     return totalSegments;
   }

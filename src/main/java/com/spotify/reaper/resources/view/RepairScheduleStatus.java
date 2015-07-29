@@ -57,6 +57,9 @@ public class RepairScheduleStatus {
   @JsonProperty
   private double intensity;
 
+  @JsonProperty("incremental_repair")
+  private boolean incrementalRepair;
+  
   @JsonProperty("segment_count")
   private int segmentCount;
 
@@ -75,7 +78,7 @@ public class RepairScheduleStatus {
   public RepairScheduleStatus(long id, String owner, String clusterName, String keyspaceName,
       Collection<String> columnFamilies, RepairSchedule.State state,
       DateTime creationTime, DateTime nextActivation,
-      DateTime pauseTime, double intensity, int segmentCount, RepairParallelism repairParallelism,
+      DateTime pauseTime, double intensity, boolean incrementalRepair, int segmentCount, RepairParallelism repairParallelism,
       int daysBetween) {
     this.id = id;
     this.owner = owner;
@@ -87,6 +90,7 @@ public class RepairScheduleStatus {
     this.nextActivation = nextActivation;
     this.pauseTime = pauseTime;
     this.intensity = CommonTools.roundDoubleNicely(intensity);
+    this.incrementalRepair = incrementalRepair;
     this.segmentCount = segmentCount;
     this.repairParallelism = repairParallelism;
     this.daysBetween = daysBetween;
@@ -104,6 +108,7 @@ public class RepairScheduleStatus {
         repairSchedule.getNextActivation(),
         repairSchedule.getPauseTime(),
         repairSchedule.getIntensity(),
+        repairUnit.getIncrementalRepair(),
         repairSchedule.getSegmentCount(),
         repairSchedule.getRepairParallelism(),
         repairSchedule.getDaysBetween()
@@ -193,7 +198,14 @@ public class RepairScheduleStatus {
   public int getSegmentCount() {
     return segmentCount;
   }
+  
+  public boolean getIncrementalRepair() {
+	return incrementalRepair;
+  }
 
+  public void setIncrementalRepair(boolean incrementalRepair) {
+	this.incrementalRepair = incrementalRepair;
+  }
   public void setSegmentCount(int segmentCount) {
     this.segmentCount = segmentCount;
   }

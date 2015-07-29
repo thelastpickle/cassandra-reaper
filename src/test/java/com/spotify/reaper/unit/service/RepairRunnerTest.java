@@ -59,6 +59,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -74,6 +75,7 @@ public class RepairRunnerTest {
     final String CLUSTER_NAME = "reaper";
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
+    final boolean INCREMENTAL_REPAIR = false;
     final long TIME_RUN = 41l;
     final double INTENSITY = 0.5f;
 
@@ -81,7 +83,7 @@ public class RepairRunnerTest {
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
     RepairUnit cf =
-        storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES));
+        storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1,
@@ -116,7 +118,7 @@ public class RepairRunnerTest {
         //doNothing().when(jmx).cancelAllRepairs();
         when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
             Matchers.<RepairParallelism>any(),
-            Sets.newHashSet(anyString()))).then(
+            Sets.newHashSet(anyString()), anyBoolean())).then(
             new Answer<Integer>() {
               @Override
               public Integer answer(InvocationOnMock invocation) throws Throwable {
@@ -179,6 +181,7 @@ public class RepairRunnerTest {
     final String CLUSTER_NAME = "reaper";
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
+    final boolean INCREMENTAL_REPAIR = false;
     final long TIME_RUN = 41l;
     final double INTENSITY = 0.5f;
 
@@ -189,7 +192,7 @@ public class RepairRunnerTest {
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
     long cf = storage.addRepairUnit(
-        new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES)).getId();
+        new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR)).getId();
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY, 1,
@@ -219,7 +222,7 @@ public class RepairRunnerTest {
         when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
         when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
                                Matchers.<RepairParallelism>any(),
-                               Sets.newHashSet(anyString()))).then(
+                               Sets.newHashSet(anyString()), anyBoolean())).then(
             new Answer<Integer>() {
               @Override
               public Integer answer(InvocationOnMock invocation) throws Throwable {
