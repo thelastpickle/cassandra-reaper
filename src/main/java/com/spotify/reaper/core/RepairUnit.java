@@ -21,7 +21,7 @@ public class RepairUnit {
   private final String clusterName;
   private final String keyspaceName;
   private final Set<String> columnFamilies;
-  private final boolean incrementalRepair;	
+  private final Boolean incrementalRepair;	
 
   private RepairUnit(Builder builder, long id) {
     this.id = id;
@@ -47,8 +47,8 @@ public class RepairUnit {
     return columnFamilies;
   }
   
-  public boolean getIncrementalRepair() {
-	    return incrementalRepair;
+  public Boolean getIncrementalRepair() {
+	return incrementalRepair;
   }
 
   public Builder with() {

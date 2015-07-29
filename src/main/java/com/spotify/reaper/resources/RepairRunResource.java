@@ -145,6 +145,12 @@ public class RepairRunResource {
                   repairParallelism.get(), context.config.getRepairParallelism());
         parallelism = RepairParallelism.valueOf(repairParallelism.get().toUpperCase());
       }
+      
+      if(!parallelism.equals(RepairParallelism.PARALLEL) && incrementalRepair) {
+          return Response.status(Response.Status.BAD_REQUEST).entity(
+                  "It is not possible to mix sequential repair and incremental repairs. parallelism " 
+                  + parallelism + " : incrementalRepair " + incrementalRepair).build();
+      }
 
       RepairRun newRepairRun = CommonTools.registerRepairRun(
           context, cluster, theRepairUnit, cause, owner.get(), segments,
