@@ -3,16 +3,17 @@
 -- Assumes PostgreSQL version 9.3 or newer
 --
 
--- CREATE DATABASE reaper_db;
--- CREATE USER reaper WITH PASSWORD 'my_secret_password';
--- GRANT ALL PRIVILEGES ON DATABASE reaper_db TO reaper;
+CREATE DATABASE reaper_db;
+\connect repear_db;
+CREATE USER reaper WITH PASSWORD 'my_secret_password';
+GRANT ALL PRIVILEGES ON DATABASE reaper_db TO reaper;
 
 -- For cleaning up the database, just do first in the following order:
--- DROP TABLE "repair_segment";
--- DROP TABLE "repair_run";
--- DROP TABLE "repair_schedule";
--- DROP TABLE "repair_unit";
--- DROP TABLE "cluster";
+DROP TABLE "repair_segment";
+DROP TABLE "repair_run";
+DROP TABLE "repair_schedule";
+DROP TABLE "repair_unit";
+DROP TABLE "cluster";
 
 CREATE TABLE IF NOT EXISTS "cluster" (
   "name"        TEXT PRIMARY KEY,
