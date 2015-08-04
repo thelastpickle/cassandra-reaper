@@ -471,6 +471,10 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   }
 
   public void clearSnapshot(String repairId, String keyspaceName) throws ReaperException {
+    if (repairId == null || repairId.equals("")) {
+      // Passing in null or empty string will clear all snapshots on the host
+      throw new IllegalArgumentException("repairId cannot be null or empty string");
+    }
     try {
       ssProxy.clearSnapshot(repairId, keyspaceName);
     } catch (IOException e) {
