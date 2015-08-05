@@ -122,6 +122,11 @@ public class RepairScheduleResource {
             "given schedule_trigger_time is in the past: "
             + CommonTools.dateTimeToISO8601(nextActivation)).build();
       }
+      
+      if(!scheduleDaysBetween.isPresent()) {
+    	  return Response.status(Response.Status.BAD_REQUEST).entity(
+              "missing required parameter: scheduleDaysBetween").build();
+      }
 
       Double intensity;
       if (intensityStr.isPresent()) {
@@ -158,6 +163,12 @@ public class RepairScheduleResource {
       RepairUnit theRepairUnit =
           CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace.get(), tableNames, incrementalRepair);
 
+      if(theRepairUnit.getIncrementalRepair() != incrementalRepair) {
+    	  return Response.status(Response.Status.BAD_REQUEST).entity(
+                  "A repair Schedule already exist for the same cluster/keyspace/table but with a different incremental repair value." 
+                  + "Requested value: " + incrementalRepair + " | Existing value: " + theRepairUnit.getIncrementalRepair()).build();
+      }
+      
       RepairParallelism parallelism = context.config.getRepairParallelism();
       if (repairParallelism.isPresent()) {
         LOG.debug("using given repair parallelism {} instead of configured value {}",
@@ -165,6 +176,12 @@ public class RepairScheduleResource {
         parallelism = RepairParallelism.valueOf(repairParallelism.get().toUpperCase());
       }
 
+      if(!parallelism.equals(RepairParallelism.PARALLEL) && incrementalRepair) {
+          return Response.status(Response.Status.BAD_REQUEST).entity(
+                  "It is not possible to mix sequential repair and incremental repairs. parallelism " 
+                  + parallelism + " : incrementalRepair " + incrementalRepair).build();
+      }
+      
       RepairSchedule newRepairSchedule = CommonTools.storeNewRepairSchedule(
           context, cluster, theRepairUnit, scheduleDaysBetween.get(), nextActivation, owner.get(),
           segments, parallelism, intensity);

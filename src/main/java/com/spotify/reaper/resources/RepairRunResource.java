@@ -139,6 +139,12 @@ public class RepairRunResource {
       RepairUnit theRepairUnit =
           CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace.get(), tableNames, incrementalRepair);
 
+      if(theRepairUnit.getIncrementalRepair() != incrementalRepair) {
+    	  return Response.status(Response.Status.BAD_REQUEST).entity(
+                  "A repair run already exist for the same cluster/keyspace/table but with a different incremental repair value." 
+                  + "Requested value: " + incrementalRepair + " | Existing value: " + theRepairUnit.getIncrementalRepair()).build();
+      }
+      
       RepairParallelism parallelism = context.config.getRepairParallelism();
       if (repairParallelism.isPresent()) {
         LOG.debug("using given repair parallelism {} instead of configured value {}",
