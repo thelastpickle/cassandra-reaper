@@ -221,7 +221,8 @@ public class RepairRunner implements Runnable {
               supposedlyRunningSegment.getId(), rangeIndex,
               supposedlyRunningSegment.getState().toString());
         }
-        if (supposedlyRunningSegment.getStartTime().isBefore(DateTime.now().minusDays(1))) {
+        DateTime startTime = supposedlyRunningSegment.getStartTime();
+        if (startTime != null && startTime.isBefore(DateTime.now().minusDays(1))) {
           LOG.warn("Looks like segment #{} has been running more than a day. Start time: {}",
               supposedlyRunningSegment.getId(), supposedlyRunningSegment.getStartTime());
         }
