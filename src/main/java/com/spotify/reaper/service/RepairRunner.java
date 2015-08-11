@@ -185,10 +185,7 @@ public class RepairRunner implements Runnable {
     startNextSegment();
   }
 
-  /**
-   * Concludes the repair run.
-   */
-  private void end() {
+  private void endRepairRun() {
     LOG.info("Repairs for repair run #{} done", repairRunId);
     synchronized (this) {
       RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
@@ -205,9 +202,18 @@ public class RepairRunner implements Runnable {
    * Get the next segment and repair it. If there is none, we're done.
    */
   private void startNextSegment() {
-    boolean triedStartingSegment = false;
+    boolean anythingRunningStill = false;
+
+    // We want to know whether a repair was started,
+    // so that a rescheduling of this runner will happen.
+    boolean repairStarted = false;
+
     for (int rangeIndex = 0; rangeIndex < currentlyRunningSegments.length(); rangeIndex++) {
+
       if (currentlyRunningSegments.get(rangeIndex) != -1L) {
+        anythingRunningStill = true;
+
+        // Just checking that no currently running segment runner is stuck.
         RepairSegment supposedlyRunningSegment =
             context.storage.getRepairSegment(currentlyRunningSegments.get(rangeIndex)).get();
         if (supposedlyRunningSegment.getState() != RepairSegment.State.RUNNING) {
@@ -219,15 +225,19 @@ public class RepairRunner implements Runnable {
           LOG.warn("Looks like segment #{} has been running more than a day. Start time: {}",
               supposedlyRunningSegment.getId(), supposedlyRunningSegment.getStartTime());
         }
+
+        // No need to try starting new repair for already active slot.
         continue;
       }
 
+      // We have an empty slot, so let's start new segment runner if possible.
       Optional<RepairSegment> nextRepairSegment =
           context.storage.getNextFreeSegmentInRange(repairRunId, parallelRanges.get(rangeIndex));
+
       if (!nextRepairSegment.isPresent()) {
         LOG.debug("No repair segment available for range {}", parallelRanges.get(rangeIndex));
+
       } else {
-        triedStartingSegment = true;
         long segmentId = nextRepairSegment.get().getId();
         boolean wasSet = currentlyRunningSegments.compareAndSet(rangeIndex, -1, segmentId);
         if (!wasSet) {
@@ -237,26 +247,25 @@ public class RepairRunner implements Runnable {
           LOG.debug("Did set segment id `{}` to slot {}", segmentId, rangeIndex);
           repairSegment(rangeIndex, nextRepairSegment.get().getId(),
               nextRepairSegment.get().getTokenRange());
+          repairStarted = true;
         }
       }
     }
 
-    if (!triedStartingSegment) {
-      boolean allRangesDone = true;
-      for (int i = 0; i < currentlyRunningSegments.length(); i++) {
-        if (currentlyRunningSegments.get(i) != -1L) {
-          allRangesDone = false;
-        }
-      }
-      if (allRangesDone) {
-        if (context.storage
-                .getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE) ==
-            context.storage.getSegmentAmountForRepairRun(repairRunId)) {
-          end();
+    if (!repairStarted) {
+      if (!anythingRunningStill) {
+        int amountDone = context.storage
+            .getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
+        if (amountDone == context.storage.getSegmentAmountForRepairRun(repairRunId)) {
+          endRepairRun();
         } else {
           LOG.debug("No more segments to repair, but some still running");
           context.repairManager.scheduleRetry(this);
         }
+      } else {
+        // There are segments still running, but as we didn't start a new repair,
+        // we need to schedule next run here.
+        context.repairManager.scheduleRetry(this);
       }
     }
   }
@@ -332,6 +341,9 @@ public class RepairRunner implements Runnable {
       @Override
       public void onSuccess(Object ignored) {
         currentlyRunningSegments.set(rangeIndex, -1);
+        // NOTE: notice that this will branch out the amount of activations
+        //       for this runner by the amount of slots we have,
+        //       as the handleResult will schedule new runs for this runner (one per slot).
         handleResult(segmentId);
       }
 
@@ -345,11 +357,11 @@ public class RepairRunner implements Runnable {
 
   private void handleResult(long segmentId) {
     RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
-    RepairSegment.State state = segment.getState();
+    RepairSegment.State segmentState = segment.getState();
     LOG.debug("In repair run #{}, triggerRepair on segment {} ended with state {}",
-        repairRunId, segmentId, state);
+        repairRunId, segmentId, segmentState);
 
-    switch (state) {
+    switch (segmentState) {
       case NOT_STARTED:
         // Unsuccessful repair
         context.repairManager.scheduleRetry(this);
@@ -363,8 +375,8 @@ public class RepairRunner implements Runnable {
       default:
         // Another thread has started a new repair on this segment already
         // Or maybe the same repair segment id should never be re-run in which case this is an error
-        String msg = "handleResult called with a segment state (" + state + ") that it should not"
-                     + " have after segmentRunner has tried a repair";
+        String msg = "handleResult called with a segment state (" + segmentState + ") that it "
+                     + "should not have after segmentRunner has tried a repair";
         LOG.error(msg);
         throw new RuntimeException(msg);
     }

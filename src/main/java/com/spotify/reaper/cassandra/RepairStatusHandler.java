@@ -27,6 +27,6 @@ public interface RepairStatusHandler {
    * @param status       new status of the repair
    * @param message      additional information about the repair
    */
-  public void handle(int repairNumber, ActiveRepairService.Status status, String message);
+  void handle(int repairNumber, ActiveRepairService.Status status, String message);
 
 }
