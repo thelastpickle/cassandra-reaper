@@ -202,6 +202,7 @@ public class RepairRunner implements Runnable {
    * Get the next segment and repair it. If there is none, we're done.
    */
   private void startNextSegment() {
+    boolean scheduleRetry = true;
     boolean anythingRunningStill = false;
 
     // We want to know whether a repair was started,
@@ -246,8 +247,11 @@ public class RepairRunner implements Runnable {
               segmentId, rangeIndex);
         } else {
           LOG.debug("Did set segment id `{}` to slot {}", segmentId, rangeIndex);
-          repairSegment(rangeIndex, nextRepairSegment.get().getId(),
+          scheduleRetry = repairSegment(rangeIndex, nextRepairSegment.get().getId(),
               nextRepairSegment.get().getTokenRange());
+          if (!scheduleRetry) {
+            break;
+          }
           repairStarted = true;
         }
       }
@@ -258,11 +262,13 @@ public class RepairRunner implements Runnable {
           .getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
       if (amountDone == context.storage.getSegmentAmountForRepairRun(repairRunId)) {
         endRepairRun();
-        // RepairRun ended, so no more scheduling required.
-        return;
+        scheduleRetry = false;
       }
     }
-    context.repairManager.scheduleRetry(this);
+
+    if (scheduleRetry) {
+      context.repairManager.scheduleRetry(this);
+    }
   }
 
   /**
@@ -270,8 +276,9 @@ public class RepairRunner implements Runnable {
    *
    * @param segmentId  id of the segment to repair.
    * @param tokenRange token range of the segment to repair.
+   * @return Boolean indicating whether rescheduling next run is needed.
    */
-  private void repairSegment(final int rangeIndex, final long segmentId, RingRange tokenRange) {
+  private boolean repairSegment(final int rangeIndex, final long segmentId, RingRange tokenRange) {
     final long unitId;
     final double intensity;
     final RepairParallelism validationParallelism;
@@ -295,8 +302,7 @@ public class RepairRunner implements Runnable {
         e.printStackTrace();
         LOG.warn("Failed to reestablish JMX connection in runner #{}, retrying", repairRunId);
         currentlyRunningSegments.set(rangeIndex, -1);
-        context.repairManager.scheduleRetry(this);
-        return;
+        return true;
       }
       LOG.debug("successfully reestablished JMX proxy for repair runner on run id: {}",
           repairRunId);
@@ -307,8 +313,7 @@ public class RepairRunner implements Runnable {
       potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
     } catch (RuntimeException e) {
       LOG.warn("Couldn't get token ranges from coordinator: ", e);
-      context.repairManager.scheduleRetry(this);
-      return;
+      return true;
     }
     if (potentialCoordinators.isEmpty()) {
       LOG.warn("Segment #{} is faulty, no potential coordinators for range: {}",
@@ -324,7 +329,7 @@ public class RepairRunner implements Runnable {
             .build(repairRunId));
         context.repairManager.removeRunner(this);
       }
-      return;
+      return false;
     }
 
     SegmentRunner segmentRunner = new SegmentRunner(context, segmentId, potentialCoordinators,
@@ -345,6 +350,8 @@ public class RepairRunner implements Runnable {
         LOG.error("Executing SegmentRunner failed: " + t.getMessage());
       }
     });
+
+    return true;
   }
 
   private void handleResult(long segmentId) {
