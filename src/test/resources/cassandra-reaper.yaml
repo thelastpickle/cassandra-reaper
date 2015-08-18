@@ -39,7 +39,7 @@ logging:
     org.eclipse.jetty: INFO
   appenders:
     - type: console
-      logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %msg %n"
+      logFormat: "%-6level [%d] [%t] %logger{5} - %msg %n"
 
 server:
   type: default
