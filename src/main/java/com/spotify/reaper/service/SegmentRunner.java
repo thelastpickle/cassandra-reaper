@@ -24,6 +24,7 @@ import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
+import com.sun.management.UnixOperatingSystemMXBean;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
@@ -33,6 +34,9 @@ import org.joda.time.Seconds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.net.SocketException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -121,6 +125,19 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
+  /**
+   * This method is intended to be temporary, until we find the root issue of too many open files
+   * issue.
+   */
+  private long getOpenFilesAmount() {
+    OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
+    long amountOfOpenFiles = -1;
+    if (os instanceof UnixOperatingSystemMXBean) {
+      amountOfOpenFiles = ((UnixOperatingSystemMXBean) os).getOpenFileDescriptorCount();
+    }
+    return amountOfOpenFiles;
+  }
+
   private void runRepair() {
     LOG.debug("Run repair for segment #{}", segmentId);
     final RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
@@ -196,6 +213,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       String msg = "Postponed a segment because no coordinator was reachable";
       repairRunner.updateLastEvent(msg);
       postponeCurrentSegment();
+      LOG.warn("Open files amount for process: " + getOpenFilesAmount());
     }
     LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
   }
@@ -243,11 +261,10 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       } catch (RuntimeException e) {
         LOG.warn("SegmentRunner declined to repair segment {} because of an error collecting "
                  + "information from one of the hosts ({}): {}", segmentId, hostName, e);
-        String
-            msg =
-            String
-                .format("Postponed due to inability to collect information from host %s", hostName);
+        String msg = String.format("Postponed due to inability to collect "
+                                   + "information from host %s", hostName);
         repairRunner.updateLastEvent(msg);
+        LOG.warn("Open files amount for process: " + getOpenFilesAmount());
         return false;
       }
     }
