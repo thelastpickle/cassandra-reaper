@@ -144,7 +144,7 @@ public class RepairRunner implements Runnable {
         // this might happen if a run is deleted while paused etc.
         LOG.warn("RepairRun \"" + repairRunId + "\" does not exist. Killing "
                  + "RepairRunner for this run instance.");
-        context.repairManager.removeRunner(this);
+        killAndCleanupRunner();
         return;
       }
       RepairRun.RunState state = repairRun.get().getRunState();
@@ -194,7 +194,7 @@ public class RepairRunner implements Runnable {
           .endTime(DateTime.now())
           .lastEvent("All done")
           .build(repairRun.getId()));
-      context.repairManager.removeRunner(this);
+      killAndCleanupRunner();
     }
   }
 
@@ -327,7 +327,7 @@ public class RepairRunner implements Runnable {
             .lastEvent(String.format("No coordinators for range %s", tokenRange.toString()))
             .endTime(DateTime.now())
             .build(repairRunId));
-        context.repairManager.removeRunner(this);
+        killAndCleanupRunner();
       }
       return false;
     }
@@ -390,6 +390,18 @@ public class RepairRunner implements Runnable {
         context.storage.updateRepairRun(repairRun.with()
             .lastEvent(newEvent)
             .build(repairRunId));
+      }
+    }
+  }
+
+  public void killAndCleanupRunner() {
+    context.repairManager.removeRunner(this);
+    if (jmxConnection != null) {
+      try {
+        jmxConnection.close();
+        jmxConnection = null;
+      } catch (ReaperException e) {
+        LOG.warn("failed closing JMX connection on runner exit: " + e);
       }
     }
   }
