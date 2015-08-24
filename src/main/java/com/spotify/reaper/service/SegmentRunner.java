@@ -97,7 +97,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   public static void postpone(AppContext context, RepairSegment segment) {
-    LOG.warn("Postponing segment {}", segment.getId());
+    LOG.info("Postponing segment {}", segment.getId());
     context.storage.updateRepairSegment(segment.with()
         .state(RepairSegment.State.NOT_STARTED)
         .coordinatorHost(null)
@@ -237,7 +237,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       try (JmxProxy hostProxy = context.jmxConnectionFactory.connect(hostName)) {
         int pendingCompactions = hostProxy.getPendingCompactions();
         if (pendingCompactions > MAX_PENDING_COMPACTIONS) {
-          LOG.warn("SegmentRunner declined to repair segment {} because of too many pending "
+          LOG.info("SegmentRunner declined to repair segment {} because of too many pending "
                    + "compactions (> {}) on host \"{}\"", segmentId, MAX_PENDING_COMPACTIONS,
               hostProxy.getHost());
           String msg = String.format("Postponed due to pending compactions (%d)",
@@ -246,7 +246,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
           return false;
         }
         if (hostProxy.isRepairRunning()) {
-          LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) was "
+          LOG.info("SegmentRunner declined to repair segment {} because one of the hosts ({}) was "
                    + "already involved in a repair", segmentId, hostProxy.getHost());
           String msg = "Postponed due to affected hosts already doing repairs";
           repairRunner.updateLastEvent(msg);
