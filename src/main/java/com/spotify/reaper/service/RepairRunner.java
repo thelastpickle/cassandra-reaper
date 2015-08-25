@@ -217,17 +217,11 @@ public class RepairRunner implements Runnable {
         // Just checking that no currently running segment runner is stuck.
         RepairSegment supposedlyRunningSegment =
             context.storage.getRepairSegment(currentlyRunningSegments.get(rangeIndex)).get();
-        if (supposedlyRunningSegment.getState() == RepairSegment.State.DONE) {
-          LOG.warn("Segment #{} supposedly running in slot {} has state: {}",
-              supposedlyRunningSegment.getId(), rangeIndex,
-              supposedlyRunningSegment.getState().toString());
-        }
         DateTime startTime = supposedlyRunningSegment.getStartTime();
         if (startTime != null && startTime.isBefore(DateTime.now().minusDays(1))) {
           LOG.warn("Looks like segment #{} has been running more than a day. Start time: {}",
               supposedlyRunningSegment.getId(), supposedlyRunningSegment.getStartTime());
         }
-
         // No need to try starting new repair for already active slot.
         continue;
       }
