@@ -5,10 +5,12 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+
 import org.apache.cassandra.concurrent.NamedThreadFactory;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -17,7 +19,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class RepairManager {
@@ -37,8 +38,8 @@ public class RepairManager {
   public Map<Long, RepairRunner> repairRunners = Maps.newConcurrentMap();
 
   public void initializeThreadPool(int threadAmount, long repairTimeout,
-                                          TimeUnit repairTimeoutTimeUnit, long retryDelay,
-                                          TimeUnit retryDelayTimeUnit) {
+      TimeUnit repairTimeoutTimeUnit, long retryDelay,
+      TimeUnit retryDelayTimeUnit) {
     executor = MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(threadAmount,
         new NamedThreadFactory("RepairRunner")));
     repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
@@ -60,7 +61,7 @@ public class RepairManager {
       for (RepairSegment segment : runningSegments) {
         try {
           SegmentRunner.abort(context, segment,
-                              context.jmxConnectionFactory.connect(segment.getCoordinatorHost()));
+              context.jmxConnectionFactory.connect(segment.getCoordinatorHost()));
         } catch (ReaperException e) {
           LOG.debug("Tried to abort repair on segment {} marked as RUNNING, but the host was down"
                     + " (so abortion won't be needed)", segment.getId());
@@ -139,7 +140,7 @@ public class RepairManager {
     } else {
       LOG.error(
           "there is already a repair runner for run with id {}, so not starting new runner. This "
-              + "should not happen.", runId);
+          + "should not happen.", runId);
     }
   }
 
@@ -156,9 +157,9 @@ public class RepairManager {
 
   public RepairRun abortRepairRun(AppContext context, RepairRun runToBeAborted) {
     RepairRun updatedRun = runToBeAborted.with()
-      .runState(RepairRun.RunState.ABORTED)
-      .pauseTime(DateTime.now())
-      .build(runToBeAborted.getId());
+        .runState(RepairRun.RunState.ABORTED)
+        .pauseTime(DateTime.now())
+        .build(runToBeAborted.getId());
     if (!context.storage.updateRepairRun(updatedRun)) {
       throw new RuntimeException("failed updating repair run " + updatedRun.getId());
     }
@@ -171,10 +172,6 @@ public class RepairManager {
 
   public ListenableFuture<?> submitSegment(SegmentRunner runner) {
     return executor.submit(runner);
-  }
-
-  public void submitNextRun(RepairRunner runner) {
-    executor.submit(runner);
   }
 
   public void removeRunner(RepairRunner runner) {
