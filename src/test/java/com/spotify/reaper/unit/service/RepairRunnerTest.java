@@ -245,7 +245,7 @@ public class RepairRunnerTest {
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
     storage.updateRepairRun(run.with().runState(RepairRun.RunState.RUNNING).build(RUN_ID));
     context.repairManager.resumeRunningRepairRuns(context);
-    Thread.sleep(100);
+    Thread.sleep(200);
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }
 
