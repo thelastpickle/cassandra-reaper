@@ -160,7 +160,7 @@ public class RepairRunner implements Runnable {
           context.repairManager.scheduleRetry(this);
           break;
       }
-    } catch (RuntimeException e) {
+    } catch (RuntimeException | ReaperException e) {
       LOG.error("RepairRun FAILURE, scheduling retry");
       LOG.error(e.toString());
       LOG.error(Arrays.toString(e.getStackTrace()));
@@ -173,7 +173,7 @@ public class RepairRunner implements Runnable {
   /**
    * Starts the repair run.
    */
-  private void start() {
+  private void start() throws ReaperException {
     LOG.info("Repairs for repair run #{} starting", repairRunId);
     synchronized (this) {
       RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
@@ -198,12 +198,23 @@ public class RepairRunner implements Runnable {
     }
   }
 
+  private void confirmJMXConnectionIsOpen() throws ReaperException {
+    if (jmxConnection == null || !jmxConnection.isConnectionAlive()) {
+      LOG.debug("connecting JMX proxy for repair runner on run id: {}", repairRunId);
+      Cluster cluster = context.storage.getCluster(this.clusterName).get();
+      jmxConnection = context.jmxConnectionFactory.connectAny(cluster);
+      LOG.debug("successfully reestablished JMX proxy for repair runner");
+    }
+  }
+
   /**
    * Get the next segment and repair it. If there is none, we're done.
    */
-  private void startNextSegment() {
+  private void startNextSegment() throws ReaperException {
     boolean scheduleRetry = true;
     boolean anythingRunningStill = false;
+
+    confirmJMXConnectionIsOpen();
 
     // We want to know whether a repair was started,
     // so that a rescheduling of this runner will happen.
@@ -220,6 +231,12 @@ public class RepairRunner implements Runnable {
         DateTime startTime = supposedlyRunningSegment.getStartTime();
         if (startTime != null && startTime.isBefore(DateTime.now().minusDays(1))) {
           LOG.warn("Looks like segment #{} has been running more than a day. Start time: {}",
+              supposedlyRunningSegment.getId(), supposedlyRunningSegment.getStartTime());
+        } else if (startTime != null && startTime.isBefore(DateTime.now().minusHours(1))) {
+          LOG.info("Looks like segment #{} has been running more than an hour. Start time: {}",
+              supposedlyRunningSegment.getId(), supposedlyRunningSegment.getStartTime());
+        } else if (startTime != null && startTime.isBefore(DateTime.now().minusMinutes(2))) {
+          LOG.debug("Looks like segment #{} has been running more than two minutes. Start time: {}",
               supposedlyRunningSegment.getId(), supposedlyRunningSegment.getStartTime());
         }
         // No need to try starting new repair for already active slot.
@@ -287,19 +304,13 @@ public class RepairRunner implements Runnable {
     String keyspace = repairUnit.getKeyspaceName();
     LOG.debug("preparing to repair segment {} on run with id {}", segmentId, repairRunId);
 
-    if (jmxConnection == null || !jmxConnection.isConnectionAlive()) {
-      try {
-        LOG.debug("connecting JMX proxy for repair runner on run id: {}", repairRunId);
-        Cluster cluster = context.storage.getCluster(repairUnit.getClusterName()).get();
-        jmxConnection = context.jmxConnectionFactory.connectAny(cluster);
-      } catch (ReaperException e) {
-        e.printStackTrace();
-        LOG.warn("Failed to reestablish JMX connection in runner #{}, retrying", repairRunId);
-        currentlyRunningSegments.set(rangeIndex, -1);
-        return true;
-      }
-      LOG.debug("successfully reestablished JMX proxy for repair runner on run id: {}",
-          repairRunId);
+    try {
+      confirmJMXConnectionIsOpen();
+    } catch (ReaperException e) {
+      e.printStackTrace();
+      LOG.warn("Failed to reestablish JMX connection in runner #{}, retrying", repairRunId);
+      currentlyRunningSegments.set(rangeIndex, -1);
+      return true;
     }
 
     List<String> potentialCoordinators;
