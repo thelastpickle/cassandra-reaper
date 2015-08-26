@@ -16,6 +16,7 @@ package com.spotify.reaper.cassandra;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.service.RingRange;
@@ -73,12 +74,14 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private final StorageServiceMBean ssProxy;
   private final Optional<RepairStatusHandler> repairStatusHandler;
   private final String host;
+  private final JMXServiceURL jmxUrl;
   private final String clusterName;
 
-  private JmxProxy(Optional<RepairStatusHandler> handler, String host, JMXConnector jmxConnector,
-                   StorageServiceMBean ssProxy, ObjectName ssMbeanName,
-                   MBeanServerConnection mbeanServer, CompactionManagerMBean cmProxy) {
+  private JmxProxy(Optional<RepairStatusHandler> handler, String host, JMXServiceURL jmxUrl,
+      JMXConnector jmxConnector, StorageServiceMBean ssProxy, ObjectName ssMbeanName,
+      MBeanServerConnection mbeanServer, CompactionManagerMBean cmProxy) {
     this.host = host;
+    this.jmxUrl = jmxUrl;
     this.jmxConnector = jmxConnector;
     this.ssMbeanName = ssMbeanName;
     this.mbeanServer = mbeanServer;
@@ -88,11 +91,12 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     this.clusterName = Cluster.toSymbolicName(ssProxy.getClusterName());
   }
 
-  
+
   /**
    * @see JmxProxy#connect(Optional, String, int, String, String)
    */
-  static JmxProxy connect(Optional<RepairStatusHandler> handler, String host, String username, String password)
+  static JmxProxy connect(Optional<RepairStatusHandler> handler, String host, String username,
+      String password)
       throws ReaperException {
     assert null != host : "null host given to JmxProxy.connect()";
     String[] parts = host.split(":");
@@ -103,22 +107,24 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
   }
 
-  
+
   /**
    * Connect to JMX interface on the given host and port.
    *
-   * @param handler Implementation of {@link RepairStatusHandler} to process incoming notifications
-   *                of repair events.
-   * @param host hostname or ip address of Cassandra node
-   * @param port port number to use for JMX connection
+   * @param handler  Implementation of {@link RepairStatusHandler} to process incoming
+   *                 notifications
+   *                 of repair events.
+   * @param host     hostname or ip address of Cassandra node
+   * @param port     port number to use for JMX connection
    * @param username username to use for JMX authentication
    * @param password password to use for JMX authentication
    */
-  static JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int port, String username, String password)
+  static JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int port,
+      String username, String password)
       throws ReaperException {
-    JMXServiceURL jmxUrl;
     ObjectName ssMbeanName;
     ObjectName cmMbeanName;
+    JMXServiceURL jmxUrl;
     try {
       jmxUrl = new JMXServiceURL(String.format(JMX_URL, host, port));
       ssMbeanName = new ObjectName(SS_OBJECT_NAME);
@@ -129,7 +135,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
     try {
       Map<String, Object> env = new HashMap<String, Object>();
-      if(username != null && password != null) {
+      if (username != null && password != null) {
         String[] creds = {username, password};
         env.put(JMXConnector.CREDENTIALS, creds);
       }
@@ -139,12 +145,13 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
           JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean.class);
       CompactionManagerMBean cmProxy =
           JMX.newMBeanProxy(mbeanServerConn, cmMbeanName, CompactionManagerMBean.class);
-      JmxProxy proxy =
-          new JmxProxy(handler, host, jmxConn, ssProxy, ssMbeanName, mbeanServerConn, cmProxy);
+      JmxProxy proxy = new JmxProxy(handler, host, jmxUrl, jmxConn, ssProxy, ssMbeanName,
+          mbeanServerConn, cmProxy);
       // registering a listener throws bunch of exceptions, so we do it here rather than in the
       // constructor
       mbeanServerConn.addNotificationListener(ssMbeanName, proxy, null, null);
-      LOG.debug(String.format("JMX connection to %s properly connected.", host));
+      LOG.debug(String.format("JMX connection to %s properly connected: %s",
+          host, jmxUrl.toString()));
       return proxy;
     } catch (IOException | InstanceNotFoundException e) {
       LOG.error(String.format("Failed to establish JMX connection to %s:%s", host, port));
@@ -293,13 +300,12 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 
   /**
    * Checks if table exists in the cluster by instantiating a MBean for that table.
-   *
    */
   public boolean tableExists(String ks, String cf) {
     try {
       String type = cf.contains(".") ? "IndexColumnFamilies" : "ColumnFamilies";
       String nameStr = String.format("org.apache.cassandra.db:type=*%s,keyspace=%s,columnfamily=%s",
-                                     type, ks, cf);
+          type, ks, cf);
       Set<ObjectName> beans = mbeanServer.queryNames(new ObjectName(nameStr), null);
       if (beans.isEmpty() || beans.size() != 1) {
         return false;
@@ -308,7 +314,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       JMX.newMBeanProxy(mbeanServer, bean, ColumnFamilyStoreMBean.class);
     } catch (MalformedObjectNameException | IOException e) {
       String errMsg = String.format("ColumnFamilyStore for %s/%s not found: %s", ks, cf,
-                                    e.getMessage());
+          e.getMessage());
       LOG.warn(errMsg);
       return false;
     }
@@ -323,7 +329,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * @return Repair command number, or 0 if nothing to repair
    */
   public int triggerRepair(BigInteger beginToken, BigInteger endToken, String keyspace,
-                           RepairParallelism repairParallelism, Collection<String> columnFamilies) {
+      RepairParallelism repairParallelism, Collection<String> columnFamilies) {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     String cassandraVersion = ssProxy.getReleaseVersion();
     boolean canUseDatacenterAware = false;
@@ -336,27 +342,27 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
                                + "host %s, with repair parallelism %s, in cluster with Cassandra "
                                + "version '%s' (can use DATACENTER_AWARE '%s'), "
                                + "for column families: %s",
-                               beginToken.toString(), endToken.toString(), keyspace, this.host,
-                               repairParallelism, cassandraVersion, canUseDatacenterAware,
-                               columnFamilies);
+        beginToken.toString(), endToken.toString(), keyspace, this.host,
+        repairParallelism, cassandraVersion, canUseDatacenterAware,
+        columnFamilies);
     LOG.info(msg);
     if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
       if (canUseDatacenterAware) {
         return ssProxy.forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-                                             repairParallelism.ordinal(), null, null,
-                                             columnFamilies
-                                                 .toArray(new String[columnFamilies.size()]));
+            repairParallelism.ordinal(), null, null,
+            columnFamilies
+                .toArray(new String[columnFamilies.size()]));
       } else {
         LOG.info("Cannot use DATACENTER_AWARE repair policy for Cassandra cluster with version {},"
                  + " falling back to SEQUENTIAL repair.",
-                 cassandraVersion);
+            cassandraVersion);
         repairParallelism = RepairParallelism.SEQUENTIAL;
       }
     }
     boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
     return ssProxy.forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-                                         snapshotRepair, false,
-                                         columnFamilies.toArray(new String[columnFamilies.size()]));
+        snapshotRepair, false,
+        columnFamilies.toArray(new String[columnFamilies.size()]));
   }
 
   /**
@@ -404,11 +410,18 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    */
   @Override
   public void close() throws ReaperException {
+    LOG.debug(String.format("close JMX connection to '%s': %s", host, jmxUrl));
     try {
       mbeanServer.removeNotificationListener(ssMbeanName, this);
+    } catch (InstanceNotFoundException | ListenerNotFoundException | IOException e) {
+      LOG.warn("failed on removing notification listener");
+      e.printStackTrace();
+    }
+    try {
       jmxConnector.close();
-    } catch (IOException | InstanceNotFoundException | ListenerNotFoundException e) {
-      throw new ReaperException(e);
+    } catch (IOException e) {
+      LOG.warn("failed closing a JMX connection");
+      e.printStackTrace();
     }
   }
 

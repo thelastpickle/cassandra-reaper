@@ -259,7 +259,7 @@ public class RepairScheduleResource {
   @GET
   @Path("/{id}")
   public Response getRepairSchedule(@PathParam("id") Long repairScheduleId) {
-    LOG.info("get repair_schedule called with: id = {}", repairScheduleId);
+    LOG.debug("get repair_schedule called with: id = {}", repairScheduleId);
     Optional<RepairSchedule> repairSchedule = context.storage.getRepairSchedule(repairScheduleId);
     if (repairSchedule.isPresent()) {
       return Response.ok().entity(getRepairScheduleStatus(repairSchedule.get())).build();
@@ -275,7 +275,7 @@ public class RepairScheduleResource {
   @GET
   @Path("/cluster/{cluster_name}")
   public Response getRepairSchedulesForCluster(@PathParam("cluster_name") String clusterName) {
-    LOG.info("get repair schedules for cluster called with: cluster_name = {}", clusterName);
+    LOG.debug("get repair schedules for cluster called with: cluster_name = {}", clusterName);
     Collection<RepairSchedule> repairSchedules =
         context.storage.getRepairSchedulesForCluster(clusterName);
     Collection<RepairScheduleStatus> repairScheduleViews = new ArrayList<>();
@@ -319,6 +319,7 @@ public class RepairScheduleResource {
    */
   @GET
   public Response listSchedules() {
+    LOG.debug("list all repair schedules called");
     List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
     Collection<RepairSchedule> schedules = context.storage.getAllRepairSchedules();
     for (RepairSchedule schedule : schedules) {

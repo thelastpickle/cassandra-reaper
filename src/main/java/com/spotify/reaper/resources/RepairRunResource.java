@@ -327,7 +327,7 @@ public class RepairRunResource {
   @GET
   @Path("/{id}")
   public Response getRepairRun(@PathParam("id") Long repairRunId) {
-    LOG.info("get repair_run called with: id = {}", repairRunId);
+    LOG.debug("get repair_run called with: id = {}", repairRunId);
     Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     if (repairRun.isPresent()) {
       return Response.ok().entity(getRepairRunStatus(repairRun.get())).build();
@@ -343,7 +343,7 @@ public class RepairRunResource {
   @GET
   @Path("/cluster/{cluster_name}")
   public Response getRepairRunsForCluster(@PathParam("cluster_name") String clusterName) {
-    LOG.info("get repair run for cluster called with: cluster_name = {}", clusterName);
+    LOG.debug("get repair run for cluster called with: cluster_name = {}", clusterName);
     Collection<RepairRun> repairRuns = context.storage.getRepairRunsForCluster(clusterName);
     Collection<RepairRunStatus> repairRunViews = new ArrayList<>();
     for (RepairRun repairRun : repairRuns) {

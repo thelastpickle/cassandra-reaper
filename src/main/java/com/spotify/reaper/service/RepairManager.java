@@ -8,6 +8,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 
@@ -59,9 +60,9 @@ public class RepairManager {
       Collection<RepairSegment> runningSegments =
           context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
       for (RepairSegment segment : runningSegments) {
-        try {
-          SegmentRunner.abort(context, segment,
-              context.jmxConnectionFactory.connect(segment.getCoordinatorHost()));
+        try (JmxProxy jmxProxy = context.jmxConnectionFactory
+            .connect(segment.getCoordinatorHost())) {
+          SegmentRunner.abort(context, segment, jmxProxy);
         } catch (ReaperException e) {
           LOG.debug("Tried to abort repair on segment {} marked as RUNNING, but the host was down"
                     + " (so abortion won't be needed)", segment.getId());
