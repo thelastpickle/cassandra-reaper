@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
-import java.net.SocketException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -353,8 +352,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     String repairId = parseRepairId(message);
     if (repairId != null) {
       for (String involvedNode : potentialCoordinators) {
-        try {
-          JmxProxy jmx = new JmxConnectionFactory().connect(involvedNode);
+        try (JmxProxy jmx = new JmxConnectionFactory().connect(involvedNode)) {
           // there is no way of telling if the snapshot was cleared or not :(
           jmx.clearSnapshot(repairId, keyspace);
         } catch (ReaperException e) {

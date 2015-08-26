@@ -59,7 +59,7 @@ public class ClusterResource {
 
   @GET
   public Response getClusterList() {
-    LOG.info("get cluster list called");
+    LOG.debug("get cluster list called");
     Collection<Cluster> clusters = context.storage.getClusters();
     List<String> clusterNames = new ArrayList<>();
     for (Cluster cluster : clusters) {
@@ -73,7 +73,7 @@ public class ClusterResource {
   public Response getCluster(
       @PathParam("cluster_name") String clusterName,
       @QueryParam("limit") Optional<Integer> limit) {
-    LOG.info("get cluster called with cluster_name: {}", clusterName);
+    LOG.debug("get cluster called with cluster_name: {}", clusterName);
     return viewCluster(clusterName, limit, Optional.<URI>absent());
   }
 
@@ -107,7 +107,7 @@ public class ClusterResource {
       LOG.error("POST on cluster resource called without seedHost");
       return Response.status(400).entity("query parameter \"seedHost\" required").build();
     }
-    LOG.info("add cluster called with seedHost: {}", seedHost.get());
+    LOG.debug("add cluster called with seedHost: {}", seedHost.get());
 
     Cluster newCluster;
     try {
