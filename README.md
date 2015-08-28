@@ -263,3 +263,9 @@ Doing a Release (on this repository)
 12. Run "git push".
 13. Deploy the released packages (there's cassandra-reaper and cassandra-reaper-cli).
 14. Send a release note to users.
+
+Notice that you can get a short list of changes since last release, by e.g.:
+
+```
+$ git log --no-merges --format="%h  %<(18)%an %s" v0.2.1..HEAD
+```
