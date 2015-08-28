@@ -1,3 +1,12 @@
+cassandra-reaper (0.2.2-1) stable; urgency=low
+
+  * Fix JMX connection leak
+  * Include full date on log lines
+  * Fix problem with scheduling fan out
+  * Improve repair resuming logic after errors
+
+ -- Hannu Varjoranta <varjo@spotify.com>  Fri, 28 Aug 2015 13:50:01 +0200
+
 cassandra-reaper (0.2.1-1) stable; urgency=low
 
   * Fixed race condition bug with parallel repairs
