@@ -1,0 +1,35 @@
+segmentCount: 200
+repairParallelism: DATACENTER_AWARE
+repairIntensity: 0.9
+scheduleDaysBetween: 7
+daysToExpireAfterDone: 2
+repairRunThreadCount: 15
+hangingRepairTimeoutMins: 30
+storageType: memory
+enableCrossOrigin: true
+
+logging:
+  level: INFO
+  loggers:
+    io.dropwizard: INFO
+    org.eclipse.jetty: INFO
+  appenders:
+    - type: console
+      logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %msg %n"
+
+server:
+  type: default
+  applicationConnectors:
+    - type: http
+      port: 8080
+      bindHost: 0.0.0.0
+  adminConnectors:
+    - type: http
+      port: 8081
+      bindHost: 0.0.0.0
+      
+database:
+  driverClass: org.postgresql.Driver
+  user: pg-user
+  password: pg-pass
+  url: jdbc:postgresql://db.example.com/db-prod

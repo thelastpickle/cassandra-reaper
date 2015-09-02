@@ -46,6 +46,11 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   @NotNull
+  @DefaultValue("7")
+  private Integer scheduleDaysBetween;
+  
+  @JsonProperty
+  @NotNull
   private Integer repairRunThreadCount;
 
   @JsonProperty
@@ -92,6 +97,21 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setRepairIntensity(double repairIntensity) {
     this.repairIntensity = repairIntensity;
   }
+<<<<<<< HEAD
+=======
+  
+  public Integer getScheduleDaysBetween() {
+    return scheduleDaysBetween;
+  }
+
+  public void setScheduleDaysBetween(int scheduleDaysBetween) {
+    this.scheduleDaysBetween = scheduleDaysBetween;
+  }
+  
+  public Integer getDaysToExpireAfterDone() {
+	return daysToExpireAfterDone;
+  }
+>>>>>>> 6e52f7a... Making ScheduleDaysBetween an optional parameter for the rest API for the Schedule. Added a default of 7 days in the config.
 
   public int getRepairRunThreadCount() {
     return repairRunThreadCount;
