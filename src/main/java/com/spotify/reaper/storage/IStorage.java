@@ -123,6 +123,10 @@ public interface IStorage {
 
   Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName);
 
+  Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName);
+
+  Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName);
+
   Collection<RepairSchedule> getAllRepairSchedules();
 
   boolean updateRepairSchedule(RepairSchedule newRepairSchedule);

@@ -58,12 +58,18 @@ public class ClusterResource {
   }
 
   @GET
-  public Response getClusterList() {
+  public Response getClusterList(@QueryParam("seedHost") Optional<String> seedHost) {
     LOG.debug("get cluster list called");
     Collection<Cluster> clusters = context.storage.getClusters();
     List<String> clusterNames = new ArrayList<>();
     for (Cluster cluster : clusters) {
-      clusterNames.add(cluster.getName());
+    	if(seedHost.isPresent()) {
+    		if(cluster.getSeedHosts().contains(seedHost.get()))
+    			clusterNames.add(cluster.getName());
+    	}
+    	else {
+    		clusterNames.add(cluster.getName());
+    	}
     }
     return Response.ok().entity(clusterNames).build();
   }

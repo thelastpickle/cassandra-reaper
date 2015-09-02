@@ -277,6 +277,8 @@ public class RepairScheduleResource {
   }
 
   /**
+   * @param cluster_name     The cluster_name for which the Repair Schedule belongs
+   * @param keyspace         The keyspace for which the Repair Schedule belongs
    * @return all know repair schedules for a cluster.
    */
   @GET
@@ -325,10 +327,11 @@ public class RepairScheduleResource {
    * @return All schedules in the system.
    */
   @GET
-  public Response listSchedules() {
-    LOG.debug("list all repair schedules called");
+  public Response listSchedules(@QueryParam("clusterName") Optional<String> clusterName,
+		  		@QueryParam("keyspace") Optional<String> keyspaceName) {
     List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
-    Collection<RepairSchedule> schedules = context.storage.getAllRepairSchedules();
+    Collection<RepairSchedule> schedules = getScheduleList(clusterName, keyspaceName);
+    
     for (RepairSchedule schedule : schedules) {
       Optional<RepairUnit> unit = context.storage.getRepairUnit(schedule.getRepairUnitId());
       if (unit.isPresent()) {
@@ -342,6 +345,20 @@ public class RepairScheduleResource {
     }
     return Response.status(Response.Status.OK).entity(scheduleStatuses).build();
   }
+
+private Collection<RepairSchedule> getScheduleList(Optional<String> clusterName, Optional<String> keyspaceName) {
+	Collection<RepairSchedule> schedules;
+    
+    if(clusterName.isPresent() && keyspaceName.isPresent())
+    	schedules = context.storage.getRepairSchedulesForClusterAndKeyspace(clusterName.get(), keyspaceName.get());
+    else if (clusterName.isPresent())
+    	schedules = context.storage.getRepairSchedulesForCluster(clusterName.get());
+    else if (keyspaceName.isPresent())
+    	schedules = context.storage.getRepairSchedulesForKeyspace(keyspaceName.get());
+    else
+    	schedules = context.storage.getAllRepairSchedules();
+	return schedules;
+}
 
   /**
    * Delete a RepairSchedule object with given id.
