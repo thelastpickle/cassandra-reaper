@@ -3,6 +3,7 @@
 segmentCount: 200
 repairParallelism: SEQUENTIAL
 repairIntensity: 0.95
+scheduleDaysBetween: 7
 repairRunThreadCount: 15
 hangingRepairTimeoutMins: 1
 storageType: memory
