@@ -24,6 +24,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
+import javax.ws.rs.DefaultValue;
 
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
@@ -97,8 +98,6 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setRepairIntensity(double repairIntensity) {
     this.repairIntensity = repairIntensity;
   }
-<<<<<<< HEAD
-=======
   
   public Integer getScheduleDaysBetween() {
     return scheduleDaysBetween;
@@ -108,11 +107,6 @@ public class ReaperApplicationConfiguration extends Configuration {
     this.scheduleDaysBetween = scheduleDaysBetween;
   }
   
-  public Integer getDaysToExpireAfterDone() {
-	return daysToExpireAfterDone;
-  }
->>>>>>> 6e52f7a... Making ScheduleDaysBetween an optional parameter for the rest API for the Schedule. Added a default of 7 days in the config.
-
   public int getRepairRunThreadCount() {
     return repairRunThreadCount;
   }

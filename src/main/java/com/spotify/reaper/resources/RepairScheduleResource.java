@@ -164,7 +164,7 @@ public class RepairScheduleResource {
       }
 
       RepairSchedule newRepairSchedule = CommonTools.storeNewRepairSchedule(
-          context, cluster, theRepairUnit, daysBetween, nextActivation, daysToExpire, owner.get(),
+          context, cluster, theRepairUnit, daysBetween, nextActivation, owner.get(),
           segments, parallelism, intensity);
 
       return Response.created(buildRepairScheduleURI(uriInfo, newRepairSchedule))
