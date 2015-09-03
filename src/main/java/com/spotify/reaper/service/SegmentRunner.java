@@ -29,7 +29,6 @@ import com.sun.management.UnixOperatingSystemMXBean;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
-import org.apache.cassandra.utils.SimpleCondition;
 import org.joda.time.DateTime;
 import org.joda.time.Seconds;
 import org.slf4j.Logger;
