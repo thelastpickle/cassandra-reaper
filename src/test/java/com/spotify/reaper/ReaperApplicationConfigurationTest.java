@@ -34,6 +34,7 @@ public class ReaperApplicationConfigurationTest {
     config.setRepairParallelism(RepairParallelism.DATACENTER_AWARE);
     config.setRepairRunThreadCount(1);
     config.setSegmentCount(1);
+    config.setScheduleDaysBetween(7);
     config.setStorageType("foo");
   }
 
