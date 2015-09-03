@@ -162,6 +162,13 @@ public interface IStoragePostgreSQL {
   static final String SQL_GET_REPAIR_SCHEDULES_FOR_CLUSTER =
       "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedule, repair_unit "
       + "WHERE repair_schedule.repair_unit_id = repair_unit.id AND cluster_name = :clusterName";
+  static final String SQL_GET_REPAIR_SCHEDULES_FOR_KEYSPACE =
+	      "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedule, repair_unit "
+	      + "WHERE repair_schedule.repair_unit_id = repair_unit.id AND keyspace_name = :keyspaceName";
+  static final String SQL_GET_REPAIR_SCHEDULES_FOR_CLUSTER_AND_KEYSPACE =
+	      "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedule, repair_unit "
+	      + "WHERE repair_schedule.repair_unit_id = repair_unit.id AND cluster_name = :clusterName AND keyspace_name = :keyspaceName";
+
   static final String SQL_GET_ALL_REPAIR_SCHEDULES =
       "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedule";
   static final String SQL_DELETE_REPAIR_SCHEDULE = "DELETE FROM repair_schedule WHERE id = :id";
@@ -313,10 +320,21 @@ public interface IStoragePostgreSQL {
   @SqlUpdate(SQL_UPDATE_REPAIR_SCHEDULE)
   public int updateRepairSchedule(@BindBean RepairSchedule newRepairSchedule);
 
+  @SqlQuery(SQL_GET_REPAIR_SCHEDULES_FOR_CLUSTER_AND_KEYSPACE)
+  @Mapper(RepairScheduleMapper.class)
+  public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeySpace(
+      @Bind("clusterName") String clusterName,
+      @Bind("keyspaceName") String keyspaceName);
+
   @SqlQuery(SQL_GET_REPAIR_SCHEDULES_FOR_CLUSTER)
   @Mapper(RepairScheduleMapper.class)
   public Collection<RepairSchedule> getRepairSchedulesForCluster(
       @Bind("clusterName") String clusterName);
+
+  @SqlQuery(SQL_GET_REPAIR_SCHEDULES_FOR_KEYSPACE)
+  @Mapper(RepairScheduleMapper.class)
+  public Collection<RepairSchedule> getRepairSchedulesForKeyspace(
+      @Bind("keyspaceName") String keyspaceName);
 
   @SqlQuery(SQL_GET_ALL_REPAIR_SCHEDULES)
   @Mapper(RepairScheduleMapper.class)
