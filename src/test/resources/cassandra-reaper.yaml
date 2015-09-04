@@ -15,6 +15,7 @@ repairRunThreadCount: 15
 hangingRepairTimeoutMins: 30
 
 scheduleDaysBetween: 7
+
 # storageType is either "database" or "memory"
 storageType: memory
 

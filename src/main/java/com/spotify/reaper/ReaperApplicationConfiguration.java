@@ -41,7 +41,7 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   @NotNull
-  @DecimalMin(value = "0", inclusive=false)
+  @DecimalMin(value = "0", inclusive = false)
   @Max(1)
   private Double repairIntensity;
 
@@ -49,7 +49,7 @@ public class ReaperApplicationConfiguration extends Configuration {
   @NotNull
   @DefaultValue("7")
   private Integer scheduleDaysBetween;
-  
+
   @JsonProperty
   @NotNull
   private Integer repairRunThreadCount;
@@ -98,7 +98,7 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setRepairIntensity(double repairIntensity) {
     this.repairIntensity = repairIntensity;
   }
-  
+
   public Integer getScheduleDaysBetween() {
     return scheduleDaysBetween;
   }
@@ -106,7 +106,7 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setScheduleDaysBetween(int scheduleDaysBetween) {
     this.scheduleDaysBetween = scheduleDaysBetween;
   }
-  
+
   public int getRepairRunThreadCount() {
     return repairRunThreadCount;
   }
@@ -178,6 +178,7 @@ public class ReaperApplicationConfiguration extends Configuration {
     public String getUsername() {
       return username;
     }
+
     public String getPassword() {
       return password;
     }
