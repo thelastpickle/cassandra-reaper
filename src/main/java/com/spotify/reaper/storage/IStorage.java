@@ -87,7 +87,7 @@ public interface IStorage {
    * @return Instance of a RepairUnit matching the parameters, or null if not found.
    */
   Optional<RepairUnit> getRepairUnit(String cluster, String keyspace,
-                                     Set<String> columnFamilyNames);
+      Set<String> columnFamilyNames);
 
   void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId);
 
@@ -100,11 +100,10 @@ public interface IStorage {
   Optional<RepairSegment> getNextFreeSegment(long runId);
 
   /**
-   *
    * @param runId the run id that the segment belongs to.
-   * @param range a ring range. The start of the range may be greater than or equal to the end. This
-   *              case has to be handled. When start = end, consider that as a range that covers the
-   *              whole ring.
+   * @param range a ring range. The start of the range may be greater than or equal to the end.
+   *              This case has to be handled. When start = end, consider that as a range
+   *              that covers the whole ring.
    * @return a segment enclosed by the range with state NOT_STARTED, or nothing.
    */
   Optional<RepairSegment> getNextFreeSegmentInRange(long runId, RingRange range);
@@ -125,7 +124,8 @@ public interface IStorage {
 
   Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName);
 
-  Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName);
+  Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName,
+      String keyspaceName);
 
   Collection<RepairSchedule> getAllRepairSchedules();
 

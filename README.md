@@ -148,12 +148,13 @@ Source code for all the REST resources can be found from package com.spotify.rea
 ## Cluster Resource
 
 * GET     /cluster
-  * Expected query parameters: *None*
+  * Expected query parameters:
+      * *seedHost*: Limit the returned cluster list based on the given seed host. (Optional)
   * Returns a list of registered cluster names in the service.
 
 * GET     /cluster/{cluster_name}
   * Expected query parameters:
-    * *limit*: limit the number of repair runs returned. Recent runs are prioritized. (Optional)
+    * *limit*: Limit the number of repair runs returned. Recent runs are prioritized. (Optional)
   * Returns a cluster object identified by the given "cluster_name" path parameter.
 
 * POST    /cluster
@@ -214,7 +215,11 @@ Source code for all the REST resources can be found from package com.spotify.rea
 ## Repair Schedule Resource
 
 * GET     /repair_schedule
-  * Expected query parameters: *None*
+  * Expected query parameters:
+      * *clusterName*: Filter the returned schedule list based on the given
+        cluster name. (Optional)
+      * *keyspaceName*: Filter the returned schedule list based on the given
+        keyspace name. (Optional)
   * Returns all repair schedules present in the Reaper
 
 * GET     /repair_schedule/{id}

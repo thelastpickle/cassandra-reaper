@@ -63,13 +63,13 @@ public class ClusterResource {
     Collection<Cluster> clusters = context.storage.getClusters();
     List<String> clusterNames = new ArrayList<>();
     for (Cluster cluster : clusters) {
-    	if(seedHost.isPresent()) {
-    		if(cluster.getSeedHosts().contains(seedHost.get()))
-    			clusterNames.add(cluster.getName());
-    	}
-    	else {
-    		clusterNames.add(cluster.getName());
-    	}
+      if (seedHost.isPresent()) {
+        if (cluster.getSeedHosts().contains(seedHost.get())) {
+          clusterNames.add(cluster.getName());
+        }
+      } else {
+        clusterNames.add(cluster.getName());
+      }
     }
     return Response.ok().entity(clusterNames).build();
   }
@@ -171,7 +171,7 @@ public class ClusterResource {
    * Cluster can be only deleted when it hasn't any RepairRun or RepairSchedule instances under it,
    * i.e. you must delete all repair runs and schedules first.
    *
-   * @param clusterName  The name of the Cluster instance you are about to delete.
+   * @param clusterName The name of the Cluster instance you are about to delete.
    * @return The deleted RepairRun instance, with state overwritten to string "DELETED".
    */
   @DELETE
