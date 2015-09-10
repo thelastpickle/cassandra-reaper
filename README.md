@@ -105,6 +105,13 @@ The Reaper service specific configuration values are:
   the repair segment in question will be cancelled, if possible, and then scheduled for later
   repair again within the same repair run process.
 
+* scheduleDaysBetween:
+
+  Defines the amount of days to wait between scheduling new repairs.
+  The value configured here is the default for new repair schedules, but you can also
+  define it separately for each new schedule. Using value 0 for continuous repairs
+  is also supported.
+
 * storageType:
 
   Whether to use database or memory based storage for storing the system state.
@@ -237,7 +244,7 @@ Source code for all the REST resources can be found from package com.spotify.rea
     * *repairParallelism*: Defines the used repair parallelism for scheduled repair runs. (Optional)
     * *intensity*: Defines the repair intensity for scheduled repair runs. (Optional)
     * *scheduleDaysBetween*: Defines the amount of days to wait between scheduling new repairs.
-                             For example, use value 7 for weekly schedule.
+                             For example, use value 7 for weekly schedule, and 0 for continuous.
     * *scheduleTriggerTime*: Defines the time for first scheduled trigger for the run.
                              If you don't give this value, it will be next mid-night (UTC).
                              Give date values in ISO format, e.g. "2015-02-11T01:00:00". (Optional)

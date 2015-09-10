@@ -193,7 +193,8 @@ def _arguments_for_scheduling(parser):
     """Arguments relevant to scheduling repair runs."""
     _arguments_for_repair_and_schedule(parser)
     parser.add_argument("--schedule-days-between", default=None,
-                        help="how many days between repair triggerings, e.g. 7 for weekly schedule")
+                        help="how many days between repair triggerings, e.g. 7 for weekly "
+                             "schedule, or 0 for continuous repairs")
     parser.add_argument("--schedule-trigger-time", default=None,
                         help="at which time to trigger the first repair (UTC), "
                              "e.g. \"2015-02-10T15:00:00\"")
@@ -457,13 +458,14 @@ class ReaperCLI(object):
         reaper, args = ReaperCLI.prepare_reaper(
             "schedule",
             "Create a repair schedule, choosing the first activation time and days between "
-            "repair activations. You need to register a cluster into Reaper (add-cluster) "
-            "before calling this.", extra_arguments=_arguments_for_scheduling
+            "repair activations. Notice that continuous repairs are also supported with value 0."
+            "You need to register a cluster into Reaper (add-cluster) before calling this.",
+            extra_arguments=_arguments_for_scheduling
         )
         if not args.keyspace_name or not args.cluster_name:
             print "# Please specify a cluster, and a keyspace"
             exit(1)
-        if not args.schedule_days_between:
+        if args.schedule_days_between is None:
             print "# Please specify repair schedule by giving at least value for " \
                   "schedule-days-between parameter"
             exit(1)
