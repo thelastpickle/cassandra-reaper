@@ -183,7 +183,7 @@ public interface IStoragePostgreSQL {
           + "(SELECT COUNT(*) FROM repair_segment WHERE run_id = repair_run.id) AS segments_total, "
           + "repair_run.state, repair_run.start_time, "
           + "repair_run.end_time, cause, owner, last_event, "
-          + "creation_time, pause_time, intensity, repair_parallelism "
+          + "creation_time, pause_time, intensity, repair_parallelism, incremental_repair "
           + "FROM repair_run "
           + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
           + "WHERE repair_unit.cluster_name = :clusterName "
