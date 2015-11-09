@@ -13,7 +13,10 @@
  */
 package com.spotify.reaper.storage;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -25,6 +28,7 @@ import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
+import com.spotify.reaper.service.RepairParameters;
 import com.spotify.reaper.service.RingRange;
 
 import java.util.ArrayList;
@@ -297,6 +301,31 @@ public class MemoryStorage implements IStorage {
       }
     }
     return segments;
+  }
+
+  @Override
+  public Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName) {
+    Collection<RepairRun> runningRuns = getRepairRunsWithState(RepairRun.RunState.RUNNING);
+    FluentIterable<RepairParameters> ongoingRepairs = FluentIterable.from(runningRuns).transformAndConcat(
+        new Function<RepairRun, Iterable<RepairParameters>>() {
+          @Override
+          public Iterable<RepairParameters> apply(final RepairRun run) {
+            return Collections2.transform(
+                getSegmentsWithState(run.getId(), RepairSegment.State.RUNNING),
+                new Function<RepairSegment, RepairParameters>() {
+                  @Override
+                  public RepairParameters apply(RepairSegment segment) {
+                    RepairUnit unit = getRepairUnit(segment.getRepairUnitId()).get();
+                    return new RepairParameters(
+                            segment.getTokenRange(),
+                            unit.getKeyspaceName(),
+                            unit.getColumnFamilies(),
+                            run.getRepairParallelism());
+                  }
+                });
+          }
+        });
+    return ongoingRepairs.toList();
   }
 
   @Override

@@ -20,6 +20,7 @@ import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
+import com.spotify.reaper.service.RepairParameters;
 
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.BindBean;
@@ -120,6 +121,12 @@ public interface IStoragePostgreSQL {
   String SQL_GET_REPAIR_SEGMENTS_FOR_RUN_WITH_STATE =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE "
       + "run_id = :runId AND state = :state";
+  String SQL_GET_RUNNING_REPAIRS_FOR_CLUSTER =
+      "SELECT start_token, end_token, keyspace_name, column_families, repair_parallelism "
+          + "FROM repair_segment "
+          + "JOIN repair_run ON run_id = repair_run.id "
+          + "JOIN repair_unit ON repair_run.repair_unit_id = repair_unit.id "
+          + "WHERE repair_segment.state = 1 AND repair_unit.cluster_name = :clusterName";
   String SQL_GET_NEXT_FREE_REPAIR_SEGMENT =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE run_id = :runId "
       + "AND state = 0 ORDER BY fail_count ASC, start_token ASC LIMIT 1";
@@ -288,6 +295,11 @@ public interface IStoragePostgreSQL {
   Collection<RepairSegment> getRepairSegmentsForRunWithState(
       @Bind("runId") long runId,
       @Bind("state") RepairSegment.State state);
+
+  @SqlQuery(SQL_GET_RUNNING_REPAIRS_FOR_CLUSTER)
+  @Mapper(RepairParametersMapper.class)
+  Collection<RepairParameters> getRunningRepairsForCluster(
+      @Bind("clusterName") String clusterName);
 
   @SqlQuery(SQL_GET_NEXT_FREE_REPAIR_SEGMENT)
   @Mapper(RepairSegmentMapper.class)
