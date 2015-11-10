@@ -16,6 +16,7 @@ package com.spotify.reaper.service;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
@@ -38,6 +39,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.regex.Matcher;
@@ -152,7 +154,13 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       RepairUnit repairUnit = context.storage.getRepairUnit(segment.getRepairUnitId()).get();
       String keyspace = repairUnit.getKeyspaceName();
 
-      if (!canRepair(segment, keyspace, coordinator)) {
+      Collection<RepairParameters> ongoingRepairs =
+          context.storage.getOngoingRepairsInCluster(clusterName);
+      Set<String> busyHosts = Sets.newHashSet();
+      for (RepairParameters ongoingRepair : ongoingRepairs) {
+        busyHosts.addAll(coordinator.tokenRangeToEndpoint(keyspace, ongoingRepair.tokenRange));
+      }
+      if (!canRepair(segment, keyspace, coordinator, busyHosts)) {
         postponeCurrentSegment();
         return;
       }
@@ -217,7 +225,8 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
   }
 
-  boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator) {
+  boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator,
+      Set<String> busyHosts) {
     Collection<String> allHosts;
     try {
       // when hosts are coming up or going down, this method can throw an
@@ -249,6 +258,8 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
                    + "already involved in a repair", segmentId, hostProxy.getHost());
           String msg = "Postponed due to affected hosts already doing repairs";
           repairRunner.updateLastEvent(msg);
+          if (!busyHosts.contains(hostName))
+            hostProxy.cancelAllRepairs();
           return false;
         }
       } catch (ReaperException e) {
