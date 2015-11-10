@@ -30,6 +30,8 @@ import com.sun.management.UnixOperatingSystemMXBean;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.SimpleCondition;
+import org.apache.commons.lang3.concurrent.ConcurrentException;
+import org.apache.commons.lang3.concurrent.LazyInitializer;
 import org.joda.time.DateTime;
 import org.joda.time.Seconds;
 import org.slf4j.Logger;
@@ -152,14 +154,20 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       segmentRunners.put(segmentId, this);
 
       RepairUnit repairUnit = context.storage.getRepairUnit(segment.getRepairUnitId()).get();
-      String keyspace = repairUnit.getKeyspaceName();
+      final String keyspace = repairUnit.getKeyspaceName();
 
-      Collection<RepairParameters> ongoingRepairs =
-          context.storage.getOngoingRepairsInCluster(clusterName);
-      Set<String> busyHosts = Sets.newHashSet();
-      for (RepairParameters ongoingRepair : ongoingRepairs) {
-        busyHosts.addAll(coordinator.tokenRangeToEndpoint(keyspace, ongoingRepair.tokenRange));
-      }
+      LazyInitializer<Set<String>> busyHosts = new LazyInitializer<Set<String>>() {
+        @Override
+        protected Set<String> initialize() {
+          Collection<RepairParameters> ongoingRepairs =
+              context.storage.getOngoingRepairsInCluster(clusterName);
+          Set<String> busyHosts = Sets.newHashSet();
+          for (RepairParameters ongoingRepair : ongoingRepairs) {
+            busyHosts.addAll(coordinator.tokenRangeToEndpoint(keyspace, ongoingRepair.tokenRange));
+          }
+          return busyHosts;
+        }
+      };
       if (!canRepair(segment, keyspace, coordinator, busyHosts)) {
         postponeCurrentSegment();
         return;
@@ -226,7 +234,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator,
-      Set<String> busyHosts) {
+      LazyInitializer<Set<String>> busyHosts) {
     Collection<String> allHosts;
     try {
       // when hosts are coming up or going down, this method can throw an
@@ -258,7 +266,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
                    + "already involved in a repair", segmentId, hostProxy.getHost());
           String msg = "Postponed due to affected hosts already doing repairs";
           repairRunner.updateLastEvent(msg);
-          if (!busyHosts.contains(hostName)) {
+          if (!busyHosts.get().contains(hostName)) {
             LOG.warn("A host ({}) reported that it is involved in a repair, but there is no record "
                 + "of any ongoing repair involving the host. Sending command to abort all repairs "
                 + "on the host.", hostProxy.getHost());
@@ -279,6 +287,10 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
                                    + "information from host %s", hostName);
         repairRunner.updateLastEvent(msg);
         LOG.warn("Open files amount for process: " + getOpenFilesAmount());
+        return false;
+      } catch (ConcurrentException e) {
+        LOG.warn("Exception thrown while listing all nodes in cluster \"{}\" with ongoing repairs: "
+            + "{}", clusterName, e);
         return false;
       }
     }
