@@ -258,8 +258,12 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
                    + "already involved in a repair", segmentId, hostProxy.getHost());
           String msg = "Postponed due to affected hosts already doing repairs";
           repairRunner.updateLastEvent(msg);
-          if (!busyHosts.contains(hostName))
+          if (!busyHosts.contains(hostName)) {
+            LOG.warn("A host ({}) reported that it is involved in a repair, but there is no record "
+                + "of any ongoing repair involving the host. Sending command to abort all repairs "
+                + "on the host.", hostProxy.getHost());
             hostProxy.cancelAllRepairs();
+          }
           return false;
         }
       } catch (ReaperException e) {
