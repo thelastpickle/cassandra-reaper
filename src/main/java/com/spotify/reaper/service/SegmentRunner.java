@@ -154,7 +154,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       segmentRunners.put(segmentId, this);
 
       RepairUnit repairUnit = context.storage.getRepairUnit(segment.getRepairUnitId()).get();
-      final String keyspace = repairUnit.getKeyspaceName();
+      String keyspace = repairUnit.getKeyspaceName();
 
       LazyInitializer<Set<String>> busyHosts = new LazyInitializer<Set<String>>() {
         @Override
@@ -163,7 +163,8 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
               context.storage.getOngoingRepairsInCluster(clusterName);
           Set<String> busyHosts = Sets.newHashSet();
           for (RepairParameters ongoingRepair : ongoingRepairs) {
-            busyHosts.addAll(coordinator.tokenRangeToEndpoint(keyspace, ongoingRepair.tokenRange));
+            busyHosts.addAll(coordinator.tokenRangeToEndpoint(ongoingRepair.keyspaceName,
+                ongoingRepair.tokenRange));
           }
           return busyHosts;
         }
