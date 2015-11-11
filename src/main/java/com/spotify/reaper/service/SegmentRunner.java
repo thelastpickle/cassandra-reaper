@@ -156,6 +156,9 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       RepairUnit repairUnit = context.storage.getRepairUnit(segment.getRepairUnitId()).get();
       String keyspace = repairUnit.getKeyspaceName();
 
+      // If this segment is blocked by other repairs on the hosts involved, we will want to double-
+      // check with storage, whether those hosts really should be busy with repairs. This listing of
+      // busy hosts isn't a cheap operation, so only do it (once) when repairs block the segment.
       LazyInitializer<Set<String>> busyHosts = new LazyInitializer<Set<String>>() {
         @Override
         protected Set<String> initialize() {
