@@ -305,27 +305,18 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName) {
-    Collection<RepairRun> runningRuns = getRepairRunsWithState(RepairRun.RunState.RUNNING);
-    FluentIterable<RepairParameters> ongoingRepairs = FluentIterable.from(runningRuns).transformAndConcat(
-        new Function<RepairRun, Iterable<RepairParameters>>() {
-          @Override
-          public Iterable<RepairParameters> apply(final RepairRun run) {
-            return Collections2.transform(
-                getSegmentsWithState(run.getId(), RepairSegment.State.RUNNING),
-                new Function<RepairSegment, RepairParameters>() {
-                  @Override
-                  public RepairParameters apply(RepairSegment segment) {
-                    RepairUnit unit = getRepairUnit(segment.getRepairUnitId()).get();
-                    return new RepairParameters(
-                            segment.getTokenRange(),
-                            unit.getKeyspaceName(),
-                            unit.getColumnFamilies(),
-                            run.getRepairParallelism());
-                  }
-                });
-          }
-        });
-    return ongoingRepairs.toList();
+    List<RepairParameters> ongoingRepairs = Lists.newArrayList();
+    for (RepairRun run : getRepairRunsWithState(RepairRun.RunState.RUNNING)) {
+      for (RepairSegment segment : getSegmentsWithState(run.getId(), RepairSegment.State.RUNNING)) {
+        RepairUnit unit = getRepairUnit(segment.getRepairUnitId()).get();
+        ongoingRepairs.add(new RepairParameters(
+            segment.getTokenRange(),
+            unit.getKeyspaceName(),
+            unit.getColumnFamilies(),
+            run.getRepairParallelism()));
+      }
+    }
+    return ongoingRepairs;
   }
 
   @Override
