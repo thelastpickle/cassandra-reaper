@@ -1,3 +1,12 @@
+cassandra-reaper (0.2.3-1) stable; urgency=low
+
+  * Add config option for default ScheduleDaysBetween
+  * REST API: Get repair schedule by keyspace[+cluster], get clusters by seed
+  * Decrease scheduler wakeup time to 10 minutes
+  * Cancel all running repairs on nodes where Reaper has no commands running
+
+ -- Björn Hegerfors <bj0rn@spotify.com>  Mon, 16 Nov 2015 16:05:51 +0100
+
 cassandra-reaper (0.2.2-1) stable; urgency=low
 
   * Fix JMX connection leak
