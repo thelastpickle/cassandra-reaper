@@ -25,6 +25,7 @@ import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
+import com.spotify.reaper.service.RepairParameters;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.postgresql.BigIntegerArgumentFactory;
 import com.spotify.reaper.storage.postgresql.IStoragePostgreSQL;
@@ -365,6 +366,13 @@ public class PostgresStorage implements IStorage {
       result = getPostgresStorage(h).getRepairSegmentsForRunWithState(runId, segmentState);
     }
     return result;
+  }
+
+  @Override
+  public Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName) {
+    try (Handle h = jdbi.open()) {
+      return getPostgresStorage(h).getRunningRepairsForCluster(clusterName);
+    }
   }
 
   @Override
