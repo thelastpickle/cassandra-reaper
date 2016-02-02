@@ -171,6 +171,11 @@ Source code for all the REST resources can be found from package com.spotify.rea
   * Adds a new cluster to the service, and returns the newly added cluster object,
     if the operation was successful.
 
+* PUT     /cluster/{cluster_name}
+  * Expected query parameters:
+      * *seedHost*: New host name or IP address used as Cassandra cluster seed.
+  * Modifies a cluster's seed host. Comes in handy when the previous seed has left the cluster.
+
 * DELETE  /cluster/{cluster_name}
   * Expected query parameters: *None*
   * Delete a cluster object identified by the given "cluster_name" path parameter.

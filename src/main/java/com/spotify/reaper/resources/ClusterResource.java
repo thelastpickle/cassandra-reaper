@@ -32,10 +32,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -163,6 +165,40 @@ public class ClusterResource {
       throw e;
     }
     return new Cluster(clusterName, partitioner, Collections.singleton(seedHost));
+  }
+
+  @PUT
+  @Path("/{cluster_name}")
+  public Response modifyClusterSeed(
+      @Context UriInfo uriInfo,
+      @PathParam("cluster_name") String clusterName,
+      @QueryParam("seedHost") Optional<String> seedHost) {
+    if (!seedHost.isPresent()) {
+      LOG.error("PUT on cluster resource called without seedHost");
+      return Response.status(400).entity("query parameter \"seedHost\" required").build();
+    }
+    LOG.info("modify cluster called with: cluster_name = {}, seedHost = {}", clusterName,
+        seedHost.get());
+
+    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
+    if (!cluster.isPresent()) {
+      return Response.status(Response.Status.NOT_FOUND).entity("cluster with name " + clusterName +
+          " not found")
+          .build();
+    }
+
+    Set<String> newSeeds = Collections.singleton(seedHost.get());
+    if (newSeeds.equals(cluster.get().getSeedHosts())) {
+      return Response.notModified().build();
+    }
+
+    Cluster newCluster = new Cluster(
+        cluster.get().getName(),
+        cluster.get().getPartitioner(),
+        newSeeds);
+    context.storage.updateCluster(newCluster);
+
+    return viewCluster(newCluster.getName(), Optional.<Integer>absent(), Optional.<URI>absent());
   }
 
   /**
