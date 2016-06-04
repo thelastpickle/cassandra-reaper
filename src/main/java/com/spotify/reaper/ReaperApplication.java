@@ -13,9 +13,25 @@
  */
 package com.spotify.reaper;
 
-import com.google.common.annotations.VisibleForTesting;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import javax.servlet.DispatcherType;
+import javax.servlet.FilterRegistration;
+
+import org.apache.cassandra.repair.RepairParallelism;
+import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.spotify.reaper.AppContext;
+import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperApplicationConfiguration.JmxCredentials;
+import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
@@ -28,27 +44,12 @@ import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
 
-import org.apache.cassandra.repair.RepairParallelism;
-import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.joda.time.DateTimeZone;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
-
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterRegistration;
-
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 public class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
@@ -210,13 +211,15 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   }
 
   private void addSignalHandlers() {
-    LOG.debug("adding signal handler for SIGHUP");
-    Signal.handle(new Signal("HUP"), new SignalHandler() {
-      @Override
-      public void handle(Signal signal) {
-        LOG.info("received SIGHUP signal: {}", signal);
-        reloadConfiguration();
-      }
-    });
+	  if(!System.getProperty("os.name").toLowerCase().contains("win")) {
+	    LOG.debug("adding signal handler for SIGHUP");
+	    Signal.handle(new Signal("HUP"), new SignalHandler() {
+	      @Override
+	      public void handle(Signal signal) {
+	        LOG.info("received SIGHUP signal: {}", signal);
+	        reloadConfiguration();
+	      }
+	    });
+	  }
   }
 }
