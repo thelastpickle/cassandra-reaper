@@ -13,11 +13,6 @@
  */
 package com.spotify.reaper;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import org.apache.cassandra.repair.RepairParallelism;
-import org.hibernate.validator.constraints.NotEmpty;
-
 import java.util.Map;
 
 import javax.validation.Valid;
@@ -25,6 +20,11 @@ import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.DefaultValue;
+
+import org.apache.cassandra.repair.RepairParallelism;
+import org.hibernate.validator.constraints.NotEmpty;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
@@ -41,7 +41,7 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   @NotNull
-  @DecimalMin(value = "0", inclusive=false)
+  @DecimalMin(value = "0", inclusive = false)
   @Max(1)
   private Double repairIntensity;
 
@@ -49,6 +49,10 @@ public class ReaperApplicationConfiguration extends Configuration {
   @NotNull
   @DefaultValue("false")
   private Boolean incrementalRepair;
+
+  @DefaultValue("7")
+  private Integer scheduleDaysBetween;
+
 
   @JsonProperty
   @NotNull
@@ -107,6 +111,14 @@ public class ReaperApplicationConfiguration extends Configuration {
 	    this.incrementalRepair = incrementalRepair;
   }
   
+  public Integer getScheduleDaysBetween() {
+    return scheduleDaysBetween;
+  }
+
+  public void setScheduleDaysBetween(int scheduleDaysBetween) {
+    this.scheduleDaysBetween = scheduleDaysBetween;
+  }
+
   public int getRepairRunThreadCount() {
     return repairRunThreadCount;
   }
@@ -178,6 +190,7 @@ public class ReaperApplicationConfiguration extends Configuration {
     public String getUsername() {
       return username;
     }
+
     public String getPassword() {
       return password;
     }
