@@ -13,10 +13,29 @@
  */
 package com.spotify.reaper.service;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.cassandra.service.ActiveRepairService;
+import org.apache.commons.lang3.concurrent.ConcurrentException;
+import org.apache.commons.lang3.concurrent.LazyInitializer;
+import org.joda.time.DateTime;
+import org.joda.time.Seconds;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-
+import com.google.common.collect.Sets;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
@@ -26,22 +45,6 @@ import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.utils.SimpleCondition;
 import com.sun.management.UnixOperatingSystemMXBean;
-
-import org.apache.cassandra.repair.RepairParallelism;
-import org.apache.cassandra.service.ActiveRepairService;
-import org.joda.time.DateTime;
-import org.joda.time.Seconds;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
@@ -153,7 +156,23 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       String keyspace = repairUnit.getKeyspaceName();
       boolean fullRepair = !repairUnit.getIncrementalRepair();
 
-      if (!canRepair(segment, keyspace, coordinator)) {
+      // If this segment is blocked by other repairs on the hosts involved, we will want to double-
+      // check with storage, whether those hosts really should be busy with repairs. This listing of
+      // busy hosts isn't a cheap operation, so only do it (once) when repairs block the segment.
+      LazyInitializer<Set<String>> busyHosts = new LazyInitializer<Set<String>>() {
+        @Override
+        protected Set<String> initialize() {
+          Collection<RepairParameters> ongoingRepairs =
+              context.storage.getOngoingRepairsInCluster(clusterName);
+          Set<String> busyHosts = Sets.newHashSet();
+          for (RepairParameters ongoingRepair : ongoingRepairs) {
+            busyHosts.addAll(coordinator.tokenRangeToEndpoint(ongoingRepair.keyspaceName,
+                ongoingRepair.tokenRange));
+          }
+          return busyHosts;
+        }
+      };
+      if (!canRepair(segment, keyspace, coordinator, busyHosts)) {
         postponeCurrentSegment();
         return;
       }
@@ -218,7 +237,8 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
   }
 
-  boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator) {
+  boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator,
+      LazyInitializer<Set<String>> busyHosts) {
     Collection<String> allHosts;
     try {
       // when hosts are coming up or going down, this method can throw an
@@ -250,6 +270,12 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
                    + "already involved in a repair", segmentId, hostProxy.getHost());
           String msg = "Postponed due to affected hosts already doing repairs";
           repairRunner.updateLastEvent(msg);
+          if (!busyHosts.get().contains(hostName)) {
+            LOG.warn("A host ({}) reported that it is involved in a repair, but there is no record "
+                + "of any ongoing repair involving the host. Sending command to abort all repairs "
+                + "on the host.", hostProxy.getHost());
+            hostProxy.cancelAllRepairs();
+          }
           return false;
         }
       } catch (ReaperException e) {
@@ -265,6 +291,10 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
                                    + "information from host %s", hostName);
         repairRunner.updateLastEvent(msg);
         LOG.warn("Open files amount for process: " + getOpenFilesAmount());
+        return false;
+      } catch (ConcurrentException e) {
+        LOG.warn("Exception thrown while listing all nodes in cluster \"{}\" with ongoing repairs: "
+            + "{}", clusterName, e);
         return false;
       }
     }

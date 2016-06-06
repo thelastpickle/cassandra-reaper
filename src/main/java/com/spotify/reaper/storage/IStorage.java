@@ -22,6 +22,7 @@ import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
+import com.spotify.reaper.service.RepairParameters;
 import com.spotify.reaper.service.RingRange;
 
 import java.util.Collection;
@@ -87,7 +88,7 @@ public interface IStorage {
    * @return Instance of a RepairUnit matching the parameters, or null if not found.
    */
   Optional<RepairUnit> getRepairUnit(String cluster, String keyspace,
-                                     Set<String> columnFamilyNames);
+      Set<String> columnFamilyNames);
 
   void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId);
 
@@ -100,16 +101,17 @@ public interface IStorage {
   Optional<RepairSegment> getNextFreeSegment(long runId);
 
   /**
-   *
    * @param runId the run id that the segment belongs to.
-   * @param range a ring range. The start of the range may be greater than or equal to the end. This
-   *              case has to be handled. When start = end, consider that as a range that covers the
-   *              whole ring.
+   * @param range a ring range. The start of the range may be greater than or equal to the end.
+   *              This case has to be handled. When start = end, consider that as a range
+   *              that covers the whole ring.
    * @return a segment enclosed by the range with state NOT_STARTED, or nothing.
    */
   Optional<RepairSegment> getNextFreeSegmentInRange(long runId, RingRange range);
 
   Collection<RepairSegment> getSegmentsWithState(long runId, RepairSegment.State segmentState);
+
+  Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName);
 
   Collection<Long> getRepairRunIdsForCluster(String clusterName);
 
@@ -122,6 +124,11 @@ public interface IStorage {
   Optional<RepairSchedule> getRepairSchedule(long repairScheduleId);
 
   Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName);
+
+  Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName);
+
+  Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName,
+      String keyspaceName);
 
   Collection<RepairSchedule> getAllRepairSchedules();
 

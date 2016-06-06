@@ -105,4 +105,24 @@ public class ClusterResourceTest {
     Response response = clusterResource.getCluster(I_DO_EXIST, Optional.<Integer>absent());
     assertEquals(200, response.getStatus());
   }
+
+  @Test
+  public void testModifyClusterSeeds() {
+    ClusterResource clusterResource = new ClusterResource(context);
+    clusterResource.addCluster(uriInfo, Optional.of(SEED_HOST));
+
+    Response response = clusterResource.modifyClusterSeed(uriInfo, CLUSTER_NAME,
+        Optional.of(SEED_HOST + 1));
+
+    assertEquals(200, response.getStatus());
+    assertEquals(1, context.storage.getClusters().size());
+
+    Cluster cluster = context.storage.getCluster(CLUSTER_NAME).get();
+    assertEquals(1, cluster.getSeedHosts().size());
+    assertEquals(SEED_HOST + 1, cluster.getSeedHosts().iterator().next());
+
+
+    response = clusterResource.modifyClusterSeed(uriInfo, CLUSTER_NAME, Optional.of(SEED_HOST + 1));
+    assertEquals(304, response.getStatus());
+  }
 }

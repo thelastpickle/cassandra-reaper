@@ -13,7 +13,10 @@
  */
 package com.spotify.reaper.storage;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -25,6 +28,7 @@ import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
+import com.spotify.reaper.service.RepairParameters;
 import com.spotify.reaper.service.RingRange;
 
 import java.util.ArrayList;
@@ -289,7 +293,7 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public Collection<RepairSegment> getSegmentsWithState(long runId,
-                                                        RepairSegment.State segmentState) {
+      RepairSegment.State segmentState) {
     List<RepairSegment> segments = Lists.newArrayList();
     for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
       if (segment.getState() == segmentState) {
@@ -297,6 +301,22 @@ public class MemoryStorage implements IStorage {
       }
     }
     return segments;
+  }
+
+  @Override
+  public Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName) {
+    List<RepairParameters> ongoingRepairs = Lists.newArrayList();
+    for (RepairRun run : getRepairRunsWithState(RepairRun.RunState.RUNNING)) {
+      for (RepairSegment segment : getSegmentsWithState(run.getId(), RepairSegment.State.RUNNING)) {
+        RepairUnit unit = getRepairUnit(segment.getRepairUnitId()).get();
+        ongoingRepairs.add(new RepairParameters(
+            segment.getTokenRange(),
+            unit.getKeyspaceName(),
+            unit.getColumnFamilies(),
+            run.getRepairParallelism()));
+      }
+    }
+    return ongoingRepairs;
   }
 
   @Override
@@ -349,6 +369,32 @@ public class MemoryStorage implements IStorage {
     for (RepairSchedule repairSchedule : repairSchedules.values()) {
       RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId()).get();
       if (repairUnit.getClusterName().equals(clusterName)) {
+        foundRepairSchedules.add(repairSchedule);
+      }
+    }
+    return foundRepairSchedules;
+  }
+
+  @Override
+  public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
+    Collection<RepairSchedule> foundRepairSchedules = new ArrayList<>();
+    for (RepairSchedule repairSchedule : repairSchedules.values()) {
+      RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId()).get();
+      if (repairUnit.getKeyspaceName().equals(keyspaceName)) {
+        foundRepairSchedules.add(repairSchedule);
+      }
+    }
+    return foundRepairSchedules;
+  }
+
+  @Override
+  public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName,
+      String keyspaceName) {
+    Collection<RepairSchedule> foundRepairSchedules = new ArrayList<>();
+    for (RepairSchedule repairSchedule : repairSchedules.values()) {
+      RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId()).get();
+      if (repairUnit.getClusterName().equals(clusterName) && repairUnit.getKeyspaceName()
+          .equals(keyspaceName)) {
         foundRepairSchedules.add(repairSchedule);
       }
     }

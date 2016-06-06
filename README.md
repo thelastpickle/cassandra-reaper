@@ -112,6 +112,13 @@ The Reaper service specific configuration values are:
   the repair segment in question will be cancelled, if possible, and then scheduled for later
   repair again within the same repair run process.
 
+* scheduleDaysBetween:
+
+  Defines the amount of days to wait between scheduling new repairs.
+  The value configured here is the default for new repair schedules, but you can also
+  define it separately for each new schedule. Using value 0 for continuous repairs
+  is also supported.
+
 * storageType:
 
   Whether to use database or memory based storage for storing the system state.
@@ -155,12 +162,13 @@ Source code for all the REST resources can be found from package com.spotify.rea
 ## Cluster Resource
 
 * GET     /cluster
-  * Expected query parameters: *None*
+  * Expected query parameters:
+      * *seedHost*: Limit the returned cluster list based on the given seed host. (Optional)
   * Returns a list of registered cluster names in the service.
 
 * GET     /cluster/{cluster_name}
   * Expected query parameters:
-    * *limit*: limit the number of repair runs returned. Recent runs are prioritized. (Optional)
+    * *limit*: Limit the number of repair runs returned. Recent runs are prioritized. (Optional)
   * Returns a cluster object identified by the given "cluster_name" path parameter.
 
 * POST    /cluster
@@ -169,6 +177,11 @@ Source code for all the REST resources can be found from package com.spotify.rea
         clusters seed host.
   * Adds a new cluster to the service, and returns the newly added cluster object,
     if the operation was successful.
+
+* PUT     /cluster/{cluster_name}
+  * Expected query parameters:
+      * *seedHost*: New host name or IP address used as Cassandra cluster seed.
+  * Modifies a cluster's seed host. Comes in handy when the previous seed has left the cluster.
 
 * DELETE  /cluster/{cluster_name}
   * Expected query parameters: *None*
@@ -222,7 +235,11 @@ Source code for all the REST resources can be found from package com.spotify.rea
 ## Repair Schedule Resource
 
 * GET     /repair_schedule
-  * Expected query parameters: *None*
+  * Expected query parameters:
+      * *clusterName*: Filter the returned schedule list based on the given
+        cluster name. (Optional)
+      * *keyspaceName*: Filter the returned schedule list based on the given
+        keyspace name. (Optional)
   * Returns all repair schedules present in the Reaper
 
 * GET     /repair_schedule/{id}
@@ -241,7 +258,7 @@ Source code for all the REST resources can be found from package com.spotify.rea
     * *intensity*: Defines the repair intensity for scheduled repair runs. (Optional)
     * *incrementalRepair*: Defines if incremental repair should be done. [True/False] (Optional)
     * *scheduleDaysBetween*: Defines the amount of days to wait between scheduling new repairs.
-                             For example, use value 7 for weekly schedule.
+                             For example, use value 7 for weekly schedule, and 0 for continuous.
     * *scheduleTriggerTime*: Defines the time for first scheduled trigger for the run.
                              If you don't give this value, it will be next mid-night (UTC).
                              Give date values in ISO format, e.g. "2015-02-11T01:00:00". (Optional)

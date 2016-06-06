@@ -1,6 +1,10 @@
+# Cassandra Reaper Configuration Example.
+# See a bit more complete example in:
+# src/test/resources/cassandra-reaper.yaml
 segmentCount: 200
 repairParallelism: DATACENTER_AWARE
 repairIntensity: 0.9
+scheduleDaysBetween: 7
 repairRunThreadCount: 15
 hangingRepairTimeoutMins: 30
 storageType: memory
@@ -14,7 +18,7 @@ logging:
     org.eclipse.jetty: INFO
   appenders:
     - type: console
-      logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %msg %n"
+      logFormat: "%-6level [%d] [%t] %logger{5} - %msg %n"
 
 server:
   type: default
@@ -26,8 +30,9 @@ server:
     - type: http
       port: 8081
       bindHost: 0.0.0.0
-      
+
 database:
   driverClass: org.postgresql.Driver
   user: pg-user
+  password: pg-pass
   url: jdbc:postgresql://db.example.com/db-prod

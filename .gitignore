@@ -13,3 +13,7 @@ dependency-reduced-pom.xml
 # Mac OS X Finder
 .DS_Store
 
+.classpath
+bin/
+.settings/
+.project
