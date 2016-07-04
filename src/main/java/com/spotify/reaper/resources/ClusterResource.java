@@ -23,6 +23,7 @@ import com.spotify.reaper.resources.view.ClusterStatus;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
 
+import com.spotify.reaper.service.ClusterRepairScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,9 +55,11 @@ public class ClusterResource {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterResource.class);
 
   private final AppContext context;
+  private final ClusterRepairScheduler clusterRepairScheduler;
 
   public ClusterResource(AppContext context) {
     this.context = context;
+    this.clusterRepairScheduler = new ClusterRepairScheduler(context);
   }
 
   @GET
@@ -139,6 +142,16 @@ public class ClusterResource {
     } else {
       LOG.info("creating new cluster based on given seed host: {}", newCluster.getName());
       context.storage.addCluster(newCluster);
+
+      if (context.config.hasAutoSchedulingEnabled()) {
+        try {
+          clusterRepairScheduler.scheduleRepairs(newCluster);
+        } catch (ReaperException e) {
+          return Response.status(400)
+            .entity("failed to automatically schedule repairs for cluster with seed host \"" + seedHost.get()
+                    + "\". Exception was: " + e.getMessage()).build();
+        }
+      }
     }
 
     URI createdURI;

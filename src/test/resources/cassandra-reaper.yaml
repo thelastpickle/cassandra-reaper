@@ -104,3 +104,17 @@ cassandra:
   clusterName: "test"
   contactPoints: ["127.0.0.1","127.0.0.2"]
   keyspace: reaper_db
+# Config used to automatically add/remove sheduled repair for each keyspace
+autoScheduling:
+
+  # Whether scheduled repairs will be automatically generated for each keyspace in a cluster
+  enabled: false
+
+  # initial delay before checking for keyspace changes (e.g. added/remove keyspaces) - unit is a Duration
+  initialDelayPeriod: PT15S
+
+  # period between checks for keyspace changes - unit is a Duration
+  periodBetweenPolls: PT10M
+
+  # period used to calculate the next activation start date when a new scheduled repair is automatically created - unit is a Duration
+  schedulingNextActivationPeriod: PT5M

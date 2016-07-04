@@ -49,14 +49,9 @@ database:
   user: postgres
   password: postgres
   url: jdbc:postgresql://127.0.0.1/reaper
-  # H2 JDBC settings
-  #driverClass: org.h2.Driver
-  #url: jdbc:h2:~/reaper-db/db;MODE=PostgreSQL
-  #user:
-  #password:
 
-
-cassandra:
-  clusterName: "test"
-  contactPoints: ["127.0.0.1"]
-  keyspace: reaper_db
+autoScheduling:
+  enabled: false
+  initialDelayPeriod: PT15S
+  periodBetweenPolls: PT10M
+  schedulingNextActivationPeriod: PT5M

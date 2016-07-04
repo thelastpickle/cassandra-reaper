@@ -76,3 +76,10 @@ cassandra:
   clusterName: "test"
   contactPoints: ["127.0.0.1","127.0.0.2"]
   keyspace: reaper_db
+
+# Config used to automatically add/remove sheduled repair for all keyspaces
+autoScheduling:
+  enabled: false
+  initialDelayPeriod: PT1M
+  periodBetweenPolls: PT10M
+  schedulingNextActivationPeriod: PT5M

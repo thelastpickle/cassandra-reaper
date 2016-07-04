@@ -13,6 +13,12 @@
  */
 package com.spotify.reaper;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.apache.cassandra.repair.RepairParallelism;
+import org.hibernate.validator.constraints.NotEmpty;
+
+import java.time.Duration;
 import java.util.Map;
 
 import javax.validation.constraints.DecimalMin;
@@ -80,6 +86,8 @@ public class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   @DefaultValue("false")
   private Boolean allowUnreachableNodes;
+  @JsonProperty
+  private AutoSchedulingConfiguration autoScheduling;
 
   public int getSegmentCount() {
     return segmentCount;
@@ -182,6 +190,18 @@ public class ReaperApplicationConfiguration extends Configuration {
     this.jmxAuth = jmxAuth;
   }
 
+  public boolean hasAutoSchedulingEnabled() {
+    return autoScheduling != null &&  autoScheduling.isEnabled();
+  }
+
+  public AutoSchedulingConfiguration getAutoScheduling() {
+    return autoScheduling;
+  }
+
+  public void setAutoScheduling(AutoSchedulingConfiguration autoRepairScheduling) {
+    this.autoScheduling = autoRepairScheduling;
+  }
+
   public static class JmxCredentials {
 
     @JsonProperty
@@ -221,4 +241,61 @@ public class ReaperApplicationConfiguration extends Configuration {
     this.allowUnreachableNodes = allow;
   }
   
+  public static class AutoSchedulingConfiguration {
+
+    @JsonProperty
+    private Boolean enabled;
+
+    @JsonProperty
+    private Duration initialDelayPeriod;
+
+    @JsonProperty
+    private Duration periodBetweenPolls;
+
+    @JsonProperty
+    private Duration schedulingNextActivationPeriod;
+
+    public Boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(Boolean enable) {
+      this.enabled = enable;
+    }
+
+    public Duration getInitialDelayPeriod() {
+      return initialDelayPeriod;
+    }
+
+    public void setInitialDelayPeriod(Duration initialDelayPeriod) {
+      this.initialDelayPeriod = initialDelayPeriod;
+    }
+
+    public Duration getPeriodBetweenPolls() {
+      return periodBetweenPolls;
+    }
+
+    public void setPeriodBetweenPolls(Duration periodBetweenPolls) {
+      this.periodBetweenPolls = periodBetweenPolls;
+    }
+
+    public Duration getSchedulingNextActivationPeriod() {
+      return schedulingNextActivationPeriod;
+    }
+
+    public void setSchedulingNextActivationPeriod(Duration schedulingNextActivationPeriod) {
+      this.schedulingNextActivationPeriod = schedulingNextActivationPeriod;
+    }
+
+    @Override
+    public String toString() {
+      return "AutoSchedulingConfiguration{" +
+              "enabled=" + enabled +
+              ", initialDelayPeriod=" + initialDelayPeriod +
+              ", periodBetweenPolls=" + periodBetweenPolls +
+              ", schedulingNextActivationPeriod=" + schedulingNextActivationPeriod +
+              '}';
+    }
+  }
+
 }
