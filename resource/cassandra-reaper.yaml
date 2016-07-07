@@ -54,4 +54,5 @@ autoScheduling:
   enabled: false
   initialDelayPeriod: PT15S
   periodBetweenPolls: PT10M
-  schedulingNextActivationPeriod: PT5M
+  timeBeforeFirstSchedule: PT5M
+  scheduleSpreadPeriod: PT6H

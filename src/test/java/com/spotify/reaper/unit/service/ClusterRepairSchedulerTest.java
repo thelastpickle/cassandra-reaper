@@ -31,6 +31,7 @@ public class ClusterRepairSchedulerTest {
 
   private static final Cluster CLUSTER = new Cluster("cluster1", null, Collections.singleton(null));
   private static final DateTime TWO_HOURS_AGO = DateTime.now().minusHours(2);
+  private static final Duration DELAY_BEFORE_SCHEDULE = Duration.ofMinutes(4);
   private AppContext context;
   private ClusterRepairScheduler clusterRepairAuto;
   private JmxProxy jmxProxy;
@@ -42,7 +43,7 @@ public class ClusterRepairSchedulerTest {
     context.config = TestRepairConfiguration.defaultConfigBuilder()
         .withAutoScheduling(TestRepairConfiguration.defaultAutoSchedulingConfigBuilder()
             .thatIsEnabled()
-            .withSchedulingNextActivationPeriod(Duration.ofMinutes(4))
+            .withTimeBeforeFirstSchedule(DELAY_BEFORE_SCHEDULE)
             .build())
         .build();
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
@@ -66,12 +67,12 @@ public class ClusterRepairSchedulerTest {
         .repairScheduleForKeyspace("keyspace1")
         .hasSameConfigItemsAs(context.config)
         .hasOwner("auto-scheduling")
-        .hasNextActivationDateCloseTo(DateTime.now().plusMinutes(4))
+        .hasNextActivationDateCloseTo(timeOfFirstSchedule())
         .andThen()
         .repairScheduleForKeyspace("keyspace3")
         .hasSameConfigItemsAs(context.config)
         .hasOwner("auto-scheduling")
-        .hasNextActivationDateCloseTo(DateTime.now().plusMinutes(4));
+        .hasNextActivationDateCloseTo(timeOfFirstSchedule());
   }
 
   @Test
@@ -132,6 +133,33 @@ public class ClusterRepairSchedulerTest {
     assertThat(context.storage.getAllRepairSchedules()).hasSize(0);
   }
 
+  @Test
+  public void spreadsKeyspaceScheduling() throws Exception {
+    context.config = TestRepairConfiguration.defaultConfigBuilder()
+        .withAutoScheduling(TestRepairConfiguration.defaultAutoSchedulingConfigBuilder()
+            .thatIsEnabled()
+            .withTimeBeforeFirstSchedule(DELAY_BEFORE_SCHEDULE)
+            .withScheduleSpreadPeriod(Duration.ofHours(6))
+            .build())
+        .build();
+
+    context.storage.addCluster(CLUSTER);
+    when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1", "keyspace2", "keyspace3", "keyspace4"));
+    when(jmxProxy.getTableNamesForKeyspace("keyspace1")).thenReturn(Sets.newHashSet("sometable"));
+    when(jmxProxy.getTableNamesForKeyspace("keyspace2")).thenReturn(Sets.newHashSet("sometable"));
+    when(jmxProxy.getTableNamesForKeyspace("keyspace4")).thenReturn(Sets.newHashSet("sometable"));
+
+    clusterRepairAuto.scheduleRepairs(CLUSTER);
+    assertThatClusterRepairSchedules(context.storage.getRepairSchedulesForCluster(CLUSTER.getName()))
+        .hasScheduleCount(3)
+        .repairScheduleForKeyspace("keyspace1").hasNextActivationDateCloseTo(timeOfFirstSchedule()).andThen()
+        .repairScheduleForKeyspace("keyspace2").hasNextActivationDateCloseTo(timeOfFirstSchedule().plusHours(6)).andThen()
+        .repairScheduleForKeyspace("keyspace4").hasNextActivationDateCloseTo(timeOfFirstSchedule().plusHours(12));
+  }
+
+  private DateTime timeOfFirstSchedule() {
+    return DateTime.now().plus(DELAY_BEFORE_SCHEDULE.toMillis());
+  }
 
   private RepairSchedule.Builder aRepairSchedule(Cluster cluster, String keyspace, DateTime creationTime) {
     RepairUnit repairUnit = context.storage.addRepairUnit(aRepair(cluster, keyspace));

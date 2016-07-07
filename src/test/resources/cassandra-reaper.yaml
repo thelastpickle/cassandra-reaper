@@ -116,5 +116,9 @@ autoScheduling:
   # period between checks for keyspace changes - unit is a Duration
   periodBetweenPolls: PT10M
 
-  # period used to calculate the next activation start date when a new scheduled repair is automatically created - unit is a Duration
-  schedulingNextActivationPeriod: PT5M
+  # how soon the first scheduled repair will start - unit is a Duration
+  timeBeforeFirstSchedule: PT5M
+
+  # how far apart are keyspace schedules from each other - unit is a Duration
+  scheduleSpreadPeriod: PT6H
+

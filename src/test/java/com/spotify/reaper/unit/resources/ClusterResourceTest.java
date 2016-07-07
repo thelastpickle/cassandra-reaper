@@ -136,7 +136,7 @@ public class ClusterResourceTest {
     context.config = TestRepairConfiguration.defaultConfigBuilder()
         .withAutoScheduling(TestRepairConfiguration.defaultAutoSchedulingConfigBuilder()
             .thatIsEnabled()
-            .withSchedulingNextActivationPeriod(Duration.ofMinutes(1))
+            .withTimeBeforeFirstSchedule(Duration.ofMinutes(1))
             .build())
         .build();
 

@@ -101,14 +101,16 @@ public class ReaperApplicationConfigurationBuilder {
     private Boolean enabled;
     private Duration initialDelayPeriod;
     private Duration periodBetweenPolls;
-    private Duration schedulingNextActivationPeriod;
+    private Duration timeBeforeFirstSchedule;
+    private Duration scheduleSpreadPeriod;
 
     public ReaperApplicationConfiguration.AutoSchedulingConfiguration build() {
       ReaperApplicationConfiguration.AutoSchedulingConfiguration autoSchedulingConfig = new ReaperApplicationConfiguration.AutoSchedulingConfiguration();
       autoSchedulingConfig.setEnabled(enabled);
       autoSchedulingConfig.setInitialDelayPeriod(initialDelayPeriod);
       autoSchedulingConfig.setPeriodBetweenPolls(periodBetweenPolls);
-      autoSchedulingConfig.setSchedulingNextActivationPeriod(schedulingNextActivationPeriod);
+      autoSchedulingConfig.setTimeBeforeFirstSchedule(timeBeforeFirstSchedule);
+      autoSchedulingConfig.setScheduleSpreadPeriod(scheduleSpreadPeriod);
       return autoSchedulingConfig;
     }
 
@@ -132,8 +134,13 @@ public class ReaperApplicationConfigurationBuilder {
       return this;
     }
 
-    public AutoSchedulingConfigurationBuilder withSchedulingNextActivationPeriod(Duration period) {
-      this.schedulingNextActivationPeriod = period;
+    public AutoSchedulingConfigurationBuilder withTimeBeforeFirstSchedule(Duration period) {
+      this.timeBeforeFirstSchedule = period;
+      return this;
+    }
+
+    public AutoSchedulingConfigurationBuilder withScheduleSpreadPeriod(Duration scheduleSpreadPeriod) {
+      this.scheduleSpreadPeriod = scheduleSpreadPeriod;
       return this;
     }
   }

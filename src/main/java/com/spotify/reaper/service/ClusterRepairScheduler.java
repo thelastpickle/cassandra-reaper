@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -31,9 +32,21 @@ public class ClusterRepairScheduler {
   }
 
   public void scheduleRepairs(Cluster cluster) throws ReaperException {
+    AtomicInteger scheduleIndex = new AtomicInteger();
     ScheduledRepairDiffView schedulesDiff = ScheduledRepairDiffView.compareWithExistingSchedules(context, cluster);
-    schedulesDiff.keyspacesWithoutSchedules().forEach(keyspace -> createRepairSchedule(cluster, keyspace));
     schedulesDiff.keyspacesDeleted().forEach(keyspace -> deleteRepairSchedule(cluster, keyspace));
+    schedulesDiff.keyspacesWithoutSchedules()
+        .stream()
+        .filter(keyspace -> keyspaceCandidateForRepair(cluster, keyspace))
+        .forEach(keyspace -> createRepairSchedule(cluster, keyspace, nextActivationStartDate(scheduleIndex.getAndIncrement())));
+  }
+
+  private DateTime nextActivationStartDate(int scheduleIndex) {
+    DateTime timeBeforeFirstSchedule = DateTime.now().plus(context.config.getAutoScheduling().getTimeBeforeFirstSchedule().toMillis());
+    if (context.config.getAutoScheduling().hasScheduleSpreadPeriod()) {
+      return timeBeforeFirstSchedule.plus(scheduleIndex * context.config.getAutoScheduling().getScheduleSpreadPeriod().toMillis());
+    }
+    return timeBeforeFirstSchedule;
   }
 
   private void deleteRepairSchedule(Cluster cluster, String keyspace) {
@@ -44,23 +57,26 @@ public class ClusterRepairScheduler {
     });
   }
 
-  private void createRepairSchedule(Cluster cluster, String keyspace) {
-    try {
-      if (SYSTEM_KEYSPACES.contains(keyspace.toLowerCase())) {
-        LOG.info("Scheduled repair skipped for system keyspace {} in cluster {}.", keyspace, cluster.getName());
-        return;
-      }
-      if (keyspaceHasNoTable(context, cluster, keyspace)) {
-        LOG.warn("No tables found for keyspace {} in cluster {}. No repair will be scheduled for this keyspace.", keyspace, cluster.getName());
-        return;
-      }
+  private boolean keyspaceCandidateForRepair(Cluster cluster, String keyspace) {
+    if (SYSTEM_KEYSPACES.contains(keyspace.toLowerCase())) {
+      LOG.info("Scheduled repair skipped for system keyspace {} in cluster {}.", keyspace, cluster.getName());
+      return false;
+    }
+    if (keyspaceHasNoTable(context, cluster, keyspace)) {
+      LOG.warn("No tables found for keyspace {} in cluster {}. No repair will be scheduled for this keyspace.", keyspace, cluster.getName());
+      return false;
+    }
+    return true;
+  }
 
+  private void createRepairSchedule(Cluster cluster, String keyspace, DateTime nextActivationTime) {
+    try {
       RepairSchedule repairSchedule = CommonTools.storeNewRepairSchedule(
           context,
           cluster,
           CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace, Collections.emptySet()),
           context.config.getScheduleDaysBetween(),
-          DateTime.now().plus(context.config.getAutoScheduling().getSchedulingNextActivationPeriod().toMillis()),
+          nextActivationTime,
           REPAIR_OWNER,
           context.config.getSegmentCount(),
           context.config.getRepairParallelism(),
@@ -72,13 +88,14 @@ public class ClusterRepairScheduler {
     }
   }
 
-  private boolean keyspaceHasNoTable(AppContext context, Cluster cluster, String keyspace) throws ReaperException {
+  private boolean keyspaceHasNoTable(AppContext context, Cluster cluster, String keyspace)  {
     try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(cluster)) {
       Set<String> tables = jmxProxy.getTableNamesForKeyspace(keyspace);
       return tables.isEmpty();
+    } catch (ReaperException e) {
+      throw Throwables.propagate(e);
     }
   }
-
 
   private static class ScheduledRepairDiffView {
     private final ImmutableSet<String> keyspacesThatRequireSchedules;
