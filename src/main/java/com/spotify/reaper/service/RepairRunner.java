@@ -13,6 +13,17 @@
  */
 package com.spotify.reaper.service;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLongArray;
+
+import org.apache.cassandra.repair.RepairParallelism;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -21,7 +32,6 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
@@ -29,17 +39,6 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
-
-import org.apache.cassandra.repair.RepairParallelism;
-import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLongArray;
 
 public class RepairRunner implements Runnable {
 
@@ -71,6 +70,10 @@ public class RepairRunner implements Runnable {
 
     String keyspace = repairUnitOpt.get().getKeyspaceName();
     int parallelRepairs = getPossibleParallelRepairsCount(jmx.getRangeToEndpointMap(keyspace));
+    if(repairUnitOpt.isPresent() && repairUnitOpt.get().getIncrementalRepair()) {
+    	// with incremental repair, can't have more parallel repairs than nodes 
+    	parallelRepairs = 1;
+    }
     currentlyRunningSegments = new AtomicLongArray(parallelRepairs);
     for (int i = 0; i < parallelRepairs; i++) {
       currentlyRunningSegments.set(i, -1);
@@ -314,27 +317,33 @@ public class RepairRunner implements Runnable {
     }
 
     List<String> potentialCoordinators;
-    try {
-      potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
-    } catch (RuntimeException e) {
-      LOG.warn("Couldn't get token ranges from coordinator: ", e);
-      return true;
-    }
-    if (potentialCoordinators.isEmpty()) {
-      LOG.warn("Segment #{} is faulty, no potential coordinators for range: {}",
-          segmentId, tokenRange.toString());
-      // This segment has a faulty token range. Abort the entire repair run.
-      synchronized (this) {
-        RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
-        context.storage.updateRepairRun(repairRun
-            .with()
-            .runState(RepairRun.RunState.ERROR)
-            .lastEvent(String.format("No coordinators for range %s", tokenRange.toString()))
-            .endTime(DateTime.now())
-            .build(repairRunId));
-        killAndCleanupRunner();
-      }
-      return false;
+    if(!repairUnit.getIncrementalRepair()) {
+    	// full repair    
+	    try {
+	      potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
+	    } catch (RuntimeException e) {
+	      LOG.warn("Couldn't get token ranges from coordinator: ", e);
+	      return true;
+	    }
+	    if (potentialCoordinators.isEmpty()) {
+	      LOG.warn("Segment #{} is faulty, no potential coordinators for range: {}",
+	          segmentId, tokenRange.toString());
+	      // This segment has a faulty token range. Abort the entire repair run.
+	      synchronized (this) {
+	        RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
+	        context.storage.updateRepairRun(repairRun
+	            .with()
+	            .runState(RepairRun.RunState.ERROR)
+	            .lastEvent(String.format("No coordinators for range %s", tokenRange.toString()))
+	            .endTime(DateTime.now())
+	            .build(repairRunId));
+	        killAndCleanupRunner();
+	      }
+	      return false;
+	    }
+    } 
+    else {
+    	potentialCoordinators = Arrays.asList(context.storage.getRepairSegment(segmentId).get().getCoordinatorHost());
     }
 
     SegmentRunner segmentRunner = new SegmentRunner(context, segmentId, potentialCoordinators,

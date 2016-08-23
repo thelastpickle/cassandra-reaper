@@ -7,9 +7,13 @@ repairIntensity: 0.9
 scheduleDaysBetween: 7
 repairRunThreadCount: 15
 hangingRepairTimeoutMins: 30
-storageType: memory
+storageType: database
 enableCrossOrigin: true
 incrementalRepair: false
+jmxPorts:
+  127.0.0.1: 7100
+  127.0.0.2: 7200
+  127.0.0.3: 7300
 
 logging:
   level: INFO
@@ -33,6 +37,6 @@ server:
 
 database:
   driverClass: org.postgresql.Driver
-  user: pg-user
-  password: pg-pass
-  url: jdbc:postgresql://db.example.com/db-prod
+  user: postgres
+  password: postgres
+  url: jdbc:postgresql://127.0.0.1/reaper

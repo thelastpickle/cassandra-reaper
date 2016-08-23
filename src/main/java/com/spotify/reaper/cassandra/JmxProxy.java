@@ -53,7 +53,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.service.RingRange;
 
@@ -366,7 +365,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 	        columnFamilies.toArray(new String[columnFamilies.size()]));
     } 
     else {    	
-    	return ssProxy.forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace, RepairParallelism.PARALLEL.ordinal() , null, null, fullRepair, columnFamilies.toArray(new String[columnFamilies.size()]));
+    	return ssProxy.forceRepairAsync(keyspace, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, fullRepair, columnFamilies.toArray(new String[columnFamilies.size()]));    			
     }
   }
 
