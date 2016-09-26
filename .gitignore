@@ -1,5 +1,4 @@
 # Build products and artifacts
-*.html
 .m2-repository/
 pom.xml.versionsBackup
 target/
