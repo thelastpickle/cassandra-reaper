@@ -3,16 +3,17 @@
 -- Assumes PostgreSQL version 9.3 or newer
 --
 
--- CREATE DATABASE reaper_db;
--- CREATE USER reaper WITH PASSWORD 'my_secret_password';
--- GRANT ALL PRIVILEGES ON DATABASE reaper_db TO reaper;
+CREATE DATABASE reaper_db;
+\connect repear_db;
+CREATE USER reaper WITH PASSWORD 'my_secret_password';
+GRANT ALL PRIVILEGES ON DATABASE reaper_db TO reaper;
 
 -- For cleaning up the database, just do first in the following order:
--- DROP TABLE "repair_segment";
--- DROP TABLE "repair_run";
--- DROP TABLE "repair_schedule";
--- DROP TABLE "repair_unit";
--- DROP TABLE "cluster";
+DROP TABLE "repair_segment";
+DROP TABLE "repair_run";
+DROP TABLE "repair_schedule";
+DROP TABLE "repair_unit";
+DROP TABLE "cluster";
 
 CREATE TABLE IF NOT EXISTS "cluster" (
   "name"        TEXT PRIMARY KEY,
@@ -27,7 +28,8 @@ CREATE TABLE IF NOT EXISTS "repair_unit" (
   "id"              SERIAL PRIMARY KEY,
   "cluster_name"    TEXT    NOT NULL REFERENCES "cluster" ("name"),
   "keyspace_name"   TEXT    NOT NULL,
-  "column_families" TEXT [] NOT NULL
+  "column_families" TEXT [] NOT NULL,
+  "incremental_repair" BOOLEAN    NOT NULL
 );
 
 -- Using GIN index to make @> (contains) type of array operations faster

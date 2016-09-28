@@ -99,7 +99,7 @@ public class RepairRun implements Comparable<RepairRun> {
   public double getIntensity() {
     return intensity;
   }
-
+  
   public String getLastEvent() {
     return lastEvent;
   }
@@ -159,6 +159,7 @@ public class RepairRun implements Comparable<RepairRun> {
     private RunState runState;
     private DateTime creationTime;
     private double intensity;
+    private boolean incrementalRepair;
     private String cause;
     private String owner;
     private DateTime startTime;
@@ -209,7 +210,7 @@ public class RepairRun implements Comparable<RepairRun> {
       this.intensity = intensity;
       return this;
     }
-
+    
     public Builder cause(String cause) {
       this.cause = cause;
       return this;

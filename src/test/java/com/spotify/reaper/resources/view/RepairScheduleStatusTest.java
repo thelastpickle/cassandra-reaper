@@ -28,6 +28,7 @@ public class RepairScheduleStatusTest {
     data.setDaysBetween(2);
     data.setId(1);
     data.setIntensity(0.75);
+    data.setIncrementalRepair(false);
     data.setKeyspaceName("testKeyspace");
     data.setOwner("testuser");
     data.setRepairParallelism(RepairParallelism.PARALLEL);
@@ -45,6 +46,7 @@ public class RepairScheduleStatusTest {
     assertEquals(data.getDaysBetween(), dataAfter.getDaysBetween());
     assertEquals(data.getId(), dataAfter.getId());
     assertEquals(data.getIntensity(), dataAfter.getIntensity(), 0.0);
+    assertEquals(data.getIncrementalRepair(), dataAfter.getIncrementalRepair());
     assertEquals(data.getKeyspaceName(), dataAfter.getKeyspaceName());
     assertEquals(data.getRepairParallelism(), dataAfter.getRepairParallelism());
     assertEquals(data.getState(), dataAfter.getState());

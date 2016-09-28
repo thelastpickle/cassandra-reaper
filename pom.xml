@@ -13,7 +13,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dropwizard.version>0.7.1</dropwizard.version>
-        <cassandra.version>2.0.12</cassandra.version>
+        <cassandra.version>2.1.13</cassandra.version>
         <cucumber.version>1.1.5</cucumber.version>
     </properties>
 

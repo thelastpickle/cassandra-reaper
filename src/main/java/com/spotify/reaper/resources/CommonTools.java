@@ -1,12 +1,30 @@
 package com.spotify.reaper.resources;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
+
+import org.apache.cassandra.repair.RepairParallelism;
+import org.joda.time.DateTime;
+import org.joda.time.format.ISODateTimeFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
@@ -17,21 +35,6 @@ import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
-
-import org.apache.cassandra.repair.RepairParallelism;
-import org.joda.time.DateTime;
-import org.joda.time.format.ISODateTimeFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
-import javax.annotation.Nullable;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CommonTools {
 
@@ -60,8 +63,9 @@ public class CommonTools {
     List<RingRange> tokenSegments = generateSegments(context, cluster, segments);
     checkNotNull(tokenSegments, "failed generating repair segments");
 
+    Map<String, RingRange> nodes = getClusterNodes(context, cluster, repairUnit);
     // the next step is to prepare a repair run object
-    RepairRun repairRun = storeNewRepairRun(context, cluster, repairUnit, cause, owner, segments,
+    RepairRun repairRun = storeNewRepairRun(context, cluster, repairUnit, cause, owner, nodes.keySet().size(),
                                             repairParallelism, intensity);
     checkNotNull(repairRun, "failed preparing repair run");
 
@@ -70,7 +74,11 @@ public class CommonTools {
     // However, RepairSegment has a pointer to the RepairRun it lives in
 
     // the last preparation step is to generate actual repair segments
-    storeNewRepairSegments(context, tokenSegments, repairRun, repairUnit);
+    if(!repairUnit.getIncrementalRepair()) {
+    	storeNewRepairSegments(context, tokenSegments, repairRun, repairUnit);
+    } else {
+    	storeNewRepairSegmentsForIncrementalRepair(context, nodes, repairRun, repairUnit);
+    }
 
     // now we're done and can return
     return repairRun;
@@ -163,6 +171,61 @@ public class CommonTools {
           repairRun.with().segmentCount(tokenSegments.size()).build(repairRun.getId()));
     }
   }
+  
+  
+  /**
+   * Creates the repair runs linked to given RepairRun and stores them directly in the storage
+   * backend in case of incrementalRepair
+   */
+  private static void storeNewRepairSegmentsForIncrementalRepair(AppContext context, Map<String, RingRange> nodes,
+                                             RepairRun repairRun, RepairUnit repairUnit) {
+    List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
+    for (Entry<String, RingRange> range : nodes.entrySet()) {
+      RepairSegment.Builder repairSegment = new RepairSegment.Builder(repairRun.getId(), range.getValue(),
+                                                                      repairUnit.getId());
+      repairSegment.coordinatorHost(range.getKey());
+      repairSegmentBuilders.add(repairSegment);
+    }
+    context.storage.addRepairSegments(repairSegmentBuilders, repairRun.getId());
+    if (repairRun.getSegmentCount() != nodes.keySet().size()) {
+      LOG.debug("created segment amount differs from expected default {} != {}",
+                repairRun.getSegmentCount(), nodes.keySet().size());
+      context.storage.updateRepairRun(
+          repairRun.with().segmentCount(nodes.keySet().size()).build(repairRun.getId()));
+    }
+  }
+  
+  private static Map<String, RingRange> getClusterNodes(AppContext context,  Cluster targetCluster, RepairUnit repairUnit) throws ReaperException {
+	  Set<String> nodes = Sets.newHashSet();
+	  ConcurrentHashMap<String, RingRange> nodesWithRanges = new ConcurrentHashMap<String, RingRange>();
+	  Set<String> seedHosts = targetCluster.getSeedHosts();
+	    if (seedHosts.isEmpty()) {
+	      String errMsg = String.format("didn't get any seed hosts for cluster \"%s\"",
+	                                    targetCluster.getName());
+	      LOG.error(errMsg);
+	      throw new ReaperException(errMsg);
+	    }
+	   
+	    
+	    Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
+	    for (String host : seedHosts) {
+	      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host)) {
+	        rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());	        
+	        break;
+	      } catch (ReaperException e) {
+	        LOG.warn("couldn't connect to host: {}, will try next one", host);
+	      }
+	    }
+	    
+	  for(Entry<List<String>, List<String>> tokenRangeToEndpoint:rangeToEndpoint.entrySet()) {
+		  String node = tokenRangeToEndpoint.getValue().get(0);
+		  RingRange range = new RingRange(tokenRangeToEndpoint.getKey().get(0), tokenRangeToEndpoint.getKey().get(1));
+		  RingRange added = nodesWithRanges.putIfAbsent(node, range);			
+	  }
+	    
+	  return nodesWithRanges;
+  }
+  
 
   /**
    * Instantiates a RepairSchedule and stores it in the storage backend.
@@ -229,7 +292,7 @@ public class CommonTools {
   }
 
   public static RepairUnit getNewOrExistingRepairUnit(AppContext context, Cluster cluster,
-                                                      String keyspace, Set<String> tableNames) {
+                                                      String keyspace, Set<String> tableNames, Boolean incrementalRepair) {
     Optional<RepairUnit> storedRepairUnit =
         context.storage.getRepairUnit(cluster.getName(), keyspace, tableNames);
     RepairUnit theRepairUnit;
@@ -241,7 +304,7 @@ public class CommonTools {
       LOG.info("create new repair unit for cluster '{}', keyspace '{}', and column families: {}",
                cluster.getName(), keyspace, tableNames);
       theRepairUnit = context.storage.addRepairUnit(
-          new RepairUnit.Builder(cluster.getName(), keyspace, tableNames));
+          new RepairUnit.Builder(cluster.getName(), keyspace, tableNames, incrementalRepair));
     }
     return theRepairUnit;
   }

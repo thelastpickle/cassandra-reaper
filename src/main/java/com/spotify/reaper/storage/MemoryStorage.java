@@ -443,7 +443,7 @@ public class MemoryStorage implements IStorage {
             run.getId(), clusterName, unit.getKeyspaceName(), unit.getColumnFamilies(),
             segmentsRepaired, totalSegments, run.getRunState(), run.getStartTime(),
             run.getEndTime(), run.getCause(), run.getOwner(), run.getLastEvent(),
-            run.getCreationTime(), run.getPauseTime(), run.getIntensity(),
+            run.getCreationTime(), run.getPauseTime(), run.getIntensity(), unit.getIncrementalRepair(),
             run.getRepairParallelism()));
       }
       return runStatuses;

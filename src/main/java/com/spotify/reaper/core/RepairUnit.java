@@ -21,12 +21,14 @@ public class RepairUnit {
   private final String clusterName;
   private final String keyspaceName;
   private final Set<String> columnFamilies;
+  private final Boolean incrementalRepair;	
 
   private RepairUnit(Builder builder, long id) {
     this.id = id;
     this.clusterName = builder.clusterName;
     this.keyspaceName = builder.keyspaceName;
     this.columnFamilies = builder.columnFamilies;
+    this.incrementalRepair = builder.incrementalRepair;
   }
 
   public long getId() {
@@ -44,6 +46,10 @@ public class RepairUnit {
   public Set<String> getColumnFamilies() {
     return columnFamilies;
   }
+  
+  public Boolean getIncrementalRepair() {
+	return incrementalRepair;
+  }
 
   public Builder with() {
     return new Builder(this);
@@ -54,17 +60,20 @@ public class RepairUnit {
     public final String clusterName;
     public final String keyspaceName;
     public final Set<String> columnFamilies;
+    public final boolean incrementalRepair;
 
-    public Builder(String clusterName, String keyspaceName, Set<String> columnFamilies) {
+    public Builder(String clusterName, String keyspaceName, Set<String> columnFamilies, Boolean incrementalRepair) {
       this.clusterName = clusterName;
       this.keyspaceName = keyspaceName;
       this.columnFamilies = columnFamilies;
+      this.incrementalRepair = incrementalRepair;
     }
 
     private Builder(RepairUnit original) {
       clusterName = original.clusterName;
       keyspaceName = original.keyspaceName;
       columnFamilies = original.columnFamilies;
+      incrementalRepair = original.incrementalRepair;
     }
 
     public RepairUnit build(long id) {

@@ -13,11 +13,6 @@
  */
 package com.spotify.reaper;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import org.apache.cassandra.repair.RepairParallelism;
-import org.hibernate.validator.constraints.NotEmpty;
-
 import java.util.Map;
 
 import javax.validation.Valid;
@@ -25,6 +20,11 @@ import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.DefaultValue;
+
+import org.apache.cassandra.repair.RepairParallelism;
+import org.hibernate.validator.constraints.NotEmpty;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
@@ -47,8 +47,12 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   @NotNull
+  @DefaultValue("false")
+  private Boolean incrementalRepair;
+
   @DefaultValue("7")
   private Integer scheduleDaysBetween;
+
 
   @JsonProperty
   @NotNull
@@ -98,7 +102,15 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setRepairIntensity(double repairIntensity) {
     this.repairIntensity = repairIntensity;
   }
+  
+  public Boolean getIncrementalRepair() {
+	    return incrementalRepair;
+  }
 
+  public void setIncrementalRepair(Boolean incrementalRepair) {
+	    this.incrementalRepair = incrementalRepair;
+  }
+  
   public Integer getScheduleDaysBetween() {
     return scheduleDaysBetween;
   }
