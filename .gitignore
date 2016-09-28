@@ -16,3 +16,5 @@ dependency-reduced-pom.xml
 bin/
 .settings/
 .project
+build/
+*.deb
