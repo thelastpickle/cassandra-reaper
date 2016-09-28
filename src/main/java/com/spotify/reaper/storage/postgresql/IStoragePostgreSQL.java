@@ -13,14 +13,10 @@
  */
 package com.spotify.reaper.storage.postgresql;
 
-import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.core.RepairSchedule;
-import com.spotify.reaper.core.RepairSegment;
-import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.resources.view.RepairRunStatus;
-import com.spotify.reaper.resources.view.RepairScheduleStatus;
-import com.spotify.reaper.service.RepairParameters;
+import java.math.BigInteger;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.BindBean;
@@ -31,10 +27,14 @@ import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.customizers.BatchChunkSize;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 
-import java.math.BigInteger;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSchedule;
+import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.resources.view.RepairRunStatus;
+import com.spotify.reaper.resources.view.RepairScheduleStatus;
+import com.spotify.reaper.service.RepairParameters;
 
 /**
  * JDBI based PostgreSQL interface.
@@ -85,12 +85,15 @@ public interface IStoragePostgreSQL {
 
   // RepairUnit
   //
-  String SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID = "cluster_name, keyspace_name, column_families";
-  String SQL_REPAIR_UNIT_ALL_FIELDS = "repair_unit.id, " + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID;
-  String SQL_INSERT_REPAIR_UNIT =
+  static final String SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID =
+      "cluster_name, keyspace_name, column_families, incremental_repair";
+  static final String SQL_REPAIR_UNIT_ALL_FIELDS =
+      "repair_unit.id, " + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID;
+  static final String SQL_INSERT_REPAIR_UNIT =
       "INSERT INTO repair_unit (" + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID + ") VALUES "
-      + "(:clusterName, :keyspaceName, :columnFamilies)";
-  String SQL_GET_REPAIR_UNIT =
+      + "(:clusterName, :keyspaceName, :columnFamilies, :incrementalRepair)";
+  static final String SQL_GET_REPAIR_UNIT =
+
       "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM repair_unit WHERE id = :id";
   String SQL_GET_REPAIR_UNIT_BY_CLUSTER_AND_TABLES =
       "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM repair_unit "
@@ -191,25 +194,24 @@ public interface IStoragePostgreSQL {
   //
   String SQL_CLUSTER_RUN_OVERVIEW =
       "SELECT repair_run.id, repair_unit.cluster_name, keyspace_name, column_families, "
-      + "(SELECT COUNT(case when state = 2 then 1 else null end) FROM repair_segment "
-      + "WHERE run_id = repair_run.id) AS segments_repaired, "
-      + "(SELECT COUNT(*) FROM repair_segment WHERE run_id = repair_run.id) AS segments_total, "
-      + "repair_run.state, repair_run.start_time, "
-      + "repair_run.end_time, cause, owner, last_event, "
-      + "creation_time, pause_time, intensity, repair_parallelism "
-      + "FROM repair_run "
-      + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
-      + "WHERE repair_unit.cluster_name = :clusterName "
-      + "ORDER BY end_time DESC, start_time DESC "
-      + "LIMIT :limit";
+          + "(SELECT COUNT(case when state = 2 then 1 else null end) FROM repair_segment WHERE run_id = repair_run.id) AS segments_repaired, "
+          + "(SELECT COUNT(*) FROM repair_segment WHERE run_id = repair_run.id) AS segments_total, "
+          + "repair_run.state, repair_run.start_time, "
+          + "repair_run.end_time, cause, owner, last_event, "
+          + "creation_time, pause_time, intensity, repair_parallelism, incremental_repair "
+          + "FROM repair_run "
+          + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
+          + "WHERE repair_unit.cluster_name = :clusterName "
+          + "ORDER BY end_time DESC, start_time DESC "
+          + "LIMIT :limit";
 
-  String SQL_CLUSTER_SCHEDULE_OVERVIEW =
+  static final String SQL_CLUSTER_SCHEDULE_OVERVIEW =
       "SELECT repair_schedule.id, owner, cluster_name, keyspace_name, column_families, state, "
-      + "creation_time, next_activation, pause_time, intensity, segment_count, "
-      + "repair_parallelism, days_between "
-      + "FROM repair_schedule "
-      + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
-      + "WHERE cluster_name = :clusterName";
+          + "creation_time, next_activation, pause_time, intensity, segment_count, "
+          + "repair_parallelism, days_between, incremental_repair "
+          + "FROM repair_schedule "
+          + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
+          + "WHERE cluster_name = :clusterName";
 
   @SqlQuery("SELECT version()")
   String getVersion();

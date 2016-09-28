@@ -1,26 +1,25 @@
 package com.spotify.reaper.service;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-
-import com.spotify.reaper.AppContext;
-import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.cassandra.JmxProxy;
-import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.core.RepairSegment;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.cassandra.concurrent.NamedThreadFactory;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.spotify.reaper.AppContext;
+import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.cassandra.JmxProxy;
+import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSegment;
 
 public class RepairManager {
 
@@ -65,8 +64,8 @@ public class RepairManager {
           SegmentRunner.abort(context, segment, jmxProxy);
         } catch (ReaperException e) {
           LOG.debug("Tried to abort repair on segment {} marked as RUNNING, but the host was down"
-                    + " (so abortion won't be needed)", segment.getId());
-          SegmentRunner.postpone(context, segment);
+                    + " (so abortion won't be needed)", segment.getId());          
+          SegmentRunner.postpone(context, segment, context.storage.getRepairUnit(repairRun.getId()));
         }
       }
       startRepairRun(context, repairRun);

@@ -1,5 +1,4 @@
 # Build products and artifacts
-*.html
 .m2-repository/
 pom.xml.versionsBackup
 target/
@@ -13,3 +12,7 @@ dependency-reduced-pom.xml
 # Mac OS X Finder
 .DS_Store
 
+.classpath
+bin/
+.settings/
+.project

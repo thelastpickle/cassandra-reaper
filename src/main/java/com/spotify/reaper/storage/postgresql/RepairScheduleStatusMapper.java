@@ -42,6 +42,7 @@ public class RepairScheduleStatusMapper implements ResultSetMapper<RepairSchedul
         RepairRunMapper.getDateTimeOrNull(r, "next_activation"),
         RepairRunMapper.getDateTimeOrNull(r, "pause_time"),
         r.getDouble("intensity"),
+        r.getBoolean("incremental_repair"),
         r.getInt("segment_count"),
         RepairParallelism.valueOf(r.getString("repair_parallelism")),
         r.getInt("days_between")

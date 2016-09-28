@@ -13,22 +13,7 @@
  */
 package com.spotify.reaper.cassandra;
 
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-
-import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.service.RingRange;
-
-import org.apache.cassandra.db.ColumnFamilyStoreMBean;
-import org.apache.cassandra.db.compaction.CompactionManager;
-import org.apache.cassandra.db.compaction.CompactionManagerMBean;
-import org.apache.cassandra.repair.RepairParallelism;
-import org.apache.cassandra.service.ActiveRepairService;
-import org.apache.cassandra.service.StorageServiceMBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -55,7 +40,21 @@ import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.validation.constraints.NotNull;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import org.apache.cassandra.db.ColumnFamilyStoreMBean;
+import org.apache.cassandra.db.compaction.CompactionManager;
+import org.apache.cassandra.db.compaction.CompactionManagerMBean;
+import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.cassandra.service.ActiveRepairService;
+import org.apache.cassandra.service.StorageServiceMBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Function;
+import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.service.RingRange;
 
 public class JmxProxy implements NotificationListener, AutoCloseable {
 
@@ -66,6 +65,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private static final String SS_OBJECT_NAME = "org.apache.cassandra.db:type=StorageService";
   private static final String AES_OBJECT_NAME =
       "org.apache.cassandra.internal:type=AntiEntropySessions";
+  private static final String COMP_OBJECT_NAME =
+	      "org.apache.cassandra.metrics:type=Compaction";
 
   private final JMXConnector jmxConnector;
   private final ObjectName ssMbeanName;
@@ -256,7 +257,23 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    */
   public int getPendingCompactions() {
     checkNotNull(cmProxy, "Looks like the proxy is not connected");
-    return cmProxy.getPendingTasks();
+    try {
+        ObjectName name = new ObjectName(COMP_OBJECT_NAME);
+        int pendingCount = (int) mbeanServer.getAttribute(name, "PendingTasks");
+        return pendingCount;
+      } catch (IOException ignored) {
+        LOG.warn("Failed to connect to " + host + " using JMX");
+      } catch (MalformedObjectNameException ignored) {
+        LOG.error("Internal error, malformed name");
+      } catch (InstanceNotFoundException e) {
+        // This happens if no repair has yet been run on the node
+        // The AntiEntropySessions object is created on the first repair
+        return 0;
+      } catch (Exception e) {
+        LOG.error("Error getting attribute from JMX", e);
+      }
+      // If uncertain, assume it's running
+      return 0;
   }
 
   /**
@@ -329,7 +346,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * @return Repair command number, or 0 if nothing to repair
    */
   public int triggerRepair(BigInteger beginToken, BigInteger endToken, String keyspace,
-      RepairParallelism repairParallelism, Collection<String> columnFamilies) {
+    	RepairParallelism repairParallelism, Collection<String> columnFamilies, boolean fullRepair) {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     String cassandraVersion = ssProxy.getReleaseVersion();
     boolean canUseDatacenterAware = false;
@@ -346,24 +363,30 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
         repairParallelism, cassandraVersion, canUseDatacenterAware,
         columnFamilies);
     LOG.info(msg);
-    if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
-      if (canUseDatacenterAware) {
-        return ssProxy.forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-            repairParallelism.ordinal(), null, null,
-            columnFamilies
-                .toArray(new String[columnFamilies.size()]));
-      } else {
-        LOG.info("Cannot use DATACENTER_AWARE repair policy for Cassandra cluster with version {},"
-                 + " falling back to SEQUENTIAL repair.",
-            cassandraVersion);
-        repairParallelism = RepairParallelism.SEQUENTIAL;
-      }
+    if(fullRepair) {
+	    if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
+	      if (canUseDatacenterAware) {
+	        return ssProxy.forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
+	            repairParallelism.ordinal(), null, null, fullRepair,
+	            columnFamilies
+	                .toArray(new String[columnFamilies.size()]));
+	      } else {
+	        LOG.info("Cannot use DATACENTER_AWARE repair policy for Cassandra cluster with version {},"
+	                 + " falling back to SEQUENTIAL repair.",
+	            cassandraVersion);
+	        repairParallelism = RepairParallelism.SEQUENTIAL;
+	      }
+	    }
+	    boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
+	    return ssProxy.forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
+	        snapshotRepair, false, fullRepair,
+	        columnFamilies.toArray(new String[columnFamilies.size()]));
+    } 
+    else {    	
+    	return ssProxy.forceRepairAsync(keyspace, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, fullRepair, columnFamilies.toArray(new String[columnFamilies.size()]));    			
     }
-    boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
-    return ssProxy.forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-        snapshotRepair, false,
-        columnFamilies.toArray(new String[columnFamilies.size()]));
   }
+
 
   /**
    * Invoked when the MBean this class listens to publishes an event.
@@ -518,11 +541,13 @@ class ColumnFamilyStoreMBeanIterator
     return new ColumnFamilyStoreMBeanIterator(mbeanServerConn);
   }
 
-  public boolean hasNext() {
+  @Override
+public boolean hasNext() {
     return resIter.hasNext();
   }
 
-  public Map.Entry<String, ColumnFamilyStoreMBean> next() {
+  @Override
+public Map.Entry<String, ColumnFamilyStoreMBean> next() {
     ObjectName objectName = resIter.next();
     String keyspaceName = objectName.getKeyProperty("keyspace");
     ColumnFamilyStoreMBean cfsProxy =
@@ -530,7 +555,8 @@ class ColumnFamilyStoreMBeanIterator
     return new AbstractMap.SimpleImmutableEntry<>(keyspaceName, cfsProxy);
   }
 
-  public void remove() {
+  @Override
+public void remove() {
     throw new UnsupportedOperationException();
   }
 }
