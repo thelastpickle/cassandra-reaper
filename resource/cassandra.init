@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# chkconfig: 35 90 12
+# description: Reaper server
+#
+# Get function from functions library
+. /etc/init.d/functions
+# Start the reaper service
+
+start() {
+        initlog -c "echo -n Starting reaper server: "
+        /usr/local/bin/cassandra-reaper &
+        ### Create the lock file ###
+        echo $! > /var/lock/subsys/cassandra-reaper
+        success "cassandra reaper server startup"
+        echo
+}
+# Restart the service FOO
+stop() {
+        initlog -c "echo -n Stopping FOO server: "
+        killproc -p `cat /var/lock/subsys/cassandra-reaper`
+        ### Now, delete the lock file ###
+        rm -f /var/lock/subsys/cassandra-reaper
+        echo "Stopped"
+}
+### main logic ###
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  status)
+        status FOO
+        ;;
+  restart|reload|condrestart)
+        stop
+        start
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|restart|reload|status}"
+        exit 1
+esac
+exit 0
