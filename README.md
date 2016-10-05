@@ -96,8 +96,8 @@ The Reaper service specific configuration values are:
 
 * incrementalRepair:
 
-  Incremental reaper is a boolean value (true | false) which defines if you want to exercise the incremental
-  repair logic. Note that this is only supported with the PARALLEL repairParallelism setting.
+  Incremental repair is a boolean value (true | false). 
+  Note that this is only supported with the PARALLEL repairParallelism setting.
   For more details in incremental repair, please refer to the following article
   http://www.datastax.com/dev/blog/more-efficient-repairs
 
