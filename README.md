@@ -1,4 +1,4 @@
-cassandra-reaper
+Reaper for Apache Cassandra
 ================
 
 Reaper is a centralized, stateful, and highly configurable tool for running Apache Cassandra
