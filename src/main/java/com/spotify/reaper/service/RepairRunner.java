@@ -311,7 +311,7 @@ public class RepairRunner implements Runnable {
       confirmJMXConnectionIsOpen();
     } catch (ReaperException e) {
       e.printStackTrace();
-      LOG.warn("Failed to reestablish JMX connection in runner #{}, retrying", repairRunId);
+      LOG.warn("Failed to reestablish JMX connection in runner {}, retrying", repairRunId);
       currentlyRunningSegments.set(rangeIndex, -1);
       return true;
     }
@@ -322,7 +322,7 @@ public class RepairRunner implements Runnable {
 	    try {
 	      potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
 	    } catch (RuntimeException e) {
-	      LOG.warn("Couldn't get token ranges from coordinator: ", e);
+	      LOG.warn("Couldn't get token ranges from coordinator: #{}", e);
 	      return true;
 	    }
 	    if (potentialCoordinators.isEmpty()) {

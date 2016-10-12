@@ -25,7 +25,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 /**
- * Splits given Cassandra table's (column family's) token range into RepairSegments.
+ * Splits given Cassandra table's token range into RepairSegments.
  */
 public class SegmentGenerator {
 
