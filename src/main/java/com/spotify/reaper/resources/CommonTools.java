@@ -3,6 +3,7 @@ package com.spotify.reaper.resources;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.math.BigInteger;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -75,9 +76,9 @@ public class CommonTools {
 
     // the last preparation step is to generate actual repair segments
     if(!repairUnit.getIncrementalRepair()) {
-    	storeNewRepairSegments(context, tokenSegments, repairRun, repairUnit);
+      storeNewRepairSegments(context, tokenSegments, repairRun, repairUnit);
     } else {
-    	storeNewRepairSegmentsForIncrementalRepair(context, nodes, repairRun, repairUnit);
+      storeNewRepairSegmentsForIncrementalRepair(context, nodes, repairRun, repairUnit);
     }
 
     // now we're done and can return
@@ -198,34 +199,34 @@ public class CommonTools {
   }
   
   private static Map<String, RingRange> getClusterNodes(AppContext context,  Cluster targetCluster, RepairUnit repairUnit) throws ReaperException {
-	  Set<String> nodes = Sets.newHashSet();
-	  ConcurrentHashMap<String, RingRange> nodesWithRanges = new ConcurrentHashMap<String, RingRange>();
-	  Set<String> seedHosts = targetCluster.getSeedHosts();
-	    if (seedHosts.isEmpty()) {
-	      String errMsg = String.format("didn't get any seed hosts for cluster \"%s\"",
-	                                    targetCluster.getName());
-	      LOG.error(errMsg);
-	      throw new ReaperException(errMsg);
-	    }
-	   
-	    
-	    Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
-	    for (String host : seedHosts) {
-	      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host)) {
-	        rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());	        
-	        break;
-	      } catch (ReaperException e) {
-	        LOG.warn("couldn't connect to host: {}, will try next one", host);
-	      }
-	    }
-	    
-	  for(Entry<List<String>, List<String>> tokenRangeToEndpoint:rangeToEndpoint.entrySet()) {
-		  String node = tokenRangeToEndpoint.getValue().get(0);
-		  RingRange range = new RingRange(tokenRangeToEndpoint.getKey().get(0), tokenRangeToEndpoint.getKey().get(1));
-		  RingRange added = nodesWithRanges.putIfAbsent(node, range);			
-	  }
-	    
-	  return nodesWithRanges;
+    Set<String> nodes = Sets.newHashSet();
+    ConcurrentHashMap<String, RingRange> nodesWithRanges = new ConcurrentHashMap<String, RingRange>();
+    Set<String> seedHosts = targetCluster.getSeedHosts();
+      if (seedHosts.isEmpty()) {
+        String errMsg = String.format("didn't get any seed hosts for cluster \"%s\"",
+                                      targetCluster.getName());
+        LOG.error(errMsg);
+        throw new ReaperException(errMsg);
+      }
+     
+      
+      Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
+      for (String host : seedHosts) {
+        try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host)) {
+          rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());          
+          break;
+        } catch (ReaperException e) {
+          LOG.warn("couldn't connect to host: {}, will try next one", host);
+        }
+      }
+      
+    for(Entry<List<String>, List<String>> tokenRangeToEndpoint:rangeToEndpoint.entrySet()) {
+      String node = tokenRangeToEndpoint.getValue().get(0);
+      RingRange range = new RingRange(tokenRangeToEndpoint.getKey().get(0), tokenRangeToEndpoint.getKey().get(1));
+      RingRange added = nodesWithRanges.putIfAbsent(node, range);      
+    }
+      
+    return nodesWithRanges;
   }
   
 
@@ -252,6 +253,22 @@ public class CommonTools {
                                    repairParallelism, intensity,
                                    DateTime.now());
     scheduleBuilder.owner(owner);
+    
+    Collection<RepairSchedule> repairSchedules = context.storage.getRepairSchedulesForClusterAndKeyspace(repairUnit.getClusterName(), repairUnit.getKeyspaceName());
+    for(RepairSchedule sched:repairSchedules){
+      Optional<RepairUnit> repairUnitForSched = context.storage.getRepairUnit(sched.getRepairUnitId());
+      if(repairUnitForSched.isPresent() && repairUnitForSched.get().getClusterName().equals(repairUnit.getClusterName()) && repairUnitForSched.get().getKeyspaceName().equals(repairUnit.getKeyspaceName())){
+        if(CommonTools.aConflictingScheduleAlreadyExists(repairUnitForSched.get(), repairUnit)){
+          String errMsg = String.format("A repair schedule already exists for cluster \"%s\", "
+                    + "keyspace \"%s\", and column families: %s",
+                    cluster.getName(), repairUnit.getKeyspaceName(),
+                    Sets.intersection(repairUnit.getColumnFamilies(),repairUnitForSched.get().getColumnFamilies()));
+            LOG.error(errMsg);
+          throw new ReaperException(errMsg);
+        }
+      }
+    }
+    
     RepairSchedule newRepairSchedule = context.storage.addRepairSchedule(scheduleBuilder);
     if (newRepairSchedule == null) {
       String errMsg = String.format("failed storing repair schedule for cluster \"%s\", "
@@ -262,6 +279,14 @@ public class CommonTools {
       throw new ReaperException(errMsg);
     }
     return newRepairSchedule;
+  }
+  
+  private static final boolean aConflictingScheduleAlreadyExists(RepairUnit newRepairUnit, RepairUnit existingRepairUnit){
+    return (newRepairUnit.getColumnFamilies().size()==0 && existingRepairUnit.getColumnFamilies().size()==0)
+        || newRepairUnit.getColumnFamilies().size()==0 && existingRepairUnit.getColumnFamilies().size()!=0
+        || newRepairUnit.getColumnFamilies().size()!=0 && existingRepairUnit.getColumnFamilies().size()==0
+        || Sets.intersection(existingRepairUnit.getColumnFamilies(),newRepairUnit.getColumnFamilies()).size() >0;
+    
   }
 
   public static final Splitter COMMA_SEPARATED_LIST_SPLITTER =
@@ -310,9 +335,9 @@ public class CommonTools {
       }
     }
     if(cassandraVersion.isPresent() && cassandraVersion.get().startsWith("2.0") && incrementalRepair){
-    	String errMsg = "Incremental repair does not work with Cassandra versions before 2.1";
-    	LOG.error(errMsg);
-    	throw new ReaperException(errMsg);
+      String errMsg = "Incremental repair does not work with Cassandra versions before 2.1";
+      LOG.error(errMsg);
+      throw new ReaperException(errMsg);
     }
     
     if (storedRepairUnit.isPresent() && storedRepairUnit.get().getIncrementalRepair().equals(incrementalRepair)) {

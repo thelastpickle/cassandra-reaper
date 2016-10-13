@@ -254,6 +254,7 @@ public class RepairRunner implements Runnable {
         LOG.debug("No repair segment available for range {}", parallelRanges.get(rangeIndex));
 
       } else {
+    	LOG.info("Next segment to run : {}", nextRepairSegment.get().getId());
         long segmentId = nextRepairSegment.get().getId();
         boolean wasSet = currentlyRunningSegments.compareAndSet(rangeIndex, -1, segmentId);
         if (!wasSet) {
@@ -274,6 +275,7 @@ public class RepairRunner implements Runnable {
     if (!repairStarted && !anythingRunningStill) {
       int amountDone = context.storage
           .getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
+      LOG.info("Repair amount done {}", amountDone);
       if (amountDone == context.storage.getSegmentAmountForRepairRun(repairRunId)) {
         endRepairRun();
         scheduleRetry = false;
