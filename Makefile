@@ -15,6 +15,9 @@ deb: prepare
 	rm -f reaper_*.deb
 	fpm -s dir -t deb -n reaper -v 0.3 --pre-install debian/preinstall.sh -C build .
 
+rpm: prepare
+	rm -f reaper_*.rpm
+	fpm -s dir -t rpm -n reaper -v 0.3 --pre-install debian/preinstall.sh -C build .
 
 all: package deb 
 
