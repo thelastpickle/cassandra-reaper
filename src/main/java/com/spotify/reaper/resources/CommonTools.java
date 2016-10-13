@@ -60,7 +60,7 @@ public class CommonTools {
     // preparing a repair run involves several steps
 
     // the first step is to generate token segments
-    List<RingRange> tokenSegments = generateSegments(context, cluster, segments);
+    List<RingRange> tokenSegments = generateSegments(context, cluster, segments, repairUnit.getIncrementalRepair());
     checkNotNull(tokenSegments, "failed generating repair segments");
 
     Map<String, RingRange> nodes = getClusterNodes(context, cluster, repairUnit);
@@ -86,13 +86,14 @@ public class CommonTools {
 
   /**
    * Splits a token range for given table into segments
+ * @param incrementalRepair 
    *
    * @return the created segments
    * @throws ReaperException when fails to discover seeds for the cluster or fails to connect to
    * any of the nodes in the Cluster.
    */
   private static List<RingRange> generateSegments(AppContext context, Cluster targetCluster,
-                                                  int segmentCount)
+                                                  int segmentCount, Boolean incrementalRepair)
       throws ReaperException {
     List<RingRange> segments = null;
     assert targetCluster.getPartitioner() != null :
@@ -114,6 +115,7 @@ public class CommonTools {
         LOG.warn("couldn't connect to host: {}, will try next one", host);
       }
     }
+    
     if (segments == null) {
       String errMsg = String.format("failed to generate repair segments for cluster \"%s\"",
                                     targetCluster.getName());
@@ -292,10 +294,27 @@ public class CommonTools {
   }
 
   public static RepairUnit getNewOrExistingRepairUnit(AppContext context, Cluster cluster,
-                                                      String keyspace, Set<String> tableNames, Boolean incrementalRepair) {
+                                                      String keyspace, Set<String> tableNames, Boolean incrementalRepair) throws ReaperException {
     Optional<RepairUnit> storedRepairUnit =
         context.storage.getRepairUnit(cluster.getName(), keyspace, tableNames);
     RepairUnit theRepairUnit;
+    
+    Optional<String> cassandraVersion = Optional.absent();
+    for (String host : cluster.getSeedHosts()) {
+      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host)) {
+        List<BigInteger> tokens = jmxProxy.getTokens();
+        cassandraVersion = Optional.fromNullable(jmxProxy.getCassandraVersion());
+        break;
+      } catch (ReaperException e) {
+        LOG.warn("couldn't connect to host: {}, will try next one", host);
+      }
+    }
+    if(cassandraVersion.isPresent() && cassandraVersion.get().startsWith("2.0") && incrementalRepair){
+    	String errMsg = "Incremental repair does not work with Cassandra versions before 2.1";
+    	LOG.error(errMsg);
+    	throw new ReaperException(errMsg);
+    }
+    
     if (storedRepairUnit.isPresent()) {
       LOG.info("use existing repair unit for cluster '{}', keyspace '{}', and column families: {}",
                cluster.getName(), keyspace, tableNames);
