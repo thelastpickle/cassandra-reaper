@@ -24,7 +24,7 @@ logging:
   level: INFO
   loggers:
     io.dropwizard: INFO
-    org.eclipse.jetty: INFO
+    org.eclipse.jetty: WARN
   appenders:
     - type: console
       logFormat: "%-6level [%d] [%t] %logger{5} - %msg %n"
@@ -45,3 +45,8 @@ database:
   user: postgres
   password: postgres
   url: jdbc:postgresql://127.0.0.1/reaper
+
+cassandra:
+  clusterName: "test"
+  contactPoints: ["127.0.0.1"]
+  keyspace: reaper_db

@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
+import systems.composable.dropwizard.cassandra.CassandraFactory;
 
 public class ReaperApplicationConfiguration extends Configuration {
 
@@ -195,6 +196,20 @@ public class ReaperApplicationConfiguration extends Configuration {
       return password;
     }
 
+  }
+  
+  @Valid
+  @NotNull
+  private CassandraFactory cassandra = new CassandraFactory();
+
+  @JsonProperty("cassandra")
+  public CassandraFactory getCassandraFactory() {
+      return cassandra;
+  }
+
+  @JsonProperty("cassandra")
+  public void setCassandraFactory(CassandraFactory cassandra) {
+      this.cassandra = cassandra;
   }
 
 }

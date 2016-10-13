@@ -14,7 +14,7 @@
 package com.spotify.reaper.core;
 
 import com.google.common.collect.ImmutableList;
-
+import com.spotify.reaper.core.RepairSegment.State;
 import com.spotify.reaper.storage.postgresql.LongCollectionSQLType;
 
 import org.apache.cassandra.repair.RepairParallelism;
@@ -165,7 +165,8 @@ public class RepairSchedule {
       intensity = original.intensity;
     }
 
-    public Builder state(State state) {
+
+	public Builder state(State state) {
       this.state = state;
       return this;
     }

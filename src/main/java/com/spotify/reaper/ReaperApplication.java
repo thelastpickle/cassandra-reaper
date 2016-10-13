@@ -40,6 +40,7 @@ import com.spotify.reaper.resources.RepairRunResource;
 import com.spotify.reaper.resources.RepairScheduleResource;
 import com.spotify.reaper.service.RepairManager;
 import com.spotify.reaper.service.SchedulingManager;
+import com.spotify.reaper.storage.CassandraStorage;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
@@ -176,6 +177,8 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
       storage = new MemoryStorage();
     } else if ("database".equalsIgnoreCase(config.getStorageType())) {
       storage = new PostgresStorage(config, environment);
+    }else if ("cassandra".equalsIgnoreCase(config.getStorageType())) {
+        storage = new CassandraStorage(config, environment);
     } else {
       LOG.error("invalid storageType: {}", config.getStorageType());
       throw new ReaperException("invalid storage type: " + config.getStorageType());

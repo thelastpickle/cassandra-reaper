@@ -30,7 +30,7 @@ public class SchedulingManager extends TimerTask {
       LOG.info("Starting new SchedulingManager instance");
       schedulingManager = new SchedulingManager(context);
       Timer timer = new Timer("SchedulingManagerTimer");
-      timer.schedule(schedulingManager, 1000, 1000 * 60 * 10); // activate once per ten minutes
+      timer.schedule(schedulingManager, 1000, 1000 * 60);
     } else {
       LOG.warn("there is already one instance of SchedulingManager running, not starting new one");
     }

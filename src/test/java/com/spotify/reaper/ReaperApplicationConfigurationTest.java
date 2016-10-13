@@ -9,6 +9,7 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 
 import io.dropwizard.db.DataSourceFactory;
+import systems.composable.dropwizard.cassandra.CassandraFactory;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 
@@ -29,6 +30,9 @@ public class ReaperApplicationConfigurationTest {
     dataSourceFactory.setDriverClass("org.postgresql.Driver");
     dataSourceFactory.setUrl("jdbc:postgresql://db.example.com/db-prod");
     dataSourceFactory.setUser("user");
+    CassandraFactory cassandraFactory = new CassandraFactory();
+    cassandraFactory.setContactPoints(new String[]{"127.0.0.1"});
+    config.setCassandraFactory(cassandraFactory);
     config.setDataSourceFactory(dataSourceFactory);
     config.setHangingRepairTimeoutMins(1);
     config.setRepairParallelism(RepairParallelism.DATACENTER_AWARE);

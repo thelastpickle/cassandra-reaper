@@ -198,6 +198,38 @@ public class RepairRunResourceTest {
     response = resource.modifyRunState(uriInfo, runId, newState);
     assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
   }
+  
+  @Test
+  public void testTriggerNewRunAlreadyRunningRun() throws InterruptedException {
+    DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
+    context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
+                                               RETRY_DELAY_S, TimeUnit.SECONDS);
+    RepairRunResource resource = new RepairRunResource(context);
+    Response response = addDefaultRepairRun(resource);
+    RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
+    long runId = repairRunStatus.getId();
+
+    DateTimeUtils.setCurrentMillisFixed(TIME_START);
+    Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
+    resource.modifyRunState(uriInfo, runId, newState);
+    Thread.sleep(1000);
+    response = resource.modifyRunState(uriInfo, runId, newState);
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    
+    // Adding a second run that we'll try to set to RUNNING status
+    RepairRunResource newResource = new RepairRunResource(context);
+    Response newResponse = addDefaultRepairRun(newResource);
+    RepairRunStatus newRepairRunStatus = (RepairRunStatus) newResponse.getEntity();
+    long newRunId = newRepairRunStatus.getId();
+
+    DateTimeUtils.setCurrentMillisFixed(TIME_START);
+    Optional<String> newRunState = Optional.of(RepairRun.RunState.RUNNING.toString());
+    response = resource.modifyRunState(uriInfo, newRunId, newRunState);
+    // We expect it to fail as we cannot have 2 running runs for the same repair unit at once
+    assertEquals(Response.Status.CONFLICT.getStatusCode(), response.getStatus());
+    
+    
+  }
 
   @Test
   public void testAddRunClusterNotInStorage() {

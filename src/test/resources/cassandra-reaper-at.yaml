@@ -66,3 +66,8 @@ database:
 
   # the minimum amount of time an connection must sit idle in the pool before it is eligible for eviction
   minIdleTime: 1 minute
+
+cassandra:
+  clusterName: "test"
+  contactPoints: ["127.0.0.1","127.0.0.2"]
+  keyspace: reaper_db

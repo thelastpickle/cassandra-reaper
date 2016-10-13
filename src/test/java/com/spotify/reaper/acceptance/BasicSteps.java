@@ -285,4 +285,18 @@ public class BasicSteps {
     callAndExpect("DELETE", "/repair_run/" + TestContext.LAST_MODIFIED_ID,
                   Optional.of(params), Response.Status.OK, Optional.of("\"" + clusterName + "\""));
   }
+  
+ @When("^a new daily repair schedule is added that already exists for \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
+  public void a_new_daily_repair_schedule_is_added_that_already_exists_for(String clusterName, String keyspace)
+      throws Throwable {
+    Map<String, String> params = Maps.newHashMap();
+    params.put("clusterName", clusterName);
+    params.put("keyspace", keyspace);
+    params.put("owner", TestContext.TEST_USER);
+    params.put("intensity", "0.9");
+    params.put("scheduleDaysBetween", "1");
+    ClientResponse response =
+        ReaperTestJettyRunner.callReaper("POST", "/repair_schedule", Optional.of(params));
+    assertEquals(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), response.getStatus());
+  }
 }
