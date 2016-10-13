@@ -372,6 +372,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
         repairParallelism, cassandraVersion, canUseDatacenterAware,
         columnFamilies);
     LOG.info(msg);
+
     if(!cassandraVersion.startsWith("2.0")){
 	    if(fullRepair) {
 		    if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {

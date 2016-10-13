@@ -229,6 +229,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       }
     } catch (ReaperException e) {
       LOG.warn("Failed to connect to a coordinator node for segment {}", segmentId);
+      LOG.warn(e.getMessage());
       String msg = "Postponed a segment because no coordinator was reachable";
       repairRunner.updateLastEvent(msg);
       postponeCurrentSegment();
