@@ -367,7 +367,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 	    if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
 	      if (canUseDatacenterAware) {
 	        return ssProxy.forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-	            repairParallelism.ordinal(), null, null, fullRepair,
+	            repairParallelism.ordinal(), null, null, // fullRepair removed
 	            columnFamilies
 	                .toArray(new String[columnFamilies.size()]));
 	      } else {
@@ -379,11 +379,12 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 	    }
 	    boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
 	    return ssProxy.forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-	        snapshotRepair, false, fullRepair,
+	        snapshotRepair, false, // fullRepair removed
 	        columnFamilies.toArray(new String[columnFamilies.size()]));
     } 
     else {    	
-    	return ssProxy.forceRepairAsync(keyspace, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, fullRepair, columnFamilies.toArray(new String[columnFamilies.size()]));    			
+    	return ssProxy.forceRepairAsync(keyspace, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, //fullRepair,
+                                        columnFamilies.toArray(new String[columnFamilies.size()]));
     }
   }
 
