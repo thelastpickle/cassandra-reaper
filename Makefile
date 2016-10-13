@@ -1,3 +1,6 @@
+package:
+	mvn package
+
 prepare:
 	mkdir -p build/usr/share/cassandra-reaper
 	mkdir -p build/usr/local/bin
@@ -12,8 +15,6 @@ deb: prepare
 	rm -f reaper_*.deb
 	fpm -s dir -t deb -n reaper -v 0.3 --pre-install debian/preinstall.sh -C build .
 
-package:
-	mvn package
 
 all: package deb 
 
