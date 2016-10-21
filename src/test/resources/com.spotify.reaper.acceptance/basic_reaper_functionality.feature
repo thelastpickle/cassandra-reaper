@@ -51,3 +51,13 @@ Feature: Using Reaper to launch repairs
     When the last added repair run is deleted for cluster called "other_cluster"
     And cluster called "other_cluster" is deleted
     Then reaper has no cluster called "other_cluster" in storage
+  
+  Scenario: Create a cluster and one incremental repair run and one full repair run on the same keyspace
+    Given reaper has no cluster with name "other_cluster" in storage
+    And that we are going to use "127.0.0.2" as cluster seed host
+    When an add-cluster request is made to reaper
+    Then reaper has a cluster called "other_cluster" in storage
+    And reaper has 0 scheduled repairs for cluster called "other_cluster"
+    When a new incremental repair is added for "other_cluster" and keyspace "system"
+    And a new repair is added for "other_cluster" and keyspace "system"
+    Then reaper has 2 repairs for cluster called "other_cluster"

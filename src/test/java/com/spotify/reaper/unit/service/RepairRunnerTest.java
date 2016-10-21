@@ -274,7 +274,7 @@ public class RepairRunnerTest {
         }
     );
     SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
-    List<RingRange> segments = generator.generateSegments(32, tokens);
+    List<RingRange> segments = generator.generateSegments(32, tokens, Boolean.FALSE);
 
     Map<List<String>, List<String>> map = RepairRunnerTest.sixNodeCluster();
     List<RingRange> ranges = RepairRunner.getParallelRanges(

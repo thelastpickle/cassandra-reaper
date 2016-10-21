@@ -214,7 +214,7 @@ public class MemoryStorage implements IStorage {
   public RepairUnit addRepairUnit(RepairUnit.Builder repairUnit) {
     Optional<RepairUnit> existing =
         getRepairUnit(repairUnit.clusterName, repairUnit.keyspaceName, repairUnit.columnFamilies);
-    if (existing.isPresent()) {
+    if (existing.isPresent() && repairUnit.incrementalRepair == existing.get().getIncrementalRepair().booleanValue()) {
       return existing.get();
     } else {
       RepairUnit newRepairUnit = repairUnit.build(REPAIR_UNIT_ID.incrementAndGet());

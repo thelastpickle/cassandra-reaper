@@ -109,7 +109,7 @@ public class CommonTools {
     for (String host : seedHosts) {
       try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host)) {
         List<BigInteger> tokens = jmxProxy.getTokens();
-        segments = sg.generateSegments(segmentCount, tokens);
+        segments = sg.generateSegments(segmentCount, tokens, incrementalRepair);
         break;
       } catch (ReaperException e) {
         LOG.warn("couldn't connect to host: {}, will try next one", host);
@@ -315,7 +315,7 @@ public class CommonTools {
     	throw new ReaperException(errMsg);
     }
     
-    if (storedRepairUnit.isPresent()) {
+    if (storedRepairUnit.isPresent() && storedRepairUnit.get().getIncrementalRepair().equals(incrementalRepair)) {
       LOG.info("use existing repair unit for cluster '{}', keyspace '{}', and column families: {}",
                cluster.getName(), keyspace, tableNames);
       theRepairUnit = storedRepairUnit.get();

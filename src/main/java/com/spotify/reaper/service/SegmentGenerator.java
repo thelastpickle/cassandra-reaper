@@ -94,9 +94,10 @@ public class SegmentGenerator {
    * @param totalSegmentCount requested total amount of repair segments. This function may generate
    *                          more segments.
    * @param ringTokens        list of all start tokens in a cluster. They have to be in ring order.
+   * @param incrementalRepair 
    * @return a list containing at least {@code totalSegmentCount} repair segments.
    */
-  public List<RingRange> generateSegments(int totalSegmentCount, List<BigInteger> ringTokens)
+  public List<RingRange> generateSegments(int totalSegmentCount, List<BigInteger> ringTokens, Boolean incrementalRepair)
       throws ReaperException {
     int tokenRangeCount = ringTokens.size();
 
@@ -156,7 +157,7 @@ public class SegmentGenerator {
       BigInteger size = segment.span(RANGE_SIZE);
       total = total.add(size);
     }
-    if (!total.equals(RANGE_SIZE)) {
+    if (!total.equals(RANGE_SIZE) && !incrementalRepair) {
       throw new ReaperException("Not entire ring would get repaired");
     }
     return repairSegments;
