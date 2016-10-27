@@ -148,7 +148,7 @@ public class RepairRunResource {
       RepairUnit theRepairUnit =
           CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace.get(), tableNames, incrementalRepair);
 
-      if(theRepairUnit.getIncrementalRepair() != incrementalRepair) {
+      if (theRepairUnit.getIncrementalRepair() != incrementalRepair) {
     	  return Response.status(Response.Status.BAD_REQUEST).entity(
                   "A repair run already exist for the same cluster/keyspace/table but with a different incremental repair value." 
                   + "Requested value: " + incrementalRepair + " | Existing value: " + theRepairUnit.getIncrementalRepair()).build();
@@ -161,12 +161,10 @@ public class RepairRunResource {
         parallelism = RepairParallelism.valueOf(repairParallelism.get().toUpperCase());
       }
       
-      if(!parallelism.equals(RepairParallelism.PARALLEL) && incrementalRepair) {
-          return Response.status(Response.Status.BAD_REQUEST).entity(
-                  "It is not possible to mix sequential repair and incremental repairs. parallelism " 
-                  + parallelism + " : incrementalRepair " + incrementalRepair).build();
+      if (incrementalRepair) {
+        parallelism = RepairParallelism.PARALLEL;
       }
-
+      
       RepairRun newRepairRun = CommonTools.registerRepairRun(
           context, cluster, theRepairUnit, cause, owner.get(), segments,
           parallelism, intensity);

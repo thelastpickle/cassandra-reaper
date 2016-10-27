@@ -247,6 +247,22 @@ public class BasicSteps {
     RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
     TestContext.LAST_MODIFIED_ID = run.getId();
   }
+  
+  @When("^a new incremental repair is added for \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
+  public void a_new_incremental_repair_is_added_for_and_keyspace(String clusterName, String keyspace)
+      throws Throwable {
+    Map<String, String> params = Maps.newHashMap();
+    params.put("clusterName", clusterName);
+    params.put("keyspace", keyspace);
+    params.put("owner", TestContext.TEST_USER);
+    params.put("incrementalRepair", Boolean.TRUE.toString());
+    ClientResponse response =
+        ReaperTestJettyRunner.callReaper("POST", "/repair_run", Optional.of(params));
+    assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
+    String responseData = response.getEntity(String.class);
+    RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
+    TestContext.LAST_MODIFIED_ID = run.getId();
+  }
 
   @Then("^reaper has (\\d+) repairs for cluster called \"([^\"]*)\"$")
   public void reaper_has_repairs_for_cluster_called(int runAmount, String clusterName)
