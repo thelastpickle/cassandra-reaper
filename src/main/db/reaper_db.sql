@@ -4,7 +4,7 @@
 --
 
 CREATE DATABASE reaper_db;
-\connect repear_db;
+\connect reaper_db;
 CREATE USER reaper WITH PASSWORD 'my_secret_password';
 GRANT ALL PRIVILEGES ON DATABASE reaper_db TO reaper;
 
