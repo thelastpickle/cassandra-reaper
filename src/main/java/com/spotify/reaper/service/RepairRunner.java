@@ -71,7 +71,7 @@ public class RepairRunner implements Runnable {
     String keyspace = repairUnitOpt.get().getKeyspaceName();
     int parallelRepairs = getPossibleParallelRepairsCount(jmx.getRangeToEndpointMap(keyspace));
     if(repairUnitOpt.isPresent() && repairUnitOpt.get().getIncrementalRepair()) {
-    	// with incremental repair, can't have more parallel repairs than nodes 
+    	// with incremental repair, can't have more parallel repairs than nodes
     	parallelRepairs = 1;
     }
     currentlyRunningSegments = new AtomicLongArray(parallelRepairs);
@@ -320,7 +320,7 @@ public class RepairRunner implements Runnable {
 
     List<String> potentialCoordinators;
     if(!repairUnit.getIncrementalRepair()) {
-    	// full repair    
+    	// full repair
 	    try {
 	      potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
 	    } catch (RuntimeException e) {
@@ -343,7 +343,7 @@ public class RepairRunner implements Runnable {
 	      }
 	      return false;
 	    }
-    } 
+    }
     else {
     	potentialCoordinators = Arrays.asList(context.storage.getRepairSegment(segmentId).get().getCoordinatorHost());
     }

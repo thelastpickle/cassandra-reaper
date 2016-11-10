@@ -148,10 +148,10 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       if(cassandraVersion.startsWith("2.0")){
     	  ssProxy = JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean20.class);
       }
-      
+
       CompactionManagerMBean cmProxy =
           JMX.newMBeanProxy(mbeanServerConn, cmMbeanName, CompactionManagerMBean.class);
-      JmxProxy proxy = new JmxProxy(handler, host, jmxUrl, jmxConn, ssProxy, ssMbeanName,
+      JmxProxy proxy = new JmxProxy(handler, host + ':' + port, jmxUrl, jmxConn, ssProxy, ssMbeanName,
           mbeanServerConn, cmProxy);
       // registering a listener throws bunch of exceptions, so we do it here rather than in the
       // constructor
@@ -207,7 +207,14 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       BigInteger rangeStart = new BigInteger(entry.getKey().get(0));
       BigInteger rangeEnd = new BigInteger(entry.getKey().get(1));
       if (new RingRange(rangeStart, rangeEnd).encloses(tokenRange)) {
-        return entry.getValue();
+        List<String> endpoints = entry.getValue();
+        if (2 == host.split(":").length) {
+            String port = host.split(":")[1];
+            for (int i = 0 ; i < endpoints.size(); ++i) {
+                endpoints.set(i, endpoints.get(i) + ':' + port);
+            }
+        }
+        return endpoints;
       }
     }
     return Lists.newArrayList();
@@ -342,7 +349,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
     return true;
   }
-  
+
   public String getCassandraVersion(){
 	  return ((StorageServiceMBean) ssProxy).getReleaseVersion();
   }
@@ -392,17 +399,17 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 		    return ((StorageServiceMBean) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
 		        snapshotRepair, false, fullRepair,
 		        columnFamilies.toArray(new String[columnFamilies.size()]));
-	    } 
-	    else {    	
-	    	return ((StorageServiceMBean) ssProxy).forceRepairAsync(keyspace, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, fullRepair, columnFamilies.toArray(new String[columnFamilies.size()]));    			
+	    }
+	    else {
+	    	return ((StorageServiceMBean) ssProxy).forceRepairAsync(keyspace, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, fullRepair, columnFamilies.toArray(new String[columnFamilies.size()]));
 	    }
     }
     else {
-    	// Cassandra 2.0 compatibility 
+    	// Cassandra 2.0 compatibility
     	if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
 		      if (canUseDatacenterAware) {
 		        return ((StorageServiceMBean20) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-		            repairParallelism.ordinal(), null, null, 
+		            repairParallelism.ordinal(), null, null,
 		            columnFamilies
 		                .toArray(new String[columnFamilies.size()]));
 		      } else {
@@ -414,10 +421,10 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 		    }
 		    boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
 		    return ((StorageServiceMBean20) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-		        snapshotRepair, false, 
+		        snapshotRepair, false,
 		        columnFamilies.toArray(new String[columnFamilies.size()]));
     }
-    
+
   }
 
 
