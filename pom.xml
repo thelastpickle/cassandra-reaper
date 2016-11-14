@@ -6,16 +6,16 @@
     <name>Cassandra Reaper</name>
     <groupId>com.spotify</groupId>
     <artifactId>cassandra-reaper</artifactId>
-    <version>0.3.1-SNAPSHOT</version>
+    <version>0.3.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<dropwizard.version>0.7.1</dropwizard.version>
 		<dropwizard.cassandra.version>4.0.0</dropwizard.cassandra.version>
-		<cassandra.version>2.1.16</cassandra.version>
-		<cucumber.version>1.1.5</cucumber.version>
-	</properties>
+        <cassandra.version>2.2.7</cassandra.version>
+        <cucumber.version>1.1.5</cucumber.version>
+    </properties>
 
 	<dependencies>
 		<!--compile scope -->

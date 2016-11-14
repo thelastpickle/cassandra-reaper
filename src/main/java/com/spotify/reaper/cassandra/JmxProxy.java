@@ -353,9 +353,10 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * For time being, we don't allow local nor snapshot repairs.
    *
    * @return Repair command number, or 0 if nothing to repair
+   * @throws ReaperException 
    */
   public int triggerRepair(BigInteger beginToken, BigInteger endToken, String keyspace,
-    	RepairParallelism repairParallelism, Collection<String> columnFamilies, boolean fullRepair) {
+    	RepairParallelism repairParallelism, Collection<String> columnFamilies, boolean fullRepair) throws ReaperException {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     String cassandraVersion = getCassandraVersion();
     boolean canUseDatacenterAware = false;
@@ -373,49 +374,51 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
         columnFamilies);
     LOG.info(msg);
 
-    if(!cassandraVersion.startsWith("2.0")){
-	    if(fullRepair) {
-		    if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
-		      if (canUseDatacenterAware) {
-		        return ((StorageServiceMBean) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-		            repairParallelism.ordinal(), null, null, fullRepair,
-		            columnFamilies
-		                .toArray(new String[columnFamilies.size()]));
-		      } else {
-		        LOG.info("Cannot use DATACENTER_AWARE repair policy for Cassandra cluster with version {},"
-		                 + " falling back to SEQUENTIAL repair.",
-		            cassandraVersion);
-		        repairParallelism = RepairParallelism.SEQUENTIAL;
-		      }
-		    }
-		    boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
-		    return ((StorageServiceMBean) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-		        snapshotRepair, false, fullRepair,
-		        columnFamilies.toArray(new String[columnFamilies.size()]));
-	    } 
-	    else {    	
-	    	return ((StorageServiceMBean) ssProxy).forceRepairAsync(keyspace, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, fullRepair, columnFamilies.toArray(new String[columnFamilies.size()]));    			
-	    }
-    }
-    else {
-    	// Cassandra 2.0 compatibility 
-    	if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
-		      if (canUseDatacenterAware) {
-		        return ((StorageServiceMBean20) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-		            repairParallelism.ordinal(), null, null, 
-		            columnFamilies
-		                .toArray(new String[columnFamilies.size()]));
-		      } else {
-		        LOG.info("Cannot use DATACENTER_AWARE repair policy for Cassandra cluster with version {},"
-		                 + " falling back to SEQUENTIAL repair.",
-		            cassandraVersion);
-		        repairParallelism = RepairParallelism.SEQUENTIAL;
-		      }
-		    }
-		    boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
-		    return ((StorageServiceMBean20) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(), keyspace,
-		        snapshotRepair, false, 
-		        columnFamilies.toArray(new String[columnFamilies.size()]));
+    try {
+      if (!cassandraVersion.startsWith("2.0")) {
+        if (fullRepair) {
+          if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
+            if (canUseDatacenterAware) {
+              return ((StorageServiceMBean) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
+                  keyspace, repairParallelism.ordinal(), cassandraVersion.startsWith("2.2")?new HashSet<String>():null, cassandraVersion.startsWith("2.2")?new HashSet<String>():null, fullRepair,
+                  columnFamilies.toArray(new String[columnFamilies.size()]));
+            } else {
+              LOG.info("Cannot use DATACENTER_AWARE repair policy for Cassandra cluster with version {},"
+                  + " falling back to SEQUENTIAL repair.", cassandraVersion);
+              repairParallelism = RepairParallelism.SEQUENTIAL;
+            }
+          }
+          boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
+
+          return ((StorageServiceMBean) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
+              keyspace, snapshotRepair ? RepairParallelism.SEQUENTIAL.ordinal() : RepairParallelism.PARALLEL.ordinal(),
+                  cassandraVersion.startsWith("2.2")?new HashSet<String>():null, cassandraVersion.startsWith("2.2")?new HashSet<String>():null, fullRepair,
+              columnFamilies.toArray(new String[columnFamilies.size()]));
+
+        } else {
+          return ((StorageServiceMBean) ssProxy).forceRepairAsync(keyspace, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE,
+              fullRepair, columnFamilies.toArray(new String[columnFamilies.size()]));
+        }
+      } else {
+        // Cassandra 2.0 compatibility
+        if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
+          if (canUseDatacenterAware) {
+            return ((StorageServiceMBean20) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
+                keyspace, repairParallelism.ordinal(), null, null,
+                columnFamilies.toArray(new String[columnFamilies.size()]));
+          } else {
+            LOG.info("Cannot use DATACENTER_AWARE repair policy for Cassandra cluster with version {},"
+                + " falling back to SEQUENTIAL repair.", cassandraVersion);
+            repairParallelism = RepairParallelism.SEQUENTIAL;
+          }
+        }
+        boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
+        return ((StorageServiceMBean20) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
+            keyspace, snapshotRepair, false, columnFamilies.toArray(new String[columnFamilies.size()]));
+      }
+    } catch (Exception e) {
+      LOG.error("Segment repair failed", e);
+      throw new ReaperException(e);
     }
     
   }
