@@ -1,8 +1,8 @@
 # Using mvn:
-VERSION = `mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\['`
+VERSION := $(shell mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[')
 
 # Using python:
-#VERSION = `python -c "import xml.etree.ElementTree as ET; print(ET.parse(open('pom.xml')).getroot().find('{http://maven.apache.org/POM/4.0.0}version').text)"`
+#VERSION := $(shell python -c "import xml.etree.ElementTree as ET; print(ET.parse(open('pom.xml')).getroot().find('{http://maven.apache.org/POM/4.0.0}version').text)")
 
 package:
 	mvn package
@@ -27,3 +27,6 @@ rpm: prepare
 	fpm -s dir -t rpm -n reaper -v $(VERSION) --pre-install debian/preinstall.sh -C build .
 
 all: package deb
+
+clean:
+	rm -rf reaper_*.deb reaper_*.rpm
