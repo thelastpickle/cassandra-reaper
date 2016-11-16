@@ -542,7 +542,7 @@ public class CassandraStorage implements IStorage {
         new DateTime(repairScheduleRow.getTimestamp("next_activation")), 
         ImmutableList.copyOf(repairScheduleRow.getSet("run_history", Long.class)), 
         repairScheduleRow.getInt("segment_count"), 
-        RepairParallelism.valueOf(repairScheduleRow.getString("repair_parallelism")), 
+        RepairParallelism.fromName(repairScheduleRow.getString("repair_parallelism")), 
         repairScheduleRow.getDouble("intensity"), 
         new DateTime(repairScheduleRow.getTimestamp("creation_time")))
         .owner(repairScheduleRow.getString("owner"))
@@ -700,7 +700,7 @@ public class CassandraStorage implements IStorage {
 
 
   private RepairRun buildRepairRunFromRow(Row repairRunResult, long id){
-    return new RepairRun.Builder(repairRunResult.getString("cluster_name"), repairRunResult.getLong("repair_unit_id"), new DateTime(repairRunResult.getTimestamp("creation_time")), repairRunResult.getDouble("intensity"), repairRunResult.getInt("segment_count"), RepairParallelism.valueOf(repairRunResult.getString("repair_parallelism")))
+    return new RepairRun.Builder(repairRunResult.getString("cluster_name"), repairRunResult.getLong("repair_unit_id"), new DateTime(repairRunResult.getTimestamp("creation_time")), repairRunResult.getDouble("intensity"), repairRunResult.getInt("segment_count"), RepairParallelism.fromName(repairRunResult.getString("repair_parallelism")))
         .cause(repairRunResult.getString("cause"))
         .owner(repairRunResult.getString("owner"))
         .endTime(new DateTime(repairRunResult.getTimestamp("end_time")))
