@@ -46,6 +46,11 @@ When using database based storage, you must setup a PostgreSQL database yourself
 Reaper to use it. You need to prepare the database using the given schema in:
 *src/main/db/reaper_db.sql*
 
+When using cassandra based storage, you must setup an Apache Cassandra database yourself and configure
+Reaper to use it. You need to prepare the database using the given schema in:
+*src/main/db/reaper_db.cql*
+Reaper uses the dropwizard-cassandra bundle and full configuration reference is available here : https://github.com/composable-systems/dropwizard-cassandra
+
 For configuring the service, see the available configuration options in later section
 of this readme document.
 
@@ -123,9 +128,9 @@ The Reaper service specific configuration values are:
 * storageType:
 
   Whether to use database or memory based storage for storing the system state.
-  Value can be either "memory" or "database".
-  If you are using the recommended (persistent) storage type "database", you need to define
-  the database client parameters in a database section in the configuration file. See the example
+  Value can be either "memory", "database" or "cassandra".
+  If you are using the recommended (persistent) storage type "database" or "cassandra", you need to define
+  the database client parameters in a database/cassandra section in the configuration file. See the example
   settings in provided testing configuration in *src/test/resources/cassandra-reaper.yaml*.
 
 * jmxPorts:
@@ -217,7 +222,7 @@ Source code for all the REST resources can be found from package com.spotify.rea
     * *segmentCount*: Defines the amount of segments to create for repair run. (Optional)
     * *repairParallelism*: Defines the used repair parallelism for repair run. (Optional)
     * *intensity*: Defines the repair intensity for repair run. (Optional)
-    * *incrementalRepair*: Defines if incremental repair should be done. [True/False] (Optional)
+    * *incrementalRepair*: Defines if incremental repair should be done. [true/false] (Optional)
 
 * PUT    /repair_run/{id}
   * Expected query parameters:
@@ -257,7 +262,7 @@ Source code for all the REST resources can be found from package com.spotify.rea
     * *segmentCount*: Defines the amount of segments to create for scheduled repair runs. (Optional)
     * *repairParallelism*: Defines the used repair parallelism for scheduled repair runs. (Optional)
     * *intensity*: Defines the repair intensity for scheduled repair runs. (Optional)
-    * *incrementalRepair*: Defines if incremental repair should be done. [True/False] (Optional)
+    * *incrementalRepair*: Defines if incremental repair should be done. [true/false] (Optional)
     * *scheduleDaysBetween*: Defines the amount of days to wait between scheduling new repairs.
                              For example, use value 7 for weekly schedule, and 0 for continuous.
     * *scheduleTriggerTime*: Defines the time for first scheduled trigger for the run.
