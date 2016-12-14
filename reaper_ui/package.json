@@ -1,0 +1,35 @@
+{
+  "name": "cassandra-reaper-ui",
+  "version": "0.2.0",
+  "description": "Interactive web UI for Cassandra Reaper",
+  "main": "index.js",
+  "keywords": [
+    "cassandra"
+  ],
+  "author": "Stefan Podkowinski <github@midnightdrift.com>",
+  "license": "MIT",
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/spodkowinski/cassandra-reaper-ui.git"
+  },
+  "devDependencies": {
+    "babel-core": "^4.1.1",
+    "babel-loader": "^4.0.0",
+    "babel-runtime": "^4.4.3",
+    "css-loader": "^0.9.1",
+    "file-loader": "^0.8.1",
+    "jsx-loader": "^0.12.2",
+    "react": "^0.13.1",
+    "react-hot-loader": "^1.2.4",
+    "style-loader": "^0.8.3",
+    "url-loader": "^0.5.5",
+    "webpack": "^1.7.3",
+    "webpack-dev-server": "^1.7.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "minimize": "webpack -p --progress --colors --devtool none",
+    "zip": "zip -jr release.zip build",
+    "start": "node server.js"
+  }
+}
