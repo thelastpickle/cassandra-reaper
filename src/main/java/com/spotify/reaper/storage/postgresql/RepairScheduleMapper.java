@@ -53,7 +53,7 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
         RepairRunMapper.getDateTimeOrNull(r, "next_activation"),
         ImmutableList.copyOf(runHistoryLong),
         r.getInt("segment_count"),
-        RepairParallelism.valueOf(r.getString("repair_parallelism")),
+        RepairParallelism.fromName(r.getString("repair_parallelism")),
         r.getDouble("intensity"),
         RepairRunMapper.getDateTimeOrNull(r, "creation_time"))
         .owner(r.getString("owner"))

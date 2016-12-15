@@ -38,7 +38,7 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
   public RepairRun map(int index, ResultSet r, StatementContext ctx) throws SQLException {
     RepairRun.RunState runState = RepairRun.RunState.valueOf(r.getString("state"));
     RepairParallelism repairParallelism =
-        RepairParallelism.valueOf(r.getString("repair_parallelism"));
+        RepairParallelism.fromName(r.getString("repair_parallelism"));
     RepairRun.Builder repairRunBuilder =
         new RepairRun.Builder(r.getString("cluster_name"),
                               r.getLong("repair_unit_id"),
