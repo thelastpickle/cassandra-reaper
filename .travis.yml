@@ -1,4 +1,9 @@
 language: java
-
 jdk:
-- oraclejdk7
+- oraclejdk8
+install: true
+script:
+  - mvn clean package
+  - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then mvn sonar:sonar -Dsonar.host.url=https://sonarqube.com -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=tlp-cassandra-reaper -Dsonar.github.oauth=$GITHUB_TOKEN -Dsonar.github.repository=thelastpickle/cassandra-reaper -Dsonar.github.pullRequest=$TRAVIS_PULL_REQUEST -Dsonar.analysis.mode=preview; fi'
+  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_BRANCH" = "master" ]; then mvn sonar:sonar -Dsonar.host.url=https://sonarqube.com -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=tlp-cassandra-reaper -Dsonar.github.oauth=$GITHUB_TOKEN -Dsonar.github.repository=thelastpickle/cassandra-reaper; fi'
+  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_BRANCH" != "master" ]; then mvn sonar:sonar -Dsonar.host.url=https://sonarqube.com -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=tlp-cassandra-reaper -Dsonar.github.oauth=$GITHUB_TOKEN -Dsonar.github.repository=thelastpickle/cassandra-reaper  -Dsonar.analysis.mode=preview; fi'
