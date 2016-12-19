@@ -116,6 +116,41 @@
                         </configuration>
                     </plugin>
                     <plugin>
+				        <artifactId>maven-surefire-plugin</artifactId>
+				        <version>2.19</version>
+				        <configuration>
+				          <argLine>${surefireArgLine}</argLine>
+				          <failIfNoTests>false</failIfNoTests>
+				          <excludes>
+				            <exclude>**/IT*.java</exclude>
+				            <exclude>**/*IT.java</exclude>
+				          </excludes>
+				          <workingDirectory>${project.build.directory}</workingDirectory>
+				        </configuration>
+				    </plugin>				
+				    <plugin>
+				        <groupId>org.apache.maven.plugins</groupId>
+				        <artifactId>maven-failsafe-plugin</artifactId>
+				        <version>2.19</version>
+				        <executions>
+				          <execution>
+				            <id>integration-tests</id>
+				            <goals>
+				              <goal>integration-test</goal>
+				              <goal>verify</goal>
+				            </goals>
+				            <configuration>
+				              <skipTests>true</skipTests>
+				              <argLine>${failsafeArgLine}</argLine>
+				              <failIfNoTests>false</failIfNoTests>
+				              <includes>
+					            <include>**/ReaperIT.java</include>
+					          </includes>
+				            </configuration>
+				          </execution>
+				        </executions>
+        			</plugin>    
+                    <plugin>
                         <!-- To know which version of your application you have deployed on 
                             a machine -->
                         <groupId>org.apache.maven.plugins</groupId>
@@ -170,6 +205,61 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+        	<id>integration-tests</id>
+        	<activation>
+        		<activeByDefault>false</activeByDefault>
+        	</activation>
+        	<build>
+        		<plugins>
+        			<plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>3.1</version>
+                        <configuration>
+                            <source>1.8</source>
+                            <target>1.8</target>
+                            <encoding>UTF-8</encoding>
+                        </configuration>
+                    </plugin>
+	        		<plugin>
+				        <artifactId>maven-surefire-plugin</artifactId>
+				        <version>2.19</version>
+				        <configuration>
+				          <skipTests>true</skipTests>
+				          <argLine>${surefireArgLine}</argLine>
+				          <failIfNoTests>false</failIfNoTests>
+				          <excludes>
+				            <exclude>**/IT*.java</exclude>
+				            <exclude>**/*IT.java</exclude>
+				          </excludes>
+				          <workingDirectory>${project.build.directory}</workingDirectory>
+				        </configuration>
+				    </plugin>	
+        			<plugin>
+				        <groupId>org.apache.maven.plugins</groupId>
+				        <artifactId>maven-failsafe-plugin</artifactId>
+				        <version>2.19</version>
+				        <executions>
+				          <execution>
+				            <id>integration-tests</id>
+				            <goals>
+				              <goal>integration-test</goal>
+				              <goal>verify</goal>
+				            </goals>
+				            <configuration>
+				              <argLine>${failsafeArgLine}</argLine>
+				              <failIfNoTests>false</failIfNoTests>
+				              <includes>
+					            <include>**/ReaperIT.java</include>
+					          </includes>
+				            </configuration>
+				          </execution>
+				        </executions>
+        			</plugin>
+        		</plugins>
+        	</build>
         </profile>
         <profile>
             <id>build-ui</id>

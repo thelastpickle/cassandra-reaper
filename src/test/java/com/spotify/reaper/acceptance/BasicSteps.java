@@ -11,6 +11,7 @@ import com.spotify.reaper.SimpleReaperClient;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.resources.CommonTools;
+import com.spotify.reaper.resources.view.ClusterStatus;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
 import com.sun.jersey.api.client.ClientResponse;
@@ -77,6 +78,14 @@ public class BasicSteps {
     client = ReaperTestJettyRunner.getClient();
   }
 
+  public static void setupReaperIntegrationTestRunner() throws Exception {
+    LOG.info("setting up testing Reaper runner with {} seed hosts defined",
+             TestContext.TEST_CLUSTER_SEED_HOSTS.size());
+    AppContext context = new AppContext();    
+    ReaperTestJettyRunner.setup(context);
+    client = ReaperTestJettyRunner.getClient();
+  }
+  
   public void callAndExpect(String httpMethod, String callPath,
                             Optional<Map<String, String>> params, Response.Status expectedStatus,
                             Optional<String> expectedDataInResponseData) {
@@ -97,6 +106,13 @@ public class BasicSteps {
     callAndExpect("GET", "/ping", Optional.<Map<String, String>>absent(),
                   Response.Status.OK, Optional.<String>absent());
   }
+  
+  @Given("^a real reaper service is running$")
+  public void a_real_reaper_service_is_running() throws Throwable {
+    setupReaperIntegrationTestRunner();
+    callAndExpect("GET", "/ping", Optional.<Map<String, String>>absent(),
+                  Response.Status.OK, Optional.<String>absent());
+  }
 
   @Given("^cluster seed host \"([^\"]*)\" points to cluster with name \"([^\"]*)\"$")
   public void cluster_seed_host_points_to_cluster_with_name(String seedHost, String clusterName)
@@ -111,6 +127,16 @@ public class BasicSteps {
         Sets.newHashSet(CommonTools.COMMA_SEPARATED_LIST_SPLITTER.split(tablesListStr));
     TestContext.addClusterInfo(clusterName, keyspace, tables);
   }
+  
+  @Given("^ccm cluster \"([^\"]*)\" has keyspace \"([^\"]*)\" with tables \"([^\"]*)\"$")
+  public void ccm_cluster_has_keyspace_with_tables(String clusterName, String keyspace,
+                                               String tablesListStr) throws Throwable {
+    Set<String> tables =
+        Sets.newHashSet(CommonTools.COMMA_SEPARATED_LIST_SPLITTER.split(tablesListStr));
+    TestUtils.getInstance().createKeyspace(keyspace);
+    tables.stream().forEach(tableName -> TestUtils.getInstance().createTable(keyspace, tableName));
+    TestContext.addClusterInfo(clusterName, keyspace, tables);
+  }
 
   @Given("^that we are going to use \"([^\"]*)\" as cluster seed host$")
   public void that_we_are_going_to_use_as_cluster_seed_host(String seedHost) throws Throwable {
@@ -123,18 +149,44 @@ public class BasicSteps {
                   Optional.<Map<String, String>>absent(), Response.Status.NOT_FOUND,
                   Optional.<String>absent());
   }
+  
+  @And("^reaper has no cluster in storage$")
+  public void reaper_has_no_cluster_in_storage() throws Throwable {
+    ClientResponse response =
+        ReaperTestJettyRunner.callReaper("GET", "/cluster/",
+                  Optional.<Map<String, String>>absent());
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    String responseData = response.getEntity(String.class);
+    List<String> clusterNames = SimpleReaperClient.parseClusterNameListJSON(responseData);
+    assertEquals(clusterNames.size(), 0);
+  }
 
   @When("^an add-cluster request is made to reaper$")
   public void an_add_cluster_request_is_made_to_reaper() throws Throwable {
     Map<String, String> params = Maps.newHashMap();
     params.put("seedHost", TestContext.SEED_HOST);
-    callAndExpect("POST", "/cluster", Optional.of(params), Response.Status.CREATED,
-                  Optional.<String>absent());
+    /*callAndExpect("POST", "/cluster", Optional.of(params), Response.Status.CREATED,
+                  Optional.<String>absent());*/
+    
+    ClientResponse response =
+        ReaperTestJettyRunner.callReaper("POST", "/cluster", Optional.of(params));
+    assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
+    String responseData = response.getEntity(String.class);
+    Map<String, Object>  cluster = SimpleReaperClient.parseClusterStatusJSON(responseData);
+    TestContext.TEST_CLUSTER = (String) cluster.get("name");
+    
   }
 
   @Then("^reaper has a cluster called \"([^\"]*)\" in storage$")
   public void reaper_has_a_cluster_called_in_storage(String clusterName) throws Throwable {
     callAndExpect("GET", "/cluster/" + clusterName,
+                  Optional.<Map<String, String>>absent(), Response.Status.OK,
+                  Optional.<String>absent());
+  }
+  
+  @Then("^reaper has the last added cluster in storage$")
+  public void reaper_has_the_last_added_cluster_in_storage() throws Throwable {
+    callAndExpect("GET", "/cluster/" + TestContext.TEST_CLUSTER,
                   Optional.<Map<String, String>>absent(), Response.Status.OK,
                   Optional.<String>absent());
   }
@@ -151,6 +203,23 @@ public class BasicSteps {
       throws Throwable {
     Map<String, String> params = Maps.newHashMap();
     params.put("clusterName", clusterName);
+    params.put("keyspace", keyspace);
+    params.put("owner", TestContext.TEST_USER);
+    params.put("intensity", "0.9");
+    params.put("scheduleDaysBetween", "1");
+    ClientResponse response =
+        ReaperTestJettyRunner.callReaper("POST", "/repair_schedule", Optional.of(params));
+    assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
+    String responseData = response.getEntity(String.class);
+    RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
+    TestContext.LAST_MODIFIED_ID = schedule.getId();
+  }
+  
+  @When("^a new daily repair schedule is added for the last added cluster and keyspace \"([^\"]*)\"$")
+  public void a_new_daily_repair_schedule_is_added_for_the_last_added_cluster(String keyspace)
+      throws Throwable {
+    Map<String, String> params = Maps.newHashMap();
+    params.put("clusterName", TestContext.TEST_CLUSTER);
     params.put("keyspace", keyspace);
     params.put("owner", TestContext.TEST_USER);
     params.put("intensity", "0.9");
@@ -197,6 +266,15 @@ public class BasicSteps {
     LOG.info("Got " + schedules.size() + " schedules");
     assertEquals(repairAmount, schedules.size());
   }
+  
+  
+  @And("^reaper has (\\d+) scheduled repairs for the last added cluster$")
+  public void reaper_has_scheduled_repairs_for_the_last_added_cluster(int repairAmount)
+      throws Throwable {
+    List<RepairScheduleStatus> schedules = client.getRepairSchedulesForCluster(TestContext.TEST_CLUSTER);
+    LOG.info("Got " + schedules.size() + " schedules");
+    assertEquals(repairAmount, schedules.size());
+  }
 
   @When("^the last added schedule is deleted for cluster called \"([^\"]*)\"$")
   public void the_last_added_schedule_is_deleted_for_cluster_called(String clusterName)
@@ -214,15 +292,43 @@ public class BasicSteps {
                   Optional.of(params), Response.Status.OK, Optional.of("\"" + clusterName + "\""));
   }
 
+  @When("^the last added schedule is deleted for the last added cluster$")
+  public void the_last_added_schedule_is_deleted_for_the_last_added_cluster()
+      throws Throwable {
+    LOG.info("pause last added repair schedule with id: {}", TestContext.LAST_MODIFIED_ID);
+    Map<String, String> params = Maps.newHashMap();
+    params.put("state", "paused");
+    callAndExpect("PUT", "/repair_schedule/" + TestContext.LAST_MODIFIED_ID,
+                  Optional.of(params), Response.Status.OK, Optional.of("\"" + TestContext.TEST_CLUSTER + "\""));
+
+    LOG.info("delete last added repair schedule with id: {}", TestContext.LAST_MODIFIED_ID);
+    params.clear();
+    params.put("owner", TestContext.TEST_USER);
+    callAndExpect("DELETE", "/repair_schedule/" + TestContext.LAST_MODIFIED_ID,
+                  Optional.of(params), Response.Status.OK, Optional.of("\"" + TestContext.TEST_CLUSTER + "\""));
+  }
+
   @And("^deleting cluster called \"([^\"]*)\" fails$")
   public void deleting_cluster_called_fails(String clusterName) throws Throwable {
     callAndExpect("DELETE", "/cluster/" + clusterName,
                   EMPTY_PARAMS, Response.Status.FORBIDDEN, Optional.of("\"" + clusterName + "\""));
   }
-
+ 
+  @And("^deleting the last added cluster fails$")
+  public void deleting_the_last_added_cluster_fails() throws Throwable {
+    callAndExpect("DELETE", "/cluster/" + TestContext.TEST_CLUSTER,
+                  EMPTY_PARAMS, Response.Status.FORBIDDEN, Optional.of("\"" + TestContext.TEST_CLUSTER + "\""));
+  }
+  
   @And("^cluster called \"([^\"]*)\" is deleted$")
   public void cluster_called_is_deleted(String clusterName) throws Throwable {
     callAndExpect("DELETE", "/cluster/" + clusterName,
+        EMPTY_PARAMS, Response.Status.OK, Optional.<String>absent());
+  }
+  
+  @And("^the last added cluster is deleted$")
+  public void cluster_called_is_deleted() throws Throwable {
+    callAndExpect("DELETE", "/cluster/" + TestContext.TEST_CLUSTER,
         EMPTY_PARAMS, Response.Status.OK, Optional.<String>absent());
   }
 
@@ -232,12 +338,35 @@ public class BasicSteps {
                   Optional.<Map<String, String>>absent(), Response.Status.NOT_FOUND,
                   Optional.<String>absent());
   }
+  
+  
+  @Then("^reaper has no longer the last added cluster in storage$")
+  public void reaper_has_no_longer_the_last_added_cluster_in_storage() throws Throwable {
+    callAndExpect("GET", "/cluster/" + TestContext.TEST_CLUSTER,
+                  Optional.<Map<String, String>>absent(), Response.Status.NOT_FOUND,
+                  Optional.<String>absent());
+  }
 
   @And("^a new repair is added for \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
   public void a_new_repair_is_added_for_and_keyspace(String clusterName, String keyspace)
       throws Throwable {
     Map<String, String> params = Maps.newHashMap();
     params.put("clusterName", clusterName);
+    params.put("keyspace", keyspace);
+    params.put("owner", TestContext.TEST_USER);
+    ClientResponse response =
+        ReaperTestJettyRunner.callReaper("POST", "/repair_run", Optional.of(params));
+    assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
+    String responseData = response.getEntity(String.class);
+    RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
+    TestContext.LAST_MODIFIED_ID = run.getId();
+  }
+  
+  @When("^a new repair is added for the last added cluster and keyspace \"([^\"]*)\"$")
+  public void a_new_repair_is_added_for_the_last_added_cluster_and_keyspace(String keyspace)
+      throws Throwable {
+    Map<String, String> params = Maps.newHashMap();
+    params.put("clusterName", TestContext.TEST_CLUSTER);
     params.put("keyspace", keyspace);
     params.put("owner", TestContext.TEST_USER);
     ClientResponse response =
@@ -263,6 +392,22 @@ public class BasicSteps {
     RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
     TestContext.LAST_MODIFIED_ID = run.getId();
   }
+  
+  @When("^a new incremental repair is added for the last added cluster and keyspace \"([^\"]*)\"$")
+  public void a_new_incremental_repair_is_added_for_the_last_added_cluster_and_keyspace(String keyspace)
+      throws Throwable {
+    Map<String, String> params = Maps.newHashMap();
+    params.put("clusterName", TestContext.TEST_CLUSTER);
+    params.put("keyspace", keyspace);
+    params.put("owner", TestContext.TEST_USER);
+    params.put("incrementalRepair", Boolean.TRUE.toString());
+    ClientResponse response =
+        ReaperTestJettyRunner.callReaper("POST", "/repair_run", Optional.of(params));
+    assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
+    String responseData = response.getEntity(String.class);
+    RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
+    TestContext.LAST_MODIFIED_ID = run.getId();
+  }
 
   @Then("^reaper has (\\d+) repairs for cluster called \"([^\"]*)\"$")
   public void reaper_has_repairs_for_cluster_called(int runAmount, String clusterName)
@@ -275,15 +420,27 @@ public class BasicSteps {
     List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
     assertEquals(runAmount, runs.size());
   }
+  
+  @Then("^reaper has (\\d+) repairs for the last added cluster$")
+  public void reaper_has_repairs_for_the_last_added_cluster(int runAmount)
+      throws Throwable {
+    ClientResponse response =
+        ReaperTestJettyRunner.callReaper("GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER,
+                                         EMPTY_PARAMS);
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    String responseData = response.getEntity(String.class);
+    List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
+    assertEquals(runAmount, runs.size());
+  }
 
-  @When("^the last added repair run is deleted for cluster called \"([^\"]*)\"$")
-  public void the_last_added_repair_run_is_deleted_for_cluster_called(String clusterName)
+  @When("^the last added repair run is deleted$")
+  public void the_last_added_repair_run_is_deleted_for_cluster_called()
       throws Throwable {
     LOG.info("delete last added repair run with id: {}", TestContext.LAST_MODIFIED_ID);
     Map<String, String> params = Maps.newHashMap();
     params.put("owner", TestContext.TEST_USER);
     callAndExpect("DELETE", "/repair_run/" + TestContext.LAST_MODIFIED_ID,
-                  Optional.of(params), Response.Status.OK, Optional.of("\"" + clusterName + "\""));
+                  Optional.of(params), Response.Status.OK, Optional.of("\"" + TestContext.TEST_CLUSTER + "\""));
   }
   
  @When("^a new daily repair schedule is added that already exists for \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
@@ -299,4 +456,57 @@ public class BasicSteps {
         ReaperTestJettyRunner.callReaper("POST", "/repair_schedule", Optional.of(params));
     assertEquals(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), response.getStatus());
   }
+ 
+ @And("^the last added repair is activated$")
+ public void the_last_added_repair_is_activated_for()
+     throws Throwable {
+   Map<String, String> params = Maps.newHashMap();
+   ClientResponse response =
+       ReaperTestJettyRunner.callReaper("PUT", "/repair_run/" + TestContext.LAST_MODIFIED_ID + "?state=RUNNING", Optional.of(params));
+   assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+   String responseData = response.getEntity(String.class);
+   RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
+   TestContext.LAST_MODIFIED_ID = run.getId();
+ }
+ 
+ @When("^the last added repair is stopped$")
+ public void the_last_added_repair_is_stopped_for()
+     throws Throwable {
+   Map<String, String> params = Maps.newHashMap();
+   ClientResponse response =
+       ReaperTestJettyRunner.callReaper("PUT", "/repair_run/" + TestContext.LAST_MODIFIED_ID + "?state=PAUSED", Optional.of(params));
+   assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+   String responseData = response.getEntity(String.class);
+   RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
+   TestContext.LAST_MODIFIED_ID = run.getId();
+ }
+ 
+ @And("^we wait for (\\d+) seconds$")
+ public void we_wait_for(int sleepTime)
+     throws Throwable {
+   LOG.info("Sleeping for " + sleepTime + "s...");
+   Thread.sleep(sleepTime * 1000);
+ }
+ 
+ @And("^we wait for at least (\\d+) segments to be repaired$")
+ public void we_wait_for_at_least_segments_to_be_repaired(int nbSegmentsToBeRepaired)
+     throws Throwable {
+   int repairedSegments = 0;
+   int i = 0;
+   
+   while(repairedSegments<nbSegmentsToBeRepaired && i<60){
+     Thread.sleep(10000);
+     ClientResponse response =
+         ReaperTestJettyRunner.callReaper("GET", "/repair_run/" + TestContext.LAST_MODIFIED_ID,
+                                          EMPTY_PARAMS);
+     assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+     String responseData = response.getEntity(String.class);
+     RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
+     i++;
+     repairedSegments = run.getSegmentsRepaired();
+   }
+   
+   assertTrue(repairedSegments >= nbSegmentsToBeRepaired);
+ }
+ 
 }

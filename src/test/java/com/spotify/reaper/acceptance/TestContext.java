@@ -12,6 +12,7 @@ public class TestContext {
 
   public static  String TEST_USER = "test_user";
   public static String SEED_HOST;
+  public static String TEST_CLUSTER;
 
   /* Used for targeting an object accessed in last test step. */
   public static Long LAST_MODIFIED_ID;

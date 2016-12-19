@@ -28,6 +28,11 @@ server:
       port: 8084
       bindHost: 127.0.0.1
 
+jmxPorts:
+  127.0.0.1: 7100
+  127.0.0.2: 7200
+  127.0.0.3: 7300
+
 # database section will be ignored if storageType is set to "memory"
 database:
   # the name of your JDBC driver

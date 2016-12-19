@@ -26,10 +26,10 @@ storageType: memory
 enableCrossOrigin: true
 
 # custom jmx port mappings that will be used instead of the default port for specified hosts (optional)
-#jmxPorts:
-#  127.0.0.1: 7100
-#  127.0.0.2: 7200
-#  127.0.0.3: 7300
+jmxPorts:
+  127.0.0.1: 7100
+  127.0.0.2: 7200
+  127.0.0.3: 7300
 
 # Use following credential for JMX authentication
 #jmxAuth:
