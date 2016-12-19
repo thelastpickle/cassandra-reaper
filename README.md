@@ -1,6 +1,8 @@
 Reaper for Apache Cassandra
 ================
 
+[![Build Status](https://travis-ci.org/thelastpickle/cassandra-reaper.svg?branch=master)](https://travis-ci.org/thelastpickle/cassandra-reaper)
+
 *Note: This repo is a fork from the original Reaper project, created by the awesome folks at Spotify.  The WebUI has been merged in with support for incremental repairs added.* 
 
 Reaper is a centralized, stateful, and highly configurable tool for running Apache Cassandra
