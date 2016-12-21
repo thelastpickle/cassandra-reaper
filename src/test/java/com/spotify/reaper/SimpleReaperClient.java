@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.spotify.reaper.resources.view.ClusterStatus;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
 import com.sun.jersey.api.client.Client;
@@ -93,6 +94,16 @@ public class SimpleReaperClient {
 
   public static RepairRunStatus parseRepairRunStatusJSON(String json) {
     return parseJSON(json, new TypeReference<RepairRunStatus>() {
+    });
+  }
+  
+  public static Map<String, Object> parseClusterStatusJSON(String json) {
+    return parseJSON(json, new TypeReference<Map<String, Object> >() {
+    });
+  }
+  
+  public static List<String> parseClusterNameListJSON(String json) {
+    return parseJSON(json, new TypeReference<List<String> >() {
     });
   }
 

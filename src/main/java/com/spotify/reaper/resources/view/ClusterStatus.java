@@ -37,4 +37,5 @@ public class ClusterStatus {
     this.repairRuns = repairRuns;
     this.repairSchedules = repairSchedules;
   }
+  
 }

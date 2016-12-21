@@ -2,8 +2,36 @@ language: java
 jdk:
 - oraclejdk8
 install: true
+env:
+  global:
+    - LOCAL_JMX=no
+  matrix:
+    - CASSANDRA_VERSION=2.1.16
+    - CASSANDRA_VERSION=2.2.8
+    - CASSANDRA_VERSION=3.0.9
+    - CASSANDRA_VERSION=3.9
+
+before_install:
+  - sudo apt-get install libjna-java > /dev/null
+  - sudo apt-get install python-support > /dev/null
+  - sudo easy_install pyYaml > /dev/null
+  - sudo easy_install pip > /dev/null
+  - sudo pip install ccm > /dev/null
+
+install:
+  - ccm create test -v $CASSANDRA_VERSION > /dev/null
+  - ccm populate -n 3 > /dev/null
+  - sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/travis/.ccm/test/node1/conf/cassandra-env.sh
+  - sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/travis/.ccm/test/node2/conf/cassandra-env.sh
+  - sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/travis/.ccm/test/node3/conf/cassandra-env.sh
+  - ccm start > /dev/null
+
+#before_script:
+#  - npm install -g bower
 script:
-  - mvn clean package
-  - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then mvn sonar:sonar -Dsonar.host.url=https://sonarqube.com -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=tlp-cassandra-reaper -Dsonar.github.oauth=$GITHUB_TOKEN -Dsonar.github.repository=thelastpickle/cassandra-reaper -Dsonar.github.pullRequest=$TRAVIS_PULL_REQUEST -Dsonar.analysis.mode=preview; fi'
-  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_BRANCH" = "master" ]; then mvn sonar:sonar -Dsonar.host.url=https://sonarqube.com -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=tlp-cassandra-reaper -Dsonar.github.oauth=$GITHUB_TOKEN -Dsonar.github.repository=thelastpickle/cassandra-reaper; fi'
-  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_BRANCH" != "master" ]; then mvn sonar:sonar -Dsonar.host.url=https://sonarqube.com -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=tlp-cassandra-reaper -Dsonar.github.oauth=$GITHUB_TOKEN -Dsonar.github.repository=thelastpickle/cassandra-reaper  -Dsonar.analysis.mode=preview; fi'
+  - mvn clean package | grep -v "Download"
+  - mvn install -Pintegration-tests | grep -v "Download"
+  # We only run the sonar analysis once, so we'll pick the build with Cassandra 2.1.16
+  - 'if [ "$TRAVIS_PULL_REQUEST" != "false" -a "$CASSANDRA_VERSION" = "2.1.16" ]; then mvn sonar:sonar -Dsonar.host.url=https://sonarqube.com -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=tlp-cassandra-reaper -Dsonar.github.oauth=$GITHUB_TOKEN -Dsonar.github.repository=thelastpickle/cassandra-reaper -Dsonar.github.pullRequest=$TRAVIS_PULL_REQUEST -Dsonar.analysis.mode=preview; fi'
+  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_BRANCH" = "master" -a "$CASSANDRA_VERSION" = "2.1.16" ]; then mvn sonar:sonar -Dsonar.host.url=https://sonarqube.com -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=tlp-cassandra-reaper -Dsonar.github.oauth=$GITHUB_TOKEN -Dsonar.github.repository=thelastpickle/cassandra-reaper; fi'
+  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_BRANCH" != "master" -a "$CASSANDRA_VERSION" = "2.1.16" ]; then mvn sonar:sonar -Dsonar.host.url=https://sonarqube.com -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=tlp-cassandra-reaper -Dsonar.github.oauth=$GITHUB_TOKEN -Dsonar.github.repository=thelastpickle/cassandra-reaper  -Dsonar.analysis.mode=preview; fi'
