@@ -39,6 +39,10 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static org.awaitility.Awaitility.*;
+import static org.awaitility.Duration.*;
+import static java.util.concurrent.TimeUnit.*;
+
 /**
  * Basic acceptance test (Cucumber) steps.
  */
@@ -481,32 +485,19 @@ public class BasicSteps {
    TestContext.LAST_MODIFIED_ID = run.getId();
  }
  
- @And("^we wait for (\\d+) seconds$")
- public void we_wait_for(int sleepTime)
-     throws Throwable {
-   LOG.info("Sleeping for " + sleepTime + "s...");
-   Thread.sleep(sleepTime * 1000);
- }
- 
  @And("^we wait for at least (\\d+) segments to be repaired$")
  public void we_wait_for_at_least_segments_to_be_repaired(int nbSegmentsToBeRepaired)
-     throws Throwable {
-   int repairedSegments = 0;
-   int i = 0;
-   
-   while(repairedSegments<nbSegmentsToBeRepaired && i<60){
-     Thread.sleep(10000);
+     throws Throwable {   
+   await().with().pollInterval(10, SECONDS).atMost(2, MINUTES).until(() -> 
+   {
      ClientResponse response =
          ReaperTestJettyRunner.callReaper("GET", "/repair_run/" + TestContext.LAST_MODIFIED_ID,
                                           EMPTY_PARAMS);
      assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
      String responseData = response.getEntity(String.class);
      RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
-     i++;
-     repairedSegments = run.getSegmentsRepaired();
-   }
-   
-   assertTrue(repairedSegments >= nbSegmentsToBeRepaired);
+     return nbSegmentsToBeRepaired == run.getSegmentsRepaired();
+   });   
  }
  
 }
