@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -367,7 +368,11 @@ public class CassandraStorage implements IStorage {
 
   @Override
   public boolean updateRepairSegment(RepairSegment newRepairSegment) {
-    session.executeAsync(insertRepairSegmentPrepStmt.bind(newRepairSegment.getId(), newRepairSegment.getRepairUnitId(), newRepairSegment.getRunId(), newRepairSegment.getStartToken(), newRepairSegment.getEndToken(), newRepairSegment.getState().ordinal(), newRepairSegment.getCoordinatorHost(), newRepairSegment.getStartTime().toDate(), newRepairSegment.getEndTime().toDate(), newRepairSegment.getFailCount()));
+    Date startTime = null;
+    if (newRepairSegment.getStartTime() != null) {
+       startTime = newRepairSegment.getStartTime().toDate();
+    }
+    session.executeAsync(insertRepairSegmentPrepStmt.bind(newRepairSegment.getId(), newRepairSegment.getRepairUnitId(), newRepairSegment.getRunId(), newRepairSegment.getStartToken(), newRepairSegment.getEndToken(), newRepairSegment.getState().ordinal(), newRepairSegment.getCoordinatorHost(), startTime, newRepairSegment.getEndTime().toDate(), newRepairSegment.getFailCount()));
     return true;
   }
 
