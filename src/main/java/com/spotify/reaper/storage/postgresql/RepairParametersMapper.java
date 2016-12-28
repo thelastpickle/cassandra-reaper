@@ -31,8 +31,14 @@ public class RepairParametersMapper implements ResultSetMapper<RepairParameters>
     RingRange range = new RingRange(r.getBigDecimal("start_token").toBigInteger(),
                                     r.getBigDecimal("end_token").toBigInteger());
     String[] columnFamilies = (String[]) r.getArray("column_families").getArray();
-    RepairParallelism repairParallelism =
-        RepairParallelism.valueOf(r.getString("repair_parallelism"));
+
+    String repairParallelismStr = r.getString("repair_parallelism");
+    if (repairParallelismStr != null)
+    {
+      repairParallelismStr = repairParallelismStr.toUpperCase();
+    }
+    RepairParallelism repairParallelism = RepairParallelism.fromName(repairParallelismStr);
+
     return new RepairParameters(range,
                                 r.getString("keyspace_name"),
                                 Sets.newHashSet(columnFamilies),
