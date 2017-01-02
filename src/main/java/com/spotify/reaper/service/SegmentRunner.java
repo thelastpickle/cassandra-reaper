@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,6 +67,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final RepairRunner repairRunner;
   private final RepairUnit repairUnit;
   private int commandId;
+  private AtomicBoolean timedOut;
 
   // Caching all active SegmentRunners.
   @VisibleForTesting
@@ -83,6 +85,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     this.clusterName = clusterName;
     this.repairUnit = repairUnit;
     this.repairRunner = repairRunner;
+    this.timedOut = new AtomicBoolean(false);
   }
 
   @Override
@@ -216,6 +219,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
           if (resultingSegment.getState() == RepairSegment.State.RUNNING) {
             LOG.info("Repair command {} on segment {} has been cancelled while running", commandId,
                 segmentId);
+            timedOut.set(true);
             abort(resultingSegment, coordinator);
           } else if (resultingSegment.getState() == RepairSegment.State.DONE) {
             LOG.debug("Repair segment with id '{}' was repaired in {} seconds",
@@ -344,12 +348,18 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
           break;
 
         case SESSION_SUCCESS:
-          LOG.debug("repair session succeeded for segment with id '{}' and repair number '{}'",
-              segmentId, repairNumber);
-          context.storage.updateRepairSegment(currentSegment.with()
-              .state(RepairSegment.State.DONE)
-              .endTime(DateTime.now())
-              .build(segmentId));
+          if (timedOut.get()) {
+            LOG.debug("Got SESSION_SUCCESS for segment with id '{}' and repair number '{}', " +
+                      "but it had already timed out",
+                    segmentId, repairNumber);
+          } else {
+            LOG.debug("repair session succeeded for segment with id '{}' and repair number '{}'",
+                    segmentId, repairNumber);
+            context.storage.updateRepairSegment(currentSegment.with()
+                    .state(RepairSegment.State.DONE)
+                    .endTime(DateTime.now())
+                    .build(segmentId));
+          }
           break;
 
         case SESSION_FAILED:
