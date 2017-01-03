@@ -207,6 +207,9 @@ public class RepairRunnerTest {
 
     assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
+
+    final Semaphore mutex = new Semaphore(0);
+
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
       public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host)
@@ -231,6 +234,7 @@ public class RepairRunnerTest {
                     handler.get().handle(1, ActiveRepairService.Status.STARTED, null);
                     handler.get().handle(1, ActiveRepairService.Status.SESSION_SUCCESS, null);
                     handler.get().handle(1, ActiveRepairService.Status.FINISHED, null);
+                    mutex.release();
                   }
                 }.start();
                 return 1;
@@ -244,9 +248,11 @@ public class RepairRunnerTest {
     context.repairManager.resumeRunningRepairRuns(context);
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
     storage.updateRepairRun(run.with().runState(RepairRun.RunState.RUNNING).build(RUN_ID));
+
+    assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(SEGMENT_ID).get().getState());
     context.repairManager.resumeRunningRepairRuns(context);
-    Thread.sleep(200);
-    assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
+    mutex.acquire(2);  // There are 2 segments, so we wait for mutex.release() to be called twice.
+    assertEquals(RepairSegment.State.DONE, storage.getRepairSegment(SEGMENT_ID).get().getState());
   }
 
   @Test
