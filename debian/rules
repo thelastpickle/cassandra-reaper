@@ -9,15 +9,17 @@ SUREFIRE = -Dsurefire.useFile=false
 %:
 	dh $@
 
-build:
-	dh build --until dh_auto_build
-	$(MVN) $(SUREFIRE) package
-	dh build --remaining
+# This is just a java application so we only need to call maven.  Doing this
+# because there is a Makefile in this project, however it is actually calling
+# the debian programs to build it, so we get into a loop if we go and use it to
+# try to build here.
+override_dh_auto_build:
+	$(MVN) $(SUREFIRE) clean package
 
-binary:
-	dh binary --until dh_fixperms
-	dh binary --remaining
+override_dh_auto_test:
+
+override_dh_auto_install:
 
 clean:
-	dh clean
+	dh_clean
 	$(MVN) clean
