@@ -5,12 +5,12 @@ Maintainer: Bjorn Hegerfors <bj0rn@spotify.com>
 Uploaders: Hannu Varjoranta <hannu.varjoranta@iki.fi>,
            Jimmy Mardell <yarin@spotify.com>,
            Radovan Zvoncek <zvo@spotify.com>
-Build-Depends: debhelper (>= 7), java7-jdk, maven
+Build-Depends: debhelper (>= 7), default-jdk (>= 1.8), maven
 Standards-Version: 3.7.2
 
 Package: cassandra-reaper
 Architecture: all
-Depends: java7-runtime
+Depends: default-jre (>= 1.8)
 Description: Software to run automated (anti-entropy) repairs of Cassandra cluster data
 
 Package: cassandra-reaper-cli
