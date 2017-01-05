@@ -5,7 +5,7 @@ Maintainer: Bjorn Hegerfors <bj0rn@spotify.com>
 Uploaders: Hannu Varjoranta <hannu.varjoranta@iki.fi>,
            Jimmy Mardell <yarin@spotify.com>,
            Radovan Zvoncek <zvo@spotify.com>
-Build-Depends: debhelper (>= 7), default-jdk (>= 1.8), maven
+Build-Depends: debhelper (>= 8), default-jdk (>= 1.8), maven
 Standards-Version: 3.7.2
 
 Package: cassandra-reaper
