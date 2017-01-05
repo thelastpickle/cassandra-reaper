@@ -214,8 +214,8 @@ public interface IStoragePostgreSQL {
           + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
           + "WHERE cluster_name = :clusterName";
 
-  @SqlQuery("SELECT version()")
-  String getVersion();
+  @SqlQuery("SELECT CURRENT_TIMESTAMP")
+  String getCurrentDate();
 
   @SqlQuery(SQL_GET_CLUSTER)
   @Mapper(ClusterMapper.class)

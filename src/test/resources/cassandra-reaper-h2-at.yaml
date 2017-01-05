@@ -1,0 +1,47 @@
+# Cassandra Reaper Configuration for Acceptance Tests.
+#
+segmentCount: 200
+repairParallelism: SEQUENTIAL
+repairIntensity: 0.95
+scheduleDaysBetween: 7
+repairRunThreadCount: 15
+hangingRepairTimeoutMins: 1
+storageType: database
+incrementalRepair: false
+
+logging:
+  level: DEBUG
+  loggers:
+    io.dropwizard: INFO
+    org.eclipse.jetty: INFO
+  appenders:
+    - type: console
+
+server:
+  type: default
+  applicationConnectors:
+    - type: http
+      port: 8083
+      bindHost: 127.0.0.1
+  adminConnectors:
+    - type: http
+      port: 8084
+      bindHost: 127.0.0.1
+
+jmxPorts:
+  127.0.0.1: 7100
+  127.0.0.2: 7200
+  127.0.0.3: 7300
+
+# database section will be ignored if storageType is set to "memory"
+database:
+  # H2 JDBC settings
+  driverClass: org.h2.Driver
+  url: jdbc:h2:mem:reaper-db;MODE=PostgreSQL
+  user:
+  password:
+  
+cassandra:
+  clusterName: "test"
+  contactPoints: ["127.0.0.1","127.0.0.2"]
+  keyspace: reaper_db

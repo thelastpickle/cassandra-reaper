@@ -37,9 +37,9 @@ public class ReaperTestJettyRunner {
   private static ReaperTestJettyRunner runnerInstance;
   private static SimpleReaperClient reaperClientInstance;
 
-  public static void setup(AppContext testContext) throws Exception {
+  public static ReaperTestJettyRunner setup(AppContext testContext, String yamlConfigFile) throws Exception {
     if (runnerInstance == null) {
-      String testConfigPath = Resources.getResource("cassandra-reaper-at.yaml").getPath();
+      String testConfigPath = Resources.getResource(yamlConfigFile).getPath();
       LOG.info("initializing ReaperTestJettyRunner with config in path: " + testConfigPath);
       runnerInstance = new ReaperTestJettyRunner(testConfigPath, testContext);
       runnerInstance.start();
@@ -53,6 +53,8 @@ public class ReaperTestJettyRunner {
         }
       });
     }
+    
+    return runnerInstance;
   }
 
   public static ClientResponse callReaper(String httpMethod, String urlPath,

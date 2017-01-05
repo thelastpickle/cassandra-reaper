@@ -263,10 +263,12 @@
                               <goal>verify</goal>
                             </goals>
                             <configuration>
+                              <forkCount>1</forkCount>
+                              <reuseForks>false</reuseForks>
                               <argLine>${failsafeArgLine}</argLine>
                               <failIfNoTests>false</failIfNoTests>
                               <includes>
-                                <include>**/ReaperIT.java</include>
+                                <include>**/*IT.java</include>
                               </includes>
                             </configuration>
                           </execution>

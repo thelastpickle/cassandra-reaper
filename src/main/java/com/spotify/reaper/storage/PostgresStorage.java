@@ -97,14 +97,13 @@ public class PostgresStorage implements IStorage {
 
   @Override
   public boolean isStorageConnected() {
-    String postgresVersion = null;
+    String currentDate = null;
     if (null != jdbi) {
       try (Handle h = jdbi.open()) {
-        postgresVersion = getPostgresStorage(h).getVersion();
-        LOG.debug("connected postgresql version: {}", postgresVersion);
+        currentDate = getPostgresStorage(h).getCurrentDate();        
       }
     }
-    return null != postgresVersion && !postgresVersion.trim().isEmpty();
+    return null != currentDate && !currentDate.trim().isEmpty();
   }
 
   @Override
