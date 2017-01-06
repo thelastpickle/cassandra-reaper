@@ -18,12 +18,20 @@ import com.spotify.reaper.ReaperApplicationConfiguration.JmxCredentials;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class JmxConnectionFactory {
 
+  private static final Logger LOG = LoggerFactory.getLogger(JmxConnectionFactory.class);
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
 
@@ -51,7 +59,20 @@ public class JmxConnectionFactory {
     if (hosts == null || hosts.isEmpty()) {
       throw new ReaperException("no hosts given for connectAny");
     }
-    return connect(handler, hosts.iterator().next());
+    List<String> hostList = new ArrayList<String>(hosts);
+    Collections.shuffle(hostList);
+    Iterator<String> hostIterator = hostList.iterator();
+    
+    while (hostIterator.hasNext()) {
+      try {
+        String host = hostIterator.next();
+        return connect(handler, host);
+      } catch(Exception e) {
+        LOG.debug("Unreachable host", e);
+      }
+    }
+    
+    throw new ReaperException("no host could be reached through JMX");
   }
 
   public final JmxProxy connectAny(Cluster cluster)
