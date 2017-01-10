@@ -13,9 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-if [ -e "target/cassandra-reaper-0.3.0-SNAPSHOT.jar" ]; then
+REAPER_JAR=$(ls -1 target/cassandra-reaper-*.jar)
+
+if [ $REAPER_JAR ]; then
     echo "Using reaper in target"
-    CLASS_PATH="target/cassandra-reaper-0.3.0-SNAPSHOT.jar"
+    CLASS_PATH=$REAPER_JAR
 fi
 
 if [ -z "$CLASS_PATH" ]; then
