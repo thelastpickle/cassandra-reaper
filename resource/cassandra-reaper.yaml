@@ -33,11 +33,11 @@ server:
   requestLog:
     appenders: []
 
-#database:
-#  driverClass: org.postgresql.Driver
-#  user: postgres
-#  password: postgres
-#  url: jdbc:postgresql://127.0.0.1/reaper
+database:
+  driverClass: org.postgresql.Driver
+  user: postgres
+  password: postgres
+  url: jdbc:postgresql://127.0.0.1/reaper
 
 cassandra:
   clusterName: "cassandra-eresus-central-test"
