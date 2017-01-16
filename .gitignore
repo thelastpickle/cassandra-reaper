@@ -18,3 +18,4 @@ bin/
 .project
 build/
 *.deb
+/scm-source.json
