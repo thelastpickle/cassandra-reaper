@@ -59,7 +59,7 @@ public class JmxConnectionFactory {
     if (hosts == null || hosts.isEmpty()) {
       throw new ReaperException("no hosts given for connectAny");
     }
-    List<String> hostList = new ArrayList<String>(hosts);
+    List<String> hostList = new ArrayList<>(hosts);
     Collections.shuffle(hostList);
     Iterator<String> hostIterator = hostList.iterator();
     
