@@ -407,17 +407,26 @@ public class CassandraStorage implements IStorage {
       segmentsFuture.add(session.executeAsync(getRepairSegmentPrepStmt.bind(segmentIdResult.getLong("segment_id"))));
       i++;
       if(i%100==0 || segmentsIdResultSet.isFullyFetched()) {
-        for(ResultSetFuture segmentResult:segmentsFuture) {
-          Row segmentRow = segmentResult.getUninterruptibly().one();
-          if(segmentRow!=null){
-            segments.add(createRepairSegmentFromRow(segmentRow));
-          }
-        }    
+        segments.addAll(fetchRepairSegmentFromFutures(segmentsFuture));
         segmentsFuture = Lists.newArrayList();
       }
     }
 
     return segments;
+  }
+  
+  private Collection<RepairSegment> fetchRepairSegmentFromFutures(List<ResultSetFuture> segmentsFuture){
+    Collection<RepairSegment> segments = Lists.newArrayList();
+    
+    for(ResultSetFuture segmentResult:segmentsFuture) {
+      Row segmentRow = segmentResult.getUninterruptibly().one();
+      if(segmentRow!=null){
+        segments.add(createRepairSegmentFromRow(segmentRow));
+      }
+    }    
+    
+    return segments;
+    
   }
 
   private RepairSegment createRepairSegmentFromRow(Row segmentRow){
