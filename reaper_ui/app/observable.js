@@ -3,7 +3,7 @@ import $ from "jquery"
 
 
 // interval to use for polling entity lists
-const POLLING_INTERVAL = 2000;
+const POLLING_INTERVAL = 10000;
 
 // use reaper server url for ajax calls if running on dev server (will be run in iframe)
 const isDev = window != window.top;
