@@ -321,7 +321,6 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private boolean repairHasSegmentRunning(long repairRunId) {
 	  Collection<RepairSegment> segments = context.storage.getRepairSegmentsForRun(repairRunId);
-	  System.out.println(segments);
 	  for(RepairSegment segment:segments) {
 		  if(segment.getState() == RepairSegment.State.RUNNING) {
 			  LOG.info("segment '{}' is running on host '{}' and with a fail count of {}",

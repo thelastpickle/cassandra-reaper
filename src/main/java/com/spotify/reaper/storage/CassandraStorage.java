@@ -104,7 +104,7 @@ public class CassandraStorage implements IStorage {
     deleteRepairRunByClusterPrepStmt = session.prepare("DELETE FROM repair_run_by_cluster WHERE id = ? and cluster_name = ?");
     deleteRepairRunByUnitPrepStmt = session.prepare("DELETE FROM repair_run_by_unit WHERE id = ? and repair_unit_id= ?");
     deleteRepairSegmentPrepStmt = session.prepare("DELETE FROM repair_segment WHERE id = ?");
-    deleteRepairSegmentByRunId = session.prepare("DELETE FROM repair_segment_by_run_id WHERE run_id = ? and segment_id = ?");
+    deleteRepairSegmentByRunId = session.prepare("DELETE FROM repair_segment_by_run_id WHERE run_id = ?");
     insertRepairUnitPrepStmt = session.prepare("INSERT INTO repair_unit(id, cluster_name, keyspace_name, column_families, incremental_repair) VALUES(?, ?, ?, ?, ?)");
     getRepairUnitPrepStmt = session.prepare("SELECT * FROM repair_unit WHERE id = ?");
     insertRepairSegmentPrepStmt = session.prepare("INSERT INTO repair_segment(id, repair_unit_id, run_id, start_token, end_token, state, coordinator_host, start_time, end_time, fail_count) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -297,9 +297,9 @@ public class CassandraStorage implements IStorage {
     Collection<RepairSegment> segments = getRepairSegmentsForRun(id);
     int i=0;
     final int nbSegments = segments.size();
+    futures.add(session.executeAsync(deleteRepairSegmentByRunId.bind(id)));
     for(RepairSegment segment:segments){
       futures.add(session.executeAsync(deleteRepairSegmentPrepStmt.bind(segment.getId())));
-      futures.add(session.executeAsync(deleteRepairSegmentByRunId.bind(id, segment.getId())));
       i++;
       if(i%100==0 || i==nbSegments-1){
         futures.stream().forEach(f -> f.getUninterruptibly());
@@ -347,20 +347,27 @@ public class CassandraStorage implements IStorage {
   @Override
   public void addRepairSegments(Collection<com.spotify.reaper.core.RepairSegment.Builder> newSegments, long runId) {
     List<ResultSetFuture> insertFutures = Lists.<ResultSetFuture>newArrayList();
+    BatchStatement batch = new BatchStatement();
     for(com.spotify.reaper.core.RepairSegment.Builder builder:newSegments){
       RepairSegment segment = builder.build(getNewRepairId("repair_segment"));
       insertFutures.add(session.executeAsync(insertRepairSegmentPrepStmt.bind(segment.getId(), segment.getRepairUnitId(), segment.getRunId(), segment.getStartToken(), segment.getEndToken(), segment.getState().ordinal(), segment.getCoordinatorHost(), segment.getStartTime(), segment.getEndTime(), segment.getFailCount())));
-      insertFutures.add(session.executeAsync(insertRepairSegmentByRunPrepStmt.bind(segment.getRunId(), segment.getId())));
+      batch.add(insertRepairSegmentByRunPrepStmt.bind(segment.getRunId(), segment.getId()));
       if(insertFutures.size()%100==0){
         // cluster ddos protection
+        session.execute(batch);
+        batch.clear();
         for(ResultSetFuture insertFuture:insertFutures){
           insertFuture.getUninterruptibly();
         }
-        insertFutures = Lists.<ResultSetFuture>newArrayList();
+        insertFutures = Lists.newArrayList();
       }
     }
 
     // Wait for last queries to ack
+    if(batch.size()>0) {
+      session.execute(batch);
+    }
+    
     for(ResultSetFuture insertFuture:insertFutures){
       insertFuture.getUninterruptibly();
     }
@@ -389,25 +396,37 @@ public class CassandraStorage implements IStorage {
 
   @Override
   public Collection<RepairSegment> getRepairSegmentsForRun(long runId) {
-    List<ResultSetFuture> segmentsFuture = Lists.<ResultSetFuture>newArrayList();
-    Collection<RepairSegment> segments = Lists.<RepairSegment>newArrayList();
+    List<ResultSetFuture> segmentsFuture = Lists.newArrayList();
+    Collection<RepairSegment> segments = Lists.newArrayList();
 
     // First gather segments ids
     ResultSet segmentsIdResultSet = session.execute(getRepairSegmentByRunIdPrepStmt.bind(runId));
-    for(Row segmentIdResult:segmentsIdResultSet){
+    int i=0;
+    for(Row segmentIdResult:segmentsIdResultSet) {
       // Then get segments by id
       segmentsFuture.add(session.executeAsync(getRepairSegmentPrepStmt.bind(segmentIdResult.getLong("segment_id"))));
-
-      for(ResultSetFuture segmentResult:segmentsFuture){
-        Row segmentRow = segmentResult.getUninterruptibly().one();
-        if(segmentRow!=null){
-          segments.add(createRepairSegmentFromRow(segmentRow));
-        }
+      i++;
+      if(i%100==0 || segmentsIdResultSet.isFullyFetched()) {
+        segments.addAll(fetchRepairSegmentFromFutures(segmentsFuture));
+        segmentsFuture = Lists.newArrayList();
       }
-
     }
 
     return segments;
+  }
+  
+  private Collection<RepairSegment> fetchRepairSegmentFromFutures(List<ResultSetFuture> segmentsFuture){
+    Collection<RepairSegment> segments = Lists.newArrayList();
+    
+    for(ResultSetFuture segmentResult:segmentsFuture) {
+      Row segmentRow = segmentResult.getUninterruptibly().one();
+      if(segmentRow!=null){
+        segments.add(createRepairSegmentFromRow(segmentRow));
+      }
+    }    
+    
+    return segments;
+    
   }
 
   private RepairSegment createRepairSegmentFromRow(Row segmentRow){
@@ -474,8 +493,6 @@ public class CassandraStorage implements IStorage {
         foundSegments.add(seg);
       }
     }
-
-    LOG.debug("found segments with state {} {} {}", segmentState.toString(), foundSegments.size(), foundSegments.size()>0?foundSegments.iterator().next().getId():0);
 
     return foundSegments;
   }
