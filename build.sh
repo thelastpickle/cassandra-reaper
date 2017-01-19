@@ -9,4 +9,5 @@ scm-source
 grep -v -e "locally modified" scm-source.json
 
 docker build . -t $TAG
+pierone login
 docker push $TAG
