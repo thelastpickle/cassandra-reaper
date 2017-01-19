@@ -20,3 +20,4 @@ build/
 *.deb
 /scm-source.json
 reaper_ui/node_modules/
+/tmp/
