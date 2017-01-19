@@ -12,7 +12,7 @@ enableCrossOrigin: true
 incrementalRepair: false
 
 logging:
-  level: INFO
+  level: DEBUG
   loggers:
     io.dropwizard: WARN
     org.eclipse.jetty: WARN
