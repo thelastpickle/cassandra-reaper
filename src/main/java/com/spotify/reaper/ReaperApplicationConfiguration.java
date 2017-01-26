@@ -79,6 +79,9 @@ public class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   private JmxCredentials jmxAuth;
 
+  @JsonProperty
+  @DefaultValue("false")
+  private Boolean allowUnreachableNodes;
 
   public int getSegmentCount() {
     return segmentCount;
@@ -212,4 +215,13 @@ public class ReaperApplicationConfiguration extends Configuration {
       this.cassandra = cassandra;
   }
 
+  
+  public Boolean getAllowUnreachableNodes() {
+    return allowUnreachableNodes;
+  }
+
+  public void setAllowUnreachableNodes(Boolean allow) {
+    this.allowUnreachableNodes = allow;
+  }
+  
 }

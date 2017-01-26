@@ -290,19 +290,24 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
           return false;
         }
       } catch (ReaperException e) {
-        LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) could "
-                 + "not be connected with", segmentId, hostName);
-        String msg = String.format("Postponed due to inability to connect host %s", hostName);
-        repairRunner.updateLastEvent(msg);
-        return false;
+        if(!context.config.getAllowUnreachableNodes()) {
+          LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) could "
+                   + "not be connected with", segmentId, hostName);
+          String msg = String.format("Postponed due to inability to connect host %s", hostName);
+          repairRunner.updateLastEvent(msg);
+          return false;
+        }
       } catch (RuntimeException e) {
         LOG.warn("SegmentRunner declined to repair segment {} because of an error collecting "
                  + "information from one of the hosts ({}): {}", segmentId, hostName, e);
-        String msg = String.format("Postponed due to inability to collect "
-                                   + "information from host %s", hostName);
-        repairRunner.updateLastEvent(msg);
-        LOG.warn("Open files amount for process: " + getOpenFilesAmount());
-        return false;
+        
+        if(!context.config.getAllowUnreachableNodes()) {
+          String msg = String.format("Postponed due to inability to collect "
+                                     + "information from host %s", hostName);
+          repairRunner.updateLastEvent(msg);
+          LOG.warn("Open files amount for process: " + getOpenFilesAmount());
+          return false;
+        }
       } catch (ConcurrentException e) {
         LOG.warn("Exception thrown while listing all nodes in cluster \"{}\" with ongoing repairs: "
             + "{}", clusterName, e);

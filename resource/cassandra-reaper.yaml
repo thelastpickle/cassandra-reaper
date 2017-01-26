@@ -10,6 +10,7 @@ hangingRepairTimeoutMins: 30
 storageType: memory
 enableCrossOrigin: true
 incrementalRepair: false
+allowUnreachableNodes: false
 jmxPorts:
   127.0.0.1: 7100
   127.0.0.2: 7200

@@ -155,6 +155,17 @@ Notice that in the *server* section of the configuration, if you want to bind th
 to all interfaces, use value "0.0.0.0", or just leave the *bindHost* line away completely.
 Using "*" as bind value won't work.
 
+Clusters with closed cross DC JMX ports
+---------------------------------------
+
+For security reasons, it is possible that Reaper will be able to access only a single DC nodes through JMX.
+The *allowUnreachableNodes* parameter in cassandra-reaper.yaml must then be set to true in order for Reaper to control the repair process through the reachable nodes only.
+Limitations of this setup are:  
+ 
+* All keyspaces must be replicated on the reachable DC using NetworkTopologyStrategy
+* Reaper won't be able to check the unreachable DC nodes for pending compactions or running repairs, which disables repair overload prevention
+
+Leaving *allowUnreachableNodes* to false will prevent all repair sessions once a single node from the cluster is unreachable.
 
 REST API
 --------
