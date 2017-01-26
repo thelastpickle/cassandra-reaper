@@ -35,8 +35,12 @@ public class RepairRunStatusMapper implements ResultSetMapper<RepairRunStatus> {
     DateTime pauseTime = RepairRunMapper.getDateTimeOrNull(r, "pause_time");
     Double intensity = r.getDouble("intensity");
     Boolean incrementalRepair = r.getBoolean("incremental_repair");
-    RepairParallelism repairParallelism =
-        RepairParallelism.valueOf(r.getString("repair_parallelism"));
+    String repairParallelismStr = r.getString("repair_parallelism");
+    if (repairParallelismStr != null)
+    {
+      repairParallelismStr = repairParallelismStr.toUpperCase();
+    }
+    RepairParallelism repairParallelism = RepairParallelism.fromName(repairParallelismStr);
 
     return new RepairRunStatus(runId, clusterName, keyspaceName, columnFamilies, segmentsRepaired,
         totalSegments, state, startTime, endTime, cause, owner, lastEvent,
