@@ -145,7 +145,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       Object ssProxy =
           JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean.class);
       String cassandraVersion = ((StorageServiceMBean) ssProxy).getReleaseVersion();
-      if(cassandraVersion.startsWith("2.0")){
+      if(cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")){
     	  ssProxy = JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean20.class);
       }
       
@@ -375,7 +375,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     LOG.info(msg);
 
     try {
-      if (!cassandraVersion.startsWith("2.0")) {
+      if (!cassandraVersion.startsWith("2.0") && !cassandraVersion.startsWith("1.")) {
         if (fullRepair) {
           if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
             if (canUseDatacenterAware) {
