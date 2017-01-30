@@ -28,18 +28,18 @@ import cucumber.api.junit.Cucumber;
 @CucumberOptions(
     features = "classpath:com.spotify.reaper.acceptance/integration_reaper_functionality.feature"
 )
-public class ReaperIT {
-  private static final Logger LOG = LoggerFactory.getLogger(ReaperIT.class);
+public class ReaperH2IT {
+  private static final Logger LOG = LoggerFactory.getLogger(ReaperH2IT.class);
   private static ReaperTestJettyRunner runnerInstance;
-  private static final String MEMORY_CONFIG_FILE="cassandra-reaper-at.yaml";
+  private static final String H2_CONFIG_FILE="cassandra-reaper-h2-at.yaml";
   
   
   @BeforeClass
   public static void setUp() throws Exception {
-    LOG.info("setting up testing Reaper runner with {} seed hosts defined and memory storage",
+    LOG.info("setting up testing Reaper runner with {} seed hosts defined and H2 storage",
         TestContext.TEST_CLUSTER_SEED_HOSTS.size());
     AppContext context = new AppContext();    
-    runnerInstance = ReaperTestJettyRunner.setup(context, MEMORY_CONFIG_FILE);
+    runnerInstance = ReaperTestJettyRunner.setup(context, H2_CONFIG_FILE);
 
     BasicSteps.setReaperClient(ReaperTestJettyRunner.getClient());
   }

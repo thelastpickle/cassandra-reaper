@@ -2,7 +2,7 @@
 -- Cassandra schema for cassandra-reaper database
 --
 
-CREATE KEYSPACE reaper_db WITH REPLICATION={'class':'SimpleStrategy', 'replication_factor':3};
+CREATE KEYSPACE IF NOT EXISTS reaper_db WITH REPLICATION={'class':'SimpleStrategy', 'replication_factor':3};
 
 use reaper_db;
 

@@ -5,7 +5,6 @@ Feature: Using Reaper to launch repairs and schedule them
   Background:
     Given cluster seed host "127.0.0.1" points to cluster with name "test_cluster"
     And ccm cluster "test_cluster" has keyspace "booya" with tables "booya1, booya2"
-    And a real reaper service is running
 
   Scenario: Registering a cluster
     Given that we are going to use "127.0.0.1" as cluster seed host

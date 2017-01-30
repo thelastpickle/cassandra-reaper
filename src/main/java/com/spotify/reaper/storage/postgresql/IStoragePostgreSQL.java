@@ -98,8 +98,9 @@ public interface IStoragePostgreSQL {
   String SQL_GET_REPAIR_UNIT_BY_CLUSTER_AND_TABLES =
       "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM repair_unit "
       + "WHERE cluster_name = :clusterName AND keyspace_name = :keyspaceName "
-      + "AND column_families @> :columnFamilies AND column_families <@ :columnFamilies";
-  String SQL_DELETE_REPAIR_UNIT = "DELETE FROM repair_unit WHERE id = :id";
+      + "AND column_families = :columnFamilies";
+  
+  static final String SQL_DELETE_REPAIR_UNIT = "DELETE FROM repair_unit WHERE id = :id";
 
   // RepairSegment
   //
@@ -213,8 +214,8 @@ public interface IStoragePostgreSQL {
           + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
           + "WHERE cluster_name = :clusterName";
 
-  @SqlQuery("SELECT version()")
-  String getVersion();
+  @SqlQuery("SELECT CURRENT_TIMESTAMP")
+  String getCurrentDate();
 
   @SqlQuery(SQL_GET_CLUSTER)
   @Mapper(ClusterMapper.class)

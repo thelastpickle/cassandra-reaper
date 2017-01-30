@@ -41,11 +41,12 @@ Usage
 
 To run Cassandra Reaper you need to simply build a project package using Maven, and
 then execute the created Java jar file, and give a path to the system configuration file
-as the first and only argument. You can also use the provided *bin/cassandra-reaper* script
+as the first and only argument. You can also use the provided `bin/cassandra-reaper` script
 to run the service.
 
 When using database based storage, you must setup a PostgreSQL database yourself and configure
-Reaper to use it. You need to prepare the database using the given schema in:
+Reaper to use it, or use an embedded H2 database (set the appropriate configuration in the yaml file). 
+You need to prepare the database using the given schema in:
 *src/main/db/reaper_db.sql*
 
 When using cassandra based storage, you must setup an Apache Cassandra database yourself and configure
@@ -58,21 +59,42 @@ of this readme document.
 
 You can call the service directly through the REST API using a tool like *curl*. You can also
 use the provided CLI tool in *bin/spreaper* to call the service.
+
 Run the tool with *-h* or *--help* option to see usage instructions.
 
 Notice that you can also build a Debian package from this project by using *debuild*, for example:
-*debuild -uc -us -b*
+`debuild -uc -us -b`
 
 
 Configuration
 -------------
 
 An example testing configuration YAML file can be found from within this project repository:
-*src/test/resources/cassandra-reaper.yaml*
+`src/test/resources/cassandra-reaper.yaml`
 
 The configuration file structure is provided by Dropwizard, and help on configuring the server,
-database connection, or logging, can be found from:
-*http://dropwizard.io/manual/configuration.html*
+database connection, or logging, can be found at:
+http://dropwizard.io/manual/configuration.html
+
+
+**Storage Backend**
+
+Cassandra Reaper can be used with either an ephemeral memory storage or persistent database. Running Reaper with memory storage, which is not persistent, means that all
+the registered clusters, column families, and repair runs will be lost upon service restart.
+The memory based storage is meant to be used for testing purposes only. Enable this type of storage by using the `storageType: memory` setting in your config file (enabled by default).
+
+For persistent database storage, you must either setup PostgreSQL or H2. You also need to set `storageType: database` in the config file.
+* PostgreSQL - you'll first have to prepare the database manually using the provided schema in: `src/main/db/reaper_db.sql`.
+Afterwards make sure to specify the correct credentials in your JDBC settings in `cassandra-reaper.yaml`.
+* H2 - the database will automatically created for you under the path configured in `cassandra-reaper.yaml`. Please
+comment/uncomment the H2 settings and modify the path as needed.
+
+For configuring other aspects of the service, see the available configuration options in later section
+of this readme document.
+
+
+
+**Reaper Settings**
 
 The Reaper service specific configuration values are:
 

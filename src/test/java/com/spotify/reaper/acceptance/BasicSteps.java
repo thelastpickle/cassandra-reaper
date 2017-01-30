@@ -49,11 +49,14 @@ import static java.util.concurrent.TimeUnit.*;
 public class BasicSteps {
 
   private static final Logger LOG = LoggerFactory.getLogger(BasicSteps.class);
-
   private static Optional<Map<String, String>> EMPTY_PARAMS = Optional.absent();
-
   private static SimpleReaperClient client;
+  private static final String MEMORY_CONFIG_FILE="cassandra-reaper-at.yaml";
 
+  public static void setReaperClient(SimpleReaperClient reaperClient) {
+    client = reaperClient;
+  }
+  
   @Before
   public static void setup() {
     // actual setup is done in setupReaperTestRunner step
@@ -78,7 +81,7 @@ public class BasicSteps {
       when(context.jmxConnectionFactory.connect(org.mockito.Matchers.<Optional>any(), eq(seedHost)))
           .thenReturn(jmx);
     }
-    ReaperTestJettyRunner.setup(context);
+    ReaperTestJettyRunner.setup(context, MEMORY_CONFIG_FILE);
     client = ReaperTestJettyRunner.getClient();
   }
 
@@ -86,7 +89,7 @@ public class BasicSteps {
     LOG.info("setting up testing Reaper runner with {} seed hosts defined",
              TestContext.TEST_CLUSTER_SEED_HOSTS.size());
     AppContext context = new AppContext();    
-    ReaperTestJettyRunner.setup(context);
+    ReaperTestJettyRunner.setup(context, MEMORY_CONFIG_FILE);
     client = ReaperTestJettyRunner.getClient();
   }
   
