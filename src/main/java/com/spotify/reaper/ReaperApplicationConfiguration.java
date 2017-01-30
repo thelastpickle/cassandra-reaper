@@ -68,8 +68,7 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   private String enableCrossOrigin;
 
-  @Valid
-  @NotNull
+  
   @JsonProperty
   private DataSourceFactory database = new DataSourceFactory();
 
@@ -201,8 +200,7 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   }
   
-  @Valid
-  @NotNull
+ 
   private CassandraFactory cassandra = new CassandraFactory();
 
   @JsonProperty("cassandra")

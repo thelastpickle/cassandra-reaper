@@ -1,0 +1,49 @@
+# Cassandra Reaper Configuration Example.
+# See a bit more complete example in:
+# src/test/resources/cassandra-reaper.yaml
+segmentCount: 200
+repairParallelism: DATACENTER_AWARE
+repairIntensity: 0.9
+scheduleDaysBetween: 7
+repairRunThreadCount: 15
+hangingRepairTimeoutMins: 30
+storageType: cassandra
+enableCrossOrigin: true
+incrementalRepair: false
+allowUnreachableNodes: false
+jmxPorts:
+  127.0.0.1: 7100
+  127.0.0.2: 7200
+  127.0.0.3: 7300
+  127.0.0.4: 7400
+  127.0.0.5: 7500
+  127.0.0.6: 7600
+  127.0.0.7: 7700
+  127.0.0.8: 7800
+
+logging:
+  level: INFO
+  loggers:
+    io.dropwizard: WARN
+    org.eclipse.jetty: WARN
+  appenders:
+    - type: console
+      logFormat: "%-6level [%d] [%t] %logger{5} - %msg %n"
+
+server:
+  type: default
+  applicationConnectors:
+    - type: http
+      port: 8080
+      bindHost: 0.0.0.0
+  adminConnectors:
+    - type: http
+      port: 8081
+      bindHost: 0.0.0.0
+  requestLog:
+    appenders: []
+
+cassandra:
+  clusterName: "test"
+  contactPoints: ["127.0.0.1"]
+  keyspace: reaper_db
