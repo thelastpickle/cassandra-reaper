@@ -50,7 +50,8 @@ You need to prepare the database using the given schema in:
 *src/main/db/reaper_db.sql*
 
 When using cassandra based storage, you must setup an Apache Cassandra database yourself and configure
-Reaper to use it. 
+Reaper to use it. You need to create a keyspace and configure reaper to use it in the yaml file. The schema will be created by Reaper on the first run.  
+
 Reaper uses the dropwizard-cassandra bundle and full configuration reference is available here : https://github.com/composable-systems/dropwizard-cassandra
 
 Find more information on how to use each storage backend in the **Configuration** section below.

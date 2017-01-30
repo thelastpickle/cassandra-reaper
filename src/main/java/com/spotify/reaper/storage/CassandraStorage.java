@@ -42,6 +42,9 @@ import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.cassandra.DateTimeCodec;
 
 import org.apache.cassandra.repair.RepairParallelism;
+import org.cognitor.cassandra.migration.Database;
+import org.cognitor.cassandra.migration.MigrationRepository;
+import org.cognitor.cassandra.migration.MigrationTask;
 import org.joda.time.DateTime;
 
 import io.dropwizard.setup.Environment;
@@ -87,6 +90,12 @@ public class CassandraStorage implements IStorage {
     CodecRegistry codecRegistry = cassandra.getConfiguration().getCodecRegistry();
     codecRegistry.register(new DateTimeCodec());
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());
+
+    // initialize/upgrade db schema
+    Database database = new Database(cassandra, config.getCassandraFactory().getKeyspace());
+    MigrationTask migration = new MigrationTask(database, new MigrationRepository("db/cassandra"));
+    migration.migrate();
+        
     prepareStatements();
   }
 

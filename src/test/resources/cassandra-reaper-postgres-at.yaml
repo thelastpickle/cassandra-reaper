@@ -36,12 +36,7 @@ jmxPorts:
 # database section will be ignored if storageType is set to "memory"
 database:
   # H2 JDBC settings
-  driverClass: org.h2.Driver
-  url: jdbc:h2:/tmp/reaper-db;MODE=PostgreSQL
-  user:
+  driverClass: org.postgresql.Driver
+  user: postgres
   password:
-  
-cassandra:
-  clusterName: "test"
-  contactPoints: ["127.0.0.1","127.0.0.2"]
-  keyspace: reaper_db
+  url: jdbc:postgresql://127.0.0.1/reaper

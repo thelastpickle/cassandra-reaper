@@ -1,10 +1,9 @@
 --
 -- Cassandra schema for cassandra-reaper database
---
 
-CREATE KEYSPACE IF NOT EXISTS reaper_db WITH REPLICATION={'class':'SimpleStrategy', 'replication_factor':3};
+-- CREATE KEYSPACE IF NOT EXISTS reaper_db WITH REPLICATION={'class':'SimpleStrategy', 'replication_factor':3};
 
-use reaper_db;
+-- use reaper_db;
 
 CREATE TABLE IF NOT EXISTS cluster (
   name        text PRIMARY KEY,
@@ -14,7 +13,7 @@ CREATE TABLE IF NOT EXISTS cluster (
 
 -- Repair unit is basically a keyspace with a set of column families.
 -- Cassandra supports repairing multiple column families in one go.
---
+
 CREATE TABLE IF NOT EXISTS repair_unit (
   id              bigint PRIMARY KEY,
   cluster_name    text,

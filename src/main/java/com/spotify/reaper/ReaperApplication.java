@@ -23,6 +23,7 @@ import javax.servlet.FilterRegistration;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.flywaydb.core.Flyway;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,6 @@ import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperApplicationConfiguration.JmxCredentials;
 import com.spotify.reaper.ReaperException;
-import com.google.common.io.CharStreams;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
@@ -49,14 +49,6 @@ import com.spotify.reaper.storage.PostgresStorage;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.exceptions.UnableToCreateStatementException;
-
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 
 import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.setup.Bootstrap;
@@ -202,16 +194,9 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
       
       // instanciate store
       storage = new PostgresStorage(jdbi);
+      initDatabase(config);
       
-      // init H2 database upon first run
-      if("org.h2.Driver".equals(config.getDataSourceFactory().getDriverClass())) {
-        try {
-          storage.getClusters();
-        } catch(UnableToCreateStatementException e) {
-          LOG.info("H2 database does not exist yet... Initializing H2 database: " + config.getDataSourceFactory().getUrl(), e);
-          initH2Database(jdbi);
-        }
-      }
+            
     } else {
       LOG.error("invalid storageType: {}", config.getStorageType());
       throw new ReaperException("invalid storage type: " + config.getStorageType());
@@ -221,13 +206,13 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   }
 
   private void checkConfiguration(ReaperApplicationConfiguration config) {
-    LOG.debug("repairIntensity: " + config.getRepairIntensity());
-    LOG.debug("incrementalRepair:" + config.getIncrementalRepair());
-    LOG.debug("repairRunThreadCount: " + config.getRepairRunThreadCount());
-    LOG.debug("segmentCount: " + config.getSegmentCount());
-    LOG.debug("repairParallelism: " + config.getRepairParallelism());
-    LOG.debug("hangingRepairTimeoutMins: " + config.getHangingRepairTimeoutMins());
-    LOG.debug("jmxPorts: " + config.getJmxPorts());
+    LOG.debug("repairIntensity: {}",config.getRepairIntensity());
+    LOG.debug("incrementalRepair: {}", config.getIncrementalRepair());
+    LOG.debug("repairRunThreadCount: {}", config.getRepairRunThreadCount());
+    LOG.debug("segmentCount: {}", config.getSegmentCount());
+    LOG.debug("repairParallelism: {}", config.getRepairParallelism());
+    LOG.debug("hangingRepairTimeoutMins: {}", config.getHangingRepairTimeoutMins());
+    LOG.debug("jmxPorts: {}", config.getJmxPorts());
   }
 
   public static void checkRepairParallelismString(String givenRepairParallelism)
@@ -259,18 +244,16 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 	  }
   }
   
-  private void initH2Database(DBI jdbi) throws ReaperException {
-    try {
-      InputStream is = getClass().getResource("/db/reaper_h2.sql").openStream();
-      String sql;
-      try(Reader reader = new InputStreamReader(is)) {
-        sql = CharStreams.toString(reader);
-      }
-      try (Handle h = jdbi.open()) {
-        h.execute(sql);
-      }             
-    } catch (IOException e2) {
-      throw new ReaperException("Failed to initialize database", e2);
+  private void initDatabase(ReaperApplicationConfiguration config) throws ReaperException {
+    Flyway flyway = new Flyway();
+    flyway.setDataSource(config.getDataSourceFactory().getUrl(), config.getDataSourceFactory().getUser(), config.getDataSourceFactory().getPassword());
+    if("org.h2.Driver".equals(config.getDataSourceFactory().getDriverClass())) {
+      flyway.setLocations("/db/h2");
     }
+    else {
+      flyway.setLocations("/db/postgres");
+    }
+    flyway.setBaselineOnMigrate(true);
+    flyway.migrate();
   }
 }
