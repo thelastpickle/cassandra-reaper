@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS repair_unit (
   incremental_repair BOOLEAN    NOT NULL
 );
 
-CREATE INDEX repair_unit_column_families_gin_idx ON repair_unit (column_families);
+CREATE INDEX IF NOT EXISTS repair_unit_column_families_gin_idx ON repair_unit (column_families);
 
 
 CREATE TABLE IF NOT EXISTS repair_run (
@@ -61,9 +61,9 @@ CREATE TABLE IF NOT EXISTS repair_segment (
   fail_count       INT         NOT NULL     DEFAULT 0
 );
 
-CREATE INDEX repair_segment_run_id_fail_count_idx ON repair_segment (run_id ASC, fail_count ASC);
+CREATE INDEX IF NOT EXISTS repair_segment_run_id_fail_count_idx ON repair_segment (run_id ASC, fail_count ASC);
 
-CREATE INDEX repair_segment_state_idx ON repair_segment (state);
+CREATE INDEX IF NOT EXISTS repair_segment_state_idx ON repair_segment (state);
 
 CREATE TABLE IF NOT EXISTS repair_schedule (
   id                 SERIAL PRIMARY KEY,

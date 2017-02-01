@@ -69,10 +69,18 @@
             <artifactId>h2</artifactId>
             <version>1.4.186</version>
         </dependency>
-                
-                
-
-        <!--test scope-->
+        <dependency>
+          <groupId>org.cognitor.cassandra</groupId>
+          <artifactId>cassandra-migration</artifactId>
+          <version>2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>4.0.3</version>
+        </dependency>
+        
+        <!--test scope -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -241,17 +249,22 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <version>2.19</version>
                         <configuration>
-                          <skipTests>true</skipTests>
+                          <skipTests>false</skipTests>
+                          <forkCount>1</forkCount>
+                          <reuseForks>false</reuseForks>
                           <argLine>${surefireArgLine}</argLine>
                           <failIfNoTests>false</failIfNoTests>
+                          <includes>
+                                <include>**/*IT.java</include>
+                          </includes>
                           <excludes>
-                            <exclude>**/IT*.java</exclude>
-                            <exclude>**/*IT.java</exclude>
+                            <exclude>**/Test*.java</exclude>
+                            <exclude>**/*Test.java</exclude>
                           </excludes>
                           <workingDirectory>${project.build.directory}</workingDirectory>
                         </configuration>
                     </plugin>    
-                    <plugin>
+                 <!--    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <version>2.19</version>
@@ -273,7 +286,7 @@
                             </configuration>
                           </execution>
                         </executions>
-                    </plugin>
+                    </plugin> -->
                 </plugins>
             </build>
         </profile>

@@ -3,17 +3,17 @@
 -- Assumes PostgreSQL version 9.3 or newer
 --
 
-CREATE DATABASE reaper_db;
-\connect reaper_db;
-CREATE USER reaper WITH PASSWORD 'my_secret_password';
-GRANT ALL PRIVILEGES ON DATABASE reaper_db TO reaper;
+-- CREATE DATABASE reaper_db;
+-- \connect reaper_db;
+-- CREATE USER reaper WITH PASSWORD 'my_secret_password';
+-- GRANT ALL PRIVILEGES ON DATABASE reaper_db TO reaper;
 
 -- For cleaning up the database, just do first in the following order:
-DROP TABLE "repair_segment";
-DROP TABLE "repair_run";
-DROP TABLE "repair_schedule";
-DROP TABLE "repair_unit";
-DROP TABLE "cluster";
+-- DROP TABLE "repair_segment";
+-- DROP TABLE "repair_run";
+-- DROP TABLE "repair_schedule";
+-- DROP TABLE "repair_unit";
+-- DROP TABLE "cluster";
 
 CREATE TABLE IF NOT EXISTS "cluster" (
   "name"        TEXT PRIMARY KEY,
@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS "repair_unit" (
 );
 
 -- Using GIN index to make @> (contains) type of array operations faster
+DROP INDEX IF EXISTS repair_unit_column_families_gin_idx;
 CREATE INDEX repair_unit_column_families_gin_idx ON repair_unit USING GIN (column_families);
 
 CREATE TABLE IF NOT EXISTS "repair_run" (
@@ -67,9 +68,11 @@ CREATE TABLE IF NOT EXISTS "repair_segment" (
   "fail_count"       INT         NOT NULL     DEFAULT 0
 );
 
+DROP INDEX IF EXISTS "repair_segment_run_id_fail_count_idx";
 CREATE INDEX "repair_segment_run_id_fail_count_idx"
 ON "repair_segment" USING BTREE ("run_id" ASC, "fail_count" ASC);
 
+DROP INDEX IF EXISTS "repair_segment_state_idx"; 
 CREATE INDEX "repair_segment_state_idx"
 ON "repair_segment" USING BTREE ("state");
 
@@ -90,12 +93,12 @@ CREATE TABLE IF NOT EXISTS "repair_schedule" (
   "pause_time"         TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE cluster TO reaper;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_unit TO reaper;
-GRANT USAGE, SELECT ON SEQUENCE repair_unit_id_seq TO reaper;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_run TO reaper;
-GRANT USAGE, SELECT ON SEQUENCE repair_run_id_seq TO reaper;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_segment TO reaper;
-GRANT USAGE, SELECT ON SEQUENCE repair_segment_id_seq TO reaper;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_schedule TO reaper;
-GRANT USAGE, SELECT ON SEQUENCE repair_schedule_id_seq TO reaper;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE cluster TO reaper;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_unit TO reaper;
+-- GRANT USAGE, SELECT ON SEQUENCE repair_unit_id_seq TO reaper;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_run TO reaper;
+-- GRANT USAGE, SELECT ON SEQUENCE repair_run_id_seq TO reaper;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_segment TO reaper;
+-- GRANT USAGE, SELECT ON SEQUENCE repair_segment_id_seq TO reaper;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE repair_schedule TO reaper;
+-- GRANT USAGE, SELECT ON SEQUENCE repair_schedule_id_seq TO reaper;

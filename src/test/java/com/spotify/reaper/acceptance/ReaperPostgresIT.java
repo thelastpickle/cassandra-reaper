@@ -13,20 +13,12 @@
  */
 package com.spotify.reaper.acceptance;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
-import com.google.common.io.CharStreams;
 import com.spotify.reaper.AppContext;
 
 import cucumber.api.CucumberOptions;
@@ -36,29 +28,20 @@ import cucumber.api.junit.Cucumber;
 @CucumberOptions(
     features = "classpath:com.spotify.reaper.acceptance/integration_reaper_functionality.feature"
 )
-public class ReaperCassandraIT {
-  private static final Logger LOG = LoggerFactory.getLogger(ReaperCassandraIT.class);
+public class ReaperPostgresIT {
+  private static final Logger LOG = LoggerFactory.getLogger(ReaperPostgresIT.class);
   private static ReaperTestJettyRunner runnerInstance;
-  private static final String CASS_CONFIG_FILE="cassandra-reaper-cassandra-at.yaml";
+  private static final String POSTGRES_CONFIG_FILE="cassandra-reaper-postgres-at.yaml";
   
   
   @BeforeClass
   public static void setUp() throws Exception {
-    LOG.info("setting up testing Reaper runner with {} seed hosts defined and cassandra storage",
+    LOG.info("setting up testing Reaper runner with {} seed hosts defined and Postgres storage",
         TestContext.TEST_CLUSTER_SEED_HOSTS.size());
     AppContext context = new AppContext();    
-    initSchema();
-    runnerInstance = ReaperTestJettyRunner.setup(context, CASS_CONFIG_FILE);
+    runnerInstance = ReaperTestJettyRunner.setup(context, POSTGRES_CONFIG_FILE);
+
     BasicSteps.setReaperClient(ReaperTestJettyRunner.getClient());
-  }
-  
-  
-  public static void initSchema() throws IOException{
-    Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
-    Session tmpSession = cluster.connect();
-    tmpSession.execute("DROP KEYSPACE IF EXISTS reaper_db");
-    tmpSession.execute("CREATE KEYSPACE IF NOT EXISTS reaper_db WITH replication = {'class':'SimpleStrategy', 'replication_factor':1}");
-    tmpSession.close();
   }
   
   @AfterClass
