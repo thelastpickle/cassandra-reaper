@@ -349,3 +349,29 @@ After modifying the `resource/cassandra-reaper.yaml` config file, Reaper can be 
 Once started, the UI can be accessed through : `http://127.0.0.1:8080/webui/`
 
 Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool `bin/spreaper`
+
+
+Building and running Reaper using Docker
+----------------------------------------
+
+These commands will attempt to build the Debian, jar, and RPM packages:
+
+    docker build -t reaper-debian docker/debian
+    docker build -t reaper-jar docker/jar
+    docker build -t reaper-rhel docker/rhel
+
+These commands need to be run to start a container from a built image:
+
+    docker run -ti reaper-debian
+    docker run -ti reaper-jar  # experiencing an error with bower ESUDO
+    docker run -ti reaper-rhel
+
+Once a container is running, we can copy the built file out of the container
+and onto our local filesystem:
+
+    # copy Debian packages
+    docker cp `docker ps | grep reaper-debian | awk '{print $1}'`:/usr/src/app/packages/cassandra-reaper-cli_0.2.3-1_all.deb .
+    docker cp `docker ps | grep reaper-debian | awk '{print $1}'`:/usr/src/app/packages/cassandra-reaper_0.2.3-1_all.deb .
+
+    # copy RPM packages
+    docker cp `docker ps | grep reaper-rhel | awk '{print $1}'`:/usr/src/app/packages/reaper-0.3-1.x86_64.rpm .
