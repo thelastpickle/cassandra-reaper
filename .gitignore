@@ -18,3 +18,5 @@ bin/
 .project
 build/
 *.deb
+*.jar
+*.rpm

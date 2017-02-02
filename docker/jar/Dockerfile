@@ -49,7 +49,10 @@ RUN mkdir ${WORKDIR}/packages
 #    You can however run a command with sudo using --allow-root option
 #    [ERROR] Command execution failed.
 RUN mvn clean package \
-    && mvn clean package -Pbuild-ui
+    && mvn clean package -Pbuild-ui \
+    && cp ${WORKDIR}/cassandra-reaper/target/*.jar ${WORKDIR}/packages
 
 # change the WORKDIR to the directory that only includes the built packages
 WORKDIR ${WORKDIR}/packages
+
+CMD java -jar cassandra-reaper-*.jar server ../cassandra-reaper/resource/cassandra-reaper.yaml

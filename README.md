@@ -363,7 +363,7 @@ These commands will attempt to build the Debian, jar, and RPM packages:
 These commands need to be run to start a container from a built image:
 
     docker run -ti reaper-debian
-    docker run -ti reaper-jar  # experiencing an error with bower ESUDO
+    docker run -ti reaper-jar
     docker run -ti reaper-rhel
 
 Once a container is running, we can copy the built file out of the container
@@ -372,6 +372,10 @@ and onto our local filesystem:
     # copy Debian packages
     docker cp `docker ps | grep reaper-debian | awk '{print $1}'`:/usr/src/app/packages/cassandra-reaper-cli_0.2.3-1_all.deb .
     docker cp `docker ps | grep reaper-debian | awk '{print $1}'`:/usr/src/app/packages/cassandra-reaper_0.2.3-1_all.deb .
+
+    # copy jars
+    docker cp `docker ps | grep reaper-jar | awk '{print $1}'`:/usr/src/app/packages/cassandra-reaper-0.4.0-SNAPSHOT.jar .
+    docker cp `docker ps | grep reaper-jar | awk '{print $1}'`:/usr/src/app/packages/original-cassandra-reaper-0.4.0-SNAPSHOT.jar .
 
     # copy RPM packages
     docker cp `docker ps | grep reaper-rhel | awk '{print $1}'`:/usr/src/app/packages/reaper-0.3-1.x86_64.rpm .
