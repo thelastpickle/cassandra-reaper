@@ -11,13 +11,18 @@ RUN apt-get update \
         apt-file \
         debhelper \
         devscripts \
-        git \
         maven \
         openjdk-8-jdk \
     && mvn --version
 
+# cache maven dependencies, useful during Dockerfile testing
+COPY pom.xml /tmp
+WORKDIR /tmp
+RUN mvn package
+WORKDIR ${WORKDIR}
+
 # grab source
-RUN git clone https://github.com/thelastpickle/cassandra-reaper
+COPY . ${WORKDIR}/cassandra-reaper
 WORKDIR ${WORKDIR}/cassandra-reaper
 
 # target directory for final build

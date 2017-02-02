@@ -17,7 +17,6 @@ RUN yum update \
     && yum install -y \
         apache-maven \
         gcc \
-        git \
         make \
         rpm-build \
         ruby-devel \
@@ -25,21 +24,18 @@ RUN yum update \
     && mvn --version \
     && gem install fpm
 
-# grab source
-RUN git clone https://github.com/thelastpickle/cassandra-reaper
-WORKDIR ${WORKDIR}/cassandra-reaper
-
 # cache maven dependencies, useful during Dockerfile testing
-RUN cp pom.xml /tmp
+COPY pom.xml /tmp
 WORKDIR /tmp
 RUN mvn package
+WORKDIR ${WORKDIR}
+
+# grab source
+COPY . ${WORKDIR}/cassandra-reaper
 WORKDIR ${WORKDIR}/cassandra-reaper
 
 # target directory for final build
 RUN mkdir ${WORKDIR}/packages
-
-# REQUIRED to build rpm packages
-RUN git checkout v0.3.0
 
 # build rpm
 RUN mvn package \

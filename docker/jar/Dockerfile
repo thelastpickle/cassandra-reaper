@@ -14,21 +14,20 @@ RUN apt-get update \
     && apt-get update \
     && apt-get install -y \
         build-essential \
-        git \
         maven \
         nodejs \
         openjdk-8-jdk \
     && mvn --version \
     && npm install -g bower
 
-# grab source
-RUN git clone https://github.com/thelastpickle/cassandra-reaper
-WORKDIR ${WORKDIR}/cassandra-reaper
-
 # cache maven dependencies, useful during Dockerfile testing
-RUN cp pom.xml /tmp
+COPY pom.xml /tmp
 WORKDIR /tmp
 RUN mvn package
+WORKDIR ${WORKDIR}
+
+# grab source
+COPY . ${WORKDIR}/cassandra-reaper
 WORKDIR ${WORKDIR}/cassandra-reaper
 
 # target directory for final build

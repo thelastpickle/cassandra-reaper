@@ -356,9 +356,9 @@ Building and running Reaper using Docker
 
 These commands will attempt to build the Debian, jar, and RPM packages:
 
-    docker build -t reaper-debian docker/debian
-    docker build -t reaper-jar docker/jar
-    docker build -t reaper-rhel docker/rhel
+    docker build --tag reaper-debian --file docker/debian/Dockerfile .
+    docker build --tag reaper-jar --file docker/jar/Dockerfile .
+    docker build --tag reaper-rhel --file docker/rhel/Dockerfile .
 
 These commands need to be run to start a container from a built image:
 
