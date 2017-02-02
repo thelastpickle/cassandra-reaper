@@ -254,6 +254,12 @@ Source code for all the REST resources can be found from package com.spotify.rea
   * Expected query parameters: *None*
   * Returns a repair schedule object identified by the given "id" path parameter.
 
+* PUT    /repair_schedule/{id}
+  * Expected query parameters:
+    * *state*: New value for the state of the repair run.
+      Possible values for given state are: "PAUSED" or "RUNNING".
+  * Starts, pauses, or resumes a repair run identified by the "id" path parameter.
+
 * POST    /repair_schedule
   * Expected query parameters:
     * *clusterName*: Name of the Cassandra cluster.
