@@ -14,6 +14,7 @@ RUN apt-get update \
     && apt-get update \
     && apt-get install -y \
         build-essential \
+        git \
         maven \
         nodejs \
         openjdk-8-jdk \

@@ -11,7 +11,6 @@ RUN apt-get update \
         apt-file \
         debhelper \
         devscripts \
-        git \
         maven \
         openjdk-8-jdk \
     && mvn --version
