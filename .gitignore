@@ -17,6 +17,7 @@ bin/
 .settings/
 .project
 build/
+data/
 *.deb
 *.jar
 *.rpm

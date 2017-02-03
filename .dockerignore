@@ -1,4 +1,18 @@
+# editor files
+*.iml
+*~
+.idea/
+.DS_Store
+
+# docker files
 docker/
+docker-compose.yml
+
+# persistent storage
+data/
+
+# build paths
+target/
 *.deb
 *.jar
 *.rpm

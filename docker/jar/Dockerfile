@@ -23,8 +23,10 @@ RUN apt-get update \
 
 # cache maven dependencies, useful during Dockerfile testing
 COPY pom.xml /tmp
+COPY reaper_ui/*.json reaper_ui/*.js /tmp/reaper_ui/
 WORKDIR /tmp
-RUN mvn package
+RUN mvn clean package \
+    && mvn clean package -Pbuild-ui
 WORKDIR ${WORKDIR}
 
 # grab source
@@ -35,19 +37,6 @@ WORKDIR ${WORKDIR}/cassandra-reaper
 RUN mkdir ${WORKDIR}/packages
 
 # build jar
-# FAILS WITH:
-#    [INFO] --- exec-maven-plugin:1.5.0:exec (exec-bower-install) @ cassandra-reaper ---
-#    bower ESUDO         Cannot be run with sudo
-#
-#    Additional error details:
-#    Since bower is a user command, there is no need to execute it with superuser permissions.
-#    If you're having permission errors when using bower without sudo, please spend a few minutes learning more about how your system should work and make any necessary repairs.
-#
-#    http://www.joyent.com/blog/installing-node-and-npm
-#    https://gist.github.com/isaacs/579814
-#
-#    You can however run a command with sudo using --allow-root option
-#    [ERROR] Command execution failed.
 RUN mvn clean package \
     && mvn clean package -Pbuild-ui \
     && cp ${WORKDIR}/cassandra-reaper/target/*.jar ${WORKDIR}/packages
@@ -55,4 +44,18 @@ RUN mvn clean package \
 # change the WORKDIR to the directory that only includes the built packages
 WORKDIR ${WORKDIR}/packages
 
-CMD java -jar cassandra-reaper-*.jar server ../cassandra-reaper/resource/cassandra-reaper.yaml
+# start reaper at container run-time
+CMD java -jar cassandra-reaper-*.jar server ../cassandra-reaper/resource/cassandra-reaper-memory.yaml
+
+# install cqlsh dependencies
+RUN apt-get install -y \
+        wget \
+        python
+
+# download cassandra for cqlsh
+WORKDIR ${WORKDIR}
+ENV CASSANDRA_FILENAME apache-cassandra-3.0.9-bin.tar.gz
+RUN wget http://archive.apache.org/dist/cassandra/3.0.9/${CASSANDRA_FILENAME} \
+    && tar xf ${CASSANDRA_FILENAME} \
+    && rm ${CASSANDRA_FILENAME}
+WORKDIR ${WORKDIR}/packages

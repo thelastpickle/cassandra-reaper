@@ -351,8 +351,8 @@ Once started, the UI can be accessed through : `http://127.0.0.1:8080/webui/`
 Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool `bin/spreaper`
 
 
-Building and running Reaper using Docker
-----------------------------------------
+Building Reaper packages using Docker
+-------------------------------------
 
 These commands will attempt to build the Debian, jar, and RPM packages:
 
@@ -366,8 +366,8 @@ These commands need to be run to start a container from a built image:
     docker run -ti reaper-jar
     docker run -ti reaper-rhel
 
-Once a container is running, we can copy the built file out of the container
-and onto our local filesystem:
+Once a container is running, we can copy the built packages out of the
+container and onto our local filesystem:
 
     # copy Debian packages
     docker cp `docker ps | grep reaper-debian | awk '{print $1}'`:/usr/src/app/packages/cassandra-reaper-cli_0.2.3-1_all.deb .
@@ -379,3 +379,48 @@ and onto our local filesystem:
 
     # copy RPM packages
     docker cp `docker ps | grep reaper-rhel | awk '{print $1}'`:/usr/src/app/packages/reaper-0.3-1.x86_64.rpm .
+
+Running In-Memory Reaper using Docker
+-------------------------------------
+
+This command will build the image:
+
+    docker build --tag reaper-jar --file docker/jar/Dockerfile .
+
+This command will run Reaper in in-memory mode:
+
+    docker run -ti -p "8080:8080" -p "8081:8081" reaper-jar
+
+The following URLs become available:
+
+* BUGGY: http://localhost:8080/webui
+* Main Interface: http://localhost:8080/webui/index.html
+* Operational Interface: http://localhost:8081
+
+Running Cassandra-backed Reaper using Docker
+--------------------------------------------
+
+First, ensure there exists a running Cassandra container. This can be confirmed
+once `Starting listening for CQL clients` appears in the log output:
+
+    docker-compose up cassandra
+
+If not already initialized, make sure the Cassandra cluster has the correct
+schema:
+
+    docker-compose run reaper-setup
+
+Once Cassandra's schema has been intialized, run reaper:
+
+    docker-compose up reaper
+
+The following URLs become available:
+
+* BUGGY: http://localhost:8080/webui
+* Main Interface: http://localhost:8080/webui/index.html
+* Operational Interface: http://localhost:8081
+
+**Note**: Although Reaper will be using a Cassandra backend, the Dockerized
+Cassandra container will be running with JMX accessible *only* from localhost.
+Therefore, another Cassandra cluster with proper JMX settings will need to
+be created in order for Reaper to monitor the cluster.

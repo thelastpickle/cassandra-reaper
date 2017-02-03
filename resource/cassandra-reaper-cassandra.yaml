@@ -44,6 +44,6 @@ server:
     appenders: []
 
 cassandra:
-  clusterName: "test"
-  contactPoints: ["127.0.0.1"]
+  clusterName: "reaper"
+  contactPoints: ["cassandra"]
   keyspace: reaper_db
