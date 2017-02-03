@@ -38,8 +38,7 @@ WORKDIR ${WORKDIR}/cassandra-reaper
 RUN mkdir ${WORKDIR}/packages
 
 # build rpm
-RUN mvn package \
-    && make rpm \
+RUN make all \
     && cp *.rpm ${WORKDIR}/packages
 
 # change the WORKDIR to the directory that only includes the built packages

@@ -378,7 +378,7 @@ container and onto our local filesystem:
     docker cp `docker ps | grep reaper-jar | awk '{print $1}'`:/usr/src/app/packages/original-cassandra-reaper-0.4.0-SNAPSHOT.jar .
 
     # copy RPM packages
-    docker cp `docker ps | grep reaper-rhel | awk '{print $1}'`:/usr/src/app/packages/reaper-0.3-1.x86_64.rpm .
+    docker cp `docker ps | grep reaper-rhel | awk '{print $1}'`:/usr/src/app/packages/reaper-0.4.0_SNAPSHOT-1.x86_64.rpm .
 
 Running In-Memory Reaper using Docker
 -------------------------------------
