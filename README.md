@@ -400,6 +400,10 @@ The following URLs become available:
 Running Cassandra-backed Reaper using Docker
 --------------------------------------------
 
+If recent changes have been made, rebuild the Docker image:
+
+    docker-compose build
+
 First, ensure there exists a running Cassandra container. This can be confirmed
 once `Starting listening for CQL clients` appears in the log output:
 
@@ -410,7 +414,7 @@ schema:
 
     docker-compose run reaper-setup
 
-Once Cassandra's schema has been intialized, run reaper:
+Once Cassandra's schema has been initialized, run reaper:
 
     docker-compose up reaper
 

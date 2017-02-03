@@ -1,4 +1,4 @@
-FROM amazonlinux
+FROM amazonlinux:2016.09
 
 # use a common app path, copied from python-onbuild:latest
 ENV WORKDIR /usr/src/app

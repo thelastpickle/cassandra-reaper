@@ -1,4 +1,4 @@
-FROM ubuntu
+FROM ubuntu:16.04
 
 # use a common app path, copied from python-onbuild:latest
 ENV WORKDIR /usr/src/app
