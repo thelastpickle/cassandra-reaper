@@ -393,9 +393,9 @@ This command will run Reaper in in-memory mode:
 
 The following URLs become available:
 
-* BUGGY: http://localhost:8080/webui
-* Main Interface: http://localhost:8080/webui/index.html
-* Operational Interface: http://localhost:8081
+* BUGGY: [http://localhost:8080/webui](http://localhost:8080/webui)
+* Main Interface: [http://localhost:8080/webui/index.html](http://localhost:8080/webui/index.html)
+* Operational Interface: [http://localhost:8081](http://localhost:8081)
 
 Running Cassandra-backed Reaper using Docker
 --------------------------------------------
@@ -420,9 +420,9 @@ Once Cassandra's schema has been initialized, run reaper:
 
 The following URLs become available:
 
-* BUGGY: http://localhost:8080/webui
-* Main Interface: http://localhost:8080/webui/index.html
-* Operational Interface: http://localhost:8081
+* BUGGY: [http://localhost:8080/webui](http://localhost:8080/webui)
+* Main Interface: [http://localhost:8080/webui/index.html](http://localhost:8080/webui/index.html)
+* Operational Interface: [http://localhost:8081](http://localhost:8081)
 
 **Note**: Although Reaper will be using a Cassandra backend, the Dockerized
 Cassandra container will be running with JMX accessible *only* from localhost.
