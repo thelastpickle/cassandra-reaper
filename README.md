@@ -46,8 +46,7 @@ to run the service.
 
 When using database based storage, you must setup a PostgreSQL database yourself and configure
 Reaper to use it, or use an embedded H2 database (set the appropriate configuration in the yaml file). 
-You need to prepare the database using the given schema in:
-*src/main/db/reaper_db.sql*
+The schema will get initialized/upgraded upon startup by FlyWay.
 
 When using cassandra based storage, you must setup an Apache Cassandra database yourself and configure
 Reaper to use it. You need to create a keyspace and configure reaper to use it in the yaml file. The schema will be created by Reaper on the first run.  
@@ -86,8 +85,8 @@ the registered clusters, column families, and repair runs will be lost upon serv
 The memory based storage is meant to be used for testing purposes only. Enable this type of storage by using the `storageType: memory` setting in your config file (enabled by default).
 
 For persistent relational database storage, you must either setup PostgreSQL or H2. You also need to set `storageType: database` in the config file.
-* PostgreSQL - you'll first have to prepare the database manually using the provided schema in: `src/main/db/reaper_db.sql`.
-Afterwards make sure to specify the correct credentials in your JDBC settings in `cassandra-reaper.yaml`.
+* PostgreSQL - The schema will be initialized/upgraded automatically upon startup in the configured database.
+Make sure to specify the correct credentials in your JDBC settings in `cassandra-reaper.yaml` to allow objects creation.
 * H2 - the database will automatically created for you under the path configured in `cassandra-reaper.yaml`. Please
 comment/uncomment the H2 settings and modify the path as needed or use the `cassandra-reaper-h2.yaml` as a base.
 
