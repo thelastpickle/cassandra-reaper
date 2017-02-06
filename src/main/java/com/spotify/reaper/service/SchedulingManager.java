@@ -42,7 +42,7 @@ public class SchedulingManager extends TimerTask {
         .pauseTime(DateTime.now())
         .build(schedule.getId());
     if (!context.storage.updateRepairSchedule(updatedSchedule)) {
-      LOG.error("failed updating repair schedule " + updatedSchedule.getId());
+      LOG.error("failed updating repair schedule {}", updatedSchedule.getId());
     }
     return updatedSchedule;
   }
@@ -53,7 +53,7 @@ public class SchedulingManager extends TimerTask {
         .pauseTime(null)
         .build(schedule.getId());
     if (!context.storage.updateRepairSchedule(updatedSchedule)) {
-      LOG.error("failed updating repair schedule " + updatedSchedule.getId());
+      LOG.error("failed updating repair schedule {}", updatedSchedule.getId());
     }
     return updatedSchedule;
   }
@@ -110,7 +110,7 @@ public class SchedulingManager extends TimerTask {
         Optional<RepairUnit> fetchedUnit =
             context.storage.getRepairUnit(schedule.getRepairUnitId());
         if (!fetchedUnit.isPresent()) {
-          LOG.warn("RepairUnit with id " + schedule.getRepairUnitId() + " not found");
+          LOG.warn("RepairUnit with id {} not found", schedule.getRepairUnitId());
           return false;
         }
         repairUnit = fetchedUnit.get();
