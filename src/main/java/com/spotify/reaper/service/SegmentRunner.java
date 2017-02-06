@@ -147,7 +147,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         .connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators)) {
 
       if (segmentRunners.containsKey(segmentId)) {
-        LOG.error("SegmentRunner already exists for segment with ID: " + segmentId);
+        LOG.error("SegmentRunner already exists for segment with ID: {}", segmentId);
         throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
       }
       segmentRunners.put(segmentId, this);
@@ -208,7 +208,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         try {
           condition.await(timeoutMillis, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
-          LOG.warn("Repair command {} on segment {} interrupted", commandId, segmentId);
+          LOG.warn("Repair command {} on segment {} interrupted", commandId, segmentId, e);
         } finally {
           RepairSegment resultingSegment = context.storage.getRepairSegment(segmentId).get();
           LOG.info("Repair command {} on segment {} returned with state {}", commandId, segmentId,
@@ -228,8 +228,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         }
       }
     } catch (ReaperException e) {
-      LOG.warn("Failed to connect to a coordinator node for segment {}", segmentId);
-      LOG.warn(e.getMessage());
+      LOG.warn("Failed to connect to a coordinator node for segment {}", segmentId, e);
       String msg = "Postponed a segment because no coordinator was reachable";
       repairRunner.updateLastEvent(msg);
       postponeCurrentSegment();
@@ -246,7 +245,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     	if(repairHasSegmentRunning(segment.getRunId())) {
     		LOG.info("SegmentRunner declined to repair segment {} because only one segment is allowed "
                     + "at once for incremental repairs", segmentId);
-           String msg = String.format("Postponed due to already running segment");
+           String msg = "Postponed due to already running segment";
            repairRunner.updateLastEvent(msg);
            return false;
     	}
@@ -292,7 +291,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       } catch (ReaperException e) {
         if(!context.config.getAllowUnreachableNodes()) {
           LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) could "
-                   + "not be connected with", segmentId, hostName);
+                   + "not be connected with", segmentId, hostName, e);
           String msg = String.format("Postponed due to inability to connect host %s", hostName);
           repairRunner.updateLastEvent(msg);
           return false;
@@ -417,7 +416,7 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
           jmx.clearSnapshot(repairId, keyspace);
         } catch (ReaperException e) {
           LOG.warn("Failed to clear snapshot after failed session for host {}, keyspace {}: {}",
-              involvedNode, keyspace, e.getMessage());
+              involvedNode, keyspace, e.getMessage(), e);
         }
       }
     }

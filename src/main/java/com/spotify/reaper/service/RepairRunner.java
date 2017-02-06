@@ -145,8 +145,8 @@ public class RepairRunner implements Runnable {
       if ((!repairRun.isPresent() || repairRun.get().getRunState().isTerminated()) &&
           context.repairManager.repairRunners.containsKey(repairRunId)) {
         // this might happen if a run is deleted while paused etc.
-        LOG.warn("RepairRun \"" + repairRunId + "\" does not exist. Killing "
-                 + "RepairRunner for this run instance.");
+        LOG.warn("RepairRun \"{}\" does not exist. Killing "
+                 + "RepairRunner for this run instance.", repairRunId);
         killAndCleanupRunner();
         return;
       }
@@ -164,9 +164,7 @@ public class RepairRunner implements Runnable {
           break;
       }
     } catch (RuntimeException | ReaperException e) {
-      LOG.error("RepairRun FAILURE, scheduling retry");
-      LOG.error(e.toString());
-      LOG.error(Arrays.toString(e.getStackTrace()));
+      LOG.error("RepairRun FAILURE, scheduling retry", e);
       context.repairManager.scheduleRetry(this);
     }
     // Adding this here to catch a deadlock
@@ -312,8 +310,7 @@ public class RepairRunner implements Runnable {
     try {
       confirmJMXConnectionIsOpen();
     } catch (ReaperException e) {
-      e.printStackTrace();
-      LOG.warn("Failed to reestablish JMX connection in runner {}, retrying", repairRunId);
+      LOG.warn("Failed to reestablish JMX connection in runner {}, retrying", repairRunId, e);
       currentlyRunningSegments.set(rangeIndex, -1);
       return true;
     }
@@ -336,7 +333,7 @@ public class RepairRunner implements Runnable {
 	        context.storage.updateRepairRun(repairRun
 	            .with()
 	            .runState(RepairRun.RunState.ERROR)
-	            .lastEvent(String.format("No coordinators for range %s", tokenRange.toString()))
+	            .lastEvent(String.format("No coordinators for range %s", tokenRange))
 	            .endTime(DateTime.now())
 	            .build(repairRunId));
 	        killAndCleanupRunner();
@@ -363,7 +360,7 @@ public class RepairRunner implements Runnable {
       @Override
       public void onFailure(Throwable t) {
         currentlyRunningSegments.set(rangeIndex, -1);
-        LOG.error("Executing SegmentRunner failed: " + t.getMessage());
+        LOG.error("Executing SegmentRunner failed: {}", t.getMessage());
       }
     });
 

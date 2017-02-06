@@ -15,7 +15,6 @@ package com.spotify.reaper;
 
 import java.util.Map;
 
-import javax.validation.Valid;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
@@ -143,7 +142,7 @@ public class ReaperApplicationConfiguration extends Configuration {
   }
 
   public boolean isEnableCrossOrigin() {
-    return this.enableCrossOrigin != null && this.enableCrossOrigin.equalsIgnoreCase("true");
+    return this.enableCrossOrigin != null && ("true").equalsIgnoreCase(this.enableCrossOrigin);
   }
 
   public void setStorageType(String storageType) {

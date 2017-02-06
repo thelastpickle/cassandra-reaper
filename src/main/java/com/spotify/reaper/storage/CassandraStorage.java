@@ -149,7 +149,7 @@ public class CassandraStorage implements IStorage {
     try {
       session.execute(insertClusterPrepStmt.bind(cluster.getName(), cluster.getPartitioner(), cluster.getSeedHosts()));
     } catch (Exception e) {
-      LOG.warn("failed inserting cluster with name: {}", cluster.getName());
+      LOG.warn("failed inserting cluster with name: {}", cluster.getName(), e);
       return false;
     }
     return true;
@@ -220,7 +220,6 @@ public class CassandraStorage implements IStorage {
 
   @Override
   public Collection<RepairRun> getRepairRunsForCluster(String clusterName) {
-    Collection<RepairRun> repairRuns = Lists.<RepairRun>newArrayList();
     List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();
 
     // Grab all ids for the given cluster name
@@ -230,9 +229,7 @@ public class CassandraStorage implements IStorage {
       repairRunFutures.add(session.executeAsync(getRepairRunPrepStmt.bind(repairRunId)));
     }
 
-    repairRuns = getRepairRunsAsync(repairRunFutures);
-
-    return repairRuns;
+    return getRepairRunsAsync(repairRunFutures);
   }
 
   @Override

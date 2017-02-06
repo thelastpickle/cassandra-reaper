@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -97,8 +98,8 @@ public class CommonTools {
                                                   int segmentCount, Boolean incrementalRepair)
       throws ReaperException {
     List<RingRange> segments = null;
-    assert targetCluster.getPartitioner() != null :
-        "no partitioner for cluster: " + targetCluster.getName();
+    Preconditions.checkState(targetCluster.getPartitioner() != null, 
+        "no partitioner for cluster: " + targetCluster.getName());
     SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
     Set<String> seedHosts = targetCluster.getSeedHosts();
     if (seedHosts.isEmpty()) {
@@ -113,7 +114,7 @@ public class CommonTools {
         segments = sg.generateSegments(segmentCount, tokens, incrementalRepair);
         break;
       } catch (ReaperException e) {
-        LOG.warn("couldn't connect to host: {}, will try next one", host);
+        LOG.warn("couldn't connect to host: {}, will try next one", host, e);
       }
     }
     
@@ -216,7 +217,7 @@ public class CommonTools {
           rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());          
           break;
         } catch (ReaperException e) {
-          LOG.warn("couldn't connect to host: {}, will try next one", host);
+          LOG.warn("couldn't connect to host: {}, will try next one", host, e);
         }
       }
       
@@ -282,10 +283,10 @@ public class CommonTools {
   }
   
   private static final boolean aConflictingScheduleAlreadyExists(RepairUnit newRepairUnit, RepairUnit existingRepairUnit){
-    return (newRepairUnit.getColumnFamilies().size()==0 && existingRepairUnit.getColumnFamilies().size()==0)
-        || newRepairUnit.getColumnFamilies().size()==0 && existingRepairUnit.getColumnFamilies().size()!=0
-        || newRepairUnit.getColumnFamilies().size()!=0 && existingRepairUnit.getColumnFamilies().size()==0
-        || Sets.intersection(existingRepairUnit.getColumnFamilies(),newRepairUnit.getColumnFamilies()).size() >0;
+    return (newRepairUnit.getColumnFamilies().isEmpty() && existingRepairUnit.getColumnFamilies().isEmpty())
+        || newRepairUnit.getColumnFamilies().isEmpty() && !existingRepairUnit.getColumnFamilies().isEmpty()
+        || !newRepairUnit.getColumnFamilies().isEmpty() && existingRepairUnit.getColumnFamilies().isEmpty()
+        || !Sets.intersection(existingRepairUnit.getColumnFamilies(),newRepairUnit.getColumnFamilies()).isEmpty();
     
   }
 
@@ -331,7 +332,7 @@ public class CommonTools {
         cassandraVersion = Optional.fromNullable(jmxProxy.getCassandraVersion());
         break;
       } catch (ReaperException e) {
-        LOG.warn("couldn't connect to host: {}, will try next one", host);
+        LOG.warn("couldn't connect to host: {}, will try next one", host, e);
       }
     }
     if(cassandraVersion.isPresent() && cassandraVersion.get().startsWith("2.0") && incrementalRepair){

@@ -30,7 +30,7 @@ public class SchedulingManager extends TimerTask {
       LOG.info("Starting new SchedulingManager instance");
       schedulingManager = new SchedulingManager(context);
       Timer timer = new Timer("SchedulingManagerTimer");
-      timer.schedule(schedulingManager, 1000, 1000 * 60);
+      timer.schedule(schedulingManager, 1000l, 1000l * 60);
     } else {
       LOG.warn("there is already one instance of SchedulingManager running, not starting new one");
     }
@@ -42,7 +42,7 @@ public class SchedulingManager extends TimerTask {
         .pauseTime(DateTime.now())
         .build(schedule.getId());
     if (!context.storage.updateRepairSchedule(updatedSchedule)) {
-      LOG.error("failed updating repair schedule " + updatedSchedule.getId());
+      LOG.error("failed updating repair schedule {}", updatedSchedule.getId());
     }
     return updatedSchedule;
   }
@@ -53,7 +53,7 @@ public class SchedulingManager extends TimerTask {
         .pauseTime(null)
         .build(schedule.getId());
     if (!context.storage.updateRepairSchedule(updatedSchedule)) {
-      LOG.error("failed updating repair schedule " + updatedSchedule.getId());
+      LOG.error("failed updating repair schedule {}", updatedSchedule.getId());
     }
     return updatedSchedule;
   }
@@ -110,7 +110,7 @@ public class SchedulingManager extends TimerTask {
         Optional<RepairUnit> fetchedUnit =
             context.storage.getRepairUnit(schedule.getRepairUnitId());
         if (!fetchedUnit.isPresent()) {
-          LOG.warn("RepairUnit with id " + schedule.getRepairUnitId() + " not found");
+          LOG.warn("RepairUnit with id {} not found", schedule.getRepairUnitId());
           return false;
         }
         repairUnit = fetchedUnit.get();
@@ -138,8 +138,7 @@ public class SchedulingManager extends TimerTask {
               .build(schedule.getId()));
           return true;
         } catch (ReaperException e) {
-          LOG.error(e.getMessage());
-          e.printStackTrace();
+          LOG.error(e.getMessage(), e);
           skipScheduling(schedule);
           return false;
         }
@@ -148,9 +147,7 @@ public class SchedulingManager extends TimerTask {
         return false;
       }
     } else {
-      if (nextActivatedSchedule == null) {
-        nextActivatedSchedule = schedule;
-      } else if (nextActivatedSchedule.getNextActivation().isAfter(schedule.getNextActivation())) {
+      if (nextActivatedSchedule == null || nextActivatedSchedule.getNextActivation().isAfter(schedule.getNextActivation())) {
         nextActivatedSchedule = schedule;
       }
     }

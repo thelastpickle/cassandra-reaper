@@ -71,7 +71,7 @@ public class RepairRunnerTest {
   }
 
   @Test
-  public void testHangingRepair() throws InterruptedException {
+  public void testHangingRepair() throws InterruptedException, ReaperException {
     final String CLUSTER_NAME = "reaper";
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
@@ -177,7 +177,7 @@ public class RepairRunnerTest {
   }
 
   @Test
-  public void testResumeRepair() throws InterruptedException {
+  public void testResumeRepair() throws InterruptedException, ReaperException {
     final String CLUSTER_NAME = "reaper";
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");

@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperApplicationConfiguration.JmxCredentials;
@@ -128,7 +129,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     // read jmx host/port mapping from config and provide to jmx con.factory
     Map<String, Integer> jmxPorts = config.getJmxPorts();
     if (jmxPorts != null) {
-      LOG.debug("using JMX ports mapping: " + jmxPorts);
+      LOG.debug("using JMX ports mapping: {}", jmxPorts);
       context.jmxConnectionFactory.setJmxPorts(jmxPorts);
     }
 
@@ -201,7 +202,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
       LOG.error("invalid storageType: {}", config.getStorageType());
       throw new ReaperException("invalid storage type: " + config.getStorageType());
     }
-    assert storage.isStorageConnected() : "Failed to connect storage";
+    Preconditions.checkState(storage.isStorageConnected(), "Failed to connect storage");
     return storage;
   }
 
@@ -222,7 +223,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     } catch (java.lang.IllegalArgumentException ex) {
       throw new ReaperException(
           "invalid repair parallelism given \"" + givenRepairParallelism
-          + "\", must be one of: " + Arrays.toString(RepairParallelism.values()));
+          + "\", must be one of: " + Arrays.toString(RepairParallelism.values()), ex);
     }
   }
 
