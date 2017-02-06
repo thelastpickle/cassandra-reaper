@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.spotify.reaper.AppContext;
@@ -109,7 +110,7 @@ public class RepairRunResource {
         intensity = Double.parseDouble(intensityStr.get());
       } else {
         intensity = context.config.getRepairIntensity();
-        LOG.debug("no intensity given, so using default value: " + intensity);
+        LOG.debug("no intensity given, so using default value: {}", intensity);
       }
 
       Boolean incrementalRepair;
@@ -117,7 +118,7 @@ public class RepairRunResource {
     	  incrementalRepair = Boolean.parseBoolean(incrementalRepairStr.get());
       } else {
     	  incrementalRepair = context.config.getIncrementalRepair();
-        LOG.debug("no incremental repair given, so using default value: " + incrementalRepair);
+        LOG.debug("no incremental repair given, so using default value: {}", incrementalRepair);
       }
 
       
@@ -143,6 +144,7 @@ public class RepairRunResource {
         tableNames = CommonTools.getTableNamesBasedOnParam(context, cluster,
                                                            keyspace.get(), tableNamesParam);
       } catch (IllegalArgumentException ex) {
+        LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
 
@@ -174,8 +176,7 @@ public class RepairRunResource {
           .entity(new RepairRunStatus(newRepairRun, theRepairUnit, 0)).build();
 
     } catch (ReaperException e) {
-      LOG.error(e.getMessage());
-      e.printStackTrace();
+      LOG.error(e.getMessage(), e);
       return Response.status(500).entity(e.getMessage()).build();
     }
   }
@@ -208,6 +209,7 @@ public class RepairRunResource {
       try {
         ReaperApplication.checkRepairParallelismString(repairParallelism.get());
       } catch (ReaperException ex) {
+        LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.BAD_REQUEST).entity(ex.getMessage()).build();
       }
     }
@@ -220,6 +222,7 @@ public class RepairRunResource {
               + intensityStr.get()).build();
         }
       } catch (NumberFormatException ex) {
+        LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.BAD_REQUEST).entity(
             "invalid value for query parameter \"intensity\": " + intensityStr.get()).build();
       }
@@ -244,13 +247,14 @@ public class RepairRunResource {
    *
    * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 501
    * (NOT_IMPLEMENTED) if transition is not supported.
+   * @throws ReaperException 
    */
   @PUT
   @Path("/{id}")
   public Response modifyRunState(
       @Context UriInfo uriInfo,
       @PathParam("id") Long repairRunId,
-      @QueryParam("state") Optional<String> state) {
+      @QueryParam("state") Optional<String> state) throws ReaperException {
 
     LOG.info("modify repair run state called with: id = {}, state = {}", repairRunId, state);
 
@@ -306,9 +310,7 @@ public class RepairRunResource {
       return startRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
     } else if (isPausing(oldState, newState)) {
       return pauseRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
-    } else if (isResuming(oldState, newState)) {
-      return resumeRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
-    } else if (isRetrying(oldState, newState)) {
+    } else if (isResuming(oldState, newState) || isRetrying(oldState, newState)) {
       return resumeRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
     } else if (isAborting(oldState, newState)) {
       return abortRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
@@ -340,7 +342,7 @@ public class RepairRunResource {
     return oldState != RepairRun.RunState.ERROR && newState == RepairRun.RunState.ABORTED;
   }
 
-  private Response startRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) {
+  private Response startRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) throws ReaperException {
     LOG.info("Starting run {}", repairRun.getId());
     RepairRun newRun = context.repairManager.startRepairRun(context, repairRun);
     return Response.status(Response.Status.OK).entity(
@@ -348,19 +350,19 @@ public class RepairRunResource {
         .build();
   }
 
-  private Response pauseRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) {
+  private Response pauseRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) throws ReaperException {
     LOG.info("Pausing run {}", repairRun.getId());
     RepairRun newRun = context.repairManager.pauseRepairRun(context, repairRun);
     return Response.ok().entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired)).build();
   }
 
-  private Response resumeRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) {
+  private Response resumeRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) throws ReaperException {
     LOG.info("Resuming run {}", repairRun.getId());
     RepairRun newRun = context.repairManager.startRepairRun(context, repairRun);
     return Response.ok().entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired)).build();
   }
 
-  private Response abortRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) {
+  private Response abortRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) throws ReaperException {
     LOG.info("Aborting run {}", repairRun.getId());
     RepairRun newRun = context.repairManager.abortRepairRun(context, repairRun);
     return Response.ok().entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired)).build();
@@ -402,7 +404,7 @@ public class RepairRunResource {
    */
   private RepairRunStatus getRepairRunStatus(RepairRun repairRun) {
     Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
-    assert repairUnit.isPresent() : "no repair unit found with id: " + repairRun.getRepairUnitId();
+    Preconditions.checkState(repairUnit.isPresent(), "no repair unit found with id: " + repairRun.getRepairUnitId());
     int segmentsRepaired =
         context.storage.getSegmentAmountForRepairRunWithState(repairRun.getId(),
             RepairSegment.State.DONE);
@@ -420,8 +422,7 @@ public class RepairRunResource {
     try {
       runUri = new URL(uriInfo.getBaseUri().toURL(), newRepairRunPathPart).toURI();
     } catch (MalformedURLException | URISyntaxException e) {
-      LOG.error(e.getMessage());
-      e.printStackTrace();
+      LOG.error(e.getMessage(), e);
     }
     checkNotNull(runUri, "failed to build repair run uri");
     return runUri;
@@ -474,7 +475,7 @@ public class RepairRunResource {
         try {
           RepairRun.RunState.valueOf(chunk.toUpperCase());
         } catch (IllegalArgumentException e) {
-          LOG.warn("Listing repair runs called with erroneous states: {}", state.get());
+          LOG.warn("Listing repair runs called with erroneous states: {}", state.get(), e);
           return null;
         }
       }

@@ -30,7 +30,7 @@ public class PingResource {
   @GET
   public String answerPing() {
     LOG.debug("ping called");
-    return String.format("Cassandra Reaper ping resource: PONG");
+    return "Cassandra Reaper ping resource: PONG";
   }
 
 }

@@ -172,7 +172,7 @@ public class RepairRunResourceTest {
   }
 
   @Test
-  public void testTriggerNotExistingRun() {
+  public void testTriggerNotExistingRun() throws ReaperException {
     RepairRunResource resource = new RepairRunResource(context);
     Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
     Response response = resource.modifyRunState(uriInfo, 42l, newState);
@@ -182,7 +182,7 @@ public class RepairRunResourceTest {
   }
 
   @Test
-  public void testTriggerAlreadyRunningRun() throws InterruptedException {
+  public void testTriggerAlreadyRunningRun() throws InterruptedException, ReaperException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
     context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
                                                RETRY_DELAY_S, TimeUnit.SECONDS);
@@ -200,7 +200,7 @@ public class RepairRunResourceTest {
   }
   
   @Test
-  public void testTriggerNewRunAlreadyRunningRun() throws InterruptedException {
+  public void testTriggerNewRunAlreadyRunningRun() throws InterruptedException, ReaperException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
     context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
                                                RETRY_DELAY_S, TimeUnit.SECONDS);
@@ -261,7 +261,7 @@ public class RepairRunResourceTest {
   }
 
   @Test
-  public void testPauseNotRunningRun() throws InterruptedException {
+  public void testPauseNotRunningRun() throws InterruptedException, ReaperException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
     context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
                                                RETRY_DELAY_S, TimeUnit.SECONDS);
@@ -285,7 +285,7 @@ public class RepairRunResourceTest {
   }
 
   @Test
-  public void testPauseNotExistingRun() throws InterruptedException {
+  public void testPauseNotExistingRun() throws InterruptedException, ReaperException {
     RepairRunResource resource = new RepairRunResource(context);
     Response response = resource.modifyRunState(uriInfo, 42l,
                                                 Optional.of(RepairRun.RunState.PAUSED.toString()));

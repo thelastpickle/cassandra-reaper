@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -51,8 +52,9 @@ public class RepairManager {
    * Consult storage to see if any repairs are running, and resume those repair runs.
    *
    * @param context Reaper's application context.
+   * @throws ReaperException 
    */
-  public void resumeRunningRepairRuns(AppContext context) {
+  public void resumeRunningRepairRuns(AppContext context) throws ReaperException {
     Collection<RepairRun> running =
         context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
     for (RepairRun repairRun : running) {
@@ -64,7 +66,7 @@ public class RepairManager {
           SegmentRunner.abort(context, segment, jmxProxy);
         } catch (ReaperException e) {
           LOG.debug("Tried to abort repair on segment {} marked as RUNNING, but the host was down"
-                    + " (so abortion won't be needed)", segment.getId());          
+                    + " (so abortion won't be needed)", segment.getId(), e);          
           SegmentRunner.postpone(context, segment, context.storage.getRepairUnit(repairRun.getId()));
         }
       }
@@ -77,7 +79,7 @@ public class RepairManager {
     }
   }
 
-  public RepairRun startRepairRun(AppContext context, RepairRun runToBeStarted) {
+  public RepairRun startRepairRun(AppContext context, RepairRun runToBeStarted) throws ReaperException {
     assert null != executor : "you need to initialize the thread pool first";
     long runId = runToBeStarted.getId();
     LOG.info("Starting a run with id #{} with current state '{}'",
@@ -89,7 +91,7 @@ public class RepairManager {
             .startTime(DateTime.now())
             .build(runToBeStarted.getId());
         if (!context.storage.updateRepairRun(updatedRun)) {
-          throw new RuntimeException("failed updating repair run " + updatedRun.getId());
+          throw new ReaperException("failed updating repair run " + updatedRun.getId());
         }
         startRunner(context, runId);
         return updatedRun;
@@ -100,14 +102,14 @@ public class RepairManager {
             .pauseTime(null)
             .build(runToBeStarted.getId());
         if (!context.storage.updateRepairRun(updatedRun)) {
-          throw new RuntimeException("failed updating repair run " + updatedRun.getId());
+          throw new ReaperException("failed updating repair run " + updatedRun.getId());
         }
         return updatedRun;
       }
       case RUNNING:
-        assert !repairRunners.containsKey(runId) :
-            "trying to re-trigger run that is already running, with id " + runId;
-        LOG.info("re-trigger a running run after restart, with id " + runId);
+        Preconditions.checkState(!repairRunners.containsKey(runId),
+            "trying to re-trigger run that is already running, with id " + runId);
+        LOG.info("re-trigger a running run after restart, with id {}", runId);
         startRunner(context, runId);
         return runToBeStarted;
       case ERROR: {
@@ -116,13 +118,13 @@ public class RepairManager {
             .endTime(null)
             .build(runToBeStarted.getId());
         if (!context.storage.updateRepairRun(updatedRun)) {
-          throw new RuntimeException("failed updating repair run " + updatedRun.getId());
+          throw new ReaperException("failed updating repair run " + updatedRun.getId());
         }
         startRunner(context, runId);
         return updatedRun;
       }
       default:
-        throw new RuntimeException("cannot start run with state: " + runToBeStarted.getRunState());
+        throw new ReaperException("cannot start run with state: " + runToBeStarted.getRunState());
     }
   }
 
@@ -134,8 +136,7 @@ public class RepairManager {
         repairRunners.put(runId, newRunner);
         executor.submit(newRunner);
       } catch (ReaperException e) {
-        e.printStackTrace();
-        LOG.warn("Failed to schedule repair for repair run #{}", runId);
+        LOG.warn("Failed to schedule repair for repair run #{}", runId, e);
       }
     } else {
       LOG.error(
@@ -144,24 +145,24 @@ public class RepairManager {
     }
   }
 
-  public RepairRun pauseRepairRun(AppContext context, RepairRun runToBePaused) {
+  public RepairRun pauseRepairRun(AppContext context, RepairRun runToBePaused) throws ReaperException {
     RepairRun updatedRun = runToBePaused.with()
         .runState(RepairRun.RunState.PAUSED)
         .pauseTime(DateTime.now())
         .build(runToBePaused.getId());
     if (!context.storage.updateRepairRun(updatedRun)) {
-      throw new RuntimeException("failed updating repair run " + updatedRun.getId());
+      throw new ReaperException("failed updating repair run " + updatedRun.getId());
     }
     return updatedRun;
   }
 
-  public RepairRun abortRepairRun(AppContext context, RepairRun runToBeAborted) {
+  public RepairRun abortRepairRun(AppContext context, RepairRun runToBeAborted) throws ReaperException {
     RepairRun updatedRun = runToBeAborted.with()
         .runState(RepairRun.RunState.ABORTED)
         .pauseTime(DateTime.now())
         .build(runToBeAborted.getId());
     if (!context.storage.updateRepairRun(updatedRun)) {
-      throw new RuntimeException("failed updating repair run " + updatedRun.getId());
+      throw new ReaperException("failed updating repair run " + updatedRun.getId());
     }
     return updatedRun;
   }

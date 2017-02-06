@@ -130,9 +130,7 @@ public class RepairRunStatus {
       estimatedTimeOfArrival = null;
     } else {
       if (state == RepairRun.RunState.ERROR || state == RepairRun.RunState.DELETED ||
-          state == RepairRun.RunState.ABORTED ) {
-        estimatedTimeOfArrival = null;
-      } else if (segmentsRepaired == 0) {
+          state == RepairRun.RunState.ABORTED || segmentsRepaired == 0) {
         estimatedTimeOfArrival = null;
       }
       else {

@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
@@ -106,21 +107,18 @@ public class RepairScheduleResource {
         try {
           nextActivation = DateTime.parse(scheduleTriggerTime.get());
         } catch (IllegalArgumentException ex) {
-          LOG.info("cannot parse data string: " + scheduleTriggerTime.get());
+          LOG.info("cannot parse data string: {}", scheduleTriggerTime.get(), ex);
           return Response.status(Response.Status.BAD_REQUEST).entity(
               "invalid schedule_trigger_time").build();
         }
-        LOG.info("first schedule activation will be: "
-                 + CommonTools.dateTimeToISO8601(nextActivation));
+        LOG.info("first schedule activation will be: {}", CommonTools.dateTimeToISO8601(nextActivation));
       } else {
         nextActivation = DateTime.now().plusDays(1).withTimeAtStartOfDay();
-        LOG.info("no schedule_trigger_time given, so setting first scheduling next night: "
-                 + CommonTools.dateTimeToISO8601(nextActivation));
+        LOG.info("no schedule_trigger_time given, so setting first scheduling next night: {}", CommonTools.dateTimeToISO8601(nextActivation));
       }
       if (nextActivation.isBeforeNow()) {
         return Response.status(Response.Status.BAD_REQUEST).entity(
-            "given schedule_trigger_time is in the past: "
-            + CommonTools.dateTimeToISO8601(nextActivation)).build();
+            "given schedule_trigger_time is in the past: " + CommonTools.dateTimeToISO8601(nextActivation)).build();
       }
       
       if(!scheduleDaysBetween.isPresent()) {
@@ -133,7 +131,7 @@ public class RepairScheduleResource {
         intensity = Double.parseDouble(intensityStr.get());
       } else {
         intensity = context.config.getRepairIntensity();
-        LOG.debug("no intensity given, so using default value: " + intensity);
+        LOG.debug("no intensity given, so using default value: {}", intensity);
       }
       
       Boolean incrementalRepair;
@@ -141,7 +139,7 @@ public class RepairScheduleResource {
     	  incrementalRepair = Boolean.parseBoolean(incrementalRepairStr.get());
       } else {
     	  incrementalRepair = context.config.getIncrementalRepair();
-        LOG.debug("no incremental repair given, so using default value: " + incrementalRepair);
+        LOG.debug("no incremental repair given, so using default value: {}", incrementalRepair);
       }
 
       int segments = context.config.getSegmentCount();
@@ -164,6 +162,7 @@ public class RepairScheduleResource {
         tableNames = CommonTools.getTableNamesBasedOnParam(context, cluster, keyspace.get(),
             tableNamesParam);
       } catch (IllegalArgumentException ex) {
+        LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
 
@@ -197,8 +196,7 @@ public class RepairScheduleResource {
           .entity(new RepairScheduleStatus(newRepairSchedule, theRepairUnit)).build();
 
     } catch (ReaperException e) {
-      LOG.error(e.getMessage());
-      e.printStackTrace();
+      LOG.error(e.getMessage(), e);
       return Response.status(500).entity(e.getMessage()).build();
     }
   }
@@ -245,6 +243,7 @@ public class RepairScheduleResource {
     try {
       newState = RepairSchedule.State.valueOf(state.get().toUpperCase());
     } catch (IllegalArgumentException ex) {
+      LOG.error(ex.getMessage(), ex);
       return Response.status(Response.Status.BAD_REQUEST.getStatusCode())
           .entity("invalid \"state\" argument: " + state.get()).build();
     }
@@ -325,8 +324,8 @@ public class RepairScheduleResource {
   private RepairScheduleStatus getRepairScheduleStatus(RepairSchedule repairSchedule) {
     Optional<RepairUnit> repairUnit =
         context.storage.getRepairUnit(repairSchedule.getRepairUnitId());
-    assert repairUnit.isPresent() : "no repair unit found with id: "
-                                    + repairSchedule.getRepairUnitId();
+    Preconditions.checkState(repairUnit.isPresent(), "no repair unit found with id: "
+                                    + repairSchedule.getRepairUnitId());
     return new RepairScheduleStatus(repairSchedule, repairUnit.get());
   }
 
@@ -341,8 +340,7 @@ public class RepairScheduleResource {
     try {
       scheduleUri = new URL(uriInfo.getBaseUri().toURL(), newRepairSchedulePathPart).toURI();
     } catch (MalformedURLException | URISyntaxException e) {
-      LOG.error(e.getMessage());
-      e.printStackTrace();
+      LOG.error(e.getMessage(), e);
     }
     checkNotNull(scheduleUri, "failed to build repair schedule uri");
     return scheduleUri;

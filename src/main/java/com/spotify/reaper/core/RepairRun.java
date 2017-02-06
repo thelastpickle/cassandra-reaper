@@ -13,6 +13,8 @@
  */
 package com.spotify.reaper.core;
 
+import java.util.Objects;
+
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeComparator;
@@ -132,6 +134,23 @@ public class RepairRun implements Comparable<RepairRun> {
     } else {
       return -comparator.compare(startTime, other.startTime);
     }
+  }
+  
+  @Override
+  public boolean equals(Object other) {
+    if (other == this) 
+      return true;
+    if (!(other instanceof RepairRun)) {
+      return false;
+    }
+    RepairRun run = (RepairRun) other;
+    return this.id == run.id
+        && this.repairUnitId == run.repairUnitId;
+  }
+  
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.id, this.repairUnitId);
   }
 
   public enum RunState {

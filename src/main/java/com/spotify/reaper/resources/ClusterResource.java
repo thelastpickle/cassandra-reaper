@@ -121,10 +121,12 @@ public class ClusterResource {
     try {
       newCluster = createClusterWithSeedHost(seedHost.get());
     } catch (java.lang.SecurityException e) {
+      LOG.error(e.getMessage(), e);
       return Response.status(400)
           .entity("seed host \"" + seedHost.get() + "\" JMX threw security exception: "
                   + e.getMessage()).build();
     } catch (ReaperException e) {
+      LOG.error(e.getMessage(), e);
       return Response.status(400)
           .entity("failed to create cluster with seed host: " + seedHost.get()).build();
     }
@@ -144,8 +146,7 @@ public class ClusterResource {
       createdURI = new URL(uriInfo.getAbsolutePath().toURL(), newCluster.getName()).toURI();
     } catch (Exception e) {
       String errMsg = "failed creating target URI for cluster: " + newCluster.getName();
-      LOG.error(errMsg);
-      e.printStackTrace();
+      LOG.error(errMsg, e);
       return Response.status(400).entity(errMsg).build();
     }
 
@@ -160,8 +161,7 @@ public class ClusterResource {
       clusterName = jmxProxy.getClusterName();
       partitioner = jmxProxy.getPartitioner();
     } catch (ReaperException e) {
-      LOG.error("failed to create cluster with seed host: " + seedHost);
-      e.printStackTrace();
+      LOG.error("failed to create cluster with seed host: {}", seedHost, e);
       throw e;
     }
     return new Cluster(clusterName, partitioner, Collections.singleton(seedHost));
