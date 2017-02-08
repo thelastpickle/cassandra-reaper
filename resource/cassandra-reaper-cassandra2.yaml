@@ -12,8 +12,6 @@ enableCrossOrigin: true
 incrementalRepair: false
 allowUnreachableNodes: false
 enableDynamicSeedList: true
-repairManagerSchedulingIntervalSeconds: 30
-activateQueryLogger: false
 
 jmxPorts:
   127.0.0.1: 7100
@@ -46,11 +44,11 @@ server:
   type: default
   applicationConnectors:
     - type: http
-      port: 8080
+      port: 8082
       bindHost: 0.0.0.0
   adminConnectors:
     - type: http
-      port: 8081
+      port: 8083
       bindHost: 0.0.0.0
   requestLog:
     appenders: []
