@@ -17,7 +17,9 @@ services:
     links:
       - cassandra:cassandra
     ports:
+      # web ui port
       - "8080:8080"
+      # admin ui port
       - "8081:8081"
     restart: always
 

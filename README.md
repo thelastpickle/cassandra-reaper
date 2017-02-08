@@ -370,15 +370,18 @@ Once a container is running, we can copy the built packages out of the
 container and onto our local filesystem:
 
     # copy Debian packages
-    docker cp `docker ps | grep reaper-debian | awk '{print $1}'`:/usr/src/app/packages/cassandra-reaper-cli_0.2.3-1_all.deb .
-    docker cp `docker ps | grep reaper-debian | awk '{print $1}'`:/usr/src/app/packages/cassandra-reaper_0.2.3-1_all.deb .
+    CONTAINER_ID=`docker ps | grep reaper-debian | awk '{print $1}'`
+    docker cp $CONTAINER_ID:/usr/src/app/packages/cassandra-reaper-cli_0.2.3-1_all.deb .
+    docker cp $CONTAINER_ID:/usr/src/app/packages/cassandra-reaper_0.2.3-1_all.deb .
 
     # copy jars
-    docker cp `docker ps | grep reaper-jar | awk '{print $1}'`:/usr/src/app/packages/cassandra-reaper-0.4.0-SNAPSHOT.jar .
-    docker cp `docker ps | grep reaper-jar | awk '{print $1}'`:/usr/src/app/packages/original-cassandra-reaper-0.4.0-SNAPSHOT.jar .
+    CONTAINER_ID=`docker ps | grep reaper-jar | awk '{print $1}'`
+    docker cp $CONTAINER_ID:/usr/src/app/packages/cassandra-reaper-0.4.0-SNAPSHOT.jar .
+    docker cp $CONTAINER_ID:/usr/src/app/packages/original-cassandra-reaper-0.4.0-SNAPSHOT.jar .
 
     # copy RPM packages
-    docker cp `docker ps | grep reaper-rhel | awk '{print $1}'`:/usr/src/app/packages/reaper-0.4.0_SNAPSHOT-1.x86_64.rpm .
+    CONTAINER_ID=`docker ps | grep reaper-rhel | awk '{print $1}'`
+    docker cp $CONTAINER_ID:/usr/src/app/packages/reaper-0.4.0_SNAPSHOT-1.x86_64.rpm .
 
 Running In-Memory Reaper using Docker
 -------------------------------------
