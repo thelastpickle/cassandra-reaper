@@ -161,5 +161,4 @@ public interface IStorage {
   
   int countRunningReapers();
   void saveHeartbeat();
-  
 }

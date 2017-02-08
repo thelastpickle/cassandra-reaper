@@ -367,6 +367,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         return false;
       }
     }
+
     if(gotMetricsForAllHosts) {
       LOG.info("It is ok to repair segment '{}' on repair run with id '{}'",
           segment.getId(), segment.getRunId());
@@ -404,7 +405,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       return Optional.fromNullable(metrics);
       
     } catch(Exception e) {
-      LOG.info("Cannot reach node {} through JMX. Trying to get metrics from storage...", hostName, e);
+      LOG.debug("Cannot reach node {} through JMX. Trying to get metrics from storage...", hostName, e);
       return context.storage.getHostMetrics(hostName);
     }
   }
@@ -519,6 +520,7 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
                 .state(RepairSegment.State.RUNNING)
                 .startTime(now)
                 .build(segmentId));
+            context.storage.renewLeadOnSegment(segmentId);
             LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
             break;
   
