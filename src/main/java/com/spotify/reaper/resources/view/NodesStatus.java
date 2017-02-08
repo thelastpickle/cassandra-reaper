@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public class NodesStatus {
   @JsonProperty
   public final List<GossipInfo> endpointStates;
-  private static Pattern endpointNamePattern = Pattern.compile("^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})", Pattern.MULTILINE);
+  private static Pattern endpointNamePattern = Pattern.compile("^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})", Pattern.MULTILINE | Pattern.DOTALL);
   private static Pattern endpointStatusPattern = Pattern.compile("(STATUS):([0-9]*):(\\w+)");
   private static Pattern endpointDcPattern = Pattern.compile("(DC):([0-9]*):([0-9a-zA-Z-\\.]+)");
   private static Pattern endpointRackPattern = Pattern.compile("(RACK):([0-9]*):([0-9a-zA-Z-\\.]+)");

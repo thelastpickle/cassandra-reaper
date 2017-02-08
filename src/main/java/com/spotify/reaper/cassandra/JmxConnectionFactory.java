@@ -17,6 +17,7 @@ import com.google.common.base.Optional;
 
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.spotify.reaper.ReaperApplicationConfiguration.JmxCredentials;
+import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 
@@ -37,13 +38,18 @@ public class JmxConnectionFactory {
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
   private EC2MultiRegionAddressTranslator addressTranslator;
+  private boolean localMode = false;
 
   public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
       throws ReaperException {
     // use configured jmx port for host if provided
+    if(localMode) {
+      host = "127.0.0.1";
+    }
     if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
       host = host + ":" + jmxPorts.get(host);
     }
+    
     String username = null;
     String password = null;
     if(jmxAuth != null) {
@@ -97,5 +103,9 @@ public class JmxConnectionFactory {
 
   public void setAddressTranslator(EC2MultiRegionAddressTranslator addressTranslator) {
     this.addressTranslator = addressTranslator;
+  }
+  
+  public void setLocalMode(boolean localMode) {
+    this.localMode = localMode;
   }
 }

@@ -13,9 +13,13 @@
  */
 package com.spotify.reaper;
 
+import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.DispatcherType;
@@ -50,6 +54,7 @@ import com.spotify.reaper.storage.CassandraStorage;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
+import com.spotify.reaper.storage.StorageType;
 
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
@@ -64,13 +69,18 @@ import sun.misc.SignalHandler;
 public class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
   static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
-
+  public static final UUID REAPER_INSTANCE_ID = UUID.randomUUID();
+  private static String reaperInstanceAddress;
+  private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+  private static final String DEFAULT_INSTANCE_ADDRESS = "127.0.0.1";
+  
   private AppContext context;
 
   public ReaperApplication() {
     super();
     LOG.info("default ReaperApplication constructor called");
     this.context = new AppContext();
+    setInstanceAddress();
   }
 
   @VisibleForTesting
@@ -78,10 +88,24 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     super();
     LOG.info("ReaperApplication constructor called with custom AppContext");
     this.context = context;
+    setInstanceAddress();
   }
 
   public static void main(String[] args) throws Exception {
     new ReaperApplication().run(args);
+  }
+  
+  private static void setInstanceAddress() {
+    try{
+      ReaperApplication.reaperInstanceAddress = InetAddress.getLocalHost().getHostAddress();
+    } catch(Exception e) {
+      LOG.warn("Cannot get instance address", e);
+      ReaperApplication.reaperInstanceAddress = DEFAULT_INSTANCE_ADDRESS;
+    }
+  }
+  
+  public static String getInstanceAddress() {
+    return reaperInstanceAddress;
   }
 
   @Override
@@ -146,6 +170,8 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     if(config.useAddressTranslator()) {
       context.jmxConnectionFactory.setAddressTranslator(new EC2MultiRegionAddressTranslator());
     }
+    
+    context.jmxConnectionFactory.setLocalMode(context.config.getLocalJmxMode());
 
     // Enable cross-origin requests for using external GUI applications.
     if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {
@@ -190,7 +216,25 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     }
 
     LOG.info("resuming pending repair runs");
-    context.repairManager.resumeRunningRepairRuns(context);
+    
+    if (context.storage.getStorageType() == StorageType.CASSANDRA) {
+      // Allowing multiple Reaper instances to work concurrently requires
+      // us to poll the database for running repairs regularly
+      // only with Cassandra storage
+      scheduler.scheduleWithFixedDelay(
+        () -> {
+            try {
+              context.repairManager.resumeRunningRepairRuns(context);
+            } catch (ReaperException e) {
+              LOG.error("Couldn't resume running repair runs", e);
+            } 
+        }, 0, 10, TimeUnit.SECONDS);
+    }
+    else {
+      // Storage is different than Cassandra, assuming we have a single instance
+      context.repairManager.resumeRunningRepairRuns(context);
+    }
+    
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config,
