@@ -186,7 +186,6 @@ public final class CommonTools {
   }
 
   private static Map<String, RingRange> getClusterNodes(AppContext context,  Cluster targetCluster, RepairUnit repairUnit) throws ReaperException {
-    Set<String> nodes = Sets.newHashSet();
     ConcurrentHashMap<String, RingRange> nodesWithRanges = new ConcurrentHashMap<String, RingRange>();
     Set<String> seedHosts = targetCluster.getSeedHosts();
       if (seedHosts.isEmpty()) {
@@ -314,7 +313,6 @@ public final class CommonTools {
     Optional<String> cassandraVersion = Optional.absent();
     for (String host : cluster.getSeedHosts()) {
       try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host)) {
-        List<BigInteger> tokens = jmxProxy.getTokens();
         cassandraVersion = Optional.fromNullable(jmxProxy.getCassandraVersion());
         break;
       } catch (ReaperException e) {

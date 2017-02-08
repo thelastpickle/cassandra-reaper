@@ -27,8 +27,10 @@ import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.HostMetrics;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairRun.Builder;
 import com.spotify.reaper.core.RepairRun.RunState;
@@ -83,9 +85,25 @@ public final class CassandraStorage implements IStorage {
   private PreparedStatement insertRepairScheduleByClusterAndKsPrepStmt;
   private PreparedStatement deleteRepairSchedulePrepStmt;
   private PreparedStatement deleteRepairScheduleByClusterAndKsPrepStmt;
-
+  private PreparedStatement deleteRepairSegmentPrepStmt;
+  private PreparedStatement deleteRepairSegmentByRunId;
+  private PreparedStatement insertRepairId;
+  private PreparedStatement selectRepairId;
+  private PreparedStatement updateRepairId;
+  private PreparedStatement getLeadOnSegmentPrepStmt;
+  private PreparedStatement renewLeadOnSegmentPrepStmt;
+  private PreparedStatement releaseLeadOnSegmentPrepStmt;
+  private PreparedStatement storeHostMetricsPrepStmt;
+  private PreparedStatement getHostMetricsPrepStmt;
+  private PreparedStatement getRunningReapersCountPrepStmt;
+  private PreparedStatement saveHeartbeatPrepStmt;
+  
+  private DateTime lastHeartBeat = DateTime.now();
+  
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
-    cassandra = config.getCassandraFactory().build(environment).register(QueryLogger.builder().build());
+    cassandra = config.getCassandraFactory().build(environment);
+    if(config.getActivateQueryLogger())
+      cassandra.register(QueryLogger.builder().build());
     CodecRegistry codecRegistry = cassandra.getConfiguration().getCodecRegistry();
     codecRegistry.register(new DateTimeCodec());
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());
@@ -96,6 +114,7 @@ public final class CassandraStorage implements IStorage {
     migration.migrate();
     Migration003.migrate(session);
     prepareStatements();
+    lastHeartBeat = lastHeartBeat.minusMinutes(1);
   }
 
   private void prepareStatements(){
@@ -122,6 +141,16 @@ public final class CassandraStorage implements IStorage {
     getRepairScheduleByClusterAndKsPrepStmt = session.prepare("SELECT repair_schedule_id FROM repair_schedule_by_cluster_and_keyspace WHERE cluster_name = ? and keyspace_name = ?");
     deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule_v1 WHERE id = ?");
     deleteRepairScheduleByClusterAndKsPrepStmt = session.prepare("DELETE FROM repair_schedule_by_cluster_and_keyspace WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
+    insertRepairId = session.prepare("INSERT INTO repair_id (id_type, id) VALUES(?, 0) IF NOT EXISTS");
+    selectRepairId = session.prepare("SELECT id FROM repair_id WHERE id_type = ?");
+    updateRepairId = session.prepare("UPDATE repair_id SET id=? WHERE id_type =? IF id = ?");
+    getLeadOnSegmentPrepStmt = session.prepare("INSERT INTO segment_leader(segment_id, reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?, ?, ?, dateof(now())) IF NOT EXISTS");
+    renewLeadOnSegmentPrepStmt = session.prepare("UPDATE segment_leader SET reaper_instance_id = ?, reaper_instance_host = ?, last_heartbeat = dateof(now()) WHERE segment_id = ? IF reaper_instance_id = ?");
+    releaseLeadOnSegmentPrepStmt = session.prepare("DELETE FROM segment_leader WHERE segment_id = ? IF reaper_instance_id = ?");
+    storeHostMetricsPrepStmt = session.prepare("INSERT INTO host_metrics (host_address, ts, pending_compactions, has_repair_running, active_anticompactions) VALUES(?, dateof(now()), ?, ?, ?)");
+    getHostMetricsPrepStmt = session.prepare("SELECT * FROM host_metrics WHERE host_address = ?");
+    getRunningReapersCountPrepStmt = session.prepare("SELECT count(*) as nb_reapers FROM running_reapers");
+    saveHeartbeatPrepStmt = session.prepare("INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?,?,dateof(now()))");
   }
 
   @Override
@@ -403,6 +432,26 @@ public final class CassandraStorage implements IStorage {
 
     return segments;
   }
+  
+  @Override
+  public Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(UUID runId, List<RingRange> localRanges) {
+    LOG.debug("Getting ranges for local node {}", localRanges);
+    Collection<RepairSegment> segments = Lists.newArrayList();
+
+    // First gather segments ids
+    ResultSet segmentsResultSet = session.execute(getRepairSegmentsByRunIdPrepStmt.bind(runId));
+    segmentsResultSet.forEach(segmentRow -> {
+      RepairSegment seg = createRepairSegmentFromRow(segmentRow);
+      RingRange range = new RingRange(seg.getStartToken(), seg.getEndToken());
+      localRanges.stream().forEach(localRange -> {
+        if(localRange.encloses(range)) {
+          segments.add(seg);
+        }
+      });
+    });
+
+    return segments;
+  }
 
   private boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
     return range.encloses(new RingRange(segment.getStartToken(), segment.getEndToken()));
@@ -446,8 +495,10 @@ public final class CassandraStorage implements IStorage {
               (segmentIsWithinRange(seg, range.get()))
               ) || !range.isPresent()) // Token range condition
           ){
-        segment = seg;
-        break;
+        if(takeLeadOnSegment(seg.getId())) {
+          segment = seg;
+          break;
+        }
       }
     }
     return Optional.fromNullable(segment);
@@ -704,4 +755,81 @@ public final class CassandraStorage implements IStorage {
         .build(id);
   }
 
+  @Override
+  public boolean takeLeadOnSegment(UUID segmentId) {
+    LOG.debug("Trying to take lead on segment {}", segmentId);
+    ResultSet lwtResult = session.execute(getLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
+    if (lwtResult.wasApplied()) {
+      LOG.debug("Took lead on segment {}", segmentId);
+      return true;
+    }
+    
+    // Another instance took the lead on the segment
+    LOG.debug("Could not take lead on segment {}", segmentId);
+    return false;
+  }
+
+  @Override
+  public boolean renewLeadOnSegment(UUID segmentId) {
+    ResultSet lwtResult = session.execute(renewLeadOnSegmentPrepStmt.bind(ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress(), segmentId, ReaperApplication.REAPER_INSTANCE_ID));
+    if (lwtResult.wasApplied()) {
+      LOG.debug("Renewed lead on segment {}", segmentId);
+      return true;
+    }
+    
+    LOG.debug("Failed to renew lead on segment {}", segmentId);
+    return false;
+  }
+
+  @Override
+  public void releaseLeadOnSegment(UUID segmentId) {
+    ResultSet lwtResult = session.execute(releaseLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID));
+    if (lwtResult.wasApplied()) {
+      LOG.debug("Released lead on segment {}", segmentId);
+    } else {
+      LOG.error("Could not release lead on segment {}", segmentId);
+    }
+  }
+
+  @Override
+  public void storeHostMetrics(HostMetrics hostMetrics) {    
+    session.execute(storeHostMetricsPrepStmt.bind(hostMetrics.getHostAddress(), hostMetrics.getPendingCompactions(), hostMetrics.hasRepairRunning(), hostMetrics.getActiveAnticompactions()));
+  }
+
+  @Override
+  public Optional<HostMetrics> getHostMetrics(String hostName) {
+    ResultSet result = session.execute(getHostMetricsPrepStmt.bind(hostName));
+    for(Row metrics:result) {
+      return Optional.of(HostMetrics.builder().withHostAddress(hostName)
+                                  .withPendingCompactions(metrics.getInt("pending_compactions"))
+                                  .withHasRepairRunning(metrics.getBool("has_repair_running"))
+                                  .withActiveAnticompactions(metrics.getInt("active_anticompactions"))
+                                  .build());
+     }
+    
+    return Optional.absent();
+  }
+
+  @Override
+  public StorageType getStorageType() {
+    return StorageType.CASSANDRA;
+  }
+
+  @Override
+  public int countRunningReapers() {
+    ResultSet result = session.execute(getRunningReapersCountPrepStmt.bind());
+    int runningReapers = (int) result.one().getLong("nb_reapers");
+    LOG.debug("Running reapers = {}", runningReapers);
+    return runningReapers>0?runningReapers:1;
+  }
+
+  @Override
+  public void saveHeartbeat() {
+    DateTime now = DateTime.now();
+    // Send heartbeats every minute
+    if(now.minusSeconds(60).getMillis() >= lastHeartBeat.getMillis()) {
+      session.executeAsync(saveHeartbeatPrepStmt.bind(ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
+      lastHeartBeat = now;
+    }
+  }
 }
