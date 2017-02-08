@@ -19,6 +19,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.spotify.reaper.AppContext;
+import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
@@ -99,6 +100,8 @@ public class RepairRunnerTest {
     context.storage = storage;
     context.repairManager = new RepairManager();
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setLocalJmxMode(false);
 
     final Semaphore mutex = new Semaphore(0);
 
@@ -202,7 +205,9 @@ public class RepairRunnerTest {
     context.storage = storage;
     context.repairManager = new RepairManager();
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
-
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setLocalJmxMode(false);
+    
     final Semaphore mutex = new Semaphore(0);
 
     context.jmxConnectionFactory = new JmxConnectionFactory() {
@@ -291,7 +296,9 @@ public class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.repairManager = new RepairManager();
-
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setLocalJmxMode(false);
+    
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
     UUID cf = storage.addRepairUnit(
         new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR)).getId();

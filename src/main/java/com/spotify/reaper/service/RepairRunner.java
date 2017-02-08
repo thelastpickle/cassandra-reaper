@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.apache.cassandra.repair.RepairParallelism;
@@ -33,6 +34,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.reaper.AppContext;
+import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
@@ -71,8 +73,9 @@ public class RepairRunner implements Runnable {
 
     String keyspace = repairUnitOpt.get().getKeyspaceName();
     int parallelRepairs = getPossibleParallelRepairsCount(jmx.getRangeToEndpointMap(keyspace), jmx.getEndpointToHostId());
-    if(repairUnitOpt.isPresent() && repairUnitOpt.get().getIncrementalRepair()) {
-    	// with incremental repair, can't have more parallel repairs than nodes 
+    if((repairUnitOpt.isPresent() && repairUnitOpt.get().getIncrementalRepair()) || context.config.getLocalJmxMode()) {
+    	// with incremental repair, can't have more parallel repairs than nodes
+      // Same goes for local mode
     	parallelRepairs = 1;
     }
     currentlyRunningSegments = new AtomicReferenceArray(parallelRepairs);
@@ -83,7 +86,7 @@ public class RepairRunner implements Runnable {
     parallelRanges = getParallelRanges(
         parallelRepairs,
         Lists.newArrayList(Collections2.transform(
-            context.storage.getRepairSegmentsForRun(repairRunId),
+            context.config.getLocalJmxMode()?context.storage.getRepairSegmentsForRunInLocalMode(repairRunId, jmx.getRangesForLocalEndpoint(keyspace)):context.storage.getRepairSegmentsForRun(repairRunId),
             new Function<RepairSegment, RingRange>() {
               @Override
               public RingRange apply(RepairSegment input) {
@@ -165,7 +168,7 @@ public class RepairRunner implements Runnable {
           context.repairManager.scheduleRetry(this);
           break;
       }
-    } catch (RuntimeException | ReaperException e) {
+    } catch (RuntimeException | ReaperException | InterruptedException e) {
       LOG.error("RepairRun FAILURE, scheduling retry", e);
       context.repairManager.scheduleRetry(this);
     }
@@ -175,8 +178,9 @@ public class RepairRunner implements Runnable {
 
   /**
    * Starts the repair run.
+   * @throws InterruptedException 
    */
-  private void start() throws ReaperException {
+  private void start() throws ReaperException, InterruptedException {
     LOG.info("Repairs for repair run #{} starting", repairRunId);
     synchronized (this) {
       RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
@@ -212,8 +216,9 @@ public class RepairRunner implements Runnable {
 
   /**
    * Get the next segment and repair it. If there is none, we're done.
+   * @throws InterruptedException 
    */
-  private void startNextSegment() throws ReaperException {
+  private void startNextSegment() throws ReaperException, InterruptedException {
     boolean scheduleRetry = true;
     boolean anythingRunningStill = false;
 
@@ -247,6 +252,7 @@ public class RepairRunner implements Runnable {
       }
 
       // We have an empty slot, so let's start new segment runner if possible.
+      LOG.info("Running segment for range {}", parallelRanges.get(rangeIndex));
       Optional<RepairSegment> nextRepairSegment =
           context.storage.getNextFreeSegmentInRange(repairRunId, parallelRanges.get(rangeIndex));
 
@@ -293,8 +299,9 @@ public class RepairRunner implements Runnable {
    * @param segmentId  id of the segment to repair.
    * @param tokenRange token range of the segment to repair.
    * @return Boolean indicating whether rescheduling next run is needed.
+   * @throws InterruptedException 
    */
-  private boolean repairSegment(final int rangeIndex, final UUID segmentId, RingRange tokenRange) {
+  private boolean repairSegment(final int rangeIndex, final UUID segmentId, RingRange tokenRange) throws InterruptedException {
     final UUID unitId;
     final double intensity;
     final RepairParallelism validationParallelism;
@@ -342,10 +349,10 @@ public class RepairRunner implements Runnable {
 	      }
 	      return false;
 	    }
-    } 
-    else {
-    	potentialCoordinators 
-                = Arrays.asList(context.storage.getRepairSegment(repairRunId, segmentId).get().getCoordinatorHost());
+    } else {
+        // Add random sleep time to avoid one Reaper instance locking all others during multi DC incremental repairs
+        Thread.sleep(ThreadLocalRandom.current().nextInt(0, 10 + 1)*1000);
+        potentialCoordinators = Arrays.asList(context.storage.getRepairSegment(repairRunId, segmentId).get().getCoordinatorHost());
     }
 
     SegmentRunner segmentRunner = new SegmentRunner(context, segmentId, potentialCoordinators,
@@ -420,5 +427,7 @@ public class RepairRunner implements Runnable {
         LOG.warn("failed closing JMX connection on runner exit: " + e);
       }
     }
+    Thread.currentThread().interrupt();
+    return;
   }
 }
