@@ -28,6 +28,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.JMX;
@@ -61,6 +68,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
+import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.service.RingRange;
@@ -142,19 +150,22 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * @param password password to use for JMX authentication
    * @param addressTranslator if EC2MultiRegionAddressTranslator isn't null it will be used to translate addresses
    */
-  static JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int port,
+  static JmxProxy connect(Optional<RepairStatusHandler> handler, String originalHost, int port,
       String username, String password, final EC2MultiRegionAddressTranslator addressTranslator)
       throws ReaperException {
     ObjectName ssMbeanName;
     ObjectName cmMbeanName;
     ObjectName fdMbeanName;
     JMXServiceURL jmxUrl;
-
+    String host = originalHost;
+    
     if(addressTranslator != null) {
-      host = addressTranslator.translate(new InetSocketAddress(host, port)).getHostString();
+      host = addressTranslator.translate(new InetSocketAddress(host, port)).getAddress().getHostAddress();
+      LOG.debug("translated {} to {}", originalHost, host);
     }
 
     try {
+      LOG.info("Connecting to {}...", host);
       jmxUrl = new JMXServiceURL(String.format(JMX_URL, host, port));
       ssMbeanName = new ObjectName(SS_OBJECT_NAME);
       cmMbeanName = new ObjectName(CompactionManager.MBEAN_OBJECT_NAME);
@@ -169,7 +180,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
         String[] creds = {username, password};
         env.put(JMXConnector.CREDENTIALS, creds);
       }
-      JMXConnector jmxConn = JMXConnectorFactory.connect(jmxUrl, env);
+      JMXConnector jmxConn = connectWithTimeout(jmxUrl, 5, TimeUnit.SECONDS, env);
       MBeanServerConnection mbeanServerConn = jmxConn.getMBeanServerConnection();
       Object ssProxy =
           JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean.class);
@@ -193,10 +204,22 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       LOG.debug("JMX connection to {} properly connected: {}",
           host, jmxUrl.toString());
       return proxy;
-    } catch (IOException | InstanceNotFoundException e) {
+    } catch (Exception e) {
       LOG.error("Failed to establish JMX connection to {}:{}", host, port);
       throw new ReaperException("Failure when establishing JMX connection", e);
     }
+  }
+  
+  
+  private static JMXConnector connectWithTimeout(JMXServiceURL url, long timeout, TimeUnit unit, Map<String, Object> env) throws InterruptedException, ExecutionException, TimeoutException {
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    Future<JMXConnector> future = executor.submit(new Callable<JMXConnector>() {
+      public JMXConnector call() throws IOException {
+        return JMXConnectorFactory.connect(url, env);
+      }
+    });
+    
+    return future.get(timeout, unit);
   }
 
   public String getHost() {
@@ -229,6 +252,35 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
   }
 
+  public List<RingRange> getRangesForLocalEndpoint(String keyspace)
+      throws ReaperException {
+    checkNotNull(ssProxy, "Looks like the proxy is not connected");
+    List<RingRange> localRanges = Lists.newArrayList();
+    try {
+      Map<List<String>, List<String>> ranges = ((StorageServiceMBean) ssProxy).getRangeToEndpointMap(keyspace);
+      String localEndpoint = getLocalEndpoint();
+      // Filtering ranges for which the local node is a replica
+      // For local mode
+      ranges.entrySet().stream().forEach(entry -> {
+        if(entry.getValue().contains(localEndpoint)) {
+          localRanges.add(new RingRange(new BigInteger(entry.getKey().get(0)), new BigInteger(entry.getKey().get(1))));
+        }
+      });
+      
+      
+      LOG.info("LOCAL RANGES {}", localRanges);
+      return localRanges;
+    } catch (Exception e) {
+      LOG.error(e.getMessage());
+      throw new ReaperException(e.getMessage(), e);
+    }
+  }
+  
+  public String getLocalEndpoint() {
+    return ((StorageServiceMBean) ssProxy).getHostIdToEndpoint().get(((StorageServiceMBean) ssProxy).getLocalHostId());
+  }
+  
+  
   /**
    * @return all hosts owning a range of tokens
    */

@@ -50,7 +50,7 @@ public class NodesStatusTest {
         .append("  STATUS:16:NORMAL,3074457345618258602 ")
         .append("  LOAD:1230134:3.974144E6")
         .append("  SCHEMA:10:2de0af6a-bf86-38e0-b62b-474ff6aefb51 ")
-        .append("  DC:6:datacenter3 ")
+        .append("  DC:6:us-west-1")
         .append("  RACK:8:rack3 ")
         .append("  RELEASE_VERSION:4:3.0.8 ")
         .append("  RPC_ADDRESS:3:127.0.0.3 ")
@@ -77,9 +77,9 @@ public class NodesStatusTest {
     assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("datacenter1").get("rack1").get(0).releaseVersion, "3.0.8");
     assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("datacenter2").get("rack2").get(0).dc, "datacenter2");
     assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("datacenter2").get("rack2").get(0).rack, "rack2");
-    assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("datacenter3").get("rack3").get(0).dc, "datacenter3");
-    assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("datacenter3").get("rack3").get(0).rack, "rack3");
-    assertTrue(nodesStatus.endpointStates.get(0).endpoints.get("datacenter3").get("rack3").get(0).load.equals(3974144.0));
+    assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("us-west-1").get("rack3").get(0).dc, "us-west-1");
+    assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("us-west-1").get("rack3").get(0).rack, "rack3");
+    assertTrue(nodesStatus.endpointStates.get(0).endpoints.get("us-west-1").get("rack3").get(0).load.equals(3974144.0));
   }
 
 }
