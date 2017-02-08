@@ -16,6 +16,7 @@ package com.spotify.reaper.storage;
 import com.google.common.base.Optional;
 
 import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.HostMetrics;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
@@ -25,6 +26,7 @@ import com.spotify.reaper.resources.view.RepairScheduleStatus;
 import com.spotify.reaper.service.RepairParameters;
 import com.spotify.reaper.service.RingRange;
 
+import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Set;
 
@@ -148,4 +150,11 @@ public interface IStorage {
 
   @NotNull
   Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName);
+  
+  boolean takeLeadOnSegment(long segmentId);
+  boolean renewLeadOnSegment(long segmentId);
+  void releaseLeadOnSegment(long segmentId);
+  void storeHostMetrics(HostMetrics hostMetrics);
+  Optional<HostMetrics> getHostMetrics(String hostName);
+  
 }

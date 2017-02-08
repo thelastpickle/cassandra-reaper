@@ -17,6 +17,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
 import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.HostMetrics;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
@@ -487,5 +488,30 @@ public class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       return getPostgresStorage(h).getClusterScheduleOverview(clusterName);
     }
+  }
+
+  @Override
+  public boolean takeLeadOnSegment(long segmentId) {
+    return true;
+  }
+
+  @Override
+  public boolean renewLeadOnSegment(long segmentId) {
+    return true;
+  }
+
+  @Override
+  public void releaseLeadOnSegment(long segmentId) {
+    // Not supported with Postgres/H2
+  }
+
+  @Override
+  public void storeHostMetrics(HostMetrics hostMetrics) {
+    // Not supported with Postgres/H2    
+  }
+  
+  @Override
+  public Optional<HostMetrics> getHostMetrics(String hostName) {
+    return Optional.absent();
   }
 }

@@ -13,9 +13,11 @@
  */
 package com.spotify.reaper;
 
+import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.DispatcherType;
@@ -64,13 +66,16 @@ import sun.misc.SignalHandler;
 public class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
   static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
-
+  public final static UUID reaperInstanceId = UUID.randomUUID();
+  private static String reaperInstanceAddress;
+  
   private AppContext context;
 
   public ReaperApplication() {
     super();
     LOG.info("default ReaperApplication constructor called");
     this.context = new AppContext();
+    setInstanceAddress();
   }
 
   @VisibleForTesting
@@ -78,10 +83,24 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     super();
     LOG.info("ReaperApplication constructor called with custom AppContext");
     this.context = context;
+    setInstanceAddress();
   }
 
   public static void main(String[] args) throws Exception {
     new ReaperApplication().run(args);
+  }
+  
+  private void setInstanceAddress() {
+    try{
+      this.reaperInstanceAddress = InetAddress.getLocalHost().getHostAddress();
+    } catch(Exception e) {
+      LOG.warn("Cannot get instance address", e);
+      this.reaperInstanceAddress = "127.0.0.1";
+    }
+  }
+  
+  public static String getInstanceAddress() {
+    return reaperInstanceAddress;
   }
 
   @Override

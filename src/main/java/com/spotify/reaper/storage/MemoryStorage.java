@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.HostMetrics;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
@@ -494,6 +495,29 @@ public class MemoryStorage implements IStorage {
     public int hashCode() {
       return cluster.hashCode() ^ keyspace.hashCode() ^ tables.hashCode();
     }
+  }
+
+  @Override
+  public boolean takeLeadOnSegment(long segmentId) {
+    return true;
+  }
+
+  @Override
+  public boolean renewLeadOnSegment(long segmentId) {
+    return true;
+  }
+
+  @Override
+  public void releaseLeadOnSegment(long segmentId) {
+  }
+
+  @Override
+  public void storeHostMetrics(HostMetrics hostMetrics) {
+  }
+
+  @Override
+  public Optional<HostMetrics> getHostMetrics(String hostName) {
+    return Optional.absent();
   }
 
 }

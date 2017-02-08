@@ -30,8 +30,10 @@ import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.HostMetrics;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairRun.Builder;
 import com.spotify.reaper.core.RepairRun.RunState;
@@ -95,6 +97,11 @@ public class CassandraStorage implements IStorage {
   private PreparedStatement insertRepairId;
   private PreparedStatement selectRepairId;
   private PreparedStatement updateRepairId;
+  private PreparedStatement getLeadOnSegmentPrepStmt;
+  private PreparedStatement renewLeadOnSegmentPrepStmt;
+  private PreparedStatement releaseLeadOnSegmentPrepStmt;
+  private PreparedStatement storeHostMetricsPrepStmt;
+  private PreparedStatement getHostMetricsPrepStmt;
 
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
     cassandra = config.getCassandraFactory().build(environment).register(QueryLogger.builder().build());
@@ -140,6 +147,11 @@ public class CassandraStorage implements IStorage {
     insertRepairId = session.prepare("INSERT INTO repair_id (id_type, id) VALUES(?, 0) IF NOT EXISTS");
     selectRepairId = session.prepare("SELECT id FROM repair_id WHERE id_type = ?");
     updateRepairId = session.prepare("UPDATE repair_id SET id=? WHERE id_type =? IF id = ?");
+    getLeadOnSegmentPrepStmt = session.prepare("INSERT INTO segment_leader(segment_id, reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?, ?, ?, dateof(now())) IF NOT EXISTS");
+    renewLeadOnSegmentPrepStmt = session.prepare("UPDATE segment_leader SET reaper_instance_id = ?, reaper_instance_host = ?, last_heartbeat = dateof(now()) WHERE segment_id = ? IF reaper_instance_id = ?");
+    releaseLeadOnSegmentPrepStmt = session.prepare("DELETE FROM segment_leader WHERE segment_id = ? IF reaper_instance_id = ?");
+    storeHostMetricsPrepStmt = session.prepare("INSERT INTO host_metrics (host_address, ts, pending_compactions, has_repair_running, active_anticompactions) VALUES(?, dateof(now()), ?, ?, ?)");
+    getHostMetricsPrepStmt = session.prepare("SELECT * FROM host_metrics WHERE host_address = ? AND ts >= ? LIMIT 1");
   }
 
   @Override
@@ -759,5 +771,55 @@ public class CassandraStorage implements IStorage {
         .startTime(new DateTime(repairRunResult.getTimestamp("start_time")))
         .build(id);
   }
+
+  @Override
+  public boolean takeLeadOnSegment(long segmentId) {
+    Row lwtResult = session.execute(getLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.reaperInstanceId, ReaperApplication.getInstanceAddress())).one();
+    if (lwtResult.getBool("[applied]")) {
+      LOG.info("Took lead on segment {}", segmentId);
+      return true;
+    }
+    
+    // Another instance took the lead on the segment
+    LOG.info("Could not take lead on segment {}", segmentId);
+    return false;
+  }
+
+  @Override
+  public boolean renewLeadOnSegment(long segmentId) {
+    Row lwtResult = session.execute(renewLeadOnSegmentPrepStmt.bind(ReaperApplication.reaperInstanceId, ReaperApplication.getInstanceAddress(), segmentId, ReaperApplication.reaperInstanceId)).one();
+    if (! lwtResult.getBool("[applied]")) {
+      LOG.info("Renewed lead on segment {}", segmentId);
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public void releaseLeadOnSegment(long segmentId) {
+    Row lwtResult = session.execute(releaseLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.reaperInstanceId)).one();
+    LOG.info("Released lead on segment {}", segmentId);
+  }
+
+  @Override
+  public void storeHostMetrics(HostMetrics hostMetrics) {    
+    session.execute(storeHostMetricsPrepStmt.bind(hostMetrics.getHostAddress(), hostMetrics.getPendingCompactions(), hostMetrics.hasRepairRunning(), hostMetrics.getActiveAnticompactions()));
+  }
+
+  @Override
+  public Optional<HostMetrics> getHostMetrics(String hostName) {
+    ResultSet result = session.execute(getHostMetricsPrepStmt.bind(hostName, System.currentTimeMillis()-180000));
+    for(Row metrics:result) {
+      return Optional.of(HostMetrics.builder().withHostAddress(hostName)
+                                  .withPendingCompactions(metrics.getInt("pending_compactions"))
+                                  .withHasRepairRunning(metrics.getBool("has_repair_running"))
+                                  .withActiveAnticompactions(metrics.getInt("active_anticompactions"))
+                                  .build());
+     }
+    
+    return Optional.absent();
+  }
+  
+  
 
 }
