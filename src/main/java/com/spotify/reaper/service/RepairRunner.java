@@ -33,6 +33,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.reaper.AppContext;
+import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
@@ -71,8 +72,9 @@ public class RepairRunner implements Runnable {
 
     String keyspace = repairUnitOpt.get().getKeyspaceName();
     int parallelRepairs = getPossibleParallelRepairsCount(jmx.getRangeToEndpointMap(keyspace), jmx.getEndpointToHostId());
-    if(repairUnitOpt.isPresent() && repairUnitOpt.get().getIncrementalRepair()) {
-    	// with incremental repair, can't have more parallel repairs than nodes 
+    if((repairUnitOpt.isPresent() && repairUnitOpt.get().getIncrementalRepair()) || context.config.getLocalJmxMode()) {
+    	// with incremental repair, can't have more parallel repairs than nodes
+      // Same goes for local mode
     	parallelRepairs = 1;
     }
     currentlyRunningSegments = new AtomicReferenceArray(parallelRepairs);
@@ -83,7 +85,7 @@ public class RepairRunner implements Runnable {
     parallelRanges = getParallelRanges(
         parallelRepairs,
         Lists.newArrayList(Collections2.transform(
-            context.storage.getRepairSegmentsForRun(repairRunId),
+            context.config.getLocalJmxMode()?context.storage.getRepairSegmentsForRunInLocalMode(repairRunId, jmx.getRangesForLocalEndpoint(keyspace)):context.storage.getRepairSegmentsForRun(repairRunId),
             new Function<RepairSegment, RingRange>() {
               @Override
               public RingRange apply(RepairSegment input) {
@@ -247,6 +249,7 @@ public class RepairRunner implements Runnable {
       }
 
       // We have an empty slot, so let's start new segment runner if possible.
+      LOG.info("Running segment for range {}", parallelRanges.get(rangeIndex));
       Optional<RepairSegment> nextRepairSegment =
           context.storage.getNextFreeSegmentInRange(repairRunId, parallelRanges.get(rangeIndex));
 
@@ -420,5 +423,7 @@ public class RepairRunner implements Runnable {
         LOG.warn("failed closing JMX connection on runner exit: " + e);
       }
     }
+    Thread.currentThread().interrupt();
+    return;
   }
 }
