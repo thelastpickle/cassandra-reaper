@@ -321,7 +321,7 @@
                           <argLine>${surefireArgLine}</argLine>
                           <failIfNoTests>false</failIfNoTests>
                           <includes>
-                                <include>**/*CassandraIT.java</include>
+                                <include>**/*IT.java</include>
                           </includes>
                           <excludes>
                             <exclude>**/Test*.java</exclude>
