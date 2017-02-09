@@ -47,5 +47,7 @@ services:
       - "9042:9042"
 
     restart: always
-    volumes:
-      - ./data/cassandra_reaper:/var/lib/cassandra
+
+    # required in production environments:
+    # volumes:
+    #   - ./data/cassandra_reaper:/var/lib/cassandra
