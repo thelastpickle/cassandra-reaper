@@ -405,7 +405,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       return Optional.fromNullable(metrics);
       
     } catch(Exception e) {
-      LOG.debug("Cannot reach node {} through JMX. Trying to get metrics from storage...", hostName, e);
+      LOG.info("Cannot reach node {} through JMX. Trying to get metrics from storage...", hostName, e);
       return context.storage.getHostMetrics(hostName);
     }
   }
