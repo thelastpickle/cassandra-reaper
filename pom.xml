@@ -6,7 +6,7 @@
     <name>Cassandra Reaper</name>
     <groupId>com.spotify</groupId>
     <artifactId>cassandra-reaper</artifactId>
-    <version>0.5.1-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -321,7 +321,7 @@
                           <argLine>${surefireArgLine}</argLine>
                           <failIfNoTests>false</failIfNoTests>
                           <includes>
-                                <include>**/*CassandraIT.java</include>
+                                <include>**/*IT.java</include>
                           </includes>
                           <excludes>
                             <exclude>**/Test*.java</exclude>
