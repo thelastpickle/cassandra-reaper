@@ -21,6 +21,18 @@ RUN apt-get update \
     && mvn --version \
     && npm install -g bower
 
+# install cqlsh dependencies, only used for docker-compose in-tree example
+RUN apt-get install -y \
+        wget \
+        python
+
+# download cassandra for cqlsh, only used for docker-compose in-tree example
+WORKDIR ${WORKDIR}
+ENV CASSANDRA_FILENAME apache-cassandra-3.0.9-bin.tar.gz
+RUN wget http://archive.apache.org/dist/cassandra/3.0.9/${CASSANDRA_FILENAME} \
+    && tar xf ${CASSANDRA_FILENAME} \
+    && rm ${CASSANDRA_FILENAME}
+
 # cache maven dependencies, useful during Dockerfile testing
 COPY pom.xml /tmp
 COPY reaper_ui/*.json reaper_ui/*.js /tmp/reaper_ui/
@@ -35,27 +47,8 @@ WORKDIR ${WORKDIR}/cassandra-reaper
 
 # target directory for final build
 RUN mkdir ${WORKDIR}/packages
+VOLUME ${WORKDIR}/packages
 
-# build jar
-RUN mvn clean package \
-    && mvn clean package -Pbuild-ui \
-    && cp ${WORKDIR}/cassandra-reaper/target/*.jar ${WORKDIR}/packages
-
-# change the WORKDIR to the directory that only includes the built packages
-WORKDIR ${WORKDIR}/packages
-
-# start reaper at container run-time
-CMD java -jar cassandra-reaper-*.jar server ../cassandra-reaper/resource/cassandra-reaper-memory.yaml
-
-# install cqlsh dependencies
-RUN apt-get install -y \
-        wget \
-        python
-
-# download cassandra for cqlsh
-WORKDIR ${WORKDIR}
-ENV CASSANDRA_FILENAME apache-cassandra-3.0.9-bin.tar.gz
-RUN wget http://archive.apache.org/dist/cassandra/3.0.9/${CASSANDRA_FILENAME} \
-    && tar xf ${CASSANDRA_FILENAME} \
-    && rm ${CASSANDRA_FILENAME}
-WORKDIR ${WORKDIR}/packages
+# Add entrypoint script
+COPY docker/jar/docker-entrypoint.sh ${WORKDIR}
+ENTRYPOINT ${WORKDIR}/docker-entrypoint.sh

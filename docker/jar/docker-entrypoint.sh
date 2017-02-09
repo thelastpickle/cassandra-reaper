@@ -2,8 +2,10 @@
 
 set -x
 
-make all
-cp *.rpm ${WORKDIR}/packages
+# build jar
+mvn clean package
+mvn clean package -Pbuild-ui
+cp ${WORKDIR}/cassandra-reaper/target/*.jar ${WORKDIR}/packages
 
 # cd into the directory that contains the built packages
 cd ${WORKDIR}/packages

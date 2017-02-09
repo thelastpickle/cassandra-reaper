@@ -360,20 +360,14 @@ These commands will attempt to build the Debian, jar, and RPM packages:
     docker build --tag reaper-jar --file docker/jar/Dockerfile .
     docker build --tag reaper-rhel --file docker/rhel/Dockerfile .
 
-These commands need to be run to start a container from a built image:
-
-    docker run -ti reaper-jar
-
-Once a container is running, we can copy the built packages out of the
-container and onto our local filesystem:
+These commands need to be run to build the packages into the local host
+filesystem:
 
     # build Debian packages into `pwd`/packages on the host machine
     docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-debian
 
-    # copy jars
-    CONTAINER_ID=`docker ps | grep reaper-jar | awk '{print $1}'`
-    docker cp $CONTAINER_ID:/usr/src/app/packages/cassandra-reaper-0.4.0-SNAPSHOT.jar .
-    docker cp $CONTAINER_ID:/usr/src/app/packages/original-cassandra-reaper-0.4.0-SNAPSHOT.jar .
+    # build jars into `pwd`/packages on the host machine
+    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-jar
 
     # build RPM packages into `pwd`/packages on the host machine
     docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-rhel
