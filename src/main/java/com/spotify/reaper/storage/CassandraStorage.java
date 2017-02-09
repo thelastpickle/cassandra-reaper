@@ -776,20 +776,20 @@ public class CassandraStorage implements IStorage {
   public boolean takeLeadOnSegment(long segmentId) {
     Row lwtResult = session.execute(getLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.reaperInstanceId, ReaperApplication.getInstanceAddress())).one();
     if (lwtResult.getBool("[applied]")) {
-      LOG.info("Took lead on segment {}", segmentId);
+      LOG.debug("Took lead on segment {}", segmentId);
       return true;
     }
     
     // Another instance took the lead on the segment
-    LOG.info("Could not take lead on segment {}", segmentId);
+    LOG.debug("Could not take lead on segment {}", segmentId);
     return false;
   }
 
   @Override
   public boolean renewLeadOnSegment(long segmentId) {
     Row lwtResult = session.execute(renewLeadOnSegmentPrepStmt.bind(ReaperApplication.reaperInstanceId, ReaperApplication.getInstanceAddress(), segmentId, ReaperApplication.reaperInstanceId)).one();
-    if (! lwtResult.getBool("[applied]")) {
-      LOG.info("Renewed lead on segment {}", segmentId);
+    if (lwtResult.getBool("[applied]")) {
+      LOG.debug("Renewed lead on segment {}", segmentId);
       return true;
     }
     return false;
@@ -798,7 +798,7 @@ public class CassandraStorage implements IStorage {
   @Override
   public void releaseLeadOnSegment(long segmentId) {
     Row lwtResult = session.execute(releaseLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.reaperInstanceId)).one();
-    LOG.info("Released lead on segment {}", segmentId);
+    LOG.debug("Released lead on segment {}", segmentId);
   }
 
   @Override
@@ -808,7 +808,7 @@ public class CassandraStorage implements IStorage {
 
   @Override
   public Optional<HostMetrics> getHostMetrics(String hostName) {
-    ResultSet result = session.execute(getHostMetricsPrepStmt.bind(hostName, System.currentTimeMillis()-180000));
+    ResultSet result = session.execute(getHostMetricsPrepStmt.bind(hostName, new Date(System.currentTimeMillis()-180000)));
     for(Row metrics:result) {
       return Optional.of(HostMetrics.builder().withHostAddress(hostName)
                                   .withPendingCompactions(metrics.getInt("pending_compactions"))
@@ -819,7 +819,9 @@ public class CassandraStorage implements IStorage {
     
     return Optional.absent();
   }
-  
-  
 
+  @Override
+  public StorageType getStorageType() {
+    return StorageType.CASSANDRA;
+  }
 }

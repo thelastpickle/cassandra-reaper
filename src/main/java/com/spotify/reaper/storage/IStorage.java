@@ -36,6 +36,8 @@ import javax.validation.constraints.NotNull;
  * API definition for cassandra-reaper.
  */
 public interface IStorage {
+  
+  StorageType getStorageType();
 
   boolean isStorageConnected();
 

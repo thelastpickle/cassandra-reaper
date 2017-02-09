@@ -417,5 +417,7 @@ public class RepairRunner implements Runnable {
         LOG.warn("failed closing JMX connection on runner exit: " + e);
       }
     }
+    Thread.currentThread().interrupt();
+    return;
   }
 }

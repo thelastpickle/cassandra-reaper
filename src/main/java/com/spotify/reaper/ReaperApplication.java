@@ -18,6 +18,8 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.DispatcherType;
@@ -52,6 +54,7 @@ import com.spotify.reaper.storage.CassandraStorage;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
+import com.spotify.reaper.storage.StorageType;
 
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
@@ -68,6 +71,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
   public final static UUID reaperInstanceId = UUID.randomUUID();
   private static String reaperInstanceAddress;
+  private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
   
   private AppContext context;
 
@@ -209,7 +213,27 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     }
 
     LOG.info("resuming pending repair runs");
-    context.repairManager.resumeRunningRepairRuns(context);
+    
+    if (context.storage.getStorageType() == StorageType.CASSANDRA) {
+      // Allowing multiple Reaper instances to work concurrently requires
+      // us to poll the database for running repairs regularly
+      // only with Cassandra storage
+      scheduler.scheduleWithFixedDelay(
+        new Runnable() {
+          public void run() { 
+            try {
+              context.repairManager.resumeRunningRepairRuns(context);
+            } catch (ReaperException e) {
+              LOG.error("Couldn't resume running repair runs", e);
+            } 
+          }
+        }, 0, 10, TimeUnit.SECONDS);
+    }
+    else {
+      // Storage is different than Cassandra, assuming we have a single instance
+      context.repairManager.resumeRunningRepairRuns(context);
+    }
+    
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config,

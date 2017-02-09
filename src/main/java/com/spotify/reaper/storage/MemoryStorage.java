@@ -520,4 +520,8 @@ public class MemoryStorage implements IStorage {
     return Optional.absent();
   }
 
+  @Override
+  public StorageType getStorageType() {
+    return StorageType.MEMORY;
+  }
 }

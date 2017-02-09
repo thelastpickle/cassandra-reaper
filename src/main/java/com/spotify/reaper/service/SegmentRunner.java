@@ -47,6 +47,7 @@ import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.HostMetrics;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.storage.StorageType;
 import com.spotify.reaper.utils.SimpleCondition;
 import com.sun.management.UnixOperatingSystemMXBean;
 
@@ -96,7 +97,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     final RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
 
-    if (context.storage.takeLeadOnSegment(segmentId)){
+    if (context.storage.takeLeadOnSegment(segmentId)) {
       if(runRepair()) {
         long delay = intensityBasedDelayMillis(intensity);
         try {
@@ -107,6 +108,9 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       }
     
       context.storage.releaseLeadOnSegment(segmentId);
+    }
+    else {
+      postpone(context, segment, Optional.fromNullable(this.repairUnit));
     }
   }
 
@@ -226,9 +230,11 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
           
           long lastLoopTime = System.currentTimeMillis();
           while (System.currentTimeMillis() < maxTime) {
-            condition.await(1, TimeUnit.SECONDS);
-            if(lastLoopTime + 1000 > System.currentTimeMillis() || context.storage.getRepairSegment(segmentId).get().getState() == RepairSegment.State.DONE)
+            condition.await(1, TimeUnit.MINUTES);
+            if(lastLoopTime + 60_000 > System.currentTimeMillis() || context.storage.getRepairSegment(segmentId).get().getState() == RepairSegment.State.DONE){
+              // The condition has been interrupted, meaning the repair might be over
               break;
+            }
             
             // Repair is still running, we'll renew lead on the segment when using Cassandra as storage backend
             context.storage.renewLeadOnSegment(segmentId);
@@ -329,12 +335,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
                      + "already involved in a repair", segmentId, hostProxy.getHost());
             String msg = "Postponed due to affected hosts already doing repairs";
             repairRunner.updateLastEvent(msg);
-            if (!busyHosts.get().contains(hostName)) {
-              LOG.warn("A host ({}) reported that it is involved in a repair, but there is no record "
-                  + "of any ongoing repair involving the host. Sending command to abort all repairs "
-                  + "on the host.", hostProxy.getHost());
-              hostProxy.cancelAllRepairs();
-            }
+            handlePotentialStuckRepairs(hostProxy, busyHosts, hostName);
             return false;
           }
         }
@@ -363,10 +364,25 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         return false;
       }
     }
-    LOG.info("It is ok to repair segment '{}' on repair run with id '{}'",
-        segment.getId(), segment.getRunId());
+    if(gotMetricsForAllHosts) {
+      LOG.info("It is ok to repair segment '{}' on repair run with id '{}'",
+          segment.getId(), segment.getRunId());
+    } 
+    else {
+      LOG.info("Not ok to repair segment '{}' on repair run with id '{}' because we couldn't get all hosts metrics :'(",
+          segment.getId(), segment.getRunId());
+    }
     
     return gotMetricsForAllHosts; // check if we should postpone when we cannot get all metrics, or just drop the lead
+  }
+  
+  private void handlePotentialStuckRepairs(JmxProxy hostProxy, LazyInitializer<Set<String>> busyHosts, String hostName) throws ConcurrentException {
+    if (!busyHosts.get().contains(hostName) && context.storage.getStorageType() != StorageType.CASSANDRA) {
+      LOG.warn("A host ({}) reported that it is involved in a repair, but there is no record "
+          + "of any ongoing repair involving the host. Sending command to abort all repairs "
+          + "on the host.", hostProxy.getHost());
+      hostProxy.cancelAllRepairs();
+    }
   }
   
   private Optional<HostMetrics> getMetricsForHost(String hostName, JmxProxy hostProxy) {
@@ -385,7 +401,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       return Optional.fromNullable(metrics);
       
     } catch(Exception e) {
-      LOG.debug("Cannot reach node {} through JMX. Trying to get metrics from storage...", hostName, e);
+      LOG.info("Cannot reach node {} through JMX. Trying to get metrics from storage...", hostName, e);
       return context.storage.getHostMetrics(hostName);
     }
   }

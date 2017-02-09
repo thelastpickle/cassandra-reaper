@@ -514,4 +514,9 @@ public class PostgresStorage implements IStorage {
   public Optional<HostMetrics> getHostMetrics(String hostName) {
     return Optional.absent();
   }
+  
+  @Override
+  public StorageType getStorageType() {
+    return StorageType.DATABASE;
+  }
 }
