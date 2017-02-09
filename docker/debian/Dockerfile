@@ -27,11 +27,8 @@ WORKDIR ${WORKDIR}/cassandra-reaper
 
 # target directory for final build
 RUN mkdir ${WORKDIR}/packages
+VOLUME ${WORKDIR}/packages
 
-# -d is required to avoid:
-#    dpkg-checkbuilddeps: error: Unmet build dependencies: java7-jdk
-RUN debuild -uc -us -b -d \
-    && cp ${WORKDIR}/*.deb ${WORKDIR}/packages
-
-# change the WORKDIR to the directory that only includes the built packages
-WORKDIR ${WORKDIR}/packages
+# Add entrypoint script
+COPY docker/debian/docker-entrypoint.sh ${WORKDIR}
+ENTRYPOINT ${WORKDIR}/docker-entrypoint.sh

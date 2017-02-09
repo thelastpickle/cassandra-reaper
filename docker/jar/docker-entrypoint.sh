@@ -2,7 +2,6 @@
 
 set -x
 
-# build rpm
 make all
 cp *.rpm ${WORKDIR}/packages
 
@@ -11,4 +10,3 @@ cd ${WORKDIR}/packages
 
 # execute any provided command
 $@
-

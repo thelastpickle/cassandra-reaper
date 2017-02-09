@@ -362,16 +362,13 @@ These commands will attempt to build the Debian, jar, and RPM packages:
 
 These commands need to be run to start a container from a built image:
 
-    docker run -ti reaper-debian
     docker run -ti reaper-jar
 
 Once a container is running, we can copy the built packages out of the
 container and onto our local filesystem:
 
-    # copy Debian packages
-    CONTAINER_ID=`docker ps | grep reaper-debian | awk '{print $1}'`
-    docker cp $CONTAINER_ID:/usr/src/app/packages/cassandra-reaper-cli_0.2.3-1_all.deb .
-    docker cp $CONTAINER_ID:/usr/src/app/packages/cassandra-reaper_0.2.3-1_all.deb .
+    # build Debian packages into `pwd`/packages on the host machine
+    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-debian
 
     # copy jars
     CONTAINER_ID=`docker ps | grep reaper-jar | awk '{print $1}'`
