@@ -5,7 +5,6 @@
 .DS_Store
 
 # docker files
-docker/
 docker-compose.yml
 
 # persistent storage

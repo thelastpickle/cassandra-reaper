@@ -364,7 +364,6 @@ These commands need to be run to start a container from a built image:
 
     docker run -ti reaper-debian
     docker run -ti reaper-jar
-    docker run -ti reaper-rhel
 
 Once a container is running, we can copy the built packages out of the
 container and onto our local filesystem:
@@ -379,9 +378,8 @@ container and onto our local filesystem:
     docker cp $CONTAINER_ID:/usr/src/app/packages/cassandra-reaper-0.4.0-SNAPSHOT.jar .
     docker cp $CONTAINER_ID:/usr/src/app/packages/original-cassandra-reaper-0.4.0-SNAPSHOT.jar .
 
-    # copy RPM packages
-    CONTAINER_ID=`docker ps | grep reaper-rhel | awk '{print $1}'`
-    docker cp $CONTAINER_ID:/usr/src/app/packages/reaper-0.4.0_SNAPSHOT-1.x86_64.rpm .
+    # build RPM packages into `pwd`/packages on the host machine
+    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-rhel
 
 Running In-Memory Reaper using Docker
 -------------------------------------
