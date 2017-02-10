@@ -360,7 +360,7 @@ These commands will attempt to build the Debian, jar, and RPM packages:
     docker build --tag reaper-jar --file docker/jar/Dockerfile .
     docker build --tag reaper-rhel --file docker/rhel/Dockerfile .
 
-These commands need to be run to build the packages into the local host
+These commands need to be run to build the packages into the local
 filesystem:
 
     # build Debian packages into `pwd`/packages on the host machine
