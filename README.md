@@ -12,7 +12,7 @@ The current version supports running Apache Cassandra cluster repairs in a segme
 opportunistically running multiple parallel repairs at the same time on different nodes
 within the cluster. Basic repair scheduling functionality is also supported.
 
-Reaper comes with a GUI, which if you're running in local mode can be at http://localhost:8080/webui/ 
+Reaper comes with a GUI, which if you're running in local mode can be at http://localhost:8080/webui/index.html
 
 Please see the [Issues](https://github.com/thelastpickle/cassandra-reaper/issues) section for more
 information on planned development, and known issues.
@@ -346,7 +346,7 @@ After modifying the `resource/cassandra-reaper.yaml` config file, Reaper can be 
 
 ```java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml```
 
-Once started, the UI can be accessed through : `http://127.0.0.1:8080/webui/`
+Once started, the UI can be accessed through : `http://127.0.0.1:8080/webui/index.html`
 
 Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool `bin/spreaper`
 
@@ -354,14 +354,15 @@ Reaper can also be accessed using the REST API exposed on port 8080, or using th
 Building Reaper packages using Docker
 -------------------------------------
 
-These commands will attempt to build the Debian, jar, and RPM packages:
+These commands will install all dependencies needed to build the Debian, jar,
+and RPM packages:
 
     docker build --tag reaper-debian --file docker/debian/Dockerfile .
     docker build --tag reaper-jar --file docker/jar/Dockerfile .
     docker build --tag reaper-rhel --file docker/rhel/Dockerfile .
 
-These commands need to be run to build the packages into the local
-filesystem:
+These commands need to be run to build the packages into the host machine's
+`./packages` directory:
 
     # build Debian packages into `pwd`/packages on the host machine
     docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-debian
@@ -380,7 +381,7 @@ These commands will build the jar file into the ./packages directory:
     docker build --tag reaper-jar --file docker/jar/Dockerfile .
     docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-jar
 
-This command will build the service images:
+This command will build the service images using a previously built jar file:
 
     docker-compose build
 
@@ -390,7 +391,6 @@ This command will run Reaper in in-memory mode:
 
 The following URLs become available:
 
-* BUGGY: [http://localhost:8080/webui](http://localhost:8080/webui)
 * Main Interface: [http://localhost:8080/webui/index.html](http://localhost:8080/webui/index.html)
 * Operational Interface: [http://localhost:8081](http://localhost:8081)
 
@@ -402,7 +402,7 @@ These commands will build the jar file into the ./packages directory:
     docker build --tag reaper-jar --file docker/jar/Dockerfile .
     docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-jar
 
-This command will build the service images:
+This command will build the service images using a previously built jar file:
 
     docker-compose build
 
@@ -416,13 +416,12 @@ schema:
 
     docker-compose run reaper-setup
 
-Once Cassandra's schema has been initialized, run reaper:
+Once Cassandra's schema has been initialized, run Reaper:
 
     docker-compose up reaper
 
 The following URLs become available:
 
-* BUGGY: [http://localhost:8080/webui](http://localhost:8080/webui)
 * Main Interface: [http://localhost:8080/webui/index.html](http://localhost:8080/webui/index.html)
 * Operational Interface: [http://localhost:8081](http://localhost:8081)
 
@@ -431,13 +430,13 @@ Cassandra container will be running with JMX accessible *only* from localhost.
 Therefore, another Cassandra cluster with proper JMX settings will need to
 be created in order for Reaper to monitor a cluster.
 
-If you wish to use an existing Cassandra cluster on a seperate machine, instead
+If you wish to use an existing Cassandra backend on a separate machine, instead
 of the provided containerized Cassandra, simply:
 
 * Update `./docker-compose.yml`'s `reaper` and `reaper-setup` services to use
-a `command`s that match an existing Cassandra node's IP address.
-* Run: `docker-compose run reaper-setup`.
-* Run: `docker-compose up reaper`.
+`command`s that match an existing Cassandra node's IP address.
+* Initialize the schema using: `docker-compose run reaper-setup`.
+* Run Reaper using: `docker-compose up reaper`.
 
 To shut everything down, run:
 
