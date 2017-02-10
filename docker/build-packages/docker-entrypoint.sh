@@ -6,8 +6,7 @@ set -x
 # build web UI
 # build Debian and RPM packages
 # copy built packages into a mounted volume
-mvn clean package \
-    && mvn clean package -Pbuild-ui \
+mvn clean package -Pbuild-ui \
     && make all \
     && cp *.deb *.rpm target/*.jar ${WORKDIR}/packages
 

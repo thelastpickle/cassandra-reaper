@@ -9,10 +9,8 @@ docker/production-reaper/*.jar
 docker/production-reaper/*.yaml
 docker-compose.yml
 
-# persistent storage
-data/
-
 # build paths
+packages/
 target/
 *.deb
 *.jar
