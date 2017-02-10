@@ -1,6 +1,17 @@
 version: "2.1"
 
 services:
+  reaper-in-memory:
+    build:
+      context: .
+      dockerfile: docker/reaper/Dockerfile
+    command: java -jar cassandra-reaper-0.4.0-SNAPSHOT.jar server cassandra-reaper/resource/cassandra-reaper-memory.yaml
+    ports:
+      # web ui port
+      - "8080:8080"
+      # admin ui port
+      - "8081:8081"
+
   reaper-setup:
     build:
       context: .

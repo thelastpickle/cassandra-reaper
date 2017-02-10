@@ -375,13 +375,18 @@ filesystem:
 Running In-Memory Reaper using Docker
 -------------------------------------
 
-This command will build the image:
+These commands will build the jar file into the ./packages directory:
 
     docker build --tag reaper-jar --file docker/jar/Dockerfile .
+    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-jar
+
+This command will build the service images:
+
+    docker-compose build
 
 This command will run Reaper in in-memory mode:
 
-    docker run -ti -p "8080:8080" -p "8081:8081" reaper-jar
+    docker-compose up reaper-in-memory
 
 The following URLs become available:
 
@@ -392,7 +397,12 @@ The following URLs become available:
 Running Cassandra-backed Reaper using Docker
 --------------------------------------------
 
-If recent changes have been made, rebuild the Docker image:
+These commands will build the jar file into the ./packages directory:
+
+    docker build --tag reaper-jar --file docker/jar/Dockerfile .
+    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-jar
+
+This command will build the service images:
 
     docker-compose build
 
