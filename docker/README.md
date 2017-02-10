@@ -13,13 +13,12 @@ repository directory.
 Building Reaper Packages Using Docker
 -------------------------------------
 
-These commands will install all dependencies needed to build the Debian, jar,
+This command installs all dependencies needed to build the Debian, jar,
 and RPM packages:
 
     docker build --tag reaper-build-packages --file docker/build-packages/Dockerfile .
 
-These commands need to be run to build the packages into the host machine's
-`./packages` directory:
+This command builds the packages into the host machine's `./packages` directory:
 
     docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-packages
 
@@ -32,7 +31,7 @@ These commands will build the jar file into the `./packages` directory:
     docker build --tag reaper-build-packages --file docker/build-packages/Dockerfile .
     docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-packages
 
-This command will build the service images using a previously built jar file:
+This command will build the service images using the previously built jar file:
 
     docker-compose build
 
@@ -49,16 +48,13 @@ The following URLs become available:
 Running Cassandra-backed Reaper using Docker Compose
 ----------------------------------------------------
 
-These commands will build the jar file into the ./packages directory:
+After having built the images as described in the
+`Running In-Memory Reaper Using Docker Compose` section, ensure there are no
+running containers by using:
 
-    docker build --tag reaper-build-packages --file docker/build-packages/Dockerfile .
-    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-packages
+    docker-compose down
 
-This command will build the service images using a previously built jar file:
-
-    docker-compose build
-
-First, ensure there exists a running Cassandra container. This can be confirmed
+Then, ensure there exists a running Cassandra container. This can be confirmed
 once `Starting listening for CQL clients` appears in the log output:
 
     docker-compose up cassandra
@@ -82,13 +78,30 @@ Cassandra container will be running with JMX accessible *only* from localhost.
 Therefore, another Cassandra cluster with proper JMX settings will need to
 be created in order for Reaper to monitor a cluster.
 
+In order for JMX authentication to be set up correctly, the following settings
+must be in effect on the Cassandra-side:
+
+* cassandra.yaml
+    * `seeds`: must be set to the host's private IP address.
+    * `listen_address`: must be set to the host's private IP address.
+    * `rpc_address`: must be set to the host's private IP address.
+* cassandra-env.sh
+    * `LOCAL_JMX` must resolve to something other than "yes".
+* /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+    * Should include a line in the format of: `<user> readwrite`.
+* /etc/cassandra/jmxremote.password
+    * Should include a line in the format of: `<user> <password>`.
+    * Have `600` file permissions.
+    * Be owned by the `cassandra` user and group.
+
+
 
 Running Cassandra-backed Reaper using Docker Compose and External Cassandra Cluster
 -----------------------------------------------------------------------------------
 
 If you wish to use an existing Cassandra backend on a separate machine, instead
 of the provided containerized Cassandra, the directions are the same as the
-above section with a few differences:
+above sections with a few differences:
 
 * Update `./docker-compose.yml`'s `reaper` and `reaper-setup` services to use
 `command`s that match an existing Cassandra node's IP address.

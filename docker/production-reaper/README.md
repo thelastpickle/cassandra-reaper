@@ -8,6 +8,9 @@ Once the Reaper build process is simplified and images are auto-published to
 Docker Hub, this Dockerfile will be slightly simplified, but realistically the
 same as what is provided here today.
 
+**Note**: The following commands are all assumed to be run from the
+`docker/reaper-production` directory.
+
 Building
 --------
 
@@ -25,7 +28,6 @@ Once both files have been placed in this directory and modified to work with
 with the production environment, run the following command to build the
 container using the `reaper-production` tag:
 
-    cd docker/reaper-production
     docker build --tag reaper-production .
 
 Running

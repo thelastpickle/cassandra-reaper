@@ -41,5 +41,5 @@ RUN mkdir ${WORKDIR}/packages
 VOLUME ${WORKDIR}/packages
 
 # Add entrypoint script
-COPY docker/build-jar/docker-entrypoint.sh ${WORKDIR}
+COPY docker/build-packages/docker-entrypoint.sh ${WORKDIR}
 ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]

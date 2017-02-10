@@ -64,7 +64,7 @@ use the provided CLI tool in *bin/spreaper* to call the service.
 Run the tool with *-h* or *--help* option to see usage instructions.
 
 Notice that you can also build Debian and RPM package from this project by using *Make*, for example:
-`make all`
+`make all`.
 
 
 Configuration
