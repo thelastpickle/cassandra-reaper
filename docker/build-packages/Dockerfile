@@ -18,7 +18,10 @@ RUN apt-get update \
         maven \
         nodejs \
         openjdk-8-jdk \
+        rpm \
+        ruby-dev \
     && mvn --version \
+    && gem install fpm \
     && npm install -g bower
 
 # cache maven dependencies, useful during Dockerfile testing
@@ -38,5 +41,5 @@ RUN mkdir ${WORKDIR}/packages
 VOLUME ${WORKDIR}/packages
 
 # Add entrypoint script
-COPY docker/jar/docker-entrypoint.sh ${WORKDIR}
+COPY docker/build-jar/docker-entrypoint.sh ${WORKDIR}
 ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]

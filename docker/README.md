@@ -16,21 +16,12 @@ Building Reaper Packages Using Docker
 These commands will install all dependencies needed to build the Debian, jar,
 and RPM packages:
 
-    docker build --tag reaper-build-debian --file docker/build-debian/Dockerfile .
-    docker build --tag reaper-build-jar --file docker/build-jar/Dockerfile .
-    docker build --tag reaper-build-rpm --file docker/build-rpm/Dockerfile .
+    docker build --tag reaper-build-packages --file docker/build-packages/Dockerfile .
 
 These commands need to be run to build the packages into the host machine's
 `./packages` directory:
 
-    # build Debian packages into `pwd`/packages on the host machine
-    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-debian
-
-    # build jars into `pwd`/packages on the host machine
-    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-jar
-
-    # build RPM packages into `pwd`/packages on the host machine
-    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-rpm
+    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-packages
 
 
 Running In-Memory Reaper Using Docker Compose
@@ -38,8 +29,8 @@ Running In-Memory Reaper Using Docker Compose
 
 These commands will build the jar file into the `./packages` directory:
 
-    docker build --tag reaper-build-jar --file docker/build-jar/Dockerfile .
-    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-jar
+    docker build --tag reaper-build-packages --file docker/build-packages/Dockerfile .
+    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-packages
 
 This command will build the service images using a previously built jar file:
 
@@ -60,8 +51,8 @@ Running Cassandra-backed Reaper using Docker Compose
 
 These commands will build the jar file into the ./packages directory:
 
-    docker build --tag reaper-build-jar --file docker/build-jar/Dockerfile .
-    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-jar
+    docker build --tag reaper-build-packages --file docker/build-packages/Dockerfile .
+    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-packages
 
 This command will build the service images using a previously built jar file:
 

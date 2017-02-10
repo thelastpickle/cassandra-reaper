@@ -25,7 +25,7 @@ Once both files have been placed in this directory and modified to work with
 with the production environment, run the following command to build the
 container using the `reaper-production` tag:
 
-    cd docker/production
+    cd docker/reaper-production
     docker build --tag reaper-production .
 
 Running
