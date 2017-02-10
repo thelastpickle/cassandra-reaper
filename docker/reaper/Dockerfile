@@ -13,3 +13,6 @@ RUN apt-get update \
 # grab source
 COPY ./packages/*.jar ${WORKDIR}/
 COPY . ${WORKDIR}/cassandra-reaper
+
+RUN sed -i'.bak' 's/\["127.0.0.1"\]/["cassandra"]/g' \
+    ${WORKDIR}/cassandra-reaper/resource/cassandra-reaper-cassandra.yaml
