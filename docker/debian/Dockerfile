@@ -31,4 +31,4 @@ VOLUME ${WORKDIR}/packages
 
 # Add entrypoint script
 COPY docker/debian/docker-entrypoint.sh ${WORKDIR}
-ENTRYPOINT ${WORKDIR}/docker-entrypoint.sh
+ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]

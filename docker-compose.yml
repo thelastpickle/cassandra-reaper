@@ -4,16 +4,16 @@ services:
   reaper-setup:
     build:
       context: .
-      dockerfile: docker/jar/Dockerfile
-    command: ../apache-cassandra-3.0.9/bin/cqlsh cassandra --file ../cassandra-reaper/src/main/resources/db/reaper_cassandra_db.cql
+      dockerfile: docker/reaper-setup/Dockerfile
+    command: bash -c "../apache-cassandra-3.0.9/bin/cqlsh cassandra --file ../cassandra-reaper/src/main/resources/db/reaper_cassandra_db.cql && echo 'Schema created!'"
     links:
       - cassandra:cassandra
 
   reaper:
     build:
       context: .
-      dockerfile: docker/jar/Dockerfile
-    command: java -jar cassandra-reaper-0.4.0-SNAPSHOT.jar server ../cassandra-reaper/resource/cassandra-reaper-cassandra.yaml
+      dockerfile: docker/reaper/Dockerfile
+    command: java -jar cassandra-reaper-0.4.0-SNAPSHOT.jar server cassandra-reaper/resource/cassandra-reaper-cassandra.yaml
     links:
       - cassandra:cassandra
     ports:

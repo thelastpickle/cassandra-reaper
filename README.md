@@ -419,7 +419,7 @@ The following URLs become available:
 **Note**: Although Reaper will be using a Cassandra backend, the Dockerized
 Cassandra container will be running with JMX accessible *only* from localhost.
 Therefore, another Cassandra cluster with proper JMX settings will need to
-be created in order for Reaper to monitor the cluster.
+be created in order for Reaper to monitor a cluster.
 
 To shut everything down, run:
 
