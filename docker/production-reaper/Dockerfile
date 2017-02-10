@@ -10,10 +10,9 @@ RUN apt-get update \
     && apt-get install -y \
         openjdk-8-jdk
 
-# grab source
-COPY ./packages/*.jar ${WORKDIR}/
-COPY . ${WORKDIR}/cassandra-reaper
+# grab jar and configuration from the build directory
+COPY ./*.jar ${WORKDIR}/
+COPY cassandra-reaper*.yaml ${WORKDIR}/
 
-# Add entrypoint script
-COPY docker/reaper/docker-entrypoint.sh ${WORKDIR}
-ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]
+# start the reaper process
+CMD java -jar cassandra-reaper*.jar server cassandra-reaper*.yaml

@@ -18,6 +18,8 @@ bin/
 .project
 build/
 data/
+docker/production-reaper/*.jar
+docker/production-reaper/*.yaml
 *.deb
 *.jar
 *.rpm

@@ -351,93 +351,14 @@ Once started, the UI can be accessed through : `http://127.0.0.1:8080/webui/inde
 Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool `bin/spreaper`
 
 
-Building Reaper packages using Docker
--------------------------------------
+Docker Support
+--------------
 
-These commands will install all dependencies needed to build the Debian, jar,
-and RPM packages:
+Docker support and documentation has been added to [./docker](./docker). The
+README.md within that directory includes instructions for:
 
-    docker build --tag reaper-debian --file docker/debian/Dockerfile .
-    docker build --tag reaper-jar --file docker/jar/Dockerfile .
-    docker build --tag reaper-rhel --file docker/rhel/Dockerfile .
-
-These commands need to be run to build the packages into the host machine's
-`./packages` directory:
-
-    # build Debian packages into `pwd`/packages on the host machine
-    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-debian
-
-    # build jars into `pwd`/packages on the host machine
-    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-jar
-
-    # build RPM packages into `pwd`/packages on the host machine
-    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-rhel
-
-Running In-Memory Reaper using Docker
--------------------------------------
-
-These commands will build the jar file into the ./packages directory:
-
-    docker build --tag reaper-jar --file docker/jar/Dockerfile .
-    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-jar
-
-This command will build the service images using a previously built jar file:
-
-    docker-compose build
-
-This command will run Reaper in in-memory mode:
-
-    docker-compose up reaper-in-memory
-
-The following URLs become available:
-
-* Main Interface: [http://localhost:8080/webui/index.html](http://localhost:8080/webui/index.html)
-* Operational Interface: [http://localhost:8081](http://localhost:8081)
-
-Running Cassandra-backed Reaper using Docker
---------------------------------------------
-
-These commands will build the jar file into the ./packages directory:
-
-    docker build --tag reaper-jar --file docker/jar/Dockerfile .
-    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-jar
-
-This command will build the service images using a previously built jar file:
-
-    docker-compose build
-
-First, ensure there exists a running Cassandra container. This can be confirmed
-once `Starting listening for CQL clients` appears in the log output:
-
-    docker-compose up cassandra
-
-If not already initialized, make sure the Cassandra cluster has the correct
-schema:
-
-    docker-compose run reaper-setup
-
-Once Cassandra's schema has been initialized, run Reaper:
-
-    docker-compose up reaper
-
-The following URLs become available:
-
-* Main Interface: [http://localhost:8080/webui/index.html](http://localhost:8080/webui/index.html)
-* Operational Interface: [http://localhost:8081](http://localhost:8081)
-
-**Note**: Although Reaper will be using a Cassandra backend, the Dockerized
-Cassandra container will be running with JMX accessible *only* from localhost.
-Therefore, another Cassandra cluster with proper JMX settings will need to
-be created in order for Reaper to monitor a cluster.
-
-If you wish to use an existing Cassandra backend on a separate machine, instead
-of the provided containerized Cassandra, simply:
-
-* Update `./docker-compose.yml`'s `reaper` and `reaper-setup` services to use
-`command`s that match an existing Cassandra node's IP address.
-* Initialize the schema using: `docker-compose run reaper-setup`.
-* Run Reaper using: `docker-compose up reaper`.
-
-To shut everything down, run:
-
-    docker-compose down
+* Building Debian, RPM, and jar packages using Docker.
+* Running an In-Memory Reaper deployment.
+* Running a Cassandra-backed Reaper deployment.
+    * With a containerized Cassandra.
+    * With a Cassandra cluster located at a different IP address.

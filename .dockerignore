@@ -5,6 +5,8 @@
 .DS_Store
 
 # docker files
+docker/production-reaper/*.jar
+docker/production-reaper/*.yaml
 docker-compose.yml
 
 # persistent storage

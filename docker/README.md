@@ -1,0 +1,131 @@
+Docker Support and Infrastructure for Reaper
+============================================
+
+The following software is required:
+
+* [Docker](https://docs.docker.com/engine/installation/)
+* [Docker Compose](https://docs.docker.com/compose/install/)
+
+**Note**: The following commands are all assumed to be run from the root
+repository directory.
+
+
+Building Reaper Packages Using Docker
+-------------------------------------
+
+These commands will install all dependencies needed to build the Debian, jar,
+and RPM packages:
+
+    docker build --tag reaper-build-debian --file docker/build-debian/Dockerfile .
+    docker build --tag reaper-build-jar --file docker/build-jar/Dockerfile .
+    docker build --tag reaper-build-rpm --file docker/build-rpm/Dockerfile .
+
+These commands need to be run to build the packages into the host machine's
+`./packages` directory:
+
+    # build Debian packages into `pwd`/packages on the host machine
+    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-debian
+
+    # build jars into `pwd`/packages on the host machine
+    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-jar
+
+    # build RPM packages into `pwd`/packages on the host machine
+    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-rpm
+
+
+Running In-Memory Reaper Using Docker Compose
+---------------------------------------------
+
+These commands will build the jar file into the `./packages` directory:
+
+    docker build --tag reaper-build-jar --file docker/build-jar/Dockerfile .
+    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-jar
+
+This command will build the service images using a previously built jar file:
+
+    docker-compose build
+
+This command will run Reaper in in-memory mode:
+
+    docker-compose up reaper-in-memory
+
+The following URLs become available:
+
+* Main Interface: [http://localhost:8080/webui/index.html](http://localhost:8080/webui/index.html)
+* Operational Interface: [http://localhost:8081](http://localhost:8081)
+
+
+Running Cassandra-backed Reaper using Docker Compose
+----------------------------------------------------
+
+These commands will build the jar file into the ./packages directory:
+
+    docker build --tag reaper-build-jar --file docker/build-jar/Dockerfile .
+    docker run -ti -v `pwd`/packages:/usr/src/app/packages reaper-build-jar
+
+This command will build the service images using a previously built jar file:
+
+    docker-compose build
+
+First, ensure there exists a running Cassandra container. This can be confirmed
+once `Starting listening for CQL clients` appears in the log output:
+
+    docker-compose up cassandra
+
+If not already initialized, make sure the Cassandra cluster has the correct
+schema:
+
+    docker-compose run reaper-setup
+
+Once Cassandra's schema has been initialized, run Reaper:
+
+    docker-compose up reaper
+
+The following URLs become available:
+
+* Main Interface: [http://localhost:8080/webui/index.html](http://localhost:8080/webui/index.html)
+* Operational Interface: [http://localhost:8081](http://localhost:8081)
+
+**Note**: Although Reaper will be using a Cassandra backend, the Dockerized
+Cassandra container will be running with JMX accessible *only* from localhost.
+Therefore, another Cassandra cluster with proper JMX settings will need to
+be created in order for Reaper to monitor a cluster.
+
+
+Running Cassandra-backed Reaper using Docker Compose and External Cassandra Cluster
+-----------------------------------------------------------------------------------
+
+If you wish to use an existing Cassandra backend on a separate machine, instead
+of the provided containerized Cassandra, the directions are the same as the
+above section with a few differences:
+
+* Update `./docker-compose.yml`'s `reaper` and `reaper-setup` services to use
+`command`s that match an existing Cassandra node's IP address.
+* Initialize the schema using: `docker-compose run reaper-setup`.
+* Run Reaper using: `docker-compose up reaper`.
+
+**Note**: Because Docker networking can use different settings and use of the
+correct JMX settings are required for this sort of setup, using a Cassandra cluster not
+located at `127.0.0.1`, or `localhost`, is ideal.
+
+
+Shutting Down Docker Compose Containers
+---------------------------------------
+
+To shut everything down all containers that were started using `docker-compose`
+command, run:
+
+    docker-compose down
+
+
+Using a Docker Container in Production
+--------------------------------------
+
+To facilitate production environments where Docker is heavily in use, we've
+provided a Dockerfile example for building an ideal production image. That file
+and README can be found in [./production-reaper](./production-reaper).
+
+There is a [ticket](https://github.com/thelastpickle/cassandra-reaper/issues/51)
+to deploy new Docker images to Docker Hub on each release. Once this ticket has
+been closed, the instructions should stay the same while the Dockerfile is
+simpler and pre-built using Docker Hub's automated build system.
