@@ -21,3 +21,7 @@ RUN wget http://archive.apache.org/dist/cassandra/3.0.9/${CASSANDRA_FILENAME} \
 # grab source
 COPY . ${WORKDIR}/cassandra-reaper
 WORKDIR ${WORKDIR}/cassandra-reaper
+
+# Add entrypoint script
+COPY docker/reaper-setup/docker-entrypoint.sh ${WORKDIR}
+ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]

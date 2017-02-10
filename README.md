@@ -431,6 +431,14 @@ Cassandra container will be running with JMX accessible *only* from localhost.
 Therefore, another Cassandra cluster with proper JMX settings will need to
 be created in order for Reaper to monitor a cluster.
 
+If you wish to use an existing Cassandra cluster on a seperate machine, instead
+of the provided containerized Cassandra, simply:
+
+* Update `./docker-compose.yml`'s `reaper` and `reaper-setup` services to use
+a `command`s that match an existing Cassandra node's IP address.
+* Run: `docker-compose run reaper-setup`.
+* Run: `docker-compose up reaper`.
+
 To shut everything down, run:
 
     docker-compose down

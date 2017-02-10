@@ -14,5 +14,6 @@ RUN apt-get update \
 COPY ./packages/*.jar ${WORKDIR}/
 COPY . ${WORKDIR}/cassandra-reaper
 
-RUN sed -i'.bak' 's/\["127.0.0.1"\]/["cassandra"]/g' \
-    ${WORKDIR}/cassandra-reaper/resource/cassandra-reaper-cassandra.yaml
+# Add entrypoint script
+COPY docker/reaper/docker-entrypoint.sh ${WORKDIR}
+ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]
