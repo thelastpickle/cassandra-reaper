@@ -362,3 +362,4 @@ README.md within that directory includes instructions for:
 * Running a Cassandra-backed Reaper deployment.
     * With a containerized Cassandra.
     * With a Cassandra cluster located at a different IP address.
+* Building a production-ready Docker container.
