@@ -73,6 +73,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,name=PendingTasks";
   private static final String COMP_OBJECT_NAME =
 	      "org.apache.cassandra.metrics:type=Compaction,name=PendingTasks";
+  private static final String VALUE_ATTRIBUTE = "Value";
 
   private final JMXConnector jmxConnector;
   private final ObjectName ssMbeanName;
@@ -269,7 +270,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     checkNotNull(cmProxy, "Looks like the proxy is not connected");
     try {
         ObjectName name = new ObjectName(COMP_OBJECT_NAME);
-        int pendingCount = (int) mbeanServer.getAttribute(name, "Value");
+        int pendingCount = (int) mbeanServer.getAttribute(name, VALUE_ATTRIBUTE);
         return pendingCount;
       } catch (IOException ignored) {
         LOG.warn("Failed to connect to " + host + " using JMX", ignored);
@@ -293,8 +294,16 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   public boolean isRepairRunning() {
     // Check if AntiEntropySession is actually running on the node
     try {
-      int activeCount = (Integer) mbeanServer.getAttribute(new ObjectName(AES_ACTIVE_OBJECT_NAME), "Value") + (Integer) mbeanServer.getAttribute(new ObjectName(VALIDATION_ACTIVE_OBJECT_NAME), "Value");
-      long pendingCount = (Long) mbeanServer.getAttribute(new ObjectName(AES_PENDING_OBJECT_NAME), "Value") + (Long) mbeanServer.getAttribute(new ObjectName(VALIDATION_PENDING_OBJECT_NAME), "Value");;
+      int activeCount = (Integer) mbeanServer.getAttribute(new ObjectName(AES_ACTIVE_OBJECT_NAME), VALUE_ATTRIBUTE);
+      long pendingCount = (Long) mbeanServer.getAttribute(new ObjectName(AES_PENDING_OBJECT_NAME), VALUE_ATTRIBUTE);
+      
+      try {
+        activeCount += (Integer) mbeanServer.getAttribute(new ObjectName(VALIDATION_ACTIVE_OBJECT_NAME), VALUE_ATTRIBUTE);
+        pendingCount += (Long) mbeanServer.getAttribute(new ObjectName(VALIDATION_PENDING_OBJECT_NAME), VALUE_ATTRIBUTE);
+      } catch(Exception e) {
+        LOG.debug("Couldn't get validation compaction metrics... not a deal breaker", e);
+      }
+      
       return activeCount + pendingCount != 0;
     } catch (IOException ignored) {
       LOG.warn("Failed to connect to " + host + " using JMX", ignored);
