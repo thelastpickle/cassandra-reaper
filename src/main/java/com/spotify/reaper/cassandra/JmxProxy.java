@@ -63,10 +63,16 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private static final int JMX_PORT = 7199;
   private static final String JMX_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
   private static final String SS_OBJECT_NAME = "org.apache.cassandra.db:type=StorageService";
-  private static final String AES_OBJECT_NAME =
-      "org.apache.cassandra.internal:type=AntiEntropySessions";
+  private static final String AES_ACTIVE_OBJECT_NAME =
+      "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=AntiEntropyStage,name=ActiveTasks";
+  private static final String AES_PENDING_OBJECT_NAME =
+      "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=AntiEntropyStage,name=PendingTasks";
+  private static final String VALIDATION_ACTIVE_OBJECT_NAME =
+      "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,name=ActiveTasks";
+  private static final String VALIDATION_PENDING_OBJECT_NAME =
+      "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,name=PendingTasks";
   private static final String COMP_OBJECT_NAME =
-	      "org.apache.cassandra.metrics:type=Compaction";
+	      "org.apache.cassandra.metrics:type=Compaction,name=PendingTasks";
 
   private final JMXConnector jmxConnector;
   private final ObjectName ssMbeanName;
@@ -263,7 +269,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     checkNotNull(cmProxy, "Looks like the proxy is not connected");
     try {
         ObjectName name = new ObjectName(COMP_OBJECT_NAME);
-        int pendingCount = (int) mbeanServer.getAttribute(name, "PendingTasks");
+        int pendingCount = (int) mbeanServer.getAttribute(name, "Value");
         return pendingCount;
       } catch (IOException ignored) {
         LOG.warn("Failed to connect to " + host + " using JMX", ignored);
@@ -272,7 +278,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       } catch (InstanceNotFoundException e) {
         // This happens if no repair has yet been run on the node
         // The AntiEntropySessions object is created on the first repair
-        LOG.debug("No compaction has run yet on the node. Ignoring exception.", e);
+        LOG.error("Error getting pending compactions attribute from JMX", e);
         return 0;
       } catch (Exception e) {
         LOG.error("Error getting attribute from JMX", e);
@@ -287,9 +293,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   public boolean isRepairRunning() {
     // Check if AntiEntropySession is actually running on the node
     try {
-      ObjectName name = new ObjectName(AES_OBJECT_NAME);
-      int activeCount = (Integer) mbeanServer.getAttribute(name, "ActiveCount");
-      long pendingCount = (Long) mbeanServer.getAttribute(name, "PendingTasks");
+      int activeCount = (Integer) mbeanServer.getAttribute(new ObjectName(AES_ACTIVE_OBJECT_NAME), "Value") + (Integer) mbeanServer.getAttribute(new ObjectName(VALIDATION_ACTIVE_OBJECT_NAME), "Value");
+      long pendingCount = (Long) mbeanServer.getAttribute(new ObjectName(AES_PENDING_OBJECT_NAME), "Value") + (Long) mbeanServer.getAttribute(new ObjectName(VALIDATION_PENDING_OBJECT_NAME), "Value");;
       return activeCount + pendingCount != 0;
     } catch (IOException ignored) {
       LOG.warn("Failed to connect to " + host + " using JMX", ignored);
@@ -298,7 +303,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     } catch (InstanceNotFoundException e) {
       // This happens if no repair has yet been run on the node
       // The AntiEntropySessions object is created on the first repair
-      LOG.debug("No repair has run yet on the node. Ignoring exception.", e);
+      LOG.error("Error getting pending/active repairs attributes from JMX", e);
       return false;
     } catch (Exception e) {
       LOG.error("Error getting attribute from JMX", e);
