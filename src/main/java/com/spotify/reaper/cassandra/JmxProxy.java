@@ -63,10 +63,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private static final int JMX_PORT = 7199;
   private static final String JMX_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
   private static final String SS_OBJECT_NAME = "org.apache.cassandra.db:type=StorageService";
-  private static final String AES_ACTIVE_OBJECT_NAME =
-      "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=AntiEntropyStage,name=ActiveTasks";
-  private static final String AES_PENDING_OBJECT_NAME =
-      "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=AntiEntropyStage,name=PendingTasks";
+  private static final String AES_OBJECT_NAME =
+      "org.apache.cassandra.internal:type=AntiEntropySessions";
   private static final String VALIDATION_ACTIVE_OBJECT_NAME =
       "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,name=ActiveTasks";
   private static final String VALIDATION_PENDING_OBJECT_NAME =
@@ -292,18 +290,19 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * @return true if any repairs are running on the node.
    */
   public boolean isRepairRunning() {
+    return isRepairRunningPre22() || isRepairRunningPost22() || isValidationCompactionRunning();
+  }
+  
+  
+  /**
+   * @return true if any repairs are running on the node.
+   */
+  public boolean isRepairRunningPre22() {
     // Check if AntiEntropySession is actually running on the node
     try {
-      int activeCount = (Integer) mbeanServer.getAttribute(new ObjectName(AES_ACTIVE_OBJECT_NAME), VALUE_ATTRIBUTE);
-      long pendingCount = (Long) mbeanServer.getAttribute(new ObjectName(AES_PENDING_OBJECT_NAME), VALUE_ATTRIBUTE);
-      
-      try {
-        activeCount += (Integer) mbeanServer.getAttribute(new ObjectName(VALIDATION_ACTIVE_OBJECT_NAME), VALUE_ATTRIBUTE);
-        pendingCount += (Long) mbeanServer.getAttribute(new ObjectName(VALIDATION_PENDING_OBJECT_NAME), VALUE_ATTRIBUTE);
-      } catch(Exception e) {
-        LOG.debug("Couldn't get validation compaction metrics... not a deal breaker", e);
-      }
-      
+      ObjectName name = new ObjectName(AES_OBJECT_NAME);
+      int activeCount = (Integer) mbeanServer.getAttribute(name, "ActiveCount");
+      long pendingCount = (Long) mbeanServer.getAttribute(name, "PendingTasks");
       return activeCount + pendingCount != 0;
     } catch (IOException ignored) {
       LOG.warn("Failed to connect to " + host + " using JMX", ignored);
@@ -312,8 +311,60 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     } catch (InstanceNotFoundException e) {
       // This happens if no repair has yet been run on the node
       // The AntiEntropySessions object is created on the first repair
-      LOG.error("Error getting pending/active repairs attributes from JMX", e);
+      LOG.debug("No repair has run yet on the node. Ignoring exception.", e);
       return false;
+    } catch (Exception e) {
+      LOG.error("Error getting attribute from JMX", e);
+    }
+    // If uncertain, assume it's running
+    return true;
+  }
+  
+  /**
+   * @return true if any repairs are running on the node.
+   */
+  public boolean isValidationCompactionRunning() {
+    // Check if AntiEntropySession is actually running on the node
+    try {
+      int activeCount = (Integer) mbeanServer.getAttribute(new ObjectName(VALIDATION_ACTIVE_OBJECT_NAME), VALUE_ATTRIBUTE);
+      long pendingCount = (Long) mbeanServer.getAttribute(new ObjectName(VALIDATION_PENDING_OBJECT_NAME), VALUE_ATTRIBUTE);
+      
+      return activeCount + pendingCount != 0;
+    } catch (IOException ignored) {
+      LOG.warn("Failed to connect to " + host + " using JMX", ignored);
+    } catch (MalformedObjectNameException ignored) {
+      LOG.error("Internal error, malformed name", ignored);
+    } catch (InstanceNotFoundException e) {
+      LOG.error("Error getting pending/active validation compaction attributes from JMX", e);
+      return false;
+    } catch (Exception e) {
+      LOG.error("Error getting attribute from JMX", e);
+    }
+    // If uncertain, assume it's not running
+    return false;
+  }
+  
+  /**
+   * New way of determining if a repair is running after C* 2.2
+   * 
+   * @return true if any repairs are running on the node.
+   */
+  public boolean isRepairRunningPost22() {
+    try {
+      // list all mbeans in search of one with the name Repair#?? 
+      // This is the replacement for AntiEntropySessions since Cassandra 2.2
+      Set beanSet = mbeanServer.queryNames(new ObjectName("org.apache.cassandra.internal:*"), null);
+      for(Object bean:beanSet) {
+        ObjectName objName = (ObjectName) bean;
+        if(objName.getCanonicalName().contains("Repair#")){
+          return true;
+        }
+      }
+      return false;
+    } catch (IOException ignored) {
+      LOG.warn("Failed to connect to " + host + " using JMX", ignored);
+    } catch (MalformedObjectNameException ignored) {
+      LOG.error("Internal error, malformed name", ignored);
     } catch (Exception e) {
       LOG.error("Error getting attribute from JMX", e);
     }

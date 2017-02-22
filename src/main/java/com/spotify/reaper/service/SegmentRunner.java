@@ -51,6 +51,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   private static final Logger LOG = LoggerFactory.getLogger(SegmentRunner.class);
 
   private static final int MAX_PENDING_COMPACTIONS = 20;
+  private static final int MAX_TIMEOUT_EXTENSIONS = 10;
   private static final Pattern REPAIR_UUID_PATTERN =
       Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
@@ -196,6 +197,9 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         }
 
         LOG.debug("Triggered repair with command id {}", commandId);
+        
+        // incremental repair can take way more time for a segment so we're extending the timeout MAX_TIMEOUT_EXTENSIONS times
+        long timeout = repairUnit.getIncrementalRepair()?timeoutMillis*MAX_TIMEOUT_EXTENSIONS:timeoutMillis;
         context.storage.updateRepairSegment(segment.with()
             .coordinatorHost(coordinator.getHost())
             .repairCommandId(commandId)
@@ -204,9 +208,9 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             segment.getId(), coordinator.getHost());
         repairRunner.updateLastEvent(eventMsg);
         LOG.info("Repair for segment {} started, status wait will timeout in {} millis", segmentId,
-            timeoutMillis);
+            timeout);
         try {
-          condition.await(timeoutMillis, TimeUnit.MILLISECONDS);
+          condition.await(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
           LOG.warn("Repair command {} on segment {} interrupted", commandId, segmentId, e);
         } finally {
@@ -236,6 +240,13 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
     LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
   }
+  
+  private void declineRun() {
+    LOG.info("SegmentRunner declined to repair segment {} because only one segment is allowed "
+        + "at once for incremental repairs", segmentId);
+    String msg = "Postponed due to already running segment";
+    repairRunner.updateLastEvent(msg);
+  }
 
   boolean canRepair(RepairSegment segment, String keyspace, JmxProxy coordinator,
       LazyInitializer<Set<String>> busyHosts) {
@@ -243,12 +254,21 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     if(repairUnit.getIncrementalRepair()){
     	// In incremental repairs, only one segment is allowed at once (one segment == the full primary range of one node)
     	if(repairHasSegmentRunning(segment.getRunId())) {
-    		LOG.info("SegmentRunner declined to repair segment {} because only one segment is allowed "
-                    + "at once for incremental repairs", segmentId);
-           String msg = "Postponed due to already running segment";
-           repairRunner.updateLastEvent(msg);
-           return false;
+    	  declineRun();
+        return false;
     	}
+    	
+    	for(RepairSegment segmentInRun:context.storage.getRepairSegmentsForRun(segment.getRunId())){
+    	  try (JmxProxy hostProxy = context.jmxConnectionFactory.connect(segmentInRun.getCoordinatorHost())) {
+    	    if(hostProxy.isRepairRunning()) {
+    	      declineRun();
+    	      return false;
+    	    }
+    	  } catch (ReaperException e) {
+          LOG.error("Unreachable node when trying to determine if repair is running on a node. Crossing fingers and continuing...", e);
+        }
+    	}
+    	
     }
     try {
       // when hosts are coming up or going down, this method can throw an
