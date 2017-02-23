@@ -36,15 +36,19 @@ script:
   - mvn surefire:test -Pintegration-tests
 after_success:
   - 'if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_BRANCH" = "master" -a "$CASSANDRA_VERSION" = "2.1.16" ]; then mvn sonar:sonar -Dsonar.host.url=https://sonarqube.com -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=tlp-cassandra-reaper -Dsonar.github.oauth=$GITHUB_TOKEN -Dsonar.github.repository=thelastpickle/cassandra-reaper; fi'
+before_deploy: 
+  - "mkdir cassandra-reaper-${TRAVIS_TAG}"
+  - "mkdir cassandra-reaper-${TRAVIS_TAG}/target"
+  - "cp -R bin cassandra-reaper-${TRAVIS_TAG}/"
+  - "cp target/cassandra-reaper-*.jar cassandra-reaper-${TRAVIS_TAG}/target"
+  - "cp -R resource cassandra-reaper-${TRAVIS_TAG}/"
+  - "tar czf cassandra-reaper-${TRAVIS_TAG}-release.tar.gz cassandra-reaper-${TRAVIS_TAG}/"
 deploy:
   provider: releases
   api_key: $GITHUB_TOKEN
   file_glob: true
   file: 
-    - "target/cassandra*.jar"
-    - "resource/*.yaml"
-    - "bin/*"
-    - "debian/*"
+    - "cassandra-reaper-${TRAVIS_TAG}-release.tar.gz"
   skip_cleanup: true
   on:
     tags: true 
