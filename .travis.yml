@@ -9,7 +9,7 @@ env:
     - CASSANDRA_VERSION=2.1.16
     - CASSANDRA_VERSION=2.2.8
     - CASSANDRA_VERSION=3.0.9
-    - CASSANDRA_VERSION=3.9
+    - CASSANDRA_VERSION=3.10
 services:
   - postgresql
 before_script:
