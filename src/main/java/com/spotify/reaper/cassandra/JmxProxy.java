@@ -72,6 +72,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private static final String COMP_OBJECT_NAME =
 	      "org.apache.cassandra.metrics:type=Compaction,name=PendingTasks";
   private static final String VALUE_ATTRIBUTE = "Value";
+  private static final String FAILED_TO_CONNECT_TO_USING_JMX = "Failed to connect to {} using JMX";
+  private static final String ERROR_GETTING_ATTR_JMX = "Error getting attribute from JMX";
 
   private final JMXConnector jmxConnector;
   private final ObjectName ssMbeanName;
@@ -271,7 +273,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
         int pendingCount = (int) mbeanServer.getAttribute(name, VALUE_ATTRIBUTE);
         return pendingCount;
       } catch (IOException ignored) {
-        LOG.warn("Failed to connect to " + host + " using JMX", ignored);
+        LOG.warn(FAILED_TO_CONNECT_TO_USING_JMX, host, ignored);
       } catch (MalformedObjectNameException ignored) {
         LOG.error("Internal error, malformed name", ignored);
       } catch (InstanceNotFoundException e) {
@@ -280,7 +282,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
         LOG.error("Error getting pending compactions attribute from JMX", e);
         return 0;
       } catch (Exception e) {
-        LOG.error("Error getting attribute from JMX", e);
+        LOG.error(ERROR_GETTING_ATTR_JMX, e);
       }
       // If uncertain, assume it's running
       return 0;
@@ -305,7 +307,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       long pendingCount = (Long) mbeanServer.getAttribute(name, "PendingTasks");
       return activeCount + pendingCount != 0;
     } catch (IOException ignored) {
-      LOG.warn("Failed to connect to " + host + " using JMX", ignored);
+      LOG.warn(FAILED_TO_CONNECT_TO_USING_JMX, host, ignored);
     } catch (MalformedObjectNameException ignored) {
       LOG.error("Internal error, malformed name", ignored);
     } catch (InstanceNotFoundException e) {
@@ -314,7 +316,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       LOG.debug("No repair has run yet on the node. Ignoring exception.", e);
       return false;
     } catch (Exception e) {
-      LOG.error("Error getting attribute from JMX", e);
+      LOG.error(ERROR_GETTING_ATTR_JMX, e);
     }
     // If uncertain, assume it's running
     return true;
@@ -331,14 +333,14 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       
       return activeCount + pendingCount != 0;
     } catch (IOException ignored) {
-      LOG.warn("Failed to connect to " + host + " using JMX", ignored);
+      LOG.warn(FAILED_TO_CONNECT_TO_USING_JMX, host, ignored);
     } catch (MalformedObjectNameException ignored) {
       LOG.error("Internal error, malformed name", ignored);
     } catch (InstanceNotFoundException e) {
       LOG.error("Error getting pending/active validation compaction attributes from JMX", e);
       return false;
     } catch (Exception e) {
-      LOG.error("Error getting attribute from JMX", e);
+      LOG.error(ERROR_GETTING_ATTR_JMX, e);
     }
     // If uncertain, assume it's not running
     return false;
@@ -362,11 +364,11 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       }
       return false;
     } catch (IOException ignored) {
-      LOG.warn("Failed to connect to " + host + " using JMX", ignored);
+      LOG.warn(FAILED_TO_CONNECT_TO_USING_JMX, host, ignored);
     } catch (MalformedObjectNameException ignored) {
       LOG.error("Internal error, malformed name", ignored);
     } catch (Exception e) {
-      LOG.error("Error getting attribute from JMX", e);
+      LOG.error(ERROR_GETTING_ATTR_JMX, e);
     }
     // If uncertain, assume it's running
     return true;

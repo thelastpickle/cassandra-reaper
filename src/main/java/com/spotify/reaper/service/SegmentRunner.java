@@ -258,16 +258,11 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         return false;
     	}
     	
-    	for(RepairSegment segmentInRun:context.storage.getRepairSegmentsForRun(segment.getRunId())){
-    	  try (JmxProxy hostProxy = context.jmxConnectionFactory.connect(segmentInRun.getCoordinatorHost())) {
-    	    if(hostProxy.isRepairRunning()) {
-    	      declineRun();
-    	      return false;
-    	    }
-    	  } catch (ReaperException e) {
-          LOG.error("Unreachable node when trying to determine if repair is running on a node. Crossing fingers and continuing...", e);
-        }
+    	if (IsRepairRunningOnOneNode(segment)) {
+    	  declineRun();
+    	  return false;
     	}
+    	
     	
     }
     try {
@@ -336,6 +331,21 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     LOG.info("It is ok to repair segment '{}' on repair run with id '{}'",
         segment.getId(), segment.getRunId());
     return true;
+  }
+
+  private boolean IsRepairRunningOnOneNode(RepairSegment segment) {
+    for(RepairSegment segmentInRun:context.storage.getRepairSegmentsForRun(segment.getRunId())){
+      try (JmxProxy hostProxy = context.jmxConnectionFactory.connect(segmentInRun.getCoordinatorHost())) {
+        if(hostProxy.isRepairRunning()) {
+          return true;
+        }
+      } catch (ReaperException e) {
+        LOG.error("Unreachable node when trying to determine if repair is running on a node. Crossing fingers and continuing...", e);
+      }
+    }
+    
+    return false;
+    
   }
 
   private boolean repairHasSegmentRunning(long repairRunId) {
