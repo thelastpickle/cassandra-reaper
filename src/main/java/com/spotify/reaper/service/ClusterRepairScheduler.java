@@ -24,7 +24,7 @@ import static java.lang.String.format;
 public class ClusterRepairScheduler {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterRepairScheduler.class);
   private static final String REPAIR_OWNER = "auto-scheduling";
-  private static final List<String> SYSTEM_KEYSPACES = Arrays.asList("system", "system_auth", "system_traces");
+  private static final String SYSTEM_KEYSPACE_PREFIX = "system";
   private final AppContext context;
 
   public ClusterRepairScheduler(AppContext context) {
@@ -58,8 +58,8 @@ public class ClusterRepairScheduler {
   }
 
   private boolean keyspaceCandidateForRepair(Cluster cluster, String keyspace) {
-    if (SYSTEM_KEYSPACES.contains(keyspace.toLowerCase())) {
-      LOG.info("Scheduled repair skipped for system keyspace {} in cluster {}.", keyspace, cluster.getName());
+    if (keyspace.toLowerCase().startsWith("system") || context.config.getAutoScheduling().getExcludedKeyspaces().contains(keyspace)) {
+      LOG.debug("Scheduled repair skipped for system keyspace {} in cluster {}.", keyspace, cluster.getName());
       return false;
     }
     if (keyspaceHasNoTable(context, cluster, keyspace)) {
@@ -74,7 +74,7 @@ public class ClusterRepairScheduler {
       RepairSchedule repairSchedule = CommonTools.storeNewRepairSchedule(
           context,
           cluster,
-          CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace, Collections.emptySet()),
+          CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace, Collections.emptySet(), Boolean.FALSE),
           context.config.getScheduleDaysBetween(),
           nextActivationTime,
           REPAIR_OWNER,

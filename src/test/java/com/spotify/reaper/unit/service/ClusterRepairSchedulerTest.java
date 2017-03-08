@@ -177,7 +177,7 @@ public class ClusterRepairSchedulerTest {
   }
 
   private RepairUnit.Builder aRepair(Cluster cluster, String keyspace) {
-    return new RepairUnit.Builder(cluster.getName(), keyspace, Collections.emptySet());
+    return new RepairUnit.Builder(cluster.getName(), keyspace, Collections.emptySet(), Boolean.FALSE);
   }
 
   private ClusterRepairScheduleAssertion assertThatClusterRepairSchedules(Collection<RepairSchedule> repairSchedules) {

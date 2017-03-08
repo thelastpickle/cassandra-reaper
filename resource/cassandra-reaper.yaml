@@ -56,3 +56,6 @@ autoScheduling:
   periodBetweenPolls: PT10M
   timeBeforeFirstSchedule: PT5M
   scheduleSpreadPeriod: PT6H
+  excludedKeyspaces:
+    - keyspace1
+    - keyspace2

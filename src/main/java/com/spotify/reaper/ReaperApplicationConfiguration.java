@@ -19,6 +19,8 @@ import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.constraints.NotEmpty;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import javax.validation.constraints.DecimalMin;
@@ -257,6 +259,9 @@ public class ReaperApplicationConfiguration extends Configuration {
 
     @JsonProperty
     private Duration scheduleSpreadPeriod;
+    
+    @JsonProperty
+    private List<String> excludedKeyspaces = Collections.EMPTY_LIST;
 
     public Boolean isEnabled() {
       return enabled;
@@ -300,6 +305,14 @@ public class ReaperApplicationConfiguration extends Configuration {
 
     public boolean hasScheduleSpreadPeriod() {
       return scheduleSpreadPeriod != null;
+    }
+    
+    public void setExcludedKeyspaces(List<String> excludedKeyspaces) {
+      this.excludedKeyspaces = excludedKeyspaces;
+    }
+
+    public List<String> getExcludedKeyspaces() {
+      return excludedKeyspaces;
     }
 
     @Override
