@@ -602,10 +602,9 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
     } else if (repairSegment.getEndTime() != null && repairSegment.getStartTime() != null) {
       long repairEnd = repairSegment.getEndTime().getMillis();
       long repairStart = repairSegment.getStartTime().getMillis();
-      long repairDuration = repairEnd - repairStart;
+      long repairDuration = Math.max(1, repairEnd - repairStart);
       long delay = (long) (repairDuration / intensity - repairDuration);
       LOG.debug("Scheduling next runner run() with delay {} ms", delay);
-      
       int nbRunningReapers = context.storage.countRunningReapers();
       LOG.debug("Concurrent reaper instances : {}", nbRunningReapers);
       return delay*nbRunningReapers;

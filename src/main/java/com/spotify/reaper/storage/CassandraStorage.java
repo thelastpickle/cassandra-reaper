@@ -160,6 +160,8 @@ public class CassandraStorage implements IStorage {
     getRunningReapersCountPrepStmt = session.prepare("SELECT count(*) as nb_reapers FROM running_reapers");
     saveHeartbeatPrepStmt = session.prepare("INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?,?,dateof(now()))");
     getHostMetricsPrepStmt = session.prepare("SELECT * FROM host_metrics WHERE host_address = ? AND ts >= ? LIMIT 1");
+    getRunningReapersCountPrepStmt = session.prepare("SELECT count(*) as nb_reapers FROM running_reapers");
+    saveHeartbeatPrepStmt = session.prepare("INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?,?,dateof(now()))");
   }
 
   @Override
