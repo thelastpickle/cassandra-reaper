@@ -524,4 +524,13 @@ public class MemoryStorage implements IStorage {
   public StorageType getStorageType() {
     return StorageType.MEMORY;
   }
+
+  @Override
+  public int countRunningReapers() {
+    return 1;
+  }
+
+  @Override
+  public void saveHeartbeat() {
+  }
 }

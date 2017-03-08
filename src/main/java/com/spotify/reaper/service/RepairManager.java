@@ -55,6 +55,7 @@ public class RepairManager {
    * @throws ReaperException 
    */
   public void resumeRunningRepairRuns(AppContext context) throws ReaperException {
+    context.storage.saveHeartbeat();
     Collection<RepairRun> running =
         context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
     for (RepairRun repairRun : running) {

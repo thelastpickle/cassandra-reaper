@@ -102,7 +102,11 @@ public class CassandraStorage implements IStorage {
   private PreparedStatement releaseLeadOnSegmentPrepStmt;
   private PreparedStatement storeHostMetricsPrepStmt;
   private PreparedStatement getHostMetricsPrepStmt;
-
+  private PreparedStatement getRunningReapersCountPrepStmt;
+  private PreparedStatement saveHeartbeatPrepStmt;
+  
+  private DateTime lastHeartBeat = DateTime.now();
+  
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
     cassandra = config.getCassandraFactory().build(environment).register(QueryLogger.builder().build());
     CodecRegistry codecRegistry = cassandra.getConfiguration().getCodecRegistry();
@@ -115,6 +119,7 @@ public class CassandraStorage implements IStorage {
     migration.migrate();
         
     prepareStatements();
+    lastHeartBeat = lastHeartBeat.minusMinutes(1);
   }
 
   private void prepareStatements(){
@@ -152,6 +157,8 @@ public class CassandraStorage implements IStorage {
     releaseLeadOnSegmentPrepStmt = session.prepare("DELETE FROM segment_leader WHERE segment_id = ? IF reaper_instance_id = ?");
     storeHostMetricsPrepStmt = session.prepare("INSERT INTO host_metrics (host_address, ts, pending_compactions, has_repair_running, active_anticompactions) VALUES(?, dateof(now()), ?, ?, ?)");
     getHostMetricsPrepStmt = session.prepare("SELECT * FROM host_metrics WHERE host_address = ? AND ts >= ? LIMIT 1");
+    getRunningReapersCountPrepStmt = session.prepare("SELECT count(*) as nb_reapers FROM running_reapers");
+    saveHeartbeatPrepStmt = session.prepare("INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?,?,dateof(now()))");
   }
 
   @Override
@@ -823,5 +830,23 @@ public class CassandraStorage implements IStorage {
   @Override
   public StorageType getStorageType() {
     return StorageType.CASSANDRA;
+  }
+
+  @Override
+  public int countRunningReapers() {
+    ResultSet result = session.execute(getRunningReapersCountPrepStmt.bind());
+    int runningReapers = (int) result.one().getLong("nb_reapers");
+    LOG.debug("Running reapers = {}", runningReapers);
+    return runningReapers>0?runningReapers:1;
+  }
+
+  @Override
+  public void saveHeartbeat() {
+    DateTime now = DateTime.now();
+    // Send heartbeats every minute
+    if(now.minusSeconds(60).getMillis() >= lastHeartBeat.getMillis()) {
+      session.executeAsync(saveHeartbeatPrepStmt.bind(ReaperApplication.reaperInstanceId, ReaperApplication.getInstanceAddress()));
+      lastHeartBeat = now;
+    }
   }
 }

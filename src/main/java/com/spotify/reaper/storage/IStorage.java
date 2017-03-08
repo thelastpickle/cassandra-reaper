@@ -159,4 +159,7 @@ public interface IStorage {
   void storeHostMetrics(HostMetrics hostMetrics);
   Optional<HostMetrics> getHostMetrics(String hostName);
   
+  int countRunningReapers();
+  void saveHeartbeat();
+  
 }

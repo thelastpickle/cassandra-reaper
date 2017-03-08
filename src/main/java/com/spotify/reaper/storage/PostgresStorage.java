@@ -519,4 +519,13 @@ public class PostgresStorage implements IStorage {
   public StorageType getStorageType() {
     return StorageType.DATABASE;
   }
+
+  @Override
+  public int countRunningReapers() {
+    return 1;
+  }
+
+  @Override
+  public void saveHeartbeat() {
+  }
 }
