@@ -156,7 +156,7 @@ public class CassandraStorage implements IStorage {
     renewLeadOnSegmentPrepStmt = session.prepare("UPDATE segment_leader SET reaper_instance_id = ?, reaper_instance_host = ?, last_heartbeat = dateof(now()) WHERE segment_id = ? IF reaper_instance_id = ?");
     releaseLeadOnSegmentPrepStmt = session.prepare("DELETE FROM segment_leader WHERE segment_id = ? IF reaper_instance_id = ?");
     storeHostMetricsPrepStmt = session.prepare("INSERT INTO host_metrics (host_address, ts, pending_compactions, has_repair_running, active_anticompactions) VALUES(?, dateof(now()), ?, ?, ?)");
-    getHostMetricsPrepStmt = session.prepare("SELECT * FROM host_metrics WHERE host_address = ? AND ts >= ? LIMIT 1");
+    getHostMetricsPrepStmt = session.prepare("SELECT * FROM host_metrics WHERE host_address = ?");
     getRunningReapersCountPrepStmt = session.prepare("SELECT count(*) as nb_reapers FROM running_reapers");
     saveHeartbeatPrepStmt = session.prepare("INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?,?,dateof(now()))");
   }
@@ -815,7 +815,7 @@ public class CassandraStorage implements IStorage {
 
   @Override
   public Optional<HostMetrics> getHostMetrics(String hostName) {
-    ResultSet result = session.execute(getHostMetricsPrepStmt.bind(hostName, new Date(System.currentTimeMillis()-180000)));
+    ResultSet result = session.execute(getHostMetricsPrepStmt.bind(hostName));
     for(Row metrics:result) {
       return Optional.of(HostMetrics.builder().withHostAddress(hostName)
                                   .withPendingCompactions(metrics.getInt("pending_compactions"))

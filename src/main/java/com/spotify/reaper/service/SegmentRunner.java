@@ -228,9 +228,12 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
           long startTime = System.currentTimeMillis();
           long maxTime = startTime + timeoutMillis;
           
+          // If timeout is lower than 1mn, use timeout, otherwise we'll loop every minute to renew lead on segment
+          long waitTime = timeoutMillis<60000?timeoutMillis:60000;
+          
           long lastLoopTime = System.currentTimeMillis();
           while (System.currentTimeMillis() < maxTime) {
-            condition.await(1, TimeUnit.MINUTES);
+            condition.await(waitTime, TimeUnit.MILLISECONDS);
             if(lastLoopTime + 60_000 > System.currentTimeMillis() || context.storage.getRepairSegment(segmentId).get().getState() == RepairSegment.State.DONE){
               // The condition has been interrupted, meaning the repair might be over
               break;
@@ -600,7 +603,10 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
       long repairDuration = repairEnd - repairStart;
       long delay = (long) (repairDuration / intensity - repairDuration);
       LOG.debug("Scheduling next runner run() with delay {} ms", delay);
-      return delay*context.storage.countRunningReapers();
+      
+      int nbRunningReapers = context.storage.countRunningReapers();
+      LOG.debug("Concurrent reaper instances : {}", nbRunningReapers);
+      return delay*nbRunningReapers;
     } else {
       LOG.error("Segment {} returned with startTime {} and endTime {}. This should not happen."
                 + "Intensity cannot apply, so next run will start immediately.",
