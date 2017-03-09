@@ -1,0 +1,8 @@
+0.5.0
+ * Add configurable auto-scheduling of repairs for all (non system) keyspaces
+0.4.1
+ * Fix for getting active/pending compactions and repairs in Cassandra 2.2+
+0.4.0
+ * Add H2 storage backend
+ * Postgres, H2 and Cassandra schema are automatically created/upgraded on startup
+ * Add automatic GitHub releases from Travis on tags

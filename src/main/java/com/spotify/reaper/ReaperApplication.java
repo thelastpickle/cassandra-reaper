@@ -27,6 +27,7 @@ import org.flywaydb.core.Flyway;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -40,6 +41,7 @@ import com.spotify.reaper.resources.PingResource;
 import com.spotify.reaper.resources.ReaperHealthCheck;
 import com.spotify.reaper.resources.RepairRunResource;
 import com.spotify.reaper.resources.RepairScheduleResource;
+import com.spotify.reaper.service.AutoSchedulingManager;
 import com.spotify.reaper.service.RepairManager;
 import com.spotify.reaper.service.SchedulingManager;
 import com.spotify.reaper.storage.CassandraStorage;
@@ -94,6 +96,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   @Override
   public void initialize(Bootstrap<ReaperApplicationConfiguration> bootstrap) {
     bootstrap.addBundle(new AssetsBundle("/assets/", "/webui", "index.html"));
+    bootstrap.getObjectMapper().registerModule(new JavaTimeModule());
   }
 
   @Override
@@ -170,6 +173,11 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     Thread.sleep(1000);
 
     SchedulingManager.start(context);
+
+    if (config.hasAutoSchedulingEnabled()) {
+      LOG.debug("using specified configuration for auto scheduling: {}", config.getAutoScheduling());
+      AutoSchedulingManager.start(context);
+    }
 
     LOG.info("resuming pending repair runs");
     context.repairManager.resumeRunningRepairRuns(context);

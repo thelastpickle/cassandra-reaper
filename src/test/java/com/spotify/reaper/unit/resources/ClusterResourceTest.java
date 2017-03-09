@@ -1,10 +1,9 @@
 package com.spotify.reaper.unit.resources;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
 import com.spotify.reaper.AppContext;
-import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
@@ -12,15 +11,17 @@ import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.storage.MemoryStorage;
-
+import com.spotify.reaper.unit.service.TestRepairConfiguration;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.net.URI;
+import java.time.Duration;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import static org.fest.assertions.api.Assertions.assertThat;
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -36,24 +37,25 @@ public class ClusterResourceTest {
 
   AppContext context = new AppContext();
   UriInfo uriInfo;
+  JmxProxy jmxProxy;
 
   @Before
   public void setUp() throws Exception {
     context.storage = new MemoryStorage();
-    context.config = mock(ReaperApplicationConfiguration.class);
+    context.config = TestRepairConfiguration.defaultConfig();
 
     uriInfo = mock(UriInfo.class);
     when(uriInfo.getAbsolutePath()).thenReturn(SAMPLE_URI);
     when(uriInfo.getBaseUri()).thenReturn(SAMPLE_URI);
 
-    final JmxProxy proxy = mock(JmxProxy.class);
-    when(proxy.getClusterName()).thenReturn(CLUSTER_NAME);
-    when(proxy.getPartitioner()).thenReturn(PARTITIONER);
+    jmxProxy = mock(JmxProxy.class);
+    when(jmxProxy.getClusterName()).thenReturn(CLUSTER_NAME);
+    when(jmxProxy.getPartitioner()).thenReturn(PARTITIONER);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
       public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
           throws ReaperException {
-        return proxy;
+        return jmxProxy;
       }
     };
   }
@@ -125,4 +127,25 @@ public class ClusterResourceTest {
     response = clusterResource.modifyClusterSeed(uriInfo, CLUSTER_NAME, Optional.of(SEED_HOST + 1));
     assertEquals(304, response.getStatus());
   }
+
+  @Test
+  public void addingAClusterAutomaticallySetupSchedulingRepairsWhenEnabled() throws Exception {
+    when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1"));
+    when(jmxProxy.getTableNamesForKeyspace("keyspace1")).thenReturn(Sets.newHashSet("table1"));
+
+    context.config = TestRepairConfiguration.defaultConfigBuilder()
+        .withAutoScheduling(TestRepairConfiguration.defaultAutoSchedulingConfigBuilder()
+            .thatIsEnabled()
+            .withTimeBeforeFirstSchedule(Duration.ofMinutes(1))
+            .build())
+        .build();
+
+    ClusterResource clusterResource = new ClusterResource(context);
+    Response response = clusterResource.addCluster(uriInfo, Optional.of(SEED_HOST));
+
+    assertEquals(201, response.getStatus());
+    assertThat(context.storage.getAllRepairSchedules()).hasSize(1);
+    assertThat(context.storage.getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1")).hasSize(1);
+  }
+
 }

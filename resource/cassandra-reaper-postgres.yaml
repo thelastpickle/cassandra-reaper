@@ -49,3 +49,13 @@ database:
   user: postgres
   password: 
   url: jdbc:postgresql://127.0.0.1/reaper
+
+autoScheduling:
+  enabled: false
+  initialDelayPeriod: PT15S
+  periodBetweenPolls: PT10M
+  timeBeforeFirstSchedule: PT5M
+  scheduleSpreadPeriod: PT6H
+  excludedKeyspaces:
+    - keyspace1
+    - keyspace2
