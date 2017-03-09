@@ -147,6 +147,7 @@ public class ClusterResource {
         try {
           clusterRepairScheduler.scheduleRepairs(newCluster);
         } catch (ReaperException e) {
+          LOG.error("failed to automatically schedule repairs", e);
           return Response.status(400)
             .entity("failed to automatically schedule repairs for cluster with seed host \"" + seedHost.get()
                     + "\". Exception was: " + e.getMessage()).build();

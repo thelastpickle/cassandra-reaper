@@ -15,6 +15,15 @@ public class AutoSchedulingManager extends TimerTask {
   private final AppContext context;
   private final ClusterRepairScheduler clusterRepairScheduler;
 
+  private AutoSchedulingManager(AppContext context) {
+    this(context, new ClusterRepairScheduler(context));
+  }
+
+  public AutoSchedulingManager(AppContext context, ClusterRepairScheduler clusterRepairScheduler) {
+    this.context = context;
+    this.clusterRepairScheduler = clusterRepairScheduler;
+  }
+  
   public static synchronized void start(AppContext context) {
     if (null == repairAutoSchedulingManager) {
       LOG.info("Starting new {} instance. First check in {}ms. Subsequent polls every {}ms",
@@ -33,15 +42,6 @@ public class AutoSchedulingManager extends TimerTask {
     } else {
       LOG.warn("there is already one instance of {} running, not starting new one", AutoSchedulingManager.class.getSimpleName());
     }
-  }
-
-  private AutoSchedulingManager(AppContext context) {
-    this(context, new ClusterRepairScheduler(context));
-  }
-
-  public AutoSchedulingManager(AppContext context, ClusterRepairScheduler clusterRepairScheduler) {
-    this.context = context;
-    this.clusterRepairScheduler = clusterRepairScheduler;
   }
 
   @Override

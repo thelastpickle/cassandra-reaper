@@ -261,7 +261,7 @@ public class ReaperApplicationConfiguration extends Configuration {
     private Duration scheduleSpreadPeriod;
     
     @JsonProperty
-    private List<String> excludedKeyspaces = Collections.EMPTY_LIST;
+    private List<String> excludedKeyspaces = Collections.emptyList();
 
     public Boolean isEnabled() {
       return enabled;

@@ -58,7 +58,7 @@ public class ClusterRepairScheduler {
   }
 
   private boolean keyspaceCandidateForRepair(Cluster cluster, String keyspace) {
-    if (keyspace.toLowerCase().startsWith("system") || context.config.getAutoScheduling().getExcludedKeyspaces().contains(keyspace)) {
+    if (keyspace.toLowerCase().startsWith(ClusterRepairScheduler.SYSTEM_KEYSPACE_PREFIX) || context.config.getAutoScheduling().getExcludedKeyspaces().contains(keyspace)) {
       LOG.debug("Scheduled repair skipped for system keyspace {} in cluster {}.", keyspace, cluster.getName());
       return false;
     }
@@ -101,15 +101,15 @@ public class ClusterRepairScheduler {
     private final ImmutableSet<String> keyspacesThatRequireSchedules;
     private final ImmutableSet<String> keyspacesDeleted;
 
-    public static ScheduledRepairDiffView compareWithExistingSchedules(AppContext context, Cluster cluster) throws ReaperException {
-      return new ScheduledRepairDiffView(context, cluster);
-    }
-
     public ScheduledRepairDiffView(AppContext context, Cluster cluster) throws ReaperException {
       Set<String> allKeyspacesInCluster = keyspacesInCluster(context, cluster);
       Set<String> keyspacesThatHaveSchedules = keyspacesThatHaveSchedules(context, cluster);
       keyspacesThatRequireSchedules = Sets.difference(allKeyspacesInCluster, keyspacesThatHaveSchedules).immutableCopy();
       keyspacesDeleted = Sets.difference(keyspacesThatHaveSchedules, allKeyspacesInCluster).immutableCopy();
+    }
+
+    public static ScheduledRepairDiffView compareWithExistingSchedules(AppContext context, Cluster cluster) throws ReaperException {
+      return new ScheduledRepairDiffView(context, cluster);
     }
 
     public Set<String> keyspacesWithoutSchedules() {
