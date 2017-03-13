@@ -1,6 +1,7 @@
 0.5.0
  * Add configurable auto-scheduling of repairs for all (non system) keyspaces
  * Fix bad segment count display on scheduled repairs
+ * Add dynamic discovery of seeds for clusters
 0.4.1
  * Fix for getting active/pending compactions and repairs in Cassandra 2.2+
 0.4.0

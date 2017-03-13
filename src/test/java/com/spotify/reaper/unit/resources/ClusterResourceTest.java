@@ -17,6 +17,7 @@ import org.junit.Test;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.Arrays;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -51,6 +52,7 @@ public class ClusterResourceTest {
     jmxProxy = mock(JmxProxy.class);
     when(jmxProxy.getClusterName()).thenReturn(CLUSTER_NAME);
     when(jmxProxy.getPartitioner()).thenReturn(PARTITIONER);
+    when(jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
       public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
@@ -109,10 +111,12 @@ public class ClusterResourceTest {
   }
 
   @Test
-  public void testModifyClusterSeeds() {
+  public void testModifyClusterSeeds() throws ReaperException {
     ClusterResource clusterResource = new ClusterResource(context);
     clusterResource.addCluster(uriInfo, Optional.of(SEED_HOST));
 
+    when(jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST+1));
+    
     Response response = clusterResource.modifyClusterSeed(uriInfo, CLUSTER_NAME,
         Optional.of(SEED_HOST + 1));
 
@@ -126,6 +130,7 @@ public class ClusterResourceTest {
 
     response = clusterResource.modifyClusterSeed(uriInfo, CLUSTER_NAME, Optional.of(SEED_HOST + 1));
     assertEquals(304, response.getStatus());
+    when(jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
   }
 
   @Test

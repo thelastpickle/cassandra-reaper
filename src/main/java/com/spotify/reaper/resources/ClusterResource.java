@@ -30,10 +30,12 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -167,18 +169,39 @@ public class ClusterResource {
     return viewCluster(newCluster.getName(), Optional.<Integer>absent(), Optional.of(createdURI));
   }
 
-  public Cluster createClusterWithSeedHost(String seedHost)
+  public Cluster createClusterWithSeedHost(String seedHostInput)
       throws ReaperException {
-    String clusterName;
-    String partitioner;
-    try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost)) {
-      clusterName = jmxProxy.getClusterName();
-      partitioner = jmxProxy.getPartitioner();
-    } catch (ReaperException e) {
-      LOG.error("failed to create cluster with seed host: {}", seedHost, e);
-      throw e;
+    Optional<String> clusterName = Optional.absent();
+    Optional<String> partitioner = Optional.absent();
+    Optional<List<String>> liveNodes = Optional.absent();
+    Set<String> seedHosts = parseSeedHosts(seedHostInput);
+    for(String seedHost:seedHosts) {
+      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost)) {
+        clusterName = Optional.of(jmxProxy.getClusterName());
+        partitioner = Optional.of(jmxProxy.getPartitioner());
+        liveNodes = Optional.of(jmxProxy.getLiveNodes());
+        break;
+      } catch (ReaperException e) {
+        LOG.error("failed to create cluster with seed host: {}", seedHost, e);
+      }
     }
-    return new Cluster(clusterName, partitioner, Collections.singleton(seedHost));
+    
+    if(!clusterName.isPresent()) {
+      throw new ReaperException("Could not connect any seed host");
+    }
+    
+    
+    Set<String> seedHostsFinal = seedHosts;
+    if (context.config.getEnableDynamicSeedList() 
+        && liveNodes.isPresent()) {
+      seedHostsFinal = !liveNodes.get().isEmpty()
+                          ?liveNodes.get().stream().collect(Collectors.toSet())
+                          :seedHosts;
+    }    
+    
+    LOG.debug("Seeds {}", seedHostsFinal);
+    
+    return new Cluster(clusterName.get(), partitioner.get(), seedHostsFinal);
   }
 
   @PUT
@@ -201,8 +224,22 @@ public class ClusterResource {
           .build();
     }
 
-    Set<String> newSeeds = Collections.singleton(seedHost.get());
-    if (newSeeds.equals(cluster.get().getSeedHosts())) {
+    Set<String> newSeeds = parseSeedHosts(seedHost.get());
+    Optional<List<String>> liveNodes = Optional.absent();
+    
+    if(context.config.getEnableDynamicSeedList()) {
+      for(String seed:newSeeds) {
+        try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seed)) {        
+          liveNodes = Optional.of(jmxProxy.getLiveNodes());
+          newSeeds = liveNodes.get().stream().collect(Collectors.toSet());
+          break;
+        } catch (ReaperException e) {
+          LOG.error("failed to create cluster with seed host: {}", seedHost, e);
+        }
+      }
+    }
+    
+    if (newSeeds.equals(cluster.get().getSeedHosts()) || newSeeds.isEmpty()) {
       return Response.notModified().build();
     }
 
@@ -253,5 +290,8 @@ public class ClusterResource {
     return Response.serverError().entity("delete failed for schedule with name \""
                                          + clusterName + "\"").build();
   }
+  
+  
+  
 
 }

@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -75,6 +76,8 @@ public class BasicSteps {
       when(jmx.getPartitioner()).thenReturn("org.apache.cassandra.dht.RandomPartitioner");
       when(jmx.getKeyspaces()).thenReturn(Lists.newArrayList(clusterKeyspaces.keySet()));
       when(jmx.getTokens()).thenReturn(Lists.newArrayList(new BigInteger("0")));
+      when(jmx.getLiveNodes()).thenReturn(Arrays.asList(seedHost));
+      
       for (String keyspace : clusterKeyspaces.keySet()) {
         when(jmx.getTableNamesForKeyspace(keyspace)).thenReturn(clusterKeyspaces.get(keyspace));
       }
