@@ -77,13 +77,10 @@ public class CommonTools {
 
     // the last preparation step is to generate actual repair segments
     if(!repairUnit.getIncrementalRepair()) {
-      storeNewRepairSegments(context, tokenSegments, repairRun, repairUnit);
+      return storeNewRepairSegments(context, tokenSegments, repairRun, repairUnit);
     } else {
-      storeNewRepairSegmentsForIncrementalRepair(context, nodes, repairRun, repairUnit);
+      return storeNewRepairSegmentsForIncrementalRepair(context, nodes, repairRun, repairUnit);
     }
-
-    // now we're done and can return
-    return repairRun;
   }
 
   /**
@@ -159,7 +156,7 @@ public class CommonTools {
    * Creates the repair runs linked to given RepairRun and stores them directly in the storage
    * backend.
    */
-  private static void storeNewRepairSegments(AppContext context, List<RingRange> tokenSegments,
+  private static RepairRun storeNewRepairSegments(AppContext context, List<RingRange> tokenSegments,
                                              RepairRun repairRun, RepairUnit repairUnit) {
     List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
     for (RingRange range : tokenSegments) {
@@ -171,9 +168,13 @@ public class CommonTools {
     if (repairRun.getSegmentCount() != tokenSegments.size()) {
       LOG.debug("created segment amount differs from expected default {} != {}",
                 repairRun.getSegmentCount(), tokenSegments.size());
-      context.storage.updateRepairRun(
-          repairRun.with().segmentCount(tokenSegments.size()).build(repairRun.getId()));
+      RepairRun newRepairRun = repairRun.with().segmentCount(tokenSegments.size()).build(repairRun.getId());
+      context.storage.updateRepairRun(newRepairRun);
+      
+      return newRepairRun;
     }
+    
+    return repairRun;
   }
   
   
@@ -181,7 +182,7 @@ public class CommonTools {
    * Creates the repair runs linked to given RepairRun and stores them directly in the storage
    * backend in case of incrementalRepair
    */
-  private static void storeNewRepairSegmentsForIncrementalRepair(AppContext context, Map<String, RingRange> nodes,
+  private static RepairRun storeNewRepairSegmentsForIncrementalRepair(AppContext context, Map<String, RingRange> nodes,
                                              RepairRun repairRun, RepairUnit repairUnit) {
     List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
     for (Entry<String, RingRange> range : nodes.entrySet()) {
@@ -194,9 +195,13 @@ public class CommonTools {
     if (repairRun.getSegmentCount() != nodes.keySet().size()) {
       LOG.debug("created segment amount differs from expected default {} != {}",
                 repairRun.getSegmentCount(), nodes.keySet().size());
-      context.storage.updateRepairRun(
-          repairRun.with().segmentCount(nodes.keySet().size()).build(repairRun.getId()));
+      RepairRun newRepairRun = repairRun.with().segmentCount(nodes.keySet().size()).build(repairRun.getId());
+      context.storage.updateRepairRun(newRepairRun);
+      
+      return newRepairRun;
     }
+    
+    return repairRun;
   }
   
   private static Map<String, RingRange> getClusterNodes(AppContext context,  Cluster targetCluster, RepairUnit repairUnit) throws ReaperException {
