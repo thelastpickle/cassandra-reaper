@@ -106,7 +106,10 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   static JmxProxy connect(Optional<RepairStatusHandler> handler, String host, String username,
       String password)
       throws ReaperException {
-    assert null != host : "null host given to JmxProxy.connect()";
+    if(host == null) {
+      throw new ReaperException("Null host given to JmxProxy.connect()");
+    }
+
     String[] parts = host.split(":");
     if (parts.length == 2) {
       return connect(handler, parts[0], Integer.valueOf(parts[1]), username, password);
