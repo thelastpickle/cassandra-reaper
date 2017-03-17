@@ -174,7 +174,7 @@ public class ClusterResource {
     Optional<String> clusterName = Optional.absent();
     Optional<String> partitioner = Optional.absent();
     Optional<List<String>> liveNodes = Optional.absent();
-    Set<String> seedHosts = parseSeedHosts(seedHostInput);
+    Set<String> seedHosts = CommonTools.parseSeedHosts(seedHostInput);
     for(String seedHost:seedHosts) {
       try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost)) {
         clusterName = Optional.of(jmxProxy.getClusterName());
@@ -224,7 +224,7 @@ public class ClusterResource {
           .build();
     }
 
-    Set<String> newSeeds = parseSeedHosts(seedHost.get());
+    Set<String> newSeeds = CommonTools.parseSeedHosts(seedHost.get());
     Optional<List<String>> liveNodes = Optional.absent();
     
     if(context.config.getEnableDynamicSeedList()) {
