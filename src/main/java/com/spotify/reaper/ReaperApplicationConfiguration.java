@@ -83,8 +83,13 @@ public class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   @DefaultValue("false")
   private Boolean allowUnreachableNodes;
+  
   @JsonProperty
   private AutoSchedulingConfiguration autoScheduling;
+  
+  @JsonProperty
+  @DefaultValue("true")
+  private Boolean enableDynamicSeedList;
 
   public int getSegmentCount() {
     return segmentCount;
@@ -197,6 +202,14 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   public void setAutoScheduling(AutoSchedulingConfiguration autoRepairScheduling) {
     this.autoScheduling = autoRepairScheduling;
+  }
+  
+  public void setEnableDynamicSeedList(Boolean enableDynamicSeedList) {
+    this.enableDynamicSeedList = enableDynamicSeedList;
+  }
+  
+  public Boolean getEnableDynamicSeedList() {
+    return this.enableDynamicSeedList==null?Boolean.TRUE:this.enableDynamicSeedList;
   }
 
   public static class JmxCredentials {

@@ -3,6 +3,7 @@ package com.spotify.reaper.resources;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -369,6 +371,10 @@ public class CommonTools {
 
   public static double roundDoubleNicely(double intensity) {
     return Math.round(intensity * 10000f) / 10000f;
+  }
+
+  public static Set<String> parseSeedHosts(String seedHost) {
+    return Arrays.stream(seedHost.split(",")).map(String::trim).collect(Collectors.toSet());
   }
 
 }

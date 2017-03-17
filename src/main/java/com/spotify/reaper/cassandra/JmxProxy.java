@@ -629,6 +629,17 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       throw new ReaperException(e);
     }
   }
+  
+  public List<String> getLiveNodes()
+      throws ReaperException {
+    checkNotNull(ssProxy, "Looks like the proxy is not connected");
+    try {
+      return ((StorageServiceMBean) ssProxy).getLiveNodes();
+    } catch (Exception e) {
+      LOG.error(e.getMessage());
+      throw new ReaperException(e.getMessage(), e);
+    }
+  }
 }
 
 /**
