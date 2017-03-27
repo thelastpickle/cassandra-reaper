@@ -28,6 +28,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.google.common.io.CharStreams;
 import com.spotify.reaper.AppContext;
+import com.spotify.reaper.acceptance.ReaperTestJettyRunner.ReaperJettyTestSupport;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
@@ -38,7 +39,7 @@ import cucumber.api.junit.Cucumber;
 )
 public class ReaperCassandraIT {
   private static final Logger LOG = LoggerFactory.getLogger(ReaperCassandraIT.class);
-  private static ReaperTestJettyRunner runnerInstance;
+  private static ReaperJettyTestSupport runnerInstance;
   private static final String CASS_CONFIG_FILE="cassandra-reaper-cassandra-at.yaml";
   
   
@@ -64,7 +65,7 @@ public class ReaperCassandraIT {
   @AfterClass
   public static void tearDown() {
     LOG.info("Stopping reaper service...");
-    runnerInstance.stop();
+    runnerInstance.after();
   }
   
 }

@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.spotify.reaper.AppContext;
+import com.spotify.reaper.acceptance.ReaperTestJettyRunner.ReaperJettyTestSupport;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
@@ -30,7 +31,7 @@ import cucumber.api.junit.Cucumber;
 )
 public class ReaperH2IT {
   private static final Logger LOG = LoggerFactory.getLogger(ReaperH2IT.class);
-  private static ReaperTestJettyRunner runnerInstance;
+  private static ReaperJettyTestSupport runnerInstance;
   private static final String H2_CONFIG_FILE="cassandra-reaper-h2-at.yaml";
   
   
@@ -47,7 +48,7 @@ public class ReaperH2IT {
   @AfterClass
   public static void tearDown() {
     LOG.info("Stopping reaper service...");
-    runnerInstance.stop();
+    runnerInstance.after();
   }
   
 }

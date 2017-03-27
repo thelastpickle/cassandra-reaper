@@ -193,13 +193,8 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     } else if ("database".equalsIgnoreCase(config.getStorageType())) {
       // create DBI instance
       DBI jdbi;
-      try {
-        final DBIFactory factory = new DBIFactory();
-        jdbi = factory.build(environment, config.getDataSourceFactory(), "postgresql");
-      } catch (ClassNotFoundException ex) {
-        LOG.error("failed creating database connection: {}", ex);
-        throw new ReaperException(ex);
-      }
+      final DBIFactory factory = new DBIFactory();
+      jdbi = factory.build(environment, config.getDataSourceFactory(), "postgresql");
       
       // instanciate store
       storage = new PostgresStorage(jdbi);

@@ -6,12 +6,12 @@
     <name>Cassandra Reaper</name>
     <groupId>com.spotify</groupId>
     <artifactId>cassandra-reaper</artifactId>
-    <version>0.5.1-SNAPSHOT</version>
+    <version>0.5.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <dropwizard.version>0.7.1</dropwizard.version>
+        <dropwizard.version>1.0.0</dropwizard.version>
         <dropwizard.cassandra.version>4.0.0</dropwizard.cassandra.version>
         <cassandra.version>2.2.7</cassandra.version>
         <cucumber.version>1.1.5</cucumber.version>
@@ -22,7 +22,27 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>16.0.1</version>
+            <version>19.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.2.2</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-access</artifactId>
+            <version>1.2.2</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.2</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.mail</groupId>
+            <artifactId>javax.mail-api</artifactId>
+            <version>1.5.6</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard</groupId>
@@ -40,6 +60,11 @@
             <version>${dropwizard.version}</version>
         </dependency>
         <dependency>
+            <groupId>systems.composable</groupId>
+            <artifactId>dropwizard-cassandra</artifactId>
+            <version>${dropwizard.cassandra.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
             <version>${cassandra.version}</version>
@@ -52,6 +77,10 @@
                     <groupId>org.codehaus.jackson</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
+                <exclusion>
+                   <groupId>com.google.guava</groupId>
+                   <artifactId>guava</artifactId>
+               </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -60,38 +89,23 @@
             <version>9.3-1100-jdbc41</version>
         </dependency>
         <dependency>
-            <groupId>systems.composable</groupId>
-            <artifactId>dropwizard-cassandra</artifactId>
-            <version>${dropwizard.cassandra.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <version>1.4.186</version>
         </dependency>
         <dependency>
-          <groupId>org.cognitor.cassandra</groupId>
-          <artifactId>cassandra-migration</artifactId>
-          <version>2.0.0</version>
+            <groupId>org.cognitor.cassandra</groupId>
+            <artifactId>cassandra-migration</artifactId>
+            <version>2.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
             <version>4.0.3</version>
         </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>2.6.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>2.6.1</version>
-        </dependency>
 
         <!--test scope -->
-        
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -103,11 +117,21 @@
             <artifactId>dropwizard-testing</artifactId>
             <version>${dropwizard.version}</version>
             <scope>test</scope>
+            <exclusions>
+               <exclusion>
+                  <groupId>org.mockito</groupId>
+                  <artifactId>mockito-core</artifactId>   
+               </exclusion>
+               <exclusion>
+                  <groupId>org.mockito</groupId>
+                  <artifactId>mockito-all</artifactId>   
+               </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
-            <version>1.9.5</version>
+            <version>1.10.19</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -127,7 +151,13 @@
             <artifactId>awaitility</artifactId>
             <version>2.0.0</version>
             <scope>test</scope>
-         </dependency>
+        </dependency>
+        <dependency>
+            <groupId>org.easytesting</groupId>
+            <artifactId>fest-assert-core</artifactId>
+            <version>2.0M10</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>
