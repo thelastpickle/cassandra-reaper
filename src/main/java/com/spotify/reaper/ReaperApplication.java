@@ -156,7 +156,6 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     // Notice that health checks are registered under the admin application on /healthcheck
     final ReaperHealthCheck healthCheck = new ReaperHealthCheck(context);
     environment.healthChecks().register("reaper", healthCheck);
-    environment.jersey().register(healthCheck);
 
     LOG.info("creating resources and registering endpoints");
     final PingResource pingResource = new PingResource();
