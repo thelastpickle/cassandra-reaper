@@ -44,14 +44,18 @@ import org.apache.cassandra.db.ColumnFamilyStoreMBean;
 import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.compaction.CompactionManagerMBean;
 import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.cassandra.repair.messages.RepairOption;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.service.StorageServiceMBean;
+import org.apache.cassandra.utils.progress.ProgressEventType;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.service.RingRange;
@@ -464,27 +468,21 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   
   
   public int triggerRepairPost2dot1(boolean fullRepair, RepairParallelism repairParallelism, String keyspace, Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken, String cassandraVersion) {
-    if (fullRepair) {
-      // full repair
-      if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
-          return ((StorageServiceMBean) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
-              keyspace, repairParallelism.ordinal(), cassandraVersion.startsWith("2.2")?new HashSet<String>():null, cassandraVersion.startsWith("2.2")?new HashSet<String>():null, fullRepair,
-              columnFamilies.toArray(new String[columnFamilies.size()]));        
-      }
-      
-      boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
-
-      return ((StorageServiceMBean) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
-          keyspace, snapshotRepair ? RepairParallelism.SEQUENTIAL.ordinal() : RepairParallelism.PARALLEL.ordinal(),
-              cassandraVersion.startsWith("2.2")?new HashSet<String>():null, cassandraVersion.startsWith("2.2")?new HashSet<String>():null, fullRepair,
-          columnFamilies.toArray(new String[columnFamilies.size()]));
-
-    } 
-
-    // incremental repair
-    return ((StorageServiceMBean) ssProxy).forceRepairAsync(keyspace, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE,
-          fullRepair, columnFamilies.toArray(new String[columnFamilies.size()]));
+    Map<String, String> options = new HashMap<>();
     
+    options.put(RepairOption.PARALLELISM_KEY, repairParallelism.getName());
+    //options.put(RepairOption.PRIMARY_RANGE_KEY, Boolean.toString(primaryRange));
+    options.put(RepairOption.INCREMENTAL_KEY, Boolean.toString(!fullRepair));
+    options.put(RepairOption.JOB_THREADS_KEY, Integer.toString(1));
+    options.put(RepairOption.TRACE_KEY, Boolean.toString(Boolean.FALSE));
+    options.put(RepairOption.COLUMNFAMILIES_KEY, StringUtils.join(columnFamilies, ","));
+    //options.put(RepairOption.PULL_REPAIR_KEY, Boolean.FALSE);
+    options.put(RepairOption.RANGES_KEY, beginToken.toString() + ":" + endToken.toString());
+    
+    //options.put(RepairOption.DATACENTERS_KEY, StringUtils.join(specificDataCenters, ","));
+    //options.put(RepairOption.HOSTS_KEY, StringUtils.join(specificHosts, ","));
+    
+    return ((StorageServiceMBean) ssProxy).repairAsync(keyspace, options);
   }
   
   
@@ -514,8 +512,21 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     Thread.currentThread().setName(clusterName);
     // we're interested in "repair"
     String type = notification.getType();
-    LOG.debug("Received notification: {}", notification);
+    LOG.debug("Received notification: {} with type {} and repairStatusHandler {}", notification, type, repairStatusHandler);
     if (repairStatusHandler.isPresent() && ("repair").equals(type)) {
+      processOldApiNotification(notification);
+    }
+    
+    if (repairStatusHandler.isPresent() && ("progress").equals(type)) {
+      processNewApiNotification(notification);
+    }
+  }
+  
+  /**
+   * Handles notifications from the old repair API (forceRepairAsync)
+   */
+  private void processOldApiNotification(Notification notification) {
+    try {
       int[] data = (int[]) notification.getUserData();
       // get the repair sequence number
       int repairNo = data[0];
@@ -524,7 +535,30 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       // this is some text message like "Starting repair...", "Finished repair...", etc.
       String message = notification.getMessage();
       // let the handler process the event
-      repairStatusHandler.get().handle(repairNo, status, message);
+      repairStatusHandler.get().handle(repairNo, Optional.of(status), Optional.absent(), message);
+    } catch (Exception e) {
+      // TODO Auto-generated catch block
+      LOG.error("Error while processing JMX notification", e);
+    }
+  }
+  
+  /**
+   * Handles notifications from the new repair API (repairAsync)
+   */
+  private void processNewApiNotification(Notification notification) {
+    Map<String, Integer> data = (Map<String, Integer>) notification.getUserData();
+    try {
+      // get the repair sequence number
+      int repairNo = Integer.parseInt(((String) notification.getSource()).split(":")[1]);
+      // get the progress status
+      ProgressEventType progress = ProgressEventType.values()[data.get("type")];
+      // this is some text message like "Starting repair...", "Finished repair...", etc.
+      String message = notification.getMessage();
+      // let the handler process the event
+      repairStatusHandler.get().handle(repairNo, Optional.absent(), Optional.of(progress), message);
+    } catch (Exception e) {
+      // TODO Auto-generated catch block
+      LOG.error("Error while processing JMX notification", e);
     }
   }
 

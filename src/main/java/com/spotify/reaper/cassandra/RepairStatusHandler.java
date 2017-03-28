@@ -14,6 +14,10 @@
 package com.spotify.reaper.cassandra;
 
 import org.apache.cassandra.service.ActiveRepairService;
+import org.apache.cassandra.streaming.StreamEvent;
+import org.apache.cassandra.utils.progress.ProgressEventType;
+
+import com.google.common.base.Optional;
 
 public interface RepairStatusHandler {
 
@@ -24,9 +28,10 @@ public interface RepairStatusHandler {
    * state.
    *
    * @param repairNumber repair sequence number, obtained when triggering a repair
-   * @param status       new status of the repair
+   * @param status       new status of the repair (old API)
+   * @param progress     new status of the repair (new API)
    * @param message      additional information about the repair
    */
-  void handle(int repairNumber, ActiveRepairService.Status status, String message);
+  void handle(int repairNumber, Optional<ActiveRepairService.Status> status, Optional<ProgressEventType> progress, String message);
 
 }

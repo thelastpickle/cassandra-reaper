@@ -25,6 +25,8 @@ import java.util.regex.Pattern;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
+import org.apache.cassandra.streaming.StreamEvent;
+import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.apache.commons.lang3.concurrent.LazyInitializer;
 import org.joda.time.DateTime;
@@ -145,7 +147,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     LOG.debug("Run repair for segment #{}", segmentId);
     final RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
     try (JmxProxy coordinator = context.jmxConnectionFactory
-        .connectAny(Optional.<RepairStatusHandler>of(this), potentialCoordinators)) {
+        .connectAny(Optional.<RepairStatusHandler>fromNullable(this), potentialCoordinators)) {
 
       if (segmentRunners.containsKey(segmentId)) {
         LOG.error("SegmentRunner already exists for segment with ID: {}", segmentId);
@@ -374,12 +376,12 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
    * @param message      additional information about the repair
    */
   @Override
-  public void handle(int repairNumber, ActiveRepairService.Status status, String message) {
+  public void handle(int repairNumber, Optional<ActiveRepairService.Status> status, Optional<ProgressEventType> progress, String message) {
     final RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
     LOG.debug(
-        "handle called for repairCommandId {}, outcome {} and message: {}",
-        repairNumber, status, message);
+        "handle called for repairCommandId {}, outcome {} / {} and message: {}",
+        repairNumber, status, progress, message);
     if (repairNumber != commandId) {
       LOG.debug("Handler for command id {} not handling message with number {}",
           commandId, repairNumber);
@@ -391,38 +393,82 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
     synchronized (condition) {
       RepairSegment currentSegment = context.storage.getRepairSegment(segmentId).get();
       // See status explanations at: https://wiki.apache.org/cassandra/RepairAsyncAPI
-      switch (status) {
-        case STARTED:
-          DateTime now = DateTime.now();
-          context.storage.updateRepairSegment(currentSegment.with()
-              .state(RepairSegment.State.RUNNING)
-              .startTime(now)
-              .build(segmentId));
-          LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
+      // Old repair API
+      if(status.isPresent()) {
+        switch (status.get()) {
+          case STARTED:
+            DateTime now = DateTime.now();
+            context.storage.updateRepairSegment(currentSegment.with()
+                .state(RepairSegment.State.RUNNING)
+                .startTime(now)
+                .build(segmentId));
+            LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
+            break;
+  
+          case SESSION_SUCCESS:
+            LOG.debug("repair session succeeded for segment with id '{}' and repair number '{}'",
+                segmentId, repairNumber);
+            context.storage.updateRepairSegment(currentSegment.with()
+                .state(RepairSegment.State.DONE)
+                .endTime(DateTime.now())
+                .build(segmentId));
+            break;
+  
+          case SESSION_FAILED:
+            LOG.warn("repair session failed for segment with id '{}' and repair number '{}'",
+                segmentId, repairNumber);
+            failOutsideSynchronizedBlock = true;
+            break;
+  
+          case FINISHED:
+            // This gets called through the JMX proxy at the end
+            // regardless of succeeded or failed sessions.
+            LOG.debug("repair session finished for segment with id '{}' and repair number '{}'",
+                segmentId, repairNumber);
+            condition.signalAll();
+            break;
+        }
+      }
+   // New repair API
+      if(progress.isPresent()) {
+        switch (progress.get()) {
+          case START:
+            DateTime now = DateTime.now();
+            context.storage.updateRepairSegment(currentSegment.with()
+                .state(RepairSegment.State.RUNNING)
+                .startTime(now)
+                .build(segmentId));
+            LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
+            break;
+  
+          case SUCCESS:
+            LOG.debug("repair session succeeded for segment with id '{}' and repair number '{}'",
+                segmentId, repairNumber);
+            context.storage.updateRepairSegment(currentSegment.with()
+                .state(RepairSegment.State.DONE)
+                .endTime(DateTime.now())
+                .build(segmentId));
+            break;
+  
+          case ERROR:
+          case ABORT:
+            LOG.warn("repair session failed for segment with id '{}' and repair number '{}'",
+                segmentId, repairNumber);
+            failOutsideSynchronizedBlock = true;
+            break;
+  
+          case COMPLETE:
+            // This gets called through the JMX proxy at the end
+            // regardless of succeeded or failed sessions.
+            LOG.debug("repair session finished for segment with id '{}' and repair number '{}'",
+                segmentId, repairNumber);
+            condition.signalAll();
+            break;
+        default:
+          LOG.debug("Unidentified progressStatus {} for segment with id '{}' and repair number '{}'",
+              progress.get(), segmentId, repairNumber);
           break;
-
-        case SESSION_SUCCESS:
-          LOG.debug("repair session succeeded for segment with id '{}' and repair number '{}'",
-              segmentId, repairNumber);
-          context.storage.updateRepairSegment(currentSegment.with()
-              .state(RepairSegment.State.DONE)
-              .endTime(DateTime.now())
-              .build(segmentId));
-          break;
-
-        case SESSION_FAILED:
-          LOG.warn("repair session failed for segment with id '{}' and repair number '{}'",
-              segmentId, repairNumber);
-          failOutsideSynchronizedBlock = true;
-          break;
-
-        case FINISHED:
-          // This gets called through the JMX proxy at the end
-          // regardless of succeeded or failed sessions.
-          LOG.debug("repair session finished for segment with id '{}' and repair number '{}'",
-              segmentId, repairNumber);
-          condition.signalAll();
-          break;
+        }
       }
     }
 
