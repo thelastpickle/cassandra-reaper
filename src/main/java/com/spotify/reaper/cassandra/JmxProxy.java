@@ -456,18 +456,19 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     try {
       if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")) {
         return triggerRepairPre2dot1(repairParallelism, keyspace, columnFamilies, beginToken, endToken);
+      } else if (cassandraVersion.startsWith("2.1")){
+        return triggerRepair2dot1(fullRepair, repairParallelism, keyspace, columnFamilies, beginToken, endToken, cassandraVersion);
       } else {
-        return triggerRepairPost2dot1(fullRepair, repairParallelism, keyspace, columnFamilies, beginToken, endToken, cassandraVersion);
+        return triggerRepairPost2dot2(fullRepair, repairParallelism, keyspace, columnFamilies, beginToken, endToken, cassandraVersion);
       }
     } catch (Exception e) {
       LOG.error("Segment repair failed", e);
       throw new ReaperException(e);
     }
-    
   }
   
   
-  public int triggerRepairPost2dot1(boolean fullRepair, RepairParallelism repairParallelism, String keyspace, Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken, String cassandraVersion) {
+  public int triggerRepairPost2dot2(boolean fullRepair, RepairParallelism repairParallelism, String keyspace, Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken, String cassandraVersion) {
     Map<String, String> options = new HashMap<>();
     
     options.put(RepairOption.PARALLELISM_KEY, repairParallelism.getName());
@@ -485,6 +486,28 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     return ((StorageServiceMBean) ssProxy).repairAsync(keyspace, options);
   }
   
+  public int triggerRepair2dot1(boolean fullRepair, RepairParallelism repairParallelism, String keyspace, Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken, String cassandraVersion) {
+    if (fullRepair) {
+      // full repair
+      if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
+          return ((StorageServiceMBean) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
+              keyspace, repairParallelism.ordinal(), cassandraVersion.startsWith("2.2")?new HashSet<String>():null, cassandraVersion.startsWith("2.2")?new HashSet<String>():null, fullRepair,
+              columnFamilies.toArray(new String[columnFamilies.size()]));        
+      }
+      
+      boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
+
+      return ((StorageServiceMBean) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
+          keyspace, snapshotRepair ? RepairParallelism.SEQUENTIAL.ordinal() : RepairParallelism.PARALLEL.ordinal(),
+              cassandraVersion.startsWith("2.2")?new HashSet<String>():null, cassandraVersion.startsWith("2.2")?new HashSet<String>():null, fullRepair,
+          columnFamilies.toArray(new String[columnFamilies.size()]));
+
+    } 
+
+    // incremental repair
+    return ((StorageServiceMBean) ssProxy).forceRepairAsync(keyspace, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE,
+          fullRepair, columnFamilies.toArray(new String[columnFamilies.size()]));
+  }
   
   public int triggerRepairPre2dot1(RepairParallelism repairParallelism, String keyspace, Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken) {
     // Cassandra 1.2 and 2.0 compatibility
