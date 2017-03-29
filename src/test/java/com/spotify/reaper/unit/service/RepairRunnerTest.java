@@ -36,6 +36,7 @@ import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
+import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.Before;
@@ -132,7 +133,7 @@ public class RepairRunnerTest {
                       @Override
                       public void run() {
                         handler.get()
-                            .handle(repairNumber, ActiveRepairService.Status.STARTED, null);
+                            .handle(repairNumber, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(), null);
                         assertEquals(RepairSegment.State.RUNNING,
                                      storage.getRepairSegment(SEGMENT_ID).get().getState());
                       }
@@ -143,15 +144,15 @@ public class RepairRunnerTest {
                       @Override
                       public void run() {
                         handler.get()
-                            .handle(repairNumber, ActiveRepairService.Status.STARTED, null);
+                            .handle(repairNumber, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(), null);
                         assertEquals(RepairSegment.State.RUNNING,
                             storage.getRepairSegment(SEGMENT_ID).get().getState());
                         handler.get()
-                            .handle(repairNumber, ActiveRepairService.Status.SESSION_SUCCESS, null);
+                            .handle(repairNumber, Optional.of(ActiveRepairService.Status.SESSION_SUCCESS), Optional.absent(), null);
                         assertEquals(RepairSegment.State.DONE,
                             storage.getRepairSegment(SEGMENT_ID).get().getState());
                         handler.get()
-                            .handle(repairNumber, ActiveRepairService.Status.FINISHED, null);
+                            .handle(repairNumber, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(), null);
                         mutex.release();
                         System.out.println("MUTEX RELEASED");
                       }
@@ -176,6 +177,112 @@ public class RepairRunnerTest {
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }
 
+  @Test
+  public void testHangingRepairNewAPI() throws InterruptedException, ReaperException {
+    final String CLUSTER_NAME = "reaper";
+    final String KS_NAME = "reaper";
+    final Set<String> CF_NAMES = Sets.newHashSet("reaper");
+    final boolean INCREMENTAL_REPAIR = false;
+    final long TIME_RUN = 41l;
+    final double INTENSITY = 0.5f;
+
+    final IStorage storage = new MemoryStorage();
+
+    storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
+    RepairUnit cf =
+        storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR));
+    DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
+    RepairRun run = storage.addRepairRun(
+        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1,
+                              RepairParallelism.PARALLEL));
+    storage.addRepairSegments(Collections.singleton(
+        new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE),
+                                  cf.getId())), run.getId());
+    final long RUN_ID = run.getId();
+    final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
+
+    assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
+                 RepairSegment.State.NOT_STARTED);
+    AppContext context = new AppContext();
+    context.storage = storage;
+    context.repairManager = new RepairManager();
+    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
+
+    final Semaphore mutex = new Semaphore(0);
+
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
+      final AtomicInteger repairAttempts = new AtomicInteger(1);
+
+      @Override
+      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host)
+          throws ReaperException {
+        final JmxProxy jmx = mock(JmxProxy.class);
+        when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
+        when(jmx.isConnectionAlive()).thenReturn(true);
+        when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
+            .thenReturn(Lists.newArrayList(""));
+        when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
+        //doNothing().when(jmx).cancelAllRepairs();
+        when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
+            Matchers.<RepairParallelism>any(),
+            Sets.newHashSet(anyString()), anyBoolean())).then(
+            new Answer<Integer>() {
+              @Override
+              public Integer answer(InvocationOnMock invocation) throws Throwable {
+                assertEquals(RepairSegment.State.NOT_STARTED,
+                             storage.getRepairSegment(SEGMENT_ID).get().getState());
+
+                final int repairNumber = repairAttempts.getAndIncrement();
+                switch (repairNumber) {
+                  case 1:
+                    new Thread() {
+                      @Override
+                      public void run() {
+                        handler.get()
+                            .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.START), null);
+                        assertEquals(RepairSegment.State.RUNNING,
+                                     storage.getRepairSegment(SEGMENT_ID).get().getState());
+                      }
+                    }.start();
+                    break;
+                  case 2:
+                    new Thread() {
+                      @Override
+                      public void run() {
+                        handler.get()
+                            .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.START), null);
+                        assertEquals(RepairSegment.State.RUNNING,
+                            storage.getRepairSegment(SEGMENT_ID).get().getState());
+                        handler.get()
+                            .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.SUCCESS), null);
+                        assertEquals(RepairSegment.State.DONE,
+                            storage.getRepairSegment(SEGMENT_ID).get().getState());
+                        handler.get()
+                            .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.COMPLETE), null);
+                        mutex.release();
+                        System.out.println("MUTEX RELEASED");
+                      }
+                    }.start();
+                    break;
+                  default:
+                    fail("triggerRepair should only have been called twice");
+                }
+                return repairNumber;
+              }
+            });
+        return jmx;
+      }
+    };
+    context.repairManager.startRepairRun(context, run);
+
+    // TODO: refactor so that we can properly wait for the repair runner to finish rather than
+    // TODO: using this sleep().
+    mutex.acquire();
+    System.out.println("MUTEX ACQUIRED");
+    Thread.sleep(100);
+    assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
+  }
+  
   @Test
   public void testResumeRepair() throws InterruptedException, ReaperException {
     final String CLUSTER_NAME = "reaper";
@@ -231,9 +338,9 @@ public class RepairRunnerTest {
                 new Thread() {
                   @Override
                   public void run() {
-                    handler.get().handle(1, ActiveRepairService.Status.STARTED, null);
-                    handler.get().handle(1, ActiveRepairService.Status.SESSION_SUCCESS, null);
-                    handler.get().handle(1, ActiveRepairService.Status.FINISHED, null);
+                    handler.get().handle(1, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(), null);
+                    handler.get().handle(1, Optional.of(ActiveRepairService.Status.SESSION_SUCCESS), Optional.absent(), null);
+                    handler.get().handle(1, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(), null);
                   }
                 }.start();
                 return 1;

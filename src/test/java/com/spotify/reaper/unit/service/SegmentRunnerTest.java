@@ -98,7 +98,7 @@ public class SegmentRunnerTest {
                 future.setValue(executor.submit(new Thread() {
                   @Override
                   public void run() {
-                    handler.get().handle(1, ActiveRepairService.Status.STARTED,
+                    handler.get().handle(1, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(),
                                          "Repair command 1 has started");
                     assertEquals(RepairSegment.State.RUNNING,
                                  context.storage.getRepairSegment(segmentId).get().getState());
@@ -161,18 +161,18 @@ public class SegmentRunnerTest {
                 future.setValue(executor.submit(new Runnable() {
                   @Override
                   public void run() {
-                    handler.get().handle(1, ActiveRepairService.Status.STARTED,
+                    handler.get().handle(1, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(),
                                          "Repair command 1 has started");
                     assertEquals(RepairSegment.State.RUNNING,
                                  storage.getRepairSegment(segmentId).get().getState());
                     // report about an unrelated repair. Shouldn't affect anything.
-                    handler.get().handle(2, ActiveRepairService.Status.SESSION_FAILED,
+                    handler.get().handle(2, Optional.of(ActiveRepairService.Status.SESSION_FAILED), Optional.absent(),
                                          "Repair command 2 has failed");
-                    handler.get().handle(1, ActiveRepairService.Status.SESSION_SUCCESS,
+                    handler.get().handle(1, Optional.of(ActiveRepairService.Status.SESSION_SUCCESS), Optional.absent(),
                                          "Repair session succeeded in command 1");
                     assertEquals(RepairSegment.State.DONE,
                                  storage.getRepairSegment(segmentId).get().getState());
-                    handler.get().handle(1, ActiveRepairService.Status.FINISHED,
+                    handler.get().handle(1, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(),
                                          "Repair command 1 has finished");
                     assertEquals(RepairSegment.State.DONE,
                                  storage.getRepairSegment(segmentId).get().getState());
@@ -235,15 +235,15 @@ public class SegmentRunnerTest {
                 future.setValue(executor.submit(new Runnable() {
                   @Override
                   public void run() {
-                    handler.get().handle(1, ActiveRepairService.Status.STARTED,
+                    handler.get().handle(1, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(),
                                          "Repair command 1 has started");
                     assertEquals(RepairSegment.State.RUNNING,
                                  storage.getRepairSegment(segmentId).get().getState());
-                    handler.get().handle(1, ActiveRepairService.Status.SESSION_FAILED,
-                                         "Repair command 1 has failed");
+                    handler.get().handle(1, Optional.of(ActiveRepairService.Status.SESSION_FAILED), Optional.absent(),
+                        "Repair command 1 has failed");
                     assertEquals(RepairSegment.State.NOT_STARTED,
                                  storage.getRepairSegment(segmentId).get().getState());
-                    handler.get().handle(1, ActiveRepairService.Status.FINISHED,
+                    handler.get().handle(1, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(),
                         "Repair command 1 has finished");
                     assertEquals(RepairSegment.State.NOT_STARTED,
                         storage.getRepairSegment(segmentId).get().getState());
