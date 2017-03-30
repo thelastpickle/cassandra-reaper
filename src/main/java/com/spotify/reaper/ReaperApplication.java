@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.flywaydb.core.Flyway;
@@ -96,6 +97,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   @Override
   public void initialize(Bootstrap<ReaperApplicationConfiguration> bootstrap) {
     bootstrap.addBundle(new AssetsBundle("/assets/", "/webui", "index.html"));
+    bootstrap.getObjectMapper().registerModule(new Jdk8Module());
     bootstrap.getObjectMapper().registerModule(new JavaTimeModule());
   }
 
