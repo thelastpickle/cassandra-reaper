@@ -7,10 +7,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.reaper.resources.view.ClusterStatus;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 
+import org.glassfish.jersey.client.ClientResponse;
+import org.glassfish.jersey.client.JerseyClient;
+import org.glassfish.jersey.client.JerseyClientBuilder;
+import org.glassfish.jersey.client.JerseyWebTarget;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +19,14 @@ import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import static org.junit.Assert.assertEquals;
 
@@ -31,7 +40,7 @@ public class SimpleReaperClient {
 
   private static Optional<Map<String, String>> EMPTY_PARAMS = Optional.absent();
 
-  public static ClientResponse doHttpCall(String httpMethod, String host, int port, String urlPath,
+  public static Response doHttpCall(String httpMethod, String host, int port, String urlPath,
                                           Optional<Map<String, String>> params) {
     String reaperBase = "http://" + host.toLowerCase() + ":" + port + "/";
     URI uri;
@@ -40,29 +49,37 @@ public class SimpleReaperClient {
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
-    Client client = new Client();
-    WebResource resource = client.resource(uri);
-    LOG.info("calling (" + httpMethod + ") Reaper in resource: " + resource.getURI());
+    
+    Client client = ClientBuilder.newClient();
+    WebTarget webTarget = client.target(uri);
+    
+    
+    LOG.info("calling (" + httpMethod + ") Reaper in resource: " + webTarget.getUri());
     if (params.isPresent()) {
       for (Map.Entry<String, String> entry : params.get().entrySet()) {
-        resource = resource.queryParam(entry.getKey(), entry.getValue());
+        webTarget = webTarget.queryParam(entry.getKey(), entry.getValue());
       }
     }
-    ClientResponse response;
+    
+    Invocation.Builder invocationBuilder =
+        webTarget.request(MediaType.APPLICATION_JSON);
+    
+    Response response;
     if ("GET".equalsIgnoreCase(httpMethod)) {
-      response = resource.get(ClientResponse.class);
+      response = invocationBuilder.get();
     } else if ("POST".equalsIgnoreCase(httpMethod)) {
-      response = resource.post(ClientResponse.class);
+      response = invocationBuilder.post(null);
     } else if ("PUT".equalsIgnoreCase(httpMethod)) {
-      response = resource.put(ClientResponse.class);
+      response = invocationBuilder.put(Entity.entity("",MediaType.APPLICATION_JSON));
     } else if ("DELETE".equalsIgnoreCase(httpMethod)) {
-      response = resource.delete(ClientResponse.class);
+      response = invocationBuilder.delete();
     } else if ("OPTIONS".equalsIgnoreCase(httpMethod)) {
-      response = resource.options(ClientResponse.class);
+      response = invocationBuilder.options();
     } else {
       throw new RuntimeException("Invalid HTTP method: " + httpMethod);
     }
-    return response;
+
+    return response; 
   }
 
   private static <T> T parseJSON(String json, TypeReference<T> ref) {
@@ -116,11 +133,11 @@ public class SimpleReaperClient {
   }
 
   public List<RepairScheduleStatus> getRepairSchedulesForCluster(String clusterName) {
-    ClientResponse response = doHttpCall("GET", reaperHost, reaperPort,
+    Response response = doHttpCall("GET", reaperHost, reaperPort,
                                          "/repair_schedule/cluster/" + clusterName, EMPTY_PARAMS);
     assertEquals(200, response.getStatus());
-    String responseData = response.getEntity(String.class);
-    return parseRepairScheduleStatusListJSON(responseData);
+    String responseData = response.readEntity(String.class);
+    return parseRepairScheduleStatusListJSON(responseData); 
   }
 
 }

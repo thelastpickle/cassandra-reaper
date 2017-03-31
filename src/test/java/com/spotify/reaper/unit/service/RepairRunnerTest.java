@@ -116,7 +116,6 @@ public class RepairRunnerTest {
         when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
             .thenReturn(Lists.newArrayList(""));
         when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
-        //doNothing().when(jmx).cancelAllRepairs();
         when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
             Matchers.<RepairParallelism>any(),
             Sets.newHashSet(anyString()), anyBoolean())).then(
@@ -161,6 +160,7 @@ public class RepairRunnerTest {
                   default:
                     fail("triggerRepair should only have been called twice");
                 }
+                System.out.println("repair number : " + repairNumber);
                 return repairNumber;
               }
             });
@@ -173,7 +173,7 @@ public class RepairRunnerTest {
     // TODO: using this sleep().
     mutex.acquire();
     System.out.println("MUTEX ACQUIRED");
-    Thread.sleep(100);
+    Thread.sleep(1000);
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }
 
@@ -355,7 +355,7 @@ public class RepairRunnerTest {
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
     storage.updateRepairRun(run.with().runState(RepairRun.RunState.RUNNING).build(RUN_ID));
     context.repairManager.resumeRunningRepairRuns(context);
-    Thread.sleep(200);
+    Thread.sleep(1000);
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }
 

@@ -20,7 +20,7 @@ import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.CommonTools;
 
 import org.apache.cassandra.repair.RepairParallelism;
-import org.apache.commons.lang.time.DurationFormatUtils;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.format.ISODateTimeFormat;
