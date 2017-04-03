@@ -179,6 +179,12 @@ The Reaper service specific configuration values are:
   Optional setting for giving username and password credentials for the used JMX connections
   in case you are using password based JMX authentication with your Cassandra clusters.
 
+    ```
+    jmxAuth:
+      username: cassandra
+      password: cassandra
+    ```
+
 * enableCrossOrigin:
 
   Optional setting which you can set to be "true", if you wish to enable the CORS headers
@@ -190,6 +196,25 @@ The Reaper service specific configuration values are:
   If enabled, adding a new cluster will automatically setup a schedule repair 
   for each keyspace. Cluster keyspaces are monitored based on a configurable frequency,
   so that adding or removing a keyspace will result in adding / removing the corresponding scheduled repairs.
+   
+* cassandra:
+   
+   Optional setting to provide cassandra store when ```storageType: cassandra```
+   The sample here shows setup using plain authentication with ssl.
+   ```
+   cassandra:
+     clusterName: "test"
+     contactPoints: ["127.0.0.1"]
+     keyspace: reaper_db
+     authProvider:
+       type: plainText
+       username: cassandra
+       password: cassandra
+     ssl:
+       type: jdk
+   ```
+   Refer to resource/cassandra-reaper-cassandra-ssl.yaml for cassandra with Auth 
+   
    
 Notice that in the *server* section of the configuration, if you want to bind the service
 to all interfaces, use value "0.0.0.0", or just leave the *bindHost* line away completely.
