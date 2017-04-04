@@ -266,6 +266,25 @@
                             </execution>
                         </executions>
                     </plugin>
+                    <plugin>
+                        <groupId>com.spotify</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <version>0.4.13</version>
+                        <configuration>
+                            <imageName>cassandra-reaper</imageName>
+                            <dockerDirectory>src/main/docker</dockerDirectory>
+                            <buildArgs>
+                                <SHADED_JAR>cassandra-reaper-${project.version}.jar</SHADED_JAR>
+                            </buildArgs>
+                            <resources>
+                                <resource>
+                                    <targetPath>/</targetPath>
+                                    <directory>${project.build.directory}</directory>
+                                    <include>cassandra-reaper-${project.version}.jar</include>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
         </profile>

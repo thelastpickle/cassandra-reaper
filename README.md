@@ -346,6 +346,9 @@ To rebuild both the UI and Reaper :
 
 ```mvn clean package -Pbuild-ui```
 
+To build the docker image :
+
+```mvn clean package docker:build```
 
 ### Running Reaper
 
