@@ -75,8 +75,8 @@ An example testing configuration YAML file can be found from within this project
 
 The configuration file structure is provided by Dropwizard, and help on configuring the server,
 database connection, or logging, can be found at:
-http://dropwizard.io/manual/configuration.html
 
+http://www.dropwizard.io/1.1.0/docs/manual/configuration.html
 
 **Storage Backend**
 
