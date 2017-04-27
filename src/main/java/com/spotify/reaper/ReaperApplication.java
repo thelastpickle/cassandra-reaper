@@ -156,7 +156,6 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     // Notice that health checks are registered under the admin application on /healthcheck
     final ReaperHealthCheck healthCheck = new ReaperHealthCheck(context);
     environment.healthChecks().register("reaper", healthCheck);
-    environment.jersey().register(healthCheck);
 
     LOG.info("creating resources and registering endpoints");
     final PingResource pingResource = new PingResource();
@@ -193,13 +192,8 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     } else if ("database".equalsIgnoreCase(config.getStorageType())) {
       // create DBI instance
       DBI jdbi;
-      try {
-        final DBIFactory factory = new DBIFactory();
-        jdbi = factory.build(environment, config.getDataSourceFactory(), "postgresql");
-      } catch (ClassNotFoundException ex) {
-        LOG.error("failed creating database connection: {}", ex);
-        throw new ReaperException(ex);
-      }
+      final DBIFactory factory = new DBIFactory();
+      jdbi = factory.build(environment, config.getDataSourceFactory(), "postgresql");
       
       // instanciate store
       storage = new PostgresStorage(jdbi);

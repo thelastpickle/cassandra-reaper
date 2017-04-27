@@ -184,7 +184,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       synchronized (condition) {
         commandId = coordinator.triggerRepair(segment.getStartToken(), segment.getEndToken(),
             keyspace, validationParallelism, repairUnit.getColumnFamilies(), fullRepair);
-
+        
         if (commandId == 0) {
           // From cassandra source in "forceRepairAsync":
           //if (ranges.isEmpty() || Keyspace.open(keyspace).getReplicationStrategy().getReplicationFactor() < 2)
