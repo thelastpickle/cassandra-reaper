@@ -522,7 +522,8 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
       long repairDuration = repairEnd - repairStart;
       long delay = (long) (repairDuration / intensity - repairDuration);
       LOG.debug("Scheduling next runner run() with delay {} ms", delay);
-      return delay;
+      return delay>0?delay:1;
+
     } else {
       LOG.error("Segment {} returned with startTime {} and endTime {}. This should not happen."
                 + "Intensity cannot apply, so next run will start immediately.",

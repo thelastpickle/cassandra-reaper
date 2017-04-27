@@ -478,7 +478,9 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     options.put(RepairOption.TRACE_KEY, Boolean.toString(Boolean.FALSE));
     options.put(RepairOption.COLUMNFAMILIES_KEY, StringUtils.join(columnFamilies, ","));
     //options.put(RepairOption.PULL_REPAIR_KEY, Boolean.FALSE);
-    options.put(RepairOption.RANGES_KEY, beginToken.toString() + ":" + endToken.toString());
+    if (fullRepair) {
+      options.put(RepairOption.RANGES_KEY, beginToken.toString() + ":" + endToken.toString());
+    }
     
     //options.put(RepairOption.DATACENTERS_KEY, StringUtils.join(specificDataCenters, ","));
     //options.put(RepairOption.HOSTS_KEY, StringUtils.join(specificHosts, ","));
