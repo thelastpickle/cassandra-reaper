@@ -14,7 +14,7 @@
         <dropwizard.version>1.1.0</dropwizard.version>
         <dropwizard.cassandra.version>4.1.0</dropwizard.cassandra.version>
         <cassandra.version>2.2.7</cassandra.version>
-        <cucumber.version>1.tered 2.5</cucumber.version>
+        <cucumber.version>1.2.5</cucumber.version>
     </properties>
 
     <dependencies>
@@ -120,11 +120,11 @@
             <exclusions>
                <exclusion>
                   <groupId>org.mockito</groupId>
-                  <artifactId>mockito-core</artifactId>   
+                  <artifactId>mockito-core</artifactId>
                </exclusion>
                <exclusion>
                   <groupId>org.mockito</groupId>
-                  <artifactId>mockito-all</artifactId>   
+                  <artifactId>mockito-all</artifactId>
                </exclusion>
             </exclusions>
         </dependency>
@@ -190,7 +190,7 @@
                           </excludes>
                           <workingDirectory>${project.build.directory}</workingDirectory>
                         </configuration>
-                    </plugin>                
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
@@ -212,9 +212,9 @@
                             </configuration>
                           </execution>
                         </executions>
-                    </plugin>    
+                    </plugin>
                     <plugin>
-                        <!-- To know which version of your application you have deployed on 
+                        <!-- To know which version of your application you have deployed on
                             a machine -->
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-jar-plugin</artifactId>
@@ -228,7 +228,7 @@
                         </configuration>
                     </plugin>
                     <plugin>
-                        <!-- Creating a fat jar by including all classes required for running 
+                        <!-- Creating a fat jar by including all classes required for running
                             the app -->
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-shade-plugin</artifactId>
@@ -304,7 +304,7 @@
                           </excludes>
                           <workingDirectory>${project.build.directory}</workingDirectory>
                         </configuration>
-                    </plugin>    
+                    </plugin>
                 </plugins>
             </build>
         </profile>
@@ -378,13 +378,13 @@
                             </goals>
                             <configuration>
                               <outputDirectory>src/main/resources/assets</outputDirectory>
-                              <resources>          
+                              <resources>
                                 <resource>
                                   <directory>reaper_ui/build</directory>
                                   <filtering>false</filtering>
                                 </resource>
-                              </resources>              
-                            </configuration>            
+                              </resources>
+                            </configuration>
                           </execution>
                         </executions>
                       </plugin>
@@ -399,7 +399,7 @@
                         </configuration>
                     </plugin>
                     <plugin>
-                        <!-- To know which version of your application you have deployed on 
+                        <!-- To know which version of your application you have deployed on
                             a machine -->
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-jar-plugin</artifactId>
@@ -413,7 +413,7 @@
                         </configuration>
                     </plugin>
                     <plugin>
-                        <!-- Creating a fat jar by including all classes required for running 
+                        <!-- Creating a fat jar by including all classes required for running
                             the app -->
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-shade-plugin</artifactId>
@@ -455,5 +455,5 @@
             </build>
         </profile>
     </profiles>
-    
+
 </project>
