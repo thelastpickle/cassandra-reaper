@@ -17,6 +17,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.util.AbstractMap;
 import java.util.Collection;
@@ -55,7 +56,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+
+import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.service.RingRange;
@@ -90,8 +92,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private final String clusterName;
 
   private JmxProxy(Optional<RepairStatusHandler> handler, String host, JMXServiceURL jmxUrl,
-      JMXConnector jmxConnector, Object ssProxy, ObjectName ssMbeanName,
-      MBeanServerConnection mbeanServer, CompactionManagerMBean cmProxy) {
+                   JMXConnector jmxConnector, Object ssProxy, ObjectName ssMbeanName,
+                   MBeanServerConnection mbeanServer, CompactionManagerMBean cmProxy) {
     this.host = host;
     this.jmxUrl = jmxUrl;
     this.jmxConnector = jmxConnector;
@@ -105,10 +107,10 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 
 
   /**
-   * @see JmxProxy#connect(Optional, String, int, String, String)
+   * @see JmxProxy#connect(Optional, String, int, String, String, EC2MultiRegionAddressTranslator)
    */
   static JmxProxy connect(Optional<RepairStatusHandler> handler, String host, String username,
-      String password)
+      String password, final EC2MultiRegionAddressTranslator addressTranslator)
       throws ReaperException {
     if(host == null) {
       throw new ReaperException("Null host given to JmxProxy.connect()");
@@ -116,9 +118,9 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 
     String[] parts = host.split(":");
     if (parts.length == 2) {
-      return connect(handler, parts[0], Integer.valueOf(parts[1]), username, password);
+      return connect(handler, parts[0], Integer.valueOf(parts[1]), username, password, addressTranslator);
     } else {
-      return connect(handler, host, JMX_PORT, username, password);
+      return connect(handler, host, JMX_PORT, username, password, addressTranslator);
     }
   }
 
@@ -133,13 +135,19 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * @param port     port number to use for JMX connection
    * @param username username to use for JMX authentication
    * @param password password to use for JMX authentication
+   * @param addressTranslator if EC2MultiRegionAddressTranslator isn't null it will be used to translate addresses
    */
   static JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int port,
-      String username, String password)
+      String username, String password, final EC2MultiRegionAddressTranslator addressTranslator)
       throws ReaperException {
     ObjectName ssMbeanName;
     ObjectName cmMbeanName;
     JMXServiceURL jmxUrl;
+
+    if(addressTranslator != null) {
+      host = addressTranslator.translate(new InetSocketAddress(host, port)).getHostString();
+    }
+
     try {
       jmxUrl = new JMXServiceURL(String.format(JMX_URL, host, port));
       ssMbeanName = new ObjectName(SS_OBJECT_NAME);

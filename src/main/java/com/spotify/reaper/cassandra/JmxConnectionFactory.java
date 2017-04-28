@@ -14,6 +14,8 @@
 package com.spotify.reaper.cassandra;
 
 import com.google.common.base.Optional;
+
+import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.spotify.reaper.ReaperApplicationConfiguration.JmxCredentials;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
@@ -34,6 +36,7 @@ public class JmxConnectionFactory {
   private static final Logger LOG = LoggerFactory.getLogger(JmxConnectionFactory.class);
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
+  private EC2MultiRegionAddressTranslator addressTranslator;
 
   public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
       throws ReaperException {
@@ -47,7 +50,7 @@ public class JmxConnectionFactory {
       username = jmxAuth.getUsername();
       password = jmxAuth.getPassword();
     }
-    return JmxProxy.connect(handler, host, username, password);
+    return JmxProxy.connect(handler, host, username, password, addressTranslator);
   }
 
   public final JmxProxy connect(String host) throws ReaperException {
@@ -90,5 +93,9 @@ public class JmxConnectionFactory {
 
   public void setJmxAuth(JmxCredentials jmxAuth) {
     this.jmxAuth = jmxAuth;
+  }
+
+  public void setUseAddressTranslator(EC2MultiRegionAddressTranslator addressTranslator) {
+    this.addressTranslator = addressTranslator;
   }
 }

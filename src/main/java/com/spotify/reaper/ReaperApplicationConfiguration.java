@@ -56,6 +56,9 @@ public class ReaperApplicationConfiguration extends Configuration {
   @DefaultValue("7")
   private Integer scheduleDaysBetween;
 
+  @JsonProperty
+  @DefaultValue("false")
+  private Boolean useAddressTranslator;
 
   @JsonProperty
   @NotNull
@@ -212,6 +215,14 @@ public class ReaperApplicationConfiguration extends Configuration {
     return this.enableDynamicSeedList==null?Boolean.TRUE:this.enableDynamicSeedList;
   }
 
+  public void setUseAddressTranslator(Boolean useAddressTranslator) {
+    this.useAddressTranslator = useAddressTranslator;
+  }
+
+  public boolean useAddressTranslator() {
+    return this.useAddressTranslator;
+  }
+
   public static class JmxCredentials {
 
     @JsonProperty
@@ -241,7 +252,6 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setCassandraFactory(CassandraFactory cassandra) {
       this.cassandra = cassandra;
   }
-
   
   public Boolean getAllowUnreachableNodes() {
     return allowUnreachableNodes;
