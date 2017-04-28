@@ -95,7 +95,7 @@ public class JmxConnectionFactory {
     this.jmxAuth = jmxAuth;
   }
 
-  public void setUseAddressTranslator(EC2MultiRegionAddressTranslator addressTranslator) {
+  public void setAddressTranslator(EC2MultiRegionAddressTranslator addressTranslator) {
     this.addressTranslator = addressTranslator;
   }
 }
