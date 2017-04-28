@@ -58,7 +58,7 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   @DefaultValue("false")
-  private Boolean useAddressTranslator;
+  private boolean useAddressTranslator;
 
   @JsonProperty
   @NotNull

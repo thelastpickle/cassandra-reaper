@@ -14,7 +14,7 @@
         <dropwizard.version>1.1.0</dropwizard.version>
         <dropwizard.cassandra.version>4.1.0</dropwizard.cassandra.version>
         <cassandra.version>2.2.7</cassandra.version>
-        <cucumber.version>1.1.5</cucumber.version>
+        <cucumber.version>1.tered 2.5</cucumber.version>
     </properties>
 
     <dependencies>
@@ -22,7 +22,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>19.0</version>
+            <version>21.0</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
