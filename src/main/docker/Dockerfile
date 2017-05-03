@@ -35,8 +35,8 @@ ENV REAPER_SEGMENT_COUNT=200 \
     REAPER_CASS_AUTH_PASSWORD="cassandra" \
     REAPER_DB_DRIVER_CLASS="org.h2.Driver" \
     REAPER_DB_URL="jdbc:h2:/var/lib/cassandra-reaper/db;MODE=PostgreSQL" \
-    DB_REAPER_DB_USERNAME="" \
-    DB_REAPER_DB_PASSWORD="" \
+    REAPER_DB_USERNAME="" \
+    REAPER_DB_PASSWORD="" \
     JAVA_OPTS=""
 
 ADD cassandra-reaper.yml /etc/cassandra-reaper.yml
@@ -46,12 +46,8 @@ RUN addgroup -S reaper && \
     adduser -S reaper reaper && \
     apk add --no-cache 'su-exec>=0.2' && \
     mkdir -p /var/lib/cassandra-reaper && \
-    chown reaper:reaper /etc/cassandra-reaper.yml && \
-    chown reaper:reaper /var/lib/cassandra-reaper && \
-    chown reaper:reaper /usr/local/bin/entrypoint.sh && \
-    chown reaper:reaper /usr/local/bin/append-persistence.sh && \
-    chmod u+x /usr/local/bin/entrypoint.sh && \
-    chmod u+x /usr/local/bin/append-persistence.sh
+    chown reaper:reaper /etc/cassandra-reaper.yml /var/lib/cassandra-reaper /usr/local/bin/entrypoint.sh /usr/local/bin/append-persistence.sh && \
+    chmod u+x /usr/local/bin/entrypoint.sh /usr/local/bin/append-persistence.sh
 
 VOLUME /var/lib/cassandra-reaper
 
