@@ -1,8 +1,9 @@
 #!/bin/sh
 
 if [ "$1" = 'cassandra-reaper' ]; then
-    /root/append-persistence.sh
-    exec java -jar ${JAVA_OPTS} /root/cassandra-reaper.jar server /root/cassandra-reaper.yml
+    su-exec reaper /usr/local/bin/append-persistence.sh
+    exec su-exec reaper java -jar ${JAVA_OPTS} \
+        /usr/local/lib/cassandra-reaper.jar server /etc/cassandra-reaper.yml
 fi
 
 exec "$@"

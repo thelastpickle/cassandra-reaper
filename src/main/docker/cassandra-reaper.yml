@@ -1,43 +1,43 @@
 
-segmentCount: ${DW_REAPER_SEGMENT_COUNT}
-repairParallelism: ${DW_REAPER_REPAIR_PARALELLISM}
-repairIntensity: ${DW_REAPER_REPAIR_INTENSITY}
-scheduleDaysBetween: ${DW_REAPER_SCHEDULE_DAYS_BETWEEN}
-repairRunThreadCount: ${DW_REAPER_REPAIR_RUN_THREADS}
-hangingRepairTimeoutMins: ${DW_REAPER_HANING_REPAIR_TIMEOUT_MINS}
-storageType: ${DW_REAPER_STORAGE_TYPE}
-enableCrossOrigin: ${DW_REAPER_ENABLE_CORS}
-incrementalRepair: ${DW_REAPER_INCREMENTAL_REPAIR}
-allowUnreachableNodes: ${DW_REAPER_ALLOW_UNREACHABLE_NODES}
-enableDynamicSeedList: ${DW_REAPER_ENABLE_DYNAMIC_SEEDS}
+segmentCount: ${REAPER_SEGMENT_COUNT}
+repairParallelism: ${REAPER_REPAIR_PARALELLISM}
+repairIntensity: ${REAPER_REPAIR_INTENSITY}
+scheduleDaysBetween: ${REAPER_SCHEDULE_DAYS_BETWEEN}
+repairRunThreadCount: ${REAPER_REPAIR_RUN_THREADS}
+hangingRepairTimeoutMins: ${REAPER_HANING_REPAIR_TIMEOUT_MINS}
+storageType: ${REAPER_STORAGE_TYPE}
+enableCrossOrigin: ${REAPER_ENABLE_CORS}
+incrementalRepair: ${REAPER_INCREMENTAL_REPAIR}
+allowUnreachableNodes: ${REAPER_ALLOW_UNREACHABLE_NODES}
+enableDynamicSeedList: ${REAPER_ENABLE_DYNAMIC_SEEDS}
 
 autoScheduling:
-  enabled: ${DW_REAPER_AUTO_SCHEDULE_ENABLED}
-  initialDelayPeriod: ${DW_REAPER_AUTO_SCHEDULE_INITIAL_DELAY_PERIOD}
-  periodBetweenPolls: ${DW_REAPER_AUTO_SCHEDULE_PERIOD_BETWEEN_POLLS}
-  timeBeforeFirstSchedule: ${DW_REAPER_AUTO_SCHEDULE_TIME_BETWEEN_FIRST_SCHEDULE}
-  scheduleSpreadPeriod: ${DW_REAPER_AUTO_SCHEDULE_TIME_BETWEEN_FIRST_SCHEDULE}
-  excludedKeyspaces: ${DW_REAPER_AUTO_SCHEDULE_EXCLUDED_KEYSPACES}
+  enabled: ${REAPER_AUTO_SCHEDULE_ENABLED}
+  initialDelayPeriod: ${REAPER_AUTO_SCHEDULE_INITIAL_DELAY_PERIOD}
+  periodBetweenPolls: ${REAPER_AUTO_SCHEDULE_PERIOD_BETWEEN_POLLS}
+  timeBeforeFirstSchedule: ${REAPER_AUTO_SCHEDULE_TIME_BETWEEN_FIRST_SCHEDULE}
+  scheduleSpreadPeriod: ${REAPER_AUTO_SCHEDULE_TIME_BETWEEN_FIRST_SCHEDULE}
+  excludedKeyspaces: ${REAPER_AUTO_SCHEDULE_EXCLUDED_KEYSPACES}
 
-jmxPorts: ${DW_REAPER_JMX_PORTS}
+jmxPorts: ${REAPER_JMX_PORTS}
 
 logging:
-  level: ${DW_REAPER_LOGGING_ROOT_LEVEL}
-  loggers: ${DW_REAPER_LOGGERS}
+  level: ${REAPER_LOGGING_ROOT_LEVEL}
+  loggers: ${REAPER_LOGGERS}
   appenders:
     - type: console
-      logFormat: ${DW_REAPER_LOGGING_FORMAT}
+      logFormat: ${REAPER_LOGGING_FORMAT}
 
 server:
   type: default
   applicationConnectors:
     - type: http
-      port: ${DW_REAPER_APP_PORT}
-      bindHost: ${DW_REAPER_APP_BIND_HOST}
+      port: ${REAPER_APP_PORT}
+      bindHost: ${REAPER_APP_BIND_HOST}
   adminConnectors:
     - type: http
-      port: ${DW_REAPER_ADMIN_PORT}
-      bindHost: ${DW_REAPER_ADMIN_BIND_HOST}
+      port: ${REAPER_ADMIN_PORT}
+      bindHost: ${REAPER_ADMIN_BIND_HOST}
   requestLog:
     appenders: []
 
