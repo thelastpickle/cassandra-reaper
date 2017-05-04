@@ -29,14 +29,14 @@ import org.flywaydb.core.Flyway;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.spotify.reaper.AppContext;
-import com.spotify.reaper.ReaperApplicationConfiguration;
+
 import com.spotify.reaper.ReaperApplicationConfiguration.JmxCredentials;
-import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.resources.PingResource;
@@ -141,6 +141,10 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     if (jmxPorts != null) {
       LOG.debug("using JMX ports mapping: {}", jmxPorts);
       context.jmxConnectionFactory.setJmxPorts(jmxPorts);
+    }
+
+    if(config.useAddressTranslator()) {
+      context.jmxConnectionFactory.setAddressTranslator(new EC2MultiRegionAddressTranslator());
     }
 
     // Enable cross-origin requests for using external GUI applications.
