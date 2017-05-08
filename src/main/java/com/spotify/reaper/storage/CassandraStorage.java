@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.CodecRegistry;
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.QueryLogger;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
@@ -86,7 +87,7 @@ public class CassandraStorage implements IStorage {
   private PreparedStatement deleteRepairSegmentByRunId;
 
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
-    cassandra = config.getCassandraFactory().build(environment);
+    cassandra = config.getCassandraFactory().build(environment).register(QueryLogger.builder().build());
     CodecRegistry codecRegistry = cassandra.getConfiguration().getCodecRegistry();
     codecRegistry.register(new DateTimeCodec());
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());

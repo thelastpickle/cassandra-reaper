@@ -26,6 +26,14 @@ jmxPorts:
 logging:
   level: INFO
   loggers:
+    com.datastax.driver.core.QueryLogger.NORMAL:
+      level: DEBUG
+      additive: false
+      appenders:
+        - type: file
+          currentLogFilename: query-logger.log
+          archivedLogFilenamePattern: query-logger-%d.log.gz
+          archivedFileCount: 2
     io.dropwizard: WARN
     org.eclipse.jetty: WARN
   appenders:
