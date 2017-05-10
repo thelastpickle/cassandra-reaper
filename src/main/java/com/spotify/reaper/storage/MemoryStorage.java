@@ -509,10 +509,12 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public void releaseLeadOnSegment(long segmentId) {
+    // Fault tolerance is not supported with this storage backend
   }
 
   @Override
   public void storeHostMetrics(HostMetrics hostMetrics) {
+    // Fault tolerance is not supported with this storage backend
   }
 
   @Override
@@ -532,5 +534,6 @@ public class MemoryStorage implements IStorage {
 
   @Override
   public void saveHeartbeat() {
+    // Fault tolerance is not supported with this storage backend
   }
 }

@@ -26,7 +26,6 @@ import com.spotify.reaper.resources.view.RepairScheduleStatus;
 import com.spotify.reaper.service.RepairParameters;
 import com.spotify.reaper.service.RingRange;
 
-import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Set;
 

@@ -1,8 +1,6 @@
 package com.spotify.reaper.core;
 
-import javax.annotation.Generated;
-
-public class HostMetrics {
+public final class HostMetrics {
   private final String hostAddress;
   private final int pendingCompactions;
   private final boolean hasRepairRunning;

@@ -69,9 +69,10 @@ import sun.misc.SignalHandler;
 public class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
   static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
-  public final static UUID reaperInstanceId = UUID.randomUUID();
+  public static final UUID REAPER_INSTANCE_ID = UUID.randomUUID();
   private static String reaperInstanceAddress;
   private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+  private static final String DEFAULT_INSTANCE_ADDRESS = "127.0.0.1";
   
   private AppContext context;
 
@@ -94,12 +95,12 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     new ReaperApplication().run(args);
   }
   
-  private void setInstanceAddress() {
+  private static void setInstanceAddress() {
     try{
-      this.reaperInstanceAddress = InetAddress.getLocalHost().getHostAddress();
+      ReaperApplication.reaperInstanceAddress = InetAddress.getLocalHost().getHostAddress();
     } catch(Exception e) {
       LOG.warn("Cannot get instance address", e);
-      this.reaperInstanceAddress = "127.0.0.1";
+      ReaperApplication.reaperInstanceAddress = DEFAULT_INSTANCE_ADDRESS;
     }
   }
   
@@ -219,14 +220,12 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
       // us to poll the database for running repairs regularly
       // only with Cassandra storage
       scheduler.scheduleWithFixedDelay(
-        new Runnable() {
-          public void run() { 
+        () -> {
             try {
               context.repairManager.resumeRunningRepairRuns(context);
             } catch (ReaperException e) {
               LOG.error("Couldn't resume running repair runs", e);
             } 
-          }
         }, 0, 10, TimeUnit.SECONDS);
     }
     else {

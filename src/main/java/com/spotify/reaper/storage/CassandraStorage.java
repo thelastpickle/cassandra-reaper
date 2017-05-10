@@ -784,7 +784,7 @@ public class CassandraStorage implements IStorage {
 
   @Override
   public boolean takeLeadOnSegment(long segmentId) {
-    Row lwtResult = session.execute(getLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.reaperInstanceId, ReaperApplication.getInstanceAddress())).one();
+    Row lwtResult = session.execute(getLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress())).one();
     if (lwtResult.getBool("[applied]")) {
       LOG.debug("Took lead on segment {}", segmentId);
       return true;
@@ -797,7 +797,7 @@ public class CassandraStorage implements IStorage {
 
   @Override
   public boolean renewLeadOnSegment(long segmentId) {
-    Row lwtResult = session.execute(renewLeadOnSegmentPrepStmt.bind(ReaperApplication.reaperInstanceId, ReaperApplication.getInstanceAddress(), segmentId, ReaperApplication.reaperInstanceId)).one();
+    Row lwtResult = session.execute(renewLeadOnSegmentPrepStmt.bind(ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress(), segmentId, ReaperApplication.REAPER_INSTANCE_ID)).one();
     if (lwtResult.getBool("[applied]")) {
       LOG.debug("Renewed lead on segment {}", segmentId);
       return true;
@@ -807,8 +807,12 @@ public class CassandraStorage implements IStorage {
 
   @Override
   public void releaseLeadOnSegment(long segmentId) {
-    Row lwtResult = session.execute(releaseLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.reaperInstanceId)).one();
-    LOG.debug("Released lead on segment {}", segmentId);
+    Row lwtResult = session.execute(releaseLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID)).one();
+    if (lwtResult.getBool("[applied]")) {
+      LOG.debug("Released lead on segment {}", segmentId);
+    } else {
+      LOG.error("Could not release lead on segment {}", segmentId);
+    }
   }
 
   @Override
@@ -848,7 +852,7 @@ public class CassandraStorage implements IStorage {
     DateTime now = DateTime.now();
     // Send heartbeats every minute
     if(now.minusSeconds(60).getMillis() >= lastHeartBeat.getMillis()) {
-      session.executeAsync(saveHeartbeatPrepStmt.bind(ReaperApplication.reaperInstanceId, ReaperApplication.getInstanceAddress()));
+      session.executeAsync(saveHeartbeatPrepStmt.bind(ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
       lastHeartBeat = now;
     }
   }

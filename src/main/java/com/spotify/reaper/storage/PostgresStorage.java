@@ -527,5 +527,6 @@ public class PostgresStorage implements IStorage {
 
   @Override
   public void saveHeartbeat() {
+    // Fault tolerance is not supported with this storage backend
   }
 }
