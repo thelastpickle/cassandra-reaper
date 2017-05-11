@@ -57,7 +57,14 @@ public class ReaperCassandraIT {
   public static void initSchema() throws IOException{
     Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
     Session tmpSession = cluster.connect();
-    tmpSession.execute("DROP KEYSPACE IF EXISTS reaper_db");
+    while(true){
+        try{
+            tmpSession.execute("DROP KEYSPACE IF EXISTS reaper_db");
+            break;
+        }catch(Exception ex){
+            LOG.warn("error dropping keyspace", ex);
+        }
+    }
     tmpSession.execute("CREATE KEYSPACE IF NOT EXISTS reaper_db WITH replication = {'class':'SimpleStrategy', 'replication_factor':1}");
     tmpSession.close();
   }

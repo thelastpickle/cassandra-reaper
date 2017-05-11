@@ -14,6 +14,7 @@
 package com.spotify.reaper.core;
 
 import java.util.Objects;
+import java.util.UUID;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
@@ -21,7 +22,7 @@ import org.joda.time.DateTimeComparator;
 
 public class RepairRun implements Comparable<RepairRun> {
 
-  private final long id;
+  private final UUID id;
 
   // IDEA: maybe we want to have start and stop token for parallel runners on same repair run?
   //private final long startToken;
@@ -30,7 +31,7 @@ public class RepairRun implements Comparable<RepairRun> {
   private final String cause;
   private final String owner;
   private final String clusterName;
-  private final long repairUnitId;
+  private final UUID repairUnitId;
   private final RunState runState;
   private final DateTime creationTime;
   private final DateTime startTime;
@@ -41,7 +42,7 @@ public class RepairRun implements Comparable<RepairRun> {
   private final int segmentCount;
   private final RepairParallelism repairParallelism;
 
-  private RepairRun(Builder builder, long id) {
+  private RepairRun(Builder builder, UUID id) {
     this.id = id;
     this.clusterName = builder.clusterName;
     this.repairUnitId = builder.repairUnitId;
@@ -58,11 +59,11 @@ public class RepairRun implements Comparable<RepairRun> {
     this.repairParallelism = builder.repairParallelism;
   }
 
-  public long getId() {
+  public UUID getId() {
     return id;
   }
 
-  public long getRepairUnitId() {
+  public UUID getRepairUnitId() {
     return repairUnitId;
   }
 
@@ -174,7 +175,7 @@ public class RepairRun implements Comparable<RepairRun> {
   public static class Builder {
 
     public final String clusterName;
-    public final long repairUnitId;
+    public final UUID repairUnitId;
     private RunState runState;
     private DateTime creationTime;
     private double intensity;
@@ -188,7 +189,7 @@ public class RepairRun implements Comparable<RepairRun> {
     private int segmentCount;
     private RepairParallelism repairParallelism;
 
-    public Builder(String clusterName, long repairUnitId, DateTime creationTime,
+    public Builder(String clusterName, UUID repairUnitId, DateTime creationTime,
                    double intensity, int segmentCount, RepairParallelism repairParallelism) {
       this.clusterName = clusterName;
       this.repairUnitId = repairUnitId;
@@ -270,7 +271,7 @@ public class RepairRun implements Comparable<RepairRun> {
       return this;
     }
 
-    public RepairRun build(long id) {
+    public RepairRun build(UUID id) {
       return new RepairRun(this, id);
     }
   }
