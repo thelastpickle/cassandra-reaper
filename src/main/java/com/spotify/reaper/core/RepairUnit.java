@@ -14,16 +14,17 @@
 package com.spotify.reaper.core;
 
 import java.util.Set;
+import java.util.UUID;
 
 public class RepairUnit {
 
-  private final long id;
+  private final UUID id;
   private final String clusterName;
   private final String keyspaceName;
   private final Set<String> columnFamilies;
   private final Boolean incrementalRepair;	
 
-  private RepairUnit(Builder builder, long id) {
+  private RepairUnit(Builder builder, UUID id) {
     this.id = id;
     this.clusterName = builder.clusterName;
     this.keyspaceName = builder.keyspaceName;
@@ -31,7 +32,7 @@ public class RepairUnit {
     this.incrementalRepair = builder.incrementalRepair;
   }
 
-  public long getId() {
+  public UUID getId() {
     return id;
   }
 
@@ -76,7 +77,7 @@ public class RepairUnit {
       incrementalRepair = original.incrementalRepair;
     }
 
-    public RepairUnit build(long id) {
+    public RepairUnit build(UUID id) {
       return new RepairUnit(this, id);
     }
   }

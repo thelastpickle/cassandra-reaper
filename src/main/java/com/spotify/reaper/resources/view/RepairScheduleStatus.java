@@ -24,11 +24,12 @@ import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 
 import java.util.Collection;
+import java.util.UUID;
 
 public class RepairScheduleStatus {
 
   @JsonProperty
-  private long id;
+  private UUID id;
 
   @JsonProperty
   private String owner;
@@ -75,7 +76,7 @@ public class RepairScheduleStatus {
   public RepairScheduleStatus() {
   }
 
-  public RepairScheduleStatus(long id, String owner, String clusterName, String keyspaceName,
+  public RepairScheduleStatus(UUID id, String owner, String clusterName, String keyspaceName,
       Collection<String> columnFamilies, RepairSchedule.State state,
       DateTime creationTime, DateTime nextActivation,
       DateTime pauseTime, double intensity, boolean incrementalRepair, int segmentCount, RepairParallelism repairParallelism,
@@ -115,11 +116,11 @@ public class RepairScheduleStatus {
     );
   }
 
-  public long getId() {
+  public UUID getId() {
     return id;
   }
 
-  public void setId(long id) {
+  public void setId(UUID id) {
     this.id = id;
   }
 
