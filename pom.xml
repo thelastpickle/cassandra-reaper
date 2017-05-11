@@ -22,7 +22,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>19.0</version>
+            <version>21.0</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -58,6 +58,11 @@
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-assets</artifactId>
             <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.datastax.cassandra</groupId>
+            <artifactId>cassandra-driver-core</artifactId>
+            <version>3.2.0</version>
         </dependency>
         <dependency>
             <groupId>systems.composable</groupId>

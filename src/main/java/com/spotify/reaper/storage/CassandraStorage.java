@@ -159,9 +159,6 @@ public class CassandraStorage implements IStorage {
     getHostMetricsPrepStmt = session.prepare("SELECT * FROM host_metrics WHERE host_address = ?");
     getRunningReapersCountPrepStmt = session.prepare("SELECT count(*) as nb_reapers FROM running_reapers");
     saveHeartbeatPrepStmt = session.prepare("INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?,?,dateof(now()))");
-    getHostMetricsPrepStmt = session.prepare("SELECT * FROM host_metrics WHERE host_address = ? AND ts >= ? LIMIT 1");
-    getRunningReapersCountPrepStmt = session.prepare("SELECT count(*) as nb_reapers FROM running_reapers");
-    saveHeartbeatPrepStmt = session.prepare("INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?,?,dateof(now()))");
   }
 
   @Override
@@ -784,8 +781,8 @@ public class CassandraStorage implements IStorage {
 
   @Override
   public boolean takeLeadOnSegment(long segmentId) {
-    Row lwtResult = session.execute(getLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress())).one();
-    if (lwtResult.getBool("[applied]")) {
+    ResultSet lwtResult = session.execute(getLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
+    if (lwtResult.wasApplied()) {
       LOG.debug("Took lead on segment {}", segmentId);
       return true;
     }
@@ -797,8 +794,8 @@ public class CassandraStorage implements IStorage {
 
   @Override
   public boolean renewLeadOnSegment(long segmentId) {
-    Row lwtResult = session.execute(renewLeadOnSegmentPrepStmt.bind(ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress(), segmentId, ReaperApplication.REAPER_INSTANCE_ID)).one();
-    if (lwtResult.getBool("[applied]")) {
+    ResultSet lwtResult = session.execute(renewLeadOnSegmentPrepStmt.bind(ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress(), segmentId, ReaperApplication.REAPER_INSTANCE_ID));
+    if (lwtResult.wasApplied()) {
       LOG.debug("Renewed lead on segment {}", segmentId);
       return true;
     }
@@ -807,8 +804,8 @@ public class CassandraStorage implements IStorage {
 
   @Override
   public void releaseLeadOnSegment(long segmentId) {
-    Row lwtResult = session.execute(releaseLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID)).one();
-    if (lwtResult.getBool("[applied]")) {
+    ResultSet lwtResult = session.execute(releaseLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID));
+    if (lwtResult.wasApplied()) {
       LOG.debug("Released lead on segment {}", segmentId);
     } else {
       LOG.error("Could not release lead on segment {}", segmentId);

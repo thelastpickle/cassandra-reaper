@@ -14,8 +14,9 @@ CREATE TABLE IF NOT EXISTS host_metrics(
   pending_compactions int,
 	has_repair_running boolean,
   active_anticompactions int,
-  PRIMARY KEY(host_address)
-) WITH default_time_to_live=180;
+  PRIMARY KEY(host_address, ts)
+) WITH CLUSTERING ORDER BY (ts DESC)
+  AND  default_time_to_live=180;
 
 --
 -- Add table to track concurrently running Reapers
