@@ -13,6 +13,7 @@
  */
 package com.spotify.reaper.storage;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
@@ -33,6 +34,7 @@ import com.spotify.reaper.storage.postgresql.RepairParallelismArgumentFactory;
 import com.spotify.reaper.storage.postgresql.RunStateArgumentFactory;
 import com.spotify.reaper.storage.postgresql.ScheduleStateArgumentFactory;
 import com.spotify.reaper.storage.postgresql.StateArgumentFactory;
+import com.spotify.reaper.storage.postgresql.UuidArgumentFactory;
 
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
@@ -44,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 
 /**
@@ -67,6 +70,7 @@ public class PostgresStorage implements IStorage {
     h.registerArgumentFactory(new StateArgumentFactory());
     h.registerArgumentFactory(new BigIntegerArgumentFactory());
     h.registerArgumentFactory(new ScheduleStateArgumentFactory());
+    h.registerArgumentFactory(new UuidArgumentFactory());
     return h.attach(IStoragePostgreSQL.class);
   }
 
@@ -144,10 +148,10 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairRun> getRepairRun(long id) {
+  public Optional<RepairRun> getRepairRun(UUID id) {
     RepairRun result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getRepairRun(id);
+      result = getPostgresStorage(h).getRepairRun(toSequenceId(id));
     }
     return Optional.fromNullable(result);
   }
@@ -162,10 +166,10 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Collection<RepairRun> getRepairRunsForUnit(long repairUnitId) {
+  public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
     Collection<RepairRun> result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getRepairRunsForUnit(repairUnitId);
+      result = getPostgresStorage(h).getRepairRunsForUnit(toSequenceId(repairUnitId));
     }
     return result == null ? Lists.<RepairRun>newArrayList() : result;
   }
@@ -180,20 +184,20 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairRun> deleteRepairRun(long id) {
+  public Optional<RepairRun> deleteRepairRun(UUID id) {
     RepairRun result = null;
     Handle h = null;
     try {
       h = jdbi.open();
       h.begin();
       IStoragePostgreSQL pg = getPostgresStorage(h);
-      RepairRun runToDelete = pg.getRepairRun(id);
+      RepairRun runToDelete = pg.getRepairRun(toSequenceId(id));
       if (runToDelete != null) {
-        int segmentsRunning = pg.getSegmentAmountForRepairRunWithState(id,
+        int segmentsRunning = pg.getSegmentAmountForRepairRunWithState(toSequenceId(id),
             RepairSegment.State.RUNNING);
         if (segmentsRunning == 0) {
-          pg.deleteRepairSegmentsForRun(runToDelete.getId());
-          pg.deleteRepairRun(id);
+          pg.deleteRepairSegmentsForRun(toSequenceId(runToDelete.getId()));
+          pg.deleteRepairRun(toSequenceId(id));
           result = runToDelete.with().runState(RepairRun.RunState.DELETED).build(id);
         } else {
           LOG.warn("not deleting RepairRun \"{}\" as it has segments running: {}",
@@ -218,10 +222,10 @@ public class PostgresStorage implements IStorage {
     return Optional.fromNullable(result);
   }
 
-  private void tryDeletingRepairUnit(long id) {
+  private void tryDeletingRepairUnit(UUID id) {
     try (Handle h = jdbi.open()) {
       IStoragePostgreSQL pg = getPostgresStorage(h);
-      pg.deleteRepairUnit(id);
+      pg.deleteRepairUnit(toSequenceId(id));
     } catch (DBIException ex) {
       LOG.info("cannot delete RepairUnit with id " + id);
     }
@@ -231,8 +235,8 @@ public class PostgresStorage implements IStorage {
   public RepairRun addRepairRun(RepairRun.Builder newRepairRun) {
     RepairRun result;
     try (Handle h = jdbi.open()) {
-      long insertedId = getPostgresStorage(h).insertRepairRun(newRepairRun.build(-1));
-      result = newRepairRun.build(insertedId);
+      long insertedId = getPostgresStorage(h).insertRepairRun(newRepairRun.build(null));
+      result = newRepairRun.build(fromSequenceId(insertedId));
     }
     return result;
   }
@@ -255,16 +259,16 @@ public class PostgresStorage implements IStorage {
   public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
     long insertedId;
     try (Handle h = jdbi.open()) {
-      insertedId = getPostgresStorage(h).insertRepairUnit(newRepairUnit.build(-1));
+      insertedId = getPostgresStorage(h).insertRepairUnit(newRepairUnit.build(null));
     }
-    return newRepairUnit.build(insertedId);
+    return newRepairUnit.build(fromSequenceId(insertedId));
   }
 
   @Override
-  public Optional<RepairUnit> getRepairUnit(long id) {
+  public Optional<RepairUnit> getRepairUnit(UUID id) {
     RepairUnit result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getRepairUnit(id);
+      result = getPostgresStorage(h).getRepairUnit(toSequenceId(id));
     }
     return Optional.fromNullable(result);
   }
@@ -281,10 +285,10 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public void addRepairSegments(Collection<RepairSegment.Builder> newSegments, long runId) {
+  public void addRepairSegments(Collection<RepairSegment.Builder> newSegments, UUID runId) {
     List<RepairSegment> insertableSegments = new ArrayList<>();
     for (RepairSegment.Builder segment : newSegments) {
-      insertableSegments.add(segment.build(-1));
+      insertableSegments.add(segment.build(null));
     }
     try (Handle h = jdbi.open()) {
       getPostgresStorage(h).insertRepairSegments(insertableSegments.iterator());
@@ -306,40 +310,40 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairSegment> getRepairSegment(long id) {
+  public Optional<RepairSegment> getRepairSegment(UUID id) {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getRepairSegment(id);
+      result = getPostgresStorage(h).getRepairSegment(toSequenceId(id));
     }
     return Optional.fromNullable(result);
   }
 
   @Override
-  public Collection<RepairSegment> getRepairSegmentsForRun(long runId) {
+  public Collection<RepairSegment> getRepairSegmentsForRun(UUID runId) {
     try (Handle h = jdbi.open()) {
-      return getPostgresStorage(h).getRepairSegmentsForRun(runId);
+      return getPostgresStorage(h).getRepairSegmentsForRun(toSequenceId(runId));
     }
   }
 
   @Override
-  public Optional<RepairSegment> getNextFreeSegment(long runId) {
+  public Optional<RepairSegment> getNextFreeSegment(UUID runId) {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getNextFreeRepairSegment(runId);
+      result = getPostgresStorage(h).getNextFreeRepairSegment(toSequenceId(runId));
     }
     return Optional.fromNullable(result);
   }
 
   @Override
-  public Optional<RepairSegment> getNextFreeSegmentInRange(long runId, RingRange range) {
+  public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, RingRange range) {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
       IStoragePostgreSQL storage = getPostgresStorage(h);
       if (!range.isWrapping()) {
-        result = storage.getNextFreeRepairSegmentInNonWrappingRange(runId, range.getStart(),
+        result = storage.getNextFreeRepairSegmentInNonWrappingRange(toSequenceId(runId), range.getStart(),
             range.getEnd());
       } else {
-        result = storage.getNextFreeRepairSegmentInWrappingRange(runId, range.getStart(),
+        result = storage.getNextFreeRepairSegmentInWrappingRange(toSequenceId(runId), range.getStart(),
             range.getEnd());
       }
     }
@@ -347,11 +351,10 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Collection<RepairSegment> getSegmentsWithState(long runId,
-      RepairSegment.State segmentState) {
+  public Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState) {
     Collection<RepairSegment> result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getRepairSegmentsForRunWithState(runId, segmentState);
+      result = getPostgresStorage(h).getRepairSegmentsForRunWithState(toSequenceId(runId), segmentState);
     }
     return result;
   }
@@ -364,26 +367,28 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Collection<Long> getRepairRunIdsForCluster(String clusterName) {
-    Collection<Long> result;
+  public Collection<UUID> getRepairRunIdsForCluster(String clusterName) {
+    Collection<UUID> result = Lists.newArrayList();
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getRepairRunIdsForCluster(clusterName);
+      for(Long l: getPostgresStorage(h).getRepairRunIdsForCluster(clusterName)){
+          result.add(fromSequenceId(l));
+      }
     }
     return result;
   }
 
   @Override
-  public int getSegmentAmountForRepairRun(long runId) {
+  public int getSegmentAmountForRepairRun(UUID runId) {
     try (Handle h = jdbi.open()) {
-      return getPostgresStorage(h).getSegmentAmountForRepairRun(runId);
+      return getPostgresStorage(h).getSegmentAmountForRepairRun(toSequenceId(runId));
     }
   }
 
   @Override
-  public int getSegmentAmountForRepairRunWithState(long runId, RepairSegment.State state) {
+  public int getSegmentAmountForRepairRunWithState(UUID runId, RepairSegment.State state) {
     int result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getSegmentAmountForRepairRunWithState(runId, state);
+      result = getPostgresStorage(h).getSegmentAmountForRepairRunWithState(toSequenceId(runId), state);
     }
     return result;
   }
@@ -392,16 +397,16 @@ public class PostgresStorage implements IStorage {
   public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
     long insertedId;
     try (Handle h = jdbi.open()) {
-      insertedId = getPostgresStorage(h).insertRepairSchedule(repairSchedule.build(-1));
+      insertedId = getPostgresStorage(h).insertRepairSchedule(repairSchedule.build(null));
     }
-    return repairSchedule.build(insertedId);
+    return repairSchedule.build(fromSequenceId(insertedId));
   }
 
   @Override
-  public Optional<RepairSchedule> getRepairSchedule(long repairScheduleId) {
+  public Optional<RepairSchedule> getRepairSchedule(UUID repairScheduleId) {
     RepairSchedule result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getRepairSchedule(repairScheduleId);
+      result = getPostgresStorage(h).getRepairSchedule(toSequenceId(repairScheduleId));
     }
     return Optional.fromNullable(result);
   }
@@ -459,13 +464,13 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairSchedule> deleteRepairSchedule(long id) {
+  public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
     RepairSchedule result = null;
     try (Handle h = jdbi.open()) {
       IStoragePostgreSQL pg = getPostgresStorage(h);
-      RepairSchedule scheduleToDel = pg.getRepairSchedule(id);
+      RepairSchedule scheduleToDel = pg.getRepairSchedule(toSequenceId(id));
       if (scheduleToDel != null) {
-        int rowsDeleted = pg.deleteRepairSchedule(scheduleToDel.getId());
+        int rowsDeleted = pg.deleteRepairSchedule(toSequenceId(scheduleToDel.getId()));
         if (rowsDeleted > 0) {
           result = scheduleToDel.with().state(RepairSchedule.State.DELETED).build(id);
         }
@@ -477,15 +482,25 @@ public class PostgresStorage implements IStorage {
     return Optional.fromNullable(result);
   }
 
+  @Override
   public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
     try (Handle h = jdbi.open()) {
       return getPostgresStorage(h).getClusterRunOverview(clusterName, limit);
     }
   }
 
+  @Override
   public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
     try (Handle h = jdbi.open()) {
       return getPostgresStorage(h).getClusterScheduleOverview(clusterName);
     }
+  }
+
+  private static UUID fromSequenceId(long insertedId) {
+    return new UUID(insertedId, UUIDs.timeBased().getLeastSignificantBits());
+  }
+
+  private static long toSequenceId(UUID id) {
+    return id.getMostSignificantBits();
   }
 }

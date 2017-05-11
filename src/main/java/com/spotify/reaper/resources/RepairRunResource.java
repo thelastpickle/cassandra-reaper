@@ -56,6 +56,7 @@ import com.spotify.reaper.core.RepairRun.RunState;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
+import java.util.UUID;
 
 @Path("/repair_run")
 @Produces(MediaType.APPLICATION_JSON)
@@ -253,7 +254,7 @@ public class RepairRunResource {
   @Path("/{id}")
   public Response modifyRunState(
       @Context UriInfo uriInfo,
-      @PathParam("id") Long repairRunId,
+      @PathParam("id") UUID repairRunId,
       @QueryParam("state") Optional<String> state) throws ReaperException {
 
     LOG.info("modify repair run state called with: id = {}, state = {}", repairRunId, state);
@@ -282,7 +283,7 @@ public class RepairRunResource {
     Collection<RepairRun> repairRuns = context.storage.getRepairRunsForUnit(repairRun.get().getRepairUnitId());
     
     for(RepairRun run:repairRuns){
-    	if(run.getId()!=repairRunId && run.getRunState().equals(RunState.RUNNING)){
+    	if(!run.getId().equals(repairRunId) && run.getRunState().equals(RunState.RUNNING)){
     		String errMsg = "repair unit already has run " + run.getId() + " in RUNNING state";
 		    LOG.error(errMsg);
 		    return Response.status(Response.Status.CONFLICT).entity(errMsg).build();
@@ -373,7 +374,7 @@ public class RepairRunResource {
    */
   @GET
   @Path("/{id}")
-  public Response getRepairRun(@PathParam("id") Long repairRunId) {
+  public Response getRepairRun(@PathParam("id") UUID repairRunId) {
     LOG.debug("get repair_run called with: id = {}", repairRunId);
     Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     if (repairRun.isPresent()) {
@@ -497,7 +498,7 @@ public class RepairRunResource {
    */
   @DELETE
   @Path("/{id}")
-  public Response deleteRepairRun(@PathParam("id") Long runId,
+  public Response deleteRepairRun(@PathParam("id") UUID runId,
                                   @QueryParam("owner") Optional<String> owner) {
     LOG.info("delete repair run called with runId: {}, and owner: {}", runId, owner);
     if (!owner.isPresent()) {

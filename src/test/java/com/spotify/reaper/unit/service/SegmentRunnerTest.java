@@ -43,6 +43,7 @@ import org.mockito.stubbing.Answer;
 
 import java.math.BigInteger;
 import java.util.Collections;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -75,7 +76,7 @@ public class SegmentRunnerTest {
     context.storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO),
                                   cf.getId())), run.getId());
-    final long segmentId = context.storage.getNextFreeSegment(run.getId()).get().getId();
+    final UUID segmentId = context.storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -136,7 +137,7 @@ public class SegmentRunnerTest {
     storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO),
                                   cf.getId())), run.getId());
-    final long segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -210,7 +211,7 @@ public class SegmentRunnerTest {
     storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO),
                                   cf.getId())), run.getId());
-    final long segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();

@@ -18,12 +18,13 @@ import com.spotify.reaper.service.RingRange;
 import org.joda.time.DateTime;
 
 import java.math.BigInteger;
+import java.util.UUID;
 
 public class RepairSegment {
 
-  private final long id;
-  private final long runId;
-  private final long repairUnitId;
+  private final UUID id;
+  private final UUID runId;
+  private final UUID repairUnitId;
   private final RingRange tokenRange;
   private final int failCount;
   private final State state;
@@ -32,7 +33,7 @@ public class RepairSegment {
   private final DateTime startTime;
   private final DateTime endTime;
 
-  private RepairSegment(Builder builder, long id) {
+  private RepairSegment(Builder builder, UUID id) {
     this.id = id;
     this.runId = builder.runId;
     this.repairUnitId = builder.repairUnitId;
@@ -45,15 +46,15 @@ public class RepairSegment {
     this.endTime = builder.endTime;
   }
 
-  public long getId() {
+  public UUID getId() {
     return id;
   }
 
-  public long getRunId() {
+  public UUID getRunId() {
     return runId;
   }
 
-  public long getRepairUnitId() {
+  public UUID getRepairUnitId() {
     return repairUnitId;
   }
 
@@ -105,9 +106,9 @@ public class RepairSegment {
 
   public static class Builder {
 
-    public final long runId;
+    public final UUID runId;
     public final RingRange tokenRange;
-    private final long repairUnitId;
+    private final UUID repairUnitId;
     private int failCount;
     private State state;
     private String coordinatorHost;
@@ -115,7 +116,7 @@ public class RepairSegment {
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder(long runId, RingRange tokenRange, long repairUnitId) {
+    public Builder(UUID runId, RingRange tokenRange, UUID repairUnitId) {
       this.runId = runId;
       this.repairUnitId = repairUnitId;
       this.tokenRange = tokenRange;
@@ -165,7 +166,7 @@ public class RepairSegment {
       return this;
     }
 
-    public RepairSegment build(long id) {
+    public RepairSegment build(UUID id) {
       return new RepairSegment(this, id);
     }
   }

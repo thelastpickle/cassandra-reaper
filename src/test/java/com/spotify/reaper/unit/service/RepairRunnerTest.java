@@ -50,6 +50,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -92,8 +93,8 @@ public class RepairRunnerTest {
     storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE),
                                   cf.getId())), run.getId());
-    final long RUN_ID = run.getId();
-    final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
+    final UUID RUN_ID = run.getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
     assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
@@ -198,8 +199,8 @@ public class RepairRunnerTest {
     storage.addRepairSegments(Collections.singleton(
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE),
                                   cf.getId())), run.getId());
-    final long RUN_ID = run.getId();
-    final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
+    final UUID RUN_ID = run.getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
     assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
@@ -298,7 +299,7 @@ public class RepairRunnerTest {
     context.repairManager = new RepairManager();
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
-    long cf = storage.addRepairUnit(
+    UUID cf = storage.addRepairUnit(
         new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR)).getId();
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
@@ -310,8 +311,8 @@ public class RepairRunnerTest {
             .repairCommandId(1337),
         new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO), cf)
     ), run.getId());
-    final long RUN_ID = run.getId();
-    final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
+    final UUID RUN_ID = run.getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 

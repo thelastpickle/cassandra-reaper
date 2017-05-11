@@ -1,5 +1,6 @@
 package com.spotify.reaper.unit.resources;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -30,6 +31,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.core.Response;
@@ -149,7 +151,7 @@ public class RepairRunResourceTest {
     assertEquals(1, context.storage.getClusters().size());
     assertEquals(1, context.storage.getRepairRunsForCluster(CLUSTER_NAME).size());
     assertEquals(1, context.storage.getRepairRunIdsForCluster(CLUSTER_NAME).size());
-    Long runId = context.storage.getRepairRunIdsForCluster(CLUSTER_NAME).iterator().next();
+    UUID runId = context.storage.getRepairRunIdsForCluster(CLUSTER_NAME).iterator().next();
     RepairRun run = context.storage.getRepairRun(runId).get();
     assertEquals(RepairRun.RunState.NOT_STARTED, run.getRunState());
     assertEquals(TIME_CREATE, run.getCreationTime().getMillis());
@@ -175,7 +177,7 @@ public class RepairRunResourceTest {
   public void testTriggerNotExistingRun() throws ReaperException {
     RepairRunResource resource = new RepairRunResource(context);
     Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
-    Response response = resource.modifyRunState(uriInfo, 42l, newState);
+    Response response = resource.modifyRunState(uriInfo, UUIDs.timeBased(), newState);
     assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
     assertTrue(response.getEntity().toString().contains("not found"));
@@ -189,7 +191,7 @@ public class RepairRunResourceTest {
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);
     RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
-    long runId = repairRunStatus.getId();
+    UUID runId = repairRunStatus.getId();
 
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
     Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
@@ -207,7 +209,7 @@ public class RepairRunResourceTest {
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);
     RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
-    long runId = repairRunStatus.getId();
+    UUID runId = repairRunStatus.getId();
 
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
     Optional<String> newState = Optional.of(RepairRun.RunState.RUNNING.toString());
@@ -220,7 +222,7 @@ public class RepairRunResourceTest {
     RepairRunResource newResource = new RepairRunResource(context);
     Response newResponse = addDefaultRepairRun(newResource);
     RepairRunStatus newRepairRunStatus = (RepairRunStatus) newResponse.getEntity();
-    long newRunId = newRepairRunStatus.getId();
+    UUID newRunId = newRepairRunStatus.getId();
 
     DateTimeUtils.setCurrentMillisFixed(TIME_START);
     Optional<String> newRunState = Optional.of(RepairRun.RunState.RUNNING.toString());
@@ -268,7 +270,7 @@ public class RepairRunResourceTest {
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);
     RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
-    long runId = repairRunStatus.getId();
+    UUID runId = repairRunStatus.getId();
 
     response = resource.modifyRunState(uriInfo, runId,
                                        Optional.of(RepairRun.RunState.PAUSED.toString()));
@@ -287,7 +289,7 @@ public class RepairRunResourceTest {
   @Test
   public void testPauseNotExistingRun() throws InterruptedException, ReaperException {
     RepairRunResource resource = new RepairRunResource(context);
-    Response response = resource.modifyRunState(uriInfo, 42l,
+    Response response = resource.modifyRunState(uriInfo, UUIDs.timeBased(),
                                                 Optional.of(RepairRun.RunState.PAUSED.toString()));
     assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
     assertEquals(0, context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING).size());
