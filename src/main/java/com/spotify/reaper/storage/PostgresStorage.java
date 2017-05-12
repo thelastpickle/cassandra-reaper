@@ -52,7 +52,7 @@ import java.util.UUID;
 /**
  * Implements the StorageAPI using PostgreSQL database.
  */
-public class PostgresStorage implements IStorage {
+public final class PostgresStorage implements IStorage {
 
   private static final Logger LOG = LoggerFactory.getLogger(PostgresStorage.class);
 
@@ -232,12 +232,13 @@ public class PostgresStorage implements IStorage {
   }
 
   @Override
-  public RepairRun addRepairRun(RepairRun.Builder newRepairRun) {
+  public RepairRun addRepairRun(RepairRun.Builder newRepairRun, Collection<RepairSegment.Builder> newSegments) {
     RepairRun result;
     try (Handle h = jdbi.open()) {
       long insertedId = getPostgresStorage(h).insertRepairRun(newRepairRun.build(null));
       result = newRepairRun.build(fromSequenceId(insertedId));
     }
+    addRepairSegments(newSegments, result.getId());
     return result;
   }
 
@@ -284,11 +285,10 @@ public class PostgresStorage implements IStorage {
     return Optional.fromNullable(result);
   }
 
-  @Override
-  public void addRepairSegments(Collection<RepairSegment.Builder> newSegments, UUID runId) {
+  private void addRepairSegments(Collection<RepairSegment.Builder> newSegments, UUID runId) {
     List<RepairSegment> insertableSegments = new ArrayList<>();
     for (RepairSegment.Builder segment : newSegments) {
-      insertableSegments.add(segment.build(null));
+      insertableSegments.add(segment.withRunId(runId).build(null));
     }
     try (Handle h = jdbi.open()) {
       getPostgresStorage(h).insertRepairSegments(insertableSegments.iterator());
