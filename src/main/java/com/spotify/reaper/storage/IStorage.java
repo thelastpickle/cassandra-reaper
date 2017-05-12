@@ -55,7 +55,7 @@ public interface IStorage {
    */
   Optional<Cluster> deleteCluster(String clusterName);
 
-  RepairRun addRepairRun(RepairRun.Builder repairRun);
+  RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments);
 
   boolean updateRepairRun(RepairRun repairRun);
 
@@ -91,7 +91,6 @@ public interface IStorage {
   Optional<RepairUnit> getRepairUnit(String cluster, String keyspace,
       Set<String> columnFamilyNames);
 
-  void addRepairSegments(Collection<RepairSegment.Builder> newSegments, UUID runId);
 
   boolean updateRepairSegment(RepairSegment newRepairSegment);
 

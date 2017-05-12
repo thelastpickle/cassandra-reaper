@@ -1,7 +1,6 @@
 package com.spotify.reaper.storage;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -24,7 +23,6 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -53,7 +51,7 @@ import org.joda.time.DateTime;
 
 import io.dropwizard.setup.Environment;
 
-public class CassandraStorage implements IStorage {
+public final class CassandraStorage implements IStorage {
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
   com.datastax.driver.core.Cluster cassandra = null;
   Session session;
@@ -182,7 +180,7 @@ public class CassandraStorage implements IStorage {
   }
 
   @Override
-  public RepairRun addRepairRun(Builder repairRun) {
+  public RepairRun addRepairRun(Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
     RepairRun newRepairRun = repairRun.build(UUIDs.timeBased());
     BatchStatement batch = new BatchStatement();
     batch.add(insertRepairRunPrepStmt.bind(newRepairRun.getId(), 
@@ -203,6 +201,7 @@ public class CassandraStorage implements IStorage {
     batch.add(insertRepairRunClusterIndexPrepStmt.bind(newRepairRun.getClusterName(), newRepairRun.getId()));
     batch.add(insertRepairRunUnitIndexPrepStmt.bind(newRepairRun.getRepairUnitId(), newRepairRun.getId()));
     session.execute(batch);
+    addRepairSegments(newSegments, newRepairRun.getId());
     return newRepairRun;
   }
 
@@ -355,13 +354,24 @@ public class CassandraStorage implements IStorage {
     return Optional.fromNullable(repairUnit);
   }
 
-  @Override
-  public void addRepairSegments(Collection<RepairSegment.Builder> newSegments, UUID runId) {
+  private void addRepairSegments(Collection<RepairSegment.Builder> newSegments, UUID runId) {
     List<ResultSetFuture> insertFutures = Lists.<ResultSetFuture>newArrayList();
     BatchStatement batch = new BatchStatement();
-    for(com.spotify.reaper.core.RepairSegment.Builder builder:newSegments){
-      RepairSegment segment = builder.build(UUIDs.timeBased());
-      insertFutures.add(session.executeAsync(insertRepairSegmentPrepStmt.bind(segment.getId(), segment.getRepairUnitId(), segment.getRunId(), segment.getStartToken(), segment.getEndToken(), segment.getState().ordinal(), segment.getCoordinatorHost(), segment.getStartTime(), segment.getEndTime(), segment.getFailCount())));
+    for(RepairSegment.Builder builder:newSegments){
+      RepairSegment segment = builder.withRunId(runId).build(UUIDs.timeBased());
+      insertFutures.add(session.executeAsync(
+              insertRepairSegmentPrepStmt.bind(
+                      segment.getId(),
+                      segment.getRepairUnitId(),
+                      segment.getRunId(),
+                      segment.getStartToken(),
+                      segment.getEndToken(),
+                      segment.getState().ordinal(),
+                      segment.getCoordinatorHost(),
+                      segment.getStartTime(),
+                      segment.getEndTime(),
+                      segment.getFailCount())));
+
       batch.add(insertRepairSegmentByRunPrepStmt.bind(segment.getRunId(), segment.getId()));
       if(insertFutures.size()%100==0){
         // cluster ddos protection
@@ -445,9 +455,9 @@ public class CassandraStorage implements IStorage {
   }
   private RepairSegment createRepairSegmentFromRow(Row segmentRow, UUID segmentId){
     return new RepairSegment.Builder(
-            segmentRow.getUUID("run_id"),
             new RingRange(new BigInteger(segmentRow.getVarint("start_token") +""), new BigInteger(segmentRow.getVarint("end_token")+"")),
             segmentRow.getUUID("repair_unit_id"))
+        .withRunId(segmentRow.getUUID("run_id"))
         .coordinatorHost(segmentRow.getString("coordinator_host"))
         .endTime(new DateTime(segmentRow.getTimestamp("end_time")))
         .failCount(segmentRow.getInt("fail_count"))
