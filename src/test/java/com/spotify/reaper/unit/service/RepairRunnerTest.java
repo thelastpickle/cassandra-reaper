@@ -88,11 +88,8 @@ public class RepairRunnerTest {
         storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1,
-                              RepairParallelism.PARALLEL));
-    storage.addRepairSegments(Collections.singleton(
-        new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE),
-                                  cf.getId())), run.getId());
+        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
+        Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ZERO, BigInteger.ONE), cf.getId())));
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
@@ -194,11 +191,8 @@ public class RepairRunnerTest {
         storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1,
-                              RepairParallelism.PARALLEL));
-    storage.addRepairSegments(Collections.singleton(
-        new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE),
-                                  cf.getId())), run.getId());
+        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
+        Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ZERO, BigInteger.ONE), cf.getId())));
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
@@ -303,14 +297,12 @@ public class RepairRunnerTest {
         new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR)).getId();
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY, 1,
-                              RepairParallelism.PARALLEL));
-    storage.addRepairSegments(Lists.newArrayList(
-        new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE), cf)
-            .state(RepairSegment.State.RUNNING).startTime(DateTime.now()).coordinatorHost("reaper")
-            .repairCommandId(1337),
-        new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO), cf)
-    ), run.getId());
+        new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
+        Lists.newArrayList(
+            new RepairSegment.Builder(new RingRange(BigInteger.ZERO, BigInteger.ONE), cf)
+                .state(RepairSegment.State.RUNNING).startTime(DateTime.now()).coordinatorHost("reaper")
+                .repairCommandId(1337),
+            new RepairSegment.Builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf)));
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 

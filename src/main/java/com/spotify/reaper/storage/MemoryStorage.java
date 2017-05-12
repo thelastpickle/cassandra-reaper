@@ -43,7 +43,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Implements the StorageAPI using transient Java classes.
  */
-public class MemoryStorage implements IStorage {
+public final class MemoryStorage implements IStorage {
 
   private final ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairRun> repairRuns = Maps.newConcurrentMap();
@@ -96,9 +96,10 @@ public class MemoryStorage implements IStorage {
   }
 
   @Override
-  public RepairRun addRepairRun(RepairRun.Builder repairRun) {
+  public RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
     RepairRun newRepairRun = repairRun.build(UUIDs.timeBased());
     repairRuns.put(newRepairRun.getId(), newRepairRun);
+    addRepairSegments(newSegments, newRepairRun.getId());
     return newRepairRun;
   }
 
@@ -229,11 +230,10 @@ public class MemoryStorage implements IStorage {
         repairUnitsByKey.get(new RepairUnitKey(cluster, keyspace, tables)));
   }
 
-  @Override
-  public void addRepairSegments(Collection<RepairSegment.Builder> segments, UUID runId) {
+  private void addRepairSegments(Collection<RepairSegment.Builder> segments, UUID runId) {
     LinkedHashMap<UUID, RepairSegment> newSegments = Maps.newLinkedHashMap();
     for (RepairSegment.Builder segment : segments) {
-      RepairSegment newRepairSegment = segment.build(UUIDs.timeBased());
+      RepairSegment newRepairSegment = segment.withRunId(runId).build(UUIDs.timeBased());
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
       newSegments.put(newRepairSegment.getId(), newRepairSegment);
     }

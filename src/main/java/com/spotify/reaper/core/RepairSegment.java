@@ -106,9 +106,10 @@ public class RepairSegment {
 
   public static class Builder {
 
-    public final UUID runId;
+
     public final RingRange tokenRange;
     private final UUID repairUnitId;
+    private UUID runId;
     private int failCount;
     private State state;
     private String coordinatorHost;
@@ -116,8 +117,7 @@ public class RepairSegment {
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder(UUID runId, RingRange tokenRange, UUID repairUnitId) {
-      this.runId = runId;
+    public Builder(RingRange tokenRange, UUID repairUnitId) {
       this.repairUnitId = repairUnitId;
       this.tokenRange = tokenRange;
       this.failCount = 0;
@@ -134,6 +134,11 @@ public class RepairSegment {
       repairCommandId = original.repairCommandId;
       startTime = original.startTime;
       endTime = original.endTime;
+    }
+
+    public Builder withRunId(UUID runId){
+        this.runId = runId;
+        return this;
     }
 
     public Builder failCount(int failCount) {
