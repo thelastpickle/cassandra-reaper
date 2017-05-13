@@ -310,10 +310,10 @@ public final class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairSegment> getRepairSegment(UUID id) {
+  public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getRepairSegment(toSequenceId(id));
+      result = getPostgresStorage(h).getRepairSegment(toSequenceId(segmentId));
     }
     return Optional.fromNullable(result);
   }

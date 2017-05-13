@@ -73,6 +73,8 @@ public class SegmentRunnerTest {
     RepairRun run = context.storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
         Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf.getId())));
+
+    final UUID runId = run.getId();
     final UUID segmentId = context.storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -92,14 +94,14 @@ public class SegmentRunnerTest {
               @Override
               public Integer answer(InvocationOnMock invocation) {
                 assertEquals(RepairSegment.State.NOT_STARTED,
-                             context.storage.getRepairSegment(segmentId).get().getState());
+                             context.storage.getRepairSegment(runId, segmentId).get().getState());
                 future.setValue(executor.submit(new Thread() {
                   @Override
                   public void run() {
                     handler.get().handle(1, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(),
                                          "Repair command 1 has started");
                     assertEquals(RepairSegment.State.RUNNING,
-                                 context.storage.getRepairSegment(segmentId).get().getState());
+                                 context.storage.getRepairSegment(runId, segmentId).get().getState());
                   }
                 }));
                 return 1;
@@ -119,8 +121,8 @@ public class SegmentRunnerTest {
     executor.shutdown();
 
     assertEquals(RepairSegment.State.NOT_STARTED,
-                 context.storage.getRepairSegment(segmentId).get().getState());
-    assertEquals(1, context.storage.getRepairSegment(segmentId).get().getFailCount());
+                 context.storage.getRepairSegment(runId, segmentId).get().getState());
+    assertEquals(1, context.storage.getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test
@@ -131,6 +133,7 @@ public class SegmentRunnerTest {
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
         Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf.getId())));
+    final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -152,25 +155,25 @@ public class SegmentRunnerTest {
               @Override
               public Integer answer(InvocationOnMock invocation) {
                 assertEquals(RepairSegment.State.NOT_STARTED,
-                             storage.getRepairSegment(segmentId).get().getState());
+                             storage.getRepairSegment(runId, segmentId).get().getState());
                 future.setValue(executor.submit(new Runnable() {
                   @Override
                   public void run() {
                     handler.get().handle(1, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(),
                                          "Repair command 1 has started");
                     assertEquals(RepairSegment.State.RUNNING,
-                                 storage.getRepairSegment(segmentId).get().getState());
+                                 storage.getRepairSegment(runId, segmentId).get().getState());
                     // report about an unrelated repair. Shouldn't affect anything.
                     handler.get().handle(2, Optional.of(ActiveRepairService.Status.SESSION_FAILED), Optional.absent(),
                                          "Repair command 2 has failed");
                     handler.get().handle(1, Optional.of(ActiveRepairService.Status.SESSION_SUCCESS), Optional.absent(),
                                          "Repair session succeeded in command 1");
                     assertEquals(RepairSegment.State.DONE,
-                                 storage.getRepairSegment(segmentId).get().getState());
+                                 storage.getRepairSegment(runId, segmentId).get().getState());
                     handler.get().handle(1, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(),
                                          "Repair command 1 has finished");
                     assertEquals(RepairSegment.State.DONE,
-                                 storage.getRepairSegment(segmentId).get().getState());
+                                 storage.getRepairSegment(runId, segmentId).get().getState());
                   }
                 }));
                 return 1;
@@ -189,8 +192,8 @@ public class SegmentRunnerTest {
     future.getValue().get();
     executor.shutdown();
 
-    assertEquals(RepairSegment.State.DONE, storage.getRepairSegment(segmentId).get().getState());
-    assertEquals(0, storage.getRepairSegment(segmentId).get().getFailCount());
+    assertEquals(RepairSegment.State.DONE, storage.getRepairSegment(runId, segmentId).get().getState());
+    assertEquals(0, storage.getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test
@@ -202,6 +205,7 @@ public class SegmentRunnerTest {
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
         Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf.getId())));
+    final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -223,22 +227,22 @@ public class SegmentRunnerTest {
               @Override
               public Integer answer(InvocationOnMock invocation) {
                 assertEquals(RepairSegment.State.NOT_STARTED,
-                             storage.getRepairSegment(segmentId).get().getState());
+                             storage.getRepairSegment(runId, segmentId).get().getState());
                 future.setValue(executor.submit(new Runnable() {
                   @Override
                   public void run() {
                     handler.get().handle(1, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(),
                                          "Repair command 1 has started");
                     assertEquals(RepairSegment.State.RUNNING,
-                                 storage.getRepairSegment(segmentId).get().getState());
+                                 storage.getRepairSegment(runId, segmentId).get().getState());
                     handler.get().handle(1, Optional.of(ActiveRepairService.Status.SESSION_FAILED), Optional.absent(),
                         "Repair command 1 has failed");
                     assertEquals(RepairSegment.State.NOT_STARTED,
-                                 storage.getRepairSegment(segmentId).get().getState());
+                                 storage.getRepairSegment(runId, segmentId).get().getState());
                     handler.get().handle(1, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(),
                         "Repair command 1 has finished");
                     assertEquals(RepairSegment.State.NOT_STARTED,
-                        storage.getRepairSegment(segmentId).get().getState());
+                        storage.getRepairSegment(runId, segmentId).get().getState());
                   }
                 }));
 
@@ -259,8 +263,8 @@ public class SegmentRunnerTest {
     executor.shutdown();
 
     assertEquals(RepairSegment.State.NOT_STARTED,
-                 storage.getRepairSegment(segmentId).get().getState());
-    assertEquals(1, storage.getRepairSegment(segmentId).get().getFailCount());
+                 storage.getRepairSegment(runId, segmentId).get().getState());
+    assertEquals(1, storage.getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test

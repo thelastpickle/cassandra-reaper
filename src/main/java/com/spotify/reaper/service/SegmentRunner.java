@@ -79,6 +79,8 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   public SegmentRunner(AppContext context, UUID segmentId, Collection<String> potentialCoordinators,
       long timeoutMillis, double intensity, RepairParallelism validationParallelism,
       String clusterName, RepairUnit repairUnit, RepairRunner repairRunner) {
+
+    assert !segmentRunners.containsKey(segmentId) : "SegmentRunner already exists for segment with ID: " + segmentId;
     this.context = context;
     this.segmentId = segmentId;
     this.potentialCoordinators = potentialCoordinators;
@@ -93,7 +95,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   @Override
   public void run() {
-    final RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
+    final RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
 
     runRepair();
@@ -129,7 +131,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
    */
   public void postponeCurrentSegment() {
     synchronized (condition) {
-      RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
+      RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
       postpone(context, segment, context.storage.getRepairUnit(segment.getRepairUnitId()));
     }
   }
@@ -149,7 +151,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private void runRepair() {
     LOG.debug("Run repair for segment #{}", segmentId);
-    final RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
+    final RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
     try (JmxProxy coordinator = context.jmxConnectionFactory
         .connectAny(Optional.<RepairStatusHandler>fromNullable(this), potentialCoordinators)) {
 
@@ -220,7 +222,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         } catch (InterruptedException e) {
           LOG.warn("Repair command {} on segment {} interrupted", commandId, segmentId, e);
         } finally {
-          RepairSegment resultingSegment = context.storage.getRepairSegment(segmentId).get();
+          RepairSegment resultingSegment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
           LOG.info("Repair command {} on segment {} returned with state {}", commandId, segmentId,
               resultingSegment.getState());
           if (resultingSegment.getState() == RepairSegment.State.RUNNING) {
@@ -382,7 +384,7 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
    */
   @Override
   public void handle(int repairNumber, Optional<ActiveRepairService.Status> status, Optional<ProgressEventType> progress, String message) {
-    final RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
+    final RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
     LOG.debug(
         "handle called for repairCommandId {}, outcome {} / {} and message: {}",
@@ -396,7 +398,7 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
     boolean failOutsideSynchronizedBlock = false;
     // DO NOT ADD EXTERNAL CALLS INSIDE THIS SYNCHRONIZED BLOCK (JMX PROXY ETC)
     synchronized (condition) {
-      RepairSegment currentSegment = context.storage.getRepairSegment(segmentId).get();
+      RepairSegment currentSegment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
       // See status explanations at: https://wiki.apache.org/cassandra/RepairAsyncAPI
       // Old repair API
       if(status.isPresent()) {
@@ -524,7 +526,7 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
    * @return the delay in milliseconds.
    */
   long intensityBasedDelayMillis(double intensity) {
-    RepairSegment repairSegment = context.storage.getRepairSegment(segmentId).get();
+    RepairSegment repairSegment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
     if (repairSegment.getEndTime() == null && repairSegment.getStartTime() == null) {
       return 0;
     } else if (repairSegment.getEndTime() != null && repairSegment.getStartTime() != null) {

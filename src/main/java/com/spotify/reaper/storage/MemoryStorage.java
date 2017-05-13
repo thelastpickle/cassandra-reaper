@@ -242,7 +242,7 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public boolean updateRepairSegment(RepairSegment newRepairSegment) {
-    if (getRepairSegment(newRepairSegment.getId()) == null) {
+    if (getRepairSegment(newRepairSegment.getRunId(), newRepairSegment.getId()) == null) {
       return false;
     } else {
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
@@ -254,8 +254,8 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairSegment> getRepairSegment(UUID id) {
-    return Optional.fromNullable(repairSegments.get(id));
+  public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
+    return Optional.fromNullable(repairSegments.get(segmentId));
   }
 
   @Override

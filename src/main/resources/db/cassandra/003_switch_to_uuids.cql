@@ -75,33 +75,6 @@ CREATE TABLE IF NOT EXISTS repair_run_by_unit (
   AND caching = {'rows_per_partition': 'ALL'};
 
 
-DROP TABLE IF EXISTS repair_segment;
-
-CREATE TABLE IF NOT EXISTS repair_segment (
-  id               timeuuid PRIMARY KEY,
-  repair_unit_id   timeuuid,
-  run_id           timeuuid,
-  start_token      varint,
-  end_token        varint,
-  state            int   ,
-  coordinator_host text,
-  start_time       timestamp,
-  end_time         timestamp,
-  fail_count       INT
-)
-  WITH compaction = {'class': 'LeveledCompactionStrategy'}
-  AND caching = {'rows_per_partition': 10};
-
-
-DROP TABLE IF EXISTS repair_segment_by_run_id;
-
-CREATE TABLE IF NOT EXISTS repair_segment_by_run_id (
-  run_id           timeuuid,
-  segment_id       timeuuid,
-  PRIMARY KEY(run_id, segment_id)
-)
-  WITH compaction = {'class': 'LeveledCompactionStrategy'}
-  AND caching = {'rows_per_partition': 10};
 
 
 CREATE TABLE IF NOT EXISTS repair_schedule_v1 (
@@ -133,4 +106,7 @@ CREATE TABLE IF NOT EXISTS repair_schedule_by_cluster_and_keyspace (
   WITH compaction = {'class': 'LeveledCompactionStrategy'}
   AND caching = {'rows_per_partition': 10};
 
+
+DROP TABLE IF EXISTS repair_segment;
+DROP TABLE IF EXISTS repair_segment_by_run_id;
 DROP TABLE IF EXISTS repair_id;

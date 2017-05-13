@@ -229,7 +229,7 @@ public class RepairRunner implements Runnable {
 
         // Just checking that no currently running segment runner is stuck.
         RepairSegment supposedlyRunningSegment =
-            context.storage.getRepairSegment(currentlyRunningSegments.get(rangeIndex)).get();
+            context.storage.getRepairSegment(repairRunId, currentlyRunningSegments.get(rangeIndex)).get();
         DateTime startTime = supposedlyRunningSegment.getStartTime();
         if (startTime != null && startTime.isBefore(DateTime.now().minusDays(1))) {
           LOG.warn("Looks like segment #{} has been running more than a day. Start time: {}",
@@ -343,7 +343,8 @@ public class RepairRunner implements Runnable {
 	    }
     } 
     else {
-    	potentialCoordinators = Arrays.asList(context.storage.getRepairSegment(segmentId).get().getCoordinatorHost());
+    	potentialCoordinators 
+                = Arrays.asList(context.storage.getRepairSegment(repairRunId, segmentId).get().getCoordinatorHost());
     }
 
     SegmentRunner segmentRunner = new SegmentRunner(context, segmentId, potentialCoordinators,
@@ -369,7 +370,7 @@ public class RepairRunner implements Runnable {
   }
 
   private void handleResult(UUID segmentId) {
-    RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
+    RepairSegment segment = context.storage.getRepairSegment(repairRunId, segmentId).get();
     RepairSegment.State segmentState = segment.getState();
     LOG.debug("In repair run #{}, triggerRepair on segment {} ended with state {}",
         repairRunId, segmentId, segmentState);
