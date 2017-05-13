@@ -254,7 +254,7 @@ public class ReaperApplicationConfiguration extends Configuration {
   }
   
   public Boolean getAllowUnreachableNodes() {
-    return allowUnreachableNodes;
+    return allowUnreachableNodes != null ? allowUnreachableNodes : false;
   }
 
   public void setAllowUnreachableNodes(Boolean allow) {

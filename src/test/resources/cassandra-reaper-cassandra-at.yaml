@@ -8,6 +8,7 @@ repairRunThreadCount: 15
 hangingRepairTimeoutMins: 1
 storageType: cassandra
 incrementalRepair: false
+allowUnreachableNodes: true
 
 logging:
   level: DEBUG

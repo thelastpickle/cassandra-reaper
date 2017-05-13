@@ -93,7 +93,7 @@ public class RepairRunnerTest {
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
-    assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
+    assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
     context.storage = storage;
@@ -121,7 +121,7 @@ public class RepairRunnerTest {
               @Override
               public Integer answer(InvocationOnMock invocation) throws Throwable {
                 assertEquals(RepairSegment.State.NOT_STARTED,
-                             storage.getRepairSegment(SEGMENT_ID).get().getState());
+                             storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
 
                 final int repairNumber = repairAttempts.getAndIncrement();
                 switch (repairNumber) {
@@ -132,7 +132,7 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(), null);
                         assertEquals(RepairSegment.State.RUNNING,
-                                     storage.getRepairSegment(SEGMENT_ID).get().getState());
+                                     storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                       }
                     }.start();
                     break;
@@ -143,11 +143,11 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(), null);
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(SEGMENT_ID).get().getState());
+                            storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, Optional.of(ActiveRepairService.Status.SESSION_SUCCESS), Optional.absent(), null);
                         assertEquals(RepairSegment.State.DONE,
-                            storage.getRepairSegment(SEGMENT_ID).get().getState());
+                            storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(), null);
                         mutex.release();
@@ -196,7 +196,7 @@ public class RepairRunnerTest {
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
-    assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
+    assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
     context.storage = storage;
@@ -225,7 +225,7 @@ public class RepairRunnerTest {
               @Override
               public Integer answer(InvocationOnMock invocation) throws Throwable {
                 assertEquals(RepairSegment.State.NOT_STARTED,
-                             storage.getRepairSegment(SEGMENT_ID).get().getState());
+                             storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
 
                 final int repairNumber = repairAttempts.getAndIncrement();
                 switch (repairNumber) {
@@ -236,7 +236,7 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.START), null);
                         assertEquals(RepairSegment.State.RUNNING,
-                                     storage.getRepairSegment(SEGMENT_ID).get().getState());
+                                     storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                       }
                     }.start();
                     break;
@@ -247,11 +247,11 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.START), null);
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(SEGMENT_ID).get().getState());
+                            storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.SUCCESS), null);
                         assertEquals(RepairSegment.State.DONE,
-                            storage.getRepairSegment(SEGMENT_ID).get().getState());
+                            storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.COMPLETE), null);
                         mutex.release();
@@ -308,7 +308,7 @@ public class RepairRunnerTest {
 
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
+    assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
@@ -327,7 +327,7 @@ public class RepairRunnerTest {
               @Override
               public Integer answer(InvocationOnMock invocation) throws Throwable {
                 assertEquals(RepairSegment.State.NOT_STARTED,
-                             storage.getRepairSegment(SEGMENT_ID).get().getState());
+                             storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                 new Thread() {
                   @Override
                   public void run() {
