@@ -97,7 +97,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     final RepairSegment segment = context.storage.getRepairSegment(segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
 
-    if (context.storage.takeLeadOnSegment(segmentId)) {
+    if (context.storage.renewLeadOnSegment(segmentId)) {
       if(runRepair()) {
         long delay = intensityBasedDelayMillis(intensity);
         try {
@@ -106,11 +106,8 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
           LOG.warn("Slept shorter than intended delay.");
         }
       }
-    
+      
       context.storage.releaseLeadOnSegment(segmentId);
-    }
-    else {
-      postpone(context, segment, Optional.fromNullable(this.repairUnit));
     }
   }
 

@@ -503,8 +503,10 @@ public class CassandraStorage implements IStorage {
               (range.get().getStart().compareTo(seg.getStartToken())>=0 || range.get().getEnd().compareTo(seg.getEndToken())<=0)
               ) || !range.isPresent()) // Token range condition
           ){
-        segment = seg;
-        break;
+        if(takeLeadOnSegment(seg.getId())) {
+          segment = seg;
+          break;
+        }
       }
     }
     return Optional.fromNullable(segment);
@@ -781,6 +783,7 @@ public class CassandraStorage implements IStorage {
 
   @Override
   public boolean takeLeadOnSegment(long segmentId) {
+    LOG.debug("Trying to take lead on segment {}", segmentId);
     ResultSet lwtResult = session.execute(getLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
     if (lwtResult.wasApplied()) {
       LOG.debug("Took lead on segment {}", segmentId);
