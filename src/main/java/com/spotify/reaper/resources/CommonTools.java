@@ -207,7 +207,6 @@ public class CommonTools {
   }
   
   private static Map<String, RingRange> getClusterNodes(AppContext context,  Cluster targetCluster, RepairUnit repairUnit) throws ReaperException {
-    Set<String> nodes = Sets.newHashSet();
     ConcurrentHashMap<String, RingRange> nodesWithRanges = new ConcurrentHashMap<String, RingRange>();
     Set<String> seedHosts = targetCluster.getSeedHosts();
       if (seedHosts.isEmpty()) {

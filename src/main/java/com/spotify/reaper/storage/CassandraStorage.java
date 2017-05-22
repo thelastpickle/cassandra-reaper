@@ -454,6 +454,54 @@ public class CassandraStorage implements IStorage {
     return segments;
   }
   
+  @Override
+  public Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(long runId, List<RingRange> localRanges) {
+    LOG.debug("Getting ranges for local node {}", localRanges);
+    List<ResultSetFuture> segmentsFuture = Lists.newArrayList();
+    Collection<RepairSegment> segments = Lists.newArrayList();
+
+    // First gather segments ids
+    ResultSet segmentsIdResultSet = session.execute(getRepairSegmentByRunIdPrepStmt.bind(runId));
+    int i=0;
+    for(Row segmentIdResult:segmentsIdResultSet) {
+      // Then get segments by id
+      segmentsFuture.add(session.executeAsync(getRepairSegmentPrepStmt.bind(segmentIdResult.getLong("segment_id"))));
+      i++;
+      if(i%100==0 || segmentsIdResultSet.isFullyFetched()) {
+        fetchRepairSegmentFromFutures(segmentsFuture).stream().forEach(segment -> {
+          RingRange range = new RingRange(segment.getStartToken(), segment.getEndToken());
+          localRanges.stream().forEach(localRange -> {
+            if(rangeIsWithinRange(range, localRange)) {
+              LOG.debug("adding segment to the list [{} , {}]", range.getStart(), range.getEnd());
+              segments.add(segment);
+            }
+          });
+        });
+
+        segmentsFuture = Lists.newArrayList();
+      }
+    }
+
+    return segments;
+  }
+  
+  
+  private boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
+    return rangeIsWithinRange(new RingRange(segment.getStartToken(), segment.getEndToken()), range);
+    
+  }
+  
+  private boolean rangeIsWithinRange(RingRange segmentRange, RingRange range) {
+    if(range.getStart().compareTo(range.getEnd()) < 0) {
+      // classic range with start < end
+      return segmentRange.getStart().compareTo(range.getStart())>=0 && segmentRange.getEnd().compareTo(range.getEnd())<=0;
+    } else {
+      // boundary range with start > end
+      return segmentRange.getStart().compareTo(range.getStart())>=0;
+    }
+    
+  }
+  
   private Collection<RepairSegment> fetchRepairSegmentFromFutures(List<ResultSetFuture> segmentsFuture){
     Collection<RepairSegment> segments = Lists.newArrayList();
     
@@ -500,7 +548,8 @@ public class CassandraStorage implements IStorage {
     for(RepairSegment seg:segments){
       if(seg.getState().equals(State.NOT_STARTED) // State condition
           && ((range.isPresent() && 
-              (range.get().getStart().compareTo(seg.getStartToken())>=0 || range.get().getEnd().compareTo(seg.getEndToken())<=0)
+              //(range.get().getStart().compareTo(seg.getStartToken())>=0 || range.get().getEnd().compareTo(seg.getEndToken())<=0)
+              segmentIsWithinRange(seg, range.get())
               ) || !range.isPresent()) // Token range condition
           ){
         if(takeLeadOnSegment(seg.getId())) {

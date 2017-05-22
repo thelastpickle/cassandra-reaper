@@ -170,6 +170,8 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     if(config.useAddressTranslator()) {
       context.jmxConnectionFactory.setAddressTranslator(new EC2MultiRegionAddressTranslator());
     }
+    
+    context.jmxConnectionFactory.setLocalMode(context.config.getLocalJmxMode());
 
     // Enable cross-origin requests for using external GUI applications.
     if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {

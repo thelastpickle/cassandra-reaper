@@ -27,6 +27,7 @@ import com.spotify.reaper.service.RepairParameters;
 import com.spotify.reaper.service.RingRange;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import javax.validation.constraints.NotNull;
@@ -100,6 +101,7 @@ public interface IStorage {
   Optional<RepairSegment> getRepairSegment(long id);
 
   Collection<RepairSegment> getRepairSegmentsForRun(long runId);
+  Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(long runId, List<RingRange> localRanges);
 
   Optional<RepairSegment> getNextFreeSegment(long runId);
 

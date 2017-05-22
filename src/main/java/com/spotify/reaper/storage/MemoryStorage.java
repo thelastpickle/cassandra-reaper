@@ -536,4 +536,9 @@ public class MemoryStorage implements IStorage {
   public void saveHeartbeat() {
     // Fault tolerance is not supported with this storage backend
   }
+
+  @Override
+  public Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(long runId, List<RingRange> localRanges) {
+    throw new UnsupportedOperationException("Cannot run local mode with memory storage");
+  }
 }

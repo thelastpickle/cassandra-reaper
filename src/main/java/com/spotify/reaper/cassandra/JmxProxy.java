@@ -58,9 +58,12 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
+import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.service.RingRange;
+
+import jersey.repackaged.com.google.common.collect.Maps;
 
 public class JmxProxy implements NotificationListener, AutoCloseable {
 
@@ -217,6 +220,35 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
   }
 
+  public List<RingRange> getRangesForLocalEndpoint(String keyspace)
+      throws ReaperException {
+    checkNotNull(ssProxy, "Looks like the proxy is not connected");
+    List<RingRange> localRanges = Lists.newArrayList();
+    try {
+      Map<List<String>, List<String>> ranges = ((StorageServiceMBean) ssProxy).getRangeToEndpointMap(keyspace);
+      String localEndpoint = getLocalEndpoint();
+      // Filtering ranges for which the local node is a replica
+      // For local mode
+      ranges.entrySet().stream().forEach(entry -> {
+        if(entry.getValue().contains(localEndpoint)) {
+          localRanges.add(new RingRange(new BigInteger(entry.getKey().get(0)), new BigInteger(entry.getKey().get(1))));
+        }
+      });
+      
+      
+      LOG.info("LOCAL RANGES {}", localRanges);
+      return localRanges;
+    } catch (Exception e) {
+      LOG.error(e.getMessage());
+      throw new ReaperException(e.getMessage(), e);
+    }
+  }
+  
+  public String getLocalEndpoint() {
+    return ((StorageServiceMBean) ssProxy).getHostIdToEndpoint().get(((StorageServiceMBean) ssProxy).getLocalHostId());
+  }
+  
+  
   /**
    * @return all hosts owning a range of tokens
    */
