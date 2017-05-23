@@ -3,15 +3,12 @@ package com.spotify.reaper.storage;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.CodecRegistry;
@@ -23,13 +20,12 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SocketOptions;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
-import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.Futures;
 import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.core.Cluster;
@@ -47,14 +43,15 @@ import com.spotify.reaper.service.RepairParameters;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.cassandra.DateTimeCodec;
 import com.spotify.reaper.storage.cassandra.Migration003;
-
+import io.dropwizard.setup.Environment;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.cognitor.cassandra.migration.Database;
 import org.cognitor.cassandra.migration.MigrationRepository;
 import org.cognitor.cassandra.migration.MigrationTask;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import io.dropwizard.setup.Environment;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
 
 public final class CassandraStorage implements IStorage, IDistributedStorage {
@@ -103,10 +100,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     CassandraFactory cassandraFactory = config.getCassandraFactory();
     // all INSERT and DELETE statement prepared in this class are idempotent
     cassandraFactory.setQueryOptions(java.util.Optional.of(new QueryOptions().setDefaultIdempotence(true)));
-    cassandra = config.getCassandraFactory().build(environment);
-
+    cassandra = cassandraFactory.build(environment);
     if(config.getActivateQueryLogger())
       cassandra.register(QueryLogger.builder().build());
+    
     CodecRegistry codecRegistry = cassandra.getConfiguration().getCodecRegistry();
     codecRegistry.register(new DateTimeCodec());
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());
@@ -171,12 +168,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public boolean addCluster(Cluster cluster) {
-    try {
-      session.execute(insertClusterPrepStmt.bind(cluster.getName(), cluster.getPartitioner(), cluster.getSeedHosts()));
-    } catch (Exception e) {
-      LOG.warn("failed inserting cluster with name: {}", cluster.getName(), e);
-      return false;
-    }
+    session.execute(insertClusterPrepStmt.bind(cluster.getName(), cluster.getPartitioner(), cluster.getSeedHosts()));
     return true;
   }
 
@@ -187,17 +179,17 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Optional<Cluster> getCluster(String clusterName) {
-    Cluster cluster = null;
-    for(Row clusterRow : session.execute(getClusterPrepStmt.bind(clusterName))){
-      cluster = new Cluster(clusterRow.getString("name"), clusterRow.getString("partitioner"), clusterRow.getSet("seed_hosts", String.class));
-    }
-
-    return Optional.fromNullable(cluster);
+    Row r = session.execute(getClusterPrepStmt.bind(clusterName)).one();
+    
+    return r != null
+            ? Optional.fromNullable(
+                new Cluster(r.getString("name"), r.getString("partitioner"), r.getSet("seed_hosts", String.class)))
+            : Optional.absent();
   }
 
   @Override
   public Optional<Cluster> deleteCluster(String clusterName) {
-    session.execute(deleteClusterPrepStmt.bind(clusterName));
+    session.executeAsync(deleteClusterPrepStmt.bind(clusterName));
     return Optional.fromNullable(new Cluster(clusterName, null, null));
   }
 
@@ -205,6 +197,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public RepairRun addRepairRun(Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
     RepairRun newRepairRun = repairRun.build(UUIDs.timeBased());
     BatchStatement repairRunBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
+    List<ResultSetFuture> futures = Lists.newArrayList();
 
     repairRunBatch.add(insertRepairRunPrepStmt.bind(
             newRepairRun.getId(),
@@ -222,9 +215,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             newRepairRun.getSegmentCount(),
             newRepairRun.getRepairParallelism().toString()));
 
-    session.execute(insertRepairRunClusterIndexPrepStmt.bind(newRepairRun.getClusterName(), newRepairRun.getId()));
-    session.execute(insertRepairRunUnitIndexPrepStmt.bind(newRepairRun.getRepairUnitId(), newRepairRun.getId()));
-
     for(RepairSegment.Builder builder:newSegments){
       RepairSegment segment = builder.withRunId(newRepairRun.getId()).build(UUIDs.timeBased());
 
@@ -241,17 +231,39 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             segment.getFailCount()));
 
       if(100 == repairRunBatch.size()){
-          session.execute(repairRunBatch);
+          futures.add(session.executeAsync(repairRunBatch));
           repairRunBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
       }
     }
-    session.execute(repairRunBatch);
+    futures.add(session.executeAsync(repairRunBatch));
+    futures.add(session.executeAsync(insertRepairRunClusterIndexPrepStmt.bind(newRepairRun.getClusterName(), newRepairRun.getId())));
+    futures.add(session.executeAsync(insertRepairRunUnitIndexPrepStmt.bind(newRepairRun.getRepairUnitId(), newRepairRun.getId())));
+
+    try {
+        Futures.allAsList(futures).get();
+    } catch (InterruptedException | ExecutionException ex) {
+        LOG.error("failed to quorum insert new repair run " + newRepairRun.getId(), ex);
+    }
     return newRepairRun;
   }
 
   @Override
   public boolean updateRepairRun(RepairRun repairRun) {
-    session.execute(insertRepairRunPrepStmt.bind(repairRun.getId(), repairRun.getClusterName(), repairRun.getRepairUnitId(), repairRun.getCause(), repairRun.getOwner(), repairRun.getRunState().toString(), repairRun.getCreationTime(), repairRun.getStartTime(), repairRun.getEndTime(), repairRun.getPauseTime(), repairRun.getIntensity(), repairRun.getLastEvent(), repairRun.getSegmentCount(), repairRun.getRepairParallelism().toString()));
+    session.execute(insertRepairRunPrepStmt.bind(
+            repairRun.getId(), 
+            repairRun.getClusterName(), 
+            repairRun.getRepairUnitId(), 
+            repairRun.getCause(), 
+            repairRun.getOwner(), 
+            repairRun.getRunState().toString(), 
+            repairRun.getCreationTime(), 
+            repairRun.getStartTime(), 
+            repairRun.getEndTime(), 
+            repairRun.getPauseTime(), 
+            repairRun.getIntensity(), 
+            repairRun.getLastEvent(), 
+            repairRun.getSegmentCount(), 
+            repairRun.getRepairParallelism().toString()));
     return true;
   }
 
@@ -343,9 +355,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public Optional<RepairRun> deleteRepairRun(UUID id) {
     Optional<RepairRun> repairRun = getRepairRun(id);
     if(repairRun.isPresent()){
-      session.execute(deleteRepairRunPrepStmt.bind(id));
-      session.execute(deleteRepairRunByClusterPrepStmt.bind(id, repairRun.get().getClusterName()));
-      session.execute(deleteRepairRunByUnitPrepStmt.bind(id, repairRun.get().getRepairUnitId()));
+      session.executeAsync(deleteRepairRunByUnitPrepStmt.bind(id, repairRun.get().getRepairUnitId()));
+      session.executeAsync(deleteRepairRunByClusterPrepStmt.bind(id, repairRun.get().getClusterName()));
+      session.executeAsync(deleteRepairRunPrepStmt.bind(id));
     }
     return repairRun;
   }
@@ -394,7 +406,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     if (newRepairSegment.getStartTime() != null) {
        startTime = newRepairSegment.getStartTime().toDate();
     }
-    session.executeAsync(insertRepairSegmentPrepStmt.bind(
+    session.execute(insertRepairSegmentPrepStmt.bind(
             newRepairSegment.getRunId(),
             newRepairSegment.getId(),
             newRepairSegment.getRepairUnitId(),
@@ -553,12 +565,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Optional<RepairSchedule> getRepairSchedule(UUID repairScheduleId) {
-    RepairSchedule schedule = null;
     Row sched = session.execute(getRepairSchedulePrepStmt.bind(repairScheduleId)).one();
-    if(sched!=null){
-      schedule = createRepairScheduleFromRow(sched);
-    }
-    return Optional.fromNullable(schedule);
+
+    return sched != null
+            ? Optional.fromNullable(createRepairScheduleFromRow(sched))
+            : Optional.absent();
   }
 
   private RepairSchedule createRepairScheduleFromRow(Row repairScheduleRow){
@@ -625,9 +636,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     ResultSet scheduleResults = session.execute("SELECT * FROM repair_schedule_v1");
     for(Row scheduleRow:scheduleResults){
       schedules.add(createRepairScheduleFromRow(scheduleRow));
-
     }
-
+    
     return schedules;
   }
 
@@ -635,8 +645,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
     final Set<UUID> repairHistory = Sets.newHashSet();
     repairHistory.addAll(newRepairSchedule.getRunHistory());
+    RepairUnit repairUnit = getRepairUnit(newRepairSchedule.getRepairUnitId()).get();
+    List<ResultSetFuture> futures = Lists.newArrayList();
 
-    session.execute(insertRepairSchedulePrepStmt.bind(newRepairSchedule.getId(),
+    futures.add(session.executeAsync(insertRepairSchedulePrepStmt.bind(newRepairSchedule.getId(),
         newRepairSchedule.getRepairUnitId(),
         newRepairSchedule.getState().toString(),
         newRepairSchedule.getDaysBetween(),
@@ -647,18 +659,22 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         newRepairSchedule.getIntensity(),
         newRepairSchedule.getCreationTime(),
         newRepairSchedule.getOwner(),
-        newRepairSchedule.getPauseTime())
-        );
-    RepairUnit repairUnit = getRepairUnit(newRepairSchedule.getRepairUnitId()).get();
+        newRepairSchedule.getPauseTime())));
 
-    session.execute(insertRepairScheduleByClusterAndKsPrepStmt
-            .bind(repairUnit.getClusterName(), repairUnit.getKeyspaceName(), newRepairSchedule.getId()));
+    futures.add(session.executeAsync(insertRepairScheduleByClusterAndKsPrepStmt
+            .bind(repairUnit.getClusterName(), repairUnit.getKeyspaceName(), newRepairSchedule.getId())));
 
-    session.execute(insertRepairScheduleByClusterAndKsPrepStmt
-            .bind(repairUnit.getClusterName(), " ", newRepairSchedule.getId()));
+    futures.add(session.executeAsync(insertRepairScheduleByClusterAndKsPrepStmt
+            .bind(repairUnit.getClusterName(), " ", newRepairSchedule.getId())));
 
-    session.execute(insertRepairScheduleByClusterAndKsPrepStmt
-            .bind(" ", repairUnit.getKeyspaceName(), newRepairSchedule.getId()));
+    futures.add(session.executeAsync(insertRepairScheduleByClusterAndKsPrepStmt
+            .bind(" ", repairUnit.getKeyspaceName(), newRepairSchedule.getId())));
+
+    try {
+        Futures.allAsList(futures).get();
+    } catch (InterruptedException | ExecutionException ex) {
+        LOG.error("failed to quorum update repair schedule " + newRepairSchedule.getId(), ex);
+    }
 
     return true;
   }
@@ -668,16 +684,17 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     Optional<RepairSchedule> repairSchedule = getRepairSchedule(id);
     if(repairSchedule.isPresent()){
       RepairUnit repairUnit = getRepairUnit(repairSchedule.get().getRepairUnitId()).get();
-      session.execute(deleteRepairSchedulePrepStmt.bind(repairSchedule.get().getId()));
 
-      session.execute(deleteRepairScheduleByClusterAndKsPrepStmt
+      session.executeAsync(deleteRepairScheduleByClusterAndKsPrepStmt
               .bind(repairUnit.getClusterName(), repairUnit.getKeyspaceName(), repairSchedule.get().getId()));
 
-      session.execute(deleteRepairScheduleByClusterAndKsPrepStmt
+      session.executeAsync(deleteRepairScheduleByClusterAndKsPrepStmt
               .bind(repairUnit.getClusterName(), " ", repairSchedule.get().getId()));
 
-      session.execute(deleteRepairScheduleByClusterAndKsPrepStmt
+      session.executeAsync(deleteRepairScheduleByClusterAndKsPrepStmt
               .bind(" ", repairUnit.getKeyspaceName(), repairSchedule.get().getId()));
+      
+      session.executeAsync(deleteRepairSchedulePrepStmt.bind(repairSchedule.get().getId()));
     }
 
     return repairSchedule;
