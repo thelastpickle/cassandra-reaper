@@ -178,7 +178,6 @@ public final class CassandraStorage implements IStorage {
   @Override
   public RepairRun addRepairRun(Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
     RepairRun newRepairRun = repairRun.build(UUIDs.timeBased());
-    BatchStatement batch = new BatchStatement();
     BatchStatement repairRunBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
 
     repairRunBatch.add(insertRepairRunPrepStmt.bind(
@@ -188,18 +187,17 @@ public final class CassandraStorage implements IStorage {
             newRepairRun.getCause(),
             newRepairRun.getOwner(),
             newRepairRun.getRunState().toString(),
-            newRepairRun.getCreationTime()==null?null:newRepairRun.getCreationTime(),
-            newRepairRun.getStartTime()==null?null:newRepairRun.getStartTime(),
-            newRepairRun.getEndTime()==null?null:newRepairRun.getEndTime(),
-            newRepairRun.getPauseTime()==null?null:newRepairRun.getPauseTime(),
+            newRepairRun.getCreationTime(),
+            newRepairRun.getStartTime(),
+            newRepairRun.getEndTime(),
+            newRepairRun.getPauseTime(),
             newRepairRun.getIntensity(),
             newRepairRun.getLastEvent(),
             newRepairRun.getSegmentCount(),
             newRepairRun.getRepairParallelism().toString()));
 
-    batch.add(insertRepairRunClusterIndexPrepStmt.bind(newRepairRun.getClusterName(), newRepairRun.getId()));
-    batch.add(insertRepairRunUnitIndexPrepStmt.bind(newRepairRun.getRepairUnitId(), newRepairRun.getId()));
-    session.execute(batch);
+    session.execute(insertRepairRunClusterIndexPrepStmt.bind(newRepairRun.getClusterName(), newRepairRun.getId()));
+    session.execute(insertRepairRunUnitIndexPrepStmt.bind(newRepairRun.getRepairUnitId(), newRepairRun.getId()));
 
     for(RepairSegment.Builder builder:newSegments){
       RepairSegment segment = builder.withRunId(newRepairRun.getId()).build(UUIDs.timeBased());
@@ -315,11 +313,9 @@ public final class CassandraStorage implements IStorage {
   public Optional<RepairRun> deleteRepairRun(UUID id) {
     Optional<RepairRun> repairRun = getRepairRun(id);
     if(repairRun.isPresent()){
-      BatchStatement batch = new BatchStatement();
-      batch.add(deleteRepairRunPrepStmt.bind(id));
-      batch.add(deleteRepairRunByClusterPrepStmt.bind(id, repairRun.get().getClusterName()));
-      batch.add(deleteRepairRunByUnitPrepStmt.bind(id, repairRun.get().getRepairUnitId()));
-      session.execute(batch);
+      session.execute(deleteRepairRunPrepStmt.bind(id));
+      session.execute(deleteRepairRunByClusterPrepStmt.bind(id, repairRun.get().getClusterName()));
+      session.execute(deleteRepairRunByUnitPrepStmt.bind(id, repairRun.get().getRepairUnitId()));
     }
     return repairRun;
   }
@@ -611,11 +607,10 @@ public final class CassandraStorage implements IStorage {
 
   @Override
   public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
-    BatchStatement batch = new BatchStatement();
     final Set<UUID> repairHistory = Sets.newHashSet();
     repairHistory.addAll(newRepairSchedule.getRunHistory());
 
-    batch.add(insertRepairSchedulePrepStmt.bind(newRepairSchedule.getId(),
+    session.execute(insertRepairSchedulePrepStmt.bind(newRepairSchedule.getId(),
         newRepairSchedule.getRepairUnitId(),
         newRepairSchedule.getState().toString(),
         newRepairSchedule.getDaysBetween(),
@@ -629,10 +624,15 @@ public final class CassandraStorage implements IStorage {
         newRepairSchedule.getPauseTime())
         );
     RepairUnit repairUnit = getRepairUnit(newRepairSchedule.getRepairUnitId()).get();
-    batch.add(insertRepairScheduleByClusterAndKsPrepStmt.bind(repairUnit.getClusterName(), repairUnit.getKeyspaceName(), newRepairSchedule.getId()));
-    batch.add(insertRepairScheduleByClusterAndKsPrepStmt.bind(repairUnit.getClusterName(), " ", newRepairSchedule.getId()));
-    batch.add(insertRepairScheduleByClusterAndKsPrepStmt.bind(" ", repairUnit.getKeyspaceName(), newRepairSchedule.getId()));
-    session.execute(batch);
+
+    session.execute(insertRepairScheduleByClusterAndKsPrepStmt
+            .bind(repairUnit.getClusterName(), repairUnit.getKeyspaceName(), newRepairSchedule.getId()));
+
+    session.execute(insertRepairScheduleByClusterAndKsPrepStmt
+            .bind(repairUnit.getClusterName(), " ", newRepairSchedule.getId()));
+
+    session.execute(insertRepairScheduleByClusterAndKsPrepStmt
+            .bind(" ", repairUnit.getKeyspaceName(), newRepairSchedule.getId()));
 
     return true;
   }
@@ -642,12 +642,16 @@ public final class CassandraStorage implements IStorage {
     Optional<RepairSchedule> repairSchedule = getRepairSchedule(id);
     if(repairSchedule.isPresent()){
       RepairUnit repairUnit = getRepairUnit(repairSchedule.get().getRepairUnitId()).get();
-      BatchStatement batch = new BatchStatement();
-      batch.add(deleteRepairSchedulePrepStmt.bind(repairSchedule.get().getId()));
-      batch.add(deleteRepairScheduleByClusterAndKsPrepStmt.bind(repairUnit.getClusterName(), repairUnit.getKeyspaceName(), repairSchedule.get().getId()));
-      batch.add(deleteRepairScheduleByClusterAndKsPrepStmt.bind(repairUnit.getClusterName(), " ", repairSchedule.get().getId()));
-      batch.add(deleteRepairScheduleByClusterAndKsPrepStmt.bind(" ", repairUnit.getKeyspaceName(), repairSchedule.get().getId()));
-      session.execute(batch);
+      session.execute(deleteRepairSchedulePrepStmt.bind(repairSchedule.get().getId()));
+
+      session.execute(deleteRepairScheduleByClusterAndKsPrepStmt
+              .bind(repairUnit.getClusterName(), repairUnit.getKeyspaceName(), repairSchedule.get().getId()));
+
+      session.execute(deleteRepairScheduleByClusterAndKsPrepStmt
+              .bind(repairUnit.getClusterName(), " ", repairSchedule.get().getId()));
+
+      session.execute(deleteRepairScheduleByClusterAndKsPrepStmt
+              .bind(" ", repairUnit.getKeyspaceName(), repairSchedule.get().getId()));
     }
 
     return repairSchedule;
