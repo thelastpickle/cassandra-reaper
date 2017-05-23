@@ -8,9 +8,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -298,17 +295,21 @@ public final class CassandraStorage implements IStorage {
 
   @Override
   public Collection<RepairRun> getRepairRunsWithState(RunState runState) {
-    // There shouldn't be many repair runs, so we'll brute force this one
-    // We'll switch to 2i if performance sucks IRL
-    Collection<RepairRun> repairRuns = Lists.<RepairRun>newArrayList();
-    ResultSet repairRunResults = session.execute("SELECT * FROM repair_run");
-    for(Row repairRun:repairRunResults){
-      if(RunState.valueOf(repairRun.getString("state")).equals(runState)){
-        repairRuns.add(buildRepairRunFromRow(repairRun, repairRun.getUUID("id")));
-      }
-    }
 
-    return repairRuns;
+    return getClusters().stream()
+            // Grab all ids for the given cluster name
+            .map(cluster -> getRepairRunIdsForCluster(cluster.getName()))
+            // Grab repair runs asynchronously for all the ids returned by the index table
+            .flatMap(repairRunIds
+                    -> repairRunIds.stream()
+                            .map(repairRunId -> session.executeAsync(getRepairRunPrepStmt.bind(repairRunId))))
+            // wait for results
+            .map((ResultSetFuture future) -> {
+                Row repairRunResult = future.getUninterruptibly().one();
+                return buildRepairRunFromRow(repairRunResult, repairRunResult.getUUID("id"));})
+            // filter on runState
+            .filter(repairRun -> repairRun.getRunState() == runState)
+            .collect(Collectors.toSet());
   }
 
   @Override
