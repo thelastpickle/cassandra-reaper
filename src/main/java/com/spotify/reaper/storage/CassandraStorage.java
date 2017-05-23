@@ -63,7 +63,10 @@ public final class CassandraStorage implements IStorage {
   Session session;
 
   /* Simple statements */
-  private final String getClustersStmt = "SELECT * FROM cluster";
+  private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
+  private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
+  private static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
+  private static final String SELECT_REPAIR_RUN = "SELECT * FROM repair_run";
 
   /* prepared statements */
   private PreparedStatement insertClusterPrepStmt;
@@ -143,7 +146,7 @@ public final class CassandraStorage implements IStorage {
   @Override
   public Collection<Cluster> getClusters() {
     Collection<Cluster> clusters = Lists.<Cluster>newArrayList();
-    ResultSet clusterResults = session.execute(getClustersStmt);
+    ResultSet clusterResults = session.execute(SELECT_CLUSTER);
     for(Row cluster:clusterResults){
       clusters.add(new Cluster(cluster.getString("name"), cluster.getString("partitioner"), cluster.getSet("seed_hosts", String.class)));
     }
@@ -320,7 +323,7 @@ public final class CassandraStorage implements IStorage {
     // There shouldn't be many repair runs, so we'll brute force this one
     // We'll switch to 2i if performance sucks IRL
     Collection<RepairRun> repairRuns = Lists.<RepairRun>newArrayList();
-    ResultSet repairRunResults = session.execute("SELECT * FROM repair_run");
+    ResultSet repairRunResults = session.execute(SELECT_REPAIR_RUN);
     for(Row repairRun:repairRunResults){
       if(RunState.valueOf(repairRun.getString("state")).equals(runState)){
         repairRuns.add(buildRepairRunFromRow(repairRun, repairRun.getUUID("id")));
@@ -362,7 +365,7 @@ public final class CassandraStorage implements IStorage {
   public Optional<RepairUnit> getRepairUnit(String cluster, String keyspace, Set<String> columnFamilyNames) {
     // brute force again
     RepairUnit repairUnit=null;
-    ResultSet results = session.execute("SELECT * FROM repair_unit_v1");
+    ResultSet results = session.execute(SELECT_REPAIR_UNIT);
     for(Row repairUnitRow:results){
       if(repairUnitRow.getString("cluster_name").equals(cluster)
           && repairUnitRow.getString("keyspace_name").equals(keyspace)
@@ -617,7 +620,7 @@ public final class CassandraStorage implements IStorage {
   @Override
   public Collection<RepairSchedule> getAllRepairSchedules() {
     Collection<RepairSchedule> schedules = Lists.<RepairSchedule>newArrayList();
-    ResultSet scheduleResults = session.execute("SELECT * FROM repair_schedule_v1");
+    ResultSet scheduleResults = session.execute(SELECT_REPAIR_SCHEDULE);
     for(Row scheduleRow:scheduleResults){
       schedules.add(createRepairScheduleFromRow(scheduleRow));
     }
