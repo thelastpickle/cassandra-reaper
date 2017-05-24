@@ -247,7 +247,7 @@ public class RepairRunner implements Runnable {
       }
 
       // We have an empty slot, so let's start new segment runner if possible.
-      LOG.info("Running segment {}", parallelRanges.get(rangeIndex));
+      LOG.info("Running segment for range {}", parallelRanges.get(rangeIndex));
       Optional<RepairSegment> nextRepairSegment =
           context.storage.getNextFreeSegmentInRange(repairRunId, parallelRanges.get(rangeIndex));
 

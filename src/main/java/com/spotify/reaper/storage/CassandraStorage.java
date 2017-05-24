@@ -467,12 +467,11 @@ public class CassandraStorage implements IStorage {
       // Then get segments by id
       segmentsFuture.add(session.executeAsync(getRepairSegmentPrepStmt.bind(segmentIdResult.getLong("segment_id"))));
       i++;
-      if(i%100==0 || segmentsIdResultSet.isFullyFetched()) {
+      if(i%100==0 || segmentsIdResultSet.isExhausted()) {
         fetchRepairSegmentFromFutures(segmentsFuture).stream().forEach(segment -> {
           RingRange range = new RingRange(segment.getStartToken(), segment.getEndToken());
           localRanges.stream().forEach(localRange -> {
-            if(rangeIsWithinRange(range, localRange)) {
-              LOG.debug("adding segment to the list [{} , {}]", range.getStart(), range.getEnd());
+            if(localRange.encloses(range)) {
               segments.add(segment);
             }
           });
@@ -487,18 +486,7 @@ public class CassandraStorage implements IStorage {
   
   
   private boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
-    return rangeIsWithinRange(new RingRange(segment.getStartToken(), segment.getEndToken()), range);
-    
-  }
-  
-  private boolean rangeIsWithinRange(RingRange segmentRange, RingRange range) {
-    if(range.getStart().compareTo(range.getEnd()) < 0) {
-      // classic range with start < end
-      return segmentRange.getStart().compareTo(range.getStart())>=0 && segmentRange.getEnd().compareTo(range.getEnd())<=0;
-    } else {
-      // boundary range with start > end
-      return segmentRange.getStart().compareTo(range.getStart())>=0;
-    }
+    return range.encloses(new RingRange(segment.getStartToken(), segment.getEndToken()));
     
   }
   
@@ -546,16 +534,14 @@ public class CassandraStorage implements IStorage {
     });
 
     for(RepairSegment seg:segments){
-      if(seg.getState().equals(State.NOT_STARTED) // State condition
-          && ((range.isPresent() && 
-              //(range.get().getStart().compareTo(seg.getStartToken())>=0 || range.get().getEnd().compareTo(seg.getEndToken())<=0)
-              segmentIsWithinRange(seg, range.get())
-              ) || !range.isPresent()) // Token range condition
-          ){
-        if(takeLeadOnSegment(seg.getId())) {
-          segment = seg;
-          break;
-        }
+      LOG.debug("segment ({},{}) state = {}", seg.getStartToken(), seg.getEndToken(), seg.getState());
+      if(seg.getState().equals(State.NOT_STARTED) && 
+          ((range.isPresent() && segmentIsWithinRange(seg, range.get())) || !range.isPresent()) // Token range condition
+         ) {
+            if(takeLeadOnSegment(seg.getId())) {
+              segment = seg;
+              break;
+            }
       }
     }
     return Optional.fromNullable(segment);
