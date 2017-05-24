@@ -80,3 +80,15 @@ export const DeleteStatusMessageMixin = {
   }
 
 };
+
+export const CFsListRender = React.createClass({
+    render: function() {
+        return (
+            <ul>
+                {this.props.list.map(function(listValue){
+                    return <li>{listValue}</li>;
+                })}
+            </ul>
+        )
+    }
+});
