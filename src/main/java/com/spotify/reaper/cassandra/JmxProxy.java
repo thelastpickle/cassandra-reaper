@@ -268,6 +268,18 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   }
 
   /**
+   * @return all hosts in the ring with their host id
+   */
+  @NotNull
+  public Map<String, String> getEndpointToHostId() {
+    checkNotNull(ssProxy, "Looks like the proxy is not connected");
+    Map<String, String> hosts =
+        ((StorageServiceMBean) ssProxy).getEndpointToHostId();
+    
+    return hosts;
+  }
+
+  /**
    * @return full class name of Cassandra's partitioner.
    */
   public String getPartitioner() {

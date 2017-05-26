@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -26,6 +27,8 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -63,6 +66,11 @@ public class CassandraStorage implements IStorage {
   /** simple cache of repair_id.
    * not accurate, only provides a floor value to shortcut looking for next appropriate id */
   private final ConcurrentMap<String,Long> repairIds = new ConcurrentHashMap<>();
+  
+  private static final Cache<Long, RepairSegment> segmentCache = CacheBuilder.newBuilder()
+      .maximumSize(5000)
+      .expireAfterWrite(1, TimeUnit.HOURS)
+      .build();
 
   /* Simple statements */
   private final String getClustersStmt = "SELECT * FROM cluster";
@@ -390,6 +398,7 @@ public class CassandraStorage implements IStorage {
     for(com.spotify.reaper.core.RepairSegment.Builder builder:newSegments){
       RepairSegment segment = builder.build(getNewRepairId("repair_segment"));
       insertFutures.add(session.executeAsync(insertRepairSegmentPrepStmt.bind(segment.getId(), segment.getRepairUnitId(), segment.getRunId(), segment.getStartToken(), segment.getEndToken(), segment.getState().ordinal(), segment.getCoordinatorHost(), segment.getStartTime(), segment.getEndTime(), segment.getFailCount())));
+      saveSegmentToCache(Optional.of(segment));
       batch.add(insertRepairSegmentByRunPrepStmt.bind(segment.getRunId(), segment.getId()));
       if(insertFutures.size()%100==0){
         // cluster ddos protection
@@ -429,6 +438,7 @@ public class CassandraStorage implements IStorage {
     if(segmentRow != null){
       segment = createRepairSegmentFromRow(segmentRow);
     }
+    LOG.info("Refreshed segment {}", segment.getId());
 
     return Optional.fromNullable(segment);
   }
@@ -454,6 +464,33 @@ public class CassandraStorage implements IStorage {
     return segments;
   }
   
+  public Collection<RepairSegment> getRepairSegmentsForRunWithCache(long runId) {
+    List<ResultSetFuture> segmentsFuture = Lists.newArrayList();
+    Collection<RepairSegment> segments = Lists.newArrayList();
+
+    // First gather segments ids
+    ResultSet segmentsIdResultSet = session.execute(getRepairSegmentByRunIdPrepStmt.bind(runId));
+    int i=0;
+    for(Row segmentIdResult:segmentsIdResultSet) {
+      Optional<RepairSegment> segment = Optional.fromNullable(segmentCache.getIfPresent(segmentIdResult.getLong("segment_id")));
+    
+      if(segment.isPresent()) {
+        segments.add(segment.get());
+        LOG.info("From cache :)");
+      } else {      
+        // Then get segments by id
+        segmentsFuture.add(session.executeAsync(getRepairSegmentPrepStmt.bind(segmentIdResult.getLong("segment_id"))));
+        i++;
+        if(i%100==0 || segmentsIdResultSet.isFullyFetched()) {
+          segments.addAll(fetchRepairSegmentFromFutures(segmentsFuture));
+          segmentsFuture = Lists.newArrayList();
+        }
+      }
+    }
+
+    return segments;
+  }
+  
   @Override
   public Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(long runId, List<RingRange> localRanges) {
     LOG.debug("Getting ranges for local node {}", localRanges);
@@ -465,19 +502,26 @@ public class CassandraStorage implements IStorage {
     int i=0;
     for(Row segmentIdResult:segmentsIdResultSet) {
       // Then get segments by id
-      segmentsFuture.add(session.executeAsync(getRepairSegmentPrepStmt.bind(segmentIdResult.getLong("segment_id"))));
-      i++;
-      if(i%100==0 || segmentsIdResultSet.isExhausted()) {
-        fetchRepairSegmentFromFutures(segmentsFuture).stream().forEach(segment -> {
-          RingRange range = new RingRange(segment.getStartToken(), segment.getEndToken());
-          localRanges.stream().forEach(localRange -> {
-            if(localRange.encloses(range)) {
-              segments.add(segment);
-            }
+      Optional<RepairSegment> segment = Optional.fromNullable(segmentCache.getIfPresent(segmentIdResult.getLong("segment_id")));
+      
+      if(segment.isPresent()) {
+        segments.add(segment.get());
+        LOG.info("From cache :)");
+      } else {      
+        segmentsFuture.add(session.executeAsync(getRepairSegmentPrepStmt.bind(segmentIdResult.getLong("segment_id"))));
+        i++;
+        if(i%100==0 || segmentsIdResultSet.isExhausted()) {
+          fetchRepairSegmentFromFutures(segmentsFuture).stream().forEach(seg -> {
+            RingRange range = new RingRange(seg.getStartToken(), seg.getEndToken());
+            localRanges.stream().forEach(localRange -> {
+              if(localRange.encloses(range)) {
+                segments.add(seg);
+              }
+            });
           });
-        });
-
-        segmentsFuture = Lists.newArrayList();
+  
+          segmentsFuture = Lists.newArrayList();
+        }
       }
     }
 
@@ -496,7 +540,9 @@ public class CassandraStorage implements IStorage {
     for(ResultSetFuture segmentResult:segmentsFuture) {
       Row segmentRow = segmentResult.getUninterruptibly().one();
       if(segmentRow!=null){
-        segments.add(createRepairSegmentFromRow(segmentRow));
+        RepairSegment segment = createRepairSegmentFromRow(segmentRow);      
+        segments.add(segment);
+        saveSegmentToCache(Optional.of(segment));
       }
     }    
     
@@ -508,20 +554,23 @@ public class CassandraStorage implements IStorage {
     return createRepairSegmentFromRow(segmentRow, segmentRow.getLong("id"));
   }
   private RepairSegment createRepairSegmentFromRow(Row segmentRow, long segmentId){
-    return new RepairSegment.Builder(segmentRow.getLong("run_id"), new RingRange(new BigInteger(segmentRow.getVarint("start_token") +""), new BigInteger(segmentRow.getVarint("end_token")+"")), segmentRow.getLong("repair_unit_id"))
+    RepairSegment segment = new RepairSegment.Builder(segmentRow.getLong("run_id"), new RingRange(new BigInteger(segmentRow.getVarint("start_token") +""), new BigInteger(segmentRow.getVarint("end_token")+"")), segmentRow.getLong("repair_unit_id"))
         .coordinatorHost(segmentRow.getString("coordinator_host"))
         .endTime(new DateTime(segmentRow.getTimestamp("end_time")))
         .failCount(segmentRow.getInt("fail_count"))
         .startTime(new DateTime(segmentRow.getTimestamp("start_time")))
         .state(State.values()[segmentRow.getInt("state")])
         .build(segmentRow.getLong("id"));
+    
+    saveSegmentToCache(Optional.of(segment));
+    return segment;
   }
 
 
   public Optional<RepairSegment> getSegment(long runId, Optional<RingRange> range){
     RepairSegment segment = null;
     List<RepairSegment> segments = Lists.<RepairSegment>newArrayList();
-    segments.addAll(getRepairSegmentsForRun(runId));
+    segments.addAll(getRepairSegmentsForRunWithCache(runId));
 
     // Sort segments by fail count and start token (in order to try those who haven't failed first, in start token order)
     Collections.sort( segments, new Comparator<RepairSegment>(){
@@ -535,16 +584,24 @@ public class CassandraStorage implements IStorage {
 
     for(RepairSegment seg:segments){
       LOG.debug("segment ({},{}) state = {}", seg.getStartToken(), seg.getEndToken(), seg.getState());
-      if(seg.getState().equals(State.NOT_STARTED) && 
+      if(seg.getState().equals(State.NOT_STARTED) &&
           ((range.isPresent() && segmentIsWithinRange(seg, range.get())) || !range.isPresent()) // Token range condition
          ) {
-            if(takeLeadOnSegment(seg.getId())) {
+            Optional<RepairSegment> upToDateSegment = getRepairSegment(seg.getId());
+            saveSegmentToCache(upToDateSegment);
+            if(upToDateSegment.isPresent() && upToDateSegment.get().getState().equals(State.NOT_STARTED) && takeLeadOnSegment(seg.getId())) {
               segment = seg;
               break;
             }
       }
     }
     return Optional.fromNullable(segment);
+  }
+  
+  private void saveSegmentToCache(Optional<RepairSegment> segment) {
+    if(segment.isPresent()) {
+      segmentCache.put(segment.get().getId(), segment.get());
+    }
   }
 
   @Override
