@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -61,7 +62,7 @@ public class CassandraStorage implements IStorage {
   /** simple cache of repair_id.
    * not accurate, only provides a floor value to shortcut looking for next appropriate id */
   private final ConcurrentMap<String,Long> repairIds = new ConcurrentHashMap<>();
-
+  
   /* Simple statements */
   private final String getClustersStmt = "SELECT * FROM cluster";
 
@@ -426,7 +427,26 @@ public class CassandraStorage implements IStorage {
       // Then get segments by id
       segmentsFuture.add(session.executeAsync(getRepairSegmentPrepStmt.bind(segmentIdResult.getLong("segment_id"))));
       i++;
-      if(i%100==0 || segmentsIdResultSet.isFullyFetched()) {
+      if(i%100==0 || segmentsIdResultSet.isExhausted()) {
+        segments.addAll(fetchRepairSegmentFromFutures(segmentsFuture));
+        segmentsFuture = Lists.newArrayList();
+      }
+    }
+
+    return segments;
+  }
+  
+  public Collection<RepairSegment> getRepairSegmentsForRunWithCache(long runId) {
+    List<ResultSetFuture> segmentsFuture = Lists.newArrayList();
+    Collection<RepairSegment> segments = Lists.newArrayList();
+
+    // First gather segments ids
+    ResultSet segmentsIdResultSet = session.execute(getRepairSegmentByRunIdPrepStmt.bind(runId));
+    int i=0;
+    for(Row segmentIdResult:segmentsIdResultSet) {
+      segmentsFuture.add(session.executeAsync(getRepairSegmentPrepStmt.bind(segmentIdResult.getLong("segment_id"))));
+      i++;
+      if(i%100==0 || segmentsIdResultSet.isExhausted()) {
         segments.addAll(fetchRepairSegmentFromFutures(segmentsFuture));
         segmentsFuture = Lists.newArrayList();
       }
@@ -441,32 +461,41 @@ public class CassandraStorage implements IStorage {
     for(ResultSetFuture segmentResult:segmentsFuture) {
       Row segmentRow = segmentResult.getUninterruptibly().one();
       if(segmentRow!=null){
-        segments.add(createRepairSegmentFromRow(segmentRow));
+        RepairSegment segment = createRepairSegmentFromRow(segmentRow);      
+        segments.add(segment);
       }
     }    
     
     return segments;
     
   }
+  
+  private boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
+    return range.encloses(new RingRange(segment.getStartToken(), segment.getEndToken()));
+    
+  }
 
   private RepairSegment createRepairSegmentFromRow(Row segmentRow){
     return createRepairSegmentFromRow(segmentRow, segmentRow.getLong("id"));
   }
+  
   private RepairSegment createRepairSegmentFromRow(Row segmentRow, long segmentId){
-    return new RepairSegment.Builder(segmentRow.getLong("run_id"), new RingRange(new BigInteger(segmentRow.getVarint("start_token") +""), new BigInteger(segmentRow.getVarint("end_token")+"")), segmentRow.getLong("repair_unit_id"))
+    RepairSegment segment = new RepairSegment.Builder(segmentRow.getLong("run_id"), new RingRange(new BigInteger(segmentRow.getVarint("start_token") +""), new BigInteger(segmentRow.getVarint("end_token")+"")), segmentRow.getLong("repair_unit_id"))
         .coordinatorHost(segmentRow.getString("coordinator_host"))
         .endTime(new DateTime(segmentRow.getTimestamp("end_time")))
         .failCount(segmentRow.getInt("fail_count"))
         .startTime(new DateTime(segmentRow.getTimestamp("start_time")))
         .state(State.values()[segmentRow.getInt("state")])
         .build(segmentRow.getLong("id"));
+    
+    return segment;
   }
 
 
   public Optional<RepairSegment> getSegment(long runId, Optional<RingRange> range){
     RepairSegment segment = null;
     List<RepairSegment> segments = Lists.<RepairSegment>newArrayList();
-    segments.addAll(getRepairSegmentsForRun(runId));
+    segments.addAll(getRepairSegmentsForRunWithCache(runId));
 
     // Sort segments by fail count and start token (in order to try those who haven't failed first, in start token order)
     Collections.sort( segments, new Comparator<RepairSegment>(){
@@ -481,16 +510,16 @@ public class CassandraStorage implements IStorage {
     for(RepairSegment seg:segments){
       if(seg.getState().equals(State.NOT_STARTED) // State condition
           && ((range.isPresent() && 
-              (range.get().getStart().compareTo(seg.getStartToken())>=0 || range.get().getEnd().compareTo(seg.getEndToken())<=0)
+              (segmentIsWithinRange(seg, range.get()))
               ) || !range.isPresent()) // Token range condition
           ){
-        segment = seg;
-        break;
+          segment = seg;
+          break;
       }
     }
     return Optional.fromNullable(segment);
   }
-
+  
   @Override
   public Optional<RepairSegment> getNextFreeSegment(long runId) {
     return getSegment(runId, Optional.<RingRange>absent());

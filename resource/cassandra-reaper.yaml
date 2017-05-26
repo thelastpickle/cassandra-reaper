@@ -12,6 +12,7 @@ enableCrossOrigin: true
 incrementalRepair: false
 allowUnreachableNodes: false
 enableDynamicSeedList: true
+repairManagerSchedulingIntervalSeconds: 30
 
 jmxPorts:
   127.0.0.1: 7100

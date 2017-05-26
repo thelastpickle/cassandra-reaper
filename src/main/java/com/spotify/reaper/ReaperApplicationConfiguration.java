@@ -93,6 +93,9 @@ public class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   @DefaultValue("true")
   private Boolean enableDynamicSeedList;
+  
+  @JsonProperty
+  private Integer repairManagerSchedulingIntervalSeconds;
 
   public int getSegmentCount() {
     return segmentCount;
@@ -170,13 +173,13 @@ public class ReaperApplicationConfiguration extends Configuration {
     this.database = database;
   }
 
-  public int getHangingRepairTimeoutMins() {
-    return hangingRepairTimeoutMins;
+  public int getRepairManagerSchedulingIntervalSeconds() {
+    return this.repairManagerSchedulingIntervalSeconds==null?30:this.repairManagerSchedulingIntervalSeconds;
   }
 
   @JsonProperty
-  public void setHangingRepairTimeoutMins(int hangingRepairTimeoutMins) {
-    this.hangingRepairTimeoutMins = hangingRepairTimeoutMins;
+  public void setRepairManagerSchedulingIntervalSeconds(int repairManagerSchedulingIntervalSeconds) {
+    this.repairManagerSchedulingIntervalSeconds = repairManagerSchedulingIntervalSeconds;
   }
 
   public Map<String, Integer> getJmxPorts() {
@@ -259,6 +262,15 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   public void setAllowUnreachableNodes(Boolean allow) {
     this.allowUnreachableNodes = allow;
+  }
+  
+  public int getHangingRepairTimeoutMins() {
+    return hangingRepairTimeoutMins;
+  }
+
+  @JsonProperty
+  public void setHangingRepairTimeoutMins(int hangingRepairTimeoutMins) {
+    this.hangingRepairTimeoutMins = hangingRepairTimeoutMins;
   }
   
   public static class AutoSchedulingConfiguration {
