@@ -9,27 +9,23 @@ CREATE TABLE IF NOT EXISTS cluster (
   name        text PRIMARY KEY,
   partitioner text,
   seed_hosts  set<text>
-)
-  WITH compaction = {'class': 'LeveledCompactionStrategy'}
-  AND caching = {'rows_per_partition': 'ALL'};
+);
 
 -- Repair unit is basically a keyspace with a set of column families.
 -- Cassandra supports repairing multiple column families in one go.
 
 CREATE TABLE IF NOT EXISTS repair_unit (
-  id              timeuuid PRIMARY KEY,
+  id              bigint PRIMARY KEY,
   cluster_name    text,
   keyspace_name   text,
   column_families set<text>,
   incremental_repair boolean
-)
-  WITH compaction = {'class': 'LeveledCompactionStrategy'}
-  AND caching = {'rows_per_partition': 10};
+);
 
 CREATE TABLE IF NOT EXISTS repair_run (
-  id                 timeuuid PRIMARY KEY,
+  id                 bigint PRIMARY KEY,
   cluster_name       text,
-  repair_unit_id     timeuuid,
+  repair_unit_id     bigint,
   cause              text,
   owner              text,
   state              text,
@@ -41,30 +37,24 @@ CREATE TABLE IF NOT EXISTS repair_run (
   last_event         text                    ,
   segment_count      int                     ,
   repair_parallelism text
-)
-  WITH compaction = {'class': 'LeveledCompactionStrategy'}
-  AND caching = {'rows_per_partition': 10};
+);
 
 CREATE TABLE IF NOT EXISTS repair_run_by_cluster(
   cluster_name text,
-  id           timeuuid,
+  id bigint,
   PRIMARY KEY(cluster_name, id)
-)
-  WITH compaction = {'class': 'LeveledCompactionStrategy'}
-  AND caching = {'rows_per_partition': 10};
+);
 
 CREATE TABLE IF NOT EXISTS repair_run_by_unit(
-  repair_unit_id timeuuid,
-  id             timeuuid,
+  repair_unit_id bigint,
+  id bigint,
   PRIMARY KEY(repair_unit_id, id)
-)
-  WITH compaction = {'class': 'LeveledCompactionStrategy'}
-  AND caching = {'rows_per_partition': 10};
+);
 
 CREATE TABLE IF NOT EXISTS repair_segment (
-  id               timeuuid PRIMARY KEY,
-  repair_unit_id   timeuuid,
-  run_id           timeuuid,
+  id               bigint PRIMARY KEY,
+  repair_unit_id   bigint,
+  run_id           bigint,
   start_token      varint,
   end_token        varint,
   state            int   ,
@@ -72,43 +62,39 @@ CREATE TABLE IF NOT EXISTS repair_segment (
   start_time       timestamp,
   end_time         timestamp,
   fail_count       INT
-)
-  WITH compaction = {'class': 'LeveledCompactionStrategy'}
-  AND caching = {'rows_per_partition': 10};
+);
 
 CREATE TABLE IF NOT EXISTS repair_segment_by_run_id (
-  run_id           timeuuid,
-  segment_id       timeuuid,
+  run_id           bigint,
+  segment_id       bigint,
   PRIMARY KEY(run_id, segment_id)
-)
-  WITH compaction = {'class': 'LeveledCompactionStrategy'}
-  AND caching = {'rows_per_partition': 10};
+);
 
 
 CREATE TABLE IF NOT EXISTS repair_schedule (
-  id                 timeuuid PRIMARY KEY,
-  repair_unit_id     timeuuid,
+  id                 bigint PRIMARY KEY,
+  repair_unit_id     bigint,
   state              text                    ,
   days_between       int                ,
   next_activation    timestamp,
-  run_history        set<timeuuid>,
+  run_history        set<bigint>,
   segment_count      int                     ,
   repair_parallelism text                    ,
   intensity          double                    ,
   creation_time      timestamp,
   owner              text                    ,
   pause_time         timestamp
-)
-  WITH compaction = {'class': 'LeveledCompactionStrategy'}
-  AND caching = {'rows_per_partition': 10};
+);
 
 
 CREATE TABLE IF NOT EXISTS repair_schedule_by_cluster_and_keyspace(
   cluster_name text,
   keyspace_name text,
-  repair_schedule_id timeuuid,
+  repair_schedule_id bigint,
   PRIMARY KEY((cluster_name, keyspace_name), repair_schedule_id)
-)
-  WITH compaction = {'class': 'LeveledCompactionStrategy'}
-  AND caching = {'rows_per_partition': 10};
+);
 
+CREATE TABLE IF NOT EXISTS repair_id(
+  id_type text PRIMARY KEY,
+  id bigint
+);

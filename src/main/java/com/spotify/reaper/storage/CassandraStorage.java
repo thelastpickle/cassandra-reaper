@@ -9,8 +9,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -45,6 +43,7 @@ import com.spotify.reaper.resources.view.RepairScheduleStatus;
 import com.spotify.reaper.service.RepairParameters;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.cassandra.DateTimeCodec;
+import com.spotify.reaper.storage.cassandra.Migration002;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.cognitor.cassandra.migration.Database;
@@ -100,6 +99,7 @@ public class CassandraStorage implements IStorage {
     Database database = new Database(cassandra, config.getCassandraFactory().getKeyspace());
     MigrationTask migration = new MigrationTask(database, new MigrationRepository("db/cassandra"));
     migration.migrate();
+    Migration002.migrate(session);
         
     prepareStatements();
   }
@@ -119,17 +119,17 @@ public class CassandraStorage implements IStorage {
     deleteRepairRunByUnitPrepStmt = session.prepare("DELETE FROM repair_run_by_unit WHERE id = ? and repair_unit_id= ?");
     deleteRepairSegmentPrepStmt = session.prepare("DELETE FROM repair_segment WHERE id = ?");
     deleteRepairSegmentByRunId = session.prepare("DELETE FROM repair_segment_by_run_id WHERE run_id = ?");
-    insertRepairUnitPrepStmt = session.prepare("INSERT INTO repair_unit(id, cluster_name, keyspace_name, column_families, incremental_repair) VALUES(?, ?, ?, ?, ?)");
-    getRepairUnitPrepStmt = session.prepare("SELECT * FROM repair_unit WHERE id = ?");
+    insertRepairUnitPrepStmt = session.prepare("INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, incremental_repair) VALUES(?, ?, ?, ?, ?)");
+    getRepairUnitPrepStmt = session.prepare("SELECT * FROM repair_unit_v1 WHERE id = ?");
     insertRepairSegmentPrepStmt = session.prepare("INSERT INTO repair_segment(id, repair_unit_id, run_id, start_token, end_token, state, coordinator_host, start_time, end_time, fail_count) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     getRepairSegmentPrepStmt = session.prepare("SELECT * FROM repair_segment WHERE id = ?");
     insertRepairSegmentByRunPrepStmt = session.prepare("INSERT INTO repair_segment_by_run_id(run_id, segment_id) VALUES(?, ?)");
     getRepairSegmentByRunIdPrepStmt = session.prepare("SELECT * FROM repair_segment_by_run_id WHERE run_id = ?");
-    insertRepairSchedulePrepStmt = session.prepare("INSERT INTO repair_schedule(id, repair_unit_id, state, days_between, next_activation, run_history, segment_count, repair_parallelism, intensity, creation_time, owner, pause_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    getRepairSchedulePrepStmt = session.prepare("SELECT * FROM repair_schedule WHERE id = ?");
+    insertRepairSchedulePrepStmt = session.prepare("INSERT INTO repair_schedule_v1(id, repair_unit_id, state, days_between, next_activation, run_history, segment_count, repair_parallelism, intensity, creation_time, owner, pause_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    getRepairSchedulePrepStmt = session.prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?");
     insertRepairScheduleByClusterAndKsPrepStmt = session.prepare("INSERT INTO repair_schedule_by_cluster_and_keyspace(cluster_name, keyspace_name, repair_schedule_id) VALUES(?, ?, ?)"); 
     getRepairScheduleByClusterAndKsPrepStmt = session.prepare("SELECT repair_schedule_id FROM repair_schedule_by_cluster_and_keyspace WHERE cluster_name = ? and keyspace_name = ?");
-    deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule WHERE id = ?");
+    deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule_v1 WHERE id = ?");
     deleteRepairScheduleByClusterAndKsPrepStmt = session.prepare("DELETE FROM repair_schedule_by_cluster_and_keyspace WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
   }
 
@@ -341,7 +341,7 @@ public class CassandraStorage implements IStorage {
   public Optional<RepairUnit> getRepairUnit(String cluster, String keyspace, Set<String> columnFamilyNames) {
     // brute force again
     RepairUnit repairUnit=null;
-    ResultSet results = session.execute("SELECT * FROM repair_unit");		
+    ResultSet results = session.execute("SELECT * FROM repair_unit_v1");
     for(Row repairUnitRow:results){
       if(repairUnitRow.getString("cluster_name").equals(cluster)
           && repairUnitRow.getString("keyspace_name").equals(keyspace)
@@ -632,7 +632,7 @@ public class CassandraStorage implements IStorage {
   @Override
   public Collection<RepairSchedule> getAllRepairSchedules() {
     Collection<RepairSchedule> schedules = Lists.<RepairSchedule>newArrayList();
-    ResultSet scheduleResults = session.execute("SELECT * FROM repair_schedule");
+    ResultSet scheduleResults = session.execute("SELECT * FROM repair_schedule_v1");
     for(Row scheduleRow:scheduleResults){
       schedules.add(createRepairScheduleFromRow(scheduleRow));
 
