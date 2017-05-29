@@ -1,7 +1,6 @@
 import React from "react";
 import moment from "moment";
-import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin} from "jsx/mixin";
-
+import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
 
 const TableRow = React.createClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin, RowAbortMixin],
@@ -23,7 +22,7 @@ const TableRow = React.createClass({
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.state}</td>
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.cluster_name}</td>
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.keyspace_name}</td>
-        <td data-toggle="collapse" data-target={rowID}>{this.props.row.column_families}</td>
+        <td data-toggle="collapse" data-target={rowID}><CFsListRender list={this.props.row.column_families} /></td>
         <td data-toggle="collapse" data-target={rowID}>{incremental}</td>
         <td data-toggle="collapse" data-target={rowID}>
           <div className="progress">

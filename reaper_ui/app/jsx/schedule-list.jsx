@@ -1,7 +1,6 @@
 import React from "react";
 import moment from "moment";
-import {RowDeleteMixin, StatusUpdateMixin, DeleteStatusMessageMixin} from "jsx/mixin";
-
+import {RowDeleteMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
 
 const TableRow = React.createClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin],
@@ -54,7 +53,7 @@ const TableRowDetails = React.createClass({
                 </tr>
                 <tr>
                     <td>CFs</td>
-                    <td>{this.props.row.column_families}</td>
+                    <td><CFsListRender list={this.props.row.column_families} /></td>
                 </tr>
                 <tr>
                     <td>Incremental</td>
