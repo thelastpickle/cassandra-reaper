@@ -18,3 +18,8 @@ bin/
 .project
 build/
 *.deb
+
+# frontend dev stuffs.
+reaper_ui/bower_components/
+reaper_ui/node_modules/
+
