@@ -48,6 +48,7 @@ import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.utils.SimpleCondition;
 import com.sun.management.UnixOperatingSystemMXBean;
+import java.util.UUID;
 
 public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
@@ -59,7 +60,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
   private final AppContext context;
-  private final long segmentId;
+  private final UUID segmentId;
   private final Condition condition = new SimpleCondition();
   private final Collection<String> potentialCoordinators;
   private final long timeoutMillis;
@@ -73,9 +74,9 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   // Caching all active SegmentRunners.
   @VisibleForTesting
-  public static Map<Long, SegmentRunner> segmentRunners = Maps.newConcurrentMap();
+  public static Map<UUID, SegmentRunner> segmentRunners = Maps.newConcurrentMap();
 
-  public SegmentRunner(AppContext context, long segmentId, Collection<String> potentialCoordinators,
+  public SegmentRunner(AppContext context, UUID segmentId, Collection<String> potentialCoordinators,
       long timeoutMillis, double intensity, RepairParallelism validationParallelism,
       String clusterName, RepairUnit repairUnit, RepairRunner repairRunner) {
     this.context = context;
@@ -209,7 +210,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             .coordinatorHost(coordinator.getHost())
             .repairCommandId(commandId)
             .build(segmentId));
-        String eventMsg = String.format("Triggered repair of segment %d via host %s",
+        String eventMsg = String.format("Triggered repair of segment %s via host %s",
             segment.getId(), coordinator.getHost());
         repairRunner.updateLastEvent(eventMsg);
         LOG.info("Repair for segment {} started, status wait will timeout in {} millis", segmentId,
@@ -354,7 +355,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     
   }
 
-  private boolean repairHasSegmentRunning(long repairRunId) {
+  private boolean repairHasSegmentRunning(UUID repairRunId) {
 	  Collection<RepairSegment> segments = context.storage.getRepairSegmentsForRun(repairRunId);
 	  for(RepairSegment segment:segments) {
 		  if(segment.getState() == RepairSegment.State.RUNNING) {

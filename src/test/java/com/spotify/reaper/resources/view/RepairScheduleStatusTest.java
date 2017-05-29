@@ -1,5 +1,6 @@
 package com.spotify.reaper.resources.view;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -26,7 +27,7 @@ public class RepairScheduleStatusTest {
     data.setColumnFamilies(Lists.<String>newArrayList());
     data.setCreationTime(DateTime.now().withMillis(0));
     data.setDaysBetween(2);
-    data.setId(1);
+    data.setId(UUIDs.timeBased());
     data.setIntensity(0.75);
     data.setIncrementalRepair(false);
     data.setKeyspaceName("testKeyspace");

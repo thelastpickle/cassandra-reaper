@@ -3,6 +3,7 @@ package com.spotify.reaper.acceptance;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Helper class for holding acceptance test scenario state.
@@ -15,7 +16,7 @@ public class TestContext {
   public static String TEST_CLUSTER;
 
   /* Used for targeting an object accessed in last test step. */
-  public static Long LAST_MODIFIED_ID;
+  public static UUID LAST_MODIFIED_ID;
 
   /* Testing cluster seed host mapped to cluster name. */
   public static Map<String, String> TEST_CLUSTER_SEED_HOSTS = new HashMap<>();

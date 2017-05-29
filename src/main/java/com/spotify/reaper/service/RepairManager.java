@@ -21,6 +21,7 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import java.util.UUID;
 
 public class RepairManager {
 
@@ -36,7 +37,7 @@ public class RepairManager {
 
   // Caching all active RepairRunners.
   @VisibleForTesting
-  public Map<Long, RepairRunner> repairRunners = Maps.newConcurrentMap();
+  public Map<UUID, RepairRunner> repairRunners = Maps.newConcurrentMap();
 
   public void initializeThreadPool(int threadAmount, long repairTimeout,
       TimeUnit repairTimeoutTimeUnit, long retryDelay,
@@ -81,7 +82,7 @@ public class RepairManager {
 
   public RepairRun startRepairRun(AppContext context, RepairRun runToBeStarted) throws ReaperException {
     assert null != executor : "you need to initialize the thread pool first";
-    long runId = runToBeStarted.getId();
+    UUID runId = runToBeStarted.getId();
     LOG.info("Starting a run with id #{} with current state '{}'",
         runId, runToBeStarted.getRunState());
     switch (runToBeStarted.getRunState()) {
@@ -128,7 +129,7 @@ public class RepairManager {
     }
   }
 
-  private void startRunner(AppContext context, long runId) {
+  private void startRunner(AppContext context, UUID runId) {
     if (!repairRunners.containsKey(runId)) {
       LOG.info("scheduling repair for repair run #{}", runId);
       try {

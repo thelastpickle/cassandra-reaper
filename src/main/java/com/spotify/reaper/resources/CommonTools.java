@@ -39,6 +39,7 @@ import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.service.SegmentGenerator;
+import java.util.UUID;
 
 public class CommonTools {
 
@@ -257,7 +258,7 @@ public class CommonTools {
       throws ReaperException {
     RepairSchedule.Builder scheduleBuilder =
         new RepairSchedule.Builder(repairUnit.getId(), RepairSchedule.State.ACTIVE, daysBetween,
-                                   nextActivation, ImmutableList.<Long>of(), segments,
+                                   nextActivation, ImmutableList.<UUID>of(), segments,
                                    repairParallelism, intensity,
                                    DateTime.now());
     scheduleBuilder.owner(owner);

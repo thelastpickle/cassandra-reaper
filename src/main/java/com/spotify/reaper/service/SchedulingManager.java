@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 
 public class SchedulingManager extends TimerTask {
 
@@ -73,7 +74,7 @@ public class SchedulingManager extends TimerTask {
   @Override
   public void run() {
     LOG.debug("Checking for repair schedules...");
-    long lastId = -1;
+    UUID lastId = null;
     try {
       Collection<RepairSchedule> schedules = context.storage.getAllRepairSchedules();
       boolean anyRunStarted = false;
@@ -130,7 +131,7 @@ public class SchedulingManager extends TimerTask {
       if (startNewRun) {
         try {
           RepairRun startedRun = startNewRunForUnit(schedule, repairUnit);
-          ImmutableList<Long> newRunHistory = new ImmutableList.Builder<Long>()
+          ImmutableList<UUID> newRunHistory = new ImmutableList.Builder<UUID>()
               .addAll(schedule.getRunHistory()).add(startedRun.getId()).build();
           context.storage.updateRepairSchedule(schedule.with()
               .runHistory(newRunHistory)

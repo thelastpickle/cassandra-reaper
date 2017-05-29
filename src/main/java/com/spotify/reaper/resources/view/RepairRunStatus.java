@@ -26,6 +26,7 @@ import org.joda.time.Duration;
 import org.joda.time.format.ISODateTimeFormat;
 
 import java.util.Collection;
+import java.util.UUID;
 
 /**
  * Contains the data to be shown when querying repair run status.
@@ -39,7 +40,7 @@ public class RepairRunStatus {
   private String owner;
 
   @JsonProperty
-  private long id;
+  private UUID id;
 
   @JsonProperty("cluster_name")
   private String clusterName;
@@ -95,7 +96,7 @@ public class RepairRunStatus {
   public RepairRunStatus() {
   }
 
-  public RepairRunStatus(long runId, String clusterName, String keyspaceName,
+  public RepairRunStatus(UUID runId, String clusterName, String keyspaceName,
       Collection<String> columnFamilies, int segmentsRepaired, int totalSegments,
       RepairRun.RunState state, DateTime startTime, DateTime endTime, String cause, String owner,
       String lastEvent, DateTime creationTime, DateTime pauseTime, double intensity, boolean incrementalRepair,
@@ -229,11 +230,11 @@ public class RepairRunStatus {
     this.owner = owner;
   }
 
-  public long getId() {
+  public UUID getId() {
     return id;
   }
 
-  public void setId(long id) {
+  public void setId(UUID id) {
     this.id = id;
   }
 

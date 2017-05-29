@@ -13,6 +13,7 @@
  */
 package com.spotify.reaper.storage.postgresql;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Sets;
 import com.spotify.reaper.core.RepairUnit;
 
@@ -22,6 +23,7 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.UUID;
 
 public class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
 
@@ -39,7 +41,11 @@ public class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
                                                         r.getString("keyspace_name"),
                                                         Sets.newHashSet(columnFamilies),
                                                         r.getBoolean("incremental_repair"));
-    return builder.build(r.getLong("id"));
+    return builder.build(fromSequenceId(r.getLong("id")));
   }
 
+
+  private static UUID fromSequenceId(long insertedId) {
+    return new UUID(insertedId, UUIDs.timeBased().getLeastSignificantBits());
+  }
 }
