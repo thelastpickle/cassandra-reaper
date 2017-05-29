@@ -170,7 +170,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       if(cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")){
     	  ssProxy = JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean20.class);
       }
-      
+
       CompactionManagerMBean cmProxy =
           JMX.newMBeanProxy(mbeanServerConn, cmMbeanName, CompactionManagerMBean.class);
       JmxProxy proxy = new JmxProxy(handler, host, jmxUrl, jmxConn, ssProxy, ssMbeanName,
@@ -233,6 +233,18 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       }
     }
     return Lists.newArrayList();
+  }
+
+  /**
+   * @return all hosts in the ring with their host id
+   */
+  @NotNull
+  public Map<String, String> getEndpointToHostId() {
+    checkNotNull(ssProxy, "Looks like the proxy is not connected");
+    Map<String, String> hosts =
+        ((StorageServiceMBean) ssProxy).getEndpointToHostId();
+
+    return hosts;
   }
 
   /**
@@ -309,8 +321,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   public boolean isRepairRunning() {
     return isRepairRunningPre22() || isRepairRunningPost22() || isValidationCompactionRunning();
   }
-  
-  
+
+
   /**
    * @return true if any repairs are running on the node.
    */
@@ -336,7 +348,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     // If uncertain, assume it's running
     return true;
   }
-  
+
   /**
    * @return true if any repairs are running on the node.
    */
@@ -345,7 +357,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     try {
       int activeCount = (Integer) mbeanServer.getAttribute(new ObjectName(VALIDATION_ACTIVE_OBJECT_NAME), VALUE_ATTRIBUTE);
       long pendingCount = (Long) mbeanServer.getAttribute(new ObjectName(VALIDATION_PENDING_OBJECT_NAME), VALUE_ATTRIBUTE);
-      
+
       return activeCount + pendingCount != 0;
     } catch (IOException ignored) {
       LOG.warn(FAILED_TO_CONNECT_TO_USING_JMX, host, ignored);
@@ -360,15 +372,15 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     // If uncertain, assume it's not running
     return false;
   }
-  
+
   /**
    * New way of determining if a repair is running after C* 2.2
-   * 
+   *
    * @return true if any repairs are running on the node.
    */
   public boolean isRepairRunningPost22() {
     try {
-      // list all mbeans in search of one with the name Repair#?? 
+      // list all mbeans in search of one with the name Repair#??
       // This is the replacement for AntiEntropySessions since Cassandra 2.2
       Set beanSet = mbeanServer.queryNames(new ObjectName("org.apache.cassandra.internal:*"), null);
       for(Object bean:beanSet) {
@@ -425,7 +437,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
     return true;
   }
-  
+
   public String getCassandraVersion(){
 	  return ((StorageServiceMBean) ssProxy).getReleaseVersion();
   }
@@ -436,7 +448,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * For time being, we don't allow local nor snapshot repairs.
    *
    * @return Repair command number, or 0 if nothing to repair
-   * @throws ReaperException 
+   * @throws ReaperException
    */
   public int triggerRepair(BigInteger beginToken, BigInteger endToken, String keyspace,
     	RepairParallelism repairParallelism, Collection<String> columnFamilies, boolean fullRepair) throws ReaperException {
@@ -474,11 +486,11 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       throw new ReaperException(e);
     }
   }
-  
-  
+
+
   public int triggerRepairPost2dot2(boolean fullRepair, RepairParallelism repairParallelism, String keyspace, Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken, String cassandraVersion) {
     Map<String, String> options = new HashMap<>();
-    
+
     options.put(RepairOption.PARALLELISM_KEY, repairParallelism.getName());
     //options.put(RepairOption.PRIMARY_RANGE_KEY, Boolean.toString(primaryRange));
     options.put(RepairOption.INCREMENTAL_KEY, Boolean.toString(!fullRepair));
@@ -489,22 +501,22 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     if (fullRepair) {
       options.put(RepairOption.RANGES_KEY, beginToken.toString() + ":" + endToken.toString());
     }
-    
+
     //options.put(RepairOption.DATACENTERS_KEY, StringUtils.join(specificDataCenters, ","));
     //options.put(RepairOption.HOSTS_KEY, StringUtils.join(specificHosts, ","));
-    
+
     return ((StorageServiceMBean) ssProxy).repairAsync(keyspace, options);
   }
-  
+
   public int triggerRepair2dot1(boolean fullRepair, RepairParallelism repairParallelism, String keyspace, Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken, String cassandraVersion) {
     if (fullRepair) {
       // full repair
       if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
           return ((StorageServiceMBean) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
               keyspace, repairParallelism.ordinal(), cassandraVersion.startsWith("2.2")?new HashSet<String>():null, cassandraVersion.startsWith("2.2")?new HashSet<String>():null, fullRepair,
-              columnFamilies.toArray(new String[columnFamilies.size()]));        
+              columnFamilies.toArray(new String[columnFamilies.size()]));
       }
-      
+
       boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
 
       return ((StorageServiceMBean) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
@@ -512,24 +524,24 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
               cassandraVersion.startsWith("2.2")?new HashSet<String>():null, cassandraVersion.startsWith("2.2")?new HashSet<String>():null, fullRepair,
           columnFamilies.toArray(new String[columnFamilies.size()]));
 
-    } 
+    }
 
     // incremental repair
     return ((StorageServiceMBean) ssProxy).forceRepairAsync(keyspace, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE,
           fullRepair, columnFamilies.toArray(new String[columnFamilies.size()]));
   }
-  
+
   public int triggerRepairPre2dot1(RepairParallelism repairParallelism, String keyspace, Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken) {
     // Cassandra 1.2 and 2.0 compatibility
     if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
         return ((StorageServiceMBean20) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
             keyspace, repairParallelism.ordinal(), null, null,
-            columnFamilies.toArray(new String[columnFamilies.size()]));         
+            columnFamilies.toArray(new String[columnFamilies.size()]));
     }
     boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
     return ((StorageServiceMBean20) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
         keyspace, snapshotRepair, false, columnFamilies.toArray(new String[columnFamilies.size()]));
-    
+
   }
 
 
@@ -549,12 +561,12 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     if (repairStatusHandler.isPresent() && ("repair").equals(type)) {
       processOldApiNotification(notification);
     }
-    
+
     if (repairStatusHandler.isPresent() && ("progress").equals(type)) {
       processNewApiNotification(notification);
     }
   }
-  
+
   /**
    * Handles notifications from the old repair API (forceRepairAsync)
    */
@@ -574,7 +586,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       LOG.error("Error while processing JMX notification", e);
     }
   }
-  
+
   /**
    * Handles notifications from the new repair API (repairAsync)
    */
@@ -696,7 +708,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       throw new ReaperException(e);
     }
   }
-  
+
   public List<String> getLiveNodes()
       throws ReaperException {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
