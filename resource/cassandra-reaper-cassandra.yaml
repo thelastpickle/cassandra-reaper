@@ -23,6 +23,10 @@ jmxPorts:
   127.0.0.7: 7700
   127.0.0.8: 7800
 
+#jmxAuth:
+#  username: myUsername
+#  password: myPassword
+
 logging:
   level: INFO
   loggers:
@@ -54,7 +58,7 @@ server:
     appenders: []
 
 cassandra:
-  clusterName: "test"
+  clusterName: "reaper"
   contactPoints: ["127.0.0.1"]
   keyspace: reaper_db
   queryOptions:

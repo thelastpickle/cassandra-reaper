@@ -1,0 +1,62 @@
+version: "2.1"
+
+services:
+  reaper-in-memory:
+    build:
+      context: .
+      dockerfile: docker/reaper/Dockerfile
+    command: java -jar cassandra-reaper-0.4.0-SNAPSHOT.jar server cassandra-reaper/resource/cassandra-reaper-memory.yaml
+    ports:
+      # web ui port
+      - "8080:8080"
+      # admin ui port
+      - "8081:8081"
+
+  reaper-setup:
+    build:
+      context: .
+      dockerfile: docker/reaper-setup/Dockerfile
+    command: cassandra
+    links:
+      - cassandra:cassandra
+
+  reaper:
+    build:
+      context: .
+      dockerfile: docker/reaper/Dockerfile
+    command: cassandra
+    links:
+      - cassandra:cassandra
+    ports:
+      # web ui port
+      - "8080:8080"
+      # admin ui port
+      - "8081:8081"
+    restart: always
+
+  cassandra:
+    image: cassandra:3.0.10
+    env_file:
+      - docker/cassandra.env
+
+    # disable swap:
+    # https://github.com/docker/docker/issues/18894#issuecomment-167177866
+    # https://github.com/docker/compose/pull/3542
+    mem_limit: 4g
+    memswap_limit: 4g
+    mem_swappiness: 0
+
+    # expose these ports to any container with a link to `cassandra`
+    ports:
+      # intra-node communication
+      - "7000:7000"
+      # TLS intra-node communication
+      - "7001:7001"
+      # JMX
+      - "7199:7199"
+      # CQL
+      - "9042:9042"
+
+    # required in production environments:
+    # volumes:
+    #   - ./data/cassandra_reaper:/var/lib/cassandra

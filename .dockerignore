@@ -1,0 +1,17 @@
+# editor files
+*.iml
+*~
+.idea/
+.DS_Store
+
+# docker files
+docker/production-reaper/*.jar
+docker/production-reaper/*.yaml
+docker-compose.yml
+
+# build paths
+packages/
+target/
+*.deb
+*.jar
+*.rpm

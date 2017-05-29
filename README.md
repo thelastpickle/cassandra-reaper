@@ -12,7 +12,7 @@ The current version supports running Apache Cassandra cluster repairs in a segme
 opportunistically running multiple parallel repairs at the same time on different nodes
 within the cluster. Basic repair scheduling functionality is also supported.
 
-Reaper comes with a GUI, which if you're running in local mode can be at http://localhost:8080/webui/ 
+Reaper comes with a GUI, which if you're running in local mode can be at http://localhost:8080/webui/index.html
 
 Please see the [Issues](https://github.com/thelastpickle/cassandra-reaper/issues) section for more
 information on planned development, and known issues.
@@ -63,8 +63,8 @@ use the provided CLI tool in *bin/spreaper* to call the service.
 
 Run the tool with *-h* or *--help* option to see usage instructions.
 
-Notice that you can also build a Debian package from this project by using *debuild*, for example:
-`debuild -uc -us -b`
+Notice that you can also build Debian and RPM package from this project by using *Make*, for example:
+`make all`.
 
 
 Configuration
@@ -381,6 +381,20 @@ After modifying the `resource/cassandra-reaper.yaml` config file, Reaper can be 
 
 ```java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml```
 
-Once started, the UI can be accessed through : `http://127.0.0.1:8080/webui/`
+Once started, the UI can be accessed through : `http://127.0.0.1:8080/webui/index.html`
 
 Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool `bin/spreaper`
+
+
+Docker Support
+--------------
+
+Docker support and documentation has been added to [./docker](./docker). The
+README.md within that directory includes instructions for:
+
+* Building Debian, RPM, and jar packages using Docker.
+* Running an In-Memory Reaper deployment.
+* Running a Cassandra-backed Reaper deployment.
+    * With a containerized Cassandra.
+    * With a Cassandra cluster located at a different IP address.
+* Building a production-ready Docker container.
