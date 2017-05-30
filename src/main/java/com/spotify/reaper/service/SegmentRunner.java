@@ -314,8 +314,17 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     for (String hostName : allHosts) {
       LOG.debug("checking host '{}' for pending compactions and other repairs (can repair?)"
                 + " Run id '{}'", hostName, segment.getRunId());
-      try (JmxProxy hostProxy = context.jmxConnectionFactory.connect(hostName)) {
-        Optional<HostMetrics> hostMetrics = getMetricsForHost(hostName, hostProxy);
+      try{
+        JmxProxy hostProxy = null;
+        Optional<HostMetrics> hostMetrics;
+        try{
+          hostProxy = context.jmxConnectionFactory.connect(hostName);
+        } 
+        catch(Exception e) {
+          LOG.debug("Couldn't reach host {} through JMX. Trying to collect metrics from storage...");
+        }
+        hostMetrics = getMetricsForHost(hostName, hostProxy);
+        
         if(!hostMetrics.isPresent()) {
           gotMetricsForAllHosts = false;
         }
@@ -338,14 +347,6 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             handlePotentialStuckRepairs(hostProxy, busyHosts, hostName);
             return false;
           }
-        }
-      } catch (ReaperException e) {
-        if(!context.config.getAllowUnreachableNodes()) {
-          LOG.warn("SegmentRunner declined to repair segment {} because one of the hosts ({}) could "
-                   + "not be connected with", segmentId, hostName, e);
-          String msg = String.format("Postponed due to inability to connect host %s", hostName);
-          repairRunner.updateLastEvent(msg);
-          return false;
         }
       } catch (RuntimeException e) {
         LOG.warn("SegmentRunner declined to repair segment {} because of an error collecting "
@@ -402,7 +403,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       return Optional.fromNullable(metrics);
       
     } catch(Exception e) {
-      LOG.info("Cannot reach node {} through JMX. Trying to get metrics from storage...", hostName, e);
+      LOG.debug("Cannot reach node {} through JMX. Trying to get metrics from storage...", hostName, e);
       return context.storage.getHostMetrics(hostName);
     }
   }
