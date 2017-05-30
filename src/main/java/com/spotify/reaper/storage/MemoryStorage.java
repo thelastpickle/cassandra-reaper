@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.HostMetrics;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
@@ -496,4 +497,48 @@ public class MemoryStorage implements IStorage {
     }
   }
 
+  @Override
+  public boolean takeLeadOnSegment(long segmentId) {
+    return true;
+  }
+
+  @Override
+  public boolean renewLeadOnSegment(long segmentId) {
+    return true;
+  }
+
+  @Override
+  public void releaseLeadOnSegment(long segmentId) {
+    // Fault tolerance is not supported with this storage backend
+  }
+
+  @Override
+  public void storeHostMetrics(HostMetrics hostMetrics) {
+    // Fault tolerance is not supported with this storage backend
+  }
+
+  @Override
+  public Optional<HostMetrics> getHostMetrics(String hostName) {
+    return Optional.absent();
+  }
+
+  @Override
+  public StorageType getStorageType() {
+    return StorageType.MEMORY;
+  }
+
+  @Override
+  public int countRunningReapers() {
+    return 1;
+  }
+
+  @Override
+  public void saveHeartbeat() {
+    // Fault tolerance is not supported with this storage backend
+  }
+
+  @Override
+  public Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(long runId, List<RingRange> localRanges) {
+    throw new UnsupportedOperationException("Cannot run local mode with memory storage");
+  }
 }

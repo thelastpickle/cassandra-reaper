@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -26,12 +27,16 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.HostMetrics;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairRun.Builder;
 import com.spotify.reaper.core.RepairRun.RunState;
@@ -61,6 +66,11 @@ public class CassandraStorage implements IStorage {
   /** simple cache of repair_id.
    * not accurate, only provides a floor value to shortcut looking for next appropriate id */
   private final ConcurrentMap<String,Long> repairIds = new ConcurrentHashMap<>();
+  
+  private static final Cache<Long, RepairSegment> segmentCache = CacheBuilder.newBuilder()
+      .maximumSize(5000)
+      .expireAfterWrite(1, TimeUnit.HOURS)
+      .build();
 
   /* Simple statements */
   private final String getClustersStmt = "SELECT * FROM cluster";
@@ -95,7 +105,16 @@ public class CassandraStorage implements IStorage {
   private PreparedStatement insertRepairId;
   private PreparedStatement selectRepairId;
   private PreparedStatement updateRepairId;
-
+  private PreparedStatement getLeadOnSegmentPrepStmt;
+  private PreparedStatement renewLeadOnSegmentPrepStmt;
+  private PreparedStatement releaseLeadOnSegmentPrepStmt;
+  private PreparedStatement storeHostMetricsPrepStmt;
+  private PreparedStatement getHostMetricsPrepStmt;
+  private PreparedStatement getRunningReapersCountPrepStmt;
+  private PreparedStatement saveHeartbeatPrepStmt;
+  
+  private DateTime lastHeartBeat = DateTime.now();
+  
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
     cassandra = config.getCassandraFactory().build(environment).register(QueryLogger.builder().build());
     CodecRegistry codecRegistry = cassandra.getConfiguration().getCodecRegistry();
@@ -108,6 +127,7 @@ public class CassandraStorage implements IStorage {
     migration.migrate();
         
     prepareStatements();
+    lastHeartBeat = lastHeartBeat.minusMinutes(1);
   }
 
   private void prepareStatements(){
@@ -140,6 +160,13 @@ public class CassandraStorage implements IStorage {
     insertRepairId = session.prepare("INSERT INTO repair_id (id_type, id) VALUES(?, 0) IF NOT EXISTS");
     selectRepairId = session.prepare("SELECT id FROM repair_id WHERE id_type = ?");
     updateRepairId = session.prepare("UPDATE repair_id SET id=? WHERE id_type =? IF id = ?");
+    getLeadOnSegmentPrepStmt = session.prepare("INSERT INTO segment_leader(segment_id, reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?, ?, ?, dateof(now())) IF NOT EXISTS");
+    renewLeadOnSegmentPrepStmt = session.prepare("UPDATE segment_leader SET reaper_instance_id = ?, reaper_instance_host = ?, last_heartbeat = dateof(now()) WHERE segment_id = ? IF reaper_instance_id = ?");
+    releaseLeadOnSegmentPrepStmt = session.prepare("DELETE FROM segment_leader WHERE segment_id = ? IF reaper_instance_id = ?");
+    storeHostMetricsPrepStmt = session.prepare("INSERT INTO host_metrics (host_address, ts, pending_compactions, has_repair_running, active_anticompactions) VALUES(?, dateof(now()), ?, ?, ?)");
+    getHostMetricsPrepStmt = session.prepare("SELECT * FROM host_metrics WHERE host_address = ?");
+    getRunningReapersCountPrepStmt = session.prepare("SELECT count(*) as nb_reapers FROM running_reapers");
+    saveHeartbeatPrepStmt = session.prepare("INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?,?,dateof(now()))");
   }
 
   @Override
@@ -371,6 +398,7 @@ public class CassandraStorage implements IStorage {
     for(com.spotify.reaper.core.RepairSegment.Builder builder:newSegments){
       RepairSegment segment = builder.build(getNewRepairId("repair_segment"));
       insertFutures.add(session.executeAsync(insertRepairSegmentPrepStmt.bind(segment.getId(), segment.getRepairUnitId(), segment.getRunId(), segment.getStartToken(), segment.getEndToken(), segment.getState().ordinal(), segment.getCoordinatorHost(), segment.getStartTime(), segment.getEndTime(), segment.getFailCount())));
+      saveSegmentToCache(Optional.of(segment));
       batch.add(insertRepairSegmentByRunPrepStmt.bind(segment.getRunId(), segment.getId()));
       if(insertFutures.size()%100==0){
         // cluster ddos protection
@@ -410,6 +438,7 @@ public class CassandraStorage implements IStorage {
     if(segmentRow != null){
       segment = createRepairSegmentFromRow(segmentRow);
     }
+    LOG.info("Refreshed segment {}", segment.getId());
 
     return Optional.fromNullable(segment);
   }
@@ -435,13 +464,85 @@ public class CassandraStorage implements IStorage {
     return segments;
   }
   
+  public Collection<RepairSegment> getRepairSegmentsForRunWithCache(long runId) {
+    List<ResultSetFuture> segmentsFuture = Lists.newArrayList();
+    Collection<RepairSegment> segments = Lists.newArrayList();
+
+    // First gather segments ids
+    ResultSet segmentsIdResultSet = session.execute(getRepairSegmentByRunIdPrepStmt.bind(runId));
+    int i=0;
+    for(Row segmentIdResult:segmentsIdResultSet) {
+      Optional<RepairSegment> segment = Optional.fromNullable(segmentCache.getIfPresent(segmentIdResult.getLong("segment_id")));
+    
+      if(segment.isPresent()) {
+        segments.add(segment.get());
+        LOG.info("From cache :)");
+      } else {      
+        // Then get segments by id
+        segmentsFuture.add(session.executeAsync(getRepairSegmentPrepStmt.bind(segmentIdResult.getLong("segment_id"))));
+        i++;
+        if(i%100==0 || segmentsIdResultSet.isFullyFetched()) {
+          segments.addAll(fetchRepairSegmentFromFutures(segmentsFuture));
+          segmentsFuture = Lists.newArrayList();
+        }
+      }
+    }
+
+    return segments;
+  }
+  
+  @Override
+  public Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(long runId, List<RingRange> localRanges) {
+    LOG.debug("Getting ranges for local node {}", localRanges);
+    List<ResultSetFuture> segmentsFuture = Lists.newArrayList();
+    Collection<RepairSegment> segments = Lists.newArrayList();
+
+    // First gather segments ids
+    ResultSet segmentsIdResultSet = session.execute(getRepairSegmentByRunIdPrepStmt.bind(runId));
+    int i=0;
+    for(Row segmentIdResult:segmentsIdResultSet) {
+      // Then get segments by id
+      Optional<RepairSegment> segment = Optional.fromNullable(segmentCache.getIfPresent(segmentIdResult.getLong("segment_id")));
+      
+      if(segment.isPresent()) {
+        segments.add(segment.get());
+        LOG.info("From cache :)");
+      } else {      
+        segmentsFuture.add(session.executeAsync(getRepairSegmentPrepStmt.bind(segmentIdResult.getLong("segment_id"))));
+        i++;
+        if(i%100==0 || segmentsIdResultSet.isExhausted()) {
+          fetchRepairSegmentFromFutures(segmentsFuture).stream().forEach(seg -> {
+            RingRange range = new RingRange(seg.getStartToken(), seg.getEndToken());
+            localRanges.stream().forEach(localRange -> {
+              if(localRange.encloses(range)) {
+                segments.add(seg);
+              }
+            });
+          });
+  
+          segmentsFuture = Lists.newArrayList();
+        }
+      }
+    }
+
+    return segments;
+  }
+  
+  
+  private boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
+    return range.encloses(new RingRange(segment.getStartToken(), segment.getEndToken()));
+    
+  }
+  
   private Collection<RepairSegment> fetchRepairSegmentFromFutures(List<ResultSetFuture> segmentsFuture){
     Collection<RepairSegment> segments = Lists.newArrayList();
     
     for(ResultSetFuture segmentResult:segmentsFuture) {
       Row segmentRow = segmentResult.getUninterruptibly().one();
       if(segmentRow!=null){
-        segments.add(createRepairSegmentFromRow(segmentRow));
+        RepairSegment segment = createRepairSegmentFromRow(segmentRow);      
+        segments.add(segment);
+        saveSegmentToCache(Optional.of(segment));
       }
     }    
     
@@ -453,20 +554,23 @@ public class CassandraStorage implements IStorage {
     return createRepairSegmentFromRow(segmentRow, segmentRow.getLong("id"));
   }
   private RepairSegment createRepairSegmentFromRow(Row segmentRow, long segmentId){
-    return new RepairSegment.Builder(segmentRow.getLong("run_id"), new RingRange(new BigInteger(segmentRow.getVarint("start_token") +""), new BigInteger(segmentRow.getVarint("end_token")+"")), segmentRow.getLong("repair_unit_id"))
+    RepairSegment segment = new RepairSegment.Builder(segmentRow.getLong("run_id"), new RingRange(new BigInteger(segmentRow.getVarint("start_token") +""), new BigInteger(segmentRow.getVarint("end_token")+"")), segmentRow.getLong("repair_unit_id"))
         .coordinatorHost(segmentRow.getString("coordinator_host"))
         .endTime(new DateTime(segmentRow.getTimestamp("end_time")))
         .failCount(segmentRow.getInt("fail_count"))
         .startTime(new DateTime(segmentRow.getTimestamp("start_time")))
         .state(State.values()[segmentRow.getInt("state")])
         .build(segmentRow.getLong("id"));
+    
+    saveSegmentToCache(Optional.of(segment));
+    return segment;
   }
 
 
   public Optional<RepairSegment> getSegment(long runId, Optional<RingRange> range){
     RepairSegment segment = null;
     List<RepairSegment> segments = Lists.<RepairSegment>newArrayList();
-    segments.addAll(getRepairSegmentsForRun(runId));
+    segments.addAll(getRepairSegmentsForRunWithCache(runId));
 
     // Sort segments by fail count and start token (in order to try those who haven't failed first, in start token order)
     Collections.sort( segments, new Comparator<RepairSegment>(){
@@ -479,16 +583,25 @@ public class CassandraStorage implements IStorage {
     });
 
     for(RepairSegment seg:segments){
-      if(seg.getState().equals(State.NOT_STARTED) // State condition
-          && ((range.isPresent() && 
-              (range.get().getStart().compareTo(seg.getStartToken())>=0 || range.get().getEnd().compareTo(seg.getEndToken())<=0)
-              ) || !range.isPresent()) // Token range condition
-          ){
-        segment = seg;
-        break;
+      LOG.debug("segment ({},{}) state = {}", seg.getStartToken(), seg.getEndToken(), seg.getState());
+      if(seg.getState().equals(State.NOT_STARTED) &&
+          ((range.isPresent() && segmentIsWithinRange(seg, range.get())) || !range.isPresent()) // Token range condition
+         ) {
+            Optional<RepairSegment> upToDateSegment = getRepairSegment(seg.getId());
+            saveSegmentToCache(upToDateSegment);
+            if(upToDateSegment.isPresent() && upToDateSegment.get().getState().equals(State.NOT_STARTED) && takeLeadOnSegment(seg.getId())) {
+              segment = seg;
+              break;
+            }
       }
     }
     return Optional.fromNullable(segment);
+  }
+  
+  private void saveSegmentToCache(Optional<RepairSegment> segment) {
+    if(segment.isPresent()) {
+      segmentCache.put(segment.get().getId(), segment.get());
+    }
   }
 
   @Override
@@ -760,4 +873,79 @@ public class CassandraStorage implements IStorage {
         .build(id);
   }
 
+  @Override
+  public boolean takeLeadOnSegment(long segmentId) {
+    LOG.debug("Trying to take lead on segment {}", segmentId);
+    ResultSet lwtResult = session.execute(getLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
+    if (lwtResult.wasApplied()) {
+      LOG.debug("Took lead on segment {}", segmentId);
+      return true;
+    }
+    
+    // Another instance took the lead on the segment
+    LOG.debug("Could not take lead on segment {}", segmentId);
+    return false;
+  }
+
+  @Override
+  public boolean renewLeadOnSegment(long segmentId) {
+    ResultSet lwtResult = session.execute(renewLeadOnSegmentPrepStmt.bind(ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress(), segmentId, ReaperApplication.REAPER_INSTANCE_ID));
+    if (lwtResult.wasApplied()) {
+      LOG.debug("Renewed lead on segment {}", segmentId);
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public void releaseLeadOnSegment(long segmentId) {
+    ResultSet lwtResult = session.execute(releaseLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID));
+    if (lwtResult.wasApplied()) {
+      LOG.debug("Released lead on segment {}", segmentId);
+    } else {
+      LOG.error("Could not release lead on segment {}", segmentId);
+    }
+  }
+
+  @Override
+  public void storeHostMetrics(HostMetrics hostMetrics) {    
+    session.execute(storeHostMetricsPrepStmt.bind(hostMetrics.getHostAddress(), hostMetrics.getPendingCompactions(), hostMetrics.hasRepairRunning(), hostMetrics.getActiveAnticompactions()));
+  }
+
+  @Override
+  public Optional<HostMetrics> getHostMetrics(String hostName) {
+    ResultSet result = session.execute(getHostMetricsPrepStmt.bind(hostName));
+    for(Row metrics:result) {
+      return Optional.of(HostMetrics.builder().withHostAddress(hostName)
+                                  .withPendingCompactions(metrics.getInt("pending_compactions"))
+                                  .withHasRepairRunning(metrics.getBool("has_repair_running"))
+                                  .withActiveAnticompactions(metrics.getInt("active_anticompactions"))
+                                  .build());
+     }
+    
+    return Optional.absent();
+  }
+
+  @Override
+  public StorageType getStorageType() {
+    return StorageType.CASSANDRA;
+  }
+
+  @Override
+  public int countRunningReapers() {
+    ResultSet result = session.execute(getRunningReapersCountPrepStmt.bind());
+    int runningReapers = (int) result.one().getLong("nb_reapers");
+    LOG.debug("Running reapers = {}", runningReapers);
+    return runningReapers>0?runningReapers:1;
+  }
+
+  @Override
+  public void saveHeartbeat() {
+    DateTime now = DateTime.now();
+    // Send heartbeats every minute
+    if(now.minusSeconds(60).getMillis() >= lastHeartBeat.getMillis()) {
+      session.executeAsync(saveHeartbeatPrepStmt.bind(ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
+      lastHeartBeat = now;
+    }
+  }
 }

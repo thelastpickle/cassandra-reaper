@@ -93,6 +93,10 @@ public class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   @DefaultValue("true")
   private Boolean enableDynamicSeedList;
+  
+  @JsonProperty
+  @DefaultValue("false")
+  private Boolean localJmxMode;
 
   public int getSegmentCount() {
     return segmentCount;
@@ -213,6 +217,14 @@ public class ReaperApplicationConfiguration extends Configuration {
   
   public Boolean getEnableDynamicSeedList() {
     return this.enableDynamicSeedList==null?Boolean.TRUE:this.enableDynamicSeedList;
+  }
+  
+  public void setLocalJmxMode(Boolean localJmxMode) {
+    this.localJmxMode = localJmxMode;
+  }
+  
+  public Boolean getLocalJmxMode() {
+    return this.localJmxMode==null?Boolean.FALSE:this.localJmxMode;
   }
 
   public void setUseAddressTranslator(Boolean useAddressTranslator) {

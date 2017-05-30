@@ -19,6 +19,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.spotify.reaper.AppContext;
+import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
@@ -101,6 +102,8 @@ public class RepairRunnerTest {
     context.storage = storage;
     context.repairManager = new RepairManager();
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setLocalJmxMode(false);
 
     final Semaphore mutex = new Semaphore(0);
 
@@ -207,7 +210,9 @@ public class RepairRunnerTest {
     context.storage = storage;
     context.repairManager = new RepairManager();
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
-
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setLocalJmxMode(false);
+    
     final Semaphore mutex = new Semaphore(0);
 
     context.jmxConnectionFactory = new JmxConnectionFactory() {
@@ -296,7 +301,9 @@ public class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.repairManager = new RepairManager();
-
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setLocalJmxMode(false);
+    
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
     long cf = storage.addRepairUnit(
         new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR)).getId();
@@ -362,10 +369,12 @@ public class RepairRunnerTest {
   @Test
   public void getPossibleParallelRepairsTest() throws Exception {
     Map<List<String>, List<String>> map = RepairRunnerTest.threeNodeCluster();
-    assertEquals(1, RepairRunner.getPossibleParallelRepairsCount(map));
+    Map<String, String> endpointsThreeNodes = RepairRunnerTest.threeNodeClusterEndpoint();
+    assertEquals(1, RepairRunner.getPossibleParallelRepairsCount(map, endpointsThreeNodes));
 
     map = RepairRunnerTest.sixNodeCluster();
-    assertEquals(2, RepairRunner.getPossibleParallelRepairsCount(map));
+    Map<String, String> endpointsSixNodes = RepairRunnerTest.sixNodeClusterEndpoint();
+    assertEquals(2, RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes));
   }
 
   @Test
@@ -384,8 +393,37 @@ public class RepairRunnerTest {
     List<RingRange> segments = generator.generateSegments(32, tokens, Boolean.FALSE);
 
     Map<List<String>, List<String>> map = RepairRunnerTest.sixNodeCluster();
+    Map<String, String> endpointsSixNodes = RepairRunnerTest.sixNodeClusterEndpoint();
     List<RingRange> ranges = RepairRunner.getParallelRanges(
-        RepairRunner.getPossibleParallelRepairsCount(map),
+        RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes),
+        segments
+    );
+    assertEquals(2, ranges.size());
+    assertEquals(  "0", ranges.get(0).getStart().toString());
+    assertEquals("150", ranges.get(0).getEnd().toString());
+    assertEquals("150", ranges.get(1).getStart().toString());
+    assertEquals(  "0", ranges.get(1).getEnd().toString());
+  }
+  
+  @Test
+  public void getParallelSegmentsTest2() throws ReaperException {
+    List<BigInteger> tokens = Lists.transform(
+        Lists.newArrayList("0", "25", "50", "75", "100", "125", "150", "175", "200", "225", "250"),
+        new Function<String, BigInteger>() {
+          @Nullable
+          @Override
+          public BigInteger apply(String s) {
+            return new BigInteger(s);
+          }
+        }
+    );
+    SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
+    List<RingRange> segments = generator.generateSegments(32, tokens, Boolean.FALSE);
+
+    Map<List<String>, List<String>> map = RepairRunnerTest.sixNodeCluster();
+    Map<String, String> endpointsSixNodes = RepairRunnerTest.sixNodeClusterEndpoint();
+    List<RingRange> ranges = RepairRunner.getParallelRanges(
+        RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes),
         segments
     );
     assertEquals(2, ranges.size());
@@ -413,6 +451,26 @@ public class RepairRunnerTest {
     map = addRangeToMap(map, "250",   "0", "a6", "a1", "a2");
     return map;
   }
+  
+  public static Map<String, String> threeNodeClusterEndpoint() {
+    Map<String, String> map = Maps.newHashMap();
+    map.put("host1", "hostId1");
+    map.put("host2", "hostId2");
+    map.put("host3", "hostId3");
+    return map;
+  }
+
+  public static Map<String, String> sixNodeClusterEndpoint() {
+    Map<String, String> map = Maps.newHashMap();
+    map.put("host1", "hostId1");
+    map.put("host2", "hostId2");
+    map.put("host3", "hostId3");
+    map.put("host4", "hostId4");
+    map.put("host5", "hostId5");
+    map.put("host6", "hostId6");
+    return map;
+  }
+
 
   private static Map<List<String>, List<String>> addRangeToMap(Map<List<String>, List<String>> map,
       String rStart, String rEnd, String... hosts) {

@@ -55,27 +55,34 @@ public class RepairManager {
    * @throws ReaperException 
    */
   public void resumeRunningRepairRuns(AppContext context) throws ReaperException {
+    context.storage.saveHeartbeat();
     Collection<RepairRun> running =
         context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
     for (RepairRun repairRun : running) {
-      Collection<RepairSegment> runningSegments =
-          context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
-      for (RepairSegment segment : runningSegments) {
-        try (JmxProxy jmxProxy = context.jmxConnectionFactory
-            .connect(segment.getCoordinatorHost())) {
-          SegmentRunner.abort(context, segment, jmxProxy);
-        } catch (ReaperException e) {
-          LOG.debug("Tried to abort repair on segment {} marked as RUNNING, but the host was down"
-                    + " (so abortion won't be needed)", segment.getId(), e);          
-          SegmentRunner.postpone(context, segment, context.storage.getRepairUnit(repairRun.getId()));
+      if(!repairRunners.containsKey(repairRun.getId())) {
+        Collection<RepairSegment> runningSegments =
+            context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
+        for (RepairSegment segment : runningSegments) {
+          try (JmxProxy jmxProxy = context.jmxConnectionFactory
+              .connect(segment.getCoordinatorHost())) {
+            SegmentRunner.abort(context, segment, jmxProxy);
+          } catch (ReaperException e) {
+            LOG.debug("Tried to abort repair on segment {} marked as RUNNING, but the host was down"
+                      + " (so abortion won't be needed)", segment.getId(), e);          
+            SegmentRunner.postpone(context, segment, context.storage.getRepairUnit(repairRun.getId()));
+          }
         }
-      }
-      startRepairRun(context, repairRun);
+        
+        LOG.info("Restarting run id {} that has no runner", repairRun.getId());
+        startRepairRun(context, repairRun);
+      } 
     }
     Collection<RepairRun> paused =
         context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED);
     for (RepairRun pausedRepairRun : paused) {
-      startRunner(context, pausedRepairRun.getId());
+      if(!repairRunners.containsKey(pausedRepairRun.getId())) {
+        startRunner(context, pausedRepairRun.getId());
+      }
     }
   }
 
