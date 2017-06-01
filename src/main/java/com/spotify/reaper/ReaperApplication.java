@@ -122,7 +122,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     context.repairManager.initializeThreadPool(
         config.getRepairRunThreadCount(),
         config.getHangingRepairTimeoutMins(), TimeUnit.MINUTES,
-        30, TimeUnit.SECONDS);
+        config.getRepairManagerSchedulingIntervalSeconds(), TimeUnit.SECONDS);
 
     if (context.storage == null) {
       LOG.info("initializing storage of type: {}", config.getStorageType());

@@ -69,7 +69,7 @@ public class RepairRunner implements Runnable {
     JmxProxy jmx = this.context.jmxConnectionFactory.connectAny(cluster.get());
 
     String keyspace = repairUnitOpt.get().getKeyspaceName();
-    int parallelRepairs = getPossibleParallelRepairsCount(jmx.getRangeToEndpointMap(keyspace));
+    int parallelRepairs = getPossibleParallelRepairsCount(jmx.getRangeToEndpointMap(keyspace), jmx.getEndpointToHostId());
     if(repairUnitOpt.isPresent() && repairUnitOpt.get().getIncrementalRepair()) {
     	// with incremental repair, can't have more parallel repairs than nodes 
     	parallelRepairs = 1;
@@ -96,14 +96,15 @@ public class RepairRunner implements Runnable {
   }
 
   @VisibleForTesting
-  public static int getPossibleParallelRepairsCount(Map<List<String>, List<String>> ranges)
+  public static int getPossibleParallelRepairsCount(Map<List<String>, List<String>> ranges, Map<String, String> hostsInRing)
       throws ReaperException {
     if (ranges.isEmpty()) {
       String msg = "Repairing 0-sized cluster.";
       LOG.error(msg);
       throw new ReaperException(msg);
     }
-    return ranges.size() / ranges.values().iterator().next().size();
+    
+    return Math.min(ranges.size() / ranges.values().iterator().next().size(), Math.max(1, hostsInRing.keySet().size()/ranges.values().iterator().next().size()));
   }
 
   @VisibleForTesting
