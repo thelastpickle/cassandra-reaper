@@ -1,3 +1,8 @@
+0.6.0
+ * New data model for the Cassandra backend - huge performance optimizations for this backend
+ * Fix parallel repair computation for clusters with vnodes
+ * Minimum wait time between segments is now configurable
+ * Added an optional query logger for the Cassandra backend
 0.5.0
  * Add configurable auto-scheduling of repairs for all (non system) keyspaces
  * Fix bad segment count display on scheduled repairs
