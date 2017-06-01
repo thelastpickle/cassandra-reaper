@@ -85,11 +85,6 @@ public final class CassandraStorage implements IStorage {
   private PreparedStatement insertRepairScheduleByClusterAndKsPrepStmt;
   private PreparedStatement deleteRepairSchedulePrepStmt;
   private PreparedStatement deleteRepairScheduleByClusterAndKsPrepStmt;
-  private PreparedStatement deleteRepairSegmentPrepStmt;
-  private PreparedStatement deleteRepairSegmentByRunId;
-  private PreparedStatement insertRepairId;
-  private PreparedStatement selectRepairId;
-  private PreparedStatement updateRepairId;
   private PreparedStatement getLeadOnSegmentPrepStmt;
   private PreparedStatement renewLeadOnSegmentPrepStmt;
   private PreparedStatement releaseLeadOnSegmentPrepStmt;
@@ -141,9 +136,6 @@ public final class CassandraStorage implements IStorage {
     getRepairScheduleByClusterAndKsPrepStmt = session.prepare("SELECT repair_schedule_id FROM repair_schedule_by_cluster_and_keyspace WHERE cluster_name = ? and keyspace_name = ?");
     deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule_v1 WHERE id = ?");
     deleteRepairScheduleByClusterAndKsPrepStmt = session.prepare("DELETE FROM repair_schedule_by_cluster_and_keyspace WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
-    insertRepairId = session.prepare("INSERT INTO repair_id (id_type, id) VALUES(?, 0) IF NOT EXISTS");
-    selectRepairId = session.prepare("SELECT id FROM repair_id WHERE id_type = ?");
-    updateRepairId = session.prepare("UPDATE repair_id SET id=? WHERE id_type =? IF id = ?");
     getLeadOnSegmentPrepStmt = session.prepare("INSERT INTO segment_leader(segment_id, reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?, ?, ?, dateof(now())) IF NOT EXISTS");
     renewLeadOnSegmentPrepStmt = session.prepare("UPDATE segment_leader SET reaper_instance_id = ?, reaper_instance_host = ?, last_heartbeat = dateof(now()) WHERE segment_id = ? IF reaper_instance_id = ?");
     releaseLeadOnSegmentPrepStmt = session.prepare("DELETE FROM segment_leader WHERE segment_id = ? IF reaper_instance_id = ?");

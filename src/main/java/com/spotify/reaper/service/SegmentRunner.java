@@ -356,7 +356,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
           }
           if (hostMetrics.get().hasRepairRunning()) {
             LOG.info("SegmentRunner declined to repair segment {} because one of the hosts ({}) was "
-                     + "already involved in a repair", segmentId, hostProxy.getHost());
+                     + "already involved in a repair", segmentId, hostName);
             String msg = "Postponed due to affected hosts already doing repairs";
             repairRunner.updateLastEvent(msg);
             handlePotentialStuckRepairs(hostProxy, busyHosts, hostName);
