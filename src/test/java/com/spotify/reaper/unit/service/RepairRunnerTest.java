@@ -50,6 +50,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -87,15 +88,12 @@ public class RepairRunnerTest {
         storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1,
-                              RepairParallelism.PARALLEL));
-    storage.addRepairSegments(Collections.singleton(
-        new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE),
-                                  cf.getId())), run.getId());
-    final long RUN_ID = run.getId();
-    final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
+        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
+        Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ZERO, BigInteger.ONE), cf.getId())));
+    final UUID RUN_ID = run.getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
-    assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
+    assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
     context.storage = storage;
@@ -123,7 +121,7 @@ public class RepairRunnerTest {
               @Override
               public Integer answer(InvocationOnMock invocation) throws Throwable {
                 assertEquals(RepairSegment.State.NOT_STARTED,
-                             storage.getRepairSegment(SEGMENT_ID).get().getState());
+                             storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
 
                 final int repairNumber = repairAttempts.getAndIncrement();
                 switch (repairNumber) {
@@ -134,7 +132,7 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(), null);
                         assertEquals(RepairSegment.State.RUNNING,
-                                     storage.getRepairSegment(SEGMENT_ID).get().getState());
+                                     storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                       }
                     }.start();
                     break;
@@ -145,11 +143,11 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(), null);
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(SEGMENT_ID).get().getState());
+                            storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, Optional.of(ActiveRepairService.Status.SESSION_SUCCESS), Optional.absent(), null);
                         assertEquals(RepairSegment.State.DONE,
-                            storage.getRepairSegment(SEGMENT_ID).get().getState());
+                            storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(), null);
                         mutex.release();
@@ -193,15 +191,12 @@ public class RepairRunnerTest {
         storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1,
-                              RepairParallelism.PARALLEL));
-    storage.addRepairSegments(Collections.singleton(
-        new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE),
-                                  cf.getId())), run.getId());
-    final long RUN_ID = run.getId();
-    final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
+        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
+        Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ZERO, BigInteger.ONE), cf.getId())));
+    final UUID RUN_ID = run.getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
-    assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
+    assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
     context.storage = storage;
@@ -230,7 +225,7 @@ public class RepairRunnerTest {
               @Override
               public Integer answer(InvocationOnMock invocation) throws Throwable {
                 assertEquals(RepairSegment.State.NOT_STARTED,
-                             storage.getRepairSegment(SEGMENT_ID).get().getState());
+                             storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
 
                 final int repairNumber = repairAttempts.getAndIncrement();
                 switch (repairNumber) {
@@ -241,7 +236,7 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.START), null);
                         assertEquals(RepairSegment.State.RUNNING,
-                                     storage.getRepairSegment(SEGMENT_ID).get().getState());
+                                     storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                       }
                     }.start();
                     break;
@@ -252,11 +247,11 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.START), null);
                         assertEquals(RepairSegment.State.RUNNING,
-                            storage.getRepairSegment(SEGMENT_ID).get().getState());
+                            storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.SUCCESS), null);
                         assertEquals(RepairSegment.State.DONE,
-                            storage.getRepairSegment(SEGMENT_ID).get().getState());
+                            storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                         handler.get()
                             .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.COMPLETE), null);
                         mutex.release();
@@ -282,7 +277,7 @@ public class RepairRunnerTest {
     Thread.sleep(100);
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }
-  
+
   @Test
   public void testResumeRepair() throws InterruptedException, ReaperException {
     final String CLUSTER_NAME = "reaper";
@@ -298,24 +293,22 @@ public class RepairRunnerTest {
     context.repairManager = new RepairManager();
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
-    long cf = storage.addRepairUnit(
+    UUID cf = storage.addRepairUnit(
         new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR)).getId();
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY, 1,
-                              RepairParallelism.PARALLEL));
-    storage.addRepairSegments(Lists.newArrayList(
-        new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ZERO, BigInteger.ONE), cf)
-            .state(RepairSegment.State.RUNNING).startTime(DateTime.now()).coordinatorHost("reaper")
-            .repairCommandId(1337),
-        new RepairSegment.Builder(run.getId(), new RingRange(BigInteger.ONE, BigInteger.ZERO), cf)
-    ), run.getId());
-    final long RUN_ID = run.getId();
-    final long SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
+        new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
+        Lists.newArrayList(
+            new RepairSegment.Builder(new RingRange(BigInteger.ZERO, BigInteger.ONE), cf)
+                .state(RepairSegment.State.RUNNING).startTime(DateTime.now()).coordinatorHost("reaper")
+                .repairCommandId(1337),
+            new RepairSegment.Builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf)));
+    final UUID RUN_ID = run.getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
 
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    assertEquals(storage.getRepairSegment(SEGMENT_ID).get().getState(),
+    assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
@@ -334,7 +327,7 @@ public class RepairRunnerTest {
               @Override
               public Integer answer(InvocationOnMock invocation) throws Throwable {
                 assertEquals(RepairSegment.State.NOT_STARTED,
-                             storage.getRepairSegment(SEGMENT_ID).get().getState());
+                             storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                 new Thread() {
                   @Override
                   public void run() {
@@ -362,10 +355,12 @@ public class RepairRunnerTest {
   @Test
   public void getPossibleParallelRepairsTest() throws Exception {
     Map<List<String>, List<String>> map = RepairRunnerTest.threeNodeCluster();
-    assertEquals(1, RepairRunner.getPossibleParallelRepairsCount(map));
+    Map<String, String> endpointsThreeNodes = RepairRunnerTest.threeNodeClusterEndpoint();
+    assertEquals(1, RepairRunner.getPossibleParallelRepairsCount(map, endpointsThreeNodes));
 
     map = RepairRunnerTest.sixNodeCluster();
-    assertEquals(2, RepairRunner.getPossibleParallelRepairsCount(map));
+    Map<String, String> endpointsSixNodes = RepairRunnerTest.sixNodeClusterEndpoint();
+    assertEquals(2, RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes));
   }
 
   @Test
@@ -384,8 +379,37 @@ public class RepairRunnerTest {
     List<RingRange> segments = generator.generateSegments(32, tokens, Boolean.FALSE);
 
     Map<List<String>, List<String>> map = RepairRunnerTest.sixNodeCluster();
+    Map<String, String> endpointsSixNodes = RepairRunnerTest.sixNodeClusterEndpoint();
     List<RingRange> ranges = RepairRunner.getParallelRanges(
-        RepairRunner.getPossibleParallelRepairsCount(map),
+        RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes),
+        segments
+    );
+    assertEquals(2, ranges.size());
+    assertEquals(  "0", ranges.get(0).getStart().toString());
+    assertEquals("150", ranges.get(0).getEnd().toString());
+    assertEquals("150", ranges.get(1).getStart().toString());
+    assertEquals(  "0", ranges.get(1).getEnd().toString());
+  }
+
+  @Test
+  public void getParallelSegmentsTest2() throws ReaperException {
+    List<BigInteger> tokens = Lists.transform(
+        Lists.newArrayList("0", "25", "50", "75", "100", "125", "150", "175", "200", "225", "250"),
+        new Function<String, BigInteger>() {
+          @Nullable
+          @Override
+          public BigInteger apply(String s) {
+            return new BigInteger(s);
+          }
+        }
+    );
+    SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
+    List<RingRange> segments = generator.generateSegments(32, tokens, Boolean.FALSE);
+
+    Map<List<String>, List<String>> map = RepairRunnerTest.sixNodeCluster();
+    Map<String, String> endpointsSixNodes = RepairRunnerTest.sixNodeClusterEndpoint();
+    List<RingRange> ranges = RepairRunner.getParallelRanges(
+        RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes),
         segments
     );
     assertEquals(2, ranges.size());
@@ -413,6 +437,26 @@ public class RepairRunnerTest {
     map = addRangeToMap(map, "250",   "0", "a6", "a1", "a2");
     return map;
   }
+
+  public static Map<String, String> threeNodeClusterEndpoint() {
+    Map<String, String> map = Maps.newHashMap();
+    map.put("host1", "hostId1");
+    map.put("host2", "hostId2");
+    map.put("host3", "hostId3");
+    return map;
+  }
+
+  public static Map<String, String> sixNodeClusterEndpoint() {
+    Map<String, String> map = Maps.newHashMap();
+    map.put("host1", "hostId1");
+    map.put("host2", "hostId2");
+    map.put("host3", "hostId3");
+    map.put("host4", "hostId4");
+    map.put("host5", "hostId5");
+    map.put("host6", "hostId6");
+    return map;
+  }
+
 
   private static Map<List<String>, List<String>> addRangeToMap(Map<List<String>, List<String>> map,
       String rStart, String rEnd, String... hosts) {

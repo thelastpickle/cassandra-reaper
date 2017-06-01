@@ -73,7 +73,7 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   private String enableCrossOrigin;
 
-  
+
   @JsonProperty
   private DataSourceFactory database = new DataSourceFactory();
 
@@ -86,13 +86,16 @@ public class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   @DefaultValue("false")
   private Boolean allowUnreachableNodes;
-  
+
   @JsonProperty
   private AutoSchedulingConfiguration autoScheduling;
-  
+
   @JsonProperty
   @DefaultValue("true")
   private Boolean enableDynamicSeedList;
+
+  @JsonProperty
+  private Integer repairManagerSchedulingIntervalSeconds;
 
   public int getSegmentCount() {
     return segmentCount;
@@ -117,7 +120,7 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setRepairIntensity(double repairIntensity) {
     this.repairIntensity = repairIntensity;
   }
-  
+
   public Boolean getIncrementalRepair() {
 	    return incrementalRepair;
   }
@@ -125,7 +128,7 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setIncrementalRepair(Boolean incrementalRepair) {
 	    this.incrementalRepair = incrementalRepair;
   }
-  
+
   public Integer getScheduleDaysBetween() {
     return scheduleDaysBetween;
   }
@@ -170,13 +173,13 @@ public class ReaperApplicationConfiguration extends Configuration {
     this.database = database;
   }
 
-  public int getHangingRepairTimeoutMins() {
-    return hangingRepairTimeoutMins;
+  public int getRepairManagerSchedulingIntervalSeconds() {
+    return this.repairManagerSchedulingIntervalSeconds==null?30:this.repairManagerSchedulingIntervalSeconds;
   }
 
   @JsonProperty
-  public void setHangingRepairTimeoutMins(int hangingRepairTimeoutMins) {
-    this.hangingRepairTimeoutMins = hangingRepairTimeoutMins;
+  public void setRepairManagerSchedulingIntervalSeconds(int repairManagerSchedulingIntervalSeconds) {
+    this.repairManagerSchedulingIntervalSeconds = repairManagerSchedulingIntervalSeconds;
   }
 
   public Map<String, Integer> getJmxPorts() {
@@ -206,11 +209,11 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setAutoScheduling(AutoSchedulingConfiguration autoRepairScheduling) {
     this.autoScheduling = autoRepairScheduling;
   }
-  
+
   public void setEnableDynamicSeedList(Boolean enableDynamicSeedList) {
     this.enableDynamicSeedList = enableDynamicSeedList;
   }
-  
+
   public Boolean getEnableDynamicSeedList() {
     return this.enableDynamicSeedList==null?Boolean.TRUE:this.enableDynamicSeedList;
   }
@@ -239,8 +242,8 @@ public class ReaperApplicationConfiguration extends Configuration {
     }
 
   }
-  
- 
+
+
   private CassandraFactory cassandra = new CassandraFactory();
 
   @JsonProperty("cassandra")
@@ -252,15 +255,24 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setCassandraFactory(CassandraFactory cassandra) {
       this.cassandra = cassandra;
   }
-  
+
   public Boolean getAllowUnreachableNodes() {
-    return allowUnreachableNodes;
+    return allowUnreachableNodes != null ? allowUnreachableNodes : false;
   }
 
   public void setAllowUnreachableNodes(Boolean allow) {
     this.allowUnreachableNodes = allow;
   }
-  
+
+  public int getHangingRepairTimeoutMins() {
+    return hangingRepairTimeoutMins;
+  }
+
+  @JsonProperty
+  public void setHangingRepairTimeoutMins(int hangingRepairTimeoutMins) {
+    this.hangingRepairTimeoutMins = hangingRepairTimeoutMins;
+  }
+
   public static class AutoSchedulingConfiguration {
 
     @JsonProperty
@@ -277,7 +289,7 @@ public class ReaperApplicationConfiguration extends Configuration {
 
     @JsonProperty
     private Duration scheduleSpreadPeriod;
-    
+
     @JsonProperty
     private List<String> excludedKeyspaces = Collections.emptyList();
 
@@ -324,7 +336,7 @@ public class ReaperApplicationConfiguration extends Configuration {
     public boolean hasScheduleSpreadPeriod() {
       return scheduleSpreadPeriod != null;
     }
-    
+
     public void setExcludedKeyspaces(List<String> excludedKeyspaces) {
       this.excludedKeyspaces = excludedKeyspaces;
     }

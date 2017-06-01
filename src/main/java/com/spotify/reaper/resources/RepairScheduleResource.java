@@ -52,6 +52,7 @@ import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
 import com.spotify.reaper.service.SchedulingManager;
+import java.util.UUID;
 
 @Path("/repair_schedule")
 @Produces(MediaType.APPLICATION_JSON)
@@ -212,7 +213,7 @@ public class RepairScheduleResource {
   @Path("/{id}")
   public Response modifyState(
       @Context UriInfo uriInfo,
-      @PathParam("id") Long repairScheduleId,
+      @PathParam("id") UUID repairScheduleId,
       @QueryParam("state") Optional<String> state) {
 
     LOG.info("modify repair schedule state called with: id = {}, state = {}",
@@ -290,7 +291,7 @@ public class RepairScheduleResource {
    */
   @GET
   @Path("/{id}")
-  public Response getRepairSchedule(@PathParam("id") Long repairScheduleId) {
+  public Response getRepairSchedule(@PathParam("id") UUID repairScheduleId) {
     LOG.debug("get repair_schedule called with: id = {}", repairScheduleId);
     Optional<RepairSchedule> repairSchedule = context.storage.getRepairSchedule(repairScheduleId);
     if (repairSchedule.isPresent()) {
@@ -399,7 +400,7 @@ public class RepairScheduleResource {
    */
   @DELETE
   @Path("/{id}")
-  public Response deleteRepairSchedule(@PathParam("id") Long repairScheduleId,
+  public Response deleteRepairSchedule(@PathParam("id") UUID repairScheduleId,
       @QueryParam("owner") Optional<String> owner) {
     LOG.info("delete repair schedule called with repairScheduleId: {}, and owner: {}",
         repairScheduleId, owner);

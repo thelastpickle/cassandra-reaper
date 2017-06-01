@@ -13,6 +13,7 @@
  */
 package com.spotify.reaper.storage.postgresql;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableList;
 import com.spotify.reaper.core.RepairSchedule;
 
@@ -24,13 +25,14 @@ import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.UUID;
 
 public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
 
   @Override
   public RepairSchedule map(int index, ResultSet r, StatementContext ctx) throws SQLException {
     
-    Long[] runHistoryLong = new Long[0];
+    UUID[] runHistoryUUIDs = new UUID[0];
     
     Integer[] runHistory = null;
     Array av = r.getArray("run_history");
@@ -44,9 +46,9 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
       }
       
       if (null != runHistory && runHistory.length > 0) {
-        runHistoryLong = new Long[runHistory.length];
+        runHistoryUUIDs = new UUID[runHistory.length];
         for (int i = 0; i < runHistory.length; i++) {
-          runHistoryLong[i] = runHistory[i].longValue();
+          runHistoryUUIDs[i] = fromSequenceId(runHistory[i]);
         }
       }
     }  
@@ -59,18 +61,21 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
 
     RepairSchedule.State scheduleState = RepairSchedule.State.valueOf(stateStr);
     return new RepairSchedule.Builder(
-        r.getLong("repair_unit_id"),
+        fromSequenceId(r.getLong("repair_unit_id")),
         scheduleState,
         r.getInt("days_between"),
         RepairRunMapper.getDateTimeOrNull(r, "next_activation"),
-        ImmutableList.copyOf(runHistoryLong),
+        ImmutableList.copyOf(runHistoryUUIDs),
         r.getInt("segment_count"),
         RepairParallelism.fromName(r.getString("repair_parallelism")),
         r.getDouble("intensity"),
         RepairRunMapper.getDateTimeOrNull(r, "creation_time"))
         .owner(r.getString("owner"))
         .pauseTime(RepairRunMapper.getDateTimeOrNull(r, "pause_time"))
-        .build(r.getLong("id"));
+        .build(fromSequenceId(r.getLong("id")));
   }
 
+  private static UUID fromSequenceId(long insertedId) {
+    return new UUID(insertedId, UUIDs.timeBased().getLeastSignificantBits());
+  }
 }
