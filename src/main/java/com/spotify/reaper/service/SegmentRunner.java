@@ -327,15 +327,15 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
                 + " Run id '{}'", hostName, segment.getRunId());
       JmxProxy hostProxy = null;
       try{
-        Optional<HostMetrics> hostMetrics;
+        Optional<HostMetrics> hostMetrics = Optional.absent();
         try{
           hostProxy = context.jmxConnectionFactory.connect(hostName);
           connected = true;
+          hostMetrics = getMetricsForHost(hostName, hostProxy);
         } 
         catch(Exception e) {
           LOG.debug("Couldn't reach host {} through JMX. Trying to collect metrics from storage...");
         }
-        hostMetrics = getMetricsForHost(hostName, hostProxy);
         
         if(!hostMetrics.isPresent()) {
           gotMetricsForAllHosts = false;
