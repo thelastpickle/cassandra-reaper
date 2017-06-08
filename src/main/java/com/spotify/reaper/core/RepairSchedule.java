@@ -16,7 +16,10 @@ package com.spotify.reaper.core;
 import com.google.common.collect.ImmutableList;
 import com.spotify.reaper.core.RepairSegment.State;
 import com.spotify.reaper.storage.postgresql.LongCollectionSQLType;
+
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
@@ -85,7 +88,11 @@ public class RepairSchedule {
    * Generic collection type would be hard to map into Postgres array types.
    */
   public LongCollectionSQLType getRunHistorySQL() {
-    return new LongCollectionSQLType(runHistory);
+    List<Long> list = runHistory
+      .stream()
+      .map(UUID::getMostSignificantBits)
+      .collect(Collectors.toList());
+    return new LongCollectionSQLType(list);
   }
 
   public int getSegmentCount() {

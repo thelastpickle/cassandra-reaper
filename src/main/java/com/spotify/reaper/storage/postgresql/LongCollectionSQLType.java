@@ -10,13 +10,13 @@ import java.util.UUID;
  */
 public class LongCollectionSQLType {
 
-  private Collection<UUID> collection;
+  private Collection<Long> collection;
 
-  public LongCollectionSQLType(Collection<UUID> collection) {
+  public LongCollectionSQLType(Collection<Long> collection) {
     this.collection = collection;
   }
 
-  public Collection<UUID> getValue() {
+  public Collection<Long> getValue() {
     if (this.collection == null) {
       return Lists.newArrayList();
     } else {
