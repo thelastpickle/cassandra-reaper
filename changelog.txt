@@ -1,3 +1,5 @@
+0.6.1
+ * Fix for storing run history with the Postgres/H2 backends
 0.6.0
  * New data model for the Cassandra backend - huge performance optimizations for this backend
  * Fix parallel repair computation for clusters with vnodes
