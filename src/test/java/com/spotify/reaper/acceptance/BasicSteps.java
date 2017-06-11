@@ -6,16 +6,13 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import com.spotify.reaper.AppContext;
-import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.SimpleReaperClient;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.resources.CommonTools;
-import com.spotify.reaper.resources.view.ClusterStatus;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
 
-import org.glassfish.jersey.client.ClientResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,12 +24,12 @@ import java.util.Set;
 
 import javax.ws.rs.core.Response;
 
-import cucumber.api.PendingException;
 import cucumber.api.java.Before;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import org.joda.time.DateTime;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -41,7 +38,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.awaitility.Awaitility.*;
-import static org.awaitility.Duration.*;
 import static java.util.concurrent.TimeUnit.*;
 
 /**
@@ -224,7 +220,7 @@ public class BasicSteps {
     RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
     TestContext.LAST_MODIFIED_ID = schedule.getId();
   }
-  
+
   @When("^a new daily repair schedule is added for the last added cluster and keyspace \"([^\"]*)\"$")
   public void a_new_daily_repair_schedule_is_added_for_the_last_added_cluster(String keyspace)
       throws Throwable {
@@ -240,6 +236,43 @@ public class BasicSteps {
     String responseData = response.readEntity(String.class);
     RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
     TestContext.LAST_MODIFIED_ID = schedule.getId();
+  }
+
+  @When("^a new daily repair schedule is added for the last added cluster and keyspace \"([^\"]*)\" with next repair immediately$")
+  public void a_new_daily_repair_schedule_is_added_for_the_last_added_cluster_and_keyspace_with_next_repair_immediately(String keyspace)
+      throws Throwable {
+    LOG.info("adding a new daily repair schedule to keyspace: {}", keyspace);
+    Map<String, String> params = Maps.newHashMap();
+    params.put("clusterName", TestContext.TEST_CLUSTER);
+    params.put("keyspace", keyspace);
+    params.put("owner", TestContext.TEST_USER);
+    params.put("intensity", "0.9");
+    params.put("scheduleDaysBetween", "1");
+    params.put("scheduleTriggerTime", DateTime.now().plusSeconds(1).toString());
+    Response response =
+        ReaperTestJettyRunner.callReaper("POST", "/repair_schedule", Optional.of(params));
+    assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
+    String responseData = response.readEntity(String.class);
+    RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
+    TestContext.LAST_MODIFIED_ID = schedule.getId();
+  }
+
+  @And("^we wait for a scheduled repair run has started for cluster \"([^\"]*)\"$")
+  public void a_scheduled_repair_run_has_started_for_cluster(String clusterName) throws Throwable {
+    LOG.info("waiting for a scheduled repair run to start for cluster: {}", clusterName);
+    await().with().pollInterval(10, SECONDS).atMost(2, MINUTES).until(() ->
+    {
+        Response response =
+            ReaperTestJettyRunner.callReaper("GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
+
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        String responseData = response.readEntity(String.class);
+        List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
+        if (!runs.isEmpty()) {
+            TestContext.LAST_MODIFIED_ID = runs.get(0).getId();
+        }
+        return !runs.isEmpty();
+    });
   }
 
   @And("^reaper has scheduled repair for cluster called \"([^\"]*)\"$")
@@ -316,6 +349,30 @@ public class BasicSteps {
     params.put("owner", TestContext.TEST_USER);
     callAndExpect("DELETE", "/repair_schedule/" + TestContext.LAST_MODIFIED_ID,
                   Optional.of(params), Response.Status.OK, Optional.of("\"" + TestContext.TEST_CLUSTER + "\""));
+  }
+
+  @When("^all added schedules are deleted for the last added cluster$")
+  public void all_added_schedules_are_deleted_for_the_last_added_cluster()
+      throws Throwable {
+
+    Response response =
+            ReaperTestJettyRunner.callReaper("GET", "/repair_schedule/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
+
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    String responseData = response.readEntity(String.class);
+    SimpleReaperClient.parseRepairScheduleStatusListJSON(responseData).stream().forEach(schedule -> {
+          LOG.info("pause last added repair schedule with id: {}", schedule.getId());
+          Map<String, String> params = Maps.newHashMap();
+          params.put("state", "paused");
+          callAndExpect("PUT", "/repair_schedule/" + schedule.getId(),
+                  Optional.of(params), Response.Status.OK, Optional.of("\"" + TestContext.TEST_CLUSTER + "\""));
+
+          LOG.info("delete last added repair schedule with id: {}", schedule.getId());
+          params.clear();
+          params.put("owner", TestContext.TEST_USER);
+          callAndExpect("DELETE", "/repair_schedule/" + schedule.getId(),
+                  Optional.of(params), Response.Status.OK, Optional.of("\"" + TestContext.TEST_CLUSTER + "\""));
+      });
   }
 
   @And("^deleting cluster called \"([^\"]*)\" fails$")
