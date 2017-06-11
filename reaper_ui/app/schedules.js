@@ -2,7 +2,7 @@ import jQuery from "jquery";
 import React from "react";
 import ServerStatus from "jsx/server-status";
 import Sidebar from "jsx/sidebar";
-import ScheduleForm from "jsx/schedule-form";
+import ScheduleScreen from "jsx/schedule-screen";
 import ScheduleList from "jsx/schedule-list";
 import {
   statusObservableTimer,
@@ -13,27 +13,24 @@ import {
 
 jQuery(document).ready(function($){
 
-  React.render(
-    React.createElement(ServerStatus, {statusObservableTimer}),
-    document.getElementById('cr-server-status')
-  );
+  $.urlParam = function(name){
+    var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+    if (results != null) {
+      return results[1] || 0;
+    } 
+    else {
+      return null;
+    }
+  }
+
+  let currentCluster: string = $.urlParam('currentCluster');
+  if(!currentCluster) {
+    currentCluster = 'all';
+  } 
 
   React.render(
-    React.createElement(Sidebar, {clusterNames}),
-    document.getElementById('cr-sidebar')
-  );
-
-  React.render(
-    React.createElement(ScheduleForm, {clusterNames, addScheduleSubject, addScheduleResult}),
-    document.getElementById('cr-schedule-form')
-  );
-
-  React.render(
-    React.createElement(ScheduleList, {
-      schedules,
-      deleteSubject: deleteScheduleSubject, deleteResult: deleteScheduleResult,
-      updateStatusSubject: updateScheduleStatusSubject, updateStatusResult: updateScheduleStatusResult
-    }),
-    document.getElementById('cr-schedule-list')
+    React.createElement(ScheduleScreen, {clusterNames, addScheduleSubject, addScheduleResult, currentCluster, schedules, deleteSubject: deleteScheduleSubject,
+    deleteResult: deleteScheduleResult, updateStatusSubject: updateScheduleStatusSubject, statusObservableTimer}),
+    document.getElementById('wrapper')
   );
 });

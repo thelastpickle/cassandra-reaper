@@ -6,7 +6,7 @@ const TableRow = React.createClass({
   render: function() {
     return (
     <tr>
-        <td>{this.props.name}</td>
+        <td><a href={'repair.html?currentCluster=' + this.props.name}> {this.props.name}</a></td>
         <td>
           <button type="button" className="btn btn-xs btn-danger" onClick={this._onDelete}>Delete</button>
         </td>

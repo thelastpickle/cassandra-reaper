@@ -6,13 +6,14 @@ const scheduleForm = React.createClass({
   propTypes: {
     addScheduleSubject: React.PropTypes.object.isRequired,
     addScheduleResult: React.PropTypes.object.isRequired,
-    clusterNames: React.PropTypes.object.isRequired
+    clusterNames: React.PropTypes.object.isRequired,
+    currentCluster: React.PropTypes.string.isRequired
   },
 
   getInitialState: function() {
     return {
       addScheduleResultMsg: null, clusterNames: [], submitEnabled: false,
-      clusterName: null, keyspace: null, tables: null, owner: null, segments: null,
+      clusterName: this.props.currentCluster!="all"?this.props.currentCluster:this.props.clusterNames[0], keyspace: null, tables: null, owner: null, segments: null,
       parallism: null, intensity: null, startTime: null, intervalDays: null, incrementalRepair: null
     };
   },
@@ -184,9 +185,9 @@ const scheduleForm = React.createClass({
 
     return (<div className="panel panel-default">
               <div className="panel-heading">
-                <div className="panel-title">Add schedule</div>
+                <div className="panel-title"><a href="#schedule-form" data-toggle="collapse">Add schedule</a></div>
               </div>
-              <div className="panel-body">
+              <div className="panel-body collapse" id="schedule-form">
                 {addMsg}
                 {form}
               </div>

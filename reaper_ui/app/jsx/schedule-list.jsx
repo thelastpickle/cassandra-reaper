@@ -94,13 +94,15 @@ const scheduleList = React.createClass({
 
   propTypes: {
     schedules: React.PropTypes.object.isRequired,
+    clusterNames: React.PropTypes.object.isRequired,
     deleteSubject: React.PropTypes.object.isRequired,
     updateStatusSubject: React.PropTypes.object.isRequired,
-    deleteResult: React.PropTypes.object.isRequired
+    deleteResult: React.PropTypes.object.isRequired,
+    changeCurrentCluster: React.PropTypes.func.isRequired
   },
 
   getInitialState: function() {
-    return {schedules: [], deleteResultMsg: null};
+    return {schedules: [], deleteResultMsg: null, clusterNames: [], currentCluster:this.props.currentCluster};
   },
 
   componentWillMount: function() {
@@ -111,15 +113,52 @@ const scheduleList = React.createClass({
         this.setState({schedules: sortedSchedules});
       })
     );
+
+    this._clusterNamesSubscription = this.props.clusterNames.subscribeOnNext(obs =>
+      obs.subscribeOnNext(names => this.setState({clusterNames: names}))
+    );
   },
 
   componentWillUnmount: function() {
     this._schedulesSubscription.dispose();
+    this._clustersSubscription.dispose();
+  },
+
+  _handleChange: function(e) {
+    var v = e.target.value;
+    var n = e.target.id.substring(3); // strip in_ prefix
+
+    // update state
+    const state = this.state;
+    state[n] = v;
+    this.replaceState(state);
+
+    // validate
+    const valid = state.currentCluster;
+    this.setState({submitEnabled: valid});
+    this.props.changeCurrentCluster(this.state.currentCluster);
   },
 
   render: function() {
 
-    const rows = this.state.schedules.map(schedule =>
+    const clusterItems = this.state.clusterNames.map(name =>
+      <option key={name} value={name}>{name}</option>
+    );
+
+    const clusterFilter = <form className="form-horizontal form-condensed">
+            <div className="form-group">
+              <label htmlFor="in_clusterName" className="col-sm-3 control-label">Filter cluster :</label>
+              <div className="col-sm-9 col-md-7 col-lg-5">
+                <select className="form-control" id="in_currentCluster"
+                  onChange={this._handleChange} value={this.state.currentCluster}>
+                  <option key="all" value="all">All</option>
+                  {clusterItems}
+                </select>
+              </div>
+            </div>
+    </form>
+
+    const rows = this.state.schedules.filter(schedule => this.state.currentCluster == "all" || this.state.currentCluster == schedule.cluster_name).map(schedule =>
       <tbody key={schedule.id+'-rows'}>
         <TableRow row={schedule} key={schedule.id+'-head'}
           deleteSubject={this.props.deleteSubject}
@@ -159,6 +198,7 @@ const scheduleList = React.createClass({
     return (<div className="panel panel-default">
               <div className="panel-body">
                 {this.deleteMessage()}
+                {clusterFilter}
                 {table}
               </div>
             </div>);

@@ -4,37 +4,38 @@ import ServerStatus from "jsx/server-status";
 import Sidebar from "jsx/sidebar";
 import RepairForm from "jsx/repair-form";
 import RepairList from "jsx/repair-list";
+import repairScreen from "jsx/repair-screen";
 import {
   statusObservableTimer,
   repairs,
   addRepairSubject, addRepairResult,
   deleteRepairSubject, deleteRepairResult, updateRepairStatusSubject,
-  clusterNames
+  clusterNames, deleteSubject, deleteResult, updateStatusSubject,
+  addClusterSubject, addClusterResult, deleteClusterSubject, deleteClusterResult
 } from "observable";
 
 jQuery(document).ready(function($){
 
-  React.render(
-    React.createElement(ServerStatus, {statusObservableTimer}),
-    document.getElementById('cr-server-status')
-  );
+  $.urlParam = function(name){
+    var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+    if (results != null) {
+      return results[1] || 0;
+    } 
+    else {
+      return null;
+    }
+  }
+
+  let currentCluster: string = $.urlParam('currentCluster');
+  if(!currentCluster) {
+    currentCluster = 'all';
+  } 
 
   React.render(
-    React.createElement(Sidebar, {clusterNames}),
-    document.getElementById('cr-sidebar')
+    React.createElement(repairScreen, {clusterNames, addRepairSubject, addRepairResult, currentCluster, repairs, deleteSubject: deleteRepairSubject,
+    deleteResult: deleteRepairResult, updateStatusSubject: updateRepairStatusSubject, statusObservableTimer}),
+    document.getElementById('wrapper')
   );
 
-  React.render(
-    React.createElement(RepairForm, {clusterNames, addRepairSubject, addRepairResult}),
-    document.getElementById('cr-repair-form')
-  );
 
-  React.render(
-    React.createElement(RepairList, {
-      repairs,
-      deleteSubject: deleteRepairSubject, deleteResult: deleteRepairResult,
-      updateStatusSubject: updateRepairStatusSubject
-    }),
-    document.getElementById('cr-repair-list')
-  );
 });

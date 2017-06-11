@@ -1,9 +1,7 @@
 import jQuery from "jquery";
 import React from "react";
 import ServerStatus from "jsx/server-status";
-import ClusterForm from "jsx/cluster-form";
-import ClusterList from "jsx/cluster-list";
-import Sidebar from "jsx/sidebar";
+import ClusterScreen from "jsx/cluster-screen";
 import {
   statusObservableTimer,
   addClusterSubject, addClusterResult, deleteClusterSubject, deleteClusterResult,
@@ -12,27 +10,24 @@ import {
 
 jQuery(document).ready(function($){
 
-  React.render(
-    React.createElement(ServerStatus, {statusObservableTimer}),
-    document.getElementById('cr-server-status')
-  );
+ $.urlParam = function(name){
+    var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+    if (results != null) {
+      return results[1] || 0;
+    } 
+    else {
+      return null;
+    }
+  }
+
+  let currentCluster: string = $.urlParam('currentCluster');
+  if(!currentCluster) {
+    currentCluster = 'all';
+  } 
 
   React.render(
-    React.createElement(Sidebar, {clusterNames}),
-    document.getElementById('cr-sidebar')
-  );
-
-  React.render(
-    React.createElement(ClusterForm, {addClusterSubject, addClusterResult}),
-    document.getElementById('cr-cluster-form')
-  );
-
-  React.render(
-    React.createElement(ClusterList, {
-      clusterNames,
-      deleteSubject: deleteClusterSubject,
-      deleteResult: deleteClusterResult
-    }),
-    document.getElementById('cr-cluster-list')
+    React.createElement(ClusterScreen, {clusterNames, addClusterSubject, addClusterResult, currentCluster, deleteSubject: deleteClusterSubject,
+    deleteResult: deleteClusterResult, statusObservableTimer}),
+    document.getElementById('wrapper')
   );
 });

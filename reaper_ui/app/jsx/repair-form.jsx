@@ -12,7 +12,7 @@ const repairForm = React.createClass({
   getInitialState: function() {
     return {
       addRepairResultMsg: null, clusterNames: [], submitEnabled: false,
-      clusterName: null, keyspace: null, tables: null, owner: null, segments: null,
+      clusterName: this.props.currentCluster!="all"?this.props.currentCluster:this.props.clusterNames[0], keyspace: null, tables: null, owner: null, segments: null,
       parallism: null, intensity: null, cause: null, incrementalRepair: null
     };
   },
@@ -175,9 +175,9 @@ const repairForm = React.createClass({
 
     return (<div className="panel panel-default">
               <div className="panel-heading">
-                <div className="panel-title">Repair</div>
+                <div className="panel-title" ><a href="#repair-form" data-toggle="collapse">Start a new repair</a></div>
               </div>
-              <div className="panel-body">
+              <div className="panel-body collapse" id="repair-form">
                 {addMsg}
                 {form}
               </div>
