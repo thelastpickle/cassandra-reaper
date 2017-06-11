@@ -452,10 +452,13 @@ public class RepairRunResource {
           continue;
         }
         Optional<RepairUnit> runsUnit = context.storage.getRepairUnit(run.getRepairUnitId());
-        int segmentsRepaired =
-            context.storage.getSegmentAmountForRepairRunWithState(run.getId(),
-                RepairSegment.State.DONE);
         if (runsUnit.isPresent()) {
+          int segmentsRepaired = run.getSegmentCount();
+          if (!run.getRunState().equals(RepairRun.RunState.DONE)) {
+            segmentsRepaired = context.storage.getSegmentAmountForRepairRunWithState(run.getId(),
+                  RepairSegment.State.DONE);
+          }
+        
           runStatuses.add(new RepairRunStatus(run, runsUnit.get(), segmentsRepaired));
         } else {
           String errMsg =
