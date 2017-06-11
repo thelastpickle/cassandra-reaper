@@ -44,6 +44,8 @@ import javax.validation.constraints.NotNull;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
 import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.compaction.CompactionManagerMBean;
+import org.apache.cassandra.gms.FailureDetector;
+import org.apache.cassandra.gms.FailureDetectorMBean;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.repair.messages.RepairOption;
 import org.apache.cassandra.service.ActiveRepairService;
@@ -86,6 +88,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private final MBeanServerConnection mbeanServer;
   private final CompactionManagerMBean cmProxy;
   private final Object ssProxy;
+  private final Object fdProxy;
   private final Optional<RepairStatusHandler> repairStatusHandler;
   private final String host;
   private final JMXServiceURL jmxUrl;
@@ -93,7 +96,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 
   private JmxProxy(Optional<RepairStatusHandler> handler, String host, JMXServiceURL jmxUrl,
                    JMXConnector jmxConnector, Object ssProxy, ObjectName ssMbeanName,
-                   MBeanServerConnection mbeanServer, CompactionManagerMBean cmProxy) {
+                   MBeanServerConnection mbeanServer, CompactionManagerMBean cmProxy, FailureDetectorMBean fdProxy) {
     this.host = host;
     this.jmxUrl = jmxUrl;
     this.jmxConnector = jmxConnector;
@@ -103,6 +106,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     this.repairStatusHandler = handler;
     this.cmProxy = cmProxy;
     this.clusterName = Cluster.toSymbolicName(((StorageServiceMBean) ssProxy).getClusterName());
+    this.fdProxy = fdProxy;
   }
 
 
@@ -142,6 +146,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       throws ReaperException {
     ObjectName ssMbeanName;
     ObjectName cmMbeanName;
+    ObjectName fdMbeanName;
     JMXServiceURL jmxUrl;
 
     if(addressTranslator != null) {
@@ -152,6 +157,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       jmxUrl = new JMXServiceURL(String.format(JMX_URL, host, port));
       ssMbeanName = new ObjectName(SS_OBJECT_NAME);
       cmMbeanName = new ObjectName(CompactionManager.MBEAN_OBJECT_NAME);
+      fdMbeanName = new ObjectName(FailureDetector.MBEAN_NAME);
     } catch (MalformedURLException | MalformedObjectNameException e) {
       LOG.error(String.format("Failed to prepare the JMX connection to %s:%s", host, port));
       throw new ReaperException("Failure during preparations for JMX connection", e);
@@ -173,8 +179,13 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 
       CompactionManagerMBean cmProxy =
           JMX.newMBeanProxy(mbeanServerConn, cmMbeanName, CompactionManagerMBean.class);
+      
+      
+      FailureDetectorMBean fdProxy =
+          JMX.newMBeanProxy(mbeanServerConn, fdMbeanName, FailureDetectorMBean.class);
+      
       JmxProxy proxy = new JmxProxy(handler, host, jmxUrl, jmxConn, ssProxy, ssMbeanName,
-          mbeanServerConn, cmProxy);
+          mbeanServerConn, cmProxy, fdProxy);
       // registering a listener throws bunch of exceptions, so we do it here rather than in the
       // constructor
       mbeanServerConn.addNotificationListener(ssMbeanName, proxy, null, null);
@@ -542,6 +553,10 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     return ((StorageServiceMBean20) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
         keyspace, snapshotRepair, false, columnFamilies.toArray(new String[columnFamilies.size()]));
 
+  }
+  
+  public String getAllEndpointsState() {
+    return ((FailureDetectorMBean) fdProxy).getAllEndpointStates();
   }
 
 

@@ -131,16 +131,24 @@ const repairList = React.createClass({
 
   propTypes: {
     repairs: React.PropTypes.object.isRequired,
+    clusterNames: React.PropTypes.object.isRequired,
     deleteSubject: React.PropTypes.object.isRequired,
     deleteResult: React.PropTypes.object.isRequired,
-    updateStatusSubject: React.PropTypes.object.isRequired
+    updateStatusSubject: React.PropTypes.object.isRequired,
+    currentCluster: React.PropTypes.string.isRequired,
+    changeCurrentCluster: React.PropTypes.func.isRequired
+
   },
 
   getInitialState: function() {
-    return {repairs: [], deleteResultMsg: null};
+    return {repairs: [], deleteResultMsg: null, clusterNames:[], currentCluster:this.props.currentCluster, runningCollapsed: false, doneCollapsed: false};
   },
 
   componentWillMount: function() {
+    this._clusterNamesSubscription = this.props.clusterNames.subscribeOnNext(obs =>
+      obs.subscribeOnNext(names => this.setState({clusterNames: names}))
+    );
+
     this._repairsSubscription = this.props.repairs.subscribeOnNext(obs =>
       obs.subscribeOnNext(repairs => {
         const sortedRepairs = Array.from(repairs);
@@ -152,11 +160,46 @@ const repairList = React.createClass({
 
   componentWillUnmount: function() {
     this._repairsSubscription.dispose();
+    this._clustersSubscription.dispose();
+  },
+
+  _handleChange: function(e) {
+    var v = e.target.value;
+    var n = e.target.id.substring(3); // strip in_ prefix
+
+    // update state
+    const state = this.state;
+    state[n] = v;
+    this.replaceState(state);
+
+    // validate
+    const valid = state.currentCluster;
+    this.setState({submitEnabled: valid});
+    this.props.changeCurrentCluster(this.state.currentCluster);
+    console.log("changed cluster to " + this.state.currentCluster);
+  },
+
+  _toggleRunningDisplay: function() {
+    if(this.state.runningCollapsed == true) {
+      this.setState({runningCollapsed: false});
+    }
+    else {
+      this.setState({runningCollapsed: true});
+    }
+  },
+
+  _toggleDoneDisplay: function() {
+    if(this.state.doneCollapsed == true) {
+      this.setState({doneCollapsed: false});
+    }
+    else {
+      this.setState({doneCollapsed: true});
+    }
   },
 
   render: function() {
 
-    const rows = this.state.repairs.map(repair =>
+    const rowsRunning = this.state.repairs.filter(repair => this.state.currentCluster == "all" || this.state.currentCluster == repair.cluster_name).filter(repair => (repair.state == "RUNNING" || repair.state == "PAUSED" || repair.state == "NOT_STARTED")).map(repair =>
       <tbody key={repair.id+'-rows'}>
       <TableRow row={repair} key={repair.id+'-head'}
         deleteSubject={this.props.deleteSubject}
@@ -165,12 +208,38 @@ const repairList = React.createClass({
       </tbody>
     );
 
-    let table = null;
-    if(rows.length == 0) {
-      table = <div className="alert alert-info" role="alert">No repair runs found</div>
+    const rowsDone = this.state.repairs.filter(repair => this.state.currentCluster == "all" || this.state.currentCluster == repair.cluster_name).filter(repair => (repair.state != "RUNNING" && repair.state != "PAUSED" && repair.state != "NOT_STARTED")).map(repair =>
+      <tbody key={repair.id+'-rows'}>
+      <TableRow row={repair} key={repair.id+'-head'}
+        deleteSubject={this.props.deleteSubject}
+        updateStatusSubject={this.props.updateStatusSubject}/>
+      <TableRowDetails row={repair} key={repair.id+'-details'}/>
+      </tbody>
+    );
+
+    const clusterItems = this.state.clusterNames.map(name =>
+      <option key={name} value={name}>{name}</option>
+    );
+
+    const clusterFilter = <form className="form-horizontal form-condensed">
+            <div className="form-group">
+              <label htmlFor="in_clusterName" className="col-sm-3 control-label">Filter cluster :</label>
+              <div className="col-sm-9 col-md-7 col-lg-5">
+                <select className="form-control" id="in_currentCluster"
+                  onChange={this._handleChange} value={this.state.currentCluster}>
+                  <option key="all" value="all">All</option>
+                  {clusterItems}
+                </select>
+              </div>
+            </div>
+    </form>
+
+    let tableRunning = null;
+    if(rowsRunning.length == 0) {
+      tableRunning = <div className="alert alert-info" role="alert">No running repair runs found</div>
     } else {
 
-      table = <div className="row">
+      tableRunning = <div className="row">
           <div className="col-sm-12">
               <div className="table-responsive">
                   <table className="table table-bordered table-hover table-striped">
@@ -186,20 +255,99 @@ const repairList = React.createClass({
                               <th></th>
                           </tr>
                       </thead>
-                        {rows}
+                        {rowsRunning}
                   </table>
               </div>
           </div>
       </div>;
     }
 
-    return (<div className="panel panel-default">
-              <div className="panel-heading">
-                <div className="panel-title">Done</div>
+    let tableDone = null;
+    if(rowsDone.length == 0) {
+      tableDone = <div className="alert alert-info" role="alert">No past repair runs found</div>
+    } else {
+
+      tableDone = <div className="row">
+          <div className="col-sm-12">
+              <div className="table-responsive">
+                  <table className="table table-bordered table-hover table-striped">
+                      <thead>
+                          <tr>
+                              <th>ID</th>
+                              <th>State</th>
+                              <th>Cluster</th>
+                              <th>Keyspace</th>
+                              <th>CFs</th>
+                              <th>Incremental</th>
+                              <th>Repaired</th>
+                              <th></th>
+                          </tr>
+                      </thead>
+                        {rowsDone}
+                  </table>
               </div>
-              <div className="panel-body">
-                {this.deleteMessage()}
-                {table}
+          </div>
+      </div>;
+    }
+
+    let menuRunningDownStyle = {
+      display: "none" 
+    }
+
+    let menuRunningUpStyle = {
+      display: "inline-block" 
+    }
+
+    if(this.state.runningCollapsed == true) {
+      menuRunningDownStyle = {
+        display: "inline-block"
+      }
+      menuRunningUpStyle = {
+        display: "none"
+      }
+    }
+
+
+    let menuDoneDownStyle = {
+      display: "inline-block" 
+    }
+
+    let menuDoneUpStyle = {
+      display: "none" 
+    }
+
+    if(this.state.doneCollapsed == true) {
+      menuDoneDownStyle = {
+        display: "none"
+      }
+      menuDoneUpStyle = {
+        display: "inline-block"
+      }
+    }
+
+    const runningHeader = <div className="panel-title"><a href="#repairs-running" data-toggle="collapse" onClick={this._toggleRunningDisplay}>Running</a>&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuRunningDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuRunningUpStyle}></span></div>
+    const doneHeader = <div className="panel-title"><a href="#repairs-done" data-toggle="collapse" onClick={this._toggleDoneDisplay}>Done</a>&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDoneDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuDoneUpStyle}></span></div>
+
+
+
+    return (
+            <div>
+              {clusterFilter}
+              <div className="panel panel-primary">
+                <div className="panel-heading">
+                  {runningHeader}
+                </div>
+                <div className="panel-body collapse in" id="repairs-running">
+                  {tableRunning}
+                </div>
+              </div>
+              <div className="panel panel-success">
+                <div className="panel-heading">
+                  {doneHeader}
+                </div>
+                <div className="panel-body collapse" id="repairs-done">
+                  {tableDone}
+                </div>
               </div>
             </div>);
   }
