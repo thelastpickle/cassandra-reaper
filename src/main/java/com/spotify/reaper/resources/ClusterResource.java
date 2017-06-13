@@ -20,6 +20,7 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.resources.view.ClusterStatus;
+import com.spotify.reaper.resources.view.NodesStatus;
 import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
 
@@ -85,13 +86,13 @@ public class ClusterResource {
   @Path("/{cluster_name}")
   public Response getCluster(
       @PathParam("cluster_name") String clusterName,
-      @QueryParam("limit") Optional<Integer> limit) {
+      @QueryParam("limit") Optional<Integer> limit) throws ReaperException {
     LOG.debug("get cluster called with cluster_name: {}", clusterName);
     return viewCluster(clusterName, limit, Optional.<URI>absent());
   }
 
   private Response viewCluster(String clusterName, Optional<Integer> limit,
-      Optional<URI> createdURI) {
+      Optional<URI> createdURI) throws ReaperException {
     Optional<Cluster> cluster = context.storage.getCluster(clusterName);
 
     if (!cluster.isPresent()) {
@@ -101,7 +102,7 @@ public class ClusterResource {
       ClusterStatus view =
           new ClusterStatus(cluster.get(),
               context.storage.getClusterRunStatuses(clusterName, limit.or(Integer.MAX_VALUE)),
-              context.storage.getClusterScheduleStatuses(clusterName));
+              context.storage.getClusterScheduleStatuses(clusterName), getNodesStatus(cluster).orNull());
       if (createdURI.isPresent()) {
         return Response.created(createdURI.get())
             .entity(view).build();
@@ -115,7 +116,7 @@ public class ClusterResource {
   @POST
   public Response addCluster(
       @Context UriInfo uriInfo,
-      @QueryParam("seedHost") Optional<String> seedHost) {
+      @QueryParam("seedHost") Optional<String> seedHost) throws ReaperException {
     if (!seedHost.isPresent()) {
       LOG.error("POST on cluster resource called without seedHost");
       return Response.status(400).entity("query parameter \"seedHost\" required").build();
@@ -209,7 +210,7 @@ public class ClusterResource {
   public Response modifyClusterSeed(
       @Context UriInfo uriInfo,
       @PathParam("cluster_name") String clusterName,
-      @QueryParam("seedHost") Optional<String> seedHost) {
+      @QueryParam("seedHost") Optional<String> seedHost) throws ReaperException {
     if (!seedHost.isPresent()) {
       LOG.error("PUT on cluster resource called without seedHost");
       return Response.status(400).entity("query parameter \"seedHost\" required").build();
@@ -260,11 +261,12 @@ public class ClusterResource {
    *
    * @param clusterName The name of the Cluster instance you are about to delete.
    * @return The deleted RepairRun instance, with state overwritten to string "DELETED".
+   * @throws ReaperException 
    */
   @DELETE
   @Path("/{cluster_name}")
   public Response deleteCluster(
-      @PathParam("cluster_name") String clusterName) {
+      @PathParam("cluster_name") String clusterName) throws ReaperException {
     LOG.info("delete cluster called with clusterName: {}", clusterName);
     Optional<Cluster> clusterToDelete = context.storage.getCluster(clusterName);
     if (!clusterToDelete.isPresent()) {
@@ -284,7 +286,7 @@ public class ClusterResource {
     Optional<Cluster> deletedCluster = context.storage.deleteCluster(clusterName);
     if (deletedCluster.isPresent()) {
       return Response.ok(new ClusterStatus(deletedCluster.get(),
-          Collections.<RepairRunStatus>emptyList(), Collections.<RepairScheduleStatus>emptyList()))
+          Collections.<RepairRunStatus>emptyList(), Collections.<RepairScheduleStatus>emptyList(), getNodesStatus(deletedCluster).orNull()))
           .build();
     }
     return Response.serverError().entity("delete failed for schedule with name \""
@@ -292,6 +294,27 @@ public class ClusterResource {
   }
   
   
-  
+  public Optional<NodesStatus> getNodesStatus(Optional<Cluster> cluster)
+      throws ReaperException {
+    Optional<String> allEndpointsState = Optional.absent();
+    Optional<NodesStatus> nodesStatus = Optional.absent();
+    if(cluster.isPresent() && cluster.get().getSeedHosts()!=null) {
+      for(String seedHost:cluster.get().getSeedHosts()) {
+        try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost)) {
+          allEndpointsState = Optional.fromNullable(jmxProxy.getAllEndpointsState());
+          if (allEndpointsState.isPresent()) {
+            nodesStatus = Optional.of(new NodesStatus(seedHost, allEndpointsState.or("")));
+            break;
+          }
+        } catch (ReaperException e) {
+          LOG.error("failed to create cluster with seed host: {}", seedHost, e);
+        }
+      }
+    }
+    
+    LOG.debug("All Endpoints State {}", allEndpointsState.or("empty"));
+    
+    return nodesStatus;
+  }
 
 }

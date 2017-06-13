@@ -16,6 +16,8 @@ package com.spotify.reaper.resources.view;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.reaper.core.Cluster;
 
+import jersey.repackaged.com.google.common.collect.Lists;
+
 import java.util.Collection;
 import java.util.Set;
 
@@ -29,13 +31,15 @@ public class ClusterStatus {
   public final Collection<RepairRunStatus> repairRuns;
   @JsonProperty("repair_schedules")
   public final Collection<RepairScheduleStatus> repairSchedules;
-
+  @JsonProperty("nodes_status")
+  public final NodesStatus nodesStatus;
+  
   public ClusterStatus(Cluster cluster, Collection<RepairRunStatus> repairRuns,
-      Collection<RepairScheduleStatus> repairSchedules) {
+      Collection<RepairScheduleStatus> repairSchedules, NodesStatus nodesStatus) {
     this.name = cluster.getName();
     this.seedHosts = cluster.getSeedHosts();
     this.repairRuns = repairRuns;
     this.repairSchedules = repairSchedules;
+    this.nodesStatus = nodesStatus;
   }
-  
 }
