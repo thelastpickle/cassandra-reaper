@@ -63,11 +63,11 @@ const ClusterScreen = React.createClass({
             <!-- /.row -->
 
             <div className="col-lg-12">
-                  <ClusterForm clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} addClusterSubject={this.props.addClusterSubject} addClusterResult={this.props.addClusterResult}> </ClusterForm>
+                  <ClusterForm clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} addClusterSubject={this.props.addClusterSubject} addClusterResult={this.props.addClusterResult} > </ClusterForm>
             </div>
             <div className="row">
                 <div className="col-lg-12">
-                  <ClusterList clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} deleteSubject={this.props.deleteSubject} deleteResult={this.props.deleteResult}> </ClusterList>
+                  <ClusterList clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} deleteSubject={this.props.deleteSubject} deleteResult={this.props.deleteResult} > </ClusterList>
                 </div>
             </div>
         </div>

@@ -1,4 +1,5 @@
 import jQuery from "jquery";
+import ReactDOM from "react-dom";
 import React from "react";
 import ServerStatus from "jsx/server-status";
 import ClusterScreen from "jsx/cluster-screen";
@@ -25,7 +26,7 @@ jQuery(document).ready(function($){
     currentCluster = 'all';
   } 
 
-  React.render(
+  ReactDOM.render(
     React.createElement(ClusterScreen, {clusterNames, addClusterSubject, addClusterResult, currentCluster, deleteSubject: deleteClusterSubject,
     deleteResult: deleteClusterResult, statusObservableTimer}),
     document.getElementById('wrapper')

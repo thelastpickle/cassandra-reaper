@@ -1,5 +1,5 @@
 import Rx from "rxjs";
-import $ from "jquery"
+import $ from "jquery";
 
 
 // interval to use for polling entity lists

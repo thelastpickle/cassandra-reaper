@@ -200,7 +200,7 @@ const repairList = React.createClass({
     );
 
     const clusterItems = this.state.clusterNames.map(name =>
-      <option key={name} value={name} selected>{name}</option>
+      <option key={name} value={name}>{name}</option>
     );
 
     const clusterFilter = <form className="form-horizontal form-condensed">
