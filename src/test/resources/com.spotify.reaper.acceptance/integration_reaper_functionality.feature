@@ -27,7 +27,26 @@ Feature: Using Reaper to launch repairs and schedule them
     When the last added schedule is deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
- 
+
+  Scenario: Create a cluster and a scheduled repair run with repair run history and delete them
+    Given that we are going to use "127.0.0.1" as cluster seed host
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    And reaper has 0 scheduled repairs for the last added cluster
+    When a new daily repair schedule is added for the last added cluster and keyspace "booya" with next repair immediately
+    Then reaper has 1 scheduled repairs for the last added cluster
+    And deleting the last added cluster fails
+    When we wait for a scheduled repair run has started for cluster "test_cluster"
+    And we wait for at least 1 segments to be repaired
+    Then reaper has 1 repairs for the last added cluster
+    When the last added repair is stopped
+    And the last added repair run is deleted
+    And deleting the last added cluster fails
+    When all added schedules are deleted for the last added cluster
+    And the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
+
   Scenario: Create a cluster and a repair run and delete them
     Given that we are going to use "127.0.0.1" as cluster seed host
     And reaper has no cluster in storage

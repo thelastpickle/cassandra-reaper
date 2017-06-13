@@ -43,7 +43,7 @@ public class SchedulingManager extends TimerTask {
         .pauseTime(DateTime.now())
         .build(schedule.getId());
     if (!context.storage.updateRepairSchedule(updatedSchedule)) {
-      LOG.error("failed updating repair schedule {}", updatedSchedule.getId());
+      throw new IllegalStateException(String.format("failed updating repair schedule %s", updatedSchedule.getId()));
     }
     return updatedSchedule;
   }
@@ -54,7 +54,7 @@ public class SchedulingManager extends TimerTask {
         .pauseTime(null)
         .build(schedule.getId());
     if (!context.storage.updateRepairSchedule(updatedSchedule)) {
-      LOG.error("failed updating repair schedule {}", updatedSchedule.getId());
+      throw new IllegalStateException(String.format("failed updating repair schedule %s", updatedSchedule.getId()));
     }
     return updatedSchedule;
   }
@@ -89,6 +89,12 @@ public class SchedulingManager extends TimerTask {
     } catch (Exception ex) {
       LOG.error("failed managing schedule for run with id: {}", lastId);
       LOG.error("catch exception", ex);
+      try {
+        assert false : "if assertions are enabled then exit the jvm";
+      } catch (AssertionError ae) {
+        LOG.error("SchedulingManager failed. Exiting JVM.");
+        System.exit(1);
+      }
     }
   }
 
@@ -133,11 +139,10 @@ public class SchedulingManager extends TimerTask {
           RepairRun startedRun = startNewRunForUnit(schedule, repairUnit);
           ImmutableList<UUID> newRunHistory = new ImmutableList.Builder<UUID>()
               .addAll(schedule.getRunHistory()).add(startedRun.getId()).build();
-          context.storage.updateRepairSchedule(schedule.with()
+          return context.storage.updateRepairSchedule(schedule.with()
               .runHistory(newRunHistory)
               .nextActivation(schedule.getFollowingActivation())
               .build(schedule.getId()));
-          return true;
         } catch (ReaperException e) {
           LOG.error(e.getMessage(), e);
           skipScheduling(schedule);

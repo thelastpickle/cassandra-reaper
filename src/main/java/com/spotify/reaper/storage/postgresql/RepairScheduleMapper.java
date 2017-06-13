@@ -34,21 +34,21 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
     
     UUID[] runHistoryUUIDs = new UUID[0];
     
-    Integer[] runHistory = null;
+    Number[] runHistory = null;
     Array av = r.getArray("run_history");
     if(null != av) {
       Object obj = av.getArray();
-      if(obj instanceof Integer[]) {
-        runHistory = (Integer[])obj;
+      if(obj instanceof Number[]) {
+        runHistory = (Number[])obj;
       } else if(obj instanceof Object[]) {
         Object[] ol = (Object[])obj;
-        runHistory = Arrays.copyOf(ol, ol.length, Integer[].class);
+        runHistory = Arrays.copyOf(ol, ol.length, Number[].class);
       }
       
       if (null != runHistory && runHistory.length > 0) {
         runHistoryUUIDs = new UUID[runHistory.length];
         for (int i = 0; i < runHistory.length; i++) {
-          runHistoryUUIDs[i] = fromSequenceId(runHistory[i]);
+          runHistoryUUIDs[i] = fromSequenceId(runHistory[i].longValue());
         }
       }
     }  
