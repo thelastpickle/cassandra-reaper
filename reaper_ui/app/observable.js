@@ -1,13 +1,13 @@
 import Rx from "rxjs";
-import $ from "jquery"
+import $ from "jquery";
 
 
 // interval to use for polling entity lists
-const POLLING_INTERVAL = 10000;
+const POLLING_INTERVAL = 2000;
 
 // use reaper server url for ajax calls if running on dev server (will be run in iframe)
 const isDev = window != window.top;
-const URL_PREFIX = isDev ? 'http://localhost:8080' : '';
+const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
 
 export const statusObservableTimer = Rx.Observable.timer(0, POLLING_INTERVAL).map(t => {
   console.debug("Pinging reaper server..");
@@ -149,5 +149,5 @@ export const repairs = Rx.Observable.merge(
     s.flatMap(t => Rx.Observable.fromPromise($.ajax({
         url: `${URL_PREFIX}/repair_run`
       }).promise())
-    )
+    ).map(arr=>arr.reverse())
 );

@@ -405,7 +405,7 @@ public class RepairRunResource {
    */
   private RepairRunStatus getRepairRunStatus(RepairRun repairRun) {
     Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
-    Preconditions.checkState(repairUnit.isPresent(), "no repair unit found with id: " + repairRun.getRepairUnitId());
+    Preconditions.checkState(repairUnit.isPresent(), "no repair unit found with id: %s", repairRun.getRepairUnitId());
     int segmentsRepaired =
         context.storage.getSegmentAmountForRepairRunWithState(repairRun.getId(),
             RepairSegment.State.DONE);
@@ -438,34 +438,51 @@ public class RepairRunResource {
    */
   @GET
   public Response listRepairRuns(@QueryParam("state") Optional<String> state) {
-    Set desiredStates = splitStateParam(state);
-    if (desiredStates == null) {
-      return Response.status(Response.Status.BAD_REQUEST).build();
+    try {
+      List<RepairRunStatus> runStatuses = Lists.newArrayList();
+      Set desiredStates = splitStateParam(state);
+      if (desiredStates == null) {
+        return Response.status(Response.Status.BAD_REQUEST).build();
+      }
+      Collection<RepairRun> runs;
+      
+      Collection<Cluster> clusters = context.storage.getClusters();
+      for (Cluster cluster : clusters) {
+        runs = context.storage.getRepairRunsForCluster(cluster.getName());
+        runStatuses.addAll(getRunStatuses(runs, desiredStates));
+      }
+      
+      return Response.status(Response.Status.OK).entity(runStatuses).build();
+    } catch (Exception e) {
+      LOG.error("Failed listing cluster statuses", e);
+      return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
     }
-    Collection<RepairRun> runs;
+  }
+  
+  private List<RepairRunStatus> getRunStatuses(Collection<RepairRun> runs, Set desiredStates) throws ReaperException {
     List<RepairRunStatus> runStatuses = Lists.newArrayList();
-    Collection<Cluster> clusters = context.storage.getClusters();
-    for (Cluster cluster : clusters) {
-      runs = context.storage.getRepairRunsForCluster(cluster.getName());
-      for (RepairRun run : runs) {
-        if (!desiredStates.isEmpty() && !desiredStates.contains(run.getRunState().name())) {
-          continue;
-        }
-        Optional<RepairUnit> runsUnit = context.storage.getRepairUnit(run.getRepairUnitId());
-        int segmentsRepaired =
-            context.storage.getSegmentAmountForRepairRunWithState(run.getId(),
+    for (RepairRun run : runs) {
+      if (!desiredStates.isEmpty() && !desiredStates.contains(run.getRunState().name())) {
+        continue;
+      }
+      Optional<RepairUnit> runsUnit = context.storage.getRepairUnit(run.getRepairUnitId());
+      if (runsUnit.isPresent()) {
+        int segmentsRepaired = run.getSegmentCount();
+        if (!run.getRunState().equals(RepairRun.RunState.DONE)) {
+          segmentsRepaired = context.storage.getSegmentAmountForRepairRunWithState(run.getId(),
                 RepairSegment.State.DONE);
-        if (runsUnit.isPresent()) {
-          runStatuses.add(new RepairRunStatus(run, runsUnit.get(), segmentsRepaired));
-        } else {
-          String errMsg =
-              String.format("Found repair run %d with no associated repair unit", run.getId());
-          LOG.error(errMsg);
-          return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
+      
+        runStatuses.add(new RepairRunStatus(run, runsUnit.get(), segmentsRepaired));
+      } else {
+        String errMsg =
+            String.format("Found repair run %d with no associated repair unit", run.getId());
+        LOG.error(errMsg);
+        throw new ReaperException("Internal server error : " + errMsg);
       }
     }
-    return Response.status(Response.Status.OK).entity(runStatuses).build();
+    
+    return runStatuses;
   }
 
   @VisibleForTesting

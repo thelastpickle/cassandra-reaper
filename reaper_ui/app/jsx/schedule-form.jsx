@@ -6,14 +6,15 @@ const scheduleForm = React.createClass({
   propTypes: {
     addScheduleSubject: React.PropTypes.object.isRequired,
     addScheduleResult: React.PropTypes.object.isRequired,
-    clusterNames: React.PropTypes.object.isRequired
+    clusterNames: React.PropTypes.object.isRequired,
+    currentCluster: React.PropTypes.string.isRequired
   },
 
   getInitialState: function() {
     return {
       addScheduleResultMsg: null, clusterNames: [], submitEnabled: false,
-      clusterName: null, keyspace: null, tables: null, owner: null, segments: null,
-      parallism: null, intensity: null, startTime: null, intervalDays: null, incrementalRepair: null
+      clusterName: this.props.currentCluster!="all"?this.props.currentCluster:this.props.clusterNames[0], keyspace: null, tables: null, owner: null, segments: null,
+      parallism: null, intensity: null, startTime: null, intervalDays: null, incrementalRepair: null, formCollapsed: true
     };
   },
 
@@ -71,7 +72,17 @@ const scheduleForm = React.createClass({
     const valid = state.keyspace && state.clusterName && state.owner
       && state.startTime && state.intervalDays;
     this.setState({submitEnabled: valid});
+  }, 
+  
+  _toggleFormDisplay: function() {
+    if(this.state.formCollapsed == true) {
+      this.setState({formCollapsed: false});
+    }
+    else {
+      this.setState({formCollapsed: true});
+    }
   },
+
 
   render: function() {
 
@@ -181,12 +192,32 @@ const scheduleForm = React.createClass({
       </div>
     </div>
 
+    let menuDownStyle = {
+      display: "inline-block" 
+    }
 
-    return (<div className="panel panel-default">
+    let menuUpStyle = {
+      display: "none" 
+    }
+
+    if(this.state.formCollapsed == false) {
+      menuDownStyle = {
+        display: "none"
+      }
+      menuUpStyle = {
+        display: "inline-block"
+      }
+    }
+
+    const formHeader = <div className="panel-title" ><a href="#schedule-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>Add schedule</a>&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span></div>
+
+
+
+    return (<div className="panel panel-warning">
               <div className="panel-heading">
-                <div className="panel-title">Add schedule</div>
+                {formHeader}
               </div>
-              <div className="panel-body">
+              <div className="panel-body collapse" id="schedule-form">
                 {addMsg}
                 {form}
               </div>

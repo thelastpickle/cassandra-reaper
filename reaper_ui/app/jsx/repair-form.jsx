@@ -12,8 +12,8 @@ const repairForm = React.createClass({
   getInitialState: function() {
     return {
       addRepairResultMsg: null, clusterNames: [], submitEnabled: false,
-      clusterName: null, keyspace: null, tables: null, owner: null, segments: null,
-      parallism: null, intensity: null, cause: null, incrementalRepair: null
+      clusterName: this.props.currentCluster!="all"?this.props.currentCluster:this.props.clusterNames[0], keyspace: null, tables: null, owner: null, segments: null,
+      parallism: null, intensity: null, cause: null, incrementalRepair: null, formCollapsed: true
     };
   },
 
@@ -68,6 +68,15 @@ const repairForm = React.createClass({
     // validate
     const valid = state.keyspace && state.clusterName && state.owner;
     this.setState({submitEnabled: valid});
+  },
+
+  _toggleFormDisplay: function() {
+    if(this.state.formCollapsed == true) {
+      this.setState({formCollapsed: false});
+    }
+    else {
+      this.setState({formCollapsed: true});
+    }
   },
 
   render: function() {
@@ -172,12 +181,36 @@ const repairForm = React.createClass({
       </div>
     </div>
 
+    
 
-    return (<div className="panel panel-default">
+    let menuDownStyle = {
+      display: "inline-block" 
+    }
+
+    let menuUpStyle = {
+      display: "none" 
+    }
+
+    if(this.state.formCollapsed == false) {
+      menuDownStyle = {
+        display: "none"
+      }
+      menuUpStyle = {
+        display: "inline-block"
+      }
+    }
+
+    const formHeader = <div className="panel-title" ><a href="#repair-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>Start a new repair</a>&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span></div>
+
+
+
+
+
+    return (<div className="panel panel-warning">
               <div className="panel-heading">
-                <div className="panel-title">Repair</div>
+                {formHeader}
               </div>
-              <div className="panel-body">
+              <div className="panel-body collapse" id="repair-form">
                 {addMsg}
                 {form}
               </div>

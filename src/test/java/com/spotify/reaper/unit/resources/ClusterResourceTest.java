@@ -93,14 +93,14 @@ public class ClusterResourceTest {
   }
 
   @Test
-  public void testGetNonExistingCluster() {
+  public void testGetNonExistingCluster() throws ReaperException {
     ClusterResource clusterResource = new ClusterResource(context);
     Response response = clusterResource.getCluster("i_dont_exist", Optional.<Integer>absent());
     assertEquals(404, response.getStatus());
   }
 
   @Test
-  public void testGetExistingCluster() {
+  public void testGetExistingCluster() throws ReaperException {
     final String I_DO_EXIST = "i_do_exist";
     Cluster cluster = new Cluster(I_DO_EXIST, PARTITIONER, Sets.newHashSet(SEED_HOST));
     context.storage.addCluster(cluster);
