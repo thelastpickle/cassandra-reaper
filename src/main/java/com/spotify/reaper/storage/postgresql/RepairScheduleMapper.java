@@ -67,7 +67,7 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
         RepairRunMapper.getDateTimeOrNull(r, "next_activation"),
         ImmutableList.copyOf(runHistoryUUIDs),
         r.getInt("segment_count"),
-        RepairParallelism.fromName(r.getString("repair_parallelism")),
+        RepairParallelism.fromName(r.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel")),
         r.getDouble("intensity"),
         RepairRunMapper.getDateTimeOrNull(r, "creation_time"))
         .owner(r.getString("owner"))
