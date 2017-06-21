@@ -400,8 +400,8 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     if(connected)
       try {
         jmxProxy.close();
-      } catch (ReaperException e) {
-        LOG.warn("Could not close JMX connection to {}. Potential leak...", jmxProxy.getHost());
+      } catch (Exception e) {
+        LOG.debug("Could not close JMX connection to {}. Potential leak...", jmxProxy.getHost());
       }
   }
   
