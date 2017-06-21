@@ -16,6 +16,7 @@ package com.spotify.reaper.cassandra;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -58,7 +59,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-
+import com.google.common.collect.Maps;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
@@ -252,9 +253,12 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   @NotNull
   public Map<String, String> getEndpointToHostId() {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    Map<String, String> hosts =
-        ((StorageServiceMBean) ssProxy).getEndpointToHostId();
-
+    Map<String, String> hosts = Maps.newHashMap();
+    try{
+      hosts = ((StorageServiceMBean) ssProxy).getEndpointToHostId();
+    } catch(UndeclaredThrowableException e){
+      hosts = ((StorageServiceMBean) ssProxy).getHostIdMap();
+    }
     return hosts;
   }
 
