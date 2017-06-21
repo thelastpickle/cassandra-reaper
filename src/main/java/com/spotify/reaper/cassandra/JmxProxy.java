@@ -64,8 +64,6 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.service.RingRange;
 
-import jersey.repackaged.com.google.common.collect.Maps;
-
 public class JmxProxy implements NotificationListener, AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(JmxProxy.class);
