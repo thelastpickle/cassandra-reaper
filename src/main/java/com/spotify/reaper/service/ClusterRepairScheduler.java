@@ -71,10 +71,11 @@ public class ClusterRepairScheduler {
 
   private void createRepairSchedule(Cluster cluster, String keyspace, DateTime nextActivationTime) {
     try {
+      Boolean incrementalRepair = context.config.getIncrementalRepair() != null ? context.config.getIncrementalRepair() : Boolean.FALSE;
       RepairSchedule repairSchedule = CommonTools.storeNewRepairSchedule(
           context,
           cluster,
-          CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace, Collections.emptySet(), Boolean.FALSE),
+          CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace, Collections.emptySet(), incrementalRepair),
           context.config.getScheduleDaysBetween(),
           nextActivationTime,
           REPAIR_OWNER,
