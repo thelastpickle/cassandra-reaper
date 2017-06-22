@@ -325,17 +325,18 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     for (String hostName : allHosts) {
       LOG.debug("checking host '{}' for pending compactions and other repairs (can repair?)"
                 + " Run id '{}'", hostName, segment.getRunId());
-      JmxProxy hostProxy = null;
+      Optional<JmxProxy> hostProxy = Optional.absent();
       try{
         Optional<HostMetrics> hostMetrics = Optional.absent();
         try{
-          hostProxy = context.jmxConnectionFactory.connect(hostName);
+          hostProxy = Optional.fromNullable(context.jmxConnectionFactory.connect(hostName));
           connected = true;
-          hostMetrics = getMetricsForHost(hostName, hostProxy);
         } 
         catch(Exception e) {
-          LOG.debug("Couldn't reach host {} through JMX. Trying to collect metrics from storage...");
+          LOG.debug("Couldn't reach host {} through JMX. Trying to collect metrics from storage...", hostName);
         }
+        
+        hostMetrics = getMetricsForHost(hostName, hostProxy);
         
         if(!hostMetrics.isPresent()) {
           gotMetricsForAllHosts = false;
@@ -396,43 +397,44 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     return gotMetricsForAllHosts; // check if we should postpone when we cannot get all metrics, or just drop the lead
   }
   
-  private void closeJmxConnection(JmxProxy jmxProxy, boolean connected) {
-    if(connected)
+  private void closeJmxConnection(Optional<JmxProxy> jmxProxy, boolean connected) {
+    if(connected && jmxProxy.isPresent())
       try {
-        jmxProxy.close();
-      } catch (Exception e) {
-        LOG.debug("Could not close JMX connection to {}. Potential leak...", jmxProxy.getHost());
+        jmxProxy.get().close();
+      } catch (ReaperException e) {
+        LOG.warn("Could not close JMX connection to {}. Potential leak...", jmxProxy.get().getHost());
+
       }
   }
   
-  private void handlePotentialStuckRepairs(JmxProxy hostProxy, LazyInitializer<Set<String>> busyHosts, String hostName) throws ConcurrentException {
-    if (!busyHosts.get().contains(hostName) && context.storage.getStorageType() != StorageType.CASSANDRA) {
+  private void handlePotentialStuckRepairs(Optional<JmxProxy> hostProxy, LazyInitializer<Set<String>> busyHosts, String hostName) throws ConcurrentException {
+    if (!busyHosts.get().contains(hostName) && context.storage.getStorageType() != StorageType.CASSANDRA && hostProxy.isPresent()) {
       LOG.warn("A host ({}) reported that it is involved in a repair, but there is no record "
           + "of any ongoing repair involving the host. Sending command to abort all repairs "
-          + "on the host.", hostProxy.getHost());
-      hostProxy.cancelAllRepairs();
+          + "on the host.", hostProxy.get().getHost());
+      hostProxy.get().cancelAllRepairs();
     }
   }
   
-  private Optional<HostMetrics> getMetricsForHost(String hostName, JmxProxy hostProxy) {
-    try {
-      int pendingCompactions = hostProxy.getPendingCompactions();
-      boolean hasRepairRunning = hostProxy.isRepairRunning();
-      
-      HostMetrics metrics = HostMetrics.builder().withHostAddress(hostName)
-                                                 .withPendingCompactions(pendingCompactions)
-                                                 .withHasRepairRunning(hasRepairRunning)
-                                                 .withActiveAnticompactions(0) // for future use
-                                                 .build();
-      
-      context.storage.storeHostMetrics(metrics);
-      
-      return Optional.fromNullable(metrics);
-      
-    } catch(Exception e) {
-      LOG.debug("Cannot reach node {} through JMX. Trying to get metrics from storage...", hostName, e);
-      return context.storage.getHostMetrics(hostName);
+  private Optional<HostMetrics> getMetricsForHost(String hostName, Optional<JmxProxy> hostProxy) {
+    if(hostProxy.isPresent()) {
+      try {
+        int pendingCompactions = hostProxy.get().getPendingCompactions();
+        boolean hasRepairRunning = hostProxy.get().isRepairRunning();
+        
+        HostMetrics metrics = HostMetrics.builder().withHostAddress(hostName)
+                                                   .withPendingCompactions(pendingCompactions)
+                                                   .withHasRepairRunning(hasRepairRunning)
+                                                   .withActiveAnticompactions(0) // for future use
+                                                   .build();
+        context.storage.storeHostMetrics(metrics);
+        return Optional.fromNullable(metrics);
+      } catch(Exception e) {
+        LOG.debug("Cannot reach node {} through JMX. Trying to get metrics from storage...", hostName, e);        
+      }
     }
+    
+    return context.storage.getHostMetrics(hostName);
   }
 
   private boolean IsRepairRunningOnOneNode(RepairSegment segment) {
