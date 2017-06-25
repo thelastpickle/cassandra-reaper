@@ -45,6 +45,8 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 import java.util.Collections;
@@ -58,6 +60,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nullable;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -66,7 +69,8 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RepairRunnerTest {
+public final class RepairRunnerTest {
+  private static final Logger LOG = LoggerFactory.getLogger(RepairRunnerTest.class);
 
   @Before
   public void setUp() throws Exception {
@@ -109,7 +113,7 @@ public class RepairRunnerTest {
       final AtomicInteger repairAttempts = new AtomicInteger(1);
 
       @Override
-      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host)
+      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
           throws ReaperException {
         final JmxProxy jmx = mock(JmxProxy.class);
         when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
@@ -154,14 +158,14 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(), null);
                         mutex.release();
-                        System.out.println("MUTEX RELEASED");
+                        LOG.info("MUTEX RELEASED");
                       }
                     }.start();
                     break;
                   default:
                     fail("triggerRepair should only have been called twice");
                 }
-                System.out.println("repair number : " + repairNumber);
+                LOG.info("repair number : " + repairNumber);
                 return repairNumber;
               }
             });
@@ -170,11 +174,19 @@ public class RepairRunnerTest {
     };
     context.repairManager.startRepairRun(context, run);
 
-    // TODO: refactor so that we can properly wait for the repair runner to finish rather than
-    // TODO: using this sleep().
-    mutex.acquire();
-    System.out.println("MUTEX ACQUIRED");
-    Thread.sleep(1000);
+    await().with().atMost(20, TimeUnit.SECONDS).until(()
+            -> {
+                try {
+                    mutex.acquire();
+                    LOG.info("MUTEX ACQUIRED");
+                    // TODO: refactor so that we can properly wait for the repair runner to finish rather than
+                    // TODO: using this sleep().
+                    Thread.sleep(1000);
+                    return true;
+                } catch (InterruptedException ex) {
+                    throw new IllegalStateException(ex);
+                }
+            });
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }
 
@@ -214,7 +226,7 @@ public class RepairRunnerTest {
       final AtomicInteger repairAttempts = new AtomicInteger(1);
 
       @Override
-      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host)
+      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
           throws ReaperException {
         final JmxProxy jmx = mock(JmxProxy.class);
         when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
@@ -260,7 +272,7 @@ public class RepairRunnerTest {
                         handler.get()
                             .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.COMPLETE), null);
                         mutex.release();
-                        System.out.println("MUTEX RELEASED");
+                        LOG.info("MUTEX RELEASED");
                       }
                     }.start();
                     break;
@@ -275,11 +287,19 @@ public class RepairRunnerTest {
     };
     context.repairManager.startRepairRun(context, run);
 
-    // TODO: refactor so that we can properly wait for the repair runner to finish rather than
-    // TODO: using this sleep().
-    mutex.acquire();
-    System.out.println("MUTEX ACQUIRED");
-    Thread.sleep(100);
+    await().with().atMost(20, TimeUnit.SECONDS).until(()
+            -> {
+                try {
+                    mutex.acquire();
+                    LOG.info("MUTEX ACQUIRED");
+                    // TODO: refactor so that we can properly wait for the repair runner to finish rather than
+                    // TODO: using this sleep().
+                    Thread.sleep(1000);
+                    return true;
+                } catch (InterruptedException ex) {
+                    throw new IllegalStateException(ex);
+                }
+            });
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }
 
@@ -319,7 +339,7 @@ public class RepairRunnerTest {
                  RepairSegment.State.NOT_STARTED);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host)
+      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
           throws ReaperException {
         final JmxProxy jmx = mock(JmxProxy.class);
         when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);

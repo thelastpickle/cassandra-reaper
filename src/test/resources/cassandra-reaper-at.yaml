@@ -9,6 +9,7 @@ hangingRepairTimeoutMins: 1
 storageType: memory
 incrementalRepair: false
 enableDynamicSeedList: false
+jmxConnectionTimeoutInSeconds: 300
 
 logging:
   level: DEBUG

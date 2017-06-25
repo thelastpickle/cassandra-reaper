@@ -104,7 +104,7 @@ public class RepairRunResourceTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
+      public JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
           throws ReaperException {
         return proxy;
       }
@@ -198,7 +198,7 @@ public class RepairRunResourceTest {
     resource.modifyRunState(uriInfo, runId, newState);
     Thread.sleep(1000);
     response = resource.modifyRunState(uriInfo, runId, newState);
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    assertEquals(Response.Status.NOT_MODIFIED.getStatusCode(), response.getStatus());
   }
   
   @Test
@@ -216,7 +216,7 @@ public class RepairRunResourceTest {
     resource.modifyRunState(uriInfo, runId, newState);
     Thread.sleep(1000);
     response = resource.modifyRunState(uriInfo, runId, newState);
-    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    assertEquals(Response.Status.NOT_MODIFIED.getStatusCode(), response.getStatus());
     
     // Adding a second run that we'll try to set to RUNNING status
     RepairRunResource newResource = new RepairRunResource(context);
@@ -276,7 +276,7 @@ public class RepairRunResourceTest {
                                        Optional.of(RepairRun.RunState.PAUSED.toString()));
     Thread.sleep(200);
 
-    assertEquals(400, response.getStatus());
+    assertEquals(405, response.getStatus());
     RepairRun repairRun = context.storage.getRepairRun(runId).get();
     // the run should be paused
     assertEquals(RepairRun.RunState.NOT_STARTED, repairRun.getRunState());

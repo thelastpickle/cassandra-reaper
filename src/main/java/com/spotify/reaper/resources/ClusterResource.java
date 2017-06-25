@@ -186,7 +186,7 @@ public class ClusterResource {
     Optional<List<String>> liveNodes = Optional.absent();
     Set<String> seedHosts = CommonTools.parseSeedHosts(seedHostInput);
     for(String seedHost:seedHosts) {
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost)) {
+      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost, context.config.getJmxConnectionTimeoutInSeconds())) {
         clusterName = Optional.of(jmxProxy.getClusterName());
         partitioner = Optional.of(jmxProxy.getPartitioner());
         liveNodes = Optional.of(jmxProxy.getLiveNodes());
@@ -239,7 +239,7 @@ public class ClusterResource {
 
     if(context.config.getEnableDynamicSeedList()) {
       for(String seed:newSeeds) {
-        try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seed)) {
+        try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seed, context.config.getJmxConnectionTimeoutInSeconds())) {
           liveNodes = Optional.of(jmxProxy.getLiveNodes());
           newSeeds = liveNodes.get().stream().collect(Collectors.toSet());
           break;
@@ -312,7 +312,7 @@ public class ClusterResource {
    */
   Callable<Optional<NodesStatus>> getEndpointState(String seedHost) {
     return () -> {
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost)) {
+      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost, context.config.getJmxConnectionTimeoutInSeconds())) {
         Optional<String> allEndpointsState = Optional.fromNullable(jmxProxy.getAllEndpointsState());
         Optional<Map<String, String>> simpleStates = Optional.fromNullable(jmxProxy.getSimpleStates());
         return Optional.of(new NodesStatus(seedHost, allEndpointsState.or(""), simpleStates.or(new HashMap<String, String>())));
@@ -348,9 +348,12 @@ public class ClusterResource {
                                                                    .map(seedHost -> getEndpointState(seedHost))
                                                                    .collect(Collectors.toList());
 
-
         try {
-          nodesStatus = clusterStatusExecutor.invokeAny(endpointStateTasks, JmxProxy.JMX_CONNECTION_TIMEOUT, JmxProxy.JMX_CONNECTION_TIMEOUT_UNIT);
+          nodesStatus = clusterStatusExecutor.invokeAny(
+                  endpointStateTasks,
+                  JmxProxy.JMX_CONNECTION_TIMEOUT,
+                  JmxProxy.JMX_CONNECTION_TIMEOUT_UNIT);
+
         } catch (Exception e) {
           // TODO Auto-generated catch block
           LOG.debug("failed grabbing nodes status", e);

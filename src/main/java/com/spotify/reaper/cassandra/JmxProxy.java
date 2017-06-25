@@ -129,7 +129,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * @see JmxProxy#connect(Optional, String, int, String, String, EC2MultiRegionAddressTranslator)
    */
   static JmxProxy connect(Optional<RepairStatusHandler> handler, String host, String username,
-      String password, final EC2MultiRegionAddressTranslator addressTranslator)
+      String password, final EC2MultiRegionAddressTranslator addressTranslator, int connectionTimeout)
       throws ReaperException {
     if(host == null) {
       throw new ReaperException("Null host given to JmxProxy.connect()");
@@ -137,9 +137,9 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 
     String[] parts = host.split(":");
     if (parts.length == 2) {
-      return connect(handler, parts[0], Integer.valueOf(parts[1]), username, password, addressTranslator);
+      return connect(handler, parts[0], Integer.valueOf(parts[1]), username, password, addressTranslator, connectionTimeout);
     } else {
-      return connect(handler, host, JMX_PORT, username, password, addressTranslator);
+      return connect(handler, host, JMX_PORT, username, password, addressTranslator, connectionTimeout);
     }
   }
 
@@ -157,7 +157,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * @param addressTranslator if EC2MultiRegionAddressTranslator isn't null it will be used to translate addresses
    */
   static JmxProxy connect(Optional<RepairStatusHandler> handler, String originalHost, int port,
-      String username, String password, final EC2MultiRegionAddressTranslator addressTranslator)
+      String username, String password, final EC2MultiRegionAddressTranslator addressTranslator, int connectionTimeout)
       throws ReaperException {
     ObjectName ssMbeanName;
     ObjectName cmMbeanName;
@@ -187,8 +187,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
         env.put(JMXConnector.CREDENTIALS, creds);
       }
       env.put("com.sun.jndi.rmi.factory.socket", getRMIClientSocketFactory());
-
-      JMXConnector jmxConn = connectWithTimeout(jmxUrl, JMX_CONNECTION_TIMEOUT, JMX_CONNECTION_TIMEOUT_UNIT, env);
+      JMXConnector jmxConn = connectWithTimeout(jmxUrl, connectionTimeout, TimeUnit.SECONDS, env);
       MBeanServerConnection mbeanServerConn = jmxConn.getMBeanServerConnection();
       Object ssProxy =
           JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean.class);

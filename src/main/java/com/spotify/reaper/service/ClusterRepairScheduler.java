@@ -90,7 +90,7 @@ public class ClusterRepairScheduler {
   }
 
   private boolean keyspaceHasNoTable(AppContext context, Cluster cluster, String keyspace)  {
-    try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(cluster)) {
+    try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds())) {
       Set<String> tables = jmxProxy.getTableNamesForKeyspace(keyspace);
       return tables.isEmpty();
     } catch (ReaperException e) {
@@ -130,7 +130,7 @@ public class ClusterRepairScheduler {
     }
 
     private Set<String> keyspacesInCluster(AppContext context, Cluster cluster) throws ReaperException {
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(cluster)) {
+      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds())) {
         List<String> keyspaces = jmxProxy.getKeyspaces();
         if (keyspaces.isEmpty()) {
           String message = format("No keyspace found in cluster %s", cluster.getName());

@@ -1,8 +1,6 @@
 package com.spotify.reaper.acceptance;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 
 import com.spotify.reaper.AppContext;
@@ -11,25 +9,17 @@ import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.SimpleReaperClient;
 
 
-import net.sourceforge.argparse4j.inf.Namespace;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.glassfish.jersey.client.ClientResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
 import io.dropwizard.Application;
-import io.dropwizard.Configuration;
-import io.dropwizard.cli.ServerCommand;
-import io.dropwizard.lifecycle.ServerLifecycleListener;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
 import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.DropwizardTestSupport;
 
@@ -38,19 +28,18 @@ import io.dropwizard.testing.DropwizardTestSupport;
  * Starts a Jetty server that wraps Reaper application,
  * and registers a shutdown hook for JVM exit event.
  */
-public class ReaperTestJettyRunner {
+public final class ReaperTestJettyRunner {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ReaperTestJettyRunner.class);
+  ReaperJettyTestSupport runnerInstance;
   private Server jettyServer;
-  private static ReaperJettyTestSupport runnerInstance;
-  private static SimpleReaperClient reaperClientInstance;
+  private SimpleReaperClient reaperClientInstance;
 
-  public static ReaperJettyTestSupport setup(AppContext testContext, String yamlConfigFile) throws Exception {
+  public ReaperJettyTestSupport setup(AppContext testContext, String yamlConfigFile) throws Exception {
     if (runnerInstance == null) {
       runnerInstance = new ReaperJettyTestSupport(Resources.getResource(yamlConfigFile).getPath(), testContext);
-      
+
       runnerInstance.before();
-      
+
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
         public void run() {
@@ -60,55 +49,44 @@ public class ReaperTestJettyRunner {
         }
       });
     }
-    
+
     return runnerInstance;
   }
 
-  public static Response callReaper(String httpMethod, String urlPath,
-                                          Optional<Map<String, String>> params) {
+  public Response callReaper(String httpMethod, String urlPath, Optional<Map<String, String>> params) {
     assert runnerInstance != null : "service not initialized, call setup() first";
-    return SimpleReaperClient.doHttpCall(httpMethod, "localhost", runnerInstance.getLocalPort(),
-                                         urlPath, params);
+    return SimpleReaperClient.doHttpCall(httpMethod, "localhost", runnerInstance.getLocalPort(), urlPath, params);
   }
 
-  public static SimpleReaperClient getClient() {
+  public SimpleReaperClient getClient() {
     if (reaperClientInstance == null) {
       reaperClientInstance = new SimpleReaperClient("localhost", runnerInstance.getLocalPort());
     }
     return reaperClientInstance;
   }
 
-
-
   public ReaperTestJettyRunner() {
-
   }
-
-
 
   public int getLocalPort() {
     assert jettyServer != null : "service not initialized, call setup() first";
     return ((ServerConnector) jettyServer.getConnectors()[0]).getLocalPort();
   }
 
-  public final static class ReaperJettyTestSupport extends DropwizardTestSupport<ReaperApplicationConfiguration>
-  {
+  public final static class ReaperJettyTestSupport extends DropwizardTestSupport<ReaperApplicationConfiguration> {
       AppContext context;
 
-      private ReaperJettyTestSupport(String configFile, AppContext context)
-      {
+      private ReaperJettyTestSupport(String configFile, AppContext context) {
           super(ReaperApplication.class,
                   new File(configFile).getAbsolutePath(),
-                  ConfigOverride.config("server.adminConnectors[0].port", "8084"),
-                  ConfigOverride.config("server.applicationConnectors[0].port", "8083")
+                  ConfigOverride.config("server.adminConnectors[0].port", "" + getAnyAvailablePort()),
+                  ConfigOverride.config("server.applicationConnectors[0].port", "" + getAnyAvailablePort())
           );
-          
-      this.context = context;    
+          this.context = context;
       }
 
       @Override
-      public Application<ReaperApplicationConfiguration> newApplication()
-      {
+      public Application<ReaperApplicationConfiguration> newApplication() {
           return new ReaperApplication(this.context);
       }
 
@@ -120,6 +98,16 @@ public class ReaperTestJettyRunner {
           } catch (InterruptedException ex) {}
           super.after();
       }
+
+      private static int getAnyAvailablePort() {
+          // this method doesn't actually reserve the ports
+          // so subsequent calls may well return the same number
+        try (ServerSocket s = new ServerSocket(0)) {
+            return s.getLocalPort();
+        } catch (IOException ex) {
+            throw new IllegalStateException("no available ports", ex);
+        }
+    }
   }
-  
+
 }
