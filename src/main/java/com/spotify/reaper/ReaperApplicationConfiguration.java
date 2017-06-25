@@ -104,6 +104,10 @@ public class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   @DefaultValue("false")
   private Boolean activateQueryLogger;
+  
+  @JsonProperty
+  @DefaultValue("5")
+  private int jmxConnectionTimeoutInSeconds;
 
   public int getSegmentCount() {
     return segmentCount;
@@ -290,6 +294,15 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   public int getHangingRepairTimeoutMins() {
     return hangingRepairTimeoutMins;
+  }
+
+  @JsonProperty
+  public void setJmxConnectionTimeoutInSeconds(int jmxConnectionTimeoutInSeconds) {
+    this.jmxConnectionTimeoutInSeconds = jmxConnectionTimeoutInSeconds;
+  }
+  
+  public int getJmxConnectionTimeoutInSeconds() {
+    return jmxConnectionTimeoutInSeconds;
   }
 
   @JsonProperty

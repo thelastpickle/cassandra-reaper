@@ -33,22 +33,22 @@ public class ReaperIT {
   private static final Logger LOG = LoggerFactory.getLogger(ReaperIT.class);
   private static ReaperJettyTestSupport runnerInstance;
   private static final String MEMORY_CONFIG_FILE="cassandra-reaper-at.yaml";
-  
-  
+
+
   @BeforeClass
   public static void setUp() throws Exception {
     LOG.info("setting up testing Reaper runner with {} seed hosts defined and memory storage",
         TestContext.TEST_CLUSTER_SEED_HOSTS.size());
-    AppContext context = new AppContext();    
-    runnerInstance = ReaperTestJettyRunner.setup(context, MEMORY_CONFIG_FILE);
-
-    BasicSteps.setReaperClient(ReaperTestJettyRunner.getClient());
+    AppContext context = new AppContext();
+    ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
+    runnerInstance = runner.setup(context, MEMORY_CONFIG_FILE);
+    BasicSteps.addReaperRunner(runner);
   }
-  
+
   @AfterClass
   public static void tearDown() {
     LOG.info("Stopping reaper service...");
     runnerInstance.after();
   }
-  
+
 }

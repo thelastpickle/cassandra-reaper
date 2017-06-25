@@ -118,7 +118,7 @@ public final class CommonTools {
       throw new ReaperException(errMsg);
     }
     for (String host : seedHosts) {
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host)) {
+      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds())) {
         List<BigInteger> tokens = jmxProxy.getTokens();
         segments = sg.generateSegments(segmentCount, tokens, incrementalRepair);
         break;
@@ -198,7 +198,7 @@ public final class CommonTools {
 
       Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
       for (String host : seedHosts) {
-        try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host)) {
+        try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds())) {
           rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());
           break;
         } catch (ReaperException e) {
@@ -282,7 +282,7 @@ public final class CommonTools {
       AppContext context, Cluster cluster, String keyspace, Optional<String> tableNamesParam)
       throws ReaperException {
     Set<String> knownTables;
-    try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(cluster)) {
+    try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds())) {
       knownTables = jmxProxy.getTableNamesForKeyspace(keyspace);
       if (knownTables.isEmpty()) {
         LOG.debug("no known tables for keyspace {} in cluster {}", keyspace, cluster.getName());
@@ -312,7 +312,7 @@ public final class CommonTools {
 
     Optional<String> cassandraVersion = Optional.absent();
     for (String host : cluster.getSeedHosts()) {
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host)) {
+      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds())) {
         cassandraVersion = Optional.fromNullable(jmxProxy.getCassandraVersion());
         break;
       } catch (ReaperException e) {
