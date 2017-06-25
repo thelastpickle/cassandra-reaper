@@ -304,7 +304,10 @@ public class RepairRunResource {
     RepairRun.RunState oldState = repairRun.get().getRunState();
 
     if (oldState == newState) {
-      return Response.ok("given \"state\" is same as the current run state").build();
+      return Response
+              .status(Response.Status.NOT_MODIFIED)
+              .entity("given \"state\" is same as the current run state")
+              .build();
     }
 
     if (isStarting(oldState, newState)) {
@@ -523,38 +526,38 @@ public class RepairRunResource {
           "required query parameter \"owner\" is missing").build();
     }
     Optional<RepairRun> runToDelete = context.storage.getRepairRun(runId);
-    if (!runToDelete.isPresent()) {
-      return Response.status(Response.Status.NOT_FOUND).entity(
-          "Repair run with id \"" + runId + "\" not found").build();
+    if (runToDelete.isPresent()) {
+        if (runToDelete.get().getRunState() == RepairRun.RunState.RUNNING) {
+          return Response.status(Response.Status.FORBIDDEN).entity(
+              "Repair run with id \"" + runId
+              + "\" is currently running, and must be stopped before deleting").build();
+        }
+        if (!runToDelete.get().getOwner().equalsIgnoreCase(owner.get())) {
+          return Response.status(Response.Status.FORBIDDEN).entity(
+              "Repair run with id \"" + runId + "\" is not owned by the user you defined: "
+              + owner.get()).build();
+        }
+        if (context.storage.getSegmentAmountForRepairRunWithState(runId, RepairSegment.State.RUNNING) > 0) {
+          return Response.status(Response.Status.FORBIDDEN).entity(
+              "Repair run with id \"" + runId
+              + "\" has a running segment, which must be waited to finish before deleting").build();
+        }
+        // Need to get the RepairUnit before it's possibly deleted.
+        Optional<RepairUnit> unitPossiblyDeleted =
+            context.storage.getRepairUnit(runToDelete.get().getRepairUnitId());
+        int segmentsRepaired =
+            context.storage.getSegmentAmountForRepairRunWithState(runId, RepairSegment.State.DONE);
+        Optional<RepairRun> deletedRun = context.storage.deleteRepairRun(runId);
+        if (deletedRun.isPresent()) {
+          RepairRunStatus repairRunStatus =
+              new RepairRunStatus(deletedRun.get(), unitPossiblyDeleted.get(), segmentsRepaired);
+          return Response.ok().entity(repairRunStatus).build();
+        }
     }
-    if (runToDelete.get().getRunState() == RepairRun.RunState.RUNNING) {
-      return Response.status(Response.Status.FORBIDDEN).entity(
-          "Repair run with id \"" + runId
-          + "\" is currently running, and must be stopped before deleting").build();
-    }
-    if (!runToDelete.get().getOwner().equalsIgnoreCase(owner.get())) {
-      return Response.status(Response.Status.FORBIDDEN).entity(
-          "Repair run with id \"" + runId + "\" is not owned by the user you defined: "
-          + owner.get()).build();
-    }
-    if (context.storage.getSegmentAmountForRepairRunWithState(runId, RepairSegment.State.RUNNING) > 0) {
-      return Response.status(Response.Status.FORBIDDEN).entity(
-          "Repair run with id \"" + runId
-          + "\" has a running segment, which must be waited to finish before deleting").build();
-    }
-    // Need to get the RepairUnit before it's possibly deleted.
-    Optional<RepairUnit> unitPossiblyDeleted =
-        context.storage.getRepairUnit(runToDelete.get().getRepairUnitId());
-    int segmentsRepaired =
-        context.storage.getSegmentAmountForRepairRunWithState(runId, RepairSegment.State.DONE);
-    Optional<RepairRun> deletedRun = context.storage.deleteRepairRun(runId);
-    if (deletedRun.isPresent()) {
-      RepairRunStatus repairRunStatus =
-          new RepairRunStatus(deletedRun.get(), unitPossiblyDeleted.get(), segmentsRepaired);
-      return Response.ok().entity(repairRunStatus).build();
-    }
-    return Response.serverError().entity("delete failed for repair run with id \""
-                                         + runId + "\"").build();
+    return Response
+            .status(Response.Status.NOT_FOUND)
+            .entity("Repair run with id \"" + runId + "\" not found")
+            .build();
   }
 
 }

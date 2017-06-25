@@ -14,9 +14,6 @@
 package com.spotify.reaper.acceptance;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -26,7 +23,6 @@ import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
-import com.google.common.io.CharStreams;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.acceptance.ReaperTestJettyRunner.ReaperJettyTestSupport;
 
@@ -41,38 +37,43 @@ public class ReaperCassandraIT {
   private static final Logger LOG = LoggerFactory.getLogger(ReaperCassandraIT.class);
   private static ReaperJettyTestSupport runnerInstance;
   private static final String CASS_CONFIG_FILE="cassandra-reaper-cassandra-at.yaml";
-  
-  
+
+
   @BeforeClass
   public static void setUp() throws Exception {
-    LOG.info("setting up testing Reaper runner with {} seed hosts defined and cassandra storage",
-        TestContext.TEST_CLUSTER_SEED_HOSTS.size());
-    AppContext context = new AppContext();    
+    LOG.info(
+            "setting up testing Reaper runner with {} seed hosts defined and cassandra storage",
+            TestContext.TEST_CLUSTER_SEED_HOSTS.size());
+
+    AppContext context = new AppContext();
     initSchema();
-    runnerInstance = ReaperTestJettyRunner.setup(context, CASS_CONFIG_FILE);
-    BasicSteps.setReaperClient(ReaperTestJettyRunner.getClient());
+    for ( int i =0 ; i < 3 ; ++i) { //TODO parameterise this puppy
+        ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
+        runnerInstance = runner.setup(context, CASS_CONFIG_FILE);
+        BasicSteps.addReaperRunner(runner);
+    }
   }
-  
-  
+
+
   public static void initSchema() throws IOException{
     Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
-    Session tmpSession = cluster.connect();
-    while(true){
-        try{
-            tmpSession.execute("DROP KEYSPACE IF EXISTS reaper_db");
-            break;
-        }catch(Exception ex){
-            LOG.warn("error dropping keyspace", ex);
-        }
-    }
-    tmpSession.execute("CREATE KEYSPACE IF NOT EXISTS reaper_db WITH replication = {'class':'SimpleStrategy', 'replication_factor':1}");
-    tmpSession.close();
+      try (Session tmpSession = cluster.connect()) {
+          while(true){
+              try{
+                  tmpSession.execute("DROP KEYSPACE IF EXISTS reaper_db");
+                  break;
+              }catch(Exception ex){
+                  LOG.warn("error dropping keyspace", ex);
+              }
+          }
+          tmpSession.execute("CREATE KEYSPACE IF NOT EXISTS reaper_db WITH replication = {'class':'SimpleStrategy', 'replication_factor':1}");
+      }
   }
-  
+
   @AfterClass
   public static void tearDown() {
     LOG.info("Stopping reaper service...");
     runnerInstance.after();
   }
-  
+
 }
