@@ -8,6 +8,7 @@ repairRunThreadCount: 15
 hangingRepairTimeoutMins: 1
 storageType: database
 incrementalRepair: false
+jmxConnectionTimeoutInSeconds: 30
 
 logging:
   level: DEBUG

@@ -186,7 +186,7 @@ public class ClusterResource {
     Optional<List<String>> liveNodes = Optional.absent();
     Set<String> seedHosts = CommonTools.parseSeedHosts(seedHostInput);
     for(String seedHost:seedHosts) {
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost)) {
+      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost, context.config.getJmxConnectionTimeoutInSeconds())) {
         clusterName = Optional.of(jmxProxy.getClusterName());
         partitioner = Optional.of(jmxProxy.getPartitioner());
         liveNodes = Optional.of(jmxProxy.getLiveNodes());
@@ -195,22 +195,22 @@ public class ClusterResource {
         LOG.error("failed to create cluster with seed host: {}", seedHost, e);
       }
     }
-    
+
     if(!clusterName.isPresent()) {
       throw new ReaperException("Could not connect any seed host");
     }
-    
-    
+
+
     Set<String> seedHostsFinal = seedHosts;
-    if (context.config.getEnableDynamicSeedList() 
+    if (context.config.getEnableDynamicSeedList()
         && liveNodes.isPresent()) {
       seedHostsFinal = !liveNodes.get().isEmpty()
                           ?liveNodes.get().stream().collect(Collectors.toSet())
                           :seedHosts;
-    }    
-    
+    }
+
     LOG.debug("Seeds {}", seedHostsFinal);
-    
+
     return new Cluster(clusterName.get(), partitioner.get(), seedHostsFinal);
   }
 
@@ -236,10 +236,10 @@ public class ClusterResource {
 
     Set<String> newSeeds = CommonTools.parseSeedHosts(seedHost.get());
     Optional<List<String>> liveNodes = Optional.absent();
-    
+
     if(context.config.getEnableDynamicSeedList()) {
       for(String seed:newSeeds) {
-        try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seed)) {        
+        try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seed, context.config.getJmxConnectionTimeoutInSeconds())) {
           liveNodes = Optional.of(jmxProxy.getLiveNodes());
           newSeeds = liveNodes.get().stream().collect(Collectors.toSet());
           break;
@@ -248,7 +248,7 @@ public class ClusterResource {
         }
       }
     }
-    
+
     if (newSeeds.equals(cluster.get().getSeedHosts()) || newSeeds.isEmpty()) {
       return Response.notModified().build();
     }
@@ -270,7 +270,7 @@ public class ClusterResource {
    *
    * @param clusterName The name of the Cluster instance you are about to delete.
    * @return The deleted RepairRun instance, with state overwritten to string "DELETED".
-   * @throws ReaperException 
+   * @throws ReaperException
    */
   @DELETE
   @Path("/{cluster_name}")
@@ -301,8 +301,8 @@ public class ClusterResource {
     return Response.serverError().entity("delete failed for schedule with name \""
                                          + clusterName + "\"").build();
   }
-  
-  
+
+
   /**
    * Callable to get and parse endpoint states through JMX
    *
@@ -312,7 +312,7 @@ public class ClusterResource {
    */
   Callable<Optional<NodesStatus>> getEndpointState(String seedHost) {
     return () -> {
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost)) {
+      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost, context.config.getJmxConnectionTimeoutInSeconds())) {
         Optional<String> allEndpointsState = Optional.fromNullable(jmxProxy.getAllEndpointsState());
         Optional<Map<String, String>> simpleStates = Optional.fromNullable(jmxProxy.getSimpleStates());
         return Optional.of(new NodesStatus(seedHost, allEndpointsState.or(""), simpleStates.or(new HashMap<String, String>())));
@@ -323,45 +323,48 @@ public class ClusterResource {
       }
     };
   }
-  
-  
+
+
   /**
    * Get all nodes state by querying the AllEndpointsState attribute through JMX.
-   * 
+   *
    * To speed up execution, the method calls JMX on 3 nodes asynchronously and processes the first response
-   * 
+   *
    * @param cluster
    * @return An optional NodesStatus object with all nodes statuses
    */
   public Optional<NodesStatus> getNodesStatus(Optional<Cluster> cluster){
     Optional<NodesStatus> nodesStatus = Optional.absent();
     if(cluster.isPresent() && cluster.get().getSeedHosts()!=null) {
-      
+
       List<String>seedHosts = Lists.newArrayList();
       seedHosts.addAll(cluster.get().getSeedHosts());
       Collections.shuffle(seedHosts);
       List<List<String>> partitionedSeedList = Lists.partition(seedHosts, JMX_NODE_STATUS_CONCURRENCY);
-      
+
       for(List<String> seeds:partitionedSeedList) {
         LOG.debug("seed list : {}", seeds);
         List<Callable<Optional<NodesStatus>>> endpointStateTasks = seeds.stream()
                                                                    .map(seedHost -> getEndpointState(seedHost))
                                                                    .collect(Collectors.toList());
-        
-        
+
         try {
-          nodesStatus = clusterStatusExecutor.invokeAny(endpointStateTasks, JmxProxy.JMX_CONNECTION_TIMEOUT, JmxProxy.JMX_CONNECTION_TIMEOUT_UNIT);
+          nodesStatus = clusterStatusExecutor.invokeAny(
+                  endpointStateTasks,
+                  JmxProxy.JMX_CONNECTION_TIMEOUT,
+                  JmxProxy.JMX_CONNECTION_TIMEOUT_UNIT);
+
         } catch (Exception e) {
           // TODO Auto-generated catch block
           LOG.debug("failed grabbing nodes status", e);
         }
-        
+
         if (nodesStatus.isPresent()) {
           return nodesStatus;
         }
       }
     }
-    
+
     return nodesStatus;
   }
 

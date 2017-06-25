@@ -55,7 +55,7 @@ public class ClusterResourceTest {
     when(jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
+      public JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
           throws ReaperException {
         return jmxProxy;
       }

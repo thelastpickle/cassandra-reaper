@@ -49,7 +49,7 @@ public class ClusterRepairSchedulerTest {
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     clusterRepairAuto = new ClusterRepairScheduler(context);
     jmxProxy = mock(JmxProxy.class);
-    when(context.jmxConnectionFactory.connectAny(CLUSTER)).thenReturn(jmxProxy);
+    when(context.jmxConnectionFactory.connectAny(CLUSTER, context.config.getJmxConnectionTimeoutInSeconds())).thenReturn(jmxProxy);
   }
 
   @Test
