@@ -14,9 +14,6 @@
 package com.spotify.reaper.acceptance;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -26,12 +23,19 @@ import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
-import com.google.common.io.CharStreams;
+import com.datastax.driver.core.SocketOptions;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.acceptance.ReaperTestJettyRunner.ReaperJettyTestSupport;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
@@ -39,40 +43,85 @@ import cucumber.api.junit.Cucumber;
 )
 public class ReaperCassandraIT {
   private static final Logger LOG = LoggerFactory.getLogger(ReaperCassandraIT.class);
-  private static ReaperJettyTestSupport runnerInstance;
+  private static final List<ReaperTestJettyRunner> RUNNER_INSTANCES = new CopyOnWriteArrayList<>();
   private static final String CASS_CONFIG_FILE="cassandra-reaper-cassandra-at.yaml";
-  
-  
+  private static final Random RAND = new Random(System.nanoTime());
+  private static Thread GRIM_REAPER;
+
+
   @BeforeClass
   public static void setUp() throws Exception {
     LOG.info(
             "setting up testing Reaper runner with {} seed hosts defined and cassandra storage",
             TestContext.TEST_CLUSTER_SEED_HOSTS.size());
+
+    int minReaperInstances = Integer.getInteger("grim.reaper.min", 1);
+    int maxReaperInstances = Integer.getInteger("grim.reaper.max", minReaperInstances);
+
     initSchema();
-    runnerInstance = ReaperTestJettyRunner.setup(new AppContext(), CASS_CONFIG_FILE);
-    BasicSteps.setReaperClient(ReaperTestJettyRunner.getClient());
-  }
-  
-  
-  public static void initSchema() throws IOException{
-    Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
-    Session tmpSession = cluster.connect();
-    while(true){
-        try{
-            tmpSession.execute("DROP KEYSPACE IF EXISTS reaper_db");
-            break;
-        }catch(Exception ex){
-            LOG.warn("error dropping keyspace", ex);
-        }
+    for ( int i =0 ; i < minReaperInstances ; ++i) {
+        ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
+        runner.setup(new AppContext(), CASS_CONFIG_FILE);
+        RUNNER_INSTANCES.add(runner);
+        BasicSteps.addReaperRunner(runner);
     }
-    tmpSession.execute("CREATE KEYSPACE IF NOT EXISTS reaper_db WITH replication = {'class':'SimpleStrategy', 'replication_factor':1}");
-    tmpSession.close();
+
+    GRIM_REAPER = new Thread(() -> {
+        Thread.currentThread().setName("GRIM REAPER");
+        while (!Thread.currentThread().isInterrupted()) { //keep adding/removing reaper instances while test is running
+            try {
+                  if (maxReaperInstances > RUNNER_INSTANCES.size()) {
+                      ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
+                      ReaperJettyTestSupport instance = runner.setup(new AppContext(), CASS_CONFIG_FILE);
+                      RUNNER_INSTANCES.add(runner);
+                      Thread.sleep(100);
+                      BasicSteps.addReaperRunner(runner);
+                  } else {
+                      int remove = minReaperInstances + RAND.nextInt(maxReaperInstances-minReaperInstances);
+                      ReaperTestJettyRunner runner = RUNNER_INSTANCES.get(remove);
+                      BasicSteps.removeReaperRunner(runner);
+                      Thread.sleep(200);
+                      runner.runnerInstance.after();
+                      RUNNER_INSTANCES.remove(runner);
+                  }
+            } catch (Exception ex) {
+                LOG.error("failed adding/removing reaper instance", ex);
+            }
+        }
+    });
+    if (minReaperInstances < maxReaperInstances) {
+        GRIM_REAPER.start();
+    }
   }
-  
+
+
+  public static void initSchema() throws IOException {
+      try (Cluster cluster = buildCluster(); Session tmpSession = cluster.connect()) {
+          await().with().pollInterval(3, SECONDS).atMost(2, MINUTES).until(() -> {
+              try {
+                tmpSession.execute("DROP KEYSPACE IF EXISTS reaper_db");
+                return true;
+              } catch (Exception ex) {
+                return false;
+              }
+          });
+          tmpSession.execute(
+                  "CREATE KEYSPACE reaper_db WITH replication = {'class':'SimpleStrategy', 'replication_factor':3}");
+      }
+  }
+
   @AfterClass
   public static void tearDown() {
     LOG.info("Stopping reaper service...");
-    runnerInstance.after();
+    GRIM_REAPER.interrupt();
+    RUNNER_INSTANCES.forEach(r -> r.runnerInstance.after());
   }
-  
+
+
+  private static Cluster buildCluster() {
+    return Cluster.builder()
+            .addContactPoint("127.0.0.1")
+            .withSocketOptions(new SocketOptions().setConnectTimeoutMillis(20000).setReadTimeoutMillis(40000))
+            .build();
+  }
 }

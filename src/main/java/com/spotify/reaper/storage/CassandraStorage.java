@@ -18,10 +18,12 @@ import com.datastax.driver.core.CodecRegistry;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.QueryLogger;
+import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.SocketOptions;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
 import com.google.common.collect.ComparisonChain;
@@ -53,6 +55,7 @@ import org.cognitor.cassandra.migration.MigrationTask;
 import org.joda.time.DateTime;
 
 import io.dropwizard.setup.Environment;
+import systems.composable.dropwizard.cassandra.CassandraFactory;
 
 public final class CassandraStorage implements IStorage {
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
@@ -97,7 +100,11 @@ public final class CassandraStorage implements IStorage {
   private DateTime lastHeartBeat = DateTime.now();
   
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
+    CassandraFactory cassandraFactory = config.getCassandraFactory();
+    // all INSERT and DELETE statement prepared in this class are idempotent
+    cassandraFactory.setQueryOptions(java.util.Optional.of(new QueryOptions().setDefaultIdempotence(true)));
     cassandra = config.getCassandraFactory().build(environment);
+
     if(config.getActivateQueryLogger())
       cassandra.register(QueryLogger.builder().build());
     CodecRegistry codecRegistry = cassandra.getConfiguration().getCodecRegistry();
@@ -114,8 +121,8 @@ public final class CassandraStorage implements IStorage {
   }
 
   private void prepareStatements(){
-    insertClusterPrepStmt = session.prepare("INSERT INTO cluster(name, partitioner, seed_hosts) values(?, ?, ?)");
-    getClusterPrepStmt = session.prepare("SELECT * FROM cluster WHERE name = ?");
+    insertClusterPrepStmt = session.prepare("INSERT INTO cluster(name, partitioner, seed_hosts) values(?, ?, ?)").setConsistencyLevel(ConsistencyLevel.QUORUM);
+    getClusterPrepStmt = session.prepare("SELECT * FROM cluster WHERE name = ?").setConsistencyLevel(ConsistencyLevel.QUORUM);
     deleteClusterPrepStmt = session.prepare("DELETE FROM cluster WHERE name = ?");
     insertRepairRunPrepStmt = session.prepare("INSERT INTO repair_run(id, cluster_name, repair_unit_id, cause, owner, state, creation_time, start_time, end_time, pause_time, intensity, last_event, segment_count, repair_parallelism) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     insertRepairRunClusterIndexPrepStmt = session.prepare("INSERT INTO repair_run_by_cluster(cluster_name, id) values(?, ?)");
@@ -466,22 +473,11 @@ public final class CassandraStorage implements IStorage {
         .build(segmentRow.getUUID("segment_id"));
   }
 
+  public Optional<RepairSegment> getSegment(UUID runId, Optional<RingRange> range) {
+    List<RepairSegment> segments = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
+    Collections.shuffle(segments);
 
-  public Optional<RepairSegment> getSegment(UUID runId, Optional<RingRange> range){
     RepairSegment segment = null;
-    List<RepairSegment> segments = Lists.<RepairSegment>newArrayList();
-    segments.addAll(getRepairSegmentsForRun(runId));
-
-    // Sort segments by fail count and start token (in order to try those who haven't failed first, in start token order)
-    Collections.sort( segments, new Comparator<RepairSegment>(){
-      public int compare(RepairSegment seg1, RepairSegment seg2) {
-        return ComparisonChain.start()
-            .compare(seg1.getFailCount(), seg2.getFailCount())
-            .compare(seg1.getStartToken(), seg2.getStartToken())
-            .result();
-      }
-    });
-
     for(RepairSegment seg:segments){
       if(seg.getState().equals(State.NOT_STARTED) // State condition
           && ((range.isPresent() &&

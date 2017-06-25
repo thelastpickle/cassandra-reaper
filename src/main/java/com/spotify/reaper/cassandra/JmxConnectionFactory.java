@@ -40,7 +40,7 @@ public class JmxConnectionFactory {
   private EC2MultiRegionAddressTranslator addressTranslator;
   private boolean localMode = false;
 
-  public JmxProxy connect(Optional<RepairStatusHandler> handler, String host)
+  public JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
       throws ReaperException {
     // use configured jmx port for host if provided
     if(localMode) {
@@ -56,14 +56,14 @@ public class JmxConnectionFactory {
       username = jmxAuth.getUsername();
       password = jmxAuth.getPassword();
     }
-    return JmxProxy.connect(handler, host, username, password, addressTranslator);
+    return JmxProxy.connect(handler, host, username, password, addressTranslator, connectionTimeout);
   }
 
-  public final JmxProxy connect(String host) throws ReaperException {
-    return connect(Optional.<RepairStatusHandler>absent(), host);
+  public final JmxProxy connect(String host, int connectionTimeout) throws ReaperException {
+    return connect(Optional.<RepairStatusHandler>absent(), host, connectionTimeout);
   }
 
-  public final JmxProxy connectAny(Optional<RepairStatusHandler> handler, Collection<String> hosts)
+  public final JmxProxy connectAny(Optional<RepairStatusHandler> handler, Collection<String> hosts, int connectionTimeout)
       throws ReaperException {
     if (hosts == null || hosts.isEmpty()) {
       throw new ReaperException("no hosts given for connectAny");
@@ -75,7 +75,7 @@ public class JmxConnectionFactory {
     while (hostIterator.hasNext()) {
       try {
         String host = hostIterator.next();
-        return connect(handler, host);
+        return connect(handler, host, connectionTimeout);
       } catch(Exception e) {
         LOG.debug("Unreachable host", e);
       }
@@ -84,13 +84,13 @@ public class JmxConnectionFactory {
     throw new ReaperException("no host could be reached through JMX");
   }
 
-  public final JmxProxy connectAny(Cluster cluster)
+  public final JmxProxy connectAny(Cluster cluster, int connectionTimeout)
       throws ReaperException {
     Set<String> hosts = cluster.getSeedHosts();
     if (hosts == null || hosts.isEmpty()) {
       throw new ReaperException("no seeds in cluster with name: " + cluster.getName());
     }
-    return connectAny(Optional.<RepairStatusHandler>absent(), hosts);
+    return connectAny(Optional.<RepairStatusHandler>absent(), hosts, connectionTimeout);
   }
 
   public void setJmxPorts(Map<String, Integer> jmxPorts) {

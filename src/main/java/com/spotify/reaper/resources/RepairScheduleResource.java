@@ -188,13 +188,17 @@ public class RepairScheduleResource {
                   "It is not possible to mix sequential repair and incremental repairs. parallelism " 
                   + parallelism + " : incrementalRepair " + incrementalRepair).build();
       }
-      
-      RepairSchedule newRepairSchedule = CommonTools.storeNewRepairSchedule(
-          context, cluster, theRepairUnit, daysBetween, nextActivation, owner.get(),
-          segments, parallelism, intensity);
+      try {
+        RepairSchedule newRepairSchedule = CommonTools.storeNewRepairSchedule(
+            context, cluster, theRepairUnit, daysBetween, nextActivation, owner.get(),
+            segments, parallelism, intensity);
 
-      return Response.created(buildRepairScheduleURI(uriInfo, newRepairSchedule))
-          .entity(new RepairScheduleStatus(newRepairSchedule, theRepairUnit)).build();
+        return Response.created(buildRepairScheduleURI(uriInfo, newRepairSchedule))
+            .entity(new RepairScheduleStatus(newRepairSchedule, theRepairUnit)).build();
+      } catch (ReaperException ex) {
+        LOG.error(ex.getMessage(), ex);
+        return Response.status(Response.Status.CONFLICT).entity(ex.getMessage()).build();
+      }
 
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -251,7 +255,10 @@ public class RepairScheduleResource {
     RepairSchedule.State oldState = repairSchedule.get().getState();
 
     if (oldState == newState) {
-      return Response.ok("given \"state\" is same as the current state").build();
+      return Response
+              .status(Response.Status.NOT_MODIFIED)
+              .entity("given \"state\" is same as the current state")
+              .build();
     }
 
     if (isPausing(oldState, newState)) {
@@ -402,6 +409,7 @@ public class RepairScheduleResource {
   @Path("/{id}")
   public Response deleteRepairSchedule(@PathParam("id") UUID repairScheduleId,
       @QueryParam("owner") Optional<String> owner) {
+
     LOG.info("delete repair schedule called with repairScheduleId: {}, and owner: {}",
         repairScheduleId, owner);
     if (!owner.isPresent()) {
@@ -409,32 +417,32 @@ public class RepairScheduleResource {
           "required query parameter \"owner\" is missing").build();
     }
     Optional<RepairSchedule> scheduleToDelete = context.storage.getRepairSchedule(repairScheduleId);
-    if (!scheduleToDelete.isPresent()) {
-      return Response.status(Response.Status.NOT_FOUND).entity(
-          "Repair schedule with id \"" + repairScheduleId + "\" not found").build();
+    if (scheduleToDelete.isPresent()) {
+        if (scheduleToDelete.get().getState() == RepairSchedule.State.ACTIVE) {
+          return Response.status(Response.Status.FORBIDDEN).entity(
+              "Repair schedule with id \"" + repairScheduleId
+              + "\" is currently running, and must be stopped before deleting").build();
+        }
+        if (!scheduleToDelete.get().getOwner().equalsIgnoreCase(owner.get())) {
+          return Response.status(Response.Status.FORBIDDEN).entity(
+              "Repair schedule with id \"" + repairScheduleId
+              + "\" is not owned by the user you defined: " + owner.get()).build();
+        }
+        // Need to get the RepairUnit before it's possibly deleted.
+        Optional<RepairUnit> possiblyDeletedUnit =
+            context.storage.getRepairUnit(scheduleToDelete.get().getRepairUnitId());
+        Optional<RepairSchedule> deletedSchedule =
+            context.storage.deleteRepairSchedule(repairScheduleId);
+        if (deletedSchedule.isPresent()) {
+          RepairScheduleStatus scheduleStatus = new RepairScheduleStatus(deletedSchedule.get(),
+              possiblyDeletedUnit.get());
+          return Response.ok().entity(scheduleStatus).build();
+        }
     }
-    if (scheduleToDelete.get().getState() == RepairSchedule.State.ACTIVE) {
-      return Response.status(Response.Status.FORBIDDEN).entity(
-          "Repair schedule with id \"" + repairScheduleId
-          + "\" is currently running, and must be stopped before deleting").build();
-    }
-    if (!scheduleToDelete.get().getOwner().equalsIgnoreCase(owner.get())) {
-      return Response.status(Response.Status.FORBIDDEN).entity(
-          "Repair schedule with id \"" + repairScheduleId
-          + "\" is not owned by the user you defined: " + owner.get()).build();
-    }
-    // Need to get the RepairUnit before it's possibly deleted.
-    Optional<RepairUnit> possiblyDeletedUnit =
-        context.storage.getRepairUnit(scheduleToDelete.get().getRepairUnitId());
-    Optional<RepairSchedule> deletedSchedule =
-        context.storage.deleteRepairSchedule(repairScheduleId);
-    if (deletedSchedule.isPresent()) {
-      RepairScheduleStatus scheduleStatus = new RepairScheduleStatus(deletedSchedule.get(),
-          possiblyDeletedUnit.get());
-      return Response.ok().entity(scheduleStatus).build();
-    }
-    return Response.serverError().entity("delete failed for schedule with id \""
-                                         + repairScheduleId + "\"").build();
+    return Response
+              .status(Response.Status.NOT_FOUND)
+              .entity("Repair schedule with id \"" + repairScheduleId + "\" not found")
+              .build();
   }
 
 }
