@@ -25,6 +25,9 @@ import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
 
 import com.spotify.reaper.service.ClusterRepairScheduler;
+
+import jersey.repackaged.com.google.common.collect.Lists;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,8 +39,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import javax.management.JMX;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -56,9 +66,10 @@ import javax.ws.rs.core.UriInfo;
 public class ClusterResource {
 
   private static final Logger LOG = LoggerFactory.getLogger(ClusterResource.class);
-
+  private static final int JMX_NODE_STATUS_CONCURRENCY = 3;
   private final AppContext context;
   private final ClusterRepairScheduler clusterRepairScheduler;
+  private final ExecutorService clusterStatusExecutor = Executors.newFixedThreadPool(JMX_NODE_STATUS_CONCURRENCY*2);
 
   public ClusterResource(AppContext context) {
     this.context = context;
@@ -294,25 +305,63 @@ public class ClusterResource {
   }
   
   
-  public Optional<NodesStatus> getNodesStatus(Optional<Cluster> cluster)
-      throws ReaperException {
-    Optional<String> allEndpointsState = Optional.absent();
+  /**
+   * Callable to get and parse endpoint states through JMX
+   *
+   *
+   * @param seedHost The host address to connect to via JMX
+   * @return An optional NodesStatus object with the status of each node in the cluster as seen from the seedHost node
+   */
+  Callable<Optional<NodesStatus>> getEndpointState(String seedHost) {
+    return () -> {
+      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost)) {
+        Optional<String> allEndpointsState = Optional.fromNullable(jmxProxy.getAllEndpointsState());
+        return Optional.of(new NodesStatus(seedHost, allEndpointsState.or("")));
+      } catch (Exception e) {
+        LOG.debug("failed to create cluster with seed host: {}", seedHost, e);
+        Thread.sleep(TimeUnit.MILLISECONDS.convert(JmxProxy.JMX_CONNECTION_TIMEOUT, JmxProxy.JMX_CONNECTION_TIMEOUT_UNIT));
+        return Optional.absent();
+      }
+    };
+  }
+  
+  
+  /**
+   * Get all nodes state by querying the AllEndpointsState attribute through JMX.
+   * 
+   * To speed up execution, the method calls JMX on 3 nodes asynchronously and processes the first response
+   * 
+   * @param cluster
+   * @return An optional NodesStatus object with all nodes statuses
+   */
+  public Optional<NodesStatus> getNodesStatus(Optional<Cluster> cluster){
     Optional<NodesStatus> nodesStatus = Optional.absent();
     if(cluster.isPresent() && cluster.get().getSeedHosts()!=null) {
-      for(String seedHost:cluster.get().getSeedHosts()) {
-        try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost)) {
-          allEndpointsState = Optional.fromNullable(jmxProxy.getAllEndpointsState());
-          if (allEndpointsState.isPresent()) {
-            nodesStatus = Optional.of(new NodesStatus(seedHost, allEndpointsState.or("")));
-            break;
-          }
-        } catch (ReaperException e) {
-          LOG.error("failed to create cluster with seed host: {}", seedHost, e);
+      
+      List<String>seedHosts = Lists.newArrayList();
+      seedHosts.addAll(cluster.get().getSeedHosts());
+      Collections.shuffle(seedHosts);
+      List<List<String>> partitionedSeedList = Lists.partition(seedHosts, JMX_NODE_STATUS_CONCURRENCY);
+      
+      for(List<String> seeds:partitionedSeedList) {
+        LOG.info("seed list : {}", seeds);
+        List<Callable<Optional<NodesStatus>>> endpointStateTasks = seeds.stream()
+                                                                   .map(seedHost -> getEndpointState(seedHost))
+                                                                   .collect(Collectors.toList());
+        
+        
+        try {
+          nodesStatus = clusterStatusExecutor.invokeAny(endpointStateTasks, JmxProxy.JMX_CONNECTION_TIMEOUT, JmxProxy.JMX_CONNECTION_TIMEOUT_UNIT);
+        } catch (Exception e) {
+          // TODO Auto-generated catch block
+          LOG.debug("failed grabbing nodes status", e);
+        }
+        
+        if (nodesStatus.isPresent()) {
+          return nodesStatus;
         }
       }
     }
-    
-    LOG.debug("All Endpoints State {}", allEndpointsState.or("empty"));
     
     return nodesStatus;
   }

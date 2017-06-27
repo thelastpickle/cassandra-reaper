@@ -102,6 +102,9 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private final String host;
   private final JMXServiceURL jmxUrl;
   private final String clusterName;
+  
+  public static final Integer JMX_CONNECTION_TIMEOUT = 5;
+  public static final TimeUnit JMX_CONNECTION_TIMEOUT_UNIT = TimeUnit.SECONDS;
 
   private JmxProxy(Optional<RepairStatusHandler> handler, String host, JMXServiceURL jmxUrl,
                    JMXConnector jmxConnector, Object ssProxy, ObjectName ssMbeanName,
@@ -180,7 +183,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
         String[] creds = {username, password};
         env.put(JMXConnector.CREDENTIALS, creds);
       }
-      JMXConnector jmxConn = connectWithTimeout(jmxUrl, 5, TimeUnit.SECONDS, env);
+      JMXConnector jmxConn = connectWithTimeout(jmxUrl, JMX_CONNECTION_TIMEOUT, JMX_CONNECTION_TIMEOUT_UNIT, env);
       MBeanServerConnection mbeanServerConn = jmxConn.getMBeanServerConnection();
       Object ssProxy =
           JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean.class);
