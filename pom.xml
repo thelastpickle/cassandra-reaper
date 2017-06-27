@@ -6,7 +6,7 @@
     <name>Cassandra Reaper</name>
     <groupId>com.spotify</groupId>
     <artifactId>cassandra-reaper</artifactId>
-    <version>0.6.2-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>

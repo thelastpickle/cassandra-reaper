@@ -16,6 +16,7 @@ package com.spotify.reaper.storage;
 import com.google.common.base.Optional;
 
 import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.HostMetrics;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
@@ -26,6 +27,7 @@ import com.spotify.reaper.service.RepairParameters;
 import com.spotify.reaper.service.RingRange;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -35,6 +37,8 @@ import javax.validation.constraints.NotNull;
  * API definition for cassandra-reaper.
  */
 public interface IStorage {
+  
+  StorageType getStorageType();
 
   boolean isStorageConnected();
 
@@ -97,6 +101,7 @@ public interface IStorage {
   Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId);
 
   Collection<RepairSegment> getRepairSegmentsForRun(UUID runId);
+  Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(UUID runId, List<RingRange> localRanges);
 
   Optional<RepairSegment> getNextFreeSegment(UUID runId);
 
@@ -148,4 +153,13 @@ public interface IStorage {
 
   @NotNull
   Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName);
+  
+  boolean takeLeadOnSegment(UUID segmentId);
+  boolean renewLeadOnSegment(UUID segmentId);
+  void releaseLeadOnSegment(UUID segmentId);
+  void storeHostMetrics(HostMetrics hostMetrics);
+  Optional<HostMetrics> getHostMetrics(String hostName);
+  
+  int countRunningReapers();
+  void saveHeartbeat();
 }
