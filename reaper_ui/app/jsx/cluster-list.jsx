@@ -125,7 +125,7 @@ const Cluster = React.createClass({
       marginBottom: "0.25em"
     }
 
-    let datacenters="";
+    let datacenters=<div className="clusterLoader"></div>
 
     let runningRepairs = 0;
 
