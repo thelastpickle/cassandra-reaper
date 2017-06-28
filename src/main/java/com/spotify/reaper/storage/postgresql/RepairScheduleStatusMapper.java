@@ -34,13 +34,6 @@ public class RepairScheduleStatusMapper implements ResultSetMapper<RepairSchedul
   public RepairScheduleStatus map(int index, ResultSet r, StatementContext ctx)
       throws SQLException {
 
-    String repairParallelismStr = r.getString("repair_parallelism");
-    if (repairParallelismStr != null)
-    {
-      repairParallelismStr = repairParallelismStr.toUpperCase();
-    }
-    RepairParallelism repairParallelism = RepairParallelism.fromName(repairParallelismStr);
-
     return new RepairScheduleStatus(
         fromSequenceId(r.getLong("id")),
         r.getString("owner"),
@@ -54,7 +47,7 @@ public class RepairScheduleStatusMapper implements ResultSetMapper<RepairSchedul
         r.getDouble("intensity"),
         r.getBoolean("incremental_repair"),
         r.getInt("segment_count"),
-        repairParallelism,
+        RepairParallelism.fromName(r.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel")),
         r.getInt("days_between")
     );
   }
