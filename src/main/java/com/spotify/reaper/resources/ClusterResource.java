@@ -34,20 +34,16 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import javax.management.JMX;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -69,7 +65,7 @@ public class ClusterResource {
   private static final int JMX_NODE_STATUS_CONCURRENCY = 3;
   private final AppContext context;
   private final ClusterRepairScheduler clusterRepairScheduler;
-  private final ExecutorService clusterStatusExecutor = Executors.newFixedThreadPool(JMX_NODE_STATUS_CONCURRENCY*2);
+  private static final ExecutorService clusterStatusExecutor = Executors.newFixedThreadPool(JMX_NODE_STATUS_CONCURRENCY*2);
 
   public ClusterResource(AppContext context) {
     this.context = context;
@@ -344,7 +340,7 @@ public class ClusterResource {
       List<List<String>> partitionedSeedList = Lists.partition(seedHosts, JMX_NODE_STATUS_CONCURRENCY);
       
       for(List<String> seeds:partitionedSeedList) {
-        LOG.info("seed list : {}", seeds);
+        LOG.debug("seed list : {}", seeds);
         List<Callable<Optional<NodesStatus>>> endpointStateTasks = seeds.stream()
                                                                    .map(seedHost -> getEndpointState(seedHost))
                                                                    .collect(Collectors.toList());
