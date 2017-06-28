@@ -701,10 +701,13 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   @Override
   public void close() throws ReaperException {
     LOG.debug("close JMX connection to '{}': {}", host, jmxUrl);
-    try {
-      mbeanServer.removeNotificationListener(ssMbeanName, this);
-    } catch (InstanceNotFoundException | ListenerNotFoundException | IOException e) {
-      LOG.warn("failed on removing notification listener", e);
+    if(this.repairStatusHandler.isPresent()){
+      try {
+        mbeanServer.removeNotificationListener(ssMbeanName, this);
+        LOG.debug("Successfully removed notification listener for '{}': {}", host, jmxUrl);
+      } catch (InstanceNotFoundException | ListenerNotFoundException | IOException e) {
+        LOG.debug("failed on removing notification listener", e);
+      }
     }
     try {
       jmxConnector.close();
