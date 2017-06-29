@@ -111,6 +111,15 @@ public class ReaperTestJettyRunner {
       {
           return new ReaperApplication(this.context);
       }
+
+      @Override
+      public void after() {
+          context.isRunning.set(false);
+          try {
+              Thread.sleep(100);
+          } catch (InterruptedException ex) {}
+          super.after();
+      }
   }
   
 }
