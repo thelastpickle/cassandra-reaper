@@ -36,7 +36,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -312,7 +314,8 @@ public class ClusterResource {
     return () -> {
       try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(seedHost)) {
         Optional<String> allEndpointsState = Optional.fromNullable(jmxProxy.getAllEndpointsState());
-        return Optional.of(new NodesStatus(seedHost, allEndpointsState.or("")));
+        Optional<Map<String, String>> simpleStates = Optional.fromNullable(jmxProxy.getSimpleStates());
+        return Optional.of(new NodesStatus(seedHost, allEndpointsState.or(""), simpleStates.or(new HashMap<String, String>())));
       } catch (Exception e) {
         LOG.debug("failed to create cluster with seed host: {}", seedHost, e);
         Thread.sleep(TimeUnit.MILLISECONDS.convert(JmxProxy.JMX_CONNECTION_TIMEOUT, JmxProxy.JMX_CONNECTION_TIMEOUT_UNIT));
