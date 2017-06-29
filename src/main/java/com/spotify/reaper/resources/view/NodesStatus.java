@@ -44,12 +44,12 @@ public class NodesStatus {
     this.endpointStates = endpointStates;
   }
   
-  public NodesStatus(String sourceNode, String allEndpointStates) {
+  public NodesStatus(String sourceNode, String allEndpointStates, Map<String, String> simpleStates) {
     this.endpointStates = Lists.newArrayList();
-    this.endpointStates.add(parseEndpointStatesString(sourceNode, allEndpointStates)); 
+    this.endpointStates.add(parseEndpointStatesString(sourceNode, allEndpointStates, simpleStates)); 
   }
 
-  private GossipInfo parseEndpointStatesString(String sourceNode, String allEndpointStates) {
+  private GossipInfo parseEndpointStatesString(String sourceNode, String allEndpointStates, Map<String, String> simpleStates) {
     List<EndpointState> endpoints = Lists.newArrayList();
     Matcher matcher;
     
@@ -76,7 +76,7 @@ public class NodesStatus {
       
       matcher = endpointStatusPattern.matcher(endpointString);
       if(matcher.find()) {
-        status = Optional.fromNullable(matcher.group(3));
+        status = Optional.fromNullable(matcher.group(3) + " - " + simpleStates.getOrDefault("/" + endpoint.or(""), "UNKNOWN")) ;
       }
       
       matcher = endpointDcPattern.matcher(endpointString);

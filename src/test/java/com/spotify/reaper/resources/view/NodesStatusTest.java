@@ -4,16 +4,21 @@ import org.junit.Test;
 
 import com.spotify.reaper.resources.view.NodesStatus.EndpointState;
 
+import jersey.repackaged.com.google.common.collect.Maps;
+
 import static org.junit.Assert.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class NodesStatusTest {
-  
-  
+
+
   @Test
   public void testParseEndpointStatusString(){
+    Map<String, String> simpleStates = Maps.newHashMap();
+
     StringBuilder endpointsStatusString = new StringBuilder().append("/127.0.0.1")
         .append("  generation:1496849190 ")
         .append("  heartbeat:1231900 ")
@@ -59,17 +64,23 @@ public class NodesStatusTest {
         .append("  HOST_ID:2:20769fed-7916-4b7a-a729-8b99bcdc9b95 ")
         .append("  RPC_READY:44:true ")
         .append("  TOKENS:15:<hidden> ");
-    
-    NodesStatus nodesStatus = new NodesStatus("127.0.0.1", endpointsStatusString.toString());
-    
+
+    simpleStates.put("/127.0.0.3","UP");
+    simpleStates.put("/127.0.0.1","DOWN");
+
+
+    NodesStatus nodesStatus = new NodesStatus("127.0.0.1", endpointsStatusString.toString(), simpleStates);
+
     assertEquals(nodesStatus.endpointStates.size(), 1);
     assertEquals(nodesStatus.endpointStates.get(0).sourceNode, "127.0.0.1");
-    
-    
-    
+
+
+
     assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("datacenter1").keySet().size(), 1);
     assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("datacenter1").get("rack1").size(), 1);
-    assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("datacenter1").get("rack1").get(0).status, "NORMAL");
+    assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("datacenter1").get("rack1").get(0).status, "NORMAL - DOWN");
+    assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("datacenter2").get("rack2").get(0).status, "NORMAL - UNKNOWN");
+    assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("us-west-1").get("rack3").get(0).status, "NORMAL - UP");
     assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("datacenter1").get("rack1").get(0).endpoint, "127.0.0.1");
     assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("datacenter1").get("rack1").get(0).hostId, "f091f82b-ce2c-40ee-b30c-6e761e94e821");
     assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("datacenter1").get("rack1").get(0).tokens, "13");
