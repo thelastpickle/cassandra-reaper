@@ -617,6 +617,10 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   public String getAllEndpointsState() {
     return ((FailureDetectorMBean) fdProxy).getAllEndpointStates();
   }
+  
+  public Map<String, String> getSimpleStates() {
+    return ((FailureDetectorMBean) fdProxy).getSimpleStates();
+  }
 
 
   /**

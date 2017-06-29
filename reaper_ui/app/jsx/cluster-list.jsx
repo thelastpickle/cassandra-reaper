@@ -32,7 +32,7 @@ const NodeStatus = React.createClass({
     let buttonStyle = "btn btn-xs btn-success";
     let largeButtonStyle = "btn btn-lg btn-success";
 
-    if(this.props.endpointStatus.status!='NORMAL'){
+    if(!this.props.endpointStatus.status.endsWith('UP')){
       buttonStyle = "btn btn-xs btn-danger";
       largeButtonStyle = "btn btn-lg btn-danger";
     }
