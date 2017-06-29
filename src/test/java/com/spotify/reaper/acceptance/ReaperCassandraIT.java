@@ -45,11 +45,11 @@ public class ReaperCassandraIT {
   
   @BeforeClass
   public static void setUp() throws Exception {
-    LOG.info("setting up testing Reaper runner with {} seed hosts defined and cassandra storage",
-        TestContext.TEST_CLUSTER_SEED_HOSTS.size());
-    AppContext context = new AppContext();    
+    LOG.info(
+            "setting up testing Reaper runner with {} seed hosts defined and cassandra storage",
+            TestContext.TEST_CLUSTER_SEED_HOSTS.size());
     initSchema();
-    runnerInstance = ReaperTestJettyRunner.setup(context, CASS_CONFIG_FILE);
+    runnerInstance = ReaperTestJettyRunner.setup(new AppContext(), CASS_CONFIG_FILE);
     BasicSteps.setReaperClient(ReaperTestJettyRunner.getClient());
   }
   
