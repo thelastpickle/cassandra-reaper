@@ -359,6 +359,15 @@ Source code for all the REST resources can be found from package com.spotify.rea
 Building and running Reaper
 ------------------------------------
 
+### Requirements
+
+1. Java SDK >= 1.8
+2. Apache Maven
+3. Python2 with Requests ```python -m pip install requests``` (for spreaper)
+
+
+### Building Reaper
+
 To build Reaper without rebuilding the UI, run the following command : 
 
 ```mvn clean package```
