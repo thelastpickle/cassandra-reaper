@@ -13,7 +13,6 @@
  */
 package com.spotify.reaper.storage.postgresql;
 
-import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableList;
 import com.spotify.reaper.core.RepairSchedule;
 
@@ -48,7 +47,7 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
       if (null != runHistory && runHistory.length > 0) {
         runHistoryUUIDs = new UUID[runHistory.length];
         for (int i = 0; i < runHistory.length; i++) {
-          runHistoryUUIDs[i] = fromSequenceId(runHistory[i].longValue());
+          runHistoryUUIDs[i] = UuidUtil.fromSequenceId(runHistory[i].longValue());
         }
       }
     }  
@@ -61,7 +60,7 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
 
     RepairSchedule.State scheduleState = RepairSchedule.State.valueOf(stateStr);
     return new RepairSchedule.Builder(
-        fromSequenceId(r.getLong("repair_unit_id")),
+        UuidUtil.fromSequenceId(r.getLong("repair_unit_id")),
         scheduleState,
         r.getInt("days_between"),
         RepairRunMapper.getDateTimeOrNull(r, "next_activation"),
@@ -72,10 +71,6 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
         RepairRunMapper.getDateTimeOrNull(r, "creation_time"))
         .owner(r.getString("owner"))
         .pauseTime(RepairRunMapper.getDateTimeOrNull(r, "pause_time"))
-        .build(fromSequenceId(r.getLong("id")));
-  }
-
-  private static UUID fromSequenceId(long insertedId) {
-    return new UUID(insertedId, UUIDs.timeBased().getLeastSignificantBits());
+        .build(UuidUtil.fromSequenceId(r.getLong("id")));
   }
 }
