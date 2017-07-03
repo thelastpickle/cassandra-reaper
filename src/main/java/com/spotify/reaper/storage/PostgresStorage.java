@@ -497,7 +497,7 @@ public final class PostgresStorage implements IStorage {
   }
 
   private static UUID fromSequenceId(long insertedId) {
-    return new UUID(insertedId, UUIDs.timeBased().getLeastSignificantBits());
+    return new UUID(insertedId, 0L);
   }
 
   private static long toSequenceId(UUID id) {
