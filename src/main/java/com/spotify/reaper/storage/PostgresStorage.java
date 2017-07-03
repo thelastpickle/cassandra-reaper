@@ -504,49 +504,4 @@ public final class PostgresStorage implements IStorage {
   private static long toSequenceId(UUID id) {
     return id.getMostSignificantBits();
   }
-
-  @Override
-  public boolean takeLeadOnSegment(UUID segmentId) {
-    return true;
-  }
-
-  @Override
-  public boolean renewLeadOnSegment(UUID segmentId) {
-    return true;
-  }
-
-  @Override
-  public void releaseLeadOnSegment(UUID segmentId) {
-    // Not supported with Postgres/H2
-  }
-
-  @Override
-  public void storeHostMetrics(HostMetrics hostMetrics) {
-    // Not supported with Postgres/H2    
-  }
-  
-  @Override
-  public Optional<HostMetrics> getHostMetrics(String hostName) {
-    return Optional.absent();
-  }
-  
-  @Override
-  public StorageType getStorageType() {
-    return StorageType.DATABASE;
-  }
-
-  @Override
-  public int countRunningReapers() {
-    return 1;
-  }
-
-  @Override
-  public void saveHeartbeat() {
-    // Fault tolerance is not supported with this storage backend
-  }
-  
-  @Override
-  public Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(UUID runId, List<RingRange> localRanges) {
-    throw new UnsupportedOperationException("Cannot run local mode with postgres/h2 storage");
-  }
 }

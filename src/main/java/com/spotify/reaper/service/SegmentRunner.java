@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
-import org.apache.cassandra.streaming.StreamEvent;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.apache.commons.lang3.concurrent.LazyInitializer;
@@ -55,8 +54,7 @@ import com.spotify.reaper.cassandra.RepairStatusHandler;
 import com.spotify.reaper.core.HostMetrics;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.resources.view.NodesStatus;
-import com.spotify.reaper.storage.StorageType;
+import com.spotify.reaper.storage.IDistributedStorage;
 import com.spotify.reaper.utils.SimpleCondition;
 import com.sun.management.UnixOperatingSystemMXBean;
 import java.util.UUID;
@@ -111,7 +109,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     final RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
 
-    if (context.storage.renewLeadOnSegment(segmentId)) {
+    if (renewLeadOnSegment(segmentId)) {
       if(runRepair()) {
         long delay = intensityBasedDelayMillis(intensity);
         try {
@@ -121,7 +119,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         }
       }
       
-      context.storage.releaseLeadOnSegment(segmentId);
+      releaseLeadOnSegment(segmentId);
     }
   }
 
@@ -260,7 +258,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             }
             
             // Repair is still running, we'll renew lead on the segment when using Cassandra as storage backend
-            context.storage.renewLeadOnSegment(segmentId);
+            renewLeadOnSegment(segmentId);
             lastLoopTime = System.currentTimeMillis();
           }
         } catch (InterruptedException e) {
@@ -403,7 +401,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   } 
   
   private void handlePotentialStuckRepairs(LazyInitializer<Set<String>> busyHosts, String hostName) throws ConcurrentException {
-    if (!busyHosts.get().contains(hostName) && context.storage.getStorageType() != StorageType.CASSANDRA) {
+    if (!busyHosts.get().contains(hostName) && context.storage instanceof IDistributedStorage) {
       LOG.warn("A host ({}) reported that it is involved in a repair, but there is no record "
           + "of any ongoing repair involving the host. Sending command to abort all repairs "
           + "on the host.", hostName);
@@ -427,12 +425,12 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
                                                    .withHasRepairRunning(hasRepairRunning)
                                                    .withActiveAnticompactions(0) // for future use
                                                    .build();
-        context.storage.storeHostMetrics(metrics);
+        storeHostMetrics(metrics);
         hostProxy.close();
         return Optional.fromNullable(metrics);
       } catch (Exception e) {
         LOG.debug("failed to query metrics for host {}, trying to get metrics from storage...", hostName, e);
-        return context.storage.getHostMetrics(hostName);
+        return getHostMetrics(hostName);
       }
     };
   }
@@ -504,7 +502,7 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
                 .state(RepairSegment.State.RUNNING)
                 .startTime(now)
                 .build(segmentId));
-            context.storage.renewLeadOnSegment(segmentId);
+            renewLeadOnSegment(segmentId);
             LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
             break;
   
@@ -547,7 +545,7 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
                 .state(RepairSegment.State.RUNNING)
                 .startTime(now)
                 .build(segmentId));
-            context.storage.renewLeadOnSegment(segmentId);
+            renewLeadOnSegment(segmentId);
             LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
             break;
   
@@ -633,7 +631,7 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
       long repairDuration = Math.max(1, repairEnd - repairStart);
       long delay = (long) (repairDuration / intensity - repairDuration);
       LOG.debug("Scheduling next runner run() with delay {} ms", delay);
-      int nbRunningReapers = context.storage.countRunningReapers();
+      int nbRunningReapers = countRunningReapers();
       LOG.debug("Concurrent reaper instances : {}", nbRunningReapers);
       return delay*nbRunningReapers;
     } else {
@@ -643,5 +641,35 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
       return 0;
     }
   }
+
+    private boolean renewLeadOnSegment(UUID segmentId) {
+        return context.storage instanceof IDistributedStorage
+            ? ((IDistributedStorage)context.storage).renewLeadOnSegment(segmentId)
+            : true;
+    }
+
+    private void releaseLeadOnSegment(UUID segmentId) {
+        if (context.storage instanceof IDistributedStorage) {
+            ((IDistributedStorage)context.storage).releaseLeadOnSegment(segmentId);
+        }
+    }
+
+    private void storeHostMetrics(HostMetrics metrics) {
+        if (context.storage instanceof IDistributedStorage) {
+            ((IDistributedStorage)context.storage).storeHostMetrics(metrics);
+        }
+    }
+
+    private Optional<HostMetrics> getHostMetrics(String hostName) {
+        return context.storage instanceof IDistributedStorage
+            ? ((IDistributedStorage)context.storage).getHostMetrics(hostName)
+            : Optional.absent();
+    }
+
+    private int countRunningReapers() {
+        return context.storage instanceof IDistributedStorage
+            ? ((IDistributedStorage)context.storage).countRunningReapers()
+            : 1;
+    }
 
 }
