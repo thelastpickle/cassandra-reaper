@@ -51,10 +51,10 @@ import com.spotify.reaper.service.AutoSchedulingManager;
 import com.spotify.reaper.service.RepairManager;
 import com.spotify.reaper.service.SchedulingManager;
 import com.spotify.reaper.storage.CassandraStorage;
+import com.spotify.reaper.storage.IDistributedStorage;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.storage.PostgresStorage;
-import com.spotify.reaper.storage.StorageType;
 
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
@@ -217,7 +217,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
 
     LOG.info("resuming pending repair runs");
     
-    if (context.storage.getStorageType() == StorageType.CASSANDRA) {
+    if (context.storage instanceof IDistributedStorage) {
       // Allowing multiple Reaper instances to work concurrently requires
       // us to poll the database for running repairs regularly
       // only with Cassandra storage
