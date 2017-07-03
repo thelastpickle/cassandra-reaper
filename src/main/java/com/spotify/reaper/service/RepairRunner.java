@@ -41,6 +41,8 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.storage.IDistributedStorage;
+import java.util.Collection;
 import java.util.UUID;
 
 public class RepairRunner implements Runnable {
@@ -82,17 +84,16 @@ public class RepairRunner implements Runnable {
     for (int i = 0; i < parallelRepairs; i++) {
       currentlyRunningSegments.set(i, null);
     }
+    List<RingRange> ranges = jmx.getRangesForLocalEndpoint(keyspace);
+
+    Collection<RepairSegment> repairSegments
+            = context.config.getLocalJmxMode() && context.storage instanceof IDistributedStorage
+              ? ((IDistributedStorage)context.storage).getRepairSegmentsForRunInLocalMode(repairRunId, ranges)
+              : context.storage.getRepairSegmentsForRun(repairRunId);
 
     parallelRanges = getParallelRanges(
-        parallelRepairs,
-        Lists.newArrayList(Collections2.transform(
-            context.config.getLocalJmxMode()?context.storage.getRepairSegmentsForRunInLocalMode(repairRunId, jmx.getRangesForLocalEndpoint(keyspace)):context.storage.getRepairSegmentsForRun(repairRunId),
-            new Function<RepairSegment, RingRange>() {
-              @Override
-              public RingRange apply(RepairSegment input) {
-                return input.getTokenRange();
-              }
-            })));
+            parallelRepairs,
+            Lists.newArrayList(Collections2.transform(repairSegments, segment -> segment.getTokenRange())));
   }
 
   public UUID getRepairRunId() {
