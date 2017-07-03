@@ -17,6 +17,7 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Sets;
 import com.spotify.reaper.core.RepairUnit;
 
+import com.spotify.reaper.storage.PostgresStorage;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -41,11 +42,6 @@ public class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
                                                         r.getString("keyspace_name"),
                                                         Sets.newHashSet(columnFamilies),
                                                         r.getBoolean("incremental_repair"));
-    return builder.build(fromSequenceId(r.getLong("id")));
-  }
-
-
-  private static UUID fromSequenceId(long insertedId) {
-    return new UUID(insertedId, UUIDs.timeBased().getLeastSignificantBits());
+    return builder.build(PostgresStorage.fromSequenceId(r.getLong("id")));
   }
 }

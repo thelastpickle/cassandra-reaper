@@ -13,9 +13,9 @@
  */
 package com.spotify.reaper.storage.postgresql;
 
-import com.datastax.driver.core.utils.UUIDs;
 import com.spotify.reaper.core.RepairRun;
 
+import com.spotify.reaper.storage.PostgresStorage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.StatementContext;
@@ -24,7 +24,6 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.UUID;
 
 public class RepairRunMapper implements ResultSetMapper<RepairRun> {
 
@@ -43,7 +42,7 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
         RepairParallelism.fromName(r.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel"));
     RepairRun.Builder repairRunBuilder =
         new RepairRun.Builder(r.getString("cluster_name"),
-                              fromSequenceId(r.getLong("repair_unit_id")),
+                              PostgresStorage.fromSequenceId(r.getLong("repair_unit_id")),
                               getDateTimeOrNull(r, "creation_time"),
                               r.getFloat("intensity"),
                               r.getInt("segment_count"),
@@ -56,10 +55,6 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
         .endTime(getDateTimeOrNull(r, "end_time"))
         .pauseTime(getDateTimeOrNull(r, "pause_time"))
         .lastEvent(r.getString("last_event"))
-        .build(fromSequenceId(r.getLong("id")));
-  }
-
-  private static UUID fromSequenceId(long insertedId) {
-    return new UUID(insertedId, UUIDs.timeBased().getLeastSignificantBits());
+        .build(PostgresStorage.fromSequenceId(r.getLong("id")));
   }
 }

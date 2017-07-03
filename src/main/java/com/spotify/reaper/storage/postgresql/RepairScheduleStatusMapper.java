@@ -13,20 +13,19 @@
  */
 package com.spotify.reaper.storage.postgresql;
 
-import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableSet;
 
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
 
+import com.spotify.reaper.storage.PostgresStorage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.UUID;
 
 public class RepairScheduleStatusMapper implements ResultSetMapper<RepairScheduleStatus> {
 
@@ -35,7 +34,7 @@ public class RepairScheduleStatusMapper implements ResultSetMapper<RepairSchedul
       throws SQLException {
 
     return new RepairScheduleStatus(
-        fromSequenceId(r.getLong("id")),
+        PostgresStorage.fromSequenceId(r.getLong("id")),
         r.getString("owner"),
         r.getString("cluster_name"),
         r.getString("keyspace_name"),
@@ -50,9 +49,5 @@ public class RepairScheduleStatusMapper implements ResultSetMapper<RepairSchedul
         RepairParallelism.fromName(r.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel")),
         r.getInt("days_between")
     );
-  }
-
-  private static UUID fromSequenceId(long insertedId) {
-    return new UUID(insertedId, UUIDs.timeBased().getLeastSignificantBits());
   }
 }

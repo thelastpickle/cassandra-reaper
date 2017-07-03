@@ -17,6 +17,7 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.service.RingRange;
 
+import com.spotify.reaper.storage.PostgresStorage;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -30,17 +31,13 @@ public class RepairSegmentMapper implements ResultSetMapper<RepairSegment> {
     RingRange range = new RingRange(r.getBigDecimal("start_token").toBigInteger(),
                                     r.getBigDecimal("end_token").toBigInteger());
     return
-        new RepairSegment.Builder(range, fromSequenceId(r.getLong("repair_unit_id")))
-                .withRunId(fromSequenceId(r.getLong("run_id")))
+        new RepairSegment.Builder(range, PostgresStorage.fromSequenceId(r.getLong("repair_unit_id")))
+                .withRunId(PostgresStorage.fromSequenceId(r.getLong("run_id")))
                 .state(RepairSegment.State.values()[r.getInt("state")])
                 .coordinatorHost(r.getString("coordinator_host"))
                 .startTime(RepairRunMapper.getDateTimeOrNull(r, "start_time"))
                 .endTime(RepairRunMapper.getDateTimeOrNull(r, "end_time"))
                 .failCount(r.getInt("fail_count"))
-                .build(fromSequenceId(r.getLong("id")));
-  }
-
-  private static UUID fromSequenceId(long insertedId) {
-    return new UUID(insertedId, UUIDs.timeBased().getLeastSignificantBits());
+                .build(PostgresStorage.fromSequenceId(r.getLong("id")));
   }
 }

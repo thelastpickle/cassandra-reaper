@@ -13,7 +13,6 @@
  */
 package com.spotify.reaper.storage;
 
-import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
@@ -496,11 +495,11 @@ public final class PostgresStorage implements IStorage {
     }
   }
 
-  private static UUID fromSequenceId(long insertedId) {
+  public static UUID fromSequenceId(long insertedId) {
     return new UUID(insertedId, 0L);
   }
 
-  private static long toSequenceId(UUID id) {
+  public static long toSequenceId(UUID id) {
     return id.getMostSignificantBits();
   }
 }
