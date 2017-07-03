@@ -31,15 +31,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.validation.constraints.NotNull;
-
 /**
  * API definition for cassandra-reaper.
  */
 public interface IStorage {
   
-  StorageType getStorageType();
-
   boolean isStorageConnected();
 
   Collection<Cluster> getClusters();
@@ -101,7 +97,6 @@ public interface IStorage {
   Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId);
 
   Collection<RepairSegment> getRepairSegmentsForRun(UUID runId);
-  Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(UUID runId, List<RingRange> localRanges);
 
   Optional<RepairSegment> getNextFreeSegment(UUID runId);
 
@@ -148,18 +143,8 @@ public interface IStorage {
    */
   Optional<RepairSchedule> deleteRepairSchedule(UUID id);
 
-  @NotNull
   Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit);
 
-  @NotNull
   Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName);
   
-  boolean takeLeadOnSegment(UUID segmentId);
-  boolean renewLeadOnSegment(UUID segmentId);
-  void releaseLeadOnSegment(UUID segmentId);
-  void storeHostMetrics(HostMetrics hostMetrics);
-  Optional<HostMetrics> getHostMetrics(String hostName);
-  
-  int countRunningReapers();
-  void saveHeartbeat();
 }

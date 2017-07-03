@@ -21,6 +21,7 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.storage.IDistributedStorage;
 import java.util.UUID;
 
 public class RepairManager {
@@ -48,7 +49,6 @@ public class RepairManager {
     retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
   }
 
-
   /**
    * Consult storage to see if any repairs are running, and resume those repair runs.
    *
@@ -56,7 +56,7 @@ public class RepairManager {
    * @throws ReaperException 
    */
   public void resumeRunningRepairRuns(AppContext context) throws ReaperException {
-    context.storage.saveHeartbeat();
+    heartbeat(context);
     Collection<RepairRun> running =
         context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
     for (RepairRun repairRun : running) {
@@ -185,5 +185,11 @@ public class RepairManager {
 
   public void removeRunner(RepairRunner runner) {
     repairRunners.remove(runner.getRepairRunId());
+  }
+
+  private static void heartbeat(AppContext context) {
+      if (context.storage instanceof IDistributedStorage) {
+          ((IDistributedStorage)context.storage).saveHeartbeat();
+      }
   }
 }

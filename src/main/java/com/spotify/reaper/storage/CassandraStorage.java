@@ -57,7 +57,7 @@ import org.joda.time.DateTime;
 import io.dropwizard.setup.Environment;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
 
-public final class CassandraStorage implements IStorage {
+public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
   com.datastax.driver.core.Cluster cassandra = null;
   Session session;
@@ -797,11 +797,6 @@ public final class CassandraStorage implements IStorage {
      }
     
     return Optional.absent();
-  }
-
-  @Override
-  public StorageType getStorageType() {
-    return StorageType.CASSANDRA;
   }
 
   @Override
