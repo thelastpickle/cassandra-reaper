@@ -98,7 +98,7 @@ public final class BasicSteps {
           for (String keyspace : clusterKeyspaces.keySet()) {
             when(jmx.getTableNamesForKeyspace(keyspace)).thenReturn(clusterKeyspaces.get(keyspace));
           }
-          when(context.jmxConnectionFactory.connect(org.mockito.Matchers.<Optional>any(), eq(seedHost)))
+          when(context.jmxConnectionFactory.connect(org.mockito.Matchers.<Optional>any(), eq(seedHost), context.config.getJmxConnectionTimeoutInSeconds()))
               .thenReturn(jmx);
         }
         ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
@@ -226,6 +226,7 @@ public final class BasicSteps {
 
         Response response = runner.callReaper("POST", "/cluster", Optional.of(params));
         if (1 < RUNNERS.size()) {
+            System.out.println("POST /cluster : " +  response.getEntity().toString());
             Assertions.assertThat(ImmutableList.of(
                     Response.Status.CREATED.getStatusCode(),
                     Response.Status.FORBIDDEN.getStatusCode()))
