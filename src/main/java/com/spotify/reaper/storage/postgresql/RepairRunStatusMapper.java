@@ -1,6 +1,5 @@
 package com.spotify.reaper.storage.postgresql;
 
-import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableSet;
 
 import com.spotify.reaper.core.RepairRun;
@@ -14,7 +13,6 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.UUID;
 
 public class RepairRunStatusMapper implements ResultSetMapper<RepairRunStatus> {
 
@@ -40,12 +38,8 @@ public class RepairRunStatusMapper implements ResultSetMapper<RepairRunStatus> {
     RepairParallelism repairParallelism =
         RepairParallelism.fromName(r.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel"));
 
-    return new RepairRunStatus(fromSequenceId(runId), clusterName, keyspaceName, columnFamilies, segmentsRepaired,
+    return new RepairRunStatus(PostgresUtils.fromSequenceId(runId), clusterName, keyspaceName, columnFamilies, segmentsRepaired,
         totalSegments, state, startTime, endTime, cause, owner, lastEvent,
         creationTime, pauseTime, intensity, incrementalRepair, repairParallelism);
-  }
-
-  private static UUID fromSequenceId(long insertedId) {
-    return new UUID(insertedId, UUIDs.timeBased().getLeastSignificantBits());
   }
 }
