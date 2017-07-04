@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.assertj.core.api.Assert;
 import org.assertj.core.api.Assertions;
 import org.joda.time.DateTime;
+import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -98,7 +99,7 @@ public final class BasicSteps {
           for (String keyspace : clusterKeyspaces.keySet()) {
             when(jmx.getTableNamesForKeyspace(keyspace)).thenReturn(clusterKeyspaces.get(keyspace));
           }
-          when(context.jmxConnectionFactory.connect(org.mockito.Matchers.<Optional>any(), eq(seedHost), context.config.getJmxConnectionTimeoutInSeconds()))
+          when(context.jmxConnectionFactory.connect(org.mockito.Matchers.<Optional>any(), eq(seedHost), Mockito.anyInt()))
               .thenReturn(jmx);
         }
         ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
@@ -767,7 +768,7 @@ public final class BasicSteps {
           assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
           String responseData = response.readEntity(String.class);
           RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
-          return nbSegmentsToBeRepaired == run.getSegmentsRepaired();
+          return nbSegmentsToBeRepaired <= run.getSegmentsRepaired();
         });
       });
  }

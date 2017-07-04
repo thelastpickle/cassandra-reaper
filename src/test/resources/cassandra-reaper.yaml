@@ -24,6 +24,7 @@ storageType: memory
 # Enable HTTP headers to that GUI can work
 # GUI lives at https://github.com/spodkowinski/cassandra-reaper-ui
 enableCrossOrigin: true
+jmxConnectionTimeoutInSeconds: 30
 
 # custom jmx port mappings that will be used instead of the default port for specified hosts (optional)
 jmxPorts:

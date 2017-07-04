@@ -18,6 +18,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import com.spotify.reaper.AppContext;
+import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
@@ -38,6 +39,7 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -67,6 +69,8 @@ public class SegmentRunnerTest {
   @Test
   public void timeoutTest() throws InterruptedException, ReaperException, ExecutionException {
     final AppContext context = new AppContext();
+    context.config = Mockito.mock(ReaperApplicationConfiguration.class);
+    when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     context.storage = new MemoryStorage();
     RepairUnit cf = context.storage.addRepairUnit(
         new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), false));
@@ -141,6 +145,8 @@ public class SegmentRunnerTest {
 
     AppContext context = new AppContext();
     context.storage = storage;
+    context.config = Mockito.mock(ReaperApplicationConfiguration.class);
+    when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
       public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout) throws ReaperException {
@@ -213,6 +219,8 @@ public class SegmentRunnerTest {
 
     AppContext context = new AppContext();
     context.storage = storage;
+    context.config = Mockito.mock(ReaperApplicationConfiguration.class);
+    when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
       public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout) throws ReaperException {
