@@ -16,10 +16,8 @@ package com.spotify.reaper.storage.postgresql;
 import com.google.common.collect.ImmutableSet;
 
 import com.spotify.reaper.core.RepairSchedule;
-import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
 
-import com.spotify.reaper.storage.PostgresStorage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
@@ -34,7 +32,7 @@ public class RepairScheduleStatusMapper implements ResultSetMapper<RepairSchedul
       throws SQLException {
 
     return new RepairScheduleStatus(
-        PostgresStorage.fromSequenceId(r.getLong("id")),
+        PostgresUtils.fromSequenceId(r.getLong("id")),
         r.getString("owner"),
         r.getString("cluster_name"),
         r.getString("keyspace_name"),

@@ -16,7 +16,6 @@ package com.spotify.reaper.storage.postgresql;
 import com.google.common.collect.ImmutableList;
 import com.spotify.reaper.core.RepairSchedule;
 
-import com.spotify.reaper.storage.PostgresStorage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
@@ -48,7 +47,7 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
       if (null != runHistory && runHistory.length > 0) {
         runHistoryUUIDs = new UUID[runHistory.length];
         for (int i = 0; i < runHistory.length; i++) {
-          runHistoryUUIDs[i] = PostgresStorage.fromSequenceId(runHistory[i].longValue());
+          runHistoryUUIDs[i] = PostgresUtils.fromSequenceId(runHistory[i].longValue());
         }
       }
     }  
@@ -61,7 +60,7 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
 
     RepairSchedule.State scheduleState = RepairSchedule.State.valueOf(stateStr);
     return new RepairSchedule.Builder(
-        PostgresStorage.fromSequenceId(r.getLong("repair_unit_id")),
+        PostgresUtils.fromSequenceId(r.getLong("repair_unit_id")),
         scheduleState,
         r.getInt("days_between"),
         RepairRunMapper.getDateTimeOrNull(r, "next_activation"),
@@ -72,6 +71,6 @@ public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
         RepairRunMapper.getDateTimeOrNull(r, "creation_time"))
         .owner(r.getString("owner"))
         .pauseTime(RepairRunMapper.getDateTimeOrNull(r, "pause_time"))
-        .build(PostgresStorage.fromSequenceId(r.getLong("id")));
+        .build(PostgresUtils.fromSequenceId(r.getLong("id")));
   }
 }

@@ -15,7 +15,6 @@ package com.spotify.reaper.storage.postgresql;
 
 import com.spotify.reaper.core.RepairRun;
 
-import com.spotify.reaper.storage.PostgresStorage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.StatementContext;
@@ -42,7 +41,7 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
         RepairParallelism.fromName(r.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel"));
     RepairRun.Builder repairRunBuilder =
         new RepairRun.Builder(r.getString("cluster_name"),
-                              PostgresStorage.fromSequenceId(r.getLong("repair_unit_id")),
+                              PostgresUtils.fromSequenceId(r.getLong("repair_unit_id")),
                               getDateTimeOrNull(r, "creation_time"),
                               r.getFloat("intensity"),
                               r.getInt("segment_count"),
@@ -55,6 +54,6 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
         .endTime(getDateTimeOrNull(r, "end_time"))
         .pauseTime(getDateTimeOrNull(r, "pause_time"))
         .lastEvent(r.getString("last_event"))
-        .build(PostgresStorage.fromSequenceId(r.getLong("id")));
+        .build(PostgresUtils.fromSequenceId(r.getLong("id")));
   }
 }
