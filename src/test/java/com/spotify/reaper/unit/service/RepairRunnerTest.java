@@ -96,7 +96,7 @@ public final class RepairRunnerTest {
         new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
         Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ZERO, BigInteger.ONE), cf.getId())));
     final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
@@ -209,7 +209,7 @@ public final class RepairRunnerTest {
         new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
         Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ZERO, BigInteger.ONE), cf.getId())));
     final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(),
                  RepairSegment.State.NOT_STARTED);
@@ -331,7 +331,7 @@ public final class RepairRunnerTest {
                 .repairCommandId(1337),
             new RepairSegment.Builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf)));
     final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
