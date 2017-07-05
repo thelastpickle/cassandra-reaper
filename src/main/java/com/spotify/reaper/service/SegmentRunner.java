@@ -89,9 +89,12 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   public SegmentRunner(AppContext context, UUID segmentId, Collection<String> potentialCoordinators,
       long timeoutMillis, double intensity, RepairParallelism validationParallelism,
-      String clusterName, RepairUnit repairUnit, RepairRunner repairRunner) {
+      String clusterName, RepairUnit repairUnit, RepairRunner repairRunner) throws ReaperException {
 
-    assert !segmentRunners.containsKey(segmentId) : "SegmentRunner already exists for segment with ID: " + segmentId;
+    if (segmentRunners.containsKey(segmentId)) {
+      LOG.error("SegmentRunner already exists for segment with ID: {}", segmentId);
+      throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
+    }
     this.context = context;
     this.segmentId = segmentId;
     this.potentialCoordinators = potentialCoordinators;
@@ -108,30 +111,35 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   public void run() {
     final RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
-
-    if (renewLeadOnSegment(segmentId)) {
-      if(runRepair()) {
-        long delay = intensityBasedDelayMillis(intensity);
+    if (takeLeadOnSegment(segmentId)) {
         try {
-          Thread.sleep(delay);
-        } catch (InterruptedException e) {
-          LOG.warn("Slept shorter than intended delay.");
+          if(runRepair()) {
+            long delay = intensityBasedDelayMillis(intensity);
+            try {
+              Thread.sleep(delay);
+            } catch (InterruptedException e) {
+              LOG.warn("Slept shorter than intended delay.");
+            }
+          }
+        } finally {
+          releaseLeadOnSegment(segmentId);
         }
-      }      
-      releaseLeadOnSegment(segmentId);
     }
   }
 
   public static void postpone(AppContext context, RepairSegment segment, Optional<RepairUnit> repairUnit) {
     LOG.info("Postponing segment {}", segment.getId());
-    context.storage.updateRepairSegment(segment.with()
-        .state(RepairSegment.State.NOT_STARTED)
-        .coordinatorHost(repairUnit.isPresent() && repairUnit.get().getIncrementalRepair()? segment.getCoordinatorHost():null) // set coordinator host to null only for full repairs
-        .repairCommandId(null)
-        .startTime(null)
-        .failCount(segment.getFailCount() + 1)
-        .build(segment.getId()));
-    segmentRunners.remove(segment.getId());
+    try {
+        context.storage.updateRepairSegment(segment.with()
+            .state(RepairSegment.State.NOT_STARTED)
+            .coordinatorHost(repairUnit.isPresent() && repairUnit.get().getIncrementalRepair()? segment.getCoordinatorHost():null) // set coordinator host to null only for full repairs
+            .repairCommandId(null)
+            .startTime(null)
+            .failCount(segment.getFailCount() + 1)
+            .build(segment.getId()));
+    } finally {
+        segmentRunners.remove(segment.getId());
+    }
   }
 
   public static void abort(AppContext context, RepairSegment segment, JmxProxy jmxConnection) {
@@ -453,8 +461,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 	  Collection<RepairSegment> segments = context.storage.getRepairSegmentsForRun(repairRunId);
 	  for(RepairSegment segment:segments) {
 		  if(segment.getState() == RepairSegment.State.RUNNING) {
-			  LOG.info("segment '{}' is running on host '{}' and with a fail count of {}",
-				        segment.getId(), segment.getCoordinatorHost(), segment.getFailCount());
+			  LOG.info("segment '{}' is running on host '{}'", segment.getId(), segment.getCoordinatorHost());
 			  return true;
 		  }
 	  }
@@ -496,12 +503,12 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
       if(status.isPresent()) {
         switch (status.get()) {
           case STARTED:
+            renewLeadOnSegment(segmentId);
             DateTime now = DateTime.now();
             context.storage.updateRepairSegment(currentSegment.with()
                 .state(RepairSegment.State.RUNNING)
                 .startTime(now)
                 .build(segmentId));
-            renewLeadOnSegment(segmentId);
             LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
             break;
 
@@ -539,22 +546,25 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
       if(progress.isPresent()) {
         switch (progress.get()) {
           case START:
+            renewLeadOnSegment(segmentId);
             DateTime now = DateTime.now();
             context.storage.updateRepairSegment(currentSegment.with()
                 .state(RepairSegment.State.RUNNING)
                 .startTime(now)
                 .build(segmentId));
-            renewLeadOnSegment(segmentId);
             LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
             break;
 
           case SUCCESS:
-            LOG.debug("repair session succeeded for segment with id '{}' and repair number '{}'",
-                segmentId, repairNumber);
+            LOG.debug(
+                    "repair session succeeded for segment with id '{}' and repair number '{}'",
+                    segmentId, repairNumber);
+
             context.storage.updateRepairSegment(currentSegment.with()
                 .state(RepairSegment.State.DONE)
                 .endTime(DateTime.now())
                 .build(segmentId));
+
             break;
 
           case ERROR:
@@ -640,6 +650,12 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
       return 0;
     }
   }
+
+    private boolean takeLeadOnSegment(UUID segmentId) {
+        return context.storage instanceof IDistributedStorage
+            ? ((IDistributedStorage)context.storage).takeLeadOnSegment(segmentId)
+            : true;
+    }
 
     private boolean renewLeadOnSegment(UUID segmentId) {
         return context.storage instanceof IDistributedStorage
