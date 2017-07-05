@@ -453,9 +453,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     return segments;
   }
 
-  private boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
+  private static boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
     return range.encloses(new RingRange(segment.getStartToken(), segment.getEndToken()));
-
   }
 
   private static RepairSegment createRepairSegmentFromRow(Row segmentRow){
@@ -473,35 +472,18 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .build(segmentRow.getUUID("segment_id"));
   }
 
-  public Optional<RepairSegment> getSegment(UUID runId, Optional<RingRange> range) {
+
+  @Override
+  public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range) {
     List<RepairSegment> segments = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
 
-    RepairSegment segment = null;
     for(RepairSegment seg:segments){
-      if(seg.getState().equals(State.NOT_STARTED) // State condition
-          && ((range.isPresent() &&
-              (segmentIsWithinRange(seg, range.get()))
-              ) || !range.isPresent()) // Token range condition
-          ){
-        if(takeLeadOnSegment(seg.getId())) {
-          segment = seg;
-          break;
-        }
+      if (seg.getState().equals(State.NOT_STARTED) && withinRange(seg, range) && takeLeadOnSegment(seg.getId())) {
+        return Optional.of(seg);
       }
     }
-    return Optional.fromNullable(segment);
-  }
-
-
-  @Override
-  public Optional<RepairSegment> getNextFreeSegment(UUID runId) {
-    return getSegment(runId, Optional.<RingRange>absent());
-  }
-
-  @Override
-  public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, RingRange range) {
-    return getSegment(runId, Optional.fromNullable(range));
+    return Optional.absent();
   }
 
   @Override
@@ -815,5 +797,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       session.executeAsync(saveHeartbeatPrepStmt.bind(ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
       lastHeartBeat = now;
     }
+  }
+
+  private static boolean withinRange(RepairSegment segment, Optional<RingRange> range) {
+    return !range.isPresent() || segmentIsWithinRange(segment, range.get());
   }
 }

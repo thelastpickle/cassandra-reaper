@@ -326,8 +326,7 @@ public final class PostgresStorage implements IStorage {
     }
   }
 
-  @Override
-  public Optional<RepairSegment> getNextFreeSegment(UUID runId) {
+  private Optional<RepairSegment> getNextFreeSegment(UUID runId) {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getNextFreeRepairSegment(toSequenceId(runId));
@@ -336,19 +335,23 @@ public final class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, RingRange range) {
-    RepairSegment result;
-    try (Handle h = jdbi.open()) {
-      IStoragePostgreSQL storage = getPostgresStorage(h);
-      if (!range.isWrapping()) {
-        result = storage.getNextFreeRepairSegmentInNonWrappingRange(toSequenceId(runId), range.getStart(),
-            range.getEnd());
-      } else {
-        result = storage.getNextFreeRepairSegmentInWrappingRange(toSequenceId(runId), range.getStart(),
-            range.getEnd());
-      }
+  public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range) {
+    if (range.isPresent()) {
+        RepairSegment result;
+        try (Handle h = jdbi.open()) {
+          IStoragePostgreSQL storage = getPostgresStorage(h);
+          if (!range.get().isWrapping()) {
+            result = storage.getNextFreeRepairSegmentInNonWrappingRange(toSequenceId(runId), range.get().getStart(),
+                range.get().getEnd());
+          } else {
+            result = storage.getNextFreeRepairSegmentInWrappingRange(toSequenceId(runId), range.get().getStart(),
+                range.get().getEnd());
+          }
+        }
+        return Optional.fromNullable(result);
+    } else {
+        return getNextFreeSegment(runId);
     }
-    return Optional.fromNullable(result);
   }
 
   @Override
