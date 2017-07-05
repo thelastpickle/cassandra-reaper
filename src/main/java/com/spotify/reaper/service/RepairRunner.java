@@ -148,11 +148,9 @@ public class RepairRunner implements Runnable {
 
     try {
       Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
-      if ((!repairRun.isPresent() || repairRun.get().getRunState().isTerminated()) &&
-          context.repairManager.repairRunners.containsKey(repairRunId)) {
+      if ((!repairRun.isPresent() || repairRun.get().getRunState().isTerminated())) {
         // this might happen if a run is deleted while paused etc.
-        LOG.warn("RepairRun \"{}\" does not exist. Killing "
-                 + "RepairRunner for this run instance.", repairRunId);
+        LOG.warn("RepairRun \"{}\" does not exist. Killing RepairRunner for this run instance.", repairRunId);
         killAndCleanupRunner();
         return;
       }
@@ -356,51 +354,58 @@ public class RepairRunner implements Runnable {
         potentialCoordinators = Arrays.asList(context.storage.getRepairSegment(repairRunId, segmentId).get().getCoordinatorHost());
     }
 
-    SegmentRunner segmentRunner = new SegmentRunner(context, segmentId, potentialCoordinators,
-        context.repairManager.getRepairTimeoutMillis(), intensity, validationParallelism,
-        clusterName, repairUnit, this);
+    try {
+        SegmentRunner segmentRunner = new SegmentRunner(context, segmentId, potentialCoordinators,
+            context.repairManager.getRepairTimeoutMillis(), intensity, validationParallelism,
+            clusterName, repairUnit, this);
 
-    ListenableFuture<?> segmentResult = context.repairManager.submitSegment(segmentRunner);
-    Futures.addCallback(segmentResult, new FutureCallback<Object>() {
-      @Override
-      public void onSuccess(Object ignored) {
-        currentlyRunningSegments.set(rangeIndex, null);
-        handleResult(segmentId);
-      }
+        ListenableFuture<?> segmentResult = context.repairManager.submitSegment(segmentRunner);
+        Futures.addCallback(segmentResult, new FutureCallback<Object>() {
+          @Override
+          public void onSuccess(Object ignored) {
+            currentlyRunningSegments.set(rangeIndex, null);
+            handleResult(segmentId);
+          }
 
-      @Override
-      public void onFailure(Throwable t) {
-        currentlyRunningSegments.set(rangeIndex, null);
-        LOG.error("Executing SegmentRunner failed: {}", t.getMessage());
-      }
-    });
+          @Override
+          public void onFailure(Throwable t) {
+            currentlyRunningSegments.set(rangeIndex, null);
+            LOG.error("Executing SegmentRunner failed: {}", t.getMessage());
+          }
+        });
+    } catch (ReaperException ex) {
+        LOG.error("Executing SegmentRunner failed: {}", ex.getMessage());
+    }
 
     return true;
   }
 
   private void handleResult(UUID segmentId) {
-    RepairSegment segment = context.storage.getRepairSegment(repairRunId, segmentId).get();
-    RepairSegment.State segmentState = segment.getState();
-    LOG.debug("In repair run #{}, triggerRepair on segment {} ended with state {}",
-        repairRunId, segmentId, segmentState);
+    Optional<RepairSegment> segment = context.storage.getRepairSegment(repairRunId, segmentId);
 
     // Don't do rescheduling here, not to spawn uncontrolled amount of threads
-    switch (segmentState) {
-      case NOT_STARTED:
-        // Unsuccessful repair
-        break;
+    if (segment.isPresent()) {
+        RepairSegment.State state = segment.get().getState();
+        LOG.debug("In repair run #{}, triggerRepair on segment {} ended with state {}", repairRunId, segmentId, state);
+        switch (state) {
+          case NOT_STARTED:
+            // Unsuccessful repair
+            break;
 
-      case DONE:
-        // Successful repair
-        break;
+          case DONE:
+            // Successful repair
+            break;
 
-      default:
-        // Another thread has started a new repair on this segment already
-        // Or maybe the same repair segment id should never be re-run in which case this is an error
-        String msg = "handleResult called with a segment state (" + segmentState + ") that it "
-                     + "should not have after segmentRunner has tried a repair";
-        LOG.error(msg);
-        throw new RuntimeException(msg);
+          default:
+            // Another thread has started a new repair on this segment already
+            // Or maybe the same repair segment id should never be re-run in which case this is an error
+            String msg = "handleResult called with a segment state (" + state + ") that it "
+                         + "should not have after segmentRunner has tried a repair";
+            LOG.error(msg);
+            throw new AssertionError(msg);
+        }
+    } else {
+        LOG.warn("In repair run #{}, triggerRepair on segment {} ended, but run is missing", repairRunId, segmentId);
     }
   }
 
