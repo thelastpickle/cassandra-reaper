@@ -264,8 +264,7 @@ public final class MemoryStorage implements IStorage {
     return repairSegmentsByRunId.get(runId).values();
   }
 
-  @Override
-  public Optional<RepairSegment> getNextFreeSegment(UUID runId) {
+  private Optional<RepairSegment> getNextFreeSegment(UUID runId) {
     for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
       if (segment.getState() == RepairSegment.State.NOT_STARTED) {
         return Optional.of(segment);
@@ -275,12 +274,15 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, RingRange range) {
-    for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
-      if (segment.getState() == RepairSegment.State.NOT_STARTED &&
-          range.encloses(segment.getTokenRange())) {
-        return Optional.of(segment);
-      }
+  public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range) {
+    if (range.isPresent()) {
+        for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
+          if (segment.getState() == RepairSegment.State.NOT_STARTED && range.get().encloses(segment.getTokenRange())) {
+            return Optional.of(segment);
+          }
+        }
+    } else {
+        return getNextFreeSegment(runId);
     }
     return Optional.absent();
   }

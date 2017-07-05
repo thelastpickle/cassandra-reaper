@@ -98,8 +98,6 @@ public interface IStorage {
 
   Collection<RepairSegment> getRepairSegmentsForRun(UUID runId);
 
-  Optional<RepairSegment> getNextFreeSegment(UUID runId);
-
   /**
    * @param runId the run id that the segment belongs to.
    * @param range a ring range. The start of the range may be greater than or equal to the end.
@@ -107,7 +105,7 @@ public interface IStorage {
    *              that covers the whole ring.
    * @return a segment enclosed by the range with state NOT_STARTED, or nothing.
    */
-  Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, RingRange range);
+  Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range);
 
   Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState);
 
