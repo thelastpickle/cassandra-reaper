@@ -96,9 +96,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement getHostMetricsPrepStmt;
   private PreparedStatement getRunningReapersCountPrepStmt;
   private PreparedStatement saveHeartbeatPrepStmt;
-  
+
   private DateTime lastHeartBeat = DateTime.now();
-  
+
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
     CassandraFactory cassandraFactory = config.getCassandraFactory();
     // all INSERT and DELETE statement prepared in this class are idempotent
@@ -135,8 +135,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     deleteRepairRunByUnitPrepStmt = session.prepare("DELETE FROM repair_run_by_unit WHERE id = ? and repair_unit_id= ?");
     insertRepairUnitPrepStmt = session.prepare("INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, incremental_repair) VALUES(?, ?, ?, ?, ?)");
     getRepairUnitPrepStmt = session.prepare("SELECT * FROM repair_unit_v1 WHERE id = ?");
-    insertRepairSegmentPrepStmt = session.prepare("INSERT INTO repair_run(id, segment_id, repair_unit_id, start_token, end_token, segment_state, coordinator_host, segment_start_time, segment_end_time, fail_count) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    getRepairSegmentPrepStmt = session.prepare("SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,segment_end_time,fail_count FROM repair_run WHERE id = ? and segment_id = ?");
+    insertRepairSegmentPrepStmt = session.prepare("INSERT INTO repair_run(id, segment_id, repair_unit_id, start_token, end_token, segment_state, coordinator_host, segment_start_time, segment_end_time, fail_count) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").setConsistencyLevel(ConsistencyLevel.QUORUM);
+    getRepairSegmentPrepStmt = session.prepare("SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,segment_end_time,fail_count FROM repair_run WHERE id = ? and segment_id = ?").setConsistencyLevel(ConsistencyLevel.QUORUM);
     getRepairSegmentsByRunIdPrepStmt = session.prepare("SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,segment_end_time,fail_count FROM repair_run WHERE id = ?");
     insertRepairSchedulePrepStmt = session.prepare("INSERT INTO repair_schedule_v1(id, repair_unit_id, state, days_between, next_activation, run_history, segment_count, repair_parallelism, intensity, creation_time, owner, pause_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").setConsistencyLevel(ConsistencyLevel.QUORUM);
     getRepairSchedulePrepStmt = session.prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?").setConsistencyLevel(ConsistencyLevel.QUORUM);
@@ -391,6 +391,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public boolean updateRepairSegment(RepairSegment newRepairSegment) {
+    assert hasLeadOnSegment(newRepairSegment.getId())
+            : "non-leader trying to update repair segment " + newRepairSegment.getId();
+
     Date startTime = null;
     if (newRepairSegment.getStartTime() != null) {
        startTime = newRepairSegment.getStartTime().toDate();
@@ -432,7 +435,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     return segments;
   }
-  
+
   @Override
   public Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(UUID runId, List<RingRange> localRanges) {
     LOG.debug("Getting ranges for local node {}", localRanges);
@@ -479,7 +482,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     Collections.shuffle(segments);
 
     for(RepairSegment seg:segments){
-      if (seg.getState().equals(State.NOT_STARTED) && withinRange(seg, range) && takeLeadOnSegment(seg.getId())) {
+      if (seg.getState().equals(State.NOT_STARTED) && withinRange(seg, range)) {
         return Optional.of(seg);
       }
     }
@@ -729,12 +732,14 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public boolean takeLeadOnSegment(UUID segmentId) {
     LOG.debug("Trying to take lead on segment {}", segmentId);
-    ResultSet lwtResult = session.execute(getLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
+    ResultSet lwtResult = session.execute(getLeadOnSegmentPrepStmt
+            .bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
+
     if (lwtResult.wasApplied()) {
       LOG.debug("Took lead on segment {}", segmentId);
       return true;
     }
-    
+
     // Another instance took the lead on the segment
     LOG.debug("Could not take lead on segment {}", segmentId);
     return false;
@@ -747,8 +752,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       LOG.debug("Renewed lead on segment {}", segmentId);
       return true;
     }
-    
-    LOG.debug("Failed to renew lead on segment {}", segmentId);
+    assert false : "Could not renew lead on segment " + segmentId;
+    LOG.error("Failed to renew lead on segment {}", segmentId);
     return false;
   }
 
@@ -758,12 +763,23 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     if (lwtResult.wasApplied()) {
       LOG.debug("Released lead on segment {}", segmentId);
     } else {
+      assert false : "Could not release lead on segment " + segmentId;
       LOG.error("Could not release lead on segment {}", segmentId);
     }
   }
 
+  private boolean hasLeadOnSegment(UUID segmentId) {
+    ResultSet lwtResult = session.execute(renewLeadOnSegmentPrepStmt.bind(
+            ReaperApplication.REAPER_INSTANCE_ID,
+            ReaperApplication.getInstanceAddress(),
+            segmentId,
+            ReaperApplication.REAPER_INSTANCE_ID));
+
+    return lwtResult.wasApplied();
+  }
+
   @Override
-  public void storeHostMetrics(HostMetrics hostMetrics) {    
+  public void storeHostMetrics(HostMetrics hostMetrics) {
     session.execute(storeHostMetricsPrepStmt.bind(hostMetrics.getHostAddress(), hostMetrics.getPendingCompactions(), hostMetrics.hasRepairRunning(), hostMetrics.getActiveAnticompactions()));
   }
 
@@ -777,7 +793,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                                   .withActiveAnticompactions(metrics.getInt("active_anticompactions"))
                                   .build());
      }
-    
+
     return Optional.absent();
   }
 

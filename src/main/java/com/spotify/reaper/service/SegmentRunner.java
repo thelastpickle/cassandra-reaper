@@ -89,9 +89,12 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   public SegmentRunner(AppContext context, UUID segmentId, Collection<String> potentialCoordinators,
       long timeoutMillis, double intensity, RepairParallelism validationParallelism,
-      String clusterName, RepairUnit repairUnit, RepairRunner repairRunner) {
+      String clusterName, RepairUnit repairUnit, RepairRunner repairRunner) throws ReaperException {
 
-    assert !segmentRunners.containsKey(segmentId) : "SegmentRunner already exists for segment with ID: " + segmentId;
+    if (segmentRunners.containsKey(segmentId)) {
+      LOG.error("SegmentRunner already exists for segment with ID: {}", segmentId);
+      throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
+    }
     this.context = context;
     this.segmentId = segmentId;
     this.potentialCoordinators = potentialCoordinators;
@@ -101,38 +104,42 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     this.clusterName = clusterName;
     this.repairUnit = repairUnit;
     this.repairRunner = repairRunner;
-    this.timedOut = new AtomicBoolean(false); 
+    this.timedOut = new AtomicBoolean(false);
   }
 
   @Override
   public void run() {
     final RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
-
-    if (renewLeadOnSegment(segmentId)) {
-      if(runRepair()) {
-        long delay = intensityBasedDelayMillis(intensity);
+    if (takeLeadOnSegment(segmentId)) {
         try {
-          Thread.sleep(delay);
-        } catch (InterruptedException e) {
-          LOG.warn("Slept shorter than intended delay.");
+          if(runRepair()) {
+            long delay = intensityBasedDelayMillis(intensity);
+            try {
+              Thread.sleep(delay);
+            } catch (InterruptedException e) {
+              LOG.warn("Slept shorter than intended delay.");
+            }
+          }
+        } finally {
+          releaseLeadOnSegment(segmentId);
         }
-      }
-      
-      releaseLeadOnSegment(segmentId);
     }
   }
 
   public static void postpone(AppContext context, RepairSegment segment, Optional<RepairUnit> repairUnit) {
     LOG.info("Postponing segment {}", segment.getId());
-    context.storage.updateRepairSegment(segment.with()
-        .state(RepairSegment.State.NOT_STARTED)
-        .coordinatorHost(repairUnit.isPresent() && repairUnit.get().getIncrementalRepair()? segment.getCoordinatorHost():null) // set coordinator host to null only for full repairs
-        .repairCommandId(null)
-        .startTime(null)
-        .failCount(segment.getFailCount() + 1)
-        .build(segment.getId()));
-    segmentRunners.remove(segment.getId());
+    try {
+        context.storage.updateRepairSegment(segment.with()
+            .state(RepairSegment.State.NOT_STARTED)
+            .coordinatorHost(repairUnit.isPresent() && repairUnit.get().getIncrementalRepair()? segment.getCoordinatorHost():null) // set coordinator host to null only for full repairs
+            .repairCommandId(null)
+            .startTime(null)
+            .failCount(segment.getFailCount() + 1)
+            .build(segment.getId()));
+    } finally {
+        segmentRunners.remove(segment.getId());
+    }
   }
 
   public static void abort(AppContext context, RepairSegment segment, JmxProxy jmxConnection) {
@@ -150,7 +157,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
       postpone(context, segment, context.storage.getRepairUnit(segment.getRepairUnitId()));
     }
-    
+
     try {
       Thread.sleep(SLEEP_TIME_AFTER_POSTPONE_IN_MS);
     } catch (InterruptedException e) {
@@ -214,7 +221,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       synchronized (condition) {
         commandId = coordinator.triggerRepair(segment.getStartToken(), segment.getEndToken(),
             keyspace, validationParallelism, repairUnit.getColumnFamilies(), fullRepair);
-        
+
         if (commandId == 0) {
           // From cassandra source in "forceRepairAsync":
           //if (ranges.isEmpty() || Keyspace.open(keyspace).getReplicationStrategy().getReplicationFactor() < 2)
@@ -230,7 +237,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         }
 
         LOG.debug("Triggered repair with command id {}", commandId);
-        
+
         // incremental repair can take way more time for a segment so we're extending the timeout MAX_TIMEOUT_EXTENSIONS times
         long timeout = repairUnit.getIncrementalRepair()?timeoutMillis*MAX_TIMEOUT_EXTENSIONS:timeoutMillis;
         context.storage.updateRepairSegment(segment.with()
@@ -245,10 +252,10 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         try {
           long startTime = System.currentTimeMillis();
           long maxTime = startTime + timeoutMillis;
-          
+
           // If timeout is lower than 1mn, use timeout, otherwise we'll loop every minute to renew lead on segment
           long waitTime = timeoutMillis<60000?timeoutMillis:60000;
-          
+
           long lastLoopTime = System.currentTimeMillis();
           while (System.currentTimeMillis() < maxTime) {
             condition.await(waitTime, TimeUnit.MILLISECONDS);
@@ -256,7 +263,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
               // The condition has been interrupted, meaning the repair might be over
               break;
             }
-            
+
             // Repair is still running, we'll renew lead on the segment when using Cassandra as storage backend
             renewLeadOnSegment(segmentId);
             lastLoopTime = System.currentTimeMillis();
@@ -294,7 +301,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
     return true;
   }
-  
+
   private void closeJmxConnection(Optional<JmxProxy> jmxProxy) {
     if(jmxProxy.isPresent())
       try {
@@ -303,7 +310,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         LOG.warn("Could not close JMX connection to {}. Potential leak...", jmxProxy.get().getHost());
       }
   }
-  
+
   private void declineRun() {
     LOG.info("SegmentRunner declined to repair segment {} because only one segment is allowed "
         + "at once for incremental repairs", segmentId);
@@ -320,13 +327,13 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     	  declineRun();
         return false;
     	}
-    	
+
     	if (IsRepairRunningOnOneNode(segment)) {
     	  declineRun();
     	  return false;
     	}
-    	
-    	
+
+
     }
     try {
       // when hosts are coming up or going down, this method can throw an
@@ -338,13 +345,13 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       repairRunner.updateLastEvent(msg);
       return false;
     }
-    
+
     boolean gotMetricsForAllHosts = true;
-    
+
     List<Callable<Optional<HostMetrics>>> getMetricsTasks = allHosts.stream()
         .map(host -> getMetricsForHost(host))
         .collect(Collectors.toList());
-    
+
     List<Future<Optional<HostMetrics>>> nodesMetrics = Lists.newArrayList();
 
     try {
@@ -352,7 +359,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     } catch (Exception e) {
       LOG.debug("failed grabbing nodes metrics", e);
     }
-    
+
     for (Future<Optional<HostMetrics>> nodeMetricsFuture : nodesMetrics) {
       Optional<HostMetrics> hostMetrics = Optional.absent();
       try {
@@ -369,7 +376,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             String msg = String.format("Postponed due to pending compactions (%d)",
                 pendingCompactions);
             repairRunner.updateLastEvent(msg);
-            
+
             return false;
           }
           if (hostMetrics.get().hasRepairRunning()) {
@@ -385,21 +392,21 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         LOG.warn("Failed grabbing metrics from at least one node. Cannot repair segment :'(", e);
         gotMetricsForAllHosts = false;
       }
-    } 
-  
+    }
+
 
     if(gotMetricsForAllHosts) {
       LOG.info("It is ok to repair segment '{}' on repair run with id '{}'",
           segment.getId(), segment.getRunId());
-    } 
+    }
     else {
       LOG.info("Not ok to repair segment '{}' on repair run with id '{}' because we couldn't get all hosts metrics :'(",
           segment.getId(), segment.getRunId());
     }
-    
-    return gotMetricsForAllHosts; // check if we should postpone when we cannot get all metrics, or just drop the lead 
-  } 
-  
+
+    return gotMetricsForAllHosts; // check if we should postpone when we cannot get all metrics, or just drop the lead
+  }
+
   private void handlePotentialStuckRepairs(LazyInitializer<Set<String>> busyHosts, String hostName) throws ConcurrentException {
     if (!busyHosts.get().contains(hostName) && context.storage instanceof IDistributedStorage) {
       LOG.warn("A host ({}) reported that it is involved in a repair, but there is no record "
@@ -413,13 +420,13 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       }
     }
   }
-  
+
   Callable<Optional<HostMetrics>> getMetricsForHost(String hostName) {
     return () -> {
       try (JmxProxy hostProxy = context.jmxConnectionFactory.connect(hostName, context.config.getJmxConnectionTimeoutInSeconds())) {
         int pendingCompactions = hostProxy.getPendingCompactions();
         boolean hasRepairRunning = hostProxy.isRepairRunning();
-        
+
         HostMetrics metrics = HostMetrics.builder().withHostAddress(hostName)
                                                    .withPendingCompactions(pendingCompactions)
                                                    .withHasRepairRunning(hasRepairRunning)
@@ -445,21 +452,20 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         LOG.error("Unreachable node when trying to determine if repair is running on a node. Crossing fingers and continuing...", e);
       }
     }
-    
+
     return false;
-    
+
   }
 
   private boolean repairHasSegmentRunning(UUID repairRunId) {
 	  Collection<RepairSegment> segments = context.storage.getRepairSegmentsForRun(repairRunId);
 	  for(RepairSegment segment:segments) {
 		  if(segment.getState() == RepairSegment.State.RUNNING) {
-			  LOG.info("segment '{}' is running on host '{}' and with a fail count of {}",
-				        segment.getId(), segment.getCoordinatorHost(), segment.getFailCount());
+			  LOG.info("segment '{}' is running on host '{}'", segment.getId(), segment.getCoordinatorHost());
 			  return true;
 		  }
 	  }
-	
+
 	  return false;
 }
 
@@ -497,15 +503,15 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
       if(status.isPresent()) {
         switch (status.get()) {
           case STARTED:
+            renewLeadOnSegment(segmentId);
             DateTime now = DateTime.now();
             context.storage.updateRepairSegment(currentSegment.with()
                 .state(RepairSegment.State.RUNNING)
                 .startTime(now)
                 .build(segmentId));
-            renewLeadOnSegment(segmentId);
             LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
             break;
-  
+
           case SESSION_SUCCESS:
             if (timedOut.get()) {
               LOG.debug("Got SESSION_SUCCESS for segment with id '{}' and repair number '{}', " +
@@ -520,13 +526,13 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
                   .build(segmentId));
             }
             break;
-  
+
           case SESSION_FAILED:
             LOG.warn("repair session failed for segment with id '{}' and repair number '{}'",
                 segmentId, repairNumber);
             failOutsideSynchronizedBlock = true;
             break;
-  
+
           case FINISHED:
             // This gets called through the JMX proxy at the end
             // regardless of succeeded or failed sessions.
@@ -540,31 +546,34 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
       if(progress.isPresent()) {
         switch (progress.get()) {
           case START:
+            renewLeadOnSegment(segmentId);
             DateTime now = DateTime.now();
             context.storage.updateRepairSegment(currentSegment.with()
                 .state(RepairSegment.State.RUNNING)
                 .startTime(now)
                 .build(segmentId));
-            renewLeadOnSegment(segmentId);
             LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
             break;
-  
+
           case SUCCESS:
-            LOG.debug("repair session succeeded for segment with id '{}' and repair number '{}'",
-                segmentId, repairNumber);
+            LOG.debug(
+                    "repair session succeeded for segment with id '{}' and repair number '{}'",
+                    segmentId, repairNumber);
+
             context.storage.updateRepairSegment(currentSegment.with()
                 .state(RepairSegment.State.DONE)
                 .endTime(DateTime.now())
                 .build(segmentId));
+
             break;
-  
+
           case ERROR:
           case ABORT:
             LOG.warn("repair session failed for segment with id '{}' and repair number '{}'",
                 segmentId, repairNumber);
             failOutsideSynchronizedBlock = true;
             break;
-  
+
           case COMPLETE:
             // This gets called through the JMX proxy at the end
             // regardless of succeeded or failed sessions.
@@ -641,6 +650,12 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
       return 0;
     }
   }
+
+    private boolean takeLeadOnSegment(UUID segmentId) {
+        return context.storage instanceof IDistributedStorage
+            ? ((IDistributedStorage)context.storage).takeLeadOnSegment(segmentId)
+            : true;
+    }
 
     private boolean renewLeadOnSegment(UUID segmentId) {
         return context.storage instanceof IDistributedStorage
