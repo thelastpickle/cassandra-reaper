@@ -378,7 +378,7 @@ Source code for all the REST resources can be found from package com.spotify.rea
     Delete all the related repair runs before calling this endpoint.
 
 
-Building and running Reaper
+Building and Running Reaper
 ------------------------------------
 
 To build Reaper without rebuilding the UI, run the following command : 
@@ -406,3 +406,55 @@ After modifying the `resource/cassandra-reaper.yaml` config file, Reaper can be 
 Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
 
 Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool `bin/spreaper`
+
+
+Running a Dockerized Reaper Example
+-----------------------------------
+
+### Build Reaper Docker Image
+
+First, build the Docker image and add it to your local image cache using the
+`cassandra-reaper:latest` tag:
+
+```mvn clean package docker:build```
+
+### Start Docker Environment
+
+First, start the Cassandra cluster:
+
+```docker-compose up cassandra```
+
+You can use the `nodetool` Docker Compose service to check on the Cassandra
+node's status:
+
+```docker-compose run nodetool status```
+
+Once the Cassandra node is online and accepting CQL connections,
+create the required `reaper_db` Cassandra keyspace to allow Reaper to save
+its scheduling data:
+
+```docker-compose run initialize-reaper_db```
+
+Wait a few moments for the `reaper_db` schema change to propagate,
+then start Reaper:
+
+```docker-compose up reaper```
+
+### Access The Environment
+
+Once started, the UI can be accessed through: http://127.0.0.1:8080/webui/
+
+The helper `cqlsh` Docker Compose service has also been included:
+
+```docker-compose run cqlsh```
+
+### Destroying the Docker Environment
+
+When terminating the infrastructure, use the following command to stop
+all related Docker Compose services:
+
+```docker-compose down```
+
+To completely clean up all persistent data, delete the `./data/` directory:
+
+```rm -rf ./data/```
