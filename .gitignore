@@ -24,3 +24,6 @@ packages/
 # frontend dev stuffs.
 reaper_ui/bower_components/
 reaper_ui/node_modules/
+
+# Docker Compose persistent storage directory
+data/

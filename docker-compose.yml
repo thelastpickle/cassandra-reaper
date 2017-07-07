@@ -1,0 +1,41 @@
+version: '2.2'
+
+services:
+  cassandra:
+    image: cassandra:3.11
+    env_file:
+      - docker/cassandra/cassandra.env
+    mem_limit: 4g
+    memswap_limit: 4g
+    mem_swappiness: 0
+    volumes:
+      - ./data/cassandra:/var/lib/cassandra
+      - ./docker/cassandra/jmxremote.access:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+      - ./docker/cassandra/jmxremote.password:/etc/cassandra/jmxremote.password
+
+  cqlsh:
+    image: cassandra:3.11
+    command: cqlsh cassandra
+    links:
+      - cassandra
+
+  nodetool:
+    image: cassandra:3.11
+    entrypoint: nodetool --host cassandra --username reaperUser --password reaperPass
+    links:
+      - cassandra
+
+  initialize-reaper_db:
+    build: ./docker/initialize-reaper_db
+    links:
+      - cassandra
+
+  reaper:
+    image: cassandra-reaper:latest
+    env_file:
+      - docker/reaper/reaper.env
+    links:
+      - cassandra
+    ports:
+      - "8080:8080"
+      - "8081:8081"
