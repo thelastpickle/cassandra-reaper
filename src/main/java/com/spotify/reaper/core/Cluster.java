@@ -23,7 +23,7 @@ public class Cluster {
 
   public static String toSymbolicName(String s) {
     assert s != null : "cannot turn null into symbolic name";
-    return s.toLowerCase().replaceAll("[^a-z0-9_]", "");
+    return s.toLowerCase().replaceAll("[^a-z0-9_\\-\\.]", "");
   }
 
   public Cluster(String name, String partitioner, Set<String> seedHosts) {

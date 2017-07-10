@@ -30,8 +30,8 @@ public class NodesStatus {
   public final List<GossipInfo> endpointStates;
   private static Pattern endpointNamePattern = Pattern.compile("^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})", Pattern.MULTILINE);
   private static Pattern endpointStatusPattern = Pattern.compile("(STATUS):([0-9]*):(\\w+)");
-  private static Pattern endpointDcPattern = Pattern.compile("(DC):([0-9]*):(\\w+)");
-  private static Pattern endpointRackPattern = Pattern.compile("(RACK):([0-9]*):(\\w+)");
+  private static Pattern endpointDcPattern = Pattern.compile("(DC):([0-9]*):([0-9a-zA-Z-\\.]+)");
+  private static Pattern endpointRackPattern = Pattern.compile("(RACK):([0-9]*):([0-9a-zA-Z-\\.]+)");
   private static Pattern endpointLoadPattern = Pattern.compile("(LOAD):([0-9]*):([0-9eE.]+)");
   private static Pattern endpointReleasePattern = Pattern.compile("(RELEASE_VERSION):([0-9]*):([0-9.]+)");
   private static Pattern endpointSeverityPattern = Pattern.compile("(SEVERITY):([0-9]*):([0-9.]+)");
