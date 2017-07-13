@@ -63,8 +63,30 @@ use the provided CLI tool in *bin/spreaper* to call the service.
 
 Run the tool with *-h* or *--help* option to see usage instructions.
 
-Notice that you can also build a Debian package from this project by using *debuild*, for example:
-`debuild -uc -us -b`
+### Debian and RPM Packages
+
+#### Make
+
+Debian and RPM packages can be built from this project using Make, for example:
+
+```bash
+make all
+```
+
+#### Docker
+
+A [Docker](https://docs.docker.com/engine/installation/) build environment is
+also provided to build the entire project and can be run by using
+[Docker Compose](https://docs.docker.com/compose/install/):
+
+```bash
+docker-compose -f docker-build/docker-compose.yml build \
+    && docker-compose -f docker-build/docker-compose.yml run build
+```
+
+The final packages will be located within:
+
+```./packages/```
 
 
 Configuration
@@ -381,6 +403,6 @@ After modifying the `resource/cassandra-reaper.yaml` config file, Reaper can be 
 
 ```java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml```
 
-Once started, the UI can be accessed through : `http://127.0.0.1:8080/webui/`
+Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
 
 Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool `bin/spreaper`

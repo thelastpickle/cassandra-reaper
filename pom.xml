@@ -366,6 +366,7 @@
                                     <executable>bower</executable>
                                     <workingDirectory>reaper_ui</workingDirectory>
                                     <arguments>
+                                        <argument>--allow-root</argument>
                                         <argument>install</argument>
                                     </arguments>
                                 </configuration>

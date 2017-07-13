@@ -17,9 +17,10 @@ bin/
 .settings/
 .project
 build/
+packages/
 *.deb
+*.rpm
 
 # frontend dev stuffs.
 reaper_ui/bower_components/
 reaper_ui/node_modules/
-
