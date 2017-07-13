@@ -65,8 +65,15 @@ Run the tool with *-h* or *--help* option to see usage instructions.
 
 ### Debian and RPM Packages
 
-Notice that you can also build Debian and RPM packages from this project by using *Make*, for example:
-`make all`.
+#### Make
+
+Debian and RPM packages can be built from this project using Make, for example:
+
+```bash
+make all
+```
+
+#### Docker
 
 A [Docker](https://docs.docker.com/engine/installation/) build environment is
 also provided to build the entire project and can be run by using
