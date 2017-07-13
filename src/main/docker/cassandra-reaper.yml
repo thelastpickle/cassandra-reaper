@@ -21,6 +21,10 @@ autoScheduling:
 
 jmxPorts: ${REAPER_JMX_PORTS}
 
+jmxAuth:
+  username: ${REAPER_JMX_USERNAME}
+  password: ${REAPER_JMX_PASSWORD}
+
 logging:
   level: ${REAPER_LOGGING_ROOT_LEVEL}
   loggers: ${REAPER_LOGGERS}
