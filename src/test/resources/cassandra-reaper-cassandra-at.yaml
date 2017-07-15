@@ -11,11 +11,7 @@ incrementalRepair: false
 jmxConnectionTimeoutInSeconds: 300
 
 logging:
-  level: DEBUG
-  loggers:
-    io.dropwizard: INFO
-    org.eclipse.jetty: INFO
-    com.datastax.driver.core.QueryLogger.NORMAL: INFO
+  level: WARN
   appenders:
     - type: console
 
@@ -47,3 +43,6 @@ cassandra:
   clusterName: "test"
   contactPoints: ["127.0.0.1"]
   keyspace: reaper_db
+  socketOptions:
+      connectTimeoutMillis: 20000
+      readTimeoutMillis: 40000

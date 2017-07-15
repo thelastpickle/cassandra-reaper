@@ -1,15 +1,23 @@
 language: java
 jdk:
 - oraclejdk8
-install: true
 env:
   global:
     - LOCAL_JMX=no
+    - TEST=""
+    - GRIM_MIN=1
+    - GRIM_MAX=1
   matrix:
-    - CASSANDRA_VERSION=2.1.16
-    - CASSANDRA_VERSION=2.2.8
-    - CASSANDRA_VERSION=3.0.9
-    - CASSANDRA_VERSION=3.10
+#    - CASSANDRA_VERSION=2.1.18
+    - CASSANDRA_VERSION=2.2.10
+    - CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=2 TEST="-Dtest=ReaperCassandraIT"
+    - CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=4 TEST="-Dtest=ReaperCassandraIT"
+    - CASSANDRA_VERSION=3.0.14
+    - CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=2 TEST="-Dtest=ReaperCassandraIT"
+    - CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=4 TEST="-Dtest=ReaperCassandraIT"
+    - CASSANDRA_VERSION=3.11.0
+    - CASSANDRA_VERSION=3.11.0 GRIM_MIN=2 GRIM_MAX=2 TEST="-Dtest=ReaperCassandraIT"
+    - CASSANDRA_VERSION=3.11.0 GRIM_MIN=2 GRIM_MAX=4 TEST="-Dtest=ReaperCassandraIT"
 services:
   - postgresql
 before_script:
@@ -23,19 +31,33 @@ before_install:
 
 install:
   - ccm create test -v $CASSANDRA_VERSION > /dev/null
-  - ccm populate -n 3 > /dev/null
+  - ccm populate --vnodes -n 3 > /dev/null
   - sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/travis/.ccm/test/node1/conf/cassandra-env.sh
   - sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/travis/.ccm/test/node2/conf/cassandra-env.sh
   - sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/travis/.ccm/test/node3/conf/cassandra-env.sh
-  - ccm start > /dev/null
+  - sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' /home/travis/.ccm/test/node1/conf/cassandra-env.sh
+  - sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' /home/travis/.ccm/test/node2/conf/cassandra-env.sh
+  - sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' /home/travis/.ccm/test/node3/conf/cassandra-env.sh
+  - "sudo sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/travis/.ccm/test/node1/conf/cassandra.yaml"
+  - "sudo sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/travis/.ccm/test/node2/conf/cassandra.yaml"
+  - "sudo sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/travis/.ccm/test/node3/conf/cassandra.yaml"
+  - "sudo sed -i 's/start_rpc: true/start_rpc: false/' /home/travis/.ccm/test/node1/conf/cassandra.yaml"
+  - "sudo sed -i 's/start_rpc: true/start_rpc: false/' /home/travis/.ccm/test/node2/conf/cassandra.yaml"
+  - "sudo sed -i 's/start_rpc: true/start_rpc: false/' /home/travis/.ccm/test/node3/conf/cassandra.yaml"
+  - "sudo sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' /home/travis/.ccm/test/node1/conf/cassandra.yaml"
+  - "sudo sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' /home/travis/.ccm/test/node2/conf/cassandra.yaml"
+  - "sudo sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' /home/travis/.ccm/test/node3/conf/cassandra.yaml"
+  - ccm start -v
 
 #before_script:
 #  - npm install -g bower
 script:
   - mvn clean package
-  - mvn surefire:test -Pintegration-tests
+  - mvn surefire:test $TEST -Dgrim.reaper.min=$GRIM_MIN -Dgrim.reaper.max=$GRIM_MAX
 after_success:
-  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_BRANCH" = "master" -a "$CASSANDRA_VERSION" = "2.1.16" ]; then mvn sonar:sonar -Dsonar.host.url=https://sonarqube.com -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=tlp-cassandra-reaper -Dsonar.github.oauth=$GITHUB_TOKEN -Dsonar.github.repository=thelastpickle/cassandra-reaper; fi'
+  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_BRANCH" = "master" -a "$CASSANDRA_VERSION" = "2.1.18" ]; then mvn sonar:sonar -Dsonar.host.url=https://sonarqube.com -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=tlp-cassandra-reaper -Dsonar.github.oauth=$GITHUB_TOKEN -Dsonar.github.repository=thelastpickle/cassandra-reaper; fi'
+after_failure:
+  - ccm checklogerror
 before_deploy: 
   - "mkdir cassandra-reaper-${TRAVIS_TAG}"
   - "mkdir cassandra-reaper-${TRAVIS_TAG}/target"
@@ -47,8 +69,7 @@ deploy:
   provider: releases
   api_key: $GITHUB_TOKEN
   file_glob: true
-  file: 
-    - "cassandra-reaper-${TRAVIS_TAG}-release.tar.gz"
+  file: "cassandra-reaper-${TRAVIS_TAG}-release.tar.gz"
   skip_cleanup: true
   on:
     tags: true 
