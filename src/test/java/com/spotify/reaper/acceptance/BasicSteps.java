@@ -946,7 +946,7 @@ public final class BasicSteps {
       try (Cluster cluster = buildCluster(); Session tmpSession = cluster.connect()) {
           tmpSession.execute(
                   "CREATE KEYSPACE IF NOT EXISTS " + keyspaceName
-                          + " WITH replication={'class':'SimpleStrategy', 'replication_factor':3}");
+                          + " WITH replication={'class':'SimpleStrategy', 'replication_factor':2}");
       }
   }
 
