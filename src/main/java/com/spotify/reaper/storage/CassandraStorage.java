@@ -20,6 +20,11 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.WriteType;
+import com.datastax.driver.core.exceptions.DriverException;
+import com.datastax.driver.core.policies.DefaultRetryPolicy;
+import com.datastax.driver.core.policies.RetryPolicy;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -53,18 +58,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import systems.composable.dropwizard.cassandra.CassandraFactory;
+import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
   com.datastax.driver.core.Cluster cassandra = null;
   Session session;
 
-  /* Simple statements */
+  /* Simple stmts */
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
   private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
   private static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
 
-  /* prepared statements */
+  /* prepared stmts */
   private PreparedStatement insertClusterPrepStmt;
   private PreparedStatement getClusterPrepStmt;
   private PreparedStatement deleteClusterPrepStmt;
@@ -100,8 +106,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
     CassandraFactory cassandraFactory = config.getCassandraFactory();
-    // all INSERT and DELETE statement prepared in this class are idempotent
+    // all INSERT and DELETE stmt prepared in this class are idempotent
+    if (cassandraFactory.getQueryOptions().isPresent()
+            && ConsistencyLevel.LOCAL_ONE != cassandraFactory.getQueryOptions().get().getConsistencyLevel()) {
+        LOG.warn("Customization of cassandra's queryOptions is not supported and will be overridden");
+    }
     cassandraFactory.setQueryOptions(java.util.Optional.of(new QueryOptions().setDefaultIdempotence(true)));
+    if (cassandraFactory.getRetryPolicy().isPresent()) {
+        LOG.warn("Customization of cassandra's retry policy is not supported and will be overridden");
+    }
+    cassandraFactory.setRetryPolicy(java.util.Optional.of((RetryPolicyFactory) () -> new RetryPolicyImpl()));
     cassandra = cassandraFactory.build(environment);
     if(config.getActivateQueryLogger())
       cassandra.register(QueryLogger.builder().build());
@@ -143,13 +157,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     getRepairScheduleByClusterAndKsPrepStmt = session.prepare("SELECT repair_schedule_id FROM repair_schedule_by_cluster_and_keyspace WHERE cluster_name = ? and keyspace_name = ?");
     deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule_v1 WHERE id = ?");
     deleteRepairScheduleByClusterAndKsPrepStmt = session.prepare("DELETE FROM repair_schedule_by_cluster_and_keyspace WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
-    getLeadOnSegmentPrepStmt = session.prepare("INSERT INTO segment_leader(segment_id, reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?, ?, ?, dateof(now())) IF NOT EXISTS");
-    renewLeadOnSegmentPrepStmt = session.prepare("UPDATE segment_leader SET reaper_instance_id = ?, reaper_instance_host = ?, last_heartbeat = dateof(now()) WHERE segment_id = ? IF reaper_instance_id = ?");
+    getLeadOnSegmentPrepStmt = session.prepare("INSERT INTO segment_leader(segment_id, reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?, ?, ?, dateof(now())) IF NOT EXISTS").setIdempotent(false);
+    renewLeadOnSegmentPrepStmt = session.prepare("UPDATE segment_leader SET reaper_instance_id = ?, reaper_instance_host = ?, last_heartbeat = dateof(now()) WHERE segment_id = ? IF reaper_instance_id = ?").setIdempotent(false);
     releaseLeadOnSegmentPrepStmt = session.prepare("DELETE FROM segment_leader WHERE segment_id = ? IF reaper_instance_id = ?");
-    storeHostMetricsPrepStmt = session.prepare("INSERT INTO host_metrics (host_address, ts, pending_compactions, has_repair_running, active_anticompactions) VALUES(?, dateof(now()), ?, ?, ?)");
+    storeHostMetricsPrepStmt = session.prepare("INSERT INTO host_metrics (host_address, ts, pending_compactions, has_repair_running, active_anticompactions) VALUES(?, dateof(now()), ?, ?, ?)").setIdempotent(false);
     getHostMetricsPrepStmt = session.prepare("SELECT * FROM host_metrics WHERE host_address = ?");
     getRunningReapersCountPrepStmt = session.prepare("SELECT count(*) as nb_reapers FROM running_reapers");
-    saveHeartbeatPrepStmt = session.prepare("INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?,?,dateof(now()))");
+    saveHeartbeatPrepStmt = session.prepare("INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?,?,dateof(now()))").setIdempotent(false);
   }
 
   @Override
@@ -840,5 +854,55 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private static boolean withinRange(RepairSegment segment, Optional<RingRange> range) {
     return !range.isPresent() || segmentIsWithinRange(segment, range.get());
+  }
+
+  /**
+   * Retry all statements.
+   *
+   * All reaper statements are idempotent.
+   * Reaper generates few read and writes requests, so it's ok to keep retrying.
+   *
+   * Sleep 100 milliseconds in between subsequent read retries.
+   * Fail after the tenth read retry.
+   *
+   * Writes keep retrying forever.
+   */
+  private static class RetryPolicyImpl implements RetryPolicy {
+
+    @Override
+    public RetryDecision onReadTimeout(Statement stmt, ConsistencyLevel cl, int required, int received, boolean retrieved, int retry) {
+        if (retry > 1) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ex) {}
+        }
+        return stmt.isIdempotent()
+                ? retry < 10 ? RetryDecision.retry(cl) : RetryDecision.rethrow()
+                : DefaultRetryPolicy.INSTANCE.onReadTimeout(stmt, cl, required, received, retrieved, retry);
+    }
+
+    @Override
+    public RetryDecision onWriteTimeout(Statement stmt, ConsistencyLevel cl, WriteType type , int required, int received, int retry) {
+        return stmt.isIdempotent()
+                ? RetryDecision.retry(cl)
+                : DefaultRetryPolicy.INSTANCE.onWriteTimeout(stmt, cl, type, required, received, retry);
+    }
+
+    @Override
+    public RetryDecision onUnavailable(Statement stmt, ConsistencyLevel cl, int required, int aliveReplica, int retry) {
+        return DefaultRetryPolicy.INSTANCE
+                .onUnavailable(stmt, cl, required, aliveReplica, retry == 1 ? 0 : retry);
+    }
+
+    @Override
+    public RetryDecision onRequestError(Statement stmt, ConsistencyLevel cl, DriverException e, int nbRetry) {
+        return DefaultRetryPolicy.INSTANCE.onRequestError(stmt, cl, e, nbRetry);
+    }
+
+    @Override
+    public void init(com.datastax.driver.core.Cluster cluster) {}
+
+    @Override
+    public void close() {}
   }
 }
