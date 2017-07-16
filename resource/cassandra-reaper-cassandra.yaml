@@ -63,9 +63,6 @@ cassandra:
   clusterName: "test"
   contactPoints: ["127.0.0.1"]
   keyspace: reaper_db
-  queryOptions:
-    consistencyLevel: LOCAL_QUORUM
-    serialConsistencyLevel: SERIAL
 
 autoScheduling:
   enabled: false
