@@ -431,9 +431,13 @@ node's status:
 
 Once the Cassandra node is online and accepting CQL connections,
 create the required `reaper_db` Cassandra keyspace to allow Reaper to save
-its cluster and scheduling data:
+its cluster and scheduling data.
 
-```docker-compose run initialize-reaper_db```
+By default, the `reaper_db` keyspace is created using a replication factor
+of 1. To change this replication factor, provide the intended replication
+factor as an optional argument:
+
+```docker-compose run initialize-reaper_db [$REPLICATION_FACTOR]```
 
 Wait a few moments for the `reaper_db` schema change to propagate,
 then start Reaper:
