@@ -446,7 +446,13 @@ then start Reaper:
 
 ### Access The Environment
 
-Once started, the UI can be accessed through: http://127.0.0.1:8080/webui/
+Once started, the UI can be accessed through:
+
+http://127.0.0.1:8080/webui/
+
+When adding the Cassandra node to the Reaper UI, use the IP address found via:
+
+```docker-compose run nodetool status```
 
 The helper `cqlsh` Docker Compose service has also been included:
 
