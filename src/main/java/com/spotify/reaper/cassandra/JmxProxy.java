@@ -20,6 +20,8 @@ import java.lang.reflect.UndeclaredThrowableException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.rmi.server.RMIClientSocketFactory;
+import java.rmi.server.RMISocketFactory;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.JMX;
@@ -169,6 +172,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
         String[] creds = {username, password};
         env.put(JMXConnector.CREDENTIALS, creds);
       }
+      env.put("com.sun.jndi.rmi.factory.socket", getRMIClientSocketFactory());
       JMXConnector jmxConn = JMXConnectorFactory.connect(jmxUrl, env);
       MBeanServerConnection mbeanServerConn = jmxConn.getMBeanServerConnection();
       Object ssProxy =
@@ -738,6 +742,12 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       throw new ReaperException(e.getMessage(), e);
     }
   }
+  
+  private static RMIClientSocketFactory getRMIClientSocketFactory() {
+        return Boolean.parseBoolean(System.getProperty("ssl.enable"))
+                ? new SslRMIClientSocketFactory()
+                : RMISocketFactory.getDefaultSocketFactory();
+  }
 }
 
 /**
@@ -763,12 +773,12 @@ class ColumnFamilyStoreMBeanIterator
   }
 
   @Override
-public boolean hasNext() {
+  public boolean hasNext() {
     return resIter.hasNext();
   }
 
   @Override
-public Map.Entry<String, ColumnFamilyStoreMBean> next() {
+  public Map.Entry<String, ColumnFamilyStoreMBean> next() {
     ObjectName objectName = resIter.next();
     String keyspaceName = objectName.getKeyProperty("keyspace");
     ColumnFamilyStoreMBean cfsProxy =
@@ -777,7 +787,7 @@ public Map.Entry<String, ColumnFamilyStoreMBean> next() {
   }
 
   @Override
-public void remove() {
+  public void remove() {
     throw new UnsupportedOperationException();
   }
 }
