@@ -88,7 +88,7 @@ The final packages will be located within:
 
 ```./packages/```
 
-#### Install RPM or DEB package and run as a service
+#### Install RPM or DEB package and run as a service
 
 Install the RPM (Fedora based distros like RHEL or Centos) using : `sudo rpm -ivh reaper-*.*.*.x86_64.rpm`  
 Install the DEB (Debian based distros like Ubuntu) using : `sudo dpkg -i reaper_*.*.*_amd64.deb`
