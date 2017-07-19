@@ -88,6 +88,19 @@ The final packages will be located within:
 
 ```./packages/```
 
+#### Install RPM or DEB package and run as a service
+
+Install the RPM (Fedora based distros like RHEL or Centos) using : `sudo rpm -ivh reaper-*.*.*.x86_64.rpm`  
+Install the DEB (Debian based distros like Ubuntu) using : `sudo dpkg -i reaper_*.*.*_amd64.deb`
+
+The yaml file used by the service is located at `/etc/cassandra-reaper/cassandra-reaper.yaml` and alternate config templates can be found under `/etc/cassandra-reaper/configs`.
+It is recommended to create a new file with your specific configuration and symlink it as `/etc/cassandra-reaper/cassandra-reaper.yaml` to avoid your configuration from being overwritten during upgrades.  
+Adapt the config file to suit your setup and then run `sudo service cassandra-reaper start`.  
+  
+Log files can be found at `/var/log/cassandra-reaper.log` and `/var/log/cassandra-reaper.err`.  
+
+Stop the service by running : `sudo service cassandra-reaper stop`  
+
 
 Configuration
 -------------
