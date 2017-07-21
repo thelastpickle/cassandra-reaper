@@ -65,6 +65,8 @@ class ReaperCaller(object):
             r = requests.post(the_url, params=params)
         elif http_method == 'PUT':
             r = requests.put(the_url, params=params)
+        elif http_method == 'DELETE':
+            r = requests.delete(the_url, params=params)
         else:
             assert False, "invalid HTTP method: {0}".format(http_method)
         log.info("HTTP %s return code %s with content of length %s",
@@ -86,6 +88,10 @@ class ReaperCaller(object):
     def put(self, endpoint, **params):
         the_url = urlparse.urljoin(self.base_url, endpoint)
         return self._http_req("PUT", the_url, params)
+
+    def delete(self, endpoint, **params):
+        the_url = urlparse.urljoin(self.base_url, endpoint)
+        return self._http_req("DELETE", the_url, params)
 
 
 # === Arguments for commands ============================================================
@@ -229,6 +235,12 @@ def _arguments_for_pause_schedule(parser):
     parser.add_argument("schedule_id", help="ID of the repair schedule to pause")
 
 
+def _arguments_for_delete_schedule(parser):
+    """Arguments needed for deleting a repair schedule"""
+    parser.add_argument("schedule_id", help="ID of the repair schedule to delete")
+    _argument_owner(parser)
+
+
 def _arguments_for_list_runs(parser):
     """Arguments needed to filter what repair runs are listed"""
     parser.add_argument("--state", help="Comma separated states used to filter returned runs")
@@ -280,6 +292,7 @@ Usage: spreaper [<global_args>] <command> [<command_args>]
     abort-repair    Abort a repair run.
     start-schedule  Resume a paused repair schedule.
     pause-schedule  Pause a repair schedule.
+    delete-schedule Delete a repair schedule.
     ping            Test connectivity to the Reaper service.
 """
 
@@ -555,6 +568,16 @@ class ReaperCLI(object):
         print "# Pausing a repair schedule with id: {0}".format(args.schedule_id)
         reaper.put("repair_schedule/{0}".format(args.schedule_id), state="PAUSED")
         print "# Repair schedule '{0}' paused".format(args.schedule_id)
+
+    def delete_schedule(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "delete-schedule",
+            "Delete a repair schedule.",
+            extra_arguments=_arguments_for_delete_schedule
+        )
+        print "# Deleting a repair schedule with id: {0}".format(args.schedule_id)
+        reaper.delete("repair_schedule/{0}".format(args.schedule_id), owner=args.owner)
+        print "# Repair schedule '{0}' deleted".format(args.schedule_id)
 
 
 if __name__ == '__main__':
