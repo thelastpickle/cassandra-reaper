@@ -9,6 +9,7 @@ package:
 
 prepare:
 	echo "$(VERSION)..."
+	rm -Rf packages/*
 	rm -Rf build/*
 	mkdir -p build/usr/share/cassandra-reaper
 	mkdir -p build/usr/local/bin

@@ -53,7 +53,7 @@ public class RepairManager {
    * Consult storage to see if any repairs are running, and resume those repair runs.
    *
    * @param context Reaper's application context.
-   * @throws ReaperException 
+   * @throws ReaperException
    */
   public void resumeRunningRepairRuns(AppContext context) throws ReaperException {
     heartbeat(context);
@@ -69,18 +69,45 @@ public class RepairManager {
             SegmentRunner.abort(context, segment, jmxProxy);
           } catch (ReaperException e) {
             LOG.debug("Tried to abort repair on segment {} marked as RUNNING, but the host was down"
-                      + " (so abortion won't be needed)", segment.getId(), e);          
+                      + " (so abortion won't be needed)", segment.getId(), e);
             SegmentRunner.postpone(context, segment, context.storage.getRepairUnit(repairRun.getId()));
           }
         }
-        
+
         LOG.info("Restarting run id {} that has no runner", repairRun.getId());
         startRepairRun(context, repairRun);
-      } 
+      }
     }
-    Collection<RepairRun> paused =
-        context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED);
+
+    Collection<RepairRun> paused = context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED);
     for (RepairRun pausedRepairRun : paused) {
+      if(repairRunners.containsKey(pausedRepairRun.getId())) {
+        // Abort all running segments for paused repair runs
+        Collection<RepairSegment> runningSegments
+                = context.storage.getSegmentsWithState(pausedRepairRun.getId(), RepairSegment.State.RUNNING);
+
+        for (RepairSegment segment : runningSegments) {
+
+          try (JmxProxy jmxProxy = context.jmxConnectionFactory
+              .connect(segment.getCoordinatorHost(), context.config.getJmxConnectionTimeoutInSeconds())) {
+
+            LOG.info(
+                    "Aborting segment {} for repair run {} due to state change",
+                    segment.getId(), pausedRepairRun.getId());
+
+            SegmentRunner.abort(context, segment, jmxProxy);
+            jmxProxy.close();
+          } catch (ReaperException e) {
+            LOG.debug(
+                    "Tried to abort repair on segment {} marked as RUNNING, but the host was down (so abortion won't be needed)",
+                    segment.getId(), e);
+
+            SegmentRunner.postpone(context, segment, context.storage.getRepairUnit(pausedRepairRun.getId()));
+          }
+        }
+
+      }
+
       if(!repairRunners.containsKey(pausedRepairRun.getId())) {
         startRunner(context, pausedRepairRun.getId());
       }
