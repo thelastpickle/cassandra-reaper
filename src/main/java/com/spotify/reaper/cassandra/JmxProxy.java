@@ -210,6 +210,9 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       mbeanServerConn.addNotificationListener(ssMbeanName, proxy, null, null);
       LOG.debug("JMX connection to {} properly connected: {}",
           host, jmxUrl.toString());
+
+      JmxConnectionFactory.incrementSuccessfullConnections(originalHost);
+
       return proxy;
     } catch (Exception e) {
       LOG.error("Failed to establish JMX connection to {}:{}", host, port);
@@ -804,7 +807,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       throw new ReaperException(e.getMessage(), e);
     }
   }
-  
+
   private static RMIClientSocketFactory getRMIClientSocketFactory() {
         return Boolean.parseBoolean(System.getProperty("ssl.enable"))
                 ? new SslRMIClientSocketFactory()

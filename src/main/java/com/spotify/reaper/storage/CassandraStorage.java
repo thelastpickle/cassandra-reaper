@@ -24,6 +24,7 @@ import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.WriteType;
 import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.policies.DefaultRetryPolicy;
+import com.datastax.driver.core.policies.DowngradingConsistencyRetryPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
@@ -119,7 +120,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     cassandra = cassandraFactory.build(environment);
     if(config.getActivateQueryLogger())
       cassandra.register(QueryLogger.builder().build());
-    
+
     CodecRegistry codecRegistry = cassandra.getConfiguration().getCodecRegistry();
     codecRegistry.register(new DateTimeCodec());
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());
@@ -135,7 +136,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private void prepareStatements(){
     insertClusterPrepStmt = session.prepare("INSERT INTO cluster(name, partitioner, seed_hosts) values(?, ?, ?)").setConsistencyLevel(ConsistencyLevel.QUORUM);
-    getClusterPrepStmt = session.prepare("SELECT * FROM cluster WHERE name = ?").setConsistencyLevel(ConsistencyLevel.QUORUM);
+    getClusterPrepStmt = session.prepare("SELECT * FROM cluster WHERE name = ?").setConsistencyLevel(ConsistencyLevel.QUORUM).setRetryPolicy(DowngradingConsistencyRetryPolicy.INSTANCE);
     deleteClusterPrepStmt = session.prepare("DELETE FROM cluster WHERE name = ?");
     insertRepairRunPrepStmt = session.prepare("INSERT INTO repair_run(id, cluster_name, repair_unit_id, cause, owner, state, creation_time, start_time, end_time, pause_time, intensity, last_event, segment_count, repair_parallelism) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").setConsistencyLevel(ConsistencyLevel.QUORUM);
     insertRepairRunClusterIndexPrepStmt = session.prepare("INSERT INTO repair_run_by_cluster(cluster_name, id) values(?, ?)");
@@ -196,7 +197,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public Optional<Cluster> getCluster(String clusterName) {
     Row r = session.execute(getClusterPrepStmt.bind(clusterName)).one();
-    
+
     return r != null
             ? Optional.fromNullable(
                 new Cluster(r.getString("name"), r.getString("partitioner"), r.getSet("seed_hosts", String.class)))
@@ -266,19 +267,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public boolean updateRepairRun(RepairRun repairRun) {
     session.execute(insertRepairRunPrepStmt.bind(
-            repairRun.getId(), 
-            repairRun.getClusterName(), 
-            repairRun.getRepairUnitId(), 
-            repairRun.getCause(), 
-            repairRun.getOwner(), 
-            repairRun.getRunState().toString(), 
-            repairRun.getCreationTime(), 
-            repairRun.getStartTime(), 
-            repairRun.getEndTime(), 
-            repairRun.getPauseTime(), 
-            repairRun.getIntensity(), 
-            repairRun.getLastEvent(), 
-            repairRun.getSegmentCount(), 
+            repairRun.getId(),
+            repairRun.getClusterName(),
+            repairRun.getRepairUnitId(),
+            repairRun.getCause(),
+            repairRun.getOwner(),
+            repairRun.getRunState().toString(),
+            repairRun.getCreationTime(),
+            repairRun.getStartTime(),
+            repairRun.getEndTime(),
+            repairRun.getPauseTime(),
+            repairRun.getIntensity(),
+            repairRun.getLastEvent(),
+            repairRun.getSegmentCount(),
             repairRun.getRepairParallelism().toString()));
     return true;
   }
@@ -414,25 +415,27 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public boolean updateRepairSegment(RepairSegment newRepairSegment) {
-    assert hasLeadOnSegment(newRepairSegment.getId())
-            : "non-leader trying to update repair segment " + newRepairSegment.getId();
+  public boolean updateRepairSegment(RepairSegment segment) {
+
+    assert hasLeadOnSegment(segment.getId())
+            || (hasLeadOnSegment(segment.getRunId()) && getRepairUnit(segment.getRepairUnitId()).get().getIncrementalRepair())
+                : "non-leader trying to update repair segment " + segment.getId() + " of run " + segment.getRunId();
 
     Date startTime = null;
-    if (newRepairSegment.getStartTime() != null) {
-       startTime = newRepairSegment.getStartTime().toDate();
+    if (segment.getStartTime() != null) {
+       startTime = segment.getStartTime().toDate();
     }
     session.execute(insertRepairSegmentPrepStmt.bind(
-            newRepairSegment.getRunId(),
-            newRepairSegment.getId(),
-            newRepairSegment.getRepairUnitId(),
-            newRepairSegment.getStartToken(),
-            newRepairSegment.getEndToken(),
-            newRepairSegment.getState().ordinal(),
-            newRepairSegment.getCoordinatorHost(),
+            segment.getRunId(),
+            segment.getId(),
+            segment.getRepairUnitId(),
+            segment.getStartToken(),
+            segment.getEndToken(),
+            segment.getState().ordinal(),
+            segment.getCoordinatorHost(),
             startTime,
-            newRepairSegment.getEndTime().toDate(),
-            newRepairSegment.getFailCount()));
+            segment.getEndTime().toDate(),
+            segment.getFailCount()));
 
     return true;
   }
@@ -653,7 +656,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     for(Row scheduleRow:scheduleResults){
       schedules.add(createRepairScheduleFromRow(scheduleRow));
     }
-    
+
     return schedules;
   }
 
@@ -709,7 +712,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
       session.executeAsync(deleteRepairScheduleByClusterAndKsPrepStmt
               .bind(" ", repairUnit.getKeyspaceName(), repairSchedule.get().getId()));
-      
+
       session.executeAsync(deleteRepairSchedulePrepStmt.bind(repairSchedule.get().getId()));
     }
 
@@ -767,57 +770,74 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public boolean takeLeadOnSegment(UUID segmentId) {
-    LOG.debug("Trying to take lead on segment {}", segmentId);
-    ResultSet lwtResult = session.execute(getLeadOnSegmentPrepStmt
-            .bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
+  public boolean takeLeadOnSegment(UUID incrementalReapirOrsegmentId) {
+    LOG.debug("Trying to take lead on segment {}", incrementalReapirOrsegmentId);
+    ResultSet lwtResult = session.execute(
+            getLeadOnSegmentPrepStmt.bind(
+                    incrementalReapirOrsegmentId,
+                    ReaperApplication.REAPER_INSTANCE_ID,
+                    ReaperApplication.getInstanceAddress()));
 
     if (lwtResult.wasApplied()) {
-      LOG.debug("Took lead on segment {}", segmentId);
+      LOG.debug("Took lead on segment {}", incrementalReapirOrsegmentId);
       return true;
     }
 
     // Another instance took the lead on the segment
-    LOG.debug("Could not take lead on segment {}", segmentId);
+    LOG.debug("Could not take lead on segment {}", incrementalReapirOrsegmentId);
     return false;
   }
 
   @Override
-  public boolean renewLeadOnSegment(UUID segmentId) {
-    ResultSet lwtResult = session.execute(renewLeadOnSegmentPrepStmt.bind(ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress(), segmentId, ReaperApplication.REAPER_INSTANCE_ID));
+  public boolean renewLeadOnSegment(UUID incrementalReapirOrsegmentId) {
+    ResultSet lwtResult = session.execute(
+            renewLeadOnSegmentPrepStmt.bind(
+                    ReaperApplication.REAPER_INSTANCE_ID,
+                    ReaperApplication.getInstanceAddress(),
+                    incrementalReapirOrsegmentId,
+                    ReaperApplication.REAPER_INSTANCE_ID));
+
     if (lwtResult.wasApplied()) {
-      LOG.debug("Renewed lead on segment {}", segmentId);
+      LOG.debug("Renewed lead on segment {}", incrementalReapirOrsegmentId);
       return true;
     }
-    assert false : "Could not renew lead on segment " + segmentId;
-    LOG.error("Failed to renew lead on segment {}", segmentId);
+    assert false : "Could not renew lead on segment " + incrementalReapirOrsegmentId;
+    LOG.error("Failed to renew lead on segment {}", incrementalReapirOrsegmentId);
     return false;
   }
 
   @Override
-  public void releaseLeadOnSegment(UUID segmentId) {
-    ResultSet lwtResult = session.execute(releaseLeadOnSegmentPrepStmt.bind(segmentId, ReaperApplication.REAPER_INSTANCE_ID));
+  public void releaseLeadOnSegment(UUID incrementalReapirOrsegmentId) {
+    ResultSet lwtResult = session.execute(
+            releaseLeadOnSegmentPrepStmt.bind(incrementalReapirOrsegmentId, ReaperApplication.REAPER_INSTANCE_ID));
+
     if (lwtResult.wasApplied()) {
-      LOG.debug("Released lead on segment {}", segmentId);
+      LOG.debug("Released lead on segment {}", incrementalReapirOrsegmentId);
     } else {
-      assert false : "Could not release lead on segment " + segmentId;
-      LOG.error("Could not release lead on segment {}", segmentId);
+      assert false : "Could not release lead on segment " + incrementalReapirOrsegmentId;
+      LOG.error("Could not release lead on segment {}", incrementalReapirOrsegmentId);
     }
   }
 
-  private boolean hasLeadOnSegment(UUID segmentId) {
-    ResultSet lwtResult = session.execute(renewLeadOnSegmentPrepStmt.bind(
-            ReaperApplication.REAPER_INSTANCE_ID,
-            ReaperApplication.getInstanceAddress(),
-            segmentId,
-            ReaperApplication.REAPER_INSTANCE_ID));
+  private boolean hasLeadOnSegment(UUID incrementalReapirOrsegmentId) {
+    ResultSet lwtResult = session.execute(
+            renewLeadOnSegmentPrepStmt.bind(
+                ReaperApplication.REAPER_INSTANCE_ID,
+                ReaperApplication.getInstanceAddress(),
+                incrementalReapirOrsegmentId,
+                ReaperApplication.REAPER_INSTANCE_ID));
 
     return lwtResult.wasApplied();
   }
 
   @Override
   public void storeHostMetrics(HostMetrics hostMetrics) {
-    session.execute(storeHostMetricsPrepStmt.bind(hostMetrics.getHostAddress(), hostMetrics.getPendingCompactions(), hostMetrics.hasRepairRunning(), hostMetrics.getActiveAnticompactions()));
+    session.execute(
+            storeHostMetricsPrepStmt.bind(
+                    hostMetrics.getHostAddress(),
+                    hostMetrics.getPendingCompactions(),
+                    hostMetrics.hasRepairRunning(),
+                    hostMetrics.getActiveAnticompactions()));
   }
 
   @Override
@@ -847,7 +867,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     DateTime now = DateTime.now();
     // Send heartbeats every minute
     if(now.minusSeconds(60).getMillis() >= lastHeartBeat.getMillis()) {
-      session.executeAsync(saveHeartbeatPrepStmt.bind(ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
+      session.executeAsync(
+              saveHeartbeatPrepStmt.bind(ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
+
       lastHeartBeat = now;
     }
   }

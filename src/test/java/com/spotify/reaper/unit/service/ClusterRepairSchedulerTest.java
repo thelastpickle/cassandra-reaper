@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 
 public class ClusterRepairSchedulerTest {
 
-  private static final Cluster CLUSTER = new Cluster("cluster1", null, Collections.singleton(null));
+  private static final Cluster CLUSTER = new Cluster("cluster1", null, Collections.singleton("127.0.0.1"));
   private static final DateTime TWO_HOURS_AGO = DateTime.now().minusHours(2);
   private static final Duration DELAY_BEFORE_SCHEDULE = Duration.ofMinutes(4);
   private AppContext context;

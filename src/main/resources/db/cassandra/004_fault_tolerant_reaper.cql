@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS host_metrics(
   PRIMARY KEY(host_address, ts)
 ) WITH CLUSTERING ORDER BY (ts DESC)
     AND  compaction = {'class': 'LeveledCompactionStrategy'}
-    AND default_time_to_live = 600
-	AND  gc_grace_seconds = 600;
+    AND default_time_to_live = 180
+	AND  gc_grace_seconds = 180;
 
 --
 -- Add table to track concurrently running Reapers
@@ -30,5 +30,5 @@ CREATE TABLE IF NOT EXISTS running_reapers (
   reaper_instance_host text,
 	last_heartbeat timestamp
 ) WITH compaction = {'class': 'LeveledCompactionStrategy'}
-    AND default_time_to_live = 600
-    AND gc_grace_seconds = 600;
+    AND default_time_to_live = 180
+    AND gc_grace_seconds = 180;

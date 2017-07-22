@@ -14,10 +14,9 @@
 package com.spotify.reaper.cassandra;
 
 import com.google.common.base.Optional;
-
+import com.google.common.collect.Maps;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.spotify.reaper.ReaperApplicationConfiguration.JmxCredentials;
-import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 
@@ -28,13 +27,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JmxConnectionFactory {
 
+  private static final ConcurrentMap<String, AtomicInteger> SUCCESSFULL_CONNECTIONS = Maps.newConcurrentMap();
   private static final Logger LOG = LoggerFactory.getLogger(JmxConnectionFactory.class);
+
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
   private EC2MultiRegionAddressTranslator addressTranslator;
@@ -49,7 +52,7 @@ public class JmxConnectionFactory {
     if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
       host = host + ":" + jmxPorts.get(host);
     }
-    
+
     String username = null;
     String password = null;
     if(jmxAuth != null) {
@@ -71,16 +74,23 @@ public class JmxConnectionFactory {
     List<String> hostList = new ArrayList<>(hosts);
     Collections.shuffle(hostList);
     Iterator<String> hostIterator = hostList.iterator();
-    
-    while (hostIterator.hasNext()) {
-      try {
+
+    for (int i=0 ; i<2 ; i++) {
+      while (hostIterator.hasNext()) {
         String host = hostIterator.next();
-        return connect(handler, host, connectionTimeout);
-      } catch(Exception e) {
-        LOG.debug("Unreachable host", e);
+
+        // First loop, we try the most accessible nodes, then second loop we try all nodes
+        if(null != host && (SUCCESSFULL_CONNECTIONS.getOrDefault(host, new AtomicInteger(0)).get() >= 0 || 1 == i)) {
+          try {
+            return connect(handler, host, connectionTimeout);
+          } catch (ReaperException | RuntimeException e) {
+            decrementSuccessfullConnections(host);
+            LOG.debug("Unreachable host", e);
+          }
+        }
       }
     }
-    
+
     throw new ReaperException("no host could be reached through JMX");
   }
 
@@ -104,8 +114,32 @@ public class JmxConnectionFactory {
   public void setAddressTranslator(EC2MultiRegionAddressTranslator addressTranslator) {
     this.addressTranslator = addressTranslator;
   }
-  
+
   public void setLocalMode(boolean localMode) {
     this.localMode = localMode;
+  }
+
+  static void incrementSuccessfullConnections(String host) {
+    try {
+      AtomicInteger successes = SUCCESSFULL_CONNECTIONS.putIfAbsent(host, new AtomicInteger(1));
+      if(null != successes && successes.get() <= 20) {
+        successes.incrementAndGet();
+      }
+      LOG.debug("Host {} has {} successfull connections", host, successes);
+    } catch(RuntimeException e) {
+      LOG.warn("Could not increment JMX successfull connections counter for host {}", host, e);
+    }
+  }
+
+  static void decrementSuccessfullConnections(String host) {
+    try {
+      AtomicInteger successes = SUCCESSFULL_CONNECTIONS.putIfAbsent(host, new AtomicInteger(-1));
+      if(null != successes && successes.get() >= -5) {
+        successes.decrementAndGet();
+      }
+      LOG.debug("Host {} has {} successfull connections", host, successes);
+    } catch(RuntimeException e) {
+      LOG.warn("Could not decrement JMX successfull connections counter for host {}", host, e);
+    }
   }
 }
