@@ -88,7 +88,7 @@ public final class RepairRunnerTest {
 
     final IStorage storage = new MemoryStorage();
 
-    storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
+    storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
     RepairUnit cf =
         storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
@@ -201,7 +201,7 @@ public final class RepairRunnerTest {
 
     final IStorage storage = new MemoryStorage();
 
-    storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
+    storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
     RepairUnit cf =
         storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
@@ -319,7 +319,7 @@ public final class RepairRunnerTest {
     context.config = new ReaperApplicationConfiguration();
     context.config.setLocalJmxMode(false);
     
-    storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton(null)));
+    storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
     UUID cf = storage.addRepairUnit(
         new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR)).getId();
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);

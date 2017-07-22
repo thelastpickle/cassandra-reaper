@@ -65,9 +65,11 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private static final int MAX_PENDING_COMPACTIONS = 20;
   private static final int MAX_TIMEOUT_EXTENSIONS = 10;
-  private static final Pattern REPAIR_UUID_PATTERN =
-      Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+  private static final Pattern REPAIR_UUID_PATTERN
+          = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
   private static final long SLEEP_TIME_AFTER_POSTPONE_IN_MS = 10000;
+  private static final ExecutorService METRICS_GRABBER_EXECUTOR = Executors.newFixedThreadPool(10);
 
   private final AppContext context;
   private final UUID segmentId;
@@ -80,8 +82,8 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final RepairRunner repairRunner;
   private final RepairUnit repairUnit;
   private int commandId;
-  private AtomicBoolean timedOut;
-  private static final ExecutorService metricsGrabberExecutor = Executors.newFixedThreadPool(10);
+  private final AtomicBoolean timedOut;
+  private final UUID leaderElectionId;
 
   // Caching all active SegmentRunners.
   @VisibleForTesting
@@ -105,13 +107,14 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     this.repairUnit = repairUnit;
     this.repairRunner = repairRunner;
     this.timedOut = new AtomicBoolean(false);
+    this.leaderElectionId = repairUnit.getIncrementalRepair() ? repairRunner.getRepairRunId() : segmentId;
   }
 
   @Override
   public void run() {
     final RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
-    if (takeLeadOnSegment(segmentId)) {
+    if (takeLeadOnSegment()) {
         try {
           if(runRepair()) {
             long delay = intensityBasedDelayMillis(intensity);
@@ -122,7 +125,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             }
           }
         } finally {
-          releaseLeadOnSegment(segmentId);
+          releaseLeadOnSegment();
         }
     }
   }
@@ -265,7 +268,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             }
 
             // Repair is still running, we'll renew lead on the segment when using Cassandra as storage backend
-            renewLeadOnSegment(segmentId);
+            renewLeadOnSegment();
             lastLoopTime = System.currentTimeMillis();
           }
         } catch (InterruptedException e) {
@@ -355,7 +358,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     List<Future<Optional<HostMetrics>>> nodesMetrics = Lists.newArrayList();
 
     try {
-      nodesMetrics = this.metricsGrabberExecutor.invokeAll(getMetricsTasks);
+      nodesMetrics = this.METRICS_GRABBER_EXECUTOR.invokeAll(getMetricsTasks);
     } catch (Exception e) {
       LOG.debug("failed grabbing nodes metrics", e);
     }
@@ -503,7 +506,7 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
       if(status.isPresent()) {
         switch (status.get()) {
           case STARTED:
-            renewLeadOnSegment(segmentId);
+            renewLeadOnSegment();
             DateTime now = DateTime.now();
             context.storage.updateRepairSegment(currentSegment.with()
                 .state(RepairSegment.State.RUNNING)
@@ -546,7 +549,7 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
       if(progress.isPresent()) {
         switch (progress.get()) {
           case START:
-            renewLeadOnSegment(segmentId);
+            renewLeadOnSegment();
             DateTime now = DateTime.now();
             context.storage.updateRepairSegment(currentSegment.with()
                 .state(RepairSegment.State.RUNNING)
@@ -651,21 +654,21 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
     }
   }
 
-    private boolean takeLeadOnSegment(UUID segmentId) {
+    private boolean takeLeadOnSegment() {
         return context.storage instanceof IDistributedStorage
-            ? ((IDistributedStorage)context.storage).takeLeadOnSegment(segmentId)
+            ? ((IDistributedStorage)context.storage).takeLeadOnSegment(leaderElectionId)
             : true;
     }
 
-    private boolean renewLeadOnSegment(UUID segmentId) {
+    private boolean renewLeadOnSegment() {
         return context.storage instanceof IDistributedStorage
-            ? ((IDistributedStorage)context.storage).renewLeadOnSegment(segmentId)
+            ? ((IDistributedStorage)context.storage).renewLeadOnSegment(leaderElectionId)
             : true;
     }
 
-    private void releaseLeadOnSegment(UUID segmentId) {
+    private void releaseLeadOnSegment() {
         if (context.storage instanceof IDistributedStorage) {
-            ((IDistributedStorage)context.storage).releaseLeadOnSegment(segmentId);
+            ((IDistributedStorage)context.storage).releaseLeadOnSegment(leaderElectionId);
         }
     }
 
@@ -686,5 +689,4 @@ private void abort(RepairSegment segment, JmxProxy jmxConnection) {
             ? ((IDistributedStorage)context.storage).countRunningReapers()
             : 1;
     }
-
 }

@@ -117,14 +117,14 @@ public final class CommonTools {
       LOG.error(errMsg);
       throw new ReaperException(errMsg);
     }
-    for (String host : seedHosts) {
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds())) {
-        List<BigInteger> tokens = jmxProxy.getTokens();
-        segments = sg.generateSegments(segmentCount, tokens, incrementalRepair);
-        break;
-      } catch (ReaperException e) {
-        LOG.warn("couldn't connect to host: {}, will try next one", host, e);
-      }
+
+    try (JmxProxy jmxProxy = context.jmxConnectionFactory
+            .connectAny(Optional.absent(), seedHosts, context.config.getJmxConnectionTimeoutInSeconds())) {
+
+      List<BigInteger> tokens = jmxProxy.getTokens();
+      segments = sg.generateSegments(segmentCount, tokens, incrementalRepair);
+    } catch (ReaperException e) {
+      LOG.warn("couldn't connect to any host: {}, life sucks...", seedHosts, e);
     }
 
     if (segments == null) {
@@ -186,30 +186,29 @@ public final class CommonTools {
   }
 
   private static Map<String, RingRange> getClusterNodes(AppContext context,  Cluster targetCluster, RepairUnit repairUnit) throws ReaperException {
-    ConcurrentHashMap<String, RingRange> nodesWithRanges = new ConcurrentHashMap<String, RingRange>();
+    ConcurrentHashMap<String, RingRange> nodesWithRanges = new ConcurrentHashMap<>();
     Set<String> seedHosts = targetCluster.getSeedHosts();
-      if (seedHosts.isEmpty()) {
-        String errMsg = String.format("didn't get any seed hosts for cluster \"%s\"",
-                                      targetCluster.getName());
-        LOG.error(errMsg);
-        throw new ReaperException(errMsg);
-      }
+    if (seedHosts.isEmpty()) {
+      String errMsg = String.format("didn't get any seed hosts for cluster \"%s\"", targetCluster.getName());
+      LOG.error(errMsg);
+      throw new ReaperException(errMsg);
+    }
 
+    Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
 
-      Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
-      for (String host : seedHosts) {
-        try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds())) {
-          rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());
-          break;
-        } catch (ReaperException e) {
-          LOG.warn("couldn't connect to host: {}, will try next one", host, e);
-        }
-      }
+    try (JmxProxy jmxProxy = context.jmxConnectionFactory
+            .connectAny(Optional.absent(), seedHosts, context.config.getJmxConnectionTimeoutInSeconds())) {
 
-    for(Entry<List<String>, List<String>> tokenRangeToEndpoint:rangeToEndpoint.entrySet()) {
+      rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());
+    } catch (ReaperException e) {
+        LOG.error("couldn't connect to any host: {}, will try next one", e);
+        throw new ReaperException(e);
+    }
+
+    for (Entry<List<String>, List<String>> tokenRangeToEndpoint:rangeToEndpoint.entrySet()) {
       String node = tokenRangeToEndpoint.getValue().get(0);
       RingRange range = new RingRange(tokenRangeToEndpoint.getKey().get(0), tokenRangeToEndpoint.getKey().get(1));
-      RingRange added = nodesWithRanges.putIfAbsent(node, range);
+      nodesWithRanges.putIfAbsent(node, range);
     }
 
     return nodesWithRanges;
@@ -311,14 +310,15 @@ public final class CommonTools {
     RepairUnit theRepairUnit;
 
     Optional<String> cassandraVersion = Optional.absent();
-    for (String host : cluster.getSeedHosts()) {
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds())) {
-        cassandraVersion = Optional.fromNullable(jmxProxy.getCassandraVersion());
-        break;
-      } catch (ReaperException e) {
-        LOG.warn("couldn't connect to host: {}, will try next one", host, e);
-      }
+
+    try (JmxProxy jmxProxy = context.jmxConnectionFactory
+            .connectAny(Optional.absent(), cluster.getSeedHosts(), context.config.getJmxConnectionTimeoutInSeconds())) {
+
+      cassandraVersion = Optional.fromNullable(jmxProxy.getCassandraVersion());
+    } catch (ReaperException e) {
+      LOG.warn("couldn't connect to hosts: {}, life sucks...", cluster.getSeedHosts(), e);
     }
+
     if(cassandraVersion.isPresent() && cassandraVersion.get().startsWith("2.0") && incrementalRepair){
       String errMsg = "Incremental repair does not work with Cassandra versions before 2.1";
       LOG.error(errMsg);

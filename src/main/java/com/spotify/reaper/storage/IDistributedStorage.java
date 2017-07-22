@@ -28,15 +28,15 @@ import java.util.UUID;
  * Definition for a storage that can run in distributed (peer-to-peer) mode. For example Cassandra.
  */
 public interface IDistributedStorage {
-    
-  boolean takeLeadOnSegment(UUID segmentId);
-  boolean renewLeadOnSegment(UUID segmentId);
-  void releaseLeadOnSegment(UUID segmentId);
+
+  boolean takeLeadOnSegment(UUID incrementalReapirOrsegmentId);
+  boolean renewLeadOnSegment(UUID incrementalReapirOrsegmentId);
+  void releaseLeadOnSegment(UUID incrementalReapirOrsegmentId);
   void storeHostMetrics(HostMetrics hostMetrics);
   Optional<HostMetrics> getHostMetrics(String hostName);
 
   Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(UUID runId, List<RingRange> localRanges);
-  
+
   int countRunningReapers();
   void saveHeartbeat();
 }
