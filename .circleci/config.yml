@@ -1,0 +1,96 @@
+# Java Maven CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-java/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version you desire here
+      - image: circleci/openjdk:8-jdk
+
+    working_directory: ~/repo
+
+    environment:
+      CASSANDRA_VERSION: 3.11.0
+
+    steps:
+      - checkout
+      - run:
+          name: Install System Dependencies
+          command: |
+              sudo apt-get update -qq
+              sudo apt-get install -y libjna-java python-dev python-pip libyaml-dev
+              sudo pip install pyYaml ccm
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "pom.xml" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
+
+      - run: mvn dependency:go-offline
+
+      - save_cache:
+          paths:
+            - ~/.m2
+            - ~/.ccm/repository
+          key: v1-dependencies-{{ checksum "pom.xml" }}
+
+      #- run: mvn clean package && mvn surefire:test -Dtest=\!ReaperPostgresIT ReaperIT
+      - run:
+          name: Start ccm and run tests
+          command: |
+              ccm create test -v $CASSANDRA_VERSION
+              ccm populate --vnodes -n 3
+              sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/circleci/.ccm/test/node1/conf/cassandra-env.sh
+              sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
+              sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
+              sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' /home/circleci/.ccm/test/node1/conf/cassandra-env.sh
+              sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
+              sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
+              sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
+              sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
+              sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
+              sed -i 's/start_rpc: true/start_rpc: false/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
+              sed -i 's/start_rpc: true/start_rpc: false/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
+              sed -i 's/start_rpc: true/start_rpc: false/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
+              sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
+              sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
+              sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
+              sed -i 's/concurrent_reads: 32/concurrent_reads: 2/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
+              sed -i 's/concurrent_reads: 32/concurrent_reads: 2/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
+              sed -i 's/concurrent_reads: 32/concurrent_reads: 2/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
+              sed -i 's/concurrent_writes: 32/concurrent_writes: 2/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
+              sed -i 's/concurrent_writes: 32/concurrent_writes: 2/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
+              sed -i 's/concurrent_writes: 32/concurrent_writes: 2/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
+              sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 2/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
+              sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 2/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
+              sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 2/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
+              sed -i 's/num_tokens: 256/num_tokens: 32/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
+              sed -i 's/num_tokens: 256/num_tokens: 32/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
+              sed -i 's/num_tokens: 256/num_tokens: 32/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
+              ccm start -v
+              ccm status
+              ccm checklogerror
+              ccm node1 nodetool status
+              mvn clean package
+              # TODO: parallelise the following
+              mvn surefire:test -Dtest=ReaperIT
+              mvn surefire:test -Dtest=ReaperH2IT
+              #mvn surefire:test -Dtest=ReaperPostgresIT # TODO set up postgres
+              mvn surefire:test -Dtest=ReaperCassandraIT -DReaperCassandraIT.rf=3
+              mvn surefire:test -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2 -DReaperCassandraIT.rf=3
+              mvn surefire:test -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4 -DReaperCassandraIT.rf=3
+
+      - store_test_results:
+          path: target/surefire-reports
+
+
+notify:
+  webhooks:
+    # A list of hook hashes, containing the url field
+    # gitter hook
+    - url: https://webhooks.gitter.im/e/5ef39c9d96700ef6954d
+
