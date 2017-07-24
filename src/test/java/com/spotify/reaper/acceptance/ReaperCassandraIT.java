@@ -106,7 +106,8 @@ public class ReaperCassandraIT {
               }
           });
           tmpSession.execute(
-                  "CREATE KEYSPACE reaper_db WITH replication = {'class':'SimpleStrategy', 'replication_factor':2}");
+                  "CREATE KEYSPACE reaper_db WITH replication = {'class':'SimpleStrategy', 'replication_factor':"
+                  + Integer.getInteger("ReaperCassandraIT.rf", 2) + "}");
       }
   }
 
