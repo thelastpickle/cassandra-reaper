@@ -244,7 +244,7 @@ public final class CommonTools {
     Collection<RepairSchedule> repairSchedules = context.storage.getRepairSchedulesForClusterAndKeyspace(repairUnit.getClusterName(), repairUnit.getKeyspaceName());
     for(RepairSchedule sched:repairSchedules){
       Optional<RepairUnit> repairUnitForSched = context.storage.getRepairUnit(sched.getRepairUnitId());
-      if(repairUnitForSched.isPresent() && repairUnitForSched.get().getClusterName().equals(repairUnit.getClusterName()) && repairUnitForSched.get().getKeyspaceName().equals(repairUnit.getKeyspaceName())){
+      if(repairUnitForSched.isPresent() && repairUnitForSched.get().getClusterName().equals(repairUnit.getClusterName()) && repairUnitForSched.get().getKeyspaceName().equals(repairUnit.getKeyspaceName()) && repairUnitForSched.get().getIncrementalRepair().equals(repairUnit.getIncrementalRepair())){
         if(CommonTools.aConflictingScheduleAlreadyExists(repairUnitForSched.get(), repairUnit)){
           String errMsg = String.format("A repair schedule already exists for cluster \"%s\", "
                     + "keyspace \"%s\", and column families: %s",

@@ -204,8 +204,8 @@ public class BasicSteps {
                   Optional.of("[]"));
   }
 
-  @When("^a new daily repair schedule is added for \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
-  public void a_new_daily_repair_schedule_is_added_for(String clusterName, String keyspace)
+  @When("^a new daily \"([^\"]*)\" repair schedule is added for \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
+  public void a_new_daily_repair_schedule_is_added_for(String repairType, String clusterName, String keyspace)
       throws Throwable {
     Map<String, String> params = Maps.newHashMap();
     params.put("clusterName", clusterName);
@@ -213,6 +213,9 @@ public class BasicSteps {
     params.put("owner", TestContext.TEST_USER);
     params.put("intensity", "0.9");
     params.put("scheduleDaysBetween", "1");
+    params.put("repairParallelism", "parallel");
+    params.put("incrementalRepair", repairType.equals("incremental")?"True":"False");
+    
     Response response =
         ReaperTestJettyRunner.callReaper("POST", "/repair_schedule", Optional.of(params));
     assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
@@ -221,8 +224,8 @@ public class BasicSteps {
     TestContext.LAST_MODIFIED_ID = schedule.getId();
   }
 
-  @When("^a new daily repair schedule is added for the last added cluster and keyspace \"([^\"]*)\"$")
-  public void a_new_daily_repair_schedule_is_added_for_the_last_added_cluster(String keyspace)
+  @When("^a new daily \"([^\"]*)\" repair schedule is added for the last added cluster and keyspace \"([^\"]*)\"$")
+  public void a_new_daily_repair_schedule_is_added_for_the_last_added_cluster(String repairType, String keyspace)
       throws Throwable {
     Map<String, String> params = Maps.newHashMap();
     params.put("clusterName", TestContext.TEST_CLUSTER);
@@ -230,6 +233,8 @@ public class BasicSteps {
     params.put("owner", TestContext.TEST_USER);
     params.put("intensity", "0.9");
     params.put("scheduleDaysBetween", "1");
+    params.put("incrementalRepair", repairType.equals("incremental")?"True":"False");
+    
     Response response =
         ReaperTestJettyRunner.callReaper("POST", "/repair_schedule", Optional.of(params));
     assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
@@ -510,8 +515,8 @@ public class BasicSteps {
                   Optional.of(params), Response.Status.OK, Optional.of("\"" + TestContext.TEST_CLUSTER + "\""));
   }
   
- @When("^a new daily repair schedule is added that already exists for \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
-  public void a_new_daily_repair_schedule_is_added_that_already_exists_for(String clusterName, String keyspace)
+ @When("^a new daily \"([^\"]*)\" repair schedule is added that already exists for \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
+  public void a_new_daily_repair_schedule_is_added_that_already_exists_for(String repairType, String clusterName, String keyspace)
       throws Throwable {
     Map<String, String> params = Maps.newHashMap();
     params.put("clusterName", clusterName);
@@ -519,6 +524,8 @@ public class BasicSteps {
     params.put("owner", TestContext.TEST_USER);
     params.put("intensity", "0.9");
     params.put("scheduleDaysBetween", "1");
+    params.put("incrementalRepair", repairType.equals("incremental")?"True":"False");
+    
     Response response =
         ReaperTestJettyRunner.callReaper("POST", "/repair_schedule", Optional.of(params));
     assertEquals(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), response.getStatus());

@@ -21,7 +21,7 @@ Feature: Using Reaper to launch repairs and schedule them
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage
     And reaper has 0 scheduled repairs for the last added cluster
-    When a new daily repair schedule is added for the last added cluster and keyspace "booya"
+    When a new daily "full" repair schedule is added for the last added cluster and keyspace "booya"
     Then reaper has 1 scheduled repairs for the last added cluster
     And deleting the last added cluster fails
     When the last added schedule is deleted for the last added cluster
