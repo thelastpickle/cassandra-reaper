@@ -120,7 +120,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   public static void abort(AppContext context, RepairSegment segment, JmxProxy jmxConnection) {
-    postpone(context, segment, Optional.fromNullable((RepairUnit) null));
+    postpone(context, segment, context.storage.getRepairUnit(segment.getRepairUnitId()));
     LOG.info("Aborting repair on segment with id {} on coordinator {}",
         segment.getId(), segment.getCoordinatorHost());
     jmxConnection.cancelAllRepairs();
