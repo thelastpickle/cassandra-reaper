@@ -231,11 +231,6 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             timedOut.set(true);
             abort(resultingSegment, coordinator);
           } else if (resultingSegment.getState() == RepairSegment.State.DONE) {
-            LOG.debug("Repair segment with id '{}' was repaired in {} seconds",
-                resultingSegment.getId(),
-                Seconds.secondsBetween(
-                    resultingSegment.getStartTime(),
-                    resultingSegment.getEndTime()).getSeconds());
             segmentRunners.remove(resultingSegment.getId());
           }
         }
