@@ -24,13 +24,21 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 
 public class RepairParametersMapper implements ResultSetMapper<RepairParameters> {
   @Override
   public RepairParameters map(int index, ResultSet r, StatementContext ctx) throws SQLException {
     RingRange range = new RingRange(r.getBigDecimal("start_token").toBigInteger(),
                                     r.getBigDecimal("end_token").toBigInteger());
-    String[] columnFamilies = (String[]) r.getArray("column_families").getArray();
+    Object columnFamiliesObj = r.getArray("column_families").getArray();
+    String[] columnFamilies;
+    if (columnFamiliesObj instanceof String[]) {
+        columnFamilies = (String[]) columnFamiliesObj;
+    } else {
+        Object[] objArray = (Object[]) columnFamiliesObj;
+        columnFamilies = Arrays.copyOf(objArray, objArray.length, String[].class);
+    }
 
     String repairParallelismStr = r.getString("repair_parallelism");
     if (repairParallelismStr != null)
