@@ -58,7 +58,7 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   @DefaultValue("false")
-  private boolean useAddressTranslator;
+  private Boolean useAddressTranslator;
 
   @JsonProperty
   @NotNull
@@ -107,7 +107,7 @@ public class ReaperApplicationConfiguration extends Configuration {
   
   @JsonProperty
   @DefaultValue("5")
-  private int jmxConnectionTimeoutInSeconds;
+  private Integer jmxConnectionTimeoutInSeconds;
 
   public int getSegmentCount() {
     return segmentCount;
@@ -133,16 +133,16 @@ public class ReaperApplicationConfiguration extends Configuration {
     this.repairIntensity = repairIntensity;
   }
 
-  public Boolean getIncrementalRepair() {
-	    return incrementalRepair;
+  public boolean getIncrementalRepair() {
+	    return incrementalRepair != null ? incrementalRepair : false;
   }
 
-  public void setIncrementalRepair(Boolean incrementalRepair) {
+  public void setIncrementalRepair(boolean incrementalRepair) {
 	    this.incrementalRepair = incrementalRepair;
   }
 
   public Integer getScheduleDaysBetween() {
-    return scheduleDaysBetween;
+    return scheduleDaysBetween != null ? scheduleDaysBetween : 7;
   }
 
   public void setScheduleDaysBetween(int scheduleDaysBetween) {
@@ -186,7 +186,7 @@ public class ReaperApplicationConfiguration extends Configuration {
   }
 
   public int getRepairManagerSchedulingIntervalSeconds() {
-    return this.repairManagerSchedulingIntervalSeconds==null?30:this.repairManagerSchedulingIntervalSeconds;
+    return this.repairManagerSchedulingIntervalSeconds == null ? 30 : this.repairManagerSchedulingIntervalSeconds;
   }
 
   @JsonProperty
@@ -222,36 +222,36 @@ public class ReaperApplicationConfiguration extends Configuration {
     this.autoScheduling = autoRepairScheduling;
   }
 
-  public void setEnableDynamicSeedList(Boolean enableDynamicSeedList) {
+  public void setEnableDynamicSeedList(boolean enableDynamicSeedList) {
     this.enableDynamicSeedList = enableDynamicSeedList;
   }
 
-  public Boolean getEnableDynamicSeedList() {
-    return this.enableDynamicSeedList==null?Boolean.TRUE:this.enableDynamicSeedList;
+  public boolean getEnableDynamicSeedList() {
+    return this.enableDynamicSeedList == null ? true : this.enableDynamicSeedList;
   }
   
-  public void setLocalJmxMode(Boolean localJmxMode) {
+  public void setLocalJmxMode(boolean localJmxMode) {
     this.localJmxMode = localJmxMode;
   }
   
-  public Boolean getLocalJmxMode() {
-    return this.localJmxMode==null?Boolean.FALSE:this.localJmxMode;
+  public boolean getLocalJmxMode() {
+    return this.localJmxMode == null ? false : this.localJmxMode;
   }
   
-  public void setActivateQueryLogger(Boolean activateQueryLogger) {
+  public void setActivateQueryLogger(boolean activateQueryLogger) {
     this.activateQueryLogger = activateQueryLogger;
   }
   
-  public Boolean getActivateQueryLogger() {
-    return this.activateQueryLogger==null?Boolean.FALSE:this.activateQueryLogger;
+  public boolean getActivateQueryLogger() {
+    return this.activateQueryLogger == null ? false : this.activateQueryLogger;
   }
 
-  public void setUseAddressTranslator(Boolean useAddressTranslator) {
+  public void setUseAddressTranslator(boolean useAddressTranslator) {
     this.useAddressTranslator = useAddressTranslator;
   }
 
   public boolean useAddressTranslator() {
-    return this.useAddressTranslator;
+    return this.useAddressTranslator != null ? useAddressTranslator : false;
   }
 
   public static class JmxCredentials {
@@ -288,7 +288,7 @@ public class ReaperApplicationConfiguration extends Configuration {
     return allowUnreachableNodes != null ? allowUnreachableNodes : false;
   }
 
-  public void setAllowUnreachableNodes(Boolean allow) {
+  public void setAllowUnreachableNodes(boolean allow) {
     this.allowUnreachableNodes = allow;
   }
 
@@ -302,7 +302,7 @@ public class ReaperApplicationConfiguration extends Configuration {
   }
   
   public int getJmxConnectionTimeoutInSeconds() {
-    return jmxConnectionTimeoutInSeconds;
+    return jmxConnectionTimeoutInSeconds != null ? jmxConnectionTimeoutInSeconds : 20;
   }
 
   @JsonProperty
