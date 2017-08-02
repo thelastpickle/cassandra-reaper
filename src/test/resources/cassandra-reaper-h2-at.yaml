@@ -46,3 +46,9 @@ cassandra:
   clusterName: "test"
   contactPoints: ["127.0.0.1","127.0.0.2"]
   keyspace: reaper_db
+
+metrics:
+  frequency: 1 second
+  reporters:
+    - type: csv
+      file: dropwizard-metrics

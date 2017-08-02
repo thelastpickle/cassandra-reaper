@@ -71,7 +71,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
-import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.service.RingRange;
@@ -94,6 +93,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private static final String VALUE_ATTRIBUTE = "Value";
   private static final String FAILED_TO_CONNECT_TO_USING_JMX = "Failed to connect to {} using JMX";
   private static final String ERROR_GETTING_ATTR_JMX = "Error getting attribute from JMX";
+
+  private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
   private final JMXConnector jmxConnector;
   private final ObjectName ssMbeanName;
@@ -171,7 +172,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
 
     try {
-      LOG.info("Connecting to {}...", host);
+      LOG.debug("Connecting to {}...", host);
       jmxUrl = new JMXServiceURL(String.format(JMX_URL, host, port));
       ssMbeanName = new ObjectName(SS_OBJECT_NAME);
       cmMbeanName = new ObjectName(CompactionManager.MBEAN_OBJECT_NAME);
@@ -208,27 +209,23 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       // registering a listener throws bunch of exceptions, so we do it here rather than in the
       // constructor
       mbeanServerConn.addNotificationListener(ssMbeanName, proxy, null, null);
-      LOG.debug("JMX connection to {} properly connected: {}",
-          host, jmxUrl.toString());
-
-      JmxConnectionFactory.incrementSuccessfullConnections(originalHost);
+      LOG.debug("JMX connection to {} properly connected: {}", host, jmxUrl.toString());
 
       return proxy;
-    } catch (Exception e) {
+    } catch (IOException | InterruptedException | ExecutionException | TimeoutException | InstanceNotFoundException e) {
       LOG.error("Failed to establish JMX connection to {}:{}", host, port);
       throw new ReaperException("Failure when establishing JMX connection", e);
     }
   }
 
 
-  private static JMXConnector connectWithTimeout(JMXServiceURL url, long timeout, TimeUnit unit, Map<String, Object> env) throws InterruptedException, ExecutionException, TimeoutException {
-    ExecutorService executor = Executors.newSingleThreadExecutor();
-    Future<JMXConnector> future = executor.submit(new Callable<JMXConnector>() {
-      public JMXConnector call() throws IOException {
-        return JMXConnectorFactory.connect(url, env);
-      }
-    });
+  private static JMXConnector connectWithTimeout(
+          JMXServiceURL url,
+          long timeout,
+          TimeUnit unit,
+          Map<String, Object> env) throws InterruptedException, ExecutionException, TimeoutException {
 
+    Future<JMXConnector> future = EXECUTOR.submit(() -> JMXConnectorFactory.connect(url, env));
     return future.get(timeout, unit);
   }
 

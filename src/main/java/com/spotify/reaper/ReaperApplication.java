@@ -63,6 +63,9 @@ import org.skife.jdbi.v2.DBI;
 import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.exporter.MetricsServlet;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
@@ -131,8 +134,7 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
   }
 
   @Override
-  public void run(ReaperApplicationConfiguration config,
-      Environment environment) throws Exception {
+  public void run(ReaperApplicationConfiguration config, Environment environment) throws Exception {
     // Using UTC times everywhere as default. Affects only Yoda time.
     DateTimeZone.setDefault(DateTimeZone.UTC);
 
@@ -140,6 +142,13 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     context.config = config;
 
     addSignalHandlers(); // SIGHUP, etc.
+
+    context.metricRegistry = environment.metrics();
+    CollectorRegistry.defaultRegistry.register(new DropwizardExports(environment.metrics()));
+
+    environment.admin()
+        .addServlet("prometheusMetrics", new MetricsServlet(CollectorRegistry.defaultRegistry))
+        .addMapping("/prometheusMetrics");
 
     LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
     context.repairManager = new RepairManager();
@@ -158,20 +167,26 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     if (context.jmxConnectionFactory == null) {
       LOG.info("no JMX connection factory given in context, creating default");
       context.jmxConnectionFactory = new JmxConnectionFactory();
-    }
+      context.jmxConnectionFactory.setLocalMode(context.config.getLocalJmxMode());
+      context.jmxConnectionFactory.setMetricRegistry(context.metricRegistry);
 
-    // read jmx host/port mapping from config and provide to jmx con.factory
-    Map<String, Integer> jmxPorts = config.getJmxPorts();
-    if (jmxPorts != null) {
-      LOG.debug("using JMX ports mapping: {}", jmxPorts);
-      context.jmxConnectionFactory.setJmxPorts(jmxPorts);
-    }
+      // read jmx host/port mapping from config and provide to jmx con.factory
+      Map<String, Integer> jmxPorts = config.getJmxPorts();
+      if (jmxPorts != null) {
+        LOG.debug("using JMX ports mapping: {}", jmxPorts);
+        context.jmxConnectionFactory.setJmxPorts(jmxPorts);
+      }
 
-    if(config.useAddressTranslator()) {
-      context.jmxConnectionFactory.setAddressTranslator(new EC2MultiRegionAddressTranslator());
+      if(config.useAddressTranslator()) {
+        context.jmxConnectionFactory.setAddressTranslator(new EC2MultiRegionAddressTranslator());
+      }
+
+      JmxCredentials jmxAuth = config.getJmxAuth();
+      if (jmxAuth != null) {
+        LOG.debug("using specified JMX credentials for authentication");
+        context.jmxConnectionFactory.setJmxAuth(jmxAuth);
+      }
     }
-    
-    context.jmxConnectionFactory.setLocalMode(context.config.getLocalJmxMode());
 
     // Enable cross-origin requests for using external GUI applications.
     if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {
@@ -181,12 +196,6 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
       cors.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin");
       cors.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD");
       cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
-    }
-
-    JmxCredentials jmxAuth = config.getJmxAuth();
-    if (jmxAuth != null) {
-      LOG.debug("using specified JMX credentials for authentication");
-      context.jmxConnectionFactory.setJmxAuth(jmxAuth);
     }
 
     LOG.info("creating and registering health checks");

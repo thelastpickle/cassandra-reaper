@@ -73,3 +73,14 @@ autoScheduling:
   excludedKeyspaces:
     - keyspace1
     - keyspace2
+
+
+# Uncomment the following to enable dropwizard metrics
+#  Configure to the reporter of your choice
+#  Reaper also provides prometheus metrics on the admin port at /prometheusMetrics
+
+#metrics:
+#  frequency: 1 minute
+#  reporters:
+#    - type: log
+#      logger: metrics

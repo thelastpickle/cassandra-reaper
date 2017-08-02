@@ -86,3 +86,9 @@ autoScheduling:
   periodBetweenPolls: PT10M
   timeBeforeFirstSchedule: PT5M
   scheduleSpreadPeriod: PT6H
+
+metrics:
+  frequency: 1 second
+  reporters:
+    - type: csv
+      file: dropwizard-metrics
