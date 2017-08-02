@@ -1,5 +1,6 @@
 package com.spotify.reaper;
 
+import com.codahale.metrics.MetricRegistry;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.service.RepairManager;
 import com.spotify.reaper.storage.IStorage;
@@ -16,4 +17,6 @@ public final class AppContext {
   public RepairManager repairManager;
   public JmxConnectionFactory jmxConnectionFactory;
   public ReaperApplicationConfiguration config;
+  public MetricRegistry metricRegistry = new MetricRegistry();
+
 }

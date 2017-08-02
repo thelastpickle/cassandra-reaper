@@ -123,3 +123,8 @@ autoScheduling:
   # how far apart are keyspace schedules from each other - unit is a Duration
   scheduleSpreadPeriod: PT6H
 
+metrics:
+  frequency: 1 second
+  reporters:
+    - type: csv
+      file: dropwizard-metrics

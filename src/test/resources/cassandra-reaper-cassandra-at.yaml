@@ -46,3 +46,9 @@ cassandra:
   socketOptions:
       connectTimeoutMillis: 20000
       readTimeoutMillis: 40000
+
+metrics:
+  frequency: 1 second
+  reporters:
+    - type: csv
+      file: dropwizard-metrics

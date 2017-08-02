@@ -41,3 +41,9 @@ database:
   user: postgres
   password:
   url: jdbc:postgresql://127.0.0.1/reaper
+
+metrics:
+  frequency: 1 second
+  reporters:
+    - type: csv
+      file: dropwizard-metrics
