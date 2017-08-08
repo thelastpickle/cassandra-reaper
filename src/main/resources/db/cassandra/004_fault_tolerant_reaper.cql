@@ -10,18 +10,6 @@ CREATE TABLE IF NOT EXISTS segment_leader (
     AND default_time_to_live = 600
     AND gc_grace_seconds = 600;
 
-CREATE TABLE IF NOT EXISTS host_metrics(
-	host_address text,
-	ts timestamp,
-  pending_compactions int,
-	has_repair_running boolean,
-  active_anticompactions int,
-  PRIMARY KEY(host_address, ts)
-) WITH CLUSTERING ORDER BY (ts DESC)
-    AND  compaction = {'class': 'LeveledCompactionStrategy'}
-    AND default_time_to_live = 180
-	AND  gc_grace_seconds = 180;
-
 --
 -- Add table to track concurrently running Reapers
 
