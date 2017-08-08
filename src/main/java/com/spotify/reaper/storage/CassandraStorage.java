@@ -98,8 +98,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement getLeadOnSegmentPrepStmt;
   private PreparedStatement renewLeadOnSegmentPrepStmt;
   private PreparedStatement releaseLeadOnSegmentPrepStmt;
-  private PreparedStatement storeHostMetricsPrepStmt;
-  private PreparedStatement getHostMetricsPrepStmt;
   private PreparedStatement getRunningReapersCountPrepStmt;
   private PreparedStatement saveHeartbeatPrepStmt;
 
@@ -161,8 +159,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     getLeadOnSegmentPrepStmt = session.prepare("INSERT INTO segment_leader(segment_id, reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?, ?, ?, dateof(now())) IF NOT EXISTS").setIdempotent(false);
     renewLeadOnSegmentPrepStmt = session.prepare("UPDATE segment_leader SET reaper_instance_id = ?, reaper_instance_host = ?, last_heartbeat = dateof(now()) WHERE segment_id = ? IF reaper_instance_id = ?").setIdempotent(false);
     releaseLeadOnSegmentPrepStmt = session.prepare("DELETE FROM segment_leader WHERE segment_id = ? IF reaper_instance_id = ?");
-    storeHostMetricsPrepStmt = session.prepare("INSERT INTO host_metrics (host_address, ts, pending_compactions, has_repair_running, active_anticompactions) VALUES(?, dateof(now()), ?, ?, ?)").setIdempotent(false);
-    getHostMetricsPrepStmt = session.prepare("SELECT * FROM host_metrics WHERE host_address = ?");
     getRunningReapersCountPrepStmt = session.prepare("SELECT count(*) as nb_reapers FROM running_reapers");
     saveHeartbeatPrepStmt = session.prepare("INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?,?,dateof(now()))").setIdempotent(false);
   }
@@ -828,30 +824,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                 ReaperApplication.REAPER_INSTANCE_ID));
 
     return lwtResult.wasApplied();
-  }
-
-  @Override
-  public void storeHostMetrics(HostMetrics hostMetrics) {
-    session.execute(
-            storeHostMetricsPrepStmt.bind(
-                    hostMetrics.getHostAddress(),
-                    hostMetrics.getPendingCompactions(),
-                    hostMetrics.hasRepairRunning(),
-                    hostMetrics.getActiveAnticompactions()));
-  }
-
-  @Override
-  public Optional<HostMetrics> getHostMetrics(String hostName) {
-    ResultSet result = session.execute(getHostMetricsPrepStmt.bind(hostName));
-    for(Row metrics:result) {
-      return Optional.of(HostMetrics.builder().withHostAddress(hostName)
-                                  .withPendingCompactions(metrics.getInt("pending_compactions"))
-                                  .withHasRepairRunning(metrics.getBool("has_repair_running"))
-                                  .withActiveAnticompactions(metrics.getInt("active_anticompactions"))
-                                  .build());
-     }
-
-    return Optional.absent();
   }
 
   @Override

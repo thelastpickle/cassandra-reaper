@@ -32,8 +32,6 @@ public interface IDistributedStorage {
   boolean takeLeadOnSegment(UUID incrementalReapirOrsegmentId);
   boolean renewLeadOnSegment(UUID incrementalReapirOrsegmentId);
   void releaseLeadOnSegment(UUID incrementalReapirOrsegmentId);
-  void storeHostMetrics(HostMetrics hostMetrics);
-  Optional<HostMetrics> getHostMetrics(String hostName);
 
   Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(UUID runId, List<RingRange> localRanges);
 

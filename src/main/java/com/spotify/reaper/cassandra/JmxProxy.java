@@ -20,6 +20,7 @@ import java.lang.reflect.UndeclaredThrowableException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMISocketFactory;
 import java.util.AbstractMap;
@@ -31,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -57,6 +57,7 @@ import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.compaction.CompactionManagerMBean;
 import org.apache.cassandra.gms.FailureDetector;
 import org.apache.cassandra.gms.FailureDetectorMBean;
+import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.repair.messages.RepairOption;
 import org.apache.cassandra.service.ActiveRepairService;
@@ -66,7 +67,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -100,6 +100,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private final ObjectName ssMbeanName;
   private final MBeanServerConnection mbeanServer;
   private final CompactionManagerMBean cmProxy;
+  private final EndpointSnitchInfoMBean endpointSnitchMbean;
   private final Object ssProxy;
   private final Object fdProxy;
   private final Optional<RepairStatusHandler> repairStatusHandler;
@@ -110,9 +111,18 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   public static final Integer JMX_CONNECTION_TIMEOUT = 5;
   public static final TimeUnit JMX_CONNECTION_TIMEOUT_UNIT = TimeUnit.SECONDS;
 
-  private JmxProxy(Optional<RepairStatusHandler> handler, String host, JMXServiceURL jmxUrl,
-                   JMXConnector jmxConnector, Object ssProxy, ObjectName ssMbeanName,
-                   MBeanServerConnection mbeanServer, CompactionManagerMBean cmProxy, FailureDetectorMBean fdProxy) {
+  private JmxProxy(
+          Optional<RepairStatusHandler> handler,
+          String host,
+          JMXServiceURL jmxUrl,
+          JMXConnector jmxConnector,
+          Object ssProxy,
+          ObjectName ssMbeanName,
+          MBeanServerConnection mbeanServer,
+          CompactionManagerMBean cmProxy,
+          EndpointSnitchInfoMBean endpointSnitchMbean,
+          FailureDetectorMBean fdProxy) {
+
     this.host = host;
     this.jmxUrl = jmxUrl;
     this.jmxConnector = jmxConnector;
@@ -121,6 +131,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     this.ssProxy = ssProxy;
     this.repairStatusHandler = handler;
     this.cmProxy = cmProxy;
+    this.endpointSnitchMbean = endpointSnitchMbean;
     this.clusterName = Cluster.toSymbolicName(((StorageServiceMBean) ssProxy).getClusterName());
     this.fdProxy = fdProxy;
   }
@@ -157,12 +168,19 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * @param password password to use for JMX authentication
    * @param addressTranslator if EC2MultiRegionAddressTranslator isn't null it will be used to translate addresses
    */
-  static JmxProxy connect(Optional<RepairStatusHandler> handler, String originalHost, int port,
-      String username, String password, final EC2MultiRegionAddressTranslator addressTranslator, int connectionTimeout)
-      throws ReaperException {
+  static JmxProxy connect(
+          Optional<RepairStatusHandler> handler,
+          String originalHost,
+          int port,
+          String username,
+          String password,
+          final EC2MultiRegionAddressTranslator addressTranslator,
+          int connectionTimeout) throws ReaperException {
+
     ObjectName ssMbeanName;
     ObjectName cmMbeanName;
     ObjectName fdMbeanName;
+    ObjectName endpointSnitchMbeanName;
     JMXServiceURL jmxUrl;
     String host = originalHost;
 
@@ -177,12 +195,13 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       ssMbeanName = new ObjectName(SS_OBJECT_NAME);
       cmMbeanName = new ObjectName(CompactionManager.MBEAN_OBJECT_NAME);
       fdMbeanName = new ObjectName(FailureDetector.MBEAN_NAME);
+      endpointSnitchMbeanName = new ObjectName("org.apache.cassandra.db:type=EndpointSnitchInfo");
     } catch (MalformedURLException | MalformedObjectNameException e) {
       LOG.error(String.format("Failed to prepare the JMX connection to %s:%s", host, port));
       throw new ReaperException("Failure during preparations for JMX connection", e);
     }
     try {
-      Map<String, Object> env = new HashMap<String, Object>();
+      Map<String, Object> env = new HashMap<>();
       if (username != null && password != null) {
         String[] creds = {username, password};
         env.put(JMXConnector.CREDENTIALS, creds);
@@ -190,22 +209,30 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       env.put("com.sun.jndi.rmi.factory.socket", getRMIClientSocketFactory());
       JMXConnector jmxConn = connectWithTimeout(jmxUrl, connectionTimeout, TimeUnit.SECONDS, env);
       MBeanServerConnection mbeanServerConn = jmxConn.getMBeanServerConnection();
-      Object ssProxy =
-          JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean.class);
+      Object ssProxy = JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean.class);
       String cassandraVersion = ((StorageServiceMBean) ssProxy).getReleaseVersion();
       if(cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")){
-    	  ssProxy = JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean20.class);
+         ssProxy = JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean20.class);
       }
 
-      CompactionManagerMBean cmProxy =
-          JMX.newMBeanProxy(mbeanServerConn, cmMbeanName, CompactionManagerMBean.class);
+      CompactionManagerMBean cmProxy = JMX.newMBeanProxy(mbeanServerConn, cmMbeanName, CompactionManagerMBean.class);
+      FailureDetectorMBean fdProxy = JMX.newMBeanProxy(mbeanServerConn, fdMbeanName, FailureDetectorMBean.class);
 
+      EndpointSnitchInfoMBean endpointSnitchProxy
+              = JMX.newMBeanProxy(mbeanServerConn, endpointSnitchMbeanName, EndpointSnitchInfoMBean.class);
 
-      FailureDetectorMBean fdProxy =
-          JMX.newMBeanProxy(mbeanServerConn, fdMbeanName, FailureDetectorMBean.class);
+      JmxProxy proxy = new JmxProxy(
+              handler,
+              host,
+              jmxUrl,
+              jmxConn,
+              ssProxy,
+              ssMbeanName,
+              mbeanServerConn,
+              cmProxy,
+              endpointSnitchProxy,
+              fdProxy);
 
-      JmxProxy proxy = new JmxProxy(handler, host, jmxUrl, jmxConn, ssProxy, ssMbeanName,
-          mbeanServerConn, cmProxy, fdProxy);
       // registering a listener throws bunch of exceptions, so we do it here rather than in the
       // constructor
       mbeanServerConn.addNotificationListener(ssMbeanName, proxy, null, null);
@@ -233,23 +260,30 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     return host;
   }
 
+  public String getDataCenter() {
+      // return endpointSnitchMbean.getDatacenter(); // not available until Cassandra-3.0
+      return getDataCenter(host);
+  }
+
+  public String getDataCenter(String host) {
+      try {
+          return endpointSnitchMbean.getDatacenter(host);
+      } catch (UnknownHostException ex) {
+          throw new IllegalArgumentException(ex);
+      }
+  }
+
   /**
    * @return list of tokens in the cluster
    */
   public List<BigInteger> getTokens() {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
+
     return Lists.transform(
-        Lists.newArrayList(((StorageServiceMBean) ssProxy).getTokenToEndpointMap().keySet()),
-        new Function<String, BigInteger>() {
-          @Override
-          public BigInteger apply(String s) {
-            return new BigInteger(s);
-          }
-        });
+            Lists.newArrayList(((StorageServiceMBean) ssProxy).getTokenToEndpointMap().keySet()), s -> new BigInteger(s));
   }
 
-  public Map<List<String>, List<String>> getRangeToEndpointMap(String keyspace)
-      throws ReaperException {
+  public Map<List<String>, List<String>> getRangeToEndpointMap(String keyspace) throws ReaperException {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     try {
       return ((StorageServiceMBean) ssProxy).getRangeToEndpointMap(keyspace);
@@ -259,8 +293,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
   }
 
-  public List<RingRange> getRangesForLocalEndpoint(String keyspace)
-      throws ReaperException {
+  public List<RingRange> getRangesForLocalEndpoint(String keyspace) throws ReaperException {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     List<RingRange> localRanges = Lists.newArrayList();
     try {
@@ -273,7 +306,6 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
           localRanges.add(new RingRange(new BigInteger(entry.getKey().get(0)), new BigInteger(entry.getKey().get(1))));
         }
       });
-
 
       LOG.info("LOCAL RANGES {}", localRanges);
       return localRanges;
@@ -294,8 +326,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   @NotNull
   public List<String> tokenRangeToEndpoint(String keyspace, RingRange tokenRange) {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    Set<Map.Entry<List<String>, List<String>>> entries =
-    		((StorageServiceMBean) ssProxy).getRangeToEndpointMap(keyspace).entrySet();
+    Set<Map.Entry<List<String>, List<String>>> entries = ((StorageServiceMBean) ssProxy).getRangeToEndpointMap(keyspace).entrySet();
     for (Map.Entry<List<String>, List<String>> entry : entries) {
       BigInteger rangeStart = new BigInteger(entry.getKey().get(0));
       BigInteger rangeEnd = new BigInteger(entry.getKey().get(1));
@@ -395,7 +426,6 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   public boolean isRepairRunning() {
     return isRepairRunningPre22() || isRepairRunningPost22() || isValidationCompactionRunning();
   }
-
 
   /**
    * @return true if any repairs are running on the node.
