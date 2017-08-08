@@ -31,6 +31,11 @@ jmxPorts:
   127.0.0.1: 7100
   127.0.0.2: 7200
   127.0.0.3: 7300
+  127.0.0.4: 7400
+  127.0.0.5: 7500
+  127.0.0.6: 7600
+  127.0.0.7: 7700
+  127.0.0.8: 7800
 
 # Use following credential for JMX authentication
 #jmxAuth:
@@ -58,53 +63,6 @@ server:
       port: 8081
       bindHost: 127.0.0.1
 
-## The example below is from:
-## https://dropwizard.github.io/dropwizard/manual/jdbi.html#usage
-# database section will be ignored if storageType is set to "memory"
-#
-database:
-  
-  # PostgreSQL JDBC settings
-  driverClass: org.postgresql.Driver
-  user: pg-user
-  password: iAMs00perSecrEET
-  url: jdbc:postgresql://db.example.com/db-prod
-  
-  # H2 JDBC settings
-  #driverClass: org.h2.Driver
-  #url: jdbc:h2:~/reaper-db/db;MODE=PostgreSQL
-  #user:
-  #password:
-
-  # any properties specific to your JDBC driver:
-  properties:
-    charSet: UTF-8
-
-  # the maximum amount of time to wait on an empty pool before throwing an exception
-  maxWaitForConnection: 1s
-
-  # the SQL query to run when validating a connection's liveness
-  validationQuery: "SELECT 1"
-
-  # the minimum number of connections to keep open
-  minSize: 8
-
-  # the maximum number of connections to keep open
-  maxSize: 32
-
-  # whether or not idle connections should be validated
-  checkConnectionWhileIdle: true
-
-  # the amount of time to sleep between runs of the idle connection validation, abandoned cleaner and idle pool resizing
-  evictionInterval: 10s
-
-  # the minimum amount of time an connection must sit idle in the pool before it is eligible for eviction
-  minIdleTime: 1 minute
-
-cassandra:
-  clusterName: "test"
-  contactPoints: ["127.0.0.1","127.0.0.2"]
-  keyspace: reaper_db
 # Config used to automatically add/remove sheduled repair for each keyspace
 autoScheduling:
 
