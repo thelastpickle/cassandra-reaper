@@ -30,6 +30,11 @@ jmxPorts:
   127.0.0.1: 7100
   127.0.0.2: 7200
   127.0.0.3: 7300
+  127.0.0.4: 7400
+  127.0.0.5: 7500
+  127.0.0.6: 7600
+  127.0.0.7: 7700
+  127.0.0.8: 7800
 
 # database section will be ignored if storageType is set to "memory"
 database:

@@ -1,6 +1,7 @@
 package com.spotify.reaper.acceptance;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
 import com.google.common.base.Optional;
@@ -944,10 +945,22 @@ public final class BasicSteps {
 
   private static void createKeyspace(String keyspaceName) {
       try (Cluster cluster = buildCluster(); Session tmpSession = cluster.connect()) {
-          tmpSession.execute(
-                  "CREATE KEYSPACE IF NOT EXISTS " + keyspaceName
-                          + " WITH replication={'class':'SimpleStrategy', 'replication_factor':2}");
+          tmpSession.execute("CREATE KEYSPACE IF NOT EXISTS " + keyspaceName
+                  + " WITH replication = {" + buildNetworkTopologyStrategyString(cluster) + "}");
       }
+  }
+
+  static String buildNetworkTopologyStrategyString(Cluster cluster) {
+    Map<String,Integer> ntsMap = Maps.newHashMap();
+    for (Host host : cluster.getMetadata().getAllHosts()) {
+        String dc = host.getDatacenter();
+        ntsMap.put(dc, 1+ ntsMap.getOrDefault(dc, 0));
+    }
+    StringBuilder builder = new StringBuilder("'class':'NetworkTopologyStrategy',");
+    for (Map.Entry<String,Integer> e : ntsMap.entrySet()) {
+        builder.append("'").append(e.getKey()).append("':").append(e.getValue()).append(",");
+    }
+    return builder.substring(0, builder.length()-1);
   }
 
   private static Cluster buildCluster() {
