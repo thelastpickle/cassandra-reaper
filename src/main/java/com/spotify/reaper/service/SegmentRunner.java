@@ -115,7 +115,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   public void run() {
     final RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
-    if (takeLeadOnSegment()) {
+    if (takeLead()) {
         try {
           if(runRepair()) {
             long delay = intensityBasedDelayMillis(intensity);
@@ -126,7 +126,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             }
           }
         } finally {
-          releaseLeadOnSegment();
+            releaseLead();
         }
     }
   }
@@ -271,7 +271,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
               }
 
               // Repair is still running, we'll renew lead on the segment when using Cassandra as storage backend
-              renewLeadOnSegment();
+              renewLead();
               lastLoopTime = System.currentTimeMillis();
             }
           } catch (InterruptedException e) {
@@ -289,7 +289,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
               segmentRunners.remove(resultingSegment.getId());
             }
             // Repair is still running, we'll renew lead on the segment when using Cassandra as storage backend
-            renewLeadOnSegment();
+            renewLead();
           }
         }
         closeJmxConnection(Optional.fromNullable(coordinator));
@@ -527,7 +527,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       if(status.isPresent()) {
         switch (status.get()) {
           case STARTED:
-            renewLeadOnSegment();
+            renewLead();
             DateTime now = DateTime.now();
             context.storage.updateRepairSegment(currentSegment.with()
                 .state(RepairSegment.State.RUNNING)
@@ -570,7 +570,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       if(progress.isPresent()) {
         switch (progress.get()) {
           case START:
-            renewLeadOnSegment();
+            renewLead();
             DateTime now = DateTime.now();
             context.storage.updateRepairSegment(currentSegment.with()
                 .state(RepairSegment.State.RUNNING)
@@ -614,8 +614,16 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
 
     if (failOutsideSynchronizedBlock) {
-      postponeCurrentSegment();
-      tryClearSnapshots(message);
+       if (takeLead() || renewLead()) {
+         try {
+            postponeCurrentSegment();
+            tryClearSnapshots(message);
+         } finally {
+            // if someone else does hold the lease, ie renewLead(..) was true, 
+            // then their writes to repair_run table and any call to releaseLead(..) will throw an exception
+            releaseLead();
+         }
+       }
     }
   }
 
@@ -676,36 +684,42 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-    private boolean takeLeadOnSegment() {
-        try (Timer.Context cxt = context.metricRegistry
-                .timer(MetricRegistry.name(SegmentRunner.class, "takeLeadOnSegment")).time()) {
+    private boolean takeLead() {
+        try (Timer.Context cxt = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "takeLead")).time()) {
 
-            return context.storage instanceof IDistributedStorage
-                ? ((IDistributedStorage)context.storage).takeLeadOnSegment(leaderElectionId)
+            boolean result = context.storage instanceof IDistributedStorage
+                ? ((IDistributedStorage)context.storage).takeLead(leaderElectionId)
                 : true;
-        }
-    }
 
-    private boolean renewLeadOnSegment() {
-        try (Timer.Context cxt = context.metricRegistry
-                .timer(MetricRegistry.name(SegmentRunner.class, "renewLeadOnSegment")).time()) {
-
-            return context.storage instanceof IDistributedStorage
-                ? ((IDistributedStorage)context.storage).renewLeadOnSegment(leaderElectionId)
-                : true;
-        }
-    }
-
-    private void releaseLeadOnSegment() {
-        try (Timer.Context cxt = context.metricRegistry
-                .timer(MetricRegistry.name(SegmentRunner.class, "releaseLeadOnSegment")).time()) {
-
-            if (context.storage instanceof IDistributedStorage) {
-                ((IDistributedStorage)context.storage).releaseLeadOnSegment(leaderElectionId);
+            if (!result) {
+                context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "takeLead", "failed")).inc();
             }
+            return result;
         }
     }
-    
+
+    private boolean renewLead() {
+        try (Timer.Context cxt = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "renewLead")).time()) {
+
+            boolean result = context.storage instanceof IDistributedStorage
+                ? ((IDistributedStorage)context.storage).renewLead(leaderElectionId)
+                : true;
+
+            if (!result) {
+                context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "renewLead", "failed")).inc();
+            }
+            return result;
+        }
+    }
+
+    private void releaseLead() {
+         try (Timer.Context cxt = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "releaseLead")).time()) {
+             if (context.storage instanceof IDistributedStorage) {
+                 ((IDistributedStorage)context.storage).releaseLead(leaderElectionId);
+             }
+         }
+    }
+
     private int countRunningReapers() {
         return context.storage instanceof IDistributedStorage
             ? ((IDistributedStorage)context.storage).countRunningReapers()

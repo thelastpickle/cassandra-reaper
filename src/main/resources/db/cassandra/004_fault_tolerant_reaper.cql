@@ -1,8 +1,8 @@
 --
 -- Upgrade for fault tolerance addons
 
-CREATE TABLE IF NOT EXISTS segment_leader (
-	segment_id timeuuid PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS leader (
+	leader_id timeuuid PRIMARY KEY,
 	reaper_instance_id uuid,
 	reaper_instance_host text,
 	last_heartbeat timestamp
