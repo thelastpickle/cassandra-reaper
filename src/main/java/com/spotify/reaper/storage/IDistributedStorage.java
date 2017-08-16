@@ -29,9 +29,9 @@ import java.util.UUID;
  */
 public interface IDistributedStorage {
 
-  boolean takeLeadOnSegment(UUID incrementalReapirOrsegmentId);
-  boolean renewLeadOnSegment(UUID incrementalReapirOrsegmentId);
-  void releaseLeadOnSegment(UUID incrementalReapirOrsegmentId);
+  boolean takeLead(UUID leaderId);
+  boolean renewLead(UUID leaderId);
+  void releaseLead(UUID leaderId);
 
   Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(UUID runId, List<RingRange> localRanges);
 
