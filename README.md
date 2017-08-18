@@ -19,10 +19,15 @@ Reaper comes with a GUI, which if you're running in local mode can be at http://
 Please see the [Issues](https://github.com/thelastpickle/cassandra-reaper/issues) section for more
 information on planned development, and known issues.
 
-Documentation 
---------------
+Documentation and Help
+------------------------
 
 The full documentation is available at the [Reaper website](http://cassandra-reaper.io/).  The [source for the website](https://github.com/thelastpickle/reaper-site) is available as well, and pull requests are encouraged!
+
+
+Have a question?  Please ask on the [reaper mailing list](https://groups.google.com/forum/#!forum/tlp-apache-cassandra-reaper-users)!  We also have a chat 
+
+
 
 System Overview
 ---------------
