@@ -1,0 +1,55 @@
+# Cassandra Reaper Configuration for Acceptance Tests.
+#
+segmentCount: 200
+repairParallelism: SEQUENTIAL
+repairIntensity: 0.95
+scheduleDaysBetween: 7
+repairRunThreadCount: 15
+hangingRepairTimeoutMins: 1
+storageType: memory
+incrementalRepair: false
+enableDynamicSeedList: false
+jmxConnectionTimeoutInSeconds: 300
+
+logging:
+  level: DEBUG
+  loggers:
+    io.dropwizard: INFO
+    org.eclipse.jetty: INFO
+  appenders:
+    - type: console
+
+server:
+  type: default
+  applicationConnectors:
+    - type: http
+      port: 8083
+      bindHost: 127.0.0.1
+  adminConnectors:
+    - type: http
+      port: 8084
+      bindHost: 127.0.0.1
+
+jmxPorts:
+  127.0.0.1: 7100
+  127.0.0.2: 7200
+  127.0.0.3: 7300
+  127.0.0.4: 7400
+  127.0.0.5: 7500
+  127.0.0.6: 7600
+  127.0.0.7: 7700
+  127.0.0.8: 7800
+
+# Config used to automatically add/remove sheduled repair for all keyspaces
+autoScheduling:
+  enabled: false
+  initialDelayPeriod: PT1M
+  periodBetweenPolls: PT10M
+  timeBeforeFirstSchedule: PT5M
+  scheduleSpreadPeriod: PT6H
+
+metrics:
+  frequency: 1 second
+  reporters:
+    - type: csv
+      file: target/dropwizard-metrics
