@@ -1,5 +1,5 @@
 Reaper for Apache Cassandra
-================
+============================
 
 [![Join the chat at https://gitter.im/thelastpickle/cassandra-reaper](https://badges.gitter.im/thelastpickle/cassandra-reaper.svg)](https://gitter.im/thelastpickle/cassandra-reaper?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -26,7 +26,6 @@ The full documentation is available at the [Reaper website](http://cassandra-rea
 
 
 Have a question?  Please ask on the [reaper mailing list](https://groups.google.com/forum/#!forum/tlp-apache-cassandra-reaper-users)!  We also have a chat 
-
 
 
 System Overview
