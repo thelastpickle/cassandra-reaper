@@ -10,9 +10,18 @@ hangingRepairTimeoutMins: 30
 storageType: cassandra
 enableCrossOrigin: true
 incrementalRepair: false
-allowUnreachableNodes: false
 enableDynamicSeedList: true
 repairManagerSchedulingIntervalSeconds: 30
+
+# datacenterAvailability has three possible values: ALL | LOCAL | EACH
+# the correct value to use depends on whether jmx ports to C* nodes in remote datacenters are accessible
+# If the reaper has access to all node jmx ports, across all datacenters, then configure to ALL.
+# If jmx access is only available to nodes in the same datacenter as reaper in running in, then configure to LOCAL.
+# If there's a reaper instance running in every datacenter, and it's important that nodes under duress are not involved in repairs,
+#    then configure to EACH.
+#
+# The default is ALL
+datacenterAvailability: ALL
 
 jmxPorts:
   127.0.0.1: 7198

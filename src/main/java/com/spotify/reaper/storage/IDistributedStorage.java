@@ -14,13 +14,12 @@
 package com.spotify.reaper.storage;
 
 import com.google.common.base.Optional;
-
-import com.spotify.reaper.core.HostMetrics;
+import com.spotify.reaper.core.NodeMetrics;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.service.RingRange;
+
 import java.util.Collection;
 import java.util.List;
-
 import java.util.UUID;
 
 
@@ -37,4 +36,6 @@ public interface IDistributedStorage {
 
   int countRunningReapers();
   void saveHeartbeat();
+  Optional<NodeMetrics> getNodeMetrics(String hostName);
+  void storeNodeMetrics(NodeMetrics hostMetrics);
 }

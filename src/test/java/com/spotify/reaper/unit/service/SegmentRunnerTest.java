@@ -23,6 +23,7 @@ import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
+import com.spotify.reaper.core.DatacenterAvailability;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
@@ -49,7 +50,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.anyBoolean;
@@ -69,6 +70,7 @@ public class SegmentRunnerTest {
     final AppContext context = new AppContext();
     context.config = Mockito.mock(ReaperApplicationConfiguration.class);
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
+    when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
     context.storage = new MemoryStorage();
     RepairUnit cf = context.storage.addRepairUnit(new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), false));
     RepairRun run = context.storage.addRepairRun(
@@ -140,6 +142,7 @@ public class SegmentRunnerTest {
     context.storage = storage;
     context.config = Mockito.mock(ReaperApplicationConfiguration.class);
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
+    when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
       public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout) throws ReaperException {
@@ -207,6 +210,7 @@ public class SegmentRunnerTest {
     context.storage = storage;
     context.config = Mockito.mock(ReaperApplicationConfiguration.class);
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
+    when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
       public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout) throws ReaperException {
@@ -269,4 +273,18 @@ public class SegmentRunnerTest {
     assertEquals("883fd090-baad-11e5-94c5-03d4762e50b7", SegmentRunner.parseRepairId(msg));
   }
 
+  @Test
+  public void isItOkToRepairTest() {
+    assertFalse(SegmentRunner.okToRepairSegment(true, false, DatacenterAvailability.ALL));
+    assertFalse(SegmentRunner.okToRepairSegment(false, false, DatacenterAvailability.ALL));
+    assertTrue(SegmentRunner.okToRepairSegment(true, true, DatacenterAvailability.ALL));
+
+    assertTrue(SegmentRunner.okToRepairSegment(true, false, DatacenterAvailability.LOCAL));
+    assertFalse(SegmentRunner.okToRepairSegment(false, false, DatacenterAvailability.LOCAL));
+    assertTrue(SegmentRunner.okToRepairSegment(true, true, DatacenterAvailability.LOCAL));
+
+    assertFalse(SegmentRunner.okToRepairSegment(true, false, DatacenterAvailability.EACH));
+    assertFalse(SegmentRunner.okToRepairSegment(false, false, DatacenterAvailability.EACH));
+    assertTrue(SegmentRunner.okToRepairSegment(true, true, DatacenterAvailability.EACH));
+  }
 }

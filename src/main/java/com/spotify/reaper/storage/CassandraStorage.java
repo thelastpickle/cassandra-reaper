@@ -35,6 +35,7 @@ import com.google.common.util.concurrent.Futures;
 import com.spotify.reaper.ReaperApplication;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.NodeMetrics;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairRun.Builder;
 import com.spotify.reaper.core.RepairRun.RunState;
@@ -99,6 +100,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement releaseLeadPrepStmt;
   private PreparedStatement getRunningReapersCountPrepStmt;
   private PreparedStatement saveHeartbeatPrepStmt;
+  private PreparedStatement storeNodeMetricsPrepStmt;
+  private PreparedStatement getNodeMetricsPrepStmt;
 
   private volatile DateTime lastHeartBeat = DateTime.now();
 
@@ -160,6 +163,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?");
     getRunningReapersCountPrepStmt = session.prepare("SELECT count(*) as nb_reapers FROM running_reapers");
     saveHeartbeatPrepStmt = session.prepare("INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat) VALUES(?,?,dateof(now()))").setIdempotent(false);
+    storeNodeMetricsPrepStmt = session.prepare("INSERT INTO node_metrics (host_address, datacenter, pending_compactions, has_repair_running, active_anticompactions) VALUES(?, ?, ?, ?, ?)").setIdempotent(false);
+    getNodeMetricsPrepStmt = session.prepare("SELECT * FROM node_metrics WHERE host_address = ?");
   }
 
   @Override
@@ -822,6 +827,32 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                 ReaperApplication.REAPER_INSTANCE_ID));
 
     return lwtResult.wasApplied();
+  }
+
+  @Override
+  public void storeNodeMetrics(NodeMetrics hostMetrics) {
+    session.execute(
+            storeNodeMetricsPrepStmt.bind(
+                    hostMetrics.getHostAddress(),
+                    hostMetrics.getDatacenter(),
+                    hostMetrics.getPendingCompactions(),
+                    hostMetrics.hasRepairRunning(),
+                    hostMetrics.getActiveAnticompactions()));
+  }
+
+  @Override
+  public Optional<NodeMetrics> getNodeMetrics(String hostName) {
+    Row metrics = session.execute(getNodeMetricsPrepStmt.bind(hostName)).one();
+    if (null != metrics) {
+      return Optional.of(NodeMetrics.builder().withHostAddress(hostName)
+                                  .withDatacenter(metrics.getString("datacenter"))
+                                  .withPendingCompactions(metrics.getInt("pending_compactions"))
+                                  .withHasRepairRunning(metrics.getBool("has_repair_running"))
+                                  .withActiveAnticompactions(metrics.getInt("active_anticompactions"))
+                                  .build());
+     } else {
+        return Optional.absent();
+    }
   }
 
   @Override
