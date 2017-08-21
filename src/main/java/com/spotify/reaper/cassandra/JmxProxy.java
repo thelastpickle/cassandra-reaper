@@ -105,6 +105,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private final Object fdProxy;
   private final Optional<RepairStatusHandler> repairStatusHandler;
   private final String host;
+  private final String hostBeforeTranslation;
   private final JMXServiceURL jmxUrl;
   private final String clusterName;
 
@@ -114,6 +115,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   private JmxProxy(
           Optional<RepairStatusHandler> handler,
           String host,
+          String hostBeforeTranslation,
           JMXServiceURL jmxUrl,
           JMXConnector jmxConnector,
           Object ssProxy,
@@ -124,6 +126,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
           FailureDetectorMBean fdProxy) {
 
     this.host = host;
+    this.hostBeforeTranslation = hostBeforeTranslation;
     this.jmxUrl = jmxUrl;
     this.jmxConnector = jmxConnector;
     this.ssMbeanName = ssMbeanName;
@@ -224,6 +227,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       JmxProxy proxy = new JmxProxy(
               handler,
               host,
+              originalHost,
               jmxUrl,
               jmxConn,
               ssProxy,
@@ -260,9 +264,12 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     return host;
   }
 
+  public String getHostBeforeTranslation() {
+    return hostBeforeTranslation;
+  }
+
   public String getDataCenter() {
-      // return endpointSnitchMbean.getDatacenter(); // not available until Cassandra-3.0
-      return getDataCenter(host);
+      return getDataCenter(hostBeforeTranslation);
   }
 
   public String getDataCenter(String host) {

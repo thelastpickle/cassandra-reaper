@@ -14,6 +14,7 @@
 package com.spotify.reaper;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.reaper.core.DatacenterAvailability;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -93,7 +94,7 @@ public class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   @DefaultValue("true")
   private Boolean enableDynamicSeedList;
-  
+
   @JsonProperty
   @DefaultValue("false")
   private Boolean localJmxMode;
@@ -104,10 +105,13 @@ public class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   @DefaultValue("false")
   private Boolean activateQueryLogger;
-  
+
   @JsonProperty
   @DefaultValue("5")
   private Integer jmxConnectionTimeoutInSeconds;
+
+  @JsonProperty
+  private DatacenterAvailability datacenterAvailability;
 
   public int getSegmentCount() {
     return segmentCount;
@@ -229,19 +233,19 @@ public class ReaperApplicationConfiguration extends Configuration {
   public boolean getEnableDynamicSeedList() {
     return this.enableDynamicSeedList == null ? true : this.enableDynamicSeedList;
   }
-  
+
   public void setLocalJmxMode(boolean localJmxMode) {
     this.localJmxMode = localJmxMode;
   }
-  
+
   public boolean getLocalJmxMode() {
     return this.localJmxMode == null ? false : this.localJmxMode;
   }
-  
+
   public void setActivateQueryLogger(boolean activateQueryLogger) {
     this.activateQueryLogger = activateQueryLogger;
   }
-  
+
   public boolean getActivateQueryLogger() {
     return this.activateQueryLogger == null ? false : this.activateQueryLogger;
   }
@@ -284,14 +288,6 @@ public class ReaperApplicationConfiguration extends Configuration {
       this.cassandra = cassandra;
   }
 
-  public Boolean getAllowUnreachableNodes() {
-    return allowUnreachableNodes != null ? allowUnreachableNodes : false;
-  }
-
-  public void setAllowUnreachableNodes(boolean allow) {
-    this.allowUnreachableNodes = allow;
-  }
-
   public int getHangingRepairTimeoutMins() {
     return hangingRepairTimeoutMins;
   }
@@ -300,7 +296,7 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setJmxConnectionTimeoutInSeconds(int jmxConnectionTimeoutInSeconds) {
     this.jmxConnectionTimeoutInSeconds = jmxConnectionTimeoutInSeconds;
   }
-  
+
   public int getJmxConnectionTimeoutInSeconds() {
     return jmxConnectionTimeoutInSeconds != null ? jmxConnectionTimeoutInSeconds : 20;
   }
@@ -309,6 +305,16 @@ public class ReaperApplicationConfiguration extends Configuration {
   public void setHangingRepairTimeoutMins(int hangingRepairTimeoutMins) {
     this.hangingRepairTimeoutMins = hangingRepairTimeoutMins;
   }
+
+  public DatacenterAvailability getDatacenterAvailability() {
+    return this.datacenterAvailability != null ? this.datacenterAvailability : DatacenterAvailability.ALL;
+  }
+
+  @JsonProperty("datacenterAvailability")
+  public void setDatacenterAvailability(DatacenterAvailability datacenterAvailability) {
+    this.datacenterAvailability = datacenterAvailability;
+  }
+
 
   public static class AutoSchedulingConfiguration {
 

@@ -16,7 +16,7 @@ package com.spotify.reaper.storage;
 import com.google.common.base.Optional;
 
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.HostMetrics;
+import com.spotify.reaper.core.NodeMetrics;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
