@@ -1,3 +1,12 @@
+0.6.2
+ * Fix coordinator node being nulled by abort() in incremental repairs
+ * Added delete-schedule to the cli (spreaper)
+ * Allow schedules for both full and incremental repairs on the same keyspace
+ * Fix ClassCastException when using H2 backend
+ * Fix SSL encryption communications through JMX
+ * Fix cluster/rack names with dashes in the UI
+ * Fix down status not being correctly caught by Reaper when nodes aren't cleanly stopped
+ * Add docker-compose environment to build packages (jar, deb and rpm)
 0.6.1
  * Fix for storing run history with the Postgres/H2 backends
 0.6.0

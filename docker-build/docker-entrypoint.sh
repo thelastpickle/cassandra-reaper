@@ -10,7 +10,7 @@ cd ${WORKDIR}/cassandra-reaper
 mvn clean package -Pbuild-ui \
     && make all \
     && mv *.deb *.rpm ${WORKDIR}/packages \
-    && cp target/cassandra-*SNAPSHOT.jar ${WORKDIR}/packages
+    && cp target/cassandra-*.jar ${WORKDIR}/packages
 
 # execute any provided command
 $@
