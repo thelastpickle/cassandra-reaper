@@ -44,19 +44,3 @@ be used only for testing purposes.
 This project is built on top of Dropwizard:
 http://dropwizard.io/
 
-
-Clusters with closed cross DC JMX ports
----------------------------------------
-
-For security reasons, it is possible that Reaper will be able to access only a single DC nodes through JMX (multi region clusters for example).
-In the case where the JMX port is accessible (with or without authentication) from the running Reaper instance only to the nodes in the current DC, it is possible to have a multiple instances of Reaper running in different DCs.
-
-This setup works with Apache Cassandra as a backend only. It is unsuitable for memory, H2 and Postgres.
-
-Reaper instances will rely on lightweight transactions to get leadership on segments before processing them.
-Reaper checks the number of pending compactions and actively running repairs on all replicas before processing a segment. The `datacenterAvailability` setting in the yaml file controls the behavior for metrics collection :  
-
-* `datacenterAvailability: ALL` requires direct JMX access to all nodes across all datacenters.
-* `datacenterAvailability: LOCAL` requires jmx access to all nodes in the datacenter local to reaper.
-* `datacenterAvailability: EACH` means each datacenter requires at minimum one reaper instance which has jmx access to all nodes within that datacenter
-
