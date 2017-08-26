@@ -2,7 +2,7 @@ package com.spotify.reaper.resources.view;
 
 import com.google.common.collect.Lists;
 
-import com.spotify.reaper.resources.CommonTools;
+import com.spotify.reaper.repair.segment.CommonTools;
 
 import org.junit.Test;
 

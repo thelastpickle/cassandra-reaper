@@ -4,13 +4,13 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.spotify.reaper.AppContext;
-import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.cassandra.JmxConnectionFactory;
-import com.spotify.reaper.cassandra.JmxProxy;
-import com.spotify.reaper.cassandra.RepairStatusHandler;
-import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.resources.ClusterResource;
-import com.spotify.reaper.storage.MemoryStorage;
+import com.spotify.reaper.repair.ReaperException;
+import com.spotify.reaper.jmx.JmxConnectionFactory;
+import com.spotify.reaper.jmx.JmxProxy;
+import com.spotify.reaper.jmx.RepairStatusHandler;
+import com.spotify.reaper.cluster.Cluster;
+import com.spotify.reaper.cluster.ClusterResource;
+import com.spotify.reaper.storage.memory.MemoryStorage;
 import com.spotify.reaper.unit.service.TestRepairConfiguration;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +18,6 @@ import org.junit.Test;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
-
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 

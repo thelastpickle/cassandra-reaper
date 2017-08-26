@@ -14,21 +14,16 @@
 package com.spotify.reaper;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.spotify.reaper.core.DatacenterAvailability;
-
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.constraints.NotEmpty;
-
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.DefaultValue;
-
 import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
@@ -399,5 +394,10 @@ public class ReaperApplicationConfiguration extends Configuration {
           '}';
     }
   }
+
+    public static enum DatacenterAvailability {
+        /* We require direct JMX access to all nodes across all datacenters */
+        ALL, /* We require jmx access to all nodes in the local datacenter */ LOCAL, /* Each datacenter requires at minimum one reaper instance that has jmx access to all nodes in that datacenter */ EACH
+    }
 
 }

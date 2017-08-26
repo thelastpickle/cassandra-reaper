@@ -2,23 +2,17 @@ package com.spotify.reaper.acceptance;
 
 import com.google.common.base.Optional;
 import com.google.common.io.Resources;
-
 import com.spotify.reaper.AppContext;
-import com.spotify.reaper.ReaperApplication;
+import com.spotify.reaper.app.ReaperApplication;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.SimpleReaperClient;
-
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Map;
-
 import javax.ws.rs.core.Response;
-
 import io.dropwizard.Application;
 import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.DropwizardTestSupport;

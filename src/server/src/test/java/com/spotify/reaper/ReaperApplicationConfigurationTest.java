@@ -7,7 +7,6 @@ import org.junit.Test;
 
 import javax.validation.Validation;
 import javax.validation.Validator;
-
 import io.dropwizard.db.DataSourceFactory;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
 

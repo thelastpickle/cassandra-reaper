@@ -15,8 +15,8 @@ package com.spotify.reaper.storage.postgresql;
 
 import com.google.common.collect.ImmutableSet;
 
-import com.spotify.reaper.core.RepairSchedule;
-import com.spotify.reaper.resources.view.RepairScheduleStatus;
+import com.spotify.reaper.scheduler.RepairSchedule;
+import com.spotify.reaper.scheduler.RepairScheduleStatus;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.skife.jdbi.v2.StatementContext;

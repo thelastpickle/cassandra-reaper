@@ -19,21 +19,21 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplicationConfiguration;
-import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.cassandra.JmxConnectionFactory;
-import com.spotify.reaper.cassandra.JmxProxy;
-import com.spotify.reaper.cassandra.RepairStatusHandler;
-import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.core.RepairSegment;
-import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.service.RepairManager;
-import com.spotify.reaper.service.RepairRunner;
-import com.spotify.reaper.service.RingRange;
-import com.spotify.reaper.service.SegmentGenerator;
-import com.spotify.reaper.service.SegmentRunner;
-import com.spotify.reaper.storage.IStorage;
-import com.spotify.reaper.storage.MemoryStorage;
+import com.spotify.reaper.repair.ReaperException;
+import com.spotify.reaper.jmx.JmxConnectionFactory;
+import com.spotify.reaper.jmx.JmxProxy;
+import com.spotify.reaper.jmx.RepairStatusHandler;
+import com.spotify.reaper.cluster.Cluster;
+import com.spotify.reaper.repair.RepairRun;
+import com.spotify.reaper.repair.segment.RepairSegment;
+import com.spotify.reaper.repair.RepairUnit;
+import com.spotify.reaper.repair.RepairManager;
+import com.spotify.reaper.repair.RepairRunner;
+import com.spotify.reaper.repair.segment.RingRange;
+import com.spotify.reaper.repair.segment.SegmentGenerator;
+import com.spotify.reaper.repair.segment.SegmentRunner;
+import com.spotify.reaper.IStorage;
+import com.spotify.reaper.storage.memory.MemoryStorage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.progress.ProgressEventType;
@@ -44,7 +44,6 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
@@ -306,8 +305,7 @@ public final class RepairRunnerTest {
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
     UUID cf = storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR)).getId();
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
-    RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
+    RepairRun run = storage.addRepairRun(new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
         Lists.newArrayList(
             new RepairSegment.Builder(new RingRange(BigInteger.ZERO, BigInteger.ONE), cf)
                 .state(RepairSegment.State.RUNNING).startTime(DateTime.now()).coordinatorHost("reaper")
@@ -371,7 +369,7 @@ public final class RepairRunnerTest {
   @Test
   public void getParallelSegmentsTest() throws ReaperException {
     List<BigInteger> tokens = Lists
-            .transform(Lists.newArrayList("0", "50", "100", "150", "200", "250"), (s) -> new BigInteger(s));
+            .transform(Lists.newArrayList("0", "50", "100", "150", "200", "250"), (String s) -> new BigInteger(s));
 
     SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
     List<RingRange> segments = generator.generateSegments(32, tokens, Boolean.FALSE);
@@ -391,9 +389,8 @@ public final class RepairRunnerTest {
 
   @Test
   public void getParallelSegmentsTest2() throws ReaperException {
-    List<BigInteger> tokens = Lists.transform(
-            Lists.newArrayList("0", "25", "50", "75", "100", "125", "150", "175", "200", "225", "250"),
-            (s) -> new BigInteger(s));
+    List<BigInteger> tokens = Lists.transform(Lists.newArrayList("0", "25", "50", "75", "100", "125", "150", "175", "200", "225", "250"),
+            (String s) -> new BigInteger(s));
 
     SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
     List<RingRange> segments = generator.generateSegments(32, tokens, Boolean.FALSE);

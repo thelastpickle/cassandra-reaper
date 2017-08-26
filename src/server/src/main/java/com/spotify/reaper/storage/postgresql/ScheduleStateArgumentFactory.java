@@ -1,6 +1,6 @@
 package com.spotify.reaper.storage.postgresql;
 
-import com.spotify.reaper.core.RepairSchedule;
+import com.spotify.reaper.scheduler.RepairSchedule;
 
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.Argument;

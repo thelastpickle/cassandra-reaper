@@ -10,19 +10,16 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.SimpleReaperClient;
-import com.spotify.reaper.cassandra.JmxConnectionFactory;
-import com.spotify.reaper.cassandra.JmxProxy;
-import com.spotify.reaper.resources.CommonTools;
-import com.spotify.reaper.resources.view.RepairRunStatus;
-import com.spotify.reaper.resources.view.RepairScheduleStatus;
-import com.spotify.reaper.storage.CassandraStorage;
-
+import com.spotify.reaper.jmx.JmxConnectionFactory;
+import com.spotify.reaper.jmx.JmxProxy;
+import com.spotify.reaper.repair.segment.CommonTools;
+import com.spotify.reaper.repair.RepairRunStatus;
+import com.spotify.reaper.scheduler.RepairScheduleStatus;
+import com.spotify.reaper.storage.cassandra.CassandraStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +28,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import javax.ws.rs.core.Response;
 
 import cucumber.api.java.Before;
@@ -204,7 +200,7 @@ public final class BasicSteps {
         Set<String> tables =
             Sets.newHashSet(CommonTools.COMMA_SEPARATED_LIST_SPLITTER.split(tablesListStr));
         createKeyspace(keyspace);
-        tables.stream().forEach(tableName -> createTable(keyspace, tableName));
+        tables.stream().forEach(String tableName -> createTable(keyspace, tableName));
         TestContext.addClusterInfo(clusterName, keyspace, tables);
     }
   }
@@ -568,7 +564,7 @@ public final class BasicSteps {
         schedules.addAll(SimpleReaperClient.parseRepairScheduleStatusListJSON(responseData));
       });
 
-      schedules.parallelStream().forEach((schedule) -> {
+      schedules.parallelStream().forEach((RepairScheduleStatus schedule) -> {
         LOG.info("pause last added repair schedule with id: {}", schedule.getId());
         Map<String, String> params = Maps.newHashMap();
         params.put("state", "paused");

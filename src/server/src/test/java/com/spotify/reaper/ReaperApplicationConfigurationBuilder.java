@@ -1,7 +1,6 @@
 package com.spotify.reaper;
 
 import org.apache.cassandra.repair.RepairParallelism;
-
 import java.time.Duration;
 import java.util.Map;
 

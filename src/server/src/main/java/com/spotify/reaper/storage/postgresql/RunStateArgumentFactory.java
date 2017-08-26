@@ -13,7 +13,7 @@
  */
 package com.spotify.reaper.storage.postgresql;
 
-import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.repair.RepairRun;
 
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.Argument;

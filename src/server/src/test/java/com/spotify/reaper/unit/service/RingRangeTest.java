@@ -1,7 +1,7 @@
 package com.spotify.reaper.unit.service;
 
 import com.google.common.collect.Lists;
-import com.spotify.reaper.service.RingRange;
+import com.spotify.reaper.repair.segment.RingRange;
 
 import org.junit.Test;
 

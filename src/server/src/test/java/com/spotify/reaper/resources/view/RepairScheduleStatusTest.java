@@ -1,13 +1,12 @@
 package com.spotify.reaper.resources.view;
 
+import com.spotify.reaper.scheduler.RepairScheduleStatus;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.reaper.SimpleReaperClient;
-import com.spotify.reaper.core.RepairSchedule;
-
+import com.spotify.reaper.scheduler.RepairSchedule;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.junit.Test;

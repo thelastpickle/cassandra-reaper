@@ -16,9 +16,9 @@ package com.spotify.reaper.unit.service;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
-import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.service.RingRange;
-import com.spotify.reaper.service.SegmentGenerator;
+import com.spotify.reaper.repair.ReaperException;
+import com.spotify.reaper.repair.segment.RingRange;
+import com.spotify.reaper.repair.segment.SegmentGenerator;
 
 import org.junit.Test;
 

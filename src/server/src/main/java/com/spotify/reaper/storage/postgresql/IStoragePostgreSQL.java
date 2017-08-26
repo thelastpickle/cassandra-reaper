@@ -27,14 +27,14 @@ import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 import org.skife.jdbi.v2.sqlobject.customizers.BatchChunkSize;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 
-import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.core.RepairSchedule;
-import com.spotify.reaper.core.RepairSegment;
-import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.resources.view.RepairRunStatus;
-import com.spotify.reaper.resources.view.RepairScheduleStatus;
-import com.spotify.reaper.service.RepairParameters;
+import com.spotify.reaper.cluster.Cluster;
+import com.spotify.reaper.repair.RepairRun;
+import com.spotify.reaper.scheduler.RepairSchedule;
+import com.spotify.reaper.repair.segment.RepairSegment;
+import com.spotify.reaper.repair.RepairUnit;
+import com.spotify.reaper.repair.RepairRunStatus;
+import com.spotify.reaper.scheduler.RepairScheduleStatus;
+import com.spotify.reaper.repair.RepairParameters;
 
 /**
  * JDBI based PostgreSQL interface.

@@ -1,11 +1,11 @@
 package com.spotify.reaper.unit.service;
 
 import com.spotify.reaper.AppContext;
-import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.service.AutoSchedulingManager;
-import com.spotify.reaper.service.ClusterRepairScheduler;
-import com.spotify.reaper.storage.MemoryStorage;
+import com.spotify.reaper.repair.ReaperException;
+import com.spotify.reaper.cluster.Cluster;
+import com.spotify.reaper.scheduler.AutoSchedulingManager;
+import com.spotify.reaper.scheduler.ClusterRepairScheduler;
+import com.spotify.reaper.storage.memory.MemoryStorage;
 import org.junit.Before;
 import org.junit.Test;
 

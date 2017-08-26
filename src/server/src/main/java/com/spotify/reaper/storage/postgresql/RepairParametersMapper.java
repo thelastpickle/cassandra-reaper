@@ -15,8 +15,8 @@ package com.spotify.reaper.storage.postgresql;
 
 import com.google.common.collect.Sets;
 
-import com.spotify.reaper.service.RepairParameters;
-import com.spotify.reaper.service.RingRange;
+import com.spotify.reaper.repair.RepairParameters;
+import com.spotify.reaper.repair.segment.RingRange;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.skife.jdbi.v2.StatementContext;

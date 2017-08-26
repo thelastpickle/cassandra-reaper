@@ -13,7 +13,7 @@
  */
 package com.spotify.reaper.storage.postgresql;
 
-import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.repair.RepairRun;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;

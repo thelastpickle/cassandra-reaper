@@ -13,8 +13,8 @@
  */
 package com.spotify.reaper.storage.postgresql;
 
-import com.spotify.reaper.core.RepairSegment;
-import com.spotify.reaper.service.RingRange;
+import com.spotify.reaper.repair.segment.RepairSegment;
+import com.spotify.reaper.repair.segment.RingRange;
 
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;

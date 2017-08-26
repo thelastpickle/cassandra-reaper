@@ -13,7 +13,7 @@
  */
 package com.spotify.reaper.unit.core;
 
-    import com.spotify.reaper.core.Cluster;
+    import com.spotify.reaper.cluster.Cluster;
 
     import org.junit.Test;
 

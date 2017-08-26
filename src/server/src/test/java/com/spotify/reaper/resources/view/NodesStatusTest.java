@@ -1,8 +1,9 @@
 package com.spotify.reaper.resources.view;
 
+import com.spotify.reaper.cluster.NodesStatus;
 import org.junit.Test;
 
-import com.spotify.reaper.resources.view.NodesStatus.EndpointState;
+import com.spotify.reaper.cluster.NodesStatus.EndpointState;
 
 import jersey.repackaged.com.google.common.collect.Maps;
 

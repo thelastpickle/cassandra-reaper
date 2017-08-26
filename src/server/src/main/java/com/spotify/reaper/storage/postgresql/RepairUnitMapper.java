@@ -14,7 +14,7 @@
 package com.spotify.reaper.storage.postgresql;
 
 import com.google.common.collect.Sets;
-import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.repair.RepairUnit;
 
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;

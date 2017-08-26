@@ -21,7 +21,7 @@ import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import com.google.common.collect.Sets;
-import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.cluster.Cluster;
 
 public class ClusterMapper implements ResultSetMapper<Cluster> {
 

@@ -5,14 +5,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplicationConfiguration;
-import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.cassandra.JmxConnectionFactory;
-import com.spotify.reaper.cassandra.JmxProxy;
-import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.RepairSchedule;
-import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.service.ClusterRepairScheduler;
-import com.spotify.reaper.storage.MemoryStorage;
+import com.spotify.reaper.repair.ReaperException;
+import com.spotify.reaper.jmx.JmxConnectionFactory;
+import com.spotify.reaper.jmx.JmxProxy;
+import com.spotify.reaper.cluster.Cluster;
+import com.spotify.reaper.scheduler.RepairSchedule;
+import com.spotify.reaper.repair.RepairUnit;
+import com.spotify.reaper.scheduler.ClusterRepairScheduler;
+import com.spotify.reaper.storage.memory.MemoryStorage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -21,7 +21,6 @@ import org.junit.Test;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
-
 import static java.lang.String.format;
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -198,7 +197,7 @@ public class ClusterRepairSchedulerTest {
 
     public ClusterRepairScheduleAssertion.RepairScheduleAssertion repairScheduleForKeyspace(String keyspace) {
       RepairSchedule keyspaceRepairSchedule = repairSchedules.stream()
-          .filter(repairSchedule -> context.storage.getRepairUnit(repairSchedule.getRepairUnitId()).get().getKeyspaceName().equals(keyspace))
+          .filter(RepairSchedule repairSchedule -> context.storage.getRepairUnit(repairSchedule.getRepairUnitId()).get().getKeyspaceName().equals(keyspace))
           .findFirst()
           .orElseThrow(() -> new AssertionError(format("No repair schedule found for keyspace %s", keyspace)));
       return new ClusterRepairScheduleAssertion.RepairScheduleAssertion(keyspaceRepairSchedule);

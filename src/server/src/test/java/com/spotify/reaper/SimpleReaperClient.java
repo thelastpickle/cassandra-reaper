@@ -1,23 +1,19 @@
 package com.spotify.reaper;
 
 import com.google.common.base.Optional;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.spotify.reaper.resources.view.RepairRunStatus;
-import com.spotify.reaper.resources.view.RepairScheduleStatus;
+import com.spotify.reaper.repair.RepairRunStatus;
+import com.spotify.reaper.scheduler.RepairScheduleStatus;
 import java.io.IOException;
 import java.net.MalformedURLException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -44,7 +40,7 @@ public final class SimpleReaperClient {
     URI uri;
     try {
       uri = new URL(new URL(reaperBase), urlPath).toURI();
-    } catch (MalformedURLException | URISyntaxException ex) {
+    } catch (MalformedURLException | URISyntaxExceptionex) {
       throw new RuntimeException(ex);
     }
     

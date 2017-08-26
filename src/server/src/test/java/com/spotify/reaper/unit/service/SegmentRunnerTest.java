@@ -16,23 +16,20 @@ package com.spotify.reaper.unit.service;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplicationConfiguration;
-import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.cassandra.JmxConnectionFactory;
-import com.spotify.reaper.cassandra.JmxProxy;
-import com.spotify.reaper.cassandra.RepairStatusHandler;
-import com.spotify.reaper.core.DatacenterAvailability;
-import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.core.RepairSegment;
-import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.service.RepairRunner;
-import com.spotify.reaper.service.RingRange;
-import com.spotify.reaper.service.SegmentRunner;
-import com.spotify.reaper.storage.IStorage;
-import com.spotify.reaper.storage.MemoryStorage;
-
+import com.spotify.reaper.repair.ReaperException;
+import com.spotify.reaper.jmx.JmxConnectionFactory;
+import com.spotify.reaper.jmx.JmxProxy;
+import com.spotify.reaper.jmx.RepairStatusHandler;
+import com.spotify.reaper.repair.RepairRun;
+import com.spotify.reaper.repair.segment.RepairSegment;
+import com.spotify.reaper.repair.RepairUnit;
+import com.spotify.reaper.repair.RepairRunner;
+import com.spotify.reaper.repair.segment.RingRange;
+import com.spotify.reaper.repair.segment.SegmentRunner;
+import com.spotify.reaper.IStorage;
+import com.spotify.reaper.storage.memory.MemoryStorage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -70,7 +67,7 @@ public class SegmentRunnerTest {
     final AppContext context = new AppContext();
     context.config = Mockito.mock(ReaperApplicationConfiguration.class);
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
-    when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
+    when(context.config.getDatacenterAvailability()).thenReturn(ReaperApplicationConfiguration.DatacenterAvailability.ALL);
     context.storage = new MemoryStorage();
     RepairUnit cf = context.storage.addRepairUnit(new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), false));
     RepairRun run = context.storage.addRepairRun(
@@ -142,7 +139,7 @@ public class SegmentRunnerTest {
     context.storage = storage;
     context.config = Mockito.mock(ReaperApplicationConfiguration.class);
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
-    when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
+    when(context.config.getDatacenterAvailability()).thenReturn(ReaperApplicationConfiguration.DatacenterAvailability.ALL);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
       public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout) throws ReaperException {
@@ -210,7 +207,7 @@ public class SegmentRunnerTest {
     context.storage = storage;
     context.config = Mockito.mock(ReaperApplicationConfiguration.class);
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
-    when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
+    when(context.config.getDatacenterAvailability()).thenReturn(ReaperApplicationConfiguration.DatacenterAvailability.ALL);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
       public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout) throws ReaperException {
@@ -275,16 +272,16 @@ public class SegmentRunnerTest {
 
   @Test
   public void isItOkToRepairTest() {
-    assertFalse(SegmentRunner.okToRepairSegment(true, false, DatacenterAvailability.ALL));
-    assertFalse(SegmentRunner.okToRepairSegment(false, false, DatacenterAvailability.ALL));
-    assertTrue(SegmentRunner.okToRepairSegment(true, true, DatacenterAvailability.ALL));
+    assertFalse(SegmentRunner.okToRepairSegment(true, false, ReaperApplicationConfiguration.DatacenterAvailability.ALL));
+    assertFalse(SegmentRunner.okToRepairSegment(false, false, ReaperApplicationConfiguration.DatacenterAvailability.ALL));
+    assertTrue(SegmentRunner.okToRepairSegment(true, true, ReaperApplicationConfiguration.DatacenterAvailability.ALL));
 
-    assertTrue(SegmentRunner.okToRepairSegment(true, false, DatacenterAvailability.LOCAL));
-    assertFalse(SegmentRunner.okToRepairSegment(false, false, DatacenterAvailability.LOCAL));
-    assertTrue(SegmentRunner.okToRepairSegment(true, true, DatacenterAvailability.LOCAL));
+    assertTrue(SegmentRunner.okToRepairSegment(true, false, ReaperApplicationConfiguration.DatacenterAvailability.LOCAL));
+    assertFalse(SegmentRunner.okToRepairSegment(false, false, ReaperApplicationConfiguration.DatacenterAvailability.LOCAL));
+    assertTrue(SegmentRunner.okToRepairSegment(true, true, ReaperApplicationConfiguration.DatacenterAvailability.LOCAL));
 
-    assertFalse(SegmentRunner.okToRepairSegment(true, false, DatacenterAvailability.EACH));
-    assertFalse(SegmentRunner.okToRepairSegment(false, false, DatacenterAvailability.EACH));
-    assertTrue(SegmentRunner.okToRepairSegment(true, true, DatacenterAvailability.EACH));
+    assertFalse(SegmentRunner.okToRepairSegment(true, false, ReaperApplicationConfiguration.DatacenterAvailability.EACH));
+    assertFalse(SegmentRunner.okToRepairSegment(false, false, ReaperApplicationConfiguration.DatacenterAvailability.EACH));
+    assertTrue(SegmentRunner.okToRepairSegment(true, true, ReaperApplicationConfiguration.DatacenterAvailability.EACH));
   }
 }
