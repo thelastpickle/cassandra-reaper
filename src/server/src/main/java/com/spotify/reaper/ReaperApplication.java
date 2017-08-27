@@ -13,11 +13,9 @@
  */
 package com.spotify.reaper;
 
-import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -69,21 +67,17 @@ import io.prometheus.client.exporter.MetricsServlet;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
-public class ReaperApplication extends Application<ReaperApplicationConfiguration> {
+public final class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
-  static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
-  public static final UUID REAPER_INSTANCE_ID = UUID.randomUUID();
-  private static String reaperInstanceAddress;
+  private static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
   private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-  private static final String DEFAULT_INSTANCE_ADDRESS = "127.0.0.1";
   
-  private AppContext context;
+  private final AppContext context;
 
   public ReaperApplication() {
     super();
     LOG.info("default ReaperApplication constructor called");
     this.context = new AppContext();
-    setInstanceAddress();
   }
 
   @VisibleForTesting
@@ -91,26 +85,12 @@ public class ReaperApplication extends Application<ReaperApplicationConfiguratio
     super();
     LOG.info("ReaperApplication constructor called with custom AppContext");
     this.context = context;
-    setInstanceAddress();
   }
 
   public static void main(String[] args) throws Exception {
     new ReaperApplication().run(args);
   }
   
-  private static void setInstanceAddress() {
-    try{
-      ReaperApplication.reaperInstanceAddress = InetAddress.getLocalHost().getHostAddress();
-    } catch(Exception e) {
-      LOG.warn("Cannot get instance address", e);
-      ReaperApplication.reaperInstanceAddress = DEFAULT_INSTANCE_ADDRESS;
-    }
-  }
-  
-  public static String getInstanceAddress() {
-    return reaperInstanceAddress;
-  }
-
   @Override
   public String getName() {
     return "cassandra-reaper";
