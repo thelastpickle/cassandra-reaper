@@ -56,6 +56,7 @@ import com.spotify.reaper.core.RepairRun.RunState;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairRunStatus;
+import java.util.Arrays;
 import java.util.UUID;
 
 @Path("/repair_run")
@@ -208,7 +209,7 @@ public class RepairRunResource {
     }
     if (repairParallelism.isPresent()) {
       try {
-        ReaperApplication.checkRepairParallelismString(repairParallelism.get());
+        checkRepairParallelismString(repairParallelism.get());
       } catch (ReaperException ex) {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.BAD_REQUEST).entity(ex.getMessage()).build();
@@ -560,4 +561,13 @@ public class RepairRunResource {
             .build();
   }
 
+    private static void checkRepairParallelismString(String repairParallelism) throws ReaperException {
+        try {
+            RepairParallelism.valueOf(repairParallelism.toUpperCase());
+        } catch (java.lang.IllegalArgumentException ex) {
+            throw new ReaperException(
+                    "invalid repair parallelism given \"" + repairParallelism
+                    + "\", must be one of: " + Arrays.toString(RepairParallelism.values()), ex);
+        }
+    }
 }
