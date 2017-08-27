@@ -19,11 +19,11 @@ import com.google.common.collect.Sets;
 
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplicationConfiguration;
+import com.spotify.reaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 import com.spotify.reaper.cassandra.RepairStatusHandler;
-import com.spotify.reaper.core.DatacenterAvailability;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;

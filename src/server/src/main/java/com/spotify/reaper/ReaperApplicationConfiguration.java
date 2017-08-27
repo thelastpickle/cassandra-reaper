@@ -14,10 +14,11 @@
 package com.spotify.reaper;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.spotify.reaper.core.DatacenterAvailability;
-
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.constraints.NotEmpty;
+import io.dropwizard.Configuration;
+import io.dropwizard.db.DataSourceFactory;
+import systems.composable.dropwizard.cassandra.CassandraFactory;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -29,9 +30,6 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.DefaultValue;
 
-import io.dropwizard.Configuration;
-import io.dropwizard.db.DataSourceFactory;
-import systems.composable.dropwizard.cassandra.CassandraFactory;
 
 public class ReaperApplicationConfiguration extends Configuration {
 
@@ -112,6 +110,8 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   private DatacenterAvailability datacenterAvailability;
+
+  private CassandraFactory cassandra = new CassandraFactory();
 
   public int getSegmentCount() {
     return segmentCount;
@@ -258,26 +258,6 @@ public class ReaperApplicationConfiguration extends Configuration {
     return this.useAddressTranslator != null ? useAddressTranslator : false;
   }
 
-  public static class JmxCredentials {
-
-    @JsonProperty
-    private String username;
-    @JsonProperty
-    private String password;
-
-    public String getUsername() {
-      return username;
-    }
-
-    public String getPassword() {
-      return password;
-    }
-
-  }
-
-
-  private CassandraFactory cassandra = new CassandraFactory();
-
   @JsonProperty("cassandra")
   public CassandraFactory getCassandraFactory() {
       return cassandra;
@@ -315,8 +295,24 @@ public class ReaperApplicationConfiguration extends Configuration {
     this.datacenterAvailability = datacenterAvailability;
   }
 
+  public static final class JmxCredentials {
 
-  public static class AutoSchedulingConfiguration {
+    @JsonProperty
+    private String username;
+    @JsonProperty
+    private String password;
+
+    public String getUsername() {
+      return username;
+    }
+
+    public String getPassword() {
+      return password;
+    }
+
+  }
+
+  public static final class AutoSchedulingConfiguration {
 
     @JsonProperty
     private Boolean enabled;
@@ -399,5 +395,14 @@ public class ReaperApplicationConfiguration extends Configuration {
           '}';
     }
   }
+
+    public static enum DatacenterAvailability {
+        /* We require direct JMX access to all nodes across all datacenters */
+        ALL,
+        /* We require jmx access to all nodes in the local datacenter */
+        LOCAL,
+        /* Each datacenter requires at minimum one reaper instance that has jmx access to all nodes in that datacenter */
+        EACH
+    }
 
 }
