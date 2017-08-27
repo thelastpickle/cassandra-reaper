@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.spotify.reaper.utils;
+package com.spotify.reaper.service;
 
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -24,61 +24,59 @@ import java.util.concurrent.locks.Condition;
 // fulfils the Condition interface without spurious wakeup problems
 // (or lost notify problems either: that is, even if you call await()
 // _after_ signal(), it will work as desired.)
-public class SimpleCondition implements Condition
-{
+final class SimpleCondition implements Condition {
+
     private boolean set;
 
-    public synchronized void await() throws InterruptedException
-    {
-        while (!set)
+    @Override
+    public synchronized void await() throws InterruptedException {
+        while (!set) {
             wait();
+        }
     }
 
-    public synchronized void reset()
-    {
+    public synchronized void reset() {
         set = false;
     }
 
-    public synchronized boolean await(long time, TimeUnit unit) throws InterruptedException
-    {
+    @Override
+    public synchronized boolean await(long time, TimeUnit unit) throws InterruptedException {
         long start = System.nanoTime();
         long timeout = unit.toNanos(time);
         long elapsed;
-        while (!set && (elapsed = System.nanoTime() - start) < timeout)
-        {
+        while (!set && (elapsed = System.nanoTime() - start) < timeout) {
             TimeUnit.NANOSECONDS.timedWait(this, timeout - elapsed);
         }
         return set;
     }
 
-    public void signal()
-    {
+    @Override
+    public void signal() {
         throw new UnsupportedOperationException();
     }
 
-    public synchronized void signalAll()
-    {
+    @Override
+    public synchronized void signalAll() {
         set = true;
         notifyAll();
     }
 
-    public synchronized boolean isSignaled()
-    {
+    public synchronized boolean isSignaled() {
         return set;
     }
 
-    public void awaitUninterruptibly()
-    {
+    @Override
+    public void awaitUninterruptibly() {
         throw new UnsupportedOperationException();
     }
 
-    public long awaitNanos(long nanosTimeout) throws InterruptedException
-    {
+    @Override
+    public long awaitNanos(long nanosTimeout) throws InterruptedException {
         throw new UnsupportedOperationException();
     }
 
-    public boolean awaitUntil(Date deadline) throws InterruptedException
-    {
+    @Override
+    public boolean awaitUntil(Date deadline) throws InterruptedException {
         throw new UnsupportedOperationException();
     }
 }
