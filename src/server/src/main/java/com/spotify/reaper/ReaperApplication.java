@@ -262,17 +262,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.debug("jmxPorts: {}", config.getJmxPorts());
   }
 
-  public static void checkRepairParallelismString(String givenRepairParallelism)
-      throws ReaperException {
-    try {
-      RepairParallelism.valueOf(givenRepairParallelism.toUpperCase());
-    } catch (java.lang.IllegalArgumentException ex) {
-      throw new ReaperException(
-          "invalid repair parallelism given \"" + givenRepairParallelism
-          + "\", must be one of: " + Arrays.toString(RepairParallelism.values()), ex);
-    }
-  }
-
   void reloadConfiguration() {
     // TODO: reload configuration, but how?
     LOG.warn("SIGHUP signal dropped, missing implementation for configuration reload");
