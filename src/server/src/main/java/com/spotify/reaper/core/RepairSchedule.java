@@ -14,8 +14,8 @@
 package com.spotify.reaper.core;
 
 import com.google.common.collect.ImmutableList;
-import com.spotify.reaper.core.RepairSegment.State;
-import com.spotify.reaper.storage.postgresql.LongCollectionSQLType;
+import com.google.common.collect.Lists;
+import java.util.Collection;
 
 import java.util.List;
 import java.util.UUID;
@@ -228,4 +228,20 @@ public class RepairSchedule {
       return new RepairSchedule(this, id);
     }
   }
+
+    /**
+     * This is required to be able to map in generic manner into Postgres array types through JDBI.
+     */
+    public static final class LongCollectionSQLType {
+
+        private final Collection<Long> collection;
+
+        public LongCollectionSQLType(Collection<Long> collection) {
+            this.collection = collection;
+        }
+
+        public Collection<Long> getValue() {
+            return null == collection ? collection : Lists.newArrayList();
+        }
+    }
 }
