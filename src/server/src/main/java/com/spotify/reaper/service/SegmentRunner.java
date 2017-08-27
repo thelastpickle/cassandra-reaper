@@ -60,7 +60,6 @@ import com.spotify.reaper.core.NodeMetrics;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.storage.IDistributedStorage;
-import com.spotify.reaper.utils.SimpleCondition;
 import com.sun.management.UnixOperatingSystemMXBean;
 
 public final class SegmentRunner implements RepairStatusHandler, Runnable {
