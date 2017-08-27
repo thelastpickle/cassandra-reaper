@@ -32,7 +32,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
-import com.spotify.reaper.ReaperApplication;
+import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.NodeMetrics;
@@ -773,10 +773,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public boolean takeLead(UUID leaderId) {
     LOG.debug("Trying to take lead on segment {}", leaderId);
     ResultSet lwtResult = session.execute(
-            takeLeadPrepStmt.bind(
-                    leaderId,
-                    ReaperApplication.REAPER_INSTANCE_ID,
-                    ReaperApplication.getInstanceAddress()));
+            takeLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS));
 
     if (lwtResult.wasApplied()) {
       LOG.debug("Took lead on segment {}", leaderId);
@@ -792,10 +789,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public boolean renewLead(UUID leaderId) {
     ResultSet lwtResult = session.execute(
             renewLeadPrepStmt.bind(
-                    ReaperApplication.REAPER_INSTANCE_ID,
-                    ReaperApplication.getInstanceAddress(),
+                    AppContext.REAPER_INSTANCE_ID,
+                    AppContext.REAPER_INSTANCE_ADDRESS,
                     leaderId,
-                    ReaperApplication.REAPER_INSTANCE_ID));
+                    AppContext.REAPER_INSTANCE_ID));
 
     if (lwtResult.wasApplied()) {
       LOG.debug("Renewed lead on segment {}", leaderId);
@@ -808,7 +805,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public void releaseLead(UUID leaderId) {
-    ResultSet lwtResult = session.execute(releaseLeadPrepStmt.bind(leaderId, ReaperApplication.REAPER_INSTANCE_ID));
+    ResultSet lwtResult = session.execute(releaseLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID));
 
     if (lwtResult.wasApplied()) {
       LOG.debug("Released lead on segment {}", leaderId);
@@ -821,10 +818,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private boolean hasLeadOnSegment(UUID leaderId) {
     ResultSet lwtResult = session.execute(
             renewLeadPrepStmt.bind(
-                ReaperApplication.REAPER_INSTANCE_ID,
-                ReaperApplication.getInstanceAddress(),
+                AppContext.REAPER_INSTANCE_ID,
+                AppContext.REAPER_INSTANCE_ADDRESS,
                 leaderId,
-                ReaperApplication.REAPER_INSTANCE_ID));
+                AppContext.REAPER_INSTANCE_ID));
 
     return lwtResult.wasApplied();
   }
@@ -868,8 +865,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     DateTime now = DateTime.now();
     // Send heartbeats every minute
     if(now.minusSeconds(60).getMillis() >= lastHeartBeat.getMillis()) {
-      session.executeAsync(
-              saveHeartbeatPrepStmt.bind(ReaperApplication.REAPER_INSTANCE_ID, ReaperApplication.getInstanceAddress()));
+      session.executeAsync(saveHeartbeatPrepStmt.bind(AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS));
 
       lastHeartBeat = now;
     }
