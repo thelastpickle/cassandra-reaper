@@ -1,5 +1,19 @@
 package com.spotify.reaper.unit.service;
 
+import static java.lang.String.format;
+import static org.fest.assertions.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.time.Duration;
+import java.util.Collection;
+import java.util.Collections;
+
+import org.apache.cassandra.repair.RepairParallelism;
+import org.joda.time.DateTime;
+import org.junit.Before;
+import org.junit.Test;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -13,19 +27,6 @@ import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.ClusterRepairScheduler;
 import com.spotify.reaper.storage.MemoryStorage;
-import org.apache.cassandra.repair.RepairParallelism;
-import org.joda.time.DateTime;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.time.Duration;
-import java.util.Collection;
-import java.util.Collections;
-
-import static java.lang.String.format;
-import static org.fest.assertions.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class ClusterRepairSchedulerTest {
 
@@ -177,7 +178,8 @@ public class ClusterRepairSchedulerTest {
   }
 
   private RepairUnit.Builder aRepair(Cluster cluster, String keyspace) {
-    return new RepairUnit.Builder(cluster.getName(), keyspace, Collections.emptySet(), Boolean.FALSE);
+    return new RepairUnit.Builder(cluster.getName(), keyspace, Collections.emptySet(), Boolean.FALSE,
+        Collections.emptySet(), Collections.emptySet());
   }
 
   private ClusterRepairScheduleAssertion assertThatClusterRepairSchedules(Collection<RepairSchedule> repairSchedules) {

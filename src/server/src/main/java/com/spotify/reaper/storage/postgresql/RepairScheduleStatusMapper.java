@@ -45,7 +45,8 @@ public class RepairScheduleStatusMapper implements ResultSetMapper<RepairSchedul
         r.getBoolean("incremental_repair"),
         r.getInt("segment_count"),
         RepairParallelism.fromName(r.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel")),
-        r.getInt("days_between")
+        r.getInt("days_between"), ImmutableSet.copyOf((String[]) r.getArray("nodes").getArray()),
+        ImmutableSet.copyOf((String[]) r.getArray("datacenters").getArray())
     );
   }
 }

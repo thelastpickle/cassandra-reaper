@@ -60,7 +60,7 @@ public class RepairScheduleStatus {
 
   @JsonProperty("incremental_repair")
   private boolean incrementalRepair;
-  
+
   @JsonProperty("segment_count")
   private int segmentCount;
 
@@ -69,6 +69,12 @@ public class RepairScheduleStatus {
 
   @JsonProperty("scheduled_days_between")
   private int daysBetween;
+
+  @JsonProperty("nodes")
+  private Collection<String> nodes;
+
+  @JsonProperty("datacenters")
+  private Collection<String> datacenters;
 
   /**
    * Default public constructor Required for Jackson JSON parsing.
@@ -80,7 +86,7 @@ public class RepairScheduleStatus {
       Collection<String> columnFamilies, RepairSchedule.State state,
       DateTime creationTime, DateTime nextActivation,
       DateTime pauseTime, double intensity, boolean incrementalRepair, int segmentCount, RepairParallelism repairParallelism,
-      int daysBetween) {
+      int daysBetween, Collection<String> nodes, Collection<String> datacenters) {
     this.id = id;
     this.owner = owner;
     this.clusterName = clusterName;
@@ -95,6 +101,8 @@ public class RepairScheduleStatus {
     this.segmentCount = segmentCount;
     this.repairParallelism = repairParallelism;
     this.daysBetween = daysBetween;
+    this.nodes = nodes;
+    this.datacenters = datacenters;
   }
 
   public RepairScheduleStatus(RepairSchedule repairSchedule, RepairUnit repairUnit) {
@@ -112,7 +120,7 @@ public class RepairScheduleStatus {
         repairUnit.getIncrementalRepair(),
         repairSchedule.getSegmentCount(),
         repairSchedule.getRepairParallelism(),
-        repairSchedule.getDaysBetween()
+        repairSchedule.getDaysBetween(), repairUnit.getNodes(), repairUnit.getDatacenters()
     );
   }
 
@@ -199,7 +207,7 @@ public class RepairScheduleStatus {
   public int getSegmentCount() {
     return segmentCount;
   }
-  
+
   public boolean getIncrementalRepair() {
 	return incrementalRepair;
   }
@@ -261,6 +269,26 @@ public class RepairScheduleStatus {
     if (null != dateStr) {
       pauseTime = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
     }
+  }
+
+  @JsonProperty("nodes")
+  public Collection<String> getNodes() {
+    return nodes;
+  }
+
+  @JsonProperty("datacenters")
+  public Collection<String> getDatacenters() {
+    return datacenters;
+  }
+
+  @JsonProperty("nodes")
+  public void setNodes(Collection<String> nodes) {
+    this.nodes = nodes;
+  }
+
+  @JsonProperty("datacenters")
+  public void setDatacenters(Collection<String> datacenters) {
+    this.datacenters = datacenters;
   }
 
 }

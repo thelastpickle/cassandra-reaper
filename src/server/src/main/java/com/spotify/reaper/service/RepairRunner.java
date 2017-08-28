@@ -21,6 +21,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +110,7 @@ public class RepairRunner implements Runnable {
       LOG.error(msg);
       throw new ReaperException(msg);
     }
-    
+
     return Math.min(ranges.size() / ranges.values().iterator().next().size(), Math.max(1, hostsInRing.keySet().size()/ranges.values().iterator().next().size()));
   }
 
@@ -178,7 +179,7 @@ public class RepairRunner implements Runnable {
 
   /**
    * Starts the repair run.
-   * @throws InterruptedException 
+   * @throws InterruptedException
    */
   private void start() throws ReaperException, InterruptedException {
     LOG.info("Repairs for repair run #{} starting", repairRunId);
@@ -216,7 +217,7 @@ public class RepairRunner implements Runnable {
 
   /**
    * Get the next segment and repair it. If there is none, we're done.
-   * @throws InterruptedException 
+   * @throws InterruptedException
    */
   private void startNextSegment() throws ReaperException, InterruptedException {
     boolean scheduleRetry = true;
@@ -253,7 +254,7 @@ public class RepairRunner implements Runnable {
 
       // We have an empty slot, so let's start new segment runner if possible.
       LOG.info("Running segment for range {}", parallelRanges.get(rangeIndex));
-      Optional<RepairSegment> nextRepairSegment 
+      Optional<RepairSegment> nextRepairSegment
               = context.storage.getNextFreeSegmentInRange(repairRunId, Optional.of(parallelRanges.get(rangeIndex)));
 
       if (!nextRepairSegment.isPresent()) {
@@ -299,7 +300,7 @@ public class RepairRunner implements Runnable {
    * @param segmentId  id of the segment to repair.
    * @param tokenRange token range of the segment to repair.
    * @return Boolean indicating whether rescheduling next run is needed.
-   * @throws InterruptedException 
+   * @throws InterruptedException
    */
   private boolean repairSegment(final int rangeIndex, final UUID segmentId, RingRange tokenRange) throws InterruptedException {
     final UUID unitId;
@@ -328,7 +329,8 @@ public class RepairRunner implements Runnable {
     if(!repairUnit.getIncrementalRepair()) {
     	    // full repair
 	    try {
-	       potentialCoordinators = jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange);
+        potentialCoordinators = filterPotentialCoordinatorsByDatacenters(repairUnit.getDatacenters(),
+            jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange), jmxConnection);
 	    } catch (RuntimeException e) {
 	      LOG.warn("Couldn't get token ranges from coordinator: #{}", e);
 	      return true;
@@ -379,6 +381,19 @@ public class RepairRunner implements Runnable {
     }
 
     return true;
+  }
+
+  private List<String> filterPotentialCoordinatorsByDatacenters(Collection<String> datacenters,
+      List<String> potentialCoordinators, JmxProxy jmxProxy) {
+
+    return potentialCoordinators.stream().map(coord -> getNodeDatacenterPair(coord, jmxProxy))
+        .filter(node -> datacenters.contains(node.getRight()) || datacenters.isEmpty())
+        .map(nodeTuple -> nodeTuple.getLeft()).collect(Collectors.toList());
+  }
+
+  private Pair<String, String> getNodeDatacenterPair(String node, JmxProxy jmxProxy) {
+    Pair<String, String> result = Pair.of(node, jmxProxy.getDataCenter(node));
+    return result;
   }
 
   private void handleResult(UUID segmentId) {

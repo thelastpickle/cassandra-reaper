@@ -562,7 +562,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
    * @throws ReaperException
    */
   public int triggerRepair(BigInteger beginToken, BigInteger endToken, String keyspace,
-    	RepairParallelism repairParallelism, Collection<String> columnFamilies, boolean fullRepair) throws ReaperException {
+      RepairParallelism repairParallelism, Collection<String> columnFamilies, boolean fullRepair,
+      Collection<String> datacenters) throws ReaperException {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     String cassandraVersion = getCassandraVersion();
     boolean canUseDatacenterAware = false;
@@ -586,11 +587,13 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
     try {
       if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")) {
-        return triggerRepairPre2dot1(repairParallelism, keyspace, columnFamilies, beginToken, endToken);
+        return triggerRepairPre2dot1(repairParallelism, keyspace, columnFamilies, beginToken, endToken, datacenters.size() > 0 ? datacenters : null);
       } else if (cassandraVersion.startsWith("2.1")){
-        return triggerRepair2dot1(fullRepair, repairParallelism, keyspace, columnFamilies, beginToken, endToken, cassandraVersion);
+        return triggerRepair2dot1(fullRepair, repairParallelism, keyspace, columnFamilies, beginToken, endToken,
+            cassandraVersion, datacenters.size() > 0 ? datacenters : null);
       } else {
-        return triggerRepairPost2dot2(fullRepair, repairParallelism, keyspace, columnFamilies, beginToken, endToken, cassandraVersion);
+        return triggerRepairPost2dot2(fullRepair, repairParallelism, keyspace, columnFamilies, beginToken, endToken,
+            cassandraVersion, datacenters);
       }
     } catch (Exception e) {
       LOG.error("Segment repair failed", e);
@@ -599,7 +602,9 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
   }
 
 
-  public int triggerRepairPost2dot2(boolean fullRepair, RepairParallelism repairParallelism, String keyspace, Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken, String cassandraVersion) {
+  public int triggerRepairPost2dot2(boolean fullRepair, RepairParallelism repairParallelism, String keyspace,
+      Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken, String cassandraVersion,
+      Collection<String> datacenters) {
     Map<String, String> options = new HashMap<>();
 
     options.put(RepairOption.PARALLELISM_KEY, repairParallelism.getName());
@@ -613,18 +618,21 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
       options.put(RepairOption.RANGES_KEY, beginToken.toString() + ":" + endToken.toString());
     }
 
-    //options.put(RepairOption.DATACENTERS_KEY, StringUtils.join(specificDataCenters, ","));
+    options.put(RepairOption.DATACENTERS_KEY, StringUtils.join(datacenters, ","));
     //options.put(RepairOption.HOSTS_KEY, StringUtils.join(specificHosts, ","));
 
     return ((StorageServiceMBean) ssProxy).repairAsync(keyspace, options);
   }
 
-  public int triggerRepair2dot1(boolean fullRepair, RepairParallelism repairParallelism, String keyspace, Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken, String cassandraVersion) {
+  public int triggerRepair2dot1(boolean fullRepair, RepairParallelism repairParallelism, String keyspace,
+      Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken, String cassandraVersion,
+      Collection<String> datacenters) {
     if (fullRepair) {
       // full repair
       if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
           return ((StorageServiceMBean) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
-              keyspace, repairParallelism.ordinal(), cassandraVersion.startsWith("2.2")?new HashSet<String>():null, cassandraVersion.startsWith("2.2")?new HashSet<String>():null, fullRepair,
+            keyspace, repairParallelism.ordinal(), datacenters,
+            cassandraVersion.startsWith("2.2") ? new HashSet<String>() : null, fullRepair,
               columnFamilies.toArray(new String[columnFamilies.size()]));
       }
 
@@ -632,7 +640,7 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 
       return ((StorageServiceMBean) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
           keyspace, snapshotRepair ? RepairParallelism.SEQUENTIAL.ordinal() : RepairParallelism.PARALLEL.ordinal(),
-              cassandraVersion.startsWith("2.2")?new HashSet<String>():null, cassandraVersion.startsWith("2.2")?new HashSet<String>():null, fullRepair,
+          datacenters, cassandraVersion.startsWith("2.2") ? new HashSet<String>() : null, fullRepair,
           columnFamilies.toArray(new String[columnFamilies.size()]));
 
     }
@@ -642,11 +650,12 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
           fullRepair, columnFamilies.toArray(new String[columnFamilies.size()]));
   }
 
-  public int triggerRepairPre2dot1(RepairParallelism repairParallelism, String keyspace, Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken) {
+  public int triggerRepairPre2dot1(RepairParallelism repairParallelism, String keyspace,
+      Collection<String> columnFamilies, BigInteger beginToken, BigInteger endToken, Collection<String> datacenters) {
     // Cassandra 1.2 and 2.0 compatibility
     if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
         return ((StorageServiceMBean20) ssProxy).forceRepairRangeAsync(beginToken.toString(), endToken.toString(),
-            keyspace, repairParallelism.ordinal(), null, null,
+          keyspace, repairParallelism.ordinal(), datacenters, null,
             columnFamilies.toArray(new String[columnFamilies.size()]));
     }
     boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
@@ -855,8 +864,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 class ColumnFamilyStoreMBeanIterator
     implements Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> {
 
-  private Iterator<ObjectName> resIter;
-  private MBeanServerConnection mbeanServerConn;
+  private final Iterator<ObjectName> resIter;
+  private final MBeanServerConnection mbeanServerConn;
 
   public ColumnFamilyStoreMBeanIterator(MBeanServerConnection mbeanServerConn)
       throws MalformedObjectNameException, NullPointerException, IOException {
