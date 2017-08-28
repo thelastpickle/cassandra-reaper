@@ -22,7 +22,7 @@ information on planned development, and known issues.
 Documentation and Help
 ------------------------
 
-The full documentation is available at the [Reaper website](http://cassandra-reaper.io/).  The [source for the website](https://github.com/thelastpickle/reaper-site) is available as well, and pull requests are encouraged!
+The full documentation is available at the [Reaper website](http://cassandra-reaper.io/).  The source for the site is located in this repo at `src/docs`.
 
 Have a question?  Please ask on the [reaper mailing list](https://groups.google.com/forum/#!forum/tlp-apache-cassandra-reaper-users)! 
 
