@@ -1,5 +1,18 @@
 package com.spotify.reaper.service;
 
+import static java.lang.String.format;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
@@ -11,15 +24,6 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.CommonTools;
-import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import static java.lang.String.format;
 
 public class ClusterRepairScheduler {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterRepairScheduler.class);
@@ -75,7 +79,8 @@ public class ClusterRepairScheduler {
       RepairSchedule repairSchedule = CommonTools.storeNewRepairSchedule(
           context,
           cluster,
-          CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace, Collections.emptySet(), incrementalRepair),
+          CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace, Collections.emptySet(), incrementalRepair,
+              Collections.emptySet(), Collections.emptySet()),
           context.config.getScheduleDaysBetween(),
           nextActivationTime,
           REPAIR_OWNER,

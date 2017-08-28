@@ -13,11 +13,8 @@
  */
 package com.spotify.reaper.resources.view;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.resources.CommonTools;
+import java.util.Collection;
+import java.util.UUID;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.time.DurationFormatUtils;
@@ -25,8 +22,11 @@ import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.format.ISODateTimeFormat;
 
-import java.util.Collection;
-import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.resources.CommonTools;
 
 /**
  * Contains the data to be shown when querying repair run status.
@@ -71,7 +71,7 @@ public class RepairRunStatus {
 
   @JsonProperty("incremental_repair")
   private boolean incrementalRepair;
-  
+
   @JsonProperty("total_segments")
   private int totalSegments;
 
@@ -90,6 +90,12 @@ public class RepairRunStatus {
   @JsonIgnore
   private DateTime estimatedTimeOfArrival;
 
+  @JsonProperty("nodes")
+  private Collection<String> nodes;
+
+  @JsonProperty("datacenters")
+  private Collection<String> datacenters;
+
   /**
    * Default public constructor Required for Jackson JSON parsing.
    */
@@ -100,7 +106,7 @@ public class RepairRunStatus {
       Collection<String> columnFamilies, int segmentsRepaired, int totalSegments,
       RepairRun.RunState state, DateTime startTime, DateTime endTime, String cause, String owner,
       String lastEvent, DateTime creationTime, DateTime pauseTime, double intensity, boolean incrementalRepair,
-      RepairParallelism repairParallelism) {
+      RepairParallelism repairParallelism, Collection<String> nodes, Collection<String> datacenters) {
     this.id = runId;
     this.cause = cause;
     this.owner = owner;
@@ -118,6 +124,8 @@ public class RepairRunStatus {
     this.repairParallelism = repairParallelism;
     this.segmentsRepaired = segmentsRepaired;
     this.lastEvent = lastEvent;
+    this.nodes = nodes;
+    this.datacenters = datacenters;
 
     if (startTime == null || endTime == null) {
       duration = null;
@@ -162,7 +170,7 @@ public class RepairRunStatus {
         repairRun.getPauseTime(),
         repairRun.getIntensity(),
         repairUnit.getIncrementalRepair(),
-        repairRun.getRepairParallelism()
+        repairRun.getRepairParallelism(), repairUnit.getNodes(), repairUnit.getDatacenters()
     );
   }
 
@@ -309,7 +317,7 @@ public class RepairRunStatus {
   public void setIntensity(double intensity) {
     this.intensity = intensity;
   }
-  
+
   public boolean getIncrementalRepair() {
 	return incrementalRepair;
   }
@@ -317,7 +325,7 @@ public class RepairRunStatus {
   public void setIncrementalRepair(boolean incrementalRepair) {
 	this.incrementalRepair = incrementalRepair;
   }
-  
+
   public int getTotalSegments() {
     return totalSegments;
   }
@@ -368,5 +376,21 @@ public class RepairRunStatus {
     if (null != dateStr) {
       estimatedTimeOfArrival = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
     }
+  }
+
+  public Collection<String> getNodes() {
+    return nodes;
+  }
+
+  public void setNodes(Collection<String> nodes) {
+    this.nodes = nodes;
+  }
+
+  public Collection<String> getDatacenters() {
+    return datacenters;
+  }
+
+  public void setDatacenters(Collection<String> datacenters) {
+    this.datacenters = datacenters;
   }
 }

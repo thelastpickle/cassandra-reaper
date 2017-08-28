@@ -1,5 +1,31 @@
 package com.spotify.reaper.acceptance;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.ws.rs.core.Response;
+
+import org.assertj.core.api.Assertions;
+import org.joda.time.DateTime;
+import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Session;
@@ -10,7 +36,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.SimpleReaperClient;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
@@ -20,37 +45,11 @@ import com.spotify.reaper.resources.view.RepairRunStatus;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
 import com.spotify.reaper.storage.CassandraStorage;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import javax.ws.rs.core.Response;
-
 import cucumber.api.java.Before;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import org.assertj.core.api.Assertions;
-import org.joda.time.DateTime;
-import org.mockito.Mockito;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import static org.awaitility.Awaitility.*;
-import static java.util.concurrent.TimeUnit.*;
 
 /**
  * Basic acceptance test (Cucumber) steps.
@@ -89,30 +88,33 @@ public final class BasicSteps {
 
   private void setupReaperTestRunner() throws Exception {
     if(CLIENTS.isEmpty()) {
-        assert RUNNERS.isEmpty();
-        LOG.info("setting up testing Reaper runner with {} seed hosts defined",
-                 TestContext.TEST_CLUSTER_SEED_HOSTS.size());
-        AppContext context = new AppContext();
-        context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-        for (String seedHost : TestContext.TEST_CLUSTER_SEED_HOSTS.keySet()) {
-          String clusterName = TestContext.TEST_CLUSTER_SEED_HOSTS.get(seedHost);
-          Map<String, Set<String>> clusterKeyspaces = TestContext.TEST_CLUSTER_INFO.get(clusterName);
-          JmxProxy jmx = mock(JmxProxy.class);
-          when(jmx.getClusterName()).thenReturn(clusterName);
-          when(jmx.getPartitioner()).thenReturn("org.apache.cassandra.dht.RandomPartitioner");
-          when(jmx.getKeyspaces()).thenReturn(Lists.newArrayList(clusterKeyspaces.keySet()));
-          when(jmx.getTokens()).thenReturn(Lists.newArrayList(new BigInteger("0")));
-          when(jmx.getLiveNodes()).thenReturn(Arrays.asList(seedHost));
+      assert RUNNERS.isEmpty();
+      LOG.info("setting up testing Reaper runner with {} seed hosts defined",
+          TestContext.TEST_CLUSTER_SEED_HOSTS.size());
+      AppContext context = new AppContext();
+      context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+      for (String seedHost : TestContext.TEST_CLUSTER_SEED_HOSTS.keySet()) {
+        String clusterName = TestContext.TEST_CLUSTER_SEED_HOSTS.get(seedHost);
+        Map<String, Set<String>> clusterKeyspaces = TestContext.TEST_CLUSTER_INFO.get(clusterName);
+        Map<String, String> hosts = Maps.newHashMap();
+        hosts.put(seedHost, seedHost);
+        JmxProxy jmx = mock(JmxProxy.class);
+        when(jmx.getClusterName()).thenReturn(clusterName);
+        when(jmx.getPartitioner()).thenReturn("org.apache.cassandra.dht.RandomPartitioner");
+        when(jmx.getKeyspaces()).thenReturn(Lists.newArrayList(clusterKeyspaces.keySet()));
+        when(jmx.getTokens()).thenReturn(Lists.newArrayList(new BigInteger("0")));
+        when(jmx.getLiveNodes()).thenReturn(Arrays.asList(seedHost));
+        when(jmx.getEndpointToHostId()).thenReturn(hosts);
 
-          for (String keyspace : clusterKeyspaces.keySet()) {
-            when(jmx.getTableNamesForKeyspace(keyspace)).thenReturn(clusterKeyspaces.get(keyspace));
-          }
-          when(context.jmxConnectionFactory.connect(org.mockito.Matchers.<Optional>any(), eq(seedHost), Mockito.anyInt()))
-              .thenReturn(jmx);
+        for (String keyspace : clusterKeyspaces.keySet()) {
+          when(jmx.getTableNamesForKeyspace(keyspace)).thenReturn(clusterKeyspaces.get(keyspace));
         }
-        ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
-        runner.setup(context, MEMORY_CONFIG_FILE);
-        addReaperRunner(runner);
+        when(context.jmxConnectionFactory.connect(org.mockito.Matchers.<Optional>any(), eq(seedHost), Mockito.anyInt()))
+            .thenReturn(jmx);
+      }
+      ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
+      runner.setup(context, MEMORY_CONFIG_FILE);
+      addReaperRunner(runner);
     }
   }
 

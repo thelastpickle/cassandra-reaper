@@ -13,23 +13,6 @@
  */
 package com.spotify.reaper.storage;
 
-import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
-import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.NodeMetrics;
-import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.core.RepairSchedule;
-import com.spotify.reaper.core.RepairSegment;
-import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.resources.view.RepairRunStatus;
-import com.spotify.reaper.resources.view.RepairScheduleStatus;
-import com.spotify.reaper.service.RepairParameters;
-import com.spotify.reaper.service.RingRange;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,6 +23,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+
+import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSchedule;
+import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.resources.view.RepairRunStatus;
+import com.spotify.reaper.resources.view.RepairScheduleStatus;
+import com.spotify.reaper.service.RepairParameters;
+import com.spotify.reaper.service.RingRange;
 
 /**
  * Implements the StorageAPI using transient Java classes.
@@ -439,7 +437,7 @@ public final class MemoryStorage implements IStorage {
             segmentsRepaired, totalSegments, run.getRunState(), run.getStartTime(),
             run.getEndTime(), run.getCause(), run.getOwner(), run.getLastEvent(),
             run.getCreationTime(), run.getPauseTime(), run.getIntensity(), unit.getIncrementalRepair(),
-            run.getRepairParallelism()));
+            run.getRepairParallelism(), unit.getNodes(), unit.getDatacenters()));
       }
       return runStatuses;
     }

@@ -10,6 +10,14 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import org.apache.cassandra.repair.RepairParallelism;
+import org.cognitor.cassandra.migration.Database;
+import org.cognitor.cassandra.migration.MigrationRepository;
+import org.cognitor.cassandra.migration.MigrationTask;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.CodecRegistry;
 import com.datastax.driver.core.ConsistencyLevel;
@@ -49,15 +57,8 @@ import com.spotify.reaper.service.RepairParameters;
 import com.spotify.reaper.service.RingRange;
 import com.spotify.reaper.storage.cassandra.DateTimeCodec;
 import com.spotify.reaper.storage.cassandra.Migration003;
-import io.dropwizard.setup.Environment;
-import org.apache.cassandra.repair.RepairParallelism;
-import org.cognitor.cassandra.migration.Database;
-import org.cognitor.cassandra.migration.MigrationRepository;
-import org.cognitor.cassandra.migration.MigrationTask;
-import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import io.dropwizard.setup.Environment;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
 import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
@@ -147,7 +148,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     deleteRepairRunPrepStmt = session.prepare("DELETE FROM repair_run WHERE id = ?");
     deleteRepairRunByClusterPrepStmt = session.prepare("DELETE FROM repair_run_by_cluster WHERE id = ? and cluster_name = ?");
     deleteRepairRunByUnitPrepStmt = session.prepare("DELETE FROM repair_run_by_unit WHERE id = ? and repair_unit_id= ?");
-    insertRepairUnitPrepStmt = session.prepare("INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, incremental_repair) VALUES(?, ?, ?, ?, ?)");
+    insertRepairUnitPrepStmt = session.prepare(
+        "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, incremental_repair, nodes, datacenters) VALUES(?, ?, ?, ?, ?, ?, ?)");
     getRepairUnitPrepStmt = session.prepare("SELECT * FROM repair_unit_v1 WHERE id = ?");
     insertRepairSegmentPrepStmt = session.prepare("INSERT INTO repair_run(id, segment_id, repair_unit_id, start_token, end_token, segment_state, coordinator_host, segment_start_time, segment_end_time, fail_count) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
     getRepairSegmentPrepStmt = session.prepare("SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,segment_end_time,fail_count FROM repair_run WHERE id = ? and segment_id = ?").setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
@@ -382,7 +384,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
     RepairUnit repairUnit = newRepairUnit.build(UUIDs.timeBased());
-    session.execute(insertRepairUnitPrepStmt.bind(repairUnit.getId(), repairUnit.getClusterName(), repairUnit.getKeyspaceName(), repairUnit.getColumnFamilies(), repairUnit.getIncrementalRepair()));
+    session.execute(
+        insertRepairUnitPrepStmt.bind(repairUnit.getId(), repairUnit.getClusterName(), repairUnit.getKeyspaceName(),
+            repairUnit.getColumnFamilies(), repairUnit.getIncrementalRepair(), repairUnit.getNodes(),
+            repairUnit.getDatacenters()));
     return repairUnit;
   }
 
@@ -391,7 +396,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     RepairUnit repairUnit = null;
     Row repairUnitRow = session.execute(getRepairUnitPrepStmt.bind(id)).one();
     if(repairUnitRow!=null){
-      repairUnit = new RepairUnit.Builder(repairUnitRow.getString("cluster_name"), repairUnitRow.getString("keyspace_name"), repairUnitRow.getSet("column_families", String.class), repairUnitRow.getBool("incremental_repair")).build(id);
+      repairUnit = new RepairUnit.Builder(repairUnitRow.getString("cluster_name"),
+          repairUnitRow.getString("keyspace_name"), repairUnitRow.getSet("column_families", String.class),
+          repairUnitRow.getBool("incremental_repair"), repairUnitRow.getSet("nodes", String.class),
+          repairUnitRow.getSet("datacenters", String.class)).build(id);
     }
     return Optional.fromNullable(repairUnit);
   }
@@ -405,7 +413,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       if(repairUnitRow.getString("cluster_name").equals(cluster)
           && repairUnitRow.getString("keyspace_name").equals(keyspace)
           && repairUnitRow.getSet("column_families", String.class).equals(columnFamilyNames)){
-        repairUnit = new RepairUnit.Builder(repairUnitRow.getString("cluster_name"), repairUnitRow.getString("keyspace_name"), repairUnitRow.getSet("column_families", String.class), repairUnitRow.getBool("incremental_repair")).build(repairUnitRow.getUUID("id"));
+        repairUnit = new RepairUnit.Builder(repairUnitRow.getString("cluster_name"),
+            repairUnitRow.getString("keyspace_name"), repairUnitRow.getSet("column_families", String.class),
+            repairUnitRow.getBool("incremental_repair"), repairUnitRow.getSet("nodes", String.class),
+            repairUnitRow.getSet("datacenters", String.class))
+                .build(repairUnitRow.getUUID("id"));
         // exit the loop once we find a match
         break;
       }

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -52,7 +53,6 @@ import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
 import com.spotify.reaper.service.SchedulingManager;
-import java.util.UUID;
 
 @Path("/repair_schedule")
 @Produces(MediaType.APPLICATION_JSON)
@@ -88,7 +88,9 @@ public class RepairScheduleResource {
       @QueryParam("intensity") Optional<String> intensityStr,
       @QueryParam("incrementalRepair") Optional<String> incrementalRepairStr,
       @QueryParam("scheduleDaysBetween") Optional<Integer> scheduleDaysBetween,
-      @QueryParam("scheduleTriggerTime") Optional<String> scheduleTriggerTime
+      @QueryParam("scheduleTriggerTime") Optional<String> scheduleTriggerTime,
+      @QueryParam("nodes") Optional<String> nodesToRepairParam,
+      @QueryParam("datacenters") Optional<String> datacentersToRepairParam
   ) {
     LOG.info("add repair schedule called with: clusterName = {}, keyspace = {}, tables = {}, "
              + "owner = {}, segmentCount = {}, repairParallelism = {}, "
@@ -98,7 +100,8 @@ public class RepairScheduleResource {
 
     try {
       Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
-          context, clusterName, keyspace, owner, segmentCount, repairParallelism, intensityStr, incrementalRepairStr);
+          context, clusterName, keyspace, owner, segmentCount, repairParallelism, intensityStr, incrementalRepairStr,
+          nodesToRepairParam, datacentersToRepairParam);
       if (null != possibleFailResponse) {
         return possibleFailResponse;
       }
@@ -121,7 +124,7 @@ public class RepairScheduleResource {
         return Response.status(Response.Status.BAD_REQUEST).entity(
             "given schedule_trigger_time is in the past: " + CommonTools.dateTimeToISO8601(nextActivation)).build();
       }
-      
+
       if(!scheduleDaysBetween.isPresent()) {
     	  return Response.status(Response.Status.BAD_REQUEST).entity(
               "missing required parameter: scheduleDaysBetween").build();
@@ -134,7 +137,7 @@ public class RepairScheduleResource {
         intensity = context.config.getRepairIntensity();
         LOG.debug("no intensity given, so using default value: {}", intensity);
       }
-      
+
       Boolean incrementalRepair;
       if (incrementalRepairStr.isPresent()) {
     	  incrementalRepair = Boolean.parseBoolean(incrementalRepairStr.get());
@@ -167,15 +170,33 @@ public class RepairScheduleResource {
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
 
+      final Set<String> nodesToRepair;
+      try {
+        nodesToRepair = CommonTools.getNodesToRepairBasedOnParam(context, cluster, nodesToRepairParam);
+      } catch (final IllegalArgumentException ex) {
+        LOG.error(ex.getMessage(), ex);
+        return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
+      }
+
+      final Set<String> datacentersToRepair;
+      try {
+        datacentersToRepair = CommonTools.getDatacentersToRepairBasedOnParam(context, cluster,
+            datacentersToRepairParam);
+      } catch (final IllegalArgumentException ex) {
+        LOG.error(ex.getMessage(), ex);
+        return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
+      }
+
       RepairUnit theRepairUnit =
-          CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace.get(), tableNames, incrementalRepair);
+          CommonTools.getNewOrExistingRepairUnit(context, cluster, keyspace.get(), tableNames, incrementalRepair,
+              nodesToRepair, datacentersToRepair);
 
       if(theRepairUnit.getIncrementalRepair() != incrementalRepair) {
     	  return Response.status(Response.Status.BAD_REQUEST).entity(
-                  "A repair Schedule already exist for the same cluster/keyspace/table but with a different incremental repair value." 
+                  "A repair Schedule already exist for the same cluster/keyspace/table but with a different incremental repair value."
                   + "Requested value: " + incrementalRepair + " | Existing value: " + theRepairUnit.getIncrementalRepair()).build();
       }
-      
+
       RepairParallelism parallelism = context.config.getRepairParallelism();
       if (repairParallelism.isPresent()) {
         LOG.debug("using given repair parallelism {} instead of configured value {}",
@@ -185,7 +206,7 @@ public class RepairScheduleResource {
 
       if(!parallelism.equals(RepairParallelism.PARALLEL) && incrementalRepair) {
           return Response.status(Response.Status.BAD_REQUEST).entity(
-                  "It is not possible to mix sequential repair and incremental repairs. parallelism " 
+                  "It is not possible to mix sequential repair and incremental repairs. parallelism "
                   + parallelism + " : incrementalRepair " + incrementalRepair).build();
       }
       try {
