@@ -15,17 +15,17 @@ dependency-reduced-pom.xml
 .DS_Store
 
 .classpath
-bin/
 .settings/
 .project
-build/
 packages/
+src/packaging/build/
 *.deb
 *.rpm
 
-# frontend dev stuffs.
-reaper_ui/bower_components/
-reaper_ui/node_modules/
+# frontend dev stuff
+src/ui/bower_components
+src/ui/node_modules
+src/ui/package-lock.json
 
 # Docker Compose persistent storage directory
 data/
