@@ -13,32 +13,41 @@
  */
 package com.spotify.reaper.storage.postgresql;
 
-import com.google.common.collect.Sets;
-import com.spotify.reaper.core.RepairUnit;
-
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 
+import org.skife.jdbi.v2.StatementContext;
+import org.skife.jdbi.v2.tweak.ResultSetMapper;
+
+import com.google.common.collect.Sets;
+import com.spotify.reaper.core.RepairUnit;
+
 public class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
 
+  @Override
   public RepairUnit map(int index, ResultSet r, StatementContext ctx) throws SQLException {
-    String[] columnFamilies = null;
-    Object obj = r.getArray("column_families").getArray();
-    if(obj instanceof String[]) {
-      columnFamilies = (String[]) obj;
-    } else if(obj instanceof Object[]) {
-      Object[] ocf = (Object[]) obj;
-      columnFamilies = Arrays.copyOf(ocf, ocf.length, String[].class);
-    }
-    
-    RepairUnit.Builder builder = new RepairUnit.Builder(r.getString("cluster_name"),
-                                                        r.getString("keyspace_name"),
-                                                        Sets.newHashSet(columnFamilies),
-                                                        r.getBoolean("incremental_repair"));
+
+    String[] columnFamilies = parseStringArray(r.getArray("column_families").getArray());
+    String[] nodes = parseStringArray(r.getArray("nodes").getArray());
+    String[] datacenters = parseStringArray(r.getArray("datacenters").getArray());
+
+
+    RepairUnit.Builder builder = new RepairUnit.Builder(r.getString("cluster_name"), r.getString("keyspace_name"),
+        Sets.newHashSet(columnFamilies), r.getBoolean("incremental_repair"), Sets.newHashSet(nodes),
+        Sets.newHashSet(datacenters));
     return builder.build(UuidUtil.fromSequenceId(r.getLong("id")));
+  }
+
+  private String[] parseStringArray(Object obj) {
+    String[] values = null;
+    if (obj instanceof String[]) {
+      values = (String[]) obj;
+    } else if (obj instanceof Object[]) {
+      Object[] ocf = (Object[]) obj;
+      values = Arrays.copyOf(ocf, ocf.length, String[].class);
+    }
+
+    return values;
   }
 }

@@ -1,18 +1,17 @@
 package com.spotify.reaper.storage.postgresql;
 
-import com.google.common.collect.ImmutableSet;
-
-import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.resources.view.RepairRunStatus;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Collection;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Collection;
+import com.google.common.collect.ImmutableSet;
+import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.resources.view.RepairRunStatus;
 
 public class RepairRunStatusMapper implements ResultSetMapper<RepairRunStatus> {
 
@@ -37,9 +36,11 @@ public class RepairRunStatusMapper implements ResultSetMapper<RepairRunStatus> {
     Boolean incrementalRepair = r.getBoolean("incremental_repair");
     RepairParallelism repairParallelism =
         RepairParallelism.fromName(r.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel"));
+    Collection<String> nodes = ImmutableSet.copyOf((String[]) r.getArray("nodes").getArray());
+    Collection<String> datacenters = ImmutableSet.copyOf((String[]) r.getArray("datacenters").getArray());
 
     return new RepairRunStatus(UuidUtil.fromSequenceId(runId), clusterName, keyspaceName, columnFamilies, segmentsRepaired,
         totalSegments, state, startTime, endTime, cause, owner, lastEvent,
-        creationTime, pauseTime, intensity, incrementalRepair, repairParallelism);
+        creationTime, pauseTime, intensity, incrementalRepair, repairParallelism, nodes, datacenters);
   }
 }

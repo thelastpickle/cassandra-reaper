@@ -86,12 +86,12 @@ public interface IStoragePostgreSQL {
   // RepairUnit
   //
   static final String SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID =
-      "cluster_name, keyspace_name, column_families, incremental_repair";
+      "cluster_name, keyspace_name, column_families, incremental_repair, nodes, datacenters";
   static final String SQL_REPAIR_UNIT_ALL_FIELDS =
       "repair_unit.id, " + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID;
   static final String SQL_INSERT_REPAIR_UNIT =
       "INSERT INTO repair_unit (" + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID + ") VALUES "
-      + "(:clusterName, :keyspaceName, :columnFamilies, :incrementalRepair)";
+          + "(:clusterName, :keyspaceName, :columnFamilies, :incrementalRepair, :nodes, :datacenters)";
   static final String SQL_GET_REPAIR_UNIT =
 
       "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM repair_unit WHERE id = :id";
@@ -99,7 +99,7 @@ public interface IStoragePostgreSQL {
       "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM repair_unit "
       + "WHERE cluster_name = :clusterName AND keyspace_name = :keyspaceName "
       + "AND column_families = :columnFamilies";
-  
+
   static final String SQL_DELETE_REPAIR_UNIT = "DELETE FROM repair_unit WHERE id = :id";
 
   // RepairSegment

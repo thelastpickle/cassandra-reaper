@@ -230,7 +230,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         LOG.debug("Enter synchronized section with segment ID {}", segmentId);
         synchronized (condition) {
           commandId = coordinator.triggerRepair(segment.getStartToken(), segment.getEndToken(),
-              keyspace, validationParallelism, repairUnit.getColumnFamilies(), fullRepair);
+              keyspace, validationParallelism, repairUnit.getColumnFamilies(), fullRepair, repairUnit.getDatacenters());
 
           if (commandId == 0) {
             // From cassandra source in "forceRepairAsync":
@@ -393,6 +393,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     allHosts.forEach(host -> dcByHost.put(host, coordinator.getDataCenter(host)));
 
     List<Callable<Pair<String,Optional<NodeMetrics>>>> getMetricsTasks = allHosts.stream()
+        .filter(host -> repairUnit.getDatacenters().isEmpty() || repairUnit.getDatacenters().contains(dcByHost.get(host)))
         .map(host -> getNodeMetrics(host, datacenter, dcByHost.get(host)))
         .collect(Collectors.toList());
 
@@ -500,7 +501,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     for(RepairSegment segmentInRun:context.storage.getRepairSegmentsForRun(segment.getRunId())) {
       try (JmxProxy hostProxy = context.jmxConnectionFactory
               .connect(segmentInRun.getCoordinatorHost(), context.config.getJmxConnectionTimeoutInSeconds())) {
-          
+
         if (hostProxy.isRepairRunning()) {
           return true;
         }
@@ -666,7 +667,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             postponeCurrentSegment();
             tryClearSnapshots(message);
          } finally {
-            // if someone else does hold the lease, ie renewLead(..) was true, 
+            // if someone else does hold the lease, ie renewLead(..) was true,
             // then their writes to repair_run table and any call to releaseLead(..) will throw an exception
             releaseLead();
          }

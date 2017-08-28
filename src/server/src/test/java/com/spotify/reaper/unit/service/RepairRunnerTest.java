@@ -13,6 +13,37 @@
  */
 package com.spotify.reaper.unit.service;
 
+import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyCollectionOf;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.cassandra.service.ActiveRepairService;
+import org.apache.cassandra.utils.progress.ProgressEventType;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -34,36 +65,6 @@ import com.spotify.reaper.service.SegmentGenerator;
 import com.spotify.reaper.service.SegmentRunner;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
-import org.apache.cassandra.repair.RepairParallelism;
-import org.apache.cassandra.service.ActiveRepairService;
-import org.apache.cassandra.utils.progress.ProgressEventType;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-
-import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public final class RepairRunnerTest {
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunnerTest.class);
@@ -79,13 +80,16 @@ public final class RepairRunnerTest {
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
+    final Set<String> NODES = Sets.newHashSet("127.0.0.1");
+    final Set<String> DATACENTERS = Collections.emptySet();
     final long TIME_RUN = 41l;
     final double INTENSITY = 0.5f;
 
     final IStorage storage = new MemoryStorage();
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
-    RepairUnit cf = storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR));
+    RepairUnit cf = storage
+        .addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR, NODES, DATACENTERS));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
@@ -118,7 +122,7 @@ public final class RepairRunnerTest {
         when(jmx.getDataCenter(anyString())).thenReturn("dc1");
 
         when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(), Matchers.<RepairParallelism>any(),
-            Sets.newHashSet(anyString()), anyBoolean())).then((invocation) -> {
+            Sets.newHashSet(anyString()), anyBoolean(), anyCollectionOf(String.class))).then((invocation) -> {
                 assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
 
                 final int repairNumber = repairAttempts.getAndIncrement();
@@ -186,13 +190,16 @@ public final class RepairRunnerTest {
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
+    final Set<String> NODES = Sets.newHashSet("127.0.0.1");
+    final Set<String> DATACENTERS = Collections.emptySet();
     final long TIME_RUN = 41l;
     final double INTENSITY = 0.5f;
 
     final IStorage storage = new MemoryStorage();
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
-    RepairUnit cf = storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR));
+    RepairUnit cf = storage
+        .addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR, NODES, DATACENTERS));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
@@ -227,7 +234,7 @@ public final class RepairRunnerTest {
 
         when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
             Matchers.<RepairParallelism>any(),
-            Sets.newHashSet(anyString()), anyBoolean())).then((invocation) -> {
+            Sets.newHashSet(anyString()), anyBoolean(), anyCollectionOf(String.class))).then((invocation) -> {
                 assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
 
                 final int repairNumber = repairAttempts.getAndIncrement();
@@ -293,6 +300,8 @@ public final class RepairRunnerTest {
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
+    final Set<String> NODES = Sets.newHashSet("127.0.0.1");
+    final Set<String> DATACENTERS = Collections.emptySet();
     final long TIME_RUN = 41l;
     final double INTENSITY = 0.5f;
 
@@ -304,7 +313,9 @@ public final class RepairRunnerTest {
     context.config.setLocalJmxMode(false);
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
-    UUID cf = storage.addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR)).getId();
+    UUID cf = storage
+        .addRepairUnit(new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR, NODES, DATACENTERS))
+        .getId();
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
@@ -332,7 +343,7 @@ public final class RepairRunnerTest {
         when(jmx.getDataCenter(anyString())).thenReturn("dc1");
 
         when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(), Matchers.<RepairParallelism>any(),
-            Sets.newHashSet(anyString()), anyBoolean())).then((invocation) -> {
+            Sets.newHashSet(anyString()), anyBoolean(), anyCollectionOf(String.class))).then((invocation) -> {
                 assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                 new Thread() {
                     @Override

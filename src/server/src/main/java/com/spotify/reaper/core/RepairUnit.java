@@ -22,7 +22,9 @@ public class RepairUnit {
   private final String clusterName;
   private final String keyspaceName;
   private final Set<String> columnFamilies;
-  private final Boolean incrementalRepair;	
+  private final Boolean incrementalRepair;
+  private final Set<String> nodes;
+  private final Set<String> datacenters;
 
   private RepairUnit(Builder builder, UUID id) {
     this.id = id;
@@ -30,6 +32,8 @@ public class RepairUnit {
     this.keyspaceName = builder.keyspaceName;
     this.columnFamilies = builder.columnFamilies;
     this.incrementalRepair = builder.incrementalRepair;
+    this.nodes = builder.nodes;
+    this.datacenters = builder.datacenters;
   }
 
   public UUID getId() {
@@ -47,9 +51,17 @@ public class RepairUnit {
   public Set<String> getColumnFamilies() {
     return columnFamilies;
   }
-  
+
   public Boolean getIncrementalRepair() {
-	return incrementalRepair;
+    return incrementalRepair;
+  }
+
+  public Set<String> getNodes() {
+    return nodes;
+  }
+
+  public Set<String> getDatacenters() {
+    return datacenters;
   }
 
   public Builder with() {
@@ -62,12 +74,17 @@ public class RepairUnit {
     public final String keyspaceName;
     public final Set<String> columnFamilies;
     public final boolean incrementalRepair;
+    public final Set<String> nodes;
+    public final Set<String> datacenters;
 
-    public Builder(String clusterName, String keyspaceName, Set<String> columnFamilies, Boolean incrementalRepair) {
+    public Builder(String clusterName, String keyspaceName, Set<String> columnFamilies, Boolean incrementalRepair,
+        Set<String> nodes, Set<String> datacenters) {
       this.clusterName = clusterName;
       this.keyspaceName = keyspaceName;
       this.columnFamilies = columnFamilies;
       this.incrementalRepair = incrementalRepair;
+      this.nodes = nodes;
+      this.datacenters = datacenters;
     }
 
     private Builder(RepairUnit original) {
@@ -75,6 +92,8 @@ public class RepairUnit {
       keyspaceName = original.keyspaceName;
       columnFamilies = original.columnFamilies;
       incrementalRepair = original.incrementalRepair;
+      nodes = original.nodes;
+      datacenters = original.datacenters;
     }
 
     public RepairUnit build(UUID id) {
