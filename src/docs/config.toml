@@ -1,0 +1,36 @@
+baseURL = "http://cassandra-reaper.io/"
+languageCode = "en-us"
+title = "Reaper: Easy Repair Management for Apache Cassandra"
+theme = "hugo-universal-theme"
+
+googleAnalytics = "UA-104925477-1"
+publishDir = "../../docs"
+
+
+[menu]
+
+[[menu.main]]
+    name = "Documentation"
+    url = "/docs/"
+
+[[menu.main]]
+    name = "Downloads"
+    url = "/download/"
+
+[[menu.main]]
+    name = "FAQ"
+    url = "/faq/"
+
+[[menu.main]]
+    name = "View on GitHub"
+    url = "https://github.com/thelastpickle/cassandra-reaper"
+
+
+[params]
+
+[params.carousel]
+    enable = true
+
+
+[params.features]
+    enable = true

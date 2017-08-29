@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Reaper: Easy Repair Management for Apache Cassandra</title>
+    <link>http://example.org/</link>
+    <description>Recent content on Reaper: Easy Repair Management for Apache Cassandra</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="http://example.org/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title></title>
+      <link>http://example.org/docs/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://example.org/docs/</guid>
+      <description>Reaper Documentation backends
+Downloads See the download section for information on how to download and install reaper.
+Configuration An example testing configuration YAML file can be found from within this project repository: src/test/resources/cassandra-reaper.yaml
+The configuration file structure is provided by Dropwizard, and help on configuring the server, database connection, or logging, can be found at:
+http://www.dropwizard.io/1.1.0/docs/manual/configuration.html
+Backends Cassandra Reaper can be used with either an ephemeral memory storage or persistent database.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://example.org/download/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://example.org/download/</guid>
+      <description>Downloads and Installation Reaper can be downloaded a number of ways. DEB, RPM, and Docker images, and building from source are supported.
+Packages Debian and RPM packages can be built from this project using Make, for example:
+make deb make rpm  Docker A Docker build environment is also provided to build the entire project and can be run by using Docker Compose:
+docker-compose -f docker-build/docker-compose.yml build \ &amp;amp;&amp;amp; docker-compose -f docker-build/docker-compose.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://example.org/faq/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://example.org/faq/</guid>
+      <description> Frequently Asked Questions </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://example.org/quickstart/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://example.org/quickstart/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>
