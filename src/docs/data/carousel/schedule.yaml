@@ -1,0 +1,10 @@
+weight: 2
+title: "Easy Scheduling"
+description: >
+  <ul class="list-style-none">
+    <li>Set and forget</li>
+    <li>No crontab required</li>
+    <li>Automatically scales with your cluster</li>
+
+  </ul>
+image: "img/carousel/schedules.png"
