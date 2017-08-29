@@ -13,6 +13,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dropwizard.version>1.0.8</dropwizard.version>
         <dropwizard.cassandra.version>4.1.0</dropwizard.cassandra.version>
+        <dropwizard.metrics.datadog.version>1.0.6</dropwizard.metrics.datadog.version>
         <cassandra.version>2.2.7</cassandra.version>
         <cucumber.version>1.2.5</cucumber.version>
     </properties>
@@ -59,6 +60,11 @@
             <artifactId>dropwizard-metrics-graphite</artifactId>
             <version>${dropwizard.version}</version>
         </dependency>
+        <dependency>
+		    <groupId>org.coursera</groupId>
+		    <artifactId>dropwizard-metrics-datadog</artifactId>
+		    <version>${dropwizard.metrics.datadog.version}</version>
+		</dependency>
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-assets</artifactId>
