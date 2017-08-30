@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Reaper: Easy Repair Management for Apache Cassandra</title>
+    <link>http://cassandra-reaper.io/</link>
+    <description>Recent content on Reaper: Easy Repair Management for Apache Cassandra</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="http://cassandra-reaper.io/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/</guid>
+      <description>Reaper Documentation backends
+Downloads See the download section for information on how to download and install reaper.
+Community We have a Mailing List and Gitter chat available.
+Configuration An example testing configuration YAML file can be found from within this project repository: src/test/resources/cassandra-reaper.yaml
+The configuration file structure is provided by Dropwizard, and help on configuring the server, database connection, or logging, can be found at:
+http://www.dropwizard.io/1.1.0/docs/manual/configuration.html
+Backends Cassandra Reaper can be used with either an ephemeral memory storage or persistent database.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/download/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/download/</guid>
+      <description>Downloads and Installation The current stable version is 0.6.2 :
+ Deb Package RPM Tarball  The latest beta version is 0.7.0-beta-25082017 :
+ Deb Package RPM Tarball  For a docker image, please see the Docker section.
+Building Packages Debian and RPM packages can be built from this project using Make, for example:
+make deb make rpm  Docker A Docker build environment is also provided to build the entire project and can be run by using Docker Compose:</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/faq/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/faq/</guid>
+      <description>Frequently Asked Questions Why use Reaper instead of noddetool + cron? While it&amp;rsquo;s possible to set up crontab to call nodetool, it requires staggering the crons to ensure overlap is kept to a minimum. Reaper is able to intelligently schedule repairs to avoid putting too much load on the cluster, avoiding impacting performance. Reaper also offers a simple UI to schedule repairs as granularly as needed.
+Do I need to do repairs if I&amp;rsquo;m not deleting data?</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/quickstart/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/quickstart/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>
