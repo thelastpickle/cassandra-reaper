@@ -4,11 +4,9 @@
 
 See the [download](/download/) section for information on how to download and install reaper.
 
-
 ## Community
 
-We have a [Mailing List](https://groups.google.com/forum/#!forum/tlp-apache-cassandra-reaper-users) and [Gitter chat](https://gitter.im/thelastpickle/cassandra-reaper) available.  
-
+We have a [Mailing List](https://groups.google.com/forum/#!forum/tlp-apache-cassandra-reaper-users) and [Gitter chat](https://gitter.im/thelastpickle/cassandra-reaper) available.
 
 ## Configuration
 
@@ -358,41 +356,65 @@ Source code for all the REST resources can be found from package com.spotify.rea
     Delete all the related repair runs before calling this endpoint.
 
 
-## Running through Docker
+## Docker
 
+[Docker](https://docs.docker.com/engine/installation/) and [Docker Compose](https://docs.docker.com/compose/install/) will need to be installed in order to use the commands in this section.
 
-### Build Reaper Docker Image
+### Building Reaper Packages with Docker
 
-First, build the Docker image and add it to your local image cache using the
-`cassandra-reaper:latest` tag:
+Building Reaper packages requires quite a few dependencies, especially when making changes to the web interface code. In an effort to simplify the build process, Dockerfiles have been created that implement the build actions required to package Reaper.
 
-```mvn clean package docker:build```
+To build the JAR and other packages which are then placed in the _packages_ directory run the following commands from the top level directory:
+
+```bash
+cd src/packaging
+docker-compose build reaper-build-packages && docker-compose run reaper-build-packages
+```
+
+### Building Reaper Docker Image
+
+To build the Reaper Docker Image which is then added to the local image cache using the `cassandra-reaper:latest` tag, run the following commands from the top level directory:
+
+```bash
+cd src/server
+mvn package docker:build
+```
+
+Note that the above command will build the Reaper JAR and place it in the _src/server/target_ directory prior to creating the Docker Image. It is also possible to build the JAR file using the [Docker package build](building-reaper-packages-with-docker) instructions and omitting the `package` command from the above Maven commands.
 
 ### Start Docker Environment
 
-First, start the Cassandra cluster:
+From the top level directory change to the _src/packaging_ directory
 
-```docker-compose up cassandra```
+```bash
+cd src/packaging
+```
 
-You can use the `nodetool` Docker Compose service to check on the Cassandra
-node's status:
+Start the Cassandra cluster:
 
-```docker-compose run nodetool status```
+```bash
+docker-compose up cassandra
+```
 
-Once the Cassandra node is online and accepting CQL connections,
-create the required `reaper_db` Cassandra keyspace to allow Reaper to save
-its cluster and scheduling data.
+The `nodetool` Docker Compose service can be used to check on the Cassandra node's status:
 
-By default, the `reaper_db` keyspace is created using a replication factor
-of 1. To change this replication factor, provide the intended replication
-factor as an optional argument:
+```bash
+docker-compose run nodetool status
+```
 
-```docker-compose run initialize-reaper_db [$REPLICATION_FACTOR]```
+Once the Cassandra node is online and accepting CQL connections, create the required `reaper_db` Cassandra keyspace to allow Reaper to save its cluster and scheduling data.
 
-Wait a few moments for the `reaper_db` schema change to propagate,
-then start Reaper:
+By default, the `reaper_db` keyspace is created using a replication factor of 1. To change this replication factor, provide the intended replication factor as an optional argument:
 
-```docker-compose up reaper```
+```bash
+docker-compose run initialize-reaper_db [$REPLICATION_FACTOR]
+```
+
+Wait a few moments for the `reaper_db` schema change to propagate, then start Reaper:
+
+```bash
+docker-compose up reaper
+```
 
 
 ### Access The Environment
@@ -403,19 +425,27 @@ http://127.0.0.1:8080/webui/
 
 When adding the Cassandra node to the Reaper UI, use the IP address found via:
 
-```docker-compose run nodetool status```
+```bash
+docker-compose run nodetool status
+```
 
 The helper `cqlsh` Docker Compose service has also been included:
 
-```docker-compose run cqlsh```
+```bash
+docker-compose run cqlsh
+```
 
 ### Destroying the Docker Environment
 
 When terminating the infrastructure, use the following command to stop
 all related Docker Compose services:
 
-```docker-compose down```
+```bash
+docker-compose down
+```
 
 To completely clean up all persistent data, delete the `./data/` directory:
 
-```rm -rf ./data/```
+```bash
+rm -rf ./data/
+```

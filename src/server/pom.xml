@@ -16,6 +16,7 @@
         <dropwizard.metrics.datadog.version>1.0.6</dropwizard.metrics.datadog.version>
         <cassandra.version>2.2.7</cassandra.version>
         <cucumber.version>1.2.5</cucumber.version>
+        <docker.directory>src/main/docker</docker.directory>
     </properties>
 
     <dependencies>
@@ -292,7 +293,7 @@
                 <version>1.0.0</version>
                 <configuration>
                     <imageName>cassandra-reaper</imageName>
-                    <dockerDirectory>src/main/docker</dockerDirectory>
+                    <dockerDirectory>${docker.directory}</dockerDirectory>
                     <buildArgs>
                         <SHADED_JAR>cassandra-reaper-${project.version}.jar</SHADED_JAR>
                     </buildArgs>
