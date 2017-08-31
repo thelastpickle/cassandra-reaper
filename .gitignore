@@ -28,4 +28,4 @@ src/ui/node_modules
 src/ui/package-lock.json
 
 # Docker Compose persistent storage directory
-src/packaging/docker
+src/packaging/data
