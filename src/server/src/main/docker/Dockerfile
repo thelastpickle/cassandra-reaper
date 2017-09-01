@@ -13,6 +13,8 @@ ENV REAPER_SEGMENT_COUNT=200 \
     REAPER_INCREMENTAL_REPAIR=false \
     REAPER_DATACENTER_AVAILABILITY=ALL \
     REAPER_ENABLE_DYNAMIC_SEEDS=true \
+    REAPER_REPAIR_MANAGER_SCHEDULING_INTERVAL_SECONDS=30 \
+    REAPER_ACTIVATE_QUERY_LOGGER=false \
     REAPER_AUTO_SCHEDULE_ENABLED=false \
     REAPER_AUTO_SCHEDULE_INITIAL_DELAY_PERIOD=PT15S \
     REAPER_AUTO_SCHEDULE_PERIOD_BETWEEN_POLLS=PT10M \
@@ -35,21 +37,35 @@ ENV REAPER_SEGMENT_COUNT=200 \
     REAPER_CASS_AUTH_ENABLED="false" \
     REAPER_CASS_AUTH_USERNAME="cassandra" \
     REAPER_CASS_AUTH_PASSWORD="cassandra" \
+    REAPER_CASS_NATIVE_PROTOCOL_SSL_ENCRYPTION_ENABLED="false" \
     REAPER_DB_DRIVER_CLASS="org.h2.Driver" \
     REAPER_DB_URL="jdbc:h2:/var/lib/cassandra-reaper/db;MODE=PostgreSQL" \
     REAPER_DB_USERNAME="" \
     REAPER_DB_PASSWORD="" \
+    REAPER_METRICS_ENABLED=false \
+    REAPER_METRICS_FREQUENCY="1 minute" \
+    REAPER_METRICS_REPORTERS="[]" \
     JAVA_OPTS=""
 
 ADD cassandra-reaper.yml /etc/cassandra-reaper.yml
 ADD entrypoint.sh /usr/local/bin/entrypoint.sh
-ADD append-persistence.sh /usr/local/bin/append-persistence.sh
+ADD configure-persistence.sh /usr/local/bin/configure-persistence.sh
+ADD configure-metrics.sh /usr/local/bin/configure-metrics.sh
+
 RUN addgroup -S reaper && \
     adduser -S reaper reaper && \
     apk add --no-cache 'su-exec>=0.2' && \
     mkdir -p /var/lib/cassandra-reaper && \
-    chown reaper:reaper /etc/cassandra-reaper.yml /var/lib/cassandra-reaper /usr/local/bin/entrypoint.sh /usr/local/bin/append-persistence.sh && \
-    chmod u+x /usr/local/bin/entrypoint.sh /usr/local/bin/append-persistence.sh
+    chown reaper:reaper \
+        /etc/cassandra-reaper.yml \
+        /var/lib/cassandra-reaper \
+        /usr/local/bin/entrypoint.sh \
+        /usr/local/bin/configure-persistence.sh \
+        /usr/local/bin/configure-metrics.sh && \
+    chmod u+x \
+        /usr/local/bin/entrypoint.sh \
+        /usr/local/bin/configure-persistence.sh \
+        /usr/local/bin/configure-metrics.sh
 
 VOLUME /var/lib/cassandra-reaper
 

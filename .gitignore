@@ -29,3 +29,6 @@ src/ui/package-lock.json
 
 # Docker Compose persistent storage directory
 src/packaging/data
+
+# SSL stores directory
+src/packaging/ssl-stores

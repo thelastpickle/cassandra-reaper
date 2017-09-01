@@ -384,7 +384,11 @@ Note that the above command will build the Reaper JAR and place it in the _src/s
 
 ### Start Docker Environment
 
-From the top level directory change to the _src/packaging_ directory
+The `docker-compose` services available allow for orchestration of an environment that uses default settings. In addition, services are provided that allow orchestration of an environment in which the connections between the services are SSL encrypted. Services which use SSL encryption contain a `-ssl` suffix in their name.
+
+#### Default Settings Environment
+
+From the top level directory change to the _src/packaging_ directory:
 
 ```bash
 cd src/packaging
@@ -407,13 +411,53 @@ Once the Cassandra node is online and accepting CQL connections, create the requ
 By default, the `reaper_db` keyspace is created using a replication factor of 1. To change this replication factor, provide the intended replication factor as an optional argument:
 
 ```bash
-docker-compose run initialize-reaper_db [$REPLICATION_FACTOR]
+docker-compose run cqlsh-initialize-reaper_db [$REPLICATION_FACTOR]
 ```
 
 Wait a few moments for the `reaper_db` schema change to propagate, then start Reaper:
 
 ```bash
 docker-compose up reaper
+```
+
+#### SSL Encrypted Connections Environment
+
+From the top level directory change to the _src/packaging_ directory:
+
+```bash
+cd src/packaging
+```
+
+Generate the SSL Keystore and Truststore which will be used to encrypt the connections between Reaper and Cassandra.
+
+```bash
+docker-compose run generate-ssl-stores
+```
+
+Start the Cassandra cluster which encrypts both the JMX and Native Protocol:
+
+```bash
+docker-compose up cassandra-ssl
+```
+
+The `nodetool-ssl` Docker Compose service can be used to check on the Cassandra node's status:
+
+```bash
+docker-compose run nodetool-ssl status
+```
+
+Once the Cassandra node is online and accepting encrypted SSL connections via the Native Transport protocol, create the required `reaper_db` Cassandra keyspace to allow Reaper to save its cluster and scheduling data.
+
+By default, the `reaper_db` keyspace is created using a replication factor of 1. To change this replication factor, provide the intended replication factor as an optional argument:
+
+```bash
+docker-compose run cqlsh-initialize-reaper_db-ssl [$REPLICATION_FACTOR]
+```
+
+Wait a few moments for the `reaper_db` schema change to propagate, then start the Reaper service that will establish encrypted connections to Cassandra:
+
+```bash
+docker-compose up reaper-ssl
 ```
 
 
@@ -429,10 +473,18 @@ When adding the Cassandra node to the Reaper UI, use the IP address found via:
 docker-compose run nodetool status
 ```
 
-The helper `cqlsh` Docker Compose service has also been included:
+The helper `cqlsh` Docker Compose service has also been included for both the default and SSL encrypted environments:
+
+#### Default Environment
 
 ```bash
 docker-compose run cqlsh
+```
+
+#### SSL Encrypted Environment
+
+```bash
+docker-compose run cqlsh-ssl
 ```
 
 ### Destroying the Docker Environment

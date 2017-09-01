@@ -62,10 +62,10 @@
             <version>${dropwizard.version}</version>
         </dependency>
         <dependency>
-		    <groupId>org.coursera</groupId>
-		    <artifactId>dropwizard-metrics-datadog</artifactId>
-		    <version>${dropwizard.metrics.datadog.version}</version>
-		</dependency>
+            <groupId>org.coursera</groupId>
+            <artifactId>dropwizard-metrics-datadog</artifactId>
+            <version>${dropwizard.metrics.datadog.version}</version>
+        </dependency>
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-assets</artifactId>
