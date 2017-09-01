@@ -2,48 +2,110 @@ version: '2.1'
 
 services:
   cassandra:
-    image: cassandra:3.11
+    extends:
+      file: ./common-services.yml
+      service: cassandra-common
+
+  cassandra-ssl:
+    extends:
+      file: ./common-services.yml
+      service: cassandra-common
+    entrypoint: /docker-alt-entrypoint.sh cassandra -f
     env_file:
-      - ./docker-services/cassandra/cassandra.env
-    mem_limit: 4g
-    memswap_limit: 4g
-    mem_swappiness: 0
-    ports:
-      - "7000:7000"
-      - "7001:7001"
-      - "7199:7199"
-      - "9042:9042"
+      - ./docker-services/cassandra-ssl/cassandra-ssl.env
     volumes:
-      - ./data/cassandra:/var/lib/cassandra
-      - ./docker-services/cassandra/jmxremote.access:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
-      - ./docker-services/cassandra/jmxremote.password:/etc/cassandra/jmxremote.password
+      - ./ssl-stores/cassandra-server-keystore.jks:/etc/ssl/cassandra-server-keystore.jks
+      - ./ssl-stores/generic-server-truststore.jks:/etc/ssl/generic-server-truststore.jks
+      - ./docker-services/cassandra-ssl/docker-entrypoint.sh:/docker-alt-entrypoint.sh
 
   cqlsh:
-    image: cassandra:3.11
-    command: cqlsh cassandra
+    extends:
+      file: ./common-services.yml
+      service: cqlsh-common
     links:
       - cassandra
 
-  initialize-reaper_db:
-    build: ./docker-services/initialize-reaper_db
+  cqlsh-ssl:
+    extends:
+      file: ./common-services.yml
+      service: cqlsh-common
+    env_file:
+      - ./docker-services/cqlsh-ssl/cqlsh-ssl.env
+    links:
+      - cassandra-ssl
+    volumes:
+      - ./ssl-stores/cassandra-server-keystore.jks:/etc/ssl/cassandra-server-keystore.jks
+      - ./ssl-stores/ca-cert:/etc/ssl/ca-cert
+
+  cqlsh-initialize-reaper_db:
+    extends:
+      file: ./common-services.yml
+      service: cqlsh-common
+    entrypoint: /docker-alt-entrypoint.sh
+    env_file:
+      - ./docker-services/cqlsh-initialize-reaper_db/cqlsh-initialize-reaper_db.env
     links:
       - cassandra
+    volumes:
+      - ./docker-services/cqlsh-initialize-reaper_db/docker-entrypoint.sh:/docker-alt-entrypoint.sh
+
+  cqlsh-initialize-reaper_db-ssl:
+    extends:
+      file: ./common-services.yml
+      service: cqlsh-common
+    entrypoint: /docker-alt-entrypoint.sh
+    env_file:
+      - ./docker-services/cqlsh-initialize-reaper_db-ssl/cqlsh-initialize-reaper_db-ssl.env
+    links:
+      - cassandra-ssl
+    volumes:
+      - ./docker-services/cqlsh-initialize-reaper_db-ssl/docker-entrypoint.sh:/docker-alt-entrypoint.sh
+      - ./ssl-stores/cassandra-server-keystore.jks:/etc/ssl/cassandra-server-keystore.jks
+      - ./ssl-stores/ca-cert:/etc/ssl/ca-cert
+
+  generate-ssl-stores:
+    build: ./docker-services/generate-ssl-stores
+    volumes:
+      - ./resource/ca_cert.conf:/usr/src/app/ca_cert.conf
+      - ./ssl-stores:/usr/src/app/ssl-stores
 
   nodetool:
-    image: cassandra:3.11
-    entrypoint: nodetool --host cassandra --username reaperUser --password reaperPass
+    extends:
+      file: ./common-services.yml
+      service: nodetool-common
     links:
       - cassandra
 
-  reaper:
-    image: cassandra-reaper:latest
+  nodetool-ssl:
+    extends:
+      file: ./common-services.yml
+      service: nodetool-common
     env_file:
-      - ./docker-services/reaper/reaper.env
+      - ./docker-services/nodetool-ssl/nodetool-ssl.env
+    links:
+      - cassandra-ssl
+    volumes:
+      - ./ssl-stores/cassandra-server-keystore.jks:/etc/ssl/cassandra-server-keystore.jks
+      - ./ssl-stores/generic-server-truststore.jks:/etc/ssl/generic-server-truststore.jks
+
+  reaper:
+    extends:
+      file: ./common-services.yml
+      service: reaper-common
     links:
       - cassandra
-    ports:
-      - "8080:8080"
-      - "8081:8081"
+
+  reaper-ssl:
+    extends:
+      file: ./common-services.yml
+      service: reaper-common
+    env_file:
+      - ./docker-services/reaper-ssl/reaper-ssl.env
+    links:
+      - cassandra-ssl
+    volumes:
+      - ./ssl-stores/reaper-server-keystore.jks:/etc/ssl/reaper-server-keystore.jks
+      - ./ssl-stores/generic-server-truststore.jks:/etc/ssl/generic-server-truststore.jks
 
   reaper-build-packages:
     extends:
