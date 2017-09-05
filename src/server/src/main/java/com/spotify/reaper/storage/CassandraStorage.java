@@ -539,6 +539,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     Collection<RepairRun> repairRuns = getRepairRunsForCluster(clusterName);
 
     for(RepairRun repairRun:repairRuns){
+      if (repairRun.getRunState() != RunState.RUNNING) {
+        continue;
+      }
       Collection<RepairSegment> runningSegments = getSegmentsWithState(repairRun.getId(), State.RUNNING);
       for(RepairSegment segment:runningSegments){
         Optional<RepairUnit> repairUnit = getRepairUnit(repairRun.getRepairUnitId());
