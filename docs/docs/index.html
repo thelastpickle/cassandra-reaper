@@ -272,6 +272,11 @@ cassandra:
 
 <p>The Apache Cassandra backend is the only one that allows running several Reaper instances at once. This provides high availability and allows to repair multi DC clusters (see the <strong>Multi-DC</strong> section below).</p>
 
+<p>You will need to create a keyspace to store your data.  This is installation specific, you will need to fill in your own datacenter names.  For example:</p>
+
+<pre><code class="language-none">CREATE KEYSPACE reaper_db WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3};
+</code></pre>
+
 <h3 id="other-configuration-settings">Other Configuration settings</h3>
 
 <p>The Reaper service specific configuration values are:</p>
