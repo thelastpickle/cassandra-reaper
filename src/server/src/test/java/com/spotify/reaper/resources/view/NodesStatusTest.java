@@ -164,6 +164,10 @@ public class NodesStatusTest {
     assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("us-west-1").get("rack3").get(0).dc, "us-west-1");
     assertEquals(nodesStatus.endpointStates.get(0).endpoints.get("us-west-1").get("rack3").get(0).rack, "rack3");
     assertTrue(nodesStatus.endpointStates.get(0).endpoints.get("us-west-1").get("rack3").get(0).load.equals(3974144.0));
+
+    assertTrue(nodesStatus.endpointStates.get(0).endpointNames.contains("127.0.0.1"));
+    assertTrue(nodesStatus.endpointStates.get(0).endpointNames.contains("127.0.0.2"));
+    assertTrue(nodesStatus.endpointStates.get(0).endpointNames.contains("127.0.0.3"));
   }
 
 }

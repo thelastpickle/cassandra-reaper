@@ -15,6 +15,7 @@ package com.spotify.reaper.resources.view;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
+import com.google.common.collect.Sets;
 
 import jersey.repackaged.com.google.common.collect.Lists;
 import jersey.repackaged.com.google.common.collect.Maps;
@@ -23,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.*;
 import java.util.stream.Collectors;
 
@@ -73,7 +75,8 @@ public class NodesStatus {
   }
 
   private GossipInfo parseEndpointStatesString(String sourceNode, String allEndpointStates, Map<String, String> simpleStates) {
-    List<EndpointState> endpoints = Lists.newArrayList();
+    List<EndpointState> endpointStates = Lists.newArrayList();
+    Set<String> endpoints = Sets.newHashSet();
     Matcher matcher;
 
     String[] strEndpoints = allEndpointStates.split("/");
@@ -104,18 +107,20 @@ public class NodesStatus {
       EndpointState endpointState = new EndpointState(endpoint.or(NOT_AVAILABLE), hostId.or(NOT_AVAILABLE), dc.or(NOT_AVAILABLE), rack.or(NOT_AVAILABLE), status.or(NOT_AVAILABLE), severity.or(0.0),
           releaseVersion.or(NOT_AVAILABLE), tokens.or(NOT_AVAILABLE), load.or(0.0));
 
-      endpoints.add(endpointState);
+      endpoints.add(endpoint.or(NOT_AVAILABLE));
+      endpointStates.add(endpointState);
     }
 
     Map<String, Map<String, List<EndpointState>>> endpointsByDcAndRack = Maps.newHashMap();
-    Map<String, List<EndpointState>> endpointsByDc = endpoints.stream().collect(Collectors.groupingBy(EndpointState::getDc, Collectors.toList()));
+    Map<String, List<EndpointState>> endpointsByDc = endpointStates.stream()
+        .collect(Collectors.groupingBy(EndpointState::getDc, Collectors.toList()));
 
     for(String dc:endpointsByDc.keySet()) {
       Map<String, List<EndpointState>> endpointsByRack = endpointsByDc.get(dc).stream().collect(Collectors.groupingBy(EndpointState::getRack, Collectors.toList()));
       endpointsByDcAndRack.put(dc, endpointsByRack);
     }
 
-    return new GossipInfo(sourceNode ,endpointsByDcAndRack, totalLoad);
+    return new GossipInfo(sourceNode, endpointsByDcAndRack, totalLoad, endpoints);
   }
 
   private <T> Optional<T> parseEndpointState(List<Pattern> patterns, String endpointString, int group, Class<T> type) {
@@ -124,7 +129,7 @@ public class NodesStatus {
       Matcher matcher = pattern.matcher(endpointString);
       if (matcher.find() && matcher.groupCount() >= group) {
         result = (Optional<T>) Optional.of(matcher.group(group));
-        if(type.equals(Double.class)) {
+        if (type.equals(Double.class)) {
           result = (Optional<T>) Optional.of(Double.parseDouble(matcher.group(group)));
         }
         break;
@@ -146,8 +151,6 @@ public class NodesStatus {
     ENDPOINT_TOKENS_PATTERNS.add(ENDPOINT_TOKENS_22_PATTERN);
   }
 
-
-
   public class GossipInfo {
     @JsonProperty
     public final String sourceNode;
@@ -155,11 +158,14 @@ public class NodesStatus {
     public final Map<String, Map<String, List<EndpointState>>> endpoints;
     @JsonProperty
     public final Double totalLoad;
+    @JsonProperty
+    public final Set<String> endpointNames;
 
-    public GossipInfo(String sourceNode, Map<String, Map<String, List<EndpointState>>> endpoints, Double totalLoad) {
+    public GossipInfo(String sourceNode, Map<String, Map<String, List<EndpointState>>> endpoints, Double totalLoad, Set<String> endpointNames) {
       this.sourceNode = sourceNode;
       this.endpoints = endpoints;
       this.totalLoad = totalLoad;
+      this.endpointNames = endpointNames;
     }
   }
 
