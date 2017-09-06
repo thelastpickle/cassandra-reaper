@@ -114,6 +114,14 @@ const TableRowDetails = React.createClass({
                     <td>{incremental}</td>
                 </tr>
                 <tr>
+                    <td>Nodes</td>
+                    <td><CFsListRender list={this.props.row.nodes} /></td>
+                </tr>
+                <tr>
+                    <td>Datacenters</td>
+                    <td><CFsListRender list={this.props.row.datacenters}/></td>
+                </tr>
+                <tr>
                     <td>Creation time</td>
                     <td>{createdAt}</td>
                 </tr>
