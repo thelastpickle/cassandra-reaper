@@ -1,85 +1,55 @@
 sudo: required
 language: java
 jdk:
-- oraclejdk8
+  - oraclejdk8
+
 env:
   global:
     - LOCAL_JMX=no
     - TEST=""
   matrix:
       # 2.1.18 runs all tests together because it's also for sonar reporting, see below
-    - CASSANDRA_VERSION=2.1.18
-    - CASSANDRA_VERSION=2.1.18 GRIM_MIN=2 GRIM_MAX=2
-    - CASSANDRA_VERSION=2.1.18 GRIM_MIN=2 GRIM_MAX=4
-    - CASSANDRA_VERSION=2.2.10 GRIM_MIN=1 GRIM_MAX=1
-    - CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=2 
-    - CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=4
-    - CASSANDRA_VERSION=3.0.10 GRIM_MIN=1 GRIM_MAX=1
-    - CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=2
-    - CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=4
-    - CASSANDRA_VERSION=3.11.0 GRIM_MIN=1 GRIM_MAX=1
-    - CASSANDRA_VERSION=3.11.0 GRIM_MIN=2 GRIM_MAX=2
-    - CASSANDRA_VERSION=3.11.0 GRIM_MIN=2 GRIM_MAX=4
+    - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.18
+    - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.18 GRIM_MIN=2 GRIM_MAX=2
+    - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.18 GRIM_MIN=2 GRIM_MAX=4
+    - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.10 GRIM_MIN=1 GRIM_MAX=1
+    - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=2
+    - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=4
+    - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.10 GRIM_MIN=1 GRIM_MAX=1
+    - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=2
+    - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=4
+    - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.0 GRIM_MIN=1 GRIM_MAX=1
+    - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.0 GRIM_MIN=2 GRIM_MAX=2
+    - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.0 GRIM_MIN=2 GRIM_MAX=4
+    - TEST_TYPE=docker
+
 matrix:
   fast_finish: true
   allow_failures:
-  - env: CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=2
-  - env: CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=4
-  - env: CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=2
-  - env: CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=4
-  - env: CASSANDRA_VERSION=3.11.0 GRIM_MIN=2 GRIM_MAX=4
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=2
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=4
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=2
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=4
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.11.0 GRIM_MIN=2 GRIM_MAX=4
+
 services:
   - postgresql
-before_script:
-  - psql -c 'create database reaper;' -U postgres
-before_install:
-  - sudo apt-get install libjna-java > /dev/null
-  - sudo apt-get install python-support > /dev/null
-  - sudo easy_install pyYaml > /dev/null
-  - sudo easy_install pip > /dev/null
-  - sudo pip install ccm > /dev/null
+  - docker
 
-install:
-  - ccm create test -v $CASSANDRA_VERSION > /dev/null
-  - ccm populate --vnodes -n 2 > /dev/null
-  - sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/travis/.ccm/test/node1/conf/cassandra-env.sh
-  - sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/travis/.ccm/test/node2/conf/cassandra-env.sh
-  - sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' /home/travis/.ccm/test/node1/conf/cassandra-env.sh
-  - sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' /home/travis/.ccm/test/node2/conf/cassandra-env.sh
-  - "sudo sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/travis/.ccm/test/node1/conf/cassandra.yaml"
-  - "sudo sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/travis/.ccm/test/node2/conf/cassandra.yaml"
-  - "sudo sed -i 's/start_rpc: true/start_rpc: false/' /home/travis/.ccm/test/node1/conf/cassandra.yaml"
-  - "sudo sed -i 's/start_rpc: true/start_rpc: false/' /home/travis/.ccm/test/node2/conf/cassandra.yaml"
-  - "sudo sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' /home/travis/.ccm/test/node1/conf/cassandra.yaml"
-  - "sudo sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' /home/travis/.ccm/test/node2/conf/cassandra.yaml"
-  - "sudo sed -i 's/concurrent_reads: 32/concurrent_reads: 2/' /home/travis/.ccm/test/node1/conf/cassandra.yaml"
-  - "sudo sed -i 's/concurrent_reads: 32/concurrent_reads: 2/' /home/travis/.ccm/test/node2/conf/cassandra.yaml"
-  - "sudo sed -i 's/concurrent_writes: 32/concurrent_writes: 2/' /home/travis/.ccm/test/node1/conf/cassandra.yaml"
-  - "sudo sed -i 's/concurrent_writes: 32/concurrent_writes: 2/' /home/travis/.ccm/test/node2/conf/cassandra.yaml"
-  - "sudo sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 2/' /home/travis/.ccm/test/node1/conf/cassandra.yaml"
-  - "sudo sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 2/' /home/travis/.ccm/test/node2/conf/cassandra.yaml"
-  - "sudo sed -i 's/num_tokens: 256/num_tokens: 32/' /home/travis/.ccm/test/node1/conf/cassandra.yaml"
-  - "sudo sed -i 's/num_tokens: 256/num_tokens: 32/' /home/travis/.ccm/test/node2/conf/cassandra.yaml"
-  - ccm start -v
+before_install: ./src/ci/before_install.sh
 
-#before_script:
-#  - npm install -g bower
-script:
-  - ccm status
-  - ccm node1 nodetool status
-  - 'if [ "x$GRIM_MIN" = "x" ]; then mvn clean package && mvn surefire:test -Dtest=ReaperIT && mvn surefire:test -Dtest=ReaperH2IT && mvn surefire:test -Dtest=ReaperPostgresIT && mvn surefire:test -Dtest=ReaperCassandraIT  ; else  mvn clean package && mvn surefire:test -Dtest=ReaperCassandraIT -Dgrim.reaper.min=$GRIM_MIN -Dgrim.reaper.max=$GRIM_MAX ; fi'
-after_success:
-  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_BRANCH" = "master" -a "$CASSANDRA_VERSION" = "2.1.18" ]; then mvn sonar:sonar -Dsonar.host.url=https://sonarqube.com -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=tlp-cassandra-reaper -Dsonar.github.oauth=$GITHUB_TOKEN -Dsonar.github.repository=thelastpickle/cassandra-reaper; fi'
-after_failure:
-  - ccm checklogerror
-before_deploy: 
-  - "mkdir cassandra-reaper-${TRAVIS_TAG}"
-  - "mkdir cassandra-reaper-${TRAVIS_TAG}/target"
-  - "mkdir cassandra-reaper-${TRAVIS_TAG}/server/target"
-  - "cp -R src/packaging/bin cassandra-reaper-${TRAVIS_TAG}/"
-  - "cp src/server/target/cassandra-reaper-*.jar cassandra-reaper-${TRAVIS_TAG}/server/target"
-  - "cp -R src/packaging/resource cassandra-reaper-${TRAVIS_TAG}/"
-  - "tar czf cassandra-reaper-${TRAVIS_TAG}-release.tar.gz cassandra-reaper-${TRAVIS_TAG}/"
+install: ./src/ci/install.sh
+
+before_script: ./src/ci/before_script.sh
+
+script: ./src/ci/script.sh
+
+after_success: ./src/ci/after_success.sh
+
+after_failure: ./src/ci/after_failure.sh
+
+before_deploy: ./src/ci/before_deploy.sh
+
 deploy:
   provider: releases
   api_key: $GITHUB_TOKEN
@@ -87,7 +57,7 @@ deploy:
   file: "cassandra-reaper-${TRAVIS_TAG}-release.tar.gz"
   skip_cleanup: true
   on:
-    tags: true 
+    tags: true
 
 notifications:
   webhooks:
