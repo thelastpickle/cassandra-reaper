@@ -11,7 +11,8 @@ storageType: database
 enableCrossOrigin: true
 incrementalRepair: false
 enableDynamicSeedList: true
-repairManagerSchedulingIntervalSeconds: 30
+repairManagerSchedulingIntervalSeconds: 10
+jmxConnectionTimeoutInSeconds: 5
 
 # datacenterAvailability has three possible values: ALL | LOCAL | EACH
 # the correct value to use depends on whether jmx ports to C* nodes in remote datacenters are accessible
