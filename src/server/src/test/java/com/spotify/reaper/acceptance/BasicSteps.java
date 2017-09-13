@@ -452,9 +452,18 @@ public final class BasicSteps {
   public void reaper_has_scheduled_repairs_for_cluster_called(int repairAmount, String clusterName) throws Throwable {
     synchronized (BasicSteps.class) {
       CLIENTS.parallelStream().forEach(client -> {
-        List<RepairScheduleStatus> schedules = client.getRepairSchedulesForCluster(clusterName);
-        LOG.info("Got " + schedules.size() + " schedules");
-        assertEquals(repairAmount, schedules.size());
+
+        await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+            try {
+                List<RepairScheduleStatus> schedules = client.getRepairSchedulesForCluster(clusterName);
+                LOG.info("Got " + schedules.size() + " schedules");
+                assertEquals(repairAmount, schedules.size());
+            } catch (AssertionError ex) {
+                LOG.warn(ex.getMessage());
+                return false;
+            }
+            return true;
+        });
       });
     }
   }
@@ -464,9 +473,17 @@ public final class BasicSteps {
   public void reaper_has_scheduled_repairs_for_the_last_added_cluster(int repairAmount) throws Throwable {
     synchronized (BasicSteps.class) {
       CLIENTS.parallelStream().forEach(client -> {
-        List<RepairScheduleStatus> schedules = client.getRepairSchedulesForCluster(TestContext.TEST_CLUSTER);
-        LOG.info("Got " + schedules.size() + " schedules");
-        assertEquals(repairAmount, schedules.size());
+        await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+            try {
+                List<RepairScheduleStatus> schedules = client.getRepairSchedulesForCluster(TestContext.TEST_CLUSTER);
+                LOG.info("Got " + schedules.size() + " schedules");
+                assertEquals(repairAmount, schedules.size());
+            } catch (AssertionError ex) {
+                LOG.warn(ex.getMessage());
+                return false;
+            }
+            return true;
+        });
       });
     }
   }
