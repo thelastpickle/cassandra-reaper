@@ -15,7 +15,7 @@ case "${TEST_TYPE}" in
         ccm status
         ccm node1 nodetool status
 
-        mvn clean package
+        mvn clean install
         if [ "x${GRIM_MIN}" = "x" ]
         then
             mvn surefire:test -Dtest=ReaperIT
