@@ -83,7 +83,7 @@ jobs:
               ccm status
               ccm checklogerror
               ccm node1 nodetool status
-              mvn clean package
+              MAVEN_OPTS="-Xmx1g" mvn clean install
               # TODO: parallelise the following
               mvn surefire:test -Dtest=ReaperIT
               mvn surefire:test -Dtest=ReaperH2IT
