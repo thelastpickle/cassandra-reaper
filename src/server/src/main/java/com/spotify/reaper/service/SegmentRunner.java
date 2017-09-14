@@ -85,7 +85,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final RepairRunner repairRunner;
   private final RepairUnit repairUnit;
   private int commandId;
-  private final AtomicBoolean timedOut;
+  private final AtomicBoolean segmentFailed;
   private final UUID leaderElectionId;
 
   // Caching all active SegmentRunners.
@@ -109,7 +109,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     this.clusterName = clusterName;
     this.repairUnit = repairUnit;
     this.repairRunner = repairRunner;
-    this.timedOut = new AtomicBoolean(false);
+    this.segmentFailed = new AtomicBoolean(false);
     this.leaderElectionId = repairUnit.getIncrementalRepair() ? repairRunner.getRepairRunId() : segmentId;
   }
 
@@ -283,7 +283,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             LOG.info("Repair command {} on segment {} returned with state {}", commandId, segmentId, resultingSegment.getState());
             if (resultingSegment.getState() == RepairSegment.State.RUNNING) {
               LOG.info("Repair command {} on segment {} has been cancelled while running", commandId, segmentId);
-              timedOut.set(true);
+              segmentFailed.set(true);
               abort(resultingSegment, coordinator);
             } else if (resultingSegment.getState() == RepairSegment.State.DONE) {
               LOG.debug("Repair segment with id '{}' was repaired in {} seconds", resultingSegment.getId(),
@@ -500,7 +500,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     for(RepairSegment segmentInRun:context.storage.getRepairSegmentsForRun(segment.getRunId())) {
       try (JmxProxy hostProxy = context.jmxConnectionFactory
               .connect(segmentInRun.getCoordinatorHost(), context.config.getJmxConnectionTimeoutInSeconds())) {
-          
+
         if (hostProxy.isRepairRunning()) {
           return true;
         }
@@ -570,32 +570,48 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     synchronized (condition) {
       RepairSegment currentSegment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
       // See status explanations at: https://wiki.apache.org/cassandra/RepairAsyncAPI
-      // Old repair API
+      // Old repair API – up to Cassandra-2.1.x
       if(status.isPresent()) {
         switch (status.get()) {
           case STARTED:
-            renewLead();
-            DateTime now = DateTime.now();
-            context.storage.updateRepairSegment(currentSegment.with()
-                .state(RepairSegment.State.RUNNING)
-                .startTime(now)
-                .build(segmentId));
-            LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
+            try {
+              if (renewLead()) {
+                DateTime now = DateTime.now();
+                
+                context.storage.updateRepairSegment(currentSegment.with()
+                    .state(RepairSegment.State.RUNNING)
+                    .startTime(now)
+                    .build(segmentId));
+                
+                LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
+                break;
+              }
+            } catch (AssertionError er) {
+              // ignore. segment repair has since timed out.
+            }
+            segmentFailed.set(true);
             break;
 
           case SESSION_SUCCESS:
-            if (timedOut.get()) {
-              LOG.debug("Got SESSION_SUCCESS for segment with id '{}' and repair number '{}', " +
-                        "but it had already timed out",
-                        segmentId, repairNumber);
-            } else {
-              LOG.debug("repair session succeeded for segment with id '{}' and repair number '{}'",
-                      segmentId, repairNumber);
-              context.storage.updateRepairSegment(currentSegment.with()
-                  .state(RepairSegment.State.DONE)
-                  .endTime(DateTime.now())
-                  .build(segmentId));
+            try {
+              if (segmentFailed.get()) {
+                LOG.debug(
+                    "Got SESSION_SUCCESS for segment with id '{}' and repair number '{}', but it had already timed out",
+                    segmentId, repairNumber);
+              } else if (renewLead()) {
+                LOG.debug("repair session succeeded for segment with id '{}' and repair number '{}'", segmentId, repairNumber);
+
+                context.storage.updateRepairSegment(currentSegment.with()
+                    .state(RepairSegment.State.DONE)
+                    .endTime(DateTime.now())
+                    .build(segmentId));
+
+                break;
+              }
+            } catch (AssertionError er) {
+              // ignore. segment repair has since timed out.
             }
+            segmentFailed.set(true);
             break;
 
           case SESSION_FAILED:
@@ -613,29 +629,47 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             break;
         }
       }
-   // New repair API
+      // New repair API – Cassandra-2.2 onwards
       if(progress.isPresent()) {
         switch (progress.get()) {
           case START:
-            renewLead();
-            DateTime now = DateTime.now();
-            context.storage.updateRepairSegment(currentSegment.with()
-                .state(RepairSegment.State.RUNNING)
-                .startTime(now)
-                .build(segmentId));
-            LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
+            try {
+              if (renewLead()) {
+                DateTime now = DateTime.now();
+
+                context.storage.updateRepairSegment(currentSegment.with()
+                    .state(RepairSegment.State.RUNNING)
+                    .startTime(now)
+                    .build(segmentId));
+
+                LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
+                break;
+              }
+            } catch (AssertionError er) {
+              // ignore. segment repair has since timed out.
+            }
+            segmentFailed.set(true);
             break;
 
           case SUCCESS:
-            LOG.debug(
-                    "repair session succeeded for segment with id '{}' and repair number '{}'",
+            try {
+              if (segmentFailed.get()) {
+                LOG.debug(
+                    "Got SUCCESS for segment with id '{}' and repair number '{}', but it had already timed out",
                     segmentId, repairNumber);
+              } else if (renewLead()) {
+                LOG.debug("repair session succeeded for segment with id '{}' and repair number '{}'", segmentId, repairNumber);
 
-            context.storage.updateRepairSegment(currentSegment.with()
-                .state(RepairSegment.State.DONE)
-                .endTime(DateTime.now())
-                .build(segmentId));
-
+                context.storage.updateRepairSegment(currentSegment.with()
+                    .state(RepairSegment.State.DONE)
+                    .endTime(DateTime.now())
+                    .build(segmentId));
+                break;
+              }
+            } catch (AssertionError er) {
+              // ignore. segment repair has since timed out.
+            }
+            segmentFailed.set(true);
             break;
 
           case ERROR:
@@ -666,7 +700,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             postponeCurrentSegment();
             tryClearSnapshots(message);
          } finally {
-            // if someone else does hold the lease, ie renewLead(..) was true, 
+            // if someone else does hold the lease, ie renewLead(..) was true,
             // then their writes to repair_run table and any call to releaseLead(..) will throw an exception
             releaseLead();
          }
