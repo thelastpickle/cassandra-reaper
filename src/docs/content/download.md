@@ -28,7 +28,7 @@ make rpm
 
 
 A [Docker](https://docs.docker.com/engine/installation/) build environment is
-also provided to build the entire project and can be run by using
+also provided in the `src/packaging` directory to build the entire project and can be run by using
 [Docker Compose](https://docs.docker.com/compose/install/):
 
 ```bash
