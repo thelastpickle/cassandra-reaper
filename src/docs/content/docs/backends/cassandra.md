@@ -1,6 +1,8 @@
 +++
-[menu.backends]
+[menu.docs]
 name = "Cassandra"
+parent = "backends"
+weight = 4
 +++
 
 # Cassandra Backend

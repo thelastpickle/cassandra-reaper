@@ -1,7 +1,8 @@
 +++
-[menu.backends]
+[menu.docs]
 name = "In Memory"
 parent = "backends"
+weight = 1
 +++
 
 # Memory Backend
