@@ -4,7 +4,7 @@ name = "Configuration"
 weight = 30
 +++
 
-## Configuration
+# Configuration
 
 An example testing configuration YAML file can be found from within this project repository:
 `src/test/resources/cassandra-reaper.yaml`

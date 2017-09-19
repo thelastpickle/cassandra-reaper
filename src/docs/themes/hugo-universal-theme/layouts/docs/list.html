@@ -29,7 +29,7 @@
                             {{ $currentPage := . }}
                             {{ range .Site.Menus.docs }}
                             {{ if .HasChildren }}
-
+                                    hi
                             <li class="sub-menu{{if $currentPage.HasMenuCurrent "main" . }} active{{end}}">
                             <a href="javascript:;" class="">
                                 {{ .Pre }}
