@@ -4,9 +4,7 @@
 
 See the [download](/download/) section for information on how to download and install reaper.
 
-## Community
 
-We have a [Mailing List](https://groups.google.com/forum/#!forum/tlp-apache-cassandra-reaper-users) and [Gitter chat](https://gitter.im/thelastpickle/cassandra-reaper) available.
 
 ## Configuration
 

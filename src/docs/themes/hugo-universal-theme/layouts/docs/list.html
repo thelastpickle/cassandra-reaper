@@ -18,10 +18,41 @@
             <div class="container">
                 <div class="row">
                     <!-- *** LEFT COLUMN *** -->
-
+                    <h1>Documentation</h1>
                     <div class="col-md-9" id="blog-listing-medium">
 
-                        {{ $paginator := .Paginate (where .Data.Pages "Type" "blog") }}
+                        <ul class="sidebar-menu">
+                            {{ $currentPage := . }}
+                            {{ range .Site.Menus.main }}
+                            {{ if .HasChildren }}
+
+                            <li class="sub-menu{{if $currentPage.HasMenuCurrent "main" . }} active{{end}}">
+                            <a href="javascript:;" class="">
+                                {{ .Pre }}
+                                <span>{{ .Name }}</span>
+                                <span class="menu-arrow arrow_carrot-right"></span>
+                            </a>
+                            <ul class="sub">
+                                {{ range .Children }}
+                                <li{{if $currentPage.IsMenuCurrent "main" . }} class="active"{{end}}><a href="{{.URL}}"> {{ .Name }} </a> </li>
+                                {{ end }}
+                            </ul>
+                            {{else}}
+                            <li>
+                                <a href="{{.URL}}">
+                                    {{ .Pre }}
+                                    <span>{{ .Name }}</span>
+                                </a>
+                                {{end}}
+                            </li>
+                            {{end}}
+                            <li> <a href="https://github.com/gohugoio/hugo/issues" target="blank">Questions and Issues</a> </li>
+                            <li> <a href="#" target="blank">Edit this Page</a> </li>
+                        </ul>
+
+
+
+                        {{ $paginator := .Paginate (where .Data.Pages "Type" "doc") }}
                         {{ range $paginator.Pages }}
                         <section class="post">
                             <div class="row">
