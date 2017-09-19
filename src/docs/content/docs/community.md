@@ -1,7 +1,4 @@
 +++
-title = "Community"
-id = "community"
-type = "blog"
 menu: "Community"
 +++
 

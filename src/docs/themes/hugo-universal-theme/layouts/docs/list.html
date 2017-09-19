@@ -19,7 +19,10 @@
                 <div class="row">
                     <!-- *** LEFT COLUMN *** -->
                     <h1>Documentation</h1>
+
                     <div class="col-md-9" id="blog-listing-medium">
+
+                        {{.Content}}
 
                         <ul class="sidebar-menu">
                             {{ $currentPage := . }}
@@ -46,8 +49,6 @@
                                 {{end}}
                             </li>
                             {{end}}
-                            <li> <a href="https://github.com/gohugoio/hugo/issues" target="blank">Questions and Issues</a> </li>
-                            <li> <a href="#" target="blank">Edit this Page</a> </li>
                         </ul>
 
 
