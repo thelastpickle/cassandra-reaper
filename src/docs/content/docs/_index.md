@@ -1,4 +1,3 @@
-# Reaper Documentation
 
 ## Downloads
 

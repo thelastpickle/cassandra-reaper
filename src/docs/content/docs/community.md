@@ -1,5 +1,7 @@
 +++
-menu: "Community"
+[menu.docs]
+name = "Community"
+weight = 100
 +++
 
 

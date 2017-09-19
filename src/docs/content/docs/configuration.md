@@ -1,4 +1,8 @@
-
++++
+[menu.docs]
+name = "Configuration"
+weight = 30
++++
 
 ## Configuration
 

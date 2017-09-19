@@ -1,5 +1,10 @@
++++
+[menu.docs]
+name = "Rest API"
+weight = 75
++++
 
-## Rest API
+# Rest API
 
 
 Source code for all the REST resources can be found from package com.spotify.reaper.resources.

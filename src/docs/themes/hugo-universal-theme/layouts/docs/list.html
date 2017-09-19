@@ -24,9 +24,10 @@
 
                         {{.Content}}
 
+
                         <ul class="sidebar-menu">
                             {{ $currentPage := . }}
-                            {{ range .Site.Menus.main }}
+                            {{ range .Site.Menus.docs }}
                             {{ if .HasChildren }}
 
                             <li class="sub-menu{{if $currentPage.HasMenuCurrent "main" . }} active{{end}}">
