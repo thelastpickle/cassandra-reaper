@@ -24,7 +24,7 @@
 
                         {{.Content}}
 
-
+                        {{ if .Params.show_menu }}
                         <ul class="sidebar-menu">
                             {{ $currentPage := . }}
                             {{ range .Site.Menus.docs }}
@@ -51,7 +51,7 @@
                             </li>
                             {{end}}
                         </ul>
-
+                        {{ end }}
                     </div>
                     <!-- /.col-md-9 -->
 
