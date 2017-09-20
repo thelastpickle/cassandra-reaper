@@ -4,6 +4,7 @@
   {{ partial "head.html" . }}
 
   <body>
+
     <div id="all">
 
         <header>
@@ -15,29 +16,31 @@
         {{ partial "breadcrumbs.html" . }}
 
         <div id="content">
+
+            {{ if isset .Params "id" }}
+              {{ partial .Params.id . }}
+            {{ else }}
+
             <div class="container">
                 <div class="row">
-                    <!-- *** LEFT COLUMN *** -->
-                    <h1>Documentation</h1>
-                    <div class = "col-md-3">
-                        {{ partial "side_doc_nav.html" . }}
+                    <div class="col-md-3">
+                        {{ partial "side_doc_nav.html" .}}
                     </div>
-                    <div class="col-md-9" id="blog-listing-medium">
 
-                        {{.Content}}
+                    <div class="col-md-9">
+                        <div>
+                          {{ .Content }}
+                        </div>
 
                     </div>
-                    <!-- /.col-md-9 -->
-
-                    <!-- *** LEFT COLUMN END *** -->
-
-
-                    <!-- *** RIGHT COLUMN END *** -->
 
                 </div>
                 <!-- /.row -->
+
             </div>
             <!-- /.container -->
+
+            {{ end }}
         </div>
         <!-- /#content -->
 

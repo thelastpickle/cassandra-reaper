@@ -29,7 +29,7 @@ docker-compose -f docker-build/docker-compose.yml build \
 
 The final packages will be located within:
 
-```./packages/```
+`./packages/`
 
 
 ## Building from source
