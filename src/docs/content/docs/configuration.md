@@ -1,6 +1,6 @@
 +++
 [menu.docs]
-name = "Configuration"
+name = "Configuration Reference"
 weight = 30
 +++
 
@@ -13,7 +13,6 @@ The configuration file structure is provided by Dropwizard, and help on configur
 database connection, or logging, can be found at:
 
 http://www.dropwizard.io/1.1.0/docs/manual/configuration.html
-
     
 
 ### Other Configuration settings
