@@ -12,6 +12,7 @@ Cassandra Reaper can be used with either an ephemeral memory storage or persiste
 For persistent relational database storage, you must either setup PostgreSQL or H2. You also need to set `storageType: database` in the config file.
 
 Sample yaml files are available in the `resource` directory for each storage backend:
+
 * cassandra-reaper-memory.yaml
 * cassandra-reaper-postgres.yaml
 * cassandra-reaper-h2.yaml
