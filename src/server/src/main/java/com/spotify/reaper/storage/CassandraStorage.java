@@ -28,6 +28,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.WriteType;
 import com.datastax.driver.core.exceptions.DriverException;
@@ -177,7 +178,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public Collection<Cluster> getClusters() {
     Collection<Cluster> clusters = Lists.<Cluster>newArrayList();
-    ResultSet clusterResults = session.execute(SELECT_CLUSTER);
+    Statement stmt = new SimpleStatement(SELECT_CLUSTER);
+    stmt.setIdempotent(Boolean.TRUE);
+    ResultSet clusterResults = session.execute(stmt);
     for(Row cluster:clusterResults){
       clusters.add(new Cluster(cluster.getString("name"), cluster.getString("partitioner"), cluster.getSet("seed_hosts", String.class)));
     }
@@ -408,7 +411,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public Optional<RepairUnit> getRepairUnit(String cluster, String keyspace, Set<String> columnFamilyNames) {
     // brute force again
     RepairUnit repairUnit=null;
-    ResultSet results = session.execute(SELECT_REPAIR_UNIT);
+    Statement stmt = new SimpleStatement(SELECT_REPAIR_UNIT);
+    stmt.setIdempotent(Boolean.TRUE);
+    ResultSet results = session.execute(stmt);
     for(Row repairUnitRow:results){
       if(repairUnitRow.getString("cluster_name").equals(cluster)
           && repairUnitRow.getString("keyspace_name").equals(keyspace)
@@ -664,7 +669,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public Collection<RepairSchedule> getAllRepairSchedules() {
     Collection<RepairSchedule> schedules = Lists.<RepairSchedule>newArrayList();
-    ResultSet scheduleResults = session.execute(SELECT_REPAIR_SCHEDULE);
+    Statement stmt = new SimpleStatement(SELECT_REPAIR_SCHEDULE);
+    stmt.setIdempotent(Boolean.TRUE);
+    ResultSet scheduleResults = session.execute(stmt);
     for(Row scheduleRow:scheduleResults){
       schedules.add(createRepairScheduleFromRow(scheduleRow));
     }
