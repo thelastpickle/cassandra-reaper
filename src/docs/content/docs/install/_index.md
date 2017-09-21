@@ -8,7 +8,7 @@ identifier = "download_install"
 
 
 
-### Running Reaper
+# Running Reaper
 
 After modifying the `resource/cassandra-reaper.yaml` config file, Reaper can be started using the following command line :
 
@@ -41,7 +41,7 @@ After downloading the DEB package, install using the `dpkg` command:
 sudo dpkg -i reaper_*.*.*_amd64.deb
 `
 
-### Service Configuration
+## Service Configuration
 
 The yaml file used by the service is located at `/etc/cassandra-reaper/cassandra-reaper.yaml` and alternate config templates can be found under `/etc/cassandra-reaper/configs`.
 It is recommended to create a new file with your specific configuration and symlink it as `/etc/cassandra-reaper/cassandra-reaper.yaml` to avoid your configuration from being overwritten during upgrades.  
