@@ -337,10 +337,20 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     for (Map.Entry<List<String>, List<String>> entry : entries) {
       BigInteger rangeStart = new BigInteger(entry.getKey().get(0));
       BigInteger rangeEnd = new BigInteger(entry.getKey().get(1));
+      LOG.debug(
+          "[tokenRangeToEndpoint] checking token range [{}, {}) against {}",
+          rangeStart,
+          rangeEnd,
+          tokenRange);
       if (new RingRange(rangeStart, rangeEnd).encloses(tokenRange)) {
+        LOG.debug(
+            "[tokenRangeToEndpoint] Found replicas for token range {} : {}",
+            tokenRange,
+            entry.getValue());
         return entry.getValue();
       }
     }
+    LOG.error("[tokenRangeToEndpoint] no replicas found for token range {}", tokenRange);
     return Lists.newArrayList();
   }
 

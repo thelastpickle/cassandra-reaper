@@ -386,13 +386,26 @@ public class RepairRunner implements Runnable {
   private List<String> filterPotentialCoordinatorsByDatacenters(Collection<String> datacenters,
       List<String> potentialCoordinators, JmxProxy jmxProxy) {
 
-    return potentialCoordinators.stream().map(coord -> getNodeDatacenterPair(coord, jmxProxy))
-        .filter(node -> datacenters.contains(node.getRight()) || datacenters.isEmpty())
-        .map(nodeTuple -> nodeTuple.getLeft()).collect(Collectors.toList());
+    List<String> coordinators =
+        potentialCoordinators
+            .stream()
+            .map(coord -> getNodeDatacenterPair(coord, jmxProxy))
+            .filter(node -> datacenters.contains(node.getRight()) || datacenters.isEmpty())
+            .map(nodeTuple -> nodeTuple.getLeft())
+            .collect(Collectors.toList());
+
+    LOG.debug(
+        "[filterPotentialCoordinatorsByDatacenters] coordinators filtered by dc {}. Before : {} / After : {}",
+        datacenters,
+        potentialCoordinators,
+        coordinators);
+
+    return coordinators;
   }
 
   private Pair<String, String> getNodeDatacenterPair(String node, JmxProxy jmxProxy) {
     Pair<String, String> result = Pair.of(node, jmxProxy.getDataCenter(node));
+    LOG.debug("[getNodeDatacenterPair] node/datacenter association {}", result);
     return result;
   }
 
