@@ -6,8 +6,6 @@ identifier = "download_install"
 +++
 
 
-
-
 # Running Reaper
 
 After modifying the `resource/cassandra-reaper.yaml` config file, Reaper can be started using the following command line :
@@ -17,7 +15,6 @@ After modifying the `resource/cassandra-reaper.yaml` config file, Reaper can be 
 Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
 
 Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool `bin/spreaper`
-
 
 
 ## Installing and Running as a Service
