@@ -5,11 +5,11 @@ weight = 50
 parent = "download_install"
 +++
 
-## Docker
+# Docker
 
 [Docker](https://docs.docker.com/engine/installation/) and [Docker Compose](https://docs.docker.com/compose/install/) will need to be installed in order to use the commands in this section.
 
-### Building Reaper Packages with Docker
+## Building Reaper Packages with Docker
 
 Building Reaper packages requires quite a few dependencies, especially when making changes to the web interface code. In an effort to simplify the build process, Dockerfiles have been created that implement the build actions required to package Reaper.
 
@@ -20,7 +20,7 @@ cd src/packaging
 docker-compose build reaper-build-packages && docker-compose run reaper-build-packages
 ```
 
-### Building Reaper Docker Image
+## Building Reaper Docker Image
 
 To build the Reaper Docker Image which is then added to the local image cache using the `cassandra-reaper:latest` tag, run the following commands from the top level directory:
 
@@ -31,11 +31,11 @@ mvn package docker:build
 
 Note that the above command will build the Reaper JAR and place it in the _src/server/target_ directory prior to creating the Docker Image. It is also possible to build the JAR file using the [Docker package build](building-reaper-packages-with-docker) instructions and omitting the `package` command from the above Maven commands.
 
-### Start Docker Environment
+# Start Docker Environment
 
 The `docker-compose` services available allow for orchestration of an environment that uses default settings. In addition, services are provided that allow orchestration of an environment in which the connections between the services are SSL encrypted. Services which use SSL encryption contain a `-ssl` suffix in their name.
 
-#### Default Settings Environment
+## Default Settings Environment
 
 From the top level directory change to the _src/packaging_ directory:
 
@@ -69,7 +69,7 @@ Wait a few moments for the `reaper_db` schema change to propagate, then start Re
 docker-compose up reaper
 ```
 
-#### SSL Encrypted Connections Environment
+## SSL Encrypted Connections Environment
 
 From the top level directory change to the _src/packaging_ directory:
 
@@ -110,7 +110,7 @@ docker-compose up reaper-ssl
 ```
 
 
-### Access The Environment
+## Access The Environment
 
 Once started, the UI can be accessed through:
 
@@ -124,19 +124,19 @@ docker-compose run nodetool status
 
 The helper `cqlsh` Docker Compose service has also been included for both the default and SSL encrypted environments:
 
-#### Default Environment
+## Default Environment
 
 ```bash
 docker-compose run cqlsh
 ```
 
-#### SSL Encrypted Environment
+## SSL Encrypted Environment
 
 ```bash
 docker-compose run cqlsh-ssl
 ```
 
-### Destroying the Docker Environment
+## Destroying the Docker Environment
 
 When terminating the infrastructure, use the following command to stop
 all related Docker Compose services:
