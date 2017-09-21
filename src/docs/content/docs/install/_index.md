@@ -22,8 +22,17 @@ Reaper can also be accessed using the REST API exposed on port 8080, or using th
 
 ## Install RPM or DEB package and run as a service
 
-Install the RPM (Fedora based distros like RHEL or Centos) using : `sudo rpm -ivh reaper-*.*.*.x86_64.rpm`  
-Install the DEB (Debian based distros like Ubuntu) using : `sudo dpkg -i reaper_*.*.*_amd64.deb`
+Install the RPM (Fedora based distros like RHEL or Centos) using: 
+
+`bash
+sudo rpm -ivh reaper-*.*.*.x86_64.rpm
+`  
+
+Install the DEB (Debian based distros like Ubuntu) using: 
+
+`
+sudo dpkg -i reaper_*.*.*_amd64.deb
+`
 
 The yaml file used by the service is located at `/etc/cassandra-reaper/cassandra-reaper.yaml` and alternate config templates can be found under `/etc/cassandra-reaper/configs`.
 It is recommended to create a new file with your specific configuration and symlink it as `/etc/cassandra-reaper/cassandra-reaper.yaml` to avoid your configuration from being overwritten during upgrades.  
