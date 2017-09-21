@@ -6,33 +6,17 @@ weight = 4
 parent = "download_install"
 +++
 
-## Building Packages
+# Building Install Packages
 
-Debian and RPM packages can be built from this project using Make, for example:
+Debian packages and RPMs can be built from this project using Make, for example:
 
 ```bash
 make deb
 make rpm
 ```
 
-## Docker
 
-
-A [Docker](https://docs.docker.com/engine/installation/) build environment is
-also provided in the `src/packaging` directory to build the entire project and can be run by using
-[Docker Compose](https://docs.docker.com/compose/install/):
-
-```bash
-docker-compose -f docker-build/docker-compose.yml build \
-    && docker-compose -f docker-build/docker-compose.yml run build
-```
-
-The final packages will be located within:
-
-`./packages/`
-
-
-## Building from source
+# Building JARs from source
 
 The easiest way to build is to use the following make command:
 
@@ -53,6 +37,13 @@ To rebuild both the UI and Reaper :
 
 ```mvn clean package -Pbuild-ui```
 
-To build the docker image :
+
+# Building Docker Image
+
 
 ```mvn clean package docker:build```
+
+
+# Building Using Docker
+
+To simplify the build toolchain it's possible to build everything using Docker itself.  See the [Docker]({{<ref "docs/install/docker.md">}}) section for details.

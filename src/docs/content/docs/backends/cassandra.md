@@ -7,8 +7,9 @@ weight = 4
 
 # Cassandra Backend
 
-For persistent Apache Cassandra storage, you need to set `storageType: cassandra` in the config file.
-You'll also need to fill in the connection details to your Apache Cassandra cluster used to store the Reaper schema (reaper_db by default), in the `cassandra: ` section of the yaml file. 
+To use Apache Cassandra as the persistent storage for Reaper, the storageType setting must be set to cassandra in the Reaper configuration YAML file. In addition, the connection details for the Apache Cassandra cluster being used to store Reaper data must be specified in the configuration YAML file.
+
+For example:
 
 ```yaml
 storageType: cassandra
@@ -21,7 +22,7 @@ cassandra:
     serialConsistencyLevel: SERIAL
 ```
 
-When using SSL:
+If you're using authentication or SSL:
 
 ```yaml
 cassandra:
@@ -37,9 +38,11 @@ cassandra:
     type: jdk
 ```
 
-The Apache Cassandra backend is the only one that allows running several Reaper instances at once. This provides high availability and allows to repair multi DC clusters (see the **Multi-DC** section below).
+The Apache Cassandra backend is the only one that allows running several Reaper instances at once. This provides high availability and allows to repair multi DC clusters.
 
-You will need to create a keyspace to store your data.  This is installation specific, you will need to fill in your own datacenter names.  For example:
+
+To run Reaper using the Cassandra backend, create a reaper_db keyspace with an appropriate placement strategy. This is installation specific, and names of the data centers in the cluster that will host the Reaper data must be specified. For example:
+
 
 ```none
 CREATE KEYSPACE reaper_db WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3};
