@@ -5,7 +5,7 @@ echo "Starting Before Deploy step..."
 set -xe
 
 mkdir cassandra-reaper-${TRAVIS_TAG}
-mkdir cassandra-reaper-${TRAVIS_TAG}/target
+mkdir cassandra-reaper-${TRAVIS_TAG}/server
 mkdir cassandra-reaper-${TRAVIS_TAG}/server/target
 cp -R src/packaging/bin cassandra-reaper-${TRAVIS_TAG}/
 cp src/server/target/cassandra-reaper-*.jar cassandra-reaper-${TRAVIS_TAG}/server/target
