@@ -356,21 +356,42 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Collection<RepairRun> getRepairRunsWithState(RunState runState) {
+    Set<RepairRun> repairRunsWithState = Sets.newHashSet();
 
-    return getClusters().stream()
+    List<Collection<UUID>> repairRunIds =
+        getClusters()
+            .stream()
             // Grab all ids for the given cluster name
             .map(cluster -> getRepairRunIdsForCluster(cluster.getName()))
-            // Grab repair runs asynchronously for all the ids returned by the index table
-            .flatMap(repairRunIds
-                    -> repairRunIds.stream()
-                            .map(repairRunId -> session.executeAsync(getRepairRunPrepStmt.bind(repairRunId))))
-            // wait for results
-            .map((ResultSetFuture future) -> {
-                Row repairRunResult = future.getUninterruptibly().one();
-                return buildRepairRunFromRow(repairRunResult, repairRunResult.getUUID("id"));})
-            // filter on runState
-            .filter(repairRun -> repairRun.getRunState() == runState)
-            .collect(Collectors.toSet());
+            .collect(Collectors.toList());
+
+    for (Collection<UUID> clusterRepairRunIds : repairRunIds) {
+      repairRunsWithState.addAll(getRepairRunsWithStateForCluster(clusterRepairRunIds, runState));
+    }
+
+    return repairRunsWithState;
+  }
+
+  private Collection<? extends RepairRun> getRepairRunsWithStateForCluster(
+      Collection<UUID> clusterRepairRunsId, RunState runState) {
+    Collection<RepairRun> repairRuns = Sets.newHashSet();
+    List<ResultSetFuture> futures = Lists.newArrayList();
+
+    for (UUID repairRunId:clusterRepairRunsId) {
+      futures.add(session.executeAsync(getRepairRunPrepStmt.bind(repairRunId)));
+    }
+
+    for (ResultSetFuture future : futures) {
+      ResultSet repairRunResult = future.getUninterruptibly();
+      for (Row row : repairRunResult) {
+        repairRuns.add(buildRepairRunFromRow(row, row.getUUID("id")));
+      }
+    }
+
+    return repairRuns
+        .stream()
+        .filter(repairRun -> repairRun.getRunState() == runState)
+        .collect(Collectors.toSet());
   }
 
   @Override
@@ -575,6 +596,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     for(Row result:results){
       repairRunIds.add(result.getUUID("id"));
     }
+
+    LOG.debug("repairRunIds : {}", repairRunIds);
     return repairRunIds;
   }
 
@@ -771,6 +794,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
 
   private RepairRun buildRepairRunFromRow(Row repairRunResult, UUID id){
+    LOG.debug("buildRepairRunFromRow {} / {}", id, repairRunResult);
     return new RepairRun.Builder(
             repairRunResult.getString("cluster_name"),
             repairRunResult.getUUID("repair_unit_id"),
