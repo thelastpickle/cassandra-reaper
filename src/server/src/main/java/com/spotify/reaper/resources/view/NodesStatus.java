@@ -11,26 +11,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.resources.view;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Optional;
-import com.google.common.collect.Sets;
 
-import jersey.repackaged.com.google.common.collect.Lists;
-import jersey.repackaged.com.google.common.collect.Maps;
-
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class NodesStatus {
-  @JsonProperty
-  public final List<GossipInfo> endpointStates;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Optional;
+import com.google.common.collect.Sets;
+import jersey.repackaged.com.google.common.collect.Lists;
+import jersey.repackaged.com.google.common.collect.Maps;
+
+public final class NodesStatus {
+
   private static final List<Pattern> ENDPOINT_NAME_PATTERNS = Lists.newArrayList();
   private static final List<Pattern> ENDPOINT_STATUS_PATTERNS = Lists.newArrayList();
   private static final List<Pattern> ENDPOINT_DC_PATTERNS = Lists.newArrayList();
@@ -41,8 +41,8 @@ public class NodesStatus {
   private static final List<Pattern> ENDPOINT_HOSTID_PATTERNS = Lists.newArrayList();
   private static final List<Pattern> ENDPOINT_TOKENS_PATTERNS = Lists.newArrayList();
 
-  private static final Pattern ENDPOINT_NAME_PATTERN = Pattern.compile("^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})",
-      Pattern.MULTILINE | Pattern.DOTALL);
+  private static final Pattern ENDPOINT_NAME_PATTERN
+      = Pattern.compile("^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})", Pattern.MULTILINE | Pattern.DOTALL);
   private static final Pattern ENDPOINT_STATUS_22_PATTERN = Pattern.compile("(STATUS):([0-9]*):(\\w+)");
   private static final Pattern ENDPOINT_DC_22_PATTERN = Pattern.compile("(DC):([0-9]*):([0-9a-zA-Z-\\.]+)");
   private static final Pattern ENDPOINT_RACK_22_PATTERN = Pattern.compile("(RACK):([0-9]*):([0-9a-zA-Z-\\.]+)");
@@ -61,6 +61,9 @@ public class NodesStatus {
 
   private static final String NOT_AVAILABLE = "Not available";
 
+  @JsonProperty
+  public final List<GossipInfo> endpointStates;
+
   static {
     initPatterns();
   }
@@ -74,7 +77,11 @@ public class NodesStatus {
     this.endpointStates.add(parseEndpointStatesString(sourceNode, allEndpointStates, simpleStates));
   }
 
-  private GossipInfo parseEndpointStatesString(String sourceNode, String allEndpointStates, Map<String, String> simpleStates) {
+  private GossipInfo parseEndpointStatesString(
+      String sourceNode,
+      String allEndpointStates,
+      Map<String, String> simpleStates) {
+
     List<EndpointState> endpointStates = Lists.newArrayList();
     Set<String> endpoints = Sets.newHashSet();
     Matcher matcher;
@@ -82,7 +89,7 @@ public class NodesStatus {
     String[] strEndpoints = allEndpointStates.split("/");
     Double totalLoad = 0.0;
 
-    for(int i=1;i<strEndpoints.length;i++){
+    for (int i = 1; i < strEndpoints.length; i++) {
       String endpointString = strEndpoints[i];
       Optional<String> status = Optional.absent();
       Optional<String> endpoint = parseEndpointState(ENDPOINT_NAME_PATTERNS, endpointString, 1, String.class);
@@ -104,19 +111,28 @@ public class NodesStatus {
       Optional<Double> load = parseEndpointState(ENDPOINT_LOAD_PATTERNS, endpointString, 3, Double.class);
       totalLoad += load.or(0.0);
 
-      EndpointState endpointState = new EndpointState(endpoint.or(NOT_AVAILABLE), hostId.or(NOT_AVAILABLE), dc.or(NOT_AVAILABLE), rack.or(NOT_AVAILABLE), status.or(NOT_AVAILABLE), severity.or(0.0),
-          releaseVersion.or(NOT_AVAILABLE), tokens.or(NOT_AVAILABLE), load.or(0.0));
+      EndpointState endpointState = new EndpointState(
+          endpoint.or(NOT_AVAILABLE),
+          hostId.or(NOT_AVAILABLE),
+          dc.or(NOT_AVAILABLE),
+          rack.or(NOT_AVAILABLE),
+          status.or(NOT_AVAILABLE),
+          severity.or(0.0),
+          releaseVersion.or(NOT_AVAILABLE),
+          tokens.or(NOT_AVAILABLE),
+          load.or(0.0));
 
       endpoints.add(endpoint.or(NOT_AVAILABLE));
       endpointStates.add(endpointState);
     }
 
     Map<String, Map<String, List<EndpointState>>> endpointsByDcAndRack = Maps.newHashMap();
-    Map<String, List<EndpointState>> endpointsByDc = endpointStates.stream()
-        .collect(Collectors.groupingBy(EndpointState::getDc, Collectors.toList()));
+    Map<String, List<EndpointState>> endpointsByDc
+        = endpointStates.stream().collect(Collectors.groupingBy(EndpointState::getDc, Collectors.toList()));
 
-    for(String dc:endpointsByDc.keySet()) {
-      Map<String, List<EndpointState>> endpointsByRack = endpointsByDc.get(dc).stream().collect(Collectors.groupingBy(EndpointState::getRack, Collectors.toList()));
+    for (String dc : endpointsByDc.keySet()) {
+      Map<String, List<EndpointState>> endpointsByRack
+          = endpointsByDc.get(dc).stream().collect(Collectors.groupingBy(EndpointState::getRack, Collectors.toList()));
       endpointsByDcAndRack.put(dc, endpointsByRack);
     }
 
@@ -151,17 +167,26 @@ public class NodesStatus {
     ENDPOINT_TOKENS_PATTERNS.add(ENDPOINT_TOKENS_22_PATTERN);
   }
 
-  public class GossipInfo {
+  public final class GossipInfo {
+
     @JsonProperty
     public final String sourceNode;
+
     @JsonProperty
     public final Map<String, Map<String, List<EndpointState>>> endpoints;
+
     @JsonProperty
     public final Double totalLoad;
+
     @JsonProperty
     public final Set<String> endpointNames;
 
-    public GossipInfo(String sourceNode, Map<String, Map<String, List<EndpointState>>> endpoints, Double totalLoad, Set<String> endpointNames) {
+    public GossipInfo(
+        String sourceNode,
+        Map<String, Map<String, List<EndpointState>>> endpoints,
+        Double totalLoad,
+        Set<String> endpointNames) {
+
       this.sourceNode = sourceNode;
       this.endpoints = endpoints;
       this.totalLoad = totalLoad;
@@ -169,28 +194,46 @@ public class NodesStatus {
     }
   }
 
-  public class EndpointState {
+  public final class EndpointState {
+
     @JsonProperty
     public final String endpoint;
+
     @JsonProperty
     public final String hostId;
+
     @JsonProperty
     public final String dc;
+
     @JsonProperty
     public final String rack;
+
     @JsonProperty
     public final String status;
+
     @JsonProperty
     public final Double severity;
+
     @JsonProperty
     public final String releaseVersion;
+
     @JsonProperty
     public final String tokens;
+
     @JsonProperty
     public final Double load;
 
-    public EndpointState(String endpoint, String hostId, String dc, String rack, String status, Double severity,
-        String releaseVersion, String tokens, Double load) {
+    public EndpointState(
+        String endpoint,
+        String hostId,
+        String dc,
+        String rack,
+        String status,
+        Double severity,
+        String releaseVersion,
+        String tokens,
+        Double load) {
+
       this.endpoint = endpoint;
       this.hostId = hostId;
       this.dc = dc;
@@ -200,27 +243,44 @@ public class NodesStatus {
       this.releaseVersion = releaseVersion;
       this.tokens = tokens;
       this.load = load;
-   }
+    }
 
-   public String getDc() {
-     return this.dc;
-   }
+    public String getDc() {
+      return this.dc;
+    }
 
-   public String getRack() {
-     return this.rack;
-   }
+    public String getRack() {
+      return this.rack;
+    }
 
-   @Override
-  public String toString() {
-     return "Endpoint : " + endpoint + " / "
-           + "Status : " + status + " / "
-           + "DC : " + dc + " / "
-           + "Rack : " + rack + " / "
-           + "Release version : " + releaseVersion + " / "
-           + "Load : " + load + " / "
-           + "Severity : " + severity + " / "
-           + "Host Id : " + hostId + " / "
-           + "Tokens : " + tokens;
-   }
+    @Override
+    public String toString() {
+      return "Endpoint : "
+          + endpoint
+          + " / "
+          + "Status : "
+          + status
+          + " / "
+          + "DC : "
+          + dc
+          + " / "
+          + "Rack : "
+          + rack
+          + " / "
+          + "Release version : "
+          + releaseVersion
+          + " / "
+          + "Load : "
+          + load
+          + " / "
+          + "Severity : "
+          + severity
+          + " / "
+          + "Host Id : "
+          + hostId
+          + " / "
+          + "Tokens : "
+          + tokens;
+    }
   }
 }

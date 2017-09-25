@@ -11,30 +11,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.storage.postgresql;
+
+import com.spotify.reaper.core.Cluster;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 
+import com.google.common.collect.Sets;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
-import com.google.common.collect.Sets;
-import com.spotify.reaper.core.Cluster;
 
-public class ClusterMapper implements ResultSetMapper<Cluster> {
+public final class ClusterMapper implements ResultSetMapper<Cluster> {
 
-  public Cluster map(int index, ResultSet r, StatementContext ctx) throws SQLException {
+  @Override
+  public Cluster map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
     String[] seedHosts = null;
-    Object obj = r.getArray("seed_hosts").getArray();
-    if(obj instanceof String[]) {
-      seedHosts = (String[])obj;
-    } else if(obj instanceof Object[]) {
-      Object[] ol = (Object[])obj;
+    Object obj = rs.getArray("seed_hosts").getArray();
+    if (obj instanceof String[]) {
+      seedHosts = (String[]) obj;
+    } else if (obj instanceof Object[]) {
+      Object[] ol = (Object[]) obj;
       seedHosts = Arrays.copyOf(ol, ol.length, String[].class);
     }
-    return new Cluster(r.getString("name"), r.getString("partitioner"), Sets.newHashSet(seedHosts));
+    return new Cluster(rs.getString("name"), rs.getString("partitioner"), Sets.newHashSet(seedHosts));
   }
-
 }

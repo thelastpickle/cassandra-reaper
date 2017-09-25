@@ -11,7 +11,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.storage;
+
+import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairSchedule;
+import com.spotify.reaper.core.RepairSegment;
+import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.resources.view.RepairRunStatus;
+import com.spotify.reaper.resources.view.RepairScheduleStatus;
+import com.spotify.reaper.service.RepairParameters;
+import com.spotify.reaper.service.RingRange;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,15 +40,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.core.RepairSchedule;
-import com.spotify.reaper.core.RepairSegment;
-import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.resources.view.RepairRunStatus;
-import com.spotify.reaper.resources.view.RepairScheduleStatus;
-import com.spotify.reaper.service.RepairParameters;
-import com.spotify.reaper.service.RingRange;
 
 /**
  * Implements the StorageAPI using transient Java classes.
@@ -49,8 +51,7 @@ public final class MemoryStorage implements IStorage {
   private final ConcurrentMap<UUID, RepairUnit> repairUnits = Maps.newConcurrentMap();
   private final ConcurrentMap<RepairUnitKey, RepairUnit> repairUnitsByKey = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairSegment> repairSegments = Maps.newConcurrentMap();
-  private final ConcurrentMap<UUID, LinkedHashMap<UUID, RepairSegment>> repairSegmentsByRunId =
-      Maps.newConcurrentMap();
+  private final ConcurrentMap<UUID, LinkedHashMap<UUID, RepairSegment>> repairSegmentsByRunId = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
 
   @Override
@@ -87,8 +88,7 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Optional<Cluster> deleteCluster(String clusterName) {
-    if (getRepairSchedulesForCluster(clusterName).isEmpty()
-        && getRepairRunsForCluster(clusterName).isEmpty()) {
+    if (getRepairSchedulesForCluster(clusterName).isEmpty() && getRepairRunsForCluster(clusterName).isEmpty()) {
       return Optional.fromNullable(clusters.remove(clusterName));
     }
     return Optional.absent();
@@ -205,8 +205,8 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder repairUnit) {
-    Optional<RepairUnit> existing =
-        getRepairUnit(repairUnit.clusterName, repairUnit.keyspaceName, repairUnit.columnFamilies);
+    Optional<RepairUnit> existing
+        = getRepairUnit(repairUnit.clusterName, repairUnit.keyspaceName, repairUnit.columnFamilies);
     if (existing.isPresent() && repairUnit.incrementalRepair == existing.get().getIncrementalRepair()) {
       return existing.get();
     } else {
@@ -225,8 +225,7 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Optional<RepairUnit> getRepairUnit(String cluster, String keyspace, Set<String> tables) {
-    return Optional.fromNullable(
-        repairUnitsByKey.get(new RepairUnitKey(cluster, keyspace, tables)));
+    return Optional.fromNullable(repairUnitsByKey.get(new RepairUnitKey(cluster, keyspace, tables)));
   }
 
   private void addRepairSegments(Collection<RepairSegment.Builder> segments, UUID runId) {
@@ -245,8 +244,7 @@ public final class MemoryStorage implements IStorage {
       return false;
     } else {
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
-      LinkedHashMap<UUID, RepairSegment> updatedSegment =
-          repairSegmentsByRunId.get(newRepairSegment.getRunId());
+      LinkedHashMap<UUID, RepairSegment> updatedSegment = repairSegmentsByRunId.get(newRepairSegment.getRunId());
       updatedSegment.put(newRepairSegment.getId(), newRepairSegment);
       return true;
     }
@@ -274,13 +272,13 @@ public final class MemoryStorage implements IStorage {
   @Override
   public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range) {
     if (range.isPresent()) {
-        for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
-          if (segment.getState() == RepairSegment.State.NOT_STARTED && range.get().encloses(segment.getTokenRange())) {
-            return Optional.of(segment);
-          }
+      for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
+        if (segment.getState() == RepairSegment.State.NOT_STARTED && range.get().encloses(segment.getTokenRange())) {
+          return Optional.of(segment);
         }
+      }
     } else {
-        return getNextFreeSegment(runId);
+      return getNextFreeSegment(runId);
     }
     return Optional.absent();
   }
@@ -302,11 +300,9 @@ public final class MemoryStorage implements IStorage {
     for (RepairRun run : getRepairRunsWithState(RepairRun.RunState.RUNNING)) {
       for (RepairSegment segment : getSegmentsWithState(run.getId(), RepairSegment.State.RUNNING)) {
         RepairUnit unit = getRepairUnit(segment.getRepairUnitId()).get();
-        ongoingRepairs.add(new RepairParameters(
-            segment.getTokenRange(),
-            unit.getKeyspaceName(),
-            unit.getColumnFamilies(),
-            run.getRepairParallelism()));
+        ongoingRepairs.add(
+            new RepairParameters(
+                segment.getTokenRange(), unit.getKeyspaceName(), unit.getColumnFamilies(), run.getRepairParallelism()));
       }
     }
     return ongoingRepairs;
@@ -342,7 +338,6 @@ public final class MemoryStorage implements IStorage {
     }
     return amount;
   }
-
 
   @Override
   public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
@@ -381,13 +376,11 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName,
-      String keyspaceName) {
+  public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<>();
     for (RepairSchedule repairSchedule : repairSchedules.values()) {
       RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId()).get();
-      if (repairUnit.getClusterName().equals(clusterName) && repairUnit.getKeyspaceName()
-          .equals(keyspaceName)) {
+      if (repairUnit.getClusterName().equals(clusterName) && repairUnit.getKeyspaceName().equals(keyspaceName)) {
         foundRepairSchedules.add(repairSchedule);
       }
     }
@@ -429,15 +422,29 @@ public final class MemoryStorage implements IStorage {
       Collections.sort(runs);
       for (RepairRun run : Iterables.limit(runs, limit)) {
         RepairUnit unit = getRepairUnit(run.getRepairUnitId()).get();
-        int segmentsRepaired =
-            getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
+        int segmentsRepaired = getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
         int totalSegments = getSegmentAmountForRepairRun(run.getId());
-        runStatuses.add(new RepairRunStatus(
-            run.getId(), clusterName, unit.getKeyspaceName(), unit.getColumnFamilies(),
-            segmentsRepaired, totalSegments, run.getRunState(), run.getStartTime(),
-            run.getEndTime(), run.getCause(), run.getOwner(), run.getLastEvent(),
-            run.getCreationTime(), run.getPauseTime(), run.getIntensity(), unit.getIncrementalRepair(),
-            run.getRepairParallelism(), unit.getNodes(), unit.getDatacenters()));
+        runStatuses.add(
+            new RepairRunStatus(
+                run.getId(),
+                clusterName,
+                unit.getKeyspaceName(),
+                unit.getColumnFamilies(),
+                segmentsRepaired,
+                totalSegments,
+                run.getRunState(),
+                run.getStartTime(),
+                run.getEndTime(),
+                run.getCause(),
+                run.getOwner(),
+                run.getLastEvent(),
+                run.getCreationTime(),
+                run.getPauseTime(),
+                run.getIntensity(),
+                unit.getIncrementalRepair(),
+                run.getRepairParallelism(),
+                unit.getNodes(),
+                unit.getDatacenters()));
       }
       return runStatuses;
     }
@@ -477,10 +484,10 @@ public final class MemoryStorage implements IStorage {
 
     @Override
     public boolean equals(Object other) {
-      return other instanceof RepairUnitKey &&
-             cluster.equals(((RepairUnitKey) other).cluster) &&
-             keyspace.equals(((RepairUnitKey) other).keyspace) &&
-             tables.equals(((RepairUnitKey) other).tables);
+      return other instanceof RepairUnitKey
+          && cluster.equals(((RepairUnitKey) other).cluster)
+          && keyspace.equals(((RepairUnitKey) other).keyspace)
+          && tables.equals(((RepairUnitKey) other).tables);
     }
 
     @Override
@@ -488,5 +495,4 @@ public final class MemoryStorage implements IStorage {
       return cluster.hashCode() ^ keyspace.hashCode() ^ tables.hashCode();
     }
   }
-
 }

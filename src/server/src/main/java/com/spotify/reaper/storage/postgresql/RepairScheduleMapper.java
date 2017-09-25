@@ -11,14 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.storage.postgresql;
 
-import com.google.common.collect.ImmutableList;
 import com.spotify.reaper.core.RepairSchedule;
-
-import org.apache.cassandra.repair.RepairParallelism;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import java.sql.Array;
 import java.sql.ResultSet;
@@ -26,51 +22,58 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.UUID;
 
-public class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
+import com.google.common.collect.ImmutableList;
+import org.apache.cassandra.repair.RepairParallelism;
+import org.skife.jdbi.v2.StatementContext;
+import org.skife.jdbi.v2.tweak.ResultSetMapper;
+
+public final class RepairScheduleMapper implements ResultSetMapper<RepairSchedule> {
 
   @Override
-  public RepairSchedule map(int index, ResultSet r, StatementContext ctx) throws SQLException {
-    
-    UUID[] runHistoryUUIDs = new UUID[0];
-    
+  public RepairSchedule map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
+
+    UUID[] runHistoryUuids = new UUID[0];
+
     Number[] runHistory = null;
-    Array av = r.getArray("run_history");
-    if(null != av) {
+    Array av = rs.getArray("run_history");
+    if (null != av) {
       Object obj = av.getArray();
-      if(obj instanceof Number[]) {
-        runHistory = (Number[])obj;
-      } else if(obj instanceof Object[]) {
-        Object[] ol = (Object[])obj;
+      if (obj instanceof Number[]) {
+        runHistory = (Number[]) obj;
+      } else if (obj instanceof Object[]) {
+        Object[] ol = (Object[]) obj;
         runHistory = Arrays.copyOf(ol, ol.length, Number[].class);
       }
-      
+
       if (null != runHistory && runHistory.length > 0) {
-        runHistoryUUIDs = new UUID[runHistory.length];
+        runHistoryUuids = new UUID[runHistory.length];
         for (int i = 0; i < runHistory.length; i++) {
-          runHistoryUUIDs[i] = UuidUtil.fromSequenceId(runHistory[i].longValue());
+          runHistoryUuids[i] = UuidUtil.fromSequenceId(runHistory[i].longValue());
         }
       }
-    }  
-    
-    String stateStr = r.getString("state");
+    }
+
+    String stateStr = rs.getString("state");
     // For temporary backward compatibility reasons, supporting RUNNING state as ACTIVE.
     if ("RUNNING".equalsIgnoreCase(stateStr)) {
       stateStr = "ACTIVE";
     }
 
     RepairSchedule.State scheduleState = RepairSchedule.State.valueOf(stateStr);
+
     return new RepairSchedule.Builder(
-        UuidUtil.fromSequenceId(r.getLong("repair_unit_id")),
+        UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")),
         scheduleState,
-        r.getInt("days_between"),
-        RepairRunMapper.getDateTimeOrNull(r, "next_activation"),
-        ImmutableList.copyOf(runHistoryUUIDs),
-        r.getInt("segment_count"),
-        RepairParallelism.fromName(r.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel")),
-        r.getDouble("intensity"),
-        RepairRunMapper.getDateTimeOrNull(r, "creation_time"))
-        .owner(r.getString("owner"))
-        .pauseTime(RepairRunMapper.getDateTimeOrNull(r, "pause_time"))
-        .build(UuidUtil.fromSequenceId(r.getLong("id")));
+        rs.getInt("days_between"),
+        RepairRunMapper.getDateTimeOrNull(rs, "next_activation"),
+        ImmutableList.copyOf(runHistoryUuids),
+        rs.getInt("segment_count"),
+        RepairParallelism.fromName(
+            rs.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel")),
+        rs.getDouble("intensity"),
+        RepairRunMapper.getDateTimeOrNull(rs, "creation_time"))
+        .owner(rs.getString("owner"))
+        .pauseTime(RepairRunMapper.getDateTimeOrNull(rs, "pause_time"))
+        .build(UuidUtil.fromSequenceId(rs.getLong("id")));
   }
 }

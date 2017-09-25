@@ -1,46 +1,78 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.spotify.reaper.storage.postgresql;
+
+import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.resources.view.RepairRunStatus;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
-import com.google.common.collect.ImmutableSet;
-import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.resources.view.RepairRunStatus;
 
-public class RepairRunStatusMapper implements ResultSetMapper<RepairRunStatus> {
+public final class RepairRunStatusMapper implements ResultSetMapper<RepairRunStatus> {
 
   @Override
-  public RepairRunStatus map(int index, ResultSet r, StatementContext ctx) throws SQLException {
-    long runId = r.getLong("id");
-    String clusterName = r.getString("cluster_name");
-    String keyspaceName = r.getString("keyspace_name");
-    Collection<String> columnFamilies =
-        ImmutableSet.copyOf((String[]) r.getArray("column_families").getArray());
-    int segmentsRepaired = r.getInt("segments_repaired");
-    int totalSegments = r.getInt("segments_total");
-    RepairRun.RunState state = RepairRun.RunState.valueOf(r.getString("state"));
-    DateTime startTime = RepairRunMapper.getDateTimeOrNull(r, "start_time");
-    DateTime endTime = RepairRunMapper.getDateTimeOrNull(r, "end_time");
-    String cause = r.getString("cause");
-    String owner = r.getString("owner");
-    String lastEvent = r.getString("last_event");
-    DateTime creationTime = RepairRunMapper.getDateTimeOrNull(r, "creation_time");
-    DateTime pauseTime = RepairRunMapper.getDateTimeOrNull(r, "pause_time");
-    Double intensity = r.getDouble("intensity");
-    Boolean incrementalRepair = r.getBoolean("incremental_repair");
-    RepairParallelism repairParallelism =
-        RepairParallelism.fromName(r.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel"));
-    Collection<String> nodes = ImmutableSet.copyOf((String[]) r.getArray("nodes").getArray());
-    Collection<String> datacenters = ImmutableSet.copyOf((String[]) r.getArray("datacenters").getArray());
+  public RepairRunStatus map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
+    long runId = rs.getLong("id");
+    String clusterName = rs.getString("cluster_name");
+    String keyspaceName = rs.getString("keyspace_name");
+    Collection<String> columnFamilies = ImmutableSet.copyOf((String[]) rs.getArray("column_families").getArray());
+    int segmentsRepaired = rs.getInt("segments_repaired");
+    int totalSegments = rs.getInt("segments_total");
+    RepairRun.RunState state = RepairRun.RunState.valueOf(rs.getString("state"));
+    DateTime startTime = RepairRunMapper.getDateTimeOrNull(rs, "start_time");
+    DateTime endTime = RepairRunMapper.getDateTimeOrNull(rs, "end_time");
+    String cause = rs.getString("cause");
+    String owner = rs.getString("owner");
+    String lastEvent = rs.getString("last_event");
+    DateTime creationTime = RepairRunMapper.getDateTimeOrNull(rs, "creation_time");
+    DateTime pauseTime = RepairRunMapper.getDateTimeOrNull(rs, "pause_time");
+    Double intensity = rs.getDouble("intensity");
+    Boolean incrementalRepair = rs.getBoolean("incremental_repair");
+    RepairParallelism repairParallelism = RepairParallelism.fromName(
+        rs.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel"));
 
-    return new RepairRunStatus(UuidUtil.fromSequenceId(runId), clusterName, keyspaceName, columnFamilies, segmentsRepaired,
-        totalSegments, state, startTime, endTime, cause, owner, lastEvent,
-        creationTime, pauseTime, intensity, incrementalRepair, repairParallelism, nodes, datacenters);
+    Collection<String> nodes = ImmutableSet.copyOf((String[]) rs.getArray("nodes").getArray());
+    Collection<String> datacenters = ImmutableSet.copyOf((String[]) rs.getArray("datacenters").getArray());
+
+    return new RepairRunStatus(
+        UuidUtil.fromSequenceId(runId),
+        clusterName,
+        keyspaceName,
+        columnFamilies,
+        segmentsRepaired,
+        totalSegments,
+        state,
+        startTime,
+        endTime,
+        cause,
+        owner,
+        lastEvent,
+        creationTime,
+        pauseTime,
+        intensity,
+        incrementalRepair,
+        repairParallelism,
+        nodes,
+        datacenters);
   }
 }

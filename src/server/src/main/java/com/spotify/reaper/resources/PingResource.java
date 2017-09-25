@@ -11,26 +11,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.resources;
+
+
+import javax.ws.rs.GET;
+import javax.ws.rs.HEAD;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
 @Path("/ping")
 @Produces(MediaType.TEXT_PLAIN)
-public class PingResource {
+public final class PingResource {
 
   private static final Logger LOG = LoggerFactory.getLogger(ClusterResource.class);
 
-  @GET
-  public String answerPing() {
+  @HEAD
+  public Response headPing() {
     LOG.debug("ping called");
-    return "Cassandra Reaper ping resource: PONG";
+    return Response.noContent().build();
   }
 
+  @GET
+  public Response getPing() {
+    LOG.debug("ping called");
+    return Response.noContent().build();
+  }
 }

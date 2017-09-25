@@ -11,31 +11,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.resources.view;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.reaper.core.Cluster;
-
-import jersey.repackaged.com.google.common.collect.Lists;
 
 import java.util.Collection;
 import java.util.Set;
 
-public class ClusterStatus {
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public final class ClusterStatus {
 
   @JsonProperty
   public final String name;
+
   @JsonProperty("seed_hosts")
   public final Set<String> seedHosts;
+
   @JsonProperty("repair_runs")
   public final Collection<RepairRunStatus> repairRuns;
+
   @JsonProperty("repair_schedules")
   public final Collection<RepairScheduleStatus> repairSchedules;
+
   @JsonProperty("nodes_status")
   public final NodesStatus nodesStatus;
-  
-  public ClusterStatus(Cluster cluster, Collection<RepairRunStatus> repairRuns,
-      Collection<RepairScheduleStatus> repairSchedules, NodesStatus nodesStatus) {
+
+  public ClusterStatus(
+      Cluster cluster,
+      Collection<RepairRunStatus> repairRuns,
+      Collection<RepairScheduleStatus> repairSchedules,
+      NodesStatus nodesStatus) {
+
     this.name = cluster.getName();
     this.seedHosts = cluster.getSeedHosts();
     this.repairRuns = repairRuns;

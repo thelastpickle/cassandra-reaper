@@ -1,11 +1,7 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -15,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.service;
 
 import java.util.Date;
@@ -26,57 +23,57 @@ import java.util.concurrent.locks.Condition;
 // _after_ signal(), it will work as desired.)
 final class SimpleCondition implements Condition {
 
-    private boolean set;
+  private boolean set;
 
-    @Override
-    public synchronized void await() throws InterruptedException {
-        while (!set) {
-            wait();
-        }
+  @Override
+  public synchronized void await() throws InterruptedException {
+    while (!set) {
+      wait();
     }
+  }
 
-    public synchronized void reset() {
-        set = false;
+  @Override
+  public synchronized boolean await(long time, TimeUnit unit) throws InterruptedException {
+    long start = System.nanoTime();
+    long timeout = unit.toNanos(time);
+    long elapsed;
+    while (!set && (elapsed = System.nanoTime() - start) < timeout) {
+      TimeUnit.NANOSECONDS.timedWait(this, timeout - elapsed);
     }
+    return set;
+  }
 
-    @Override
-    public synchronized boolean await(long time, TimeUnit unit) throws InterruptedException {
-        long start = System.nanoTime();
-        long timeout = unit.toNanos(time);
-        long elapsed;
-        while (!set && (elapsed = System.nanoTime() - start) < timeout) {
-            TimeUnit.NANOSECONDS.timedWait(this, timeout - elapsed);
-        }
-        return set;
-    }
+  public synchronized void reset() {
+    set = false;
+  }
 
-    @Override
-    public void signal() {
-        throw new UnsupportedOperationException();
-    }
+  @Override
+  public void signal() {
+    throw new UnsupportedOperationException();
+  }
 
-    @Override
-    public synchronized void signalAll() {
-        set = true;
-        notifyAll();
-    }
+  @Override
+  public synchronized void signalAll() {
+    set = true;
+    notifyAll();
+  }
 
-    public synchronized boolean isSignaled() {
-        return set;
-    }
+  public synchronized boolean isSignaled() {
+    return set;
+  }
 
-    @Override
-    public void awaitUninterruptibly() {
-        throw new UnsupportedOperationException();
-    }
+  @Override
+  public void awaitUninterruptibly() {
+    throw new UnsupportedOperationException();
+  }
 
-    @Override
-    public long awaitNanos(long nanosTimeout) throws InterruptedException {
-        throw new UnsupportedOperationException();
-    }
+  @Override
+  public long awaitNanos(long nanosTimeout) throws InterruptedException {
+    throw new UnsupportedOperationException();
+  }
 
-    @Override
-    public boolean awaitUntil(Date deadline) throws InterruptedException {
-        throw new UnsupportedOperationException();
-    }
+  @Override
+  public boolean awaitUntil(Date deadline) throws InterruptedException {
+    throw new UnsupportedOperationException();
+  }
 }

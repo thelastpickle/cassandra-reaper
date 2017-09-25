@@ -11,14 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.spotify.reaper;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.cassandra.repair.RepairParallelism;
-import org.hibernate.validator.constraints.NotEmpty;
-import io.dropwizard.Configuration;
-import io.dropwizard.db.DataSourceFactory;
-import systems.composable.dropwizard.cassandra.CassandraFactory;
+package com.spotify.reaper;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -30,8 +24,14 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.DefaultValue;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dropwizard.Configuration;
+import io.dropwizard.db.DataSourceFactory;
+import org.apache.cassandra.repair.RepairParallelism;
+import org.hibernate.validator.constraints.NotEmpty;
+import systems.composable.dropwizard.cassandra.CassandraFactory;
 
-public class ReaperApplicationConfiguration extends Configuration {
+public final class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   @NotNull
@@ -71,7 +71,6 @@ public class ReaperApplicationConfiguration extends Configuration {
   private String storageType;
 
   private String enableCrossOrigin;
-
 
   @JsonProperty
   private DataSourceFactory database = new DataSourceFactory();
@@ -138,11 +137,11 @@ public class ReaperApplicationConfiguration extends Configuration {
   }
 
   public boolean getIncrementalRepair() {
-	    return incrementalRepair != null ? incrementalRepair : false;
+    return incrementalRepair != null ? incrementalRepair : false;
   }
 
   public void setIncrementalRepair(boolean incrementalRepair) {
-	    this.incrementalRepair = incrementalRepair;
+    this.incrementalRepair = incrementalRepair;
   }
 
   public Integer getScheduleDaysBetween() {
@@ -215,7 +214,7 @@ public class ReaperApplicationConfiguration extends Configuration {
   }
 
   public boolean hasAutoSchedulingEnabled() {
-    return autoScheduling != null &&  autoScheduling.isEnabled();
+    return autoScheduling != null && autoScheduling.isEnabled();
   }
 
   public AutoSchedulingConfiguration getAutoScheduling() {
@@ -260,12 +259,12 @@ public class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty("cassandra")
   public CassandraFactory getCassandraFactory() {
-      return cassandra;
+    return cassandra;
   }
 
   @JsonProperty("cassandra")
   public void setCassandraFactory(CassandraFactory cassandra) {
-      this.cassandra = cassandra;
+    this.cassandra = cassandra;
   }
 
   public int getHangingRepairTimeoutMins() {
@@ -299,6 +298,7 @@ public class ReaperApplicationConfiguration extends Configuration {
 
     @JsonProperty
     private String username;
+
     @JsonProperty
     private String password;
 
@@ -309,7 +309,6 @@ public class ReaperApplicationConfiguration extends Configuration {
     public String getPassword() {
       return password;
     }
-
   }
 
   public static final class AutoSchedulingConfiguration {
@@ -386,23 +385,27 @@ public class ReaperApplicationConfiguration extends Configuration {
 
     @Override
     public String toString() {
-      return "AutoSchedulingConfiguration{" +
-          "enabled=" + enabled +
-          ", initialDelayPeriod=" + initialDelayPeriod +
-          ", periodBetweenPolls=" + periodBetweenPolls +
-          ", timeBeforeFirstSchedule=" + timeBeforeFirstSchedule +
-          ", scheduleSpreadPeriod=" + scheduleSpreadPeriod +
-          '}';
+      return "AutoSchedulingConfiguration{"
+          + "enabled="
+          + enabled
+          + ", initialDelayPeriod="
+          + initialDelayPeriod
+          + ", periodBetweenPolls="
+          + periodBetweenPolls
+          + ", timeBeforeFirstSchedule="
+          + timeBeforeFirstSchedule
+          + ", scheduleSpreadPeriod="
+          + scheduleSpreadPeriod
+          + '}';
     }
   }
 
-    public static enum DatacenterAvailability {
-        /* We require direct JMX access to all nodes across all datacenters */
-        ALL,
-        /* We require jmx access to all nodes in the local datacenter */
-        LOCAL,
-        /* Each datacenter requires at minimum one reaper instance that has jmx access to all nodes in that datacenter */
-        EACH
-    }
-
+  public enum DatacenterAvailability {
+    /* We require direct JMX access to all nodes across all datacenters */
+    ALL,
+    /* We require jmx access to all nodes in the local datacenter */
+    LOCAL,
+    /* Each datacenter requires at minimum one reaper instance that has jmx access to all nodes in that datacenter */
+    EACH
+  }
 }

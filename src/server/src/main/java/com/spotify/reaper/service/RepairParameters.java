@@ -11,23 +11,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.service;
 
-import org.apache.cassandra.repair.RepairParallelism;
 
 import java.util.Set;
+
+import org.apache.cassandra.repair.RepairParallelism;
 
 /**
  * Represents the parameters of a repair command given to Cassandra.
  */
-public class RepairParameters {
+public final class RepairParameters {
+
   public final RingRange tokenRange;
   public final String keyspaceName;
   public final Set<String> columnFamilies;
   public final RepairParallelism repairParallelism;
 
-  public RepairParameters(RingRange tokenRange, String keyspaceName, Set<String> columnFamilies,
+  public RepairParameters(
+      RingRange tokenRange,
+      String keyspaceName,
+      Set<String> columnFamilies,
       RepairParallelism repairParallelism) {
+
     this.tokenRange = tokenRange;
     this.keyspaceName = keyspaceName;
     this.columnFamilies = columnFamilies;

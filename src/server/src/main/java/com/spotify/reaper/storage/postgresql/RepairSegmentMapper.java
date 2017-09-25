@@ -11,30 +11,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.storage.postgresql;
 
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.service.RingRange;
 
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class RepairSegmentMapper implements ResultSetMapper<RepairSegment> {
+import org.skife.jdbi.v2.StatementContext;
+import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
-  public RepairSegment map(int index, ResultSet r, StatementContext ctx) throws SQLException {
-    RingRange range = new RingRange(r.getBigDecimal("start_token").toBigInteger(),
-                                    r.getBigDecimal("end_token").toBigInteger());
-    return
-        new RepairSegment.Builder(range, UuidUtil.fromSequenceId(r.getLong("repair_unit_id")))
-                .withRunId(UuidUtil.fromSequenceId(r.getLong("run_id")))
-                .state(RepairSegment.State.values()[r.getInt("state")])
-                .coordinatorHost(r.getString("coordinator_host"))
-                .startTime(RepairRunMapper.getDateTimeOrNull(r, "start_time"))
-                .endTime(RepairRunMapper.getDateTimeOrNull(r, "end_time"))
-                .failCount(r.getInt("fail_count"))
-                .build(UuidUtil.fromSequenceId(r.getLong("id")));
+public final class RepairSegmentMapper implements ResultSetMapper<RepairSegment> {
+
+  @Override
+  public RepairSegment map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
+    RingRange range
+        = new RingRange(rs.getBigDecimal("start_token").toBigInteger(), rs.getBigDecimal("end_token").toBigInteger());
+
+    return new RepairSegment.Builder(range, UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")))
+        .withRunId(UuidUtil.fromSequenceId(rs.getLong("run_id")))
+        .state(RepairSegment.State.values()[rs.getInt("state")])
+        .coordinatorHost(rs.getString("coordinator_host"))
+        .startTime(RepairRunMapper.getDateTimeOrNull(rs, "start_time"))
+        .endTime(RepairRunMapper.getDateTimeOrNull(rs, "end_time"))
+        .failCount(rs.getInt("fail_count"))
+        .build(UuidUtil.fromSequenceId(rs.getLong("id")));
   }
 }

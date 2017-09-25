@@ -11,9 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.storage;
 
-import com.google.common.base.Optional;
 import com.spotify.reaper.core.NodeMetrics;
 import com.spotify.reaper.core.RepairSegment;
 import com.spotify.reaper.service.RingRange;
@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import com.google.common.base.Optional;
 
 /**
  * Definition for a storage that can run in distributed (peer-to-peer) mode. For example Cassandra.
@@ -29,13 +30,18 @@ import java.util.UUID;
 public interface IDistributedStorage {
 
   boolean takeLead(UUID leaderId);
+
   boolean renewLead(UUID leaderId);
+
   void releaseLead(UUID leaderId);
 
   Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(UUID runId, List<RingRange> localRanges);
 
   int countRunningReapers();
+
   void saveHeartbeat();
+
   Optional<NodeMetrics> getNodeMetrics(String hostName);
+
   void storeNodeMetrics(NodeMetrics hostMetrics);
 }

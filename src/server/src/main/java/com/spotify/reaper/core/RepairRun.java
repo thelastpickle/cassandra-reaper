@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.core;
 
 import java.util.Objects;
@@ -20,14 +21,13 @@ import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeComparator;
 
-public class RepairRun implements Comparable<RepairRun> {
+public final class RepairRun implements Comparable<RepairRun> {
 
   private final UUID id;
 
   // IDEA: maybe we want to have start and stop token for parallel runners on same repair run?
-  //private final long startToken;
-  //private final long endToken;
-
+  // private final long startToken;
+  // private final long endToken;
   private final String cause;
   private final String owner;
   private final String clusterName;
@@ -102,7 +102,7 @@ public class RepairRun implements Comparable<RepairRun> {
   public double getIntensity() {
     return intensity;
   }
-  
+
   public String getLastEvent() {
     return lastEvent;
   }
@@ -120,11 +120,10 @@ public class RepairRun implements Comparable<RepairRun> {
   }
 
   /**
-   * Order RepairRun instances by time. Primarily endTime, secondarily startTime. Descending, i.e.
-   * latest first.
+   * Order RepairRun instances by time. Primarily endTime, secondarily startTime. Descending, i.e. latest first.
+   *
    * @param other the RepairRun compared to
-   * @return negative if this RepairRun is later than the specified RepairRun. Positive if earlier.
-   *         0 if equal.
+   * @return negative if this RepairRun is later than the specified RepairRun. Positive if earlier. 0 if equal.
    */
   @Override
   public int compareTo(RepairRun other) {
@@ -136,19 +135,19 @@ public class RepairRun implements Comparable<RepairRun> {
       return -comparator.compare(startTime, other.startTime);
     }
   }
-  
+
   @Override
   public boolean equals(Object other) {
-    if (other == this) 
+    if (other == this) {
       return true;
+    }
     if (!(other instanceof RepairRun)) {
       return false;
     }
     RepairRun run = (RepairRun) other;
-    return this.id == run.id
-        && this.repairUnitId == run.repairUnitId;
+    return this.id == run.id && this.repairUnitId == run.repairUnitId;
   }
-  
+
   @Override
   public int hashCode() {
     return Objects.hash(this.id, this.repairUnitId);
@@ -172,14 +171,13 @@ public class RepairRun implements Comparable<RepairRun> {
     }
   }
 
-  public static class Builder {
+  public static final class Builder {
 
     public final String clusterName;
     public final UUID repairUnitId;
     private RunState runState;
     private DateTime creationTime;
     private double intensity;
-    private boolean incrementalRepair;
     private String cause;
     private String owner;
     private DateTime startTime;
@@ -189,8 +187,14 @@ public class RepairRun implements Comparable<RepairRun> {
     private int segmentCount;
     private RepairParallelism repairParallelism;
 
-    public Builder(String clusterName, UUID repairUnitId, DateTime creationTime,
-                   double intensity, int segmentCount, RepairParallelism repairParallelism) {
+    public Builder(
+        String clusterName,
+        UUID repairUnitId,
+        DateTime creationTime,
+        double intensity,
+        int segmentCount,
+        RepairParallelism repairParallelism) {
+
       this.clusterName = clusterName;
       this.repairUnitId = repairUnitId;
       this.runState = RunState.NOT_STARTED;
@@ -230,7 +234,7 @@ public class RepairRun implements Comparable<RepairRun> {
       this.intensity = intensity;
       return this;
     }
-    
+
     public Builder cause(String cause) {
       this.cause = cause;
       return this;

@@ -11,45 +11,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.storage.postgresql;
 
-import com.google.common.collect.Sets;
 
 import com.spotify.reaper.service.RepairParameters;
 import com.spotify.reaper.service.RingRange;
-
-import org.apache.cassandra.repair.RepairParallelism;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 
-public class RepairParametersMapper implements ResultSetMapper<RepairParameters> {
+import com.google.common.collect.Sets;
+import org.apache.cassandra.repair.RepairParallelism;
+import org.skife.jdbi.v2.StatementContext;
+import org.skife.jdbi.v2.tweak.ResultSetMapper;
+
+public final class RepairParametersMapper implements ResultSetMapper<RepairParameters> {
+
   @Override
-  public RepairParameters map(int index, ResultSet r, StatementContext ctx) throws SQLException {
-    RingRange range = new RingRange(r.getBigDecimal("start_token").toBigInteger(),
-                                    r.getBigDecimal("end_token").toBigInteger());
-    Object columnFamiliesObj = r.getArray("column_families").getArray();
+  public RepairParameters map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
+
+    RingRange range
+        = new RingRange(rs.getBigDecimal("start_token").toBigInteger(), rs.getBigDecimal("end_token").toBigInteger());
+
+    Object columnFamiliesObj = rs.getArray("column_families").getArray();
     String[] columnFamilies;
     if (columnFamiliesObj instanceof String[]) {
-        columnFamilies = (String[]) columnFamiliesObj;
+      columnFamilies = (String[]) columnFamiliesObj;
     } else {
-        Object[] objArray = (Object[]) columnFamiliesObj;
-        columnFamilies = Arrays.copyOf(objArray, objArray.length, String[].class);
+      Object[] objArray = (Object[]) columnFamiliesObj;
+      columnFamilies = Arrays.copyOf(objArray, objArray.length, String[].class);
     }
 
-    String repairParallelismStr = r.getString("repair_parallelism");
-    if (repairParallelismStr != null)
-    {
+    String repairParallelismStr = rs.getString("repair_parallelism");
+    if (repairParallelismStr != null) {
       repairParallelismStr = repairParallelismStr.toUpperCase();
     }
     RepairParallelism repairParallelism = RepairParallelism.fromName(repairParallelismStr);
 
-    return new RepairParameters(range,
-                                r.getString("keyspace_name"),
-                                Sets.newHashSet(columnFamilies),
-                                repairParallelism);
+    return new RepairParameters(
+        range,
+        rs.getString("keyspace_name"),
+        Sets.newHashSet(columnFamilies),
+        repairParallelism);
   }
 }

@@ -11,26 +11,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.spotify.reaper.storage.postgresql;
 
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.tweak.Argument;
-import org.skife.jdbi.v2.tweak.ArgumentFactory;
+package com.spotify.reaper.storage.postgresql;
 
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
 
+import org.skife.jdbi.v2.StatementContext;
+import org.skife.jdbi.v2.tweak.Argument;
+import org.skife.jdbi.v2.tweak.ArgumentFactory;
+
 /**
  * Provides JDBI a method to map String Collection to an SQL Array type.
  *
- * NOTICE: this is very non-generic and ugly due to not being able to have different generic types
- * except Strings when using Collections with JDBI here.
- * Should probably use own collection types without generics to solve this.
- * See LongCollectionSQLType for example, if this becomes a problem.
+ * <p>
+ * NOTICE: this is very non-generic and ugly due to not being able to have different generic types except Strings
+ * when using Collections with JDBI here. Should probably use own collection types without generics to solve this. See
+ * LongCollectionSQLType for example, if this becomes a problem.
  */
-public class PostgresArrayArgumentFactory implements ArgumentFactory<Collection<String>> {
+public final class PostgresArrayArgumentFactory implements ArgumentFactory<Collection<String>> {
 
   @Override
   public boolean accepts(Class<?> expectedType, Object value, StatementContext ctx) {
@@ -38,21 +39,17 @@ public class PostgresArrayArgumentFactory implements ArgumentFactory<Collection<
   }
 
   @Override
-  public Argument build(Class<?> expectedType, final Collection<String> value,
-                        StatementContext ctx) {
-    return new Argument() {
-      public void apply(int position, PreparedStatement statement, StatementContext ctx)
-          throws SQLException {
-        try {
-          Array sqlArray = ctx.getConnection().createArrayOf("text", value.toArray());
-          statement.setArray(position, sqlArray);
-        } catch(SQLException e) {
-          // H2 DB feature not supported: "createArray" error
-          if(e.getErrorCode() != 50100) {
-            throw e;
-          }
-          statement.setObject(position, value.toArray());
+  public Argument build(Class<?> expectedType, final Collection<String> value, StatementContext ctx) {
+    return (int position, PreparedStatement statement, StatementContext ctx1) -> {
+      try {
+        Array sqlArray = ctx1.getConnection().createArrayOf("text", value.toArray());
+        statement.setArray(position, sqlArray);
+      } catch (SQLException e) {
+        // H2 DB feature not supported: "createArray" error
+        if (e.getErrorCode() != 50100) {
+          throw e;
         }
+        statement.setObject(position, value.toArray());
       }
     };
   }

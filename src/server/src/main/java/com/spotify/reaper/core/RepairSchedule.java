@@ -11,20 +11,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.core;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import java.util.Collection;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 
-public class RepairSchedule {
+public final class RepairSchedule {
 
   private final UUID id;
 
@@ -84,15 +84,11 @@ public class RepairSchedule {
   }
 
   /**
-   * Required for JDBI mapping into database.
-   * Generic collection type would be hard to map into Postgres array types.
+   * Required for JDBI mapping into database. Generic collection type would be hard to map into Postgres array types.
    */
-  public LongCollectionSQLType getRunHistorySQL() {
-    List<Long> list = runHistory
-      .stream()
-      .map(UUID::getMostSignificantBits)
-      .collect(Collectors.toList());
-    return new LongCollectionSQLType(list);
+  public LongCollectionSqlType getRunHistorySql() {
+    List<Long> list = runHistory.stream().map(UUID::getMostSignificantBits).collect(Collectors.toList());
+    return new LongCollectionSqlType(list);
   }
 
   public int getSegmentCount() {
@@ -143,10 +139,16 @@ public class RepairSchedule {
     private String owner;
     private DateTime pauseTime;
 
-    public Builder(UUID repairUnitId, State state, int daysBetween, DateTime nextActivation,
-                   ImmutableList<UUID> runHistory, int segmentCount,
-                   RepairParallelism repairParallelism,
-                   double intensity, DateTime creationTime) {
+    public Builder(
+        UUID repairUnitId,
+        State state,
+        int daysBetween,
+        DateTime nextActivation,
+        ImmutableList<UUID> runHistory,
+        int segmentCount,
+        RepairParallelism repairParallelism,
+        double intensity,
+        DateTime creationTime) {
       this.repairUnitId = repairUnitId;
       this.state = state;
       this.daysBetween = daysBetween;
@@ -173,8 +175,7 @@ public class RepairSchedule {
       intensity = original.intensity;
     }
 
-
-	public Builder state(State state) {
+    public Builder state(State state) {
       this.state = state;
       return this;
     }
@@ -229,19 +230,19 @@ public class RepairSchedule {
     }
   }
 
-    /**
-     * This is required to be able to map in generic manner into Postgres array types through JDBI.
-     */
-    public static final class LongCollectionSQLType {
+  /**
+   * This is required to be able to map in generic manner into Postgres array types through JDBI.
+   */
+  public static final class LongCollectionSqlType {
 
-        private final Collection<Long> collection;
+    private final Collection<Long> collection;
 
-        public LongCollectionSQLType(Collection<Long> collection) {
-            this.collection = collection;
-        }
-
-        public Collection<Long> getValue() {
-            return null == collection ? collection : Lists.newArrayList();
-        }
+    public LongCollectionSqlType(Collection<Long> collection) {
+      this.collection = collection;
     }
+
+    public Collection<Long> getValue() {
+      return null == collection ? collection : Lists.newArrayList();
+    }
+  }
 }

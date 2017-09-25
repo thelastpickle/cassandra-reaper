@@ -11,43 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.unit.service;
 
-import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyCollectionOf;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.math.BigInteger;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.cassandra.repair.RepairParallelism;
-import org.apache.cassandra.service.ActiveRepairService;
-import org.apache.cassandra.utils.progress.ProgressEventType;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
@@ -66,12 +32,46 @@ import com.spotify.reaper.service.SegmentRunner;
 import com.spotify.reaper.storage.IStorage;
 import com.spotify.reaper.storage.MemoryStorage;
 
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.cassandra.service.ActiveRepairService;
+import org.apache.cassandra.utils.progress.ProgressEventType;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.junit.Before;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 public final class RepairRunnerTest {
+
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunnerTest.class);
 
   @Before
   public void setUp() throws Exception {
-    SegmentRunner.segmentRunners.clear();
+    SegmentRunner.SEGMENT_RUNNERS.clear();
   }
 
   @Test
@@ -82,7 +82,7 @@ public final class RepairRunnerTest {
     final boolean INCREMENTAL_REPAIR = false;
     final Set<String> NODES = Sets.newHashSet("127.0.0.1");
     final Set<String> DATACENTERS = Collections.emptySet();
-    final long TIME_RUN = 41l;
+    final long TIME_RUN = 41L;
     final double INTENSITY = 0.5f;
 
     final IStorage storage = new MemoryStorage();
@@ -113,6 +113,7 @@ public final class RepairRunnerTest {
       @Override
       public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
           throws ReaperException {
+
         final JmxProxy jmx = mock(JmxProxy.class);
         when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
         when(jmx.isConnectionAlive()).thenReturn(true);
@@ -121,66 +122,98 @@ public final class RepairRunnerTest {
         when(jmx.getDataCenter()).thenReturn("dc1");
         when(jmx.getDataCenter(anyString())).thenReturn("dc1");
 
-        when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(), Matchers.<RepairParallelism>any(),
-            Sets.newHashSet(anyString()), anyBoolean(), anyCollectionOf(String.class))).then((invocation) -> {
-                assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+        when(jmx.triggerRepair(
+            any(BigInteger.class),
+            any(BigInteger.class),
+            any(),
+            any(RepairParallelism.class),
+            any(),
+            anyBoolean(),
+            any()))
+            .then((invocation) -> {
 
-                final int repairNumber = repairAttempts.getAndIncrement();
-                switch (repairNumber) {
-                    case 1:
-                        new Thread() {
-                            @Override
-                            public void run() {
-                                handler.get()
-                                    .handle(repairNumber, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(), null);
-                                assertEquals(RepairSegment.State.RUNNING,
-                                        storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-                            }
-                        }.start();
-                        break;
-                    case 2:
-                        new Thread() {
-                            @Override
-                            public void run() {
-                                handler.get()
-                                        .handle(repairNumber, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(), null);
-                                assertEquals(RepairSegment.State.RUNNING,
-                                        storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-                                handler.get()
-                                        .handle(repairNumber, Optional.of(ActiveRepairService.Status.SESSION_SUCCESS), Optional.absent(), null);
-                                assertEquals(RepairSegment.State.DONE,
-                                        storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-                                handler.get()
-                                        .handle(repairNumber, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(), null);
-                                mutex.release();
-                                LOG.info("MUTEX RELEASED");
-                            }
-                        }.start();
-                        break;
-                    default:
-                        fail("triggerRepair should only have been called twice");
-                }
-                LOG.info("repair number : " + repairNumber);
-                return repairNumber;
-        });
+              assertEquals(
+                  RepairSegment.State.NOT_STARTED,
+                  storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+
+              final int repairNumber = repairAttempts.getAndIncrement();
+              switch (repairNumber) {
+                case 1:
+                  new Thread() {
+                    @Override
+                    public void run() {
+                      handler.get().handle(
+                          repairNumber,
+                          Optional.of(ActiveRepairService.Status.STARTED),
+                          Optional.absent(),
+                          null);
+
+                      assertEquals(
+                          RepairSegment.State.RUNNING,
+                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                    }
+                  }.start();
+                  break;
+                case 2:
+                  new Thread() {
+                    @Override
+                    public void run() {
+
+                      handler.get().handle(
+                          repairNumber,
+                          Optional.of(ActiveRepairService.Status.STARTED),
+                          Optional.absent(),
+                          null);
+
+                      assertEquals(
+                          RepairSegment.State.RUNNING,
+                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+
+                      handler.get().handle(
+                          repairNumber,
+                          Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
+                          Optional.absent(),
+                          null);
+
+                      assertEquals(
+                          RepairSegment.State.DONE,
+                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+
+                      handler.get().handle(
+                          repairNumber,
+                          Optional.of(ActiveRepairService.Status.FINISHED),
+                          Optional.absent(),
+                          null);
+
+                      mutex.release();
+                      LOG.info("MUTEX RELEASED");
+                    }
+                  }.start();
+                  break;
+                default:
+                  fail("triggerRepair should only have been called twice");
+              }
+              LOG.info("repair number : " + repairNumber);
+              return repairNumber;
+            });
         return jmx;
       }
     };
     context.repairManager.startRepairRun(context, run);
 
     await().with().atMost(20, TimeUnit.SECONDS).until(()
-            -> {
-                try {
-                    mutex.acquire();
-                    LOG.info("MUTEX ACQUIRED");
-                    // TODO: refactor so that we can properly wait for the repair runner to finish rather than
-                    // TODO: using this sleep().
-                    Thread.sleep(1000);
-                    return true;
-                } catch (InterruptedException ex) {
-                    throw new IllegalStateException(ex);
-                }
-            });
+        -> {
+      try {
+        mutex.acquire();
+        LOG.info("MUTEX ACQUIRED");
+        // TODO: refactor so that we can properly wait for the repair runner to finish rather than
+        // TODO: using this sleep().
+        Thread.sleep(1000);
+        return true;
+      } catch (InterruptedException ex) {
+        throw new IllegalStateException(ex);
+      }
+    });
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }
 
@@ -192,7 +225,7 @@ public final class RepairRunnerTest {
     final boolean INCREMENTAL_REPAIR = false;
     final Set<String> NODES = Sets.newHashSet("127.0.0.1");
     final Set<String> DATACENTERS = Collections.emptySet();
-    final long TIME_RUN = 41l;
+    final long TIME_RUN = 41L;
     final double INTENSITY = 0.5f;
 
     final IStorage storage = new MemoryStorage();
@@ -223,6 +256,7 @@ public final class RepairRunnerTest {
       @Override
       public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
           throws ReaperException {
+
         final JmxProxy jmx = mock(JmxProxy.class);
         when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
         when(jmx.isConnectionAlive()).thenReturn(true);
@@ -232,65 +266,74 @@ public final class RepairRunnerTest {
         when(jmx.getDataCenter(anyString())).thenReturn("dc1");
         //doNothing().when(jmx).cancelAllRepairs();
 
-        when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-            Matchers.<RepairParallelism>any(),
-            Sets.newHashSet(anyString()), anyBoolean(), anyCollectionOf(String.class))).then((invocation) -> {
-                assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+        when(jmx.triggerRepair(
+            any(BigInteger.class),
+            any(BigInteger.class),
+            any(),
+            any(RepairParallelism.class),
+            any(),
+            anyBoolean(),
+            any()))
+            .then((invocation) -> {
 
-                final int repairNumber = repairAttempts.getAndIncrement();
-                switch (repairNumber) {
-                    case 1:
-                        new Thread() {
-                            @Override
-                            public void run() {
-                                handler.get().handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.START), null);
-                                assertEquals(RepairSegment.State.RUNNING,
-                                        storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-                            }
-                        }.start();
-                        break;
-                    case 2:
-                        new Thread() {
-                            @Override
-                            public void run() {
-                                handler.get()
-                                        .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.START), null);
-                                assertEquals(RepairSegment.State.RUNNING,
-                                        storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-                                handler.get()
-                                        .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.SUCCESS), null);
-                                assertEquals(RepairSegment.State.DONE,
-                                        storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-                                handler.get()
-                                        .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.COMPLETE), null);
-                                mutex.release();
-                                LOG.info("MUTEX RELEASED");
-                            }
-                        }.start();
-                        break;
-                    default:
-                        fail("triggerRepair should only have been called twice");
-                }
-                return repairNumber;
-        });
+              assertEquals(
+                  RepairSegment.State.NOT_STARTED,
+                  storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+
+              final int repairNumber = repairAttempts.getAndIncrement();
+              switch (repairNumber) {
+                case 1:
+                  new Thread() {
+                    @Override
+                    public void run() {
+                      handler.get().handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.START), null);
+                      assertEquals(RepairSegment.State.RUNNING,
+                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                    }
+                  }.start();
+                  break;
+                case 2:
+                  new Thread() {
+                    @Override
+                    public void run() {
+                      handler.get()
+                          .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.START), null);
+                      assertEquals(RepairSegment.State.RUNNING,
+                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                      handler.get()
+                          .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.SUCCESS), null);
+                      assertEquals(RepairSegment.State.DONE,
+                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                      handler.get()
+                          .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.COMPLETE), null);
+                      mutex.release();
+                      LOG.info("MUTEX RELEASED");
+                    }
+                  }.start();
+                  break;
+                default:
+                  fail("triggerRepair should only have been called twice");
+              }
+              return repairNumber;
+            });
         return jmx;
       }
     };
     context.repairManager.startRepairRun(context, run);
 
     await().with().atMost(20, TimeUnit.SECONDS).until(()
-            -> {
-                try {
-                    mutex.acquire();
-                    LOG.info("MUTEX ACQUIRED");
-                    // TODO: refactor so that we can properly wait for the repair runner to finish rather than
-                    // TODO: using this sleep().
-                    Thread.sleep(1000);
-                    return true;
-                } catch (InterruptedException ex) {
-                    throw new IllegalStateException(ex);
-                }
-            });
+        -> {
+      try {
+        mutex.acquire();
+        LOG.info("MUTEX ACQUIRED");
+        // TODO: refactor so that we can properly wait for the repair runner to finish rather than
+        // TODO: using this sleep().
+        Thread.sleep(1000);
+        return true;
+      } catch (InterruptedException ex) {
+        throw new IllegalStateException(ex);
+      }
+    });
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }
 
@@ -302,7 +345,7 @@ public final class RepairRunnerTest {
     final boolean INCREMENTAL_REPAIR = false;
     final Set<String> NODES = Sets.newHashSet("127.0.0.1");
     final Set<String> DATACENTERS = Collections.emptySet();
-    final long TIME_RUN = 41l;
+    final long TIME_RUN = 41L;
     final double INTENSITY = 0.5f;
 
     final IStorage storage = new MemoryStorage();
@@ -334,6 +377,7 @@ public final class RepairRunnerTest {
       @Override
       public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
           throws ReaperException {
+
         final JmxProxy jmx = mock(JmxProxy.class);
         when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
         when(jmx.isConnectionAlive()).thenReturn(true);
@@ -342,19 +386,35 @@ public final class RepairRunnerTest {
         when(jmx.getDataCenter()).thenReturn("dc1");
         when(jmx.getDataCenter(anyString())).thenReturn("dc1");
 
-        when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(), Matchers.<RepairParallelism>any(),
-            Sets.newHashSet(anyString()), anyBoolean(), anyCollectionOf(String.class))).then((invocation) -> {
-                assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-                new Thread() {
-                    @Override
-                    public void run() {
-                        handler.get().handle(1, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(), null);
-                        handler.get().handle(1, Optional.of(ActiveRepairService.Status.SESSION_SUCCESS), Optional.absent(), null);
-                        handler.get().handle(1, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(), null);
-                    }
-                }.start();
-                return 1;
-        });
+        when(jmx.triggerRepair(
+            any(BigInteger.class),
+            any(BigInteger.class),
+            any(),
+            any(RepairParallelism.class),
+            any(),
+            anyBoolean(),
+            any()))
+            .then((invocation) -> {
+
+              assertEquals(
+                  RepairSegment.State.NOT_STARTED,
+                  storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+
+              new Thread() {
+                @Override
+                public void run() {
+                  handler.get()
+                      .handle(1, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(), null);
+
+                  handler.get()
+                      .handle(1, Optional.of(ActiveRepairService.Status.SESSION_SUCCESS), Optional.absent(), null);
+
+                  handler.get()
+                      .handle(1, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(), null);
+                }
+              }.start();
+              return 1;
+            });
         return jmx;
       }
     };
@@ -382,7 +442,7 @@ public final class RepairRunnerTest {
   @Test
   public void getParallelSegmentsTest() throws ReaperException {
     List<BigInteger> tokens = Lists
-            .transform(Lists.newArrayList("0", "50", "100", "150", "200", "250"), (s) -> new BigInteger(s));
+        .transform(Lists.newArrayList("0", "50", "100", "150", "200", "250"), (string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
     List<RingRange> segments = generator.generateSegments(32, tokens, Boolean.FALSE);
@@ -394,17 +454,17 @@ public final class RepairRunnerTest {
         segments
     );
     assertEquals(2, ranges.size());
-    assertEquals(  "0", ranges.get(0).getStart().toString());
+    assertEquals("0", ranges.get(0).getStart().toString());
     assertEquals("150", ranges.get(0).getEnd().toString());
     assertEquals("150", ranges.get(1).getStart().toString());
-    assertEquals(  "0", ranges.get(1).getEnd().toString());
+    assertEquals("0", ranges.get(1).getEnd().toString());
   }
 
   @Test
   public void getParallelSegmentsTest2() throws ReaperException {
     List<BigInteger> tokens = Lists.transform(
-            Lists.newArrayList("0", "25", "50", "75", "100", "125", "150", "175", "200", "225", "250"),
-            (s) -> new BigInteger(s));
+        Lists.newArrayList("0", "25", "50", "75", "100", "125", "150", "175", "200", "225", "250"),
+        (string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
     List<RingRange> segments = generator.generateSegments(32, tokens, Boolean.FALSE);
@@ -416,28 +476,28 @@ public final class RepairRunnerTest {
         segments
     );
     assertEquals(2, ranges.size());
-    assertEquals(  "0", ranges.get(0).getStart().toString());
+    assertEquals("0", ranges.get(0).getStart().toString());
     assertEquals("150", ranges.get(0).getEnd().toString());
     assertEquals("150", ranges.get(1).getStart().toString());
-    assertEquals(  "0", ranges.get(1).getEnd().toString());
+    assertEquals("0", ranges.get(1).getEnd().toString());
   }
 
   public static Map<List<String>, List<String>> threeNodeCluster() {
     Map<List<String>, List<String>> map = Maps.newHashMap();
-    map = addRangeToMap(map,   "0",  "50", "a1", "a2", "a3");
-    map = addRangeToMap(map,  "50", "100", "a2", "a3", "a1");
-    map = addRangeToMap(map, "100",   "0", "a3", "a1", "a2");
+    map = addRangeToMap(map, "0", "50", "a1", "a2", "a3");
+    map = addRangeToMap(map, "50", "100", "a2", "a3", "a1");
+    map = addRangeToMap(map, "100", "0", "a3", "a1", "a2");
     return map;
   }
 
   public static Map<List<String>, List<String>> sixNodeCluster() {
     Map<List<String>, List<String>> map = Maps.newLinkedHashMap();
-    map = addRangeToMap(map,   "0",  "50", "a1", "a2", "a3");
-    map = addRangeToMap(map,  "50", "100", "a2", "a3", "a4");
+    map = addRangeToMap(map, "0", "50", "a1", "a2", "a3");
+    map = addRangeToMap(map, "50", "100", "a2", "a3", "a4");
     map = addRangeToMap(map, "100", "150", "a3", "a4", "a5");
     map = addRangeToMap(map, "150", "200", "a4", "a5", "a6");
     map = addRangeToMap(map, "200", "250", "a5", "a6", "a1");
-    map = addRangeToMap(map, "250",   "0", "a6", "a1", "a2");
+    map = addRangeToMap(map, "250", "0", "a6", "a1", "a2");
     return map;
   }
 
@@ -460,9 +520,13 @@ public final class RepairRunnerTest {
     return map;
   }
 
-  private static Map<List<String>, List<String>> addRangeToMap(Map<List<String>, List<String>> map,
-      String rStart, String rEnd, String... hosts) {
-    List<String> range = Lists.newArrayList(rStart, rEnd);
+  private static Map<List<String>, List<String>> addRangeToMap(
+      Map<List<String>, List<String>> map,
+      String start,
+      String end,
+      String... hosts) {
+
+    List<String> range = Lists.newArrayList(start, end);
     List<String> endPoints = Lists.newArrayList(hosts);
     map.put(range, endPoints);
     return map;

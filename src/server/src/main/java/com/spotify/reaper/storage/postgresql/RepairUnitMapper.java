@@ -11,32 +11,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.storage.postgresql;
+
+
+import com.spotify.reaper.core.RepairUnit;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 
+import com.google.common.collect.Sets;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
-import com.google.common.collect.Sets;
-import com.spotify.reaper.core.RepairUnit;
-
-public class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
+public final class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
 
   @Override
-  public RepairUnit map(int index, ResultSet r, StatementContext ctx) throws SQLException {
+  public RepairUnit map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
 
-    String[] columnFamilies = parseStringArray(r.getArray("column_families").getArray());
-    String[] nodes = parseStringArray(r.getArray("nodes").getArray());
-    String[] datacenters = parseStringArray(r.getArray("datacenters").getArray());
+    String[] columnFamilies = parseStringArray(rs.getArray("column_families").getArray());
+    String[] nodes = parseStringArray(rs.getArray("nodes").getArray());
+    String[] datacenters = parseStringArray(rs.getArray("datacenters").getArray());
 
-
-    RepairUnit.Builder builder = new RepairUnit.Builder(r.getString("cluster_name"), r.getString("keyspace_name"),
-        Sets.newHashSet(columnFamilies), r.getBoolean("incremental_repair"), Sets.newHashSet(nodes),
+    RepairUnit.Builder builder = new RepairUnit.Builder(
+        rs.getString("cluster_name"),
+        rs.getString("keyspace_name"),
+        Sets.newHashSet(columnFamilies),
+        rs.getBoolean("incremental_repair"),
+        Sets.newHashSet(nodes),
         Sets.newHashSet(datacenters));
-    return builder.build(UuidUtil.fromSequenceId(r.getLong("id")));
+
+    return builder.build(UuidUtil.fromSequenceId(rs.getLong("id")));
   }
 
   private String[] parseStringArray(Object obj) {
