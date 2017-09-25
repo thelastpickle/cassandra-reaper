@@ -11,19 +11,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper;
 
-public class ReaperException extends Exception {
+public final class ReaperException extends Exception {
 
-  public ReaperException(String s) {
-    super(s);
+  public ReaperException(String message) {
+    super(message);
   }
 
-  public ReaperException(Exception e) {
-    super(e);
+  public ReaperException(Exception exception) {
+    super(exception);
   }
 
-  public ReaperException(String s, Exception e) {
-    super(s, e);
+  public ReaperException(String message, Exception exception) {
+    super(message, exception);
   }
 }

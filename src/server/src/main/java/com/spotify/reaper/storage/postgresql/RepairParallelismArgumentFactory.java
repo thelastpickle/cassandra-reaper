@@ -11,20 +11,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.storage.postgresql;
+
+
+import java.sql.PreparedStatement;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.Argument;
 import org.skife.jdbi.v2.tweak.ArgumentFactory;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
 /**
  * Provides JDBI a method to map RepairParallelism value to a TEXT value in database.
  */
-public class RepairParallelismArgumentFactory implements ArgumentFactory<RepairParallelism> {
+public final class RepairParallelismArgumentFactory implements ArgumentFactory<RepairParallelism> {
 
   @Override
   public boolean accepts(Class<?> expectedType, Object value, StatementContext ctx) {
@@ -32,13 +33,9 @@ public class RepairParallelismArgumentFactory implements ArgumentFactory<RepairP
   }
 
   @Override
-  public Argument build(Class<?> expectedType, final RepairParallelism value,
-                        StatementContext ctx) {
-    return new Argument() {
-      public void apply(int position, PreparedStatement statement, StatementContext ctx)
-          throws SQLException {
-        statement.setString(position, value.toString());
-      }
+  public Argument build(Class<?> expectedType, final RepairParallelism value, StatementContext ctx) {
+    return (int position, PreparedStatement statement, StatementContext ctx1) -> {
+      statement.setString(position, value.toString());
     };
   }
 }

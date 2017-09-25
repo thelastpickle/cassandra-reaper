@@ -11,17 +11,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.service;
 
-import com.google.common.annotations.VisibleForTesting;
 
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
+
 // TODO: Check if this duplicates org.apache.cassandra.dht.Range.
-public class RingRange {
+public final class RingRange {
+
+  public static final Comparator<RingRange> START_COMPARATOR
+      = (RingRange o1, RingRange o2) -> o1.start.compareTo(o2.start);
 
   private final BigInteger start;
   private final BigInteger end;
@@ -62,20 +67,15 @@ public class RingRange {
    */
   public boolean encloses(RingRange other) {
     if (!isWrapping()) {
-      return !other.isWrapping() &&
-          SegmentGenerator.greaterThanOrEqual(other.start, start)
+      return !other.isWrapping()
+          && SegmentGenerator.greaterThanOrEqual(other.start, start)
           && SegmentGenerator.lowerThanOrEqual(other.end, end);
     } else {
-      return
-          (!other.isWrapping() &&
-              (
-                  SegmentGenerator.greaterThanOrEqual(other.start, start) ||
-                  SegmentGenerator.lowerThanOrEqual(other.end, end)
-              )
-          ) || (
-              SegmentGenerator.greaterThanOrEqual(other.start, start) &&
-              SegmentGenerator.lowerThanOrEqual(other.end, end)
-          );
+      return (!other.isWrapping()
+          && (SegmentGenerator.greaterThanOrEqual(other.start, start)
+          || SegmentGenerator.lowerThanOrEqual(other.end, end)))
+          || (SegmentGenerator.greaterThanOrEqual(other.start, start)
+          && SegmentGenerator.lowerThanOrEqual(other.end, end));
     }
   }
 
@@ -94,12 +94,12 @@ public class RingRange {
 
   public static RingRange merge(List<RingRange> ranges) {
 
-    // sort
-    Collections.sort(ranges, startComparator);
+    // sor
+    Collections.sort(ranges, START_COMPARATOR);
 
     // find gap
     int gap = 0;
-    for (;gap<ranges.size()-1;gap++) {
+    for (; gap < ranges.size() - 1; gap++) {
       RingRange left = ranges.get(gap);
       RingRange right = ranges.get(gap + 1);
       if (!left.end.equals(right.start)) {
@@ -108,17 +108,10 @@ public class RingRange {
     }
 
     // return merged
-    if (gap == ranges.size()-1) {
+    if (gap == ranges.size() - 1) {
       return new RingRange(ranges.get(0).start, ranges.get(gap).end);
     } else {
-      return new RingRange(ranges.get(gap+1).start, ranges.get(gap).end);
+      return new RingRange(ranges.get(gap + 1).start, ranges.get(gap).end);
     }
   }
-
-  public static final Comparator<RingRange> startComparator = new Comparator<RingRange>() {
-    @Override
-    public int compare(RingRange o1, RingRange o2) {
-      return o1.start.compareTo(o2.start);
-    }
-  };
 }

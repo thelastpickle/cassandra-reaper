@@ -1,8 +1,19 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.spotify.reaper.unit.resources;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.cassandra.JmxConnectionFactory;
@@ -12,15 +23,18 @@ import com.spotify.reaper.core.Cluster;
 import com.spotify.reaper.resources.ClusterResource;
 import com.spotify.reaper.storage.MemoryStorage;
 import com.spotify.reaper.unit.service.TestRepairConfiguration;
-import org.junit.Before;
-import org.junit.Test;
 
 import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
-
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.fest.assertions.api.Assertions.assertThat;
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
@@ -30,7 +44,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ClusterResourceTest {
+public final class ClusterResourceTest {
 
   static final String CLUSTER_NAME = "testcluster";
   static final String PARTITIONER = "org.apache.cassandra.dht.RandomPartitioner";
@@ -41,7 +55,6 @@ public class ClusterResourceTest {
 
   @Before
   public void setUp() throws Exception {
-
   }
 
   @Test
@@ -110,8 +123,7 @@ public class ClusterResourceTest {
     clusterResource.addCluster(mocks.uriInfo, Optional.of(SEED_HOST));
     doReturn(Arrays.asList(SEED_HOST + 1)).when(mocks.jmxProxy).getLiveNodes();
 
-    Response response =
-        clusterResource.modifyClusterSeed(mocks.uriInfo, CLUSTER_NAME, Optional.of(SEED_HOST + 1));
+    Response response = clusterResource.modifyClusterSeed(mocks.uriInfo, CLUSTER_NAME, Optional.of(SEED_HOST + 1));
 
     assertEquals(200, response.getStatus());
     assertEquals(1, mocks.context.storage.getClusters().size());
@@ -120,9 +132,7 @@ public class ClusterResourceTest {
     assertEquals(1, cluster.getSeedHosts().size());
     assertEquals(SEED_HOST + 1, cluster.getSeedHosts().iterator().next());
 
-
-    response =
-        clusterResource.modifyClusterSeed(mocks.uriInfo, CLUSTER_NAME, Optional.of(SEED_HOST + 1));
+    response = clusterResource.modifyClusterSeed(mocks.uriInfo, CLUSTER_NAME, Optional.of(SEED_HOST + 1));
     assertEquals(304, response.getStatus());
     //when(mocks.jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
   }
@@ -136,14 +146,13 @@ public class ClusterResourceTest {
     when(mocks.jmxProxy.getTableNamesForKeyspace("keyspace1"))
         .thenReturn(Sets.newHashSet("table1"));
 
-    mocks.context.config =
-        TestRepairConfiguration.defaultConfigBuilder()
-            .withAutoScheduling(
-                TestRepairConfiguration.defaultAutoSchedulingConfigBuilder()
-                    .thatIsEnabled()
-                    .withTimeBeforeFirstSchedule(Duration.ofMinutes(1))
-                    .build())
-            .build();
+    mocks.context.config = TestRepairConfiguration.defaultConfigBuilder()
+        .withAutoScheduling(
+            TestRepairConfiguration.defaultAutoSchedulingConfigBuilder()
+                .thatIsEnabled()
+                .withTimeBeforeFirstSchedule(Duration.ofMinutes(1))
+                .build())
+        .build();
 
     ClusterResource clusterResource = new ClusterResource(mocks.context);
     Response response = clusterResource.addCluster(mocks.uriInfo, Optional.of(SEED_HOST));
@@ -151,24 +160,21 @@ public class ClusterResourceTest {
     assertEquals(201, response.getStatus());
     assertThat(mocks.context.storage.getAllRepairSchedules()).hasSize(1);
     assertThat(
-            mocks.context.storage.getRepairSchedulesForClusterAndKeyspace(
-                CLUSTER_NAME, "keyspace1"))
+        mocks.context.storage.getRepairSchedulesForClusterAndKeyspace(
+            CLUSTER_NAME, "keyspace1"))
         .hasSize(1);
   }
 
   private MockObjects initMocks() throws ReaperException {
     AppContext context = new AppContext();
-    UriInfo uriInfo;
-    JmxProxy jmxProxy;
-
     context.storage = new MemoryStorage();
     context.config = TestRepairConfiguration.defaultConfig();
 
-    uriInfo = mock(UriInfo.class);
+    UriInfo uriInfo = mock(UriInfo.class);
     when(uriInfo.getAbsolutePath()).thenReturn(SAMPLE_URI);
     when(uriInfo.getBaseUri()).thenReturn(SAMPLE_URI);
 
-    jmxProxy = mock(JmxProxy.class);
+    JmxProxy jmxProxy = mock(JmxProxy.class);
     when(jmxProxy.getClusterName()).thenReturn(CLUSTER_NAME);
     when(jmxProxy.getPartitioner()).thenReturn(PARTITIONER);
 
@@ -181,22 +187,20 @@ public class ClusterResourceTest {
     };
 
     return new MockObjects(context, uriInfo, jmxProxy);
-
   }
 
   private static final class MockObjects {
-    public final AppContext context;
-    public final UriInfo uriInfo;
-    public final JmxProxy jmxProxy;
 
-    public MockObjects(AppContext context, UriInfo uriInfo, JmxProxy jmxProxy) {
+    final AppContext context;
+    final UriInfo uriInfo;
+    final JmxProxy jmxProxy;
+
+    MockObjects(AppContext context, UriInfo uriInfo, JmxProxy jmxProxy) {
       super();
       this.context = context;
       this.uriInfo = uriInfo;
       this.jmxProxy = jmxProxy;
     }
-
-
 
   }
 

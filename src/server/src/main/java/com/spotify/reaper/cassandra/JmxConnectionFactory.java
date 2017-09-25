@@ -11,12 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.cassandra;
 
-import com.codahale.metrics.MetricRegistry;
-import com.google.common.base.Optional;
-import com.google.common.collect.Maps;
-import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.spotify.reaper.ReaperApplicationConfiguration.JmxCredentials;
 import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
@@ -31,6 +28,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.codahale.metrics.MetricRegistry;
+import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
+import com.google.common.base.Optional;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +49,7 @@ public class JmxConnectionFactory {
   public JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
       throws ReaperException {
     // use configured jmx port for host if provided
-    if(localMode) {
+    if (localMode) {
       host = "127.0.0.1";
     }
     if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
@@ -57,7 +58,7 @@ public class JmxConnectionFactory {
 
     String username = null;
     String password = null;
-    if(jmxAuth != null) {
+    if (jmxAuth != null) {
       username = jmxAuth.getUsername();
       password = jmxAuth.getPassword();
     }
@@ -68,8 +69,11 @@ public class JmxConnectionFactory {
     return connect(Optional.<RepairStatusHandler>absent(), host, connectionTimeout);
   }
 
-  public final JmxProxy connectAny(Optional<RepairStatusHandler> handler, Collection<String> hosts, int connectionTimeout)
-      throws ReaperException {
+  public final JmxProxy connectAny(
+      Optional<RepairStatusHandler> handler,
+      Collection<String> hosts,
+      int connectionTimeout) throws ReaperException {
+
     if (hosts == null || hosts.isEmpty()) {
       throw new ReaperException("no hosts given for connectAny");
     }
@@ -77,12 +81,12 @@ public class JmxConnectionFactory {
     Collections.shuffle(hostList);
     Iterator<String> hostIterator = hostList.iterator();
 
-    for (int i=0 ; i<2 ; i++) {
+    for (int i = 0; i < 2; i++) {
       while (hostIterator.hasNext()) {
         String host = hostIterator.next();
 
         // First loop, we try the most accessible nodes, then second loop we try all nodes
-        if(null != host && (SUCCESSFULL_CONNECTIONS.getOrDefault(host, new AtomicInteger(0)).get() >= 0 || 1 == i)) {
+        if (null != host && (SUCCESSFULL_CONNECTIONS.getOrDefault(host, new AtomicInteger(0)).get() >= 0 || 1 == i)) {
           try {
             JmxProxy jmxProxy = connect(handler, host, connectionTimeout);
             incrementSuccessfullConnections(host);
@@ -98,8 +102,7 @@ public class JmxConnectionFactory {
     throw new ReaperException("no host could be reached through JMX");
   }
 
-  public final JmxProxy connectAny(Cluster cluster, int connectionTimeout)
-      throws ReaperException {
+  public final JmxProxy connectAny(Cluster cluster, int connectionTimeout) throws ReaperException {
     Set<String> hosts = cluster.getSeedHosts();
     if (hosts == null || hosts.isEmpty()) {
       throw new ReaperException("no seeds in cluster with name: " + cluster.getName());
@@ -107,37 +110,39 @@ public class JmxConnectionFactory {
     return connectAny(Optional.<RepairStatusHandler>absent(), hosts, connectionTimeout);
   }
 
-  public void setJmxPorts(Map<String, Integer> jmxPorts) {
+  public final void setJmxPorts(Map<String, Integer> jmxPorts) {
     this.jmxPorts = jmxPorts;
   }
 
-  public void setJmxAuth(JmxCredentials jmxAuth) {
+  public final void setJmxAuth(JmxCredentials jmxAuth) {
     this.jmxAuth = jmxAuth;
   }
 
-  public void setAddressTranslator(EC2MultiRegionAddressTranslator addressTranslator) {
+  public final void setAddressTranslator(EC2MultiRegionAddressTranslator addressTranslator) {
     this.addressTranslator = addressTranslator;
   }
 
-  public void setLocalMode(boolean localMode) {
+  public final void setLocalMode(boolean localMode) {
     this.localMode = localMode;
   }
 
-  public void setMetricRegistry(MetricRegistry metricRegistry) {
+  public final void setMetricRegistry(MetricRegistry metricRegistry) {
     this.metricRegistry = metricRegistry;
   }
 
   private void incrementSuccessfullConnections(String host) {
     try {
       AtomicInteger successes = SUCCESSFULL_CONNECTIONS.putIfAbsent(host, new AtomicInteger(1));
-      if(null != successes && successes.get() <= 20) {
+      if (null != successes && successes.get() <= 20) {
         successes.incrementAndGet();
       }
       LOG.debug("Host {} has {} successfull connections", host, successes);
       if (null != metricRegistry) {
-          metricRegistry.counter(MetricRegistry.name(JmxConnectionFactory.class, "connections", host.replace('.', '-'))).inc();
+        metricRegistry
+            .counter(MetricRegistry.name(JmxConnectionFactory.class, "connections", host.replace('.', '-')))
+            .inc();
       }
-    } catch(RuntimeException e) {
+    } catch (RuntimeException e) {
       LOG.warn("Could not increment JMX successfull connections counter for host {}", host, e);
     }
   }
@@ -145,14 +150,16 @@ public class JmxConnectionFactory {
   private void decrementSuccessfullConnections(String host) {
     try {
       AtomicInteger successes = SUCCESSFULL_CONNECTIONS.putIfAbsent(host, new AtomicInteger(-1));
-      if(null != successes && successes.get() >= -5) {
+      if (null != successes && successes.get() >= -5) {
         successes.decrementAndGet();
       }
       LOG.debug("Host {} has {} successfull connections", host, successes);
       if (null != metricRegistry) {
-          metricRegistry.counter(MetricRegistry.name(JmxConnectionFactory.class, "connections", host.replace('.', '-'))).dec();
+        metricRegistry
+            .counter(MetricRegistry.name(JmxConnectionFactory.class, "connections", host.replace('.', '-')))
+            .dec();
       }
-    } catch(RuntimeException e) {
+    } catch (RuntimeException e) {
       LOG.warn("Could not decrement JMX successfull connections counter for host {}", host, e);
     }
   }

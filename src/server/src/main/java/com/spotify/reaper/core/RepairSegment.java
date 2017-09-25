@@ -11,16 +11,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.core;
 
 import com.spotify.reaper.service.RingRange;
 
-import org.joda.time.DateTime;
-
 import java.math.BigInteger;
 import java.util.UUID;
 
-public class RepairSegment {
+import org.joda.time.DateTime;
+
+public final class RepairSegment {
 
   private final UUID id;
   private final UUID runId;
@@ -106,7 +107,6 @@ public class RepairSegment {
 
   public static class Builder {
 
-
     public final RingRange tokenRange;
     private final UUID repairUnitId;
     private UUID runId;
@@ -136,9 +136,9 @@ public class RepairSegment {
       endTime = original.endTime;
     }
 
-    public Builder withRunId(UUID runId){
-        this.runId = runId;
-        return this;
+    public Builder withRunId(UUID runId) {
+      this.runId = runId;
+      return this;
     }
 
     public Builder failCount(int failCount) {

@@ -11,12 +11,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.storage;
 
-import com.google.common.base.Optional;
-
 import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.core.NodeMetrics;
 import com.spotify.reaper.core.RepairRun;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairSegment;
@@ -27,15 +25,16 @@ import com.spotify.reaper.service.RepairParameters;
 import com.spotify.reaper.service.RingRange;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+
+import com.google.common.base.Optional;
 
 /**
  * API definition for cassandra-reaper.
  */
 public interface IStorage {
-  
+
   boolean isStorageConnected();
 
   Collection<Cluster> getClusters();
@@ -47,8 +46,8 @@ public interface IStorage {
   Optional<Cluster> getCluster(String clusterName);
 
   /**
-   * Delete the Cluster instance identified by the given cluster name. Delete succeeds
-   * only if there are no repair runs for the targeted cluster.
+   * Delete the Cluster instance identified by the given cluster name. Delete succeeds only if there are no repair runs
+   * for the targeted cluster.
    *
    * @param clusterName The name of the Cluster instance to delete.
    * @return The deleted Cluster instance if delete succeeds, with state set to DELETED.
@@ -68,8 +67,7 @@ public interface IStorage {
   Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState);
 
   /**
-   * Delete the RepairRun instance identified by the given id, and delete also
-   * all the related repair segments.
+   * Delete the RepairRun instance identified by the given id, and delete also all the related repair segments.
    *
    * @param id The id of the RepairRun instance to delete, and all segments for it.
    * @return The deleted RepairRun instance, if delete succeeds, with state set to DELETED.
@@ -83,14 +81,12 @@ public interface IStorage {
   /**
    * Get a stored RepairUnit targeting the given tables in the given keyspace.
    *
-   * @param cluster           Cluster name for the RepairUnit.
-   * @param keyspace          Keyspace name for the RepairUnit.
+   * @param cluster Cluster name for the RepairUnit.
+   * @param keyspace Keyspace name for the RepairUnit.
    * @param columnFamilyNames Set of column families targeted by the RepairUnit.
    * @return Instance of a RepairUnit matching the parameters, or null if not found.
    */
-  Optional<RepairUnit> getRepairUnit(String cluster, String keyspace,
-      Set<String> columnFamilyNames);
-
+  Optional<RepairUnit> getRepairUnit(String cluster, String keyspace, Set<String> columnFamilyNames);
 
   boolean updateRepairSegment(RepairSegment newRepairSegment);
 
@@ -100,9 +96,8 @@ public interface IStorage {
 
   /**
    * @param runId the run id that the segment belongs to.
-   * @param range a ring range. The start of the range may be greater than or equal to the end.
-   *              This case has to be handled. When start = end, consider that as a range
-   *              that covers the whole ring.
+   * @param range a ring range. The start of the range may be greater than or equal to the end. This case has to be
+   *      handled. When start = end, consider that as a range that covers the whole ring.
    * @return a segment enclosed by the range with state NOT_STARTED, or nothing.
    */
   Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range);
@@ -125,16 +120,15 @@ public interface IStorage {
 
   Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName);
 
-  Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName,
-      String keyspaceName);
+  Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName);
 
   Collection<RepairSchedule> getAllRepairSchedules();
 
   boolean updateRepairSchedule(RepairSchedule newRepairSchedule);
 
   /**
-   * Delete the RepairSchedule instance identified by the given id. Related repair runs
-   * or other resources tied to the schedule will not be deleted.
+   * Delete the RepairSchedule instance identified by the given id. Related repair runs or other resources tied to the
+   * schedule will not be deleted.
    *
    * @param id The id of the RepairSchedule instance to delete.
    * @return The deleted RepairSchedule instance, if delete succeeds, with state set to DELETED.
@@ -144,5 +138,4 @@ public interface IStorage {
   Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit);
 
   Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName);
-  
 }

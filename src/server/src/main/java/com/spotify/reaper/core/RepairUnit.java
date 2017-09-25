@@ -11,12 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.core;
 
 import java.util.Set;
 import java.util.UUID;
 
-public class RepairUnit {
+public final class RepairUnit {
 
   private final UUID id;
   private final String clusterName;
@@ -77,8 +78,13 @@ public class RepairUnit {
     public final Set<String> nodes;
     public final Set<String> datacenters;
 
-    public Builder(String clusterName, String keyspaceName, Set<String> columnFamilies, Boolean incrementalRepair,
-        Set<String> nodes, Set<String> datacenters) {
+    public Builder(
+        String clusterName,
+        String keyspaceName,
+        Set<String> columnFamilies,
+        Boolean incrementalRepair,
+        Set<String> nodes,
+        Set<String> datacenters) {
       this.clusterName = clusterName;
       this.keyspaceName = keyspaceName;
       this.columnFamilies = columnFamilies;

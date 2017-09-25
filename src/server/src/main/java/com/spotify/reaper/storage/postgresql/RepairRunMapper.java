@@ -11,23 +11,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.storage.postgresql;
 
 import com.spotify.reaper.core.RepairRun;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+public final class RepairRunMapper implements ResultSetMapper<RepairRun> {
 
-public class RepairRunMapper implements ResultSetMapper<RepairRun> {
-
-  static DateTime getDateTimeOrNull(ResultSet r, String dbColumnName) throws SQLException {
-    Timestamp timestamp = r.getTimestamp(dbColumnName);
+  static DateTime getDateTimeOrNull(ResultSet rs, String dbColumnName) throws SQLException {
+    Timestamp timestamp = rs.getTimestamp(dbColumnName);
     DateTime result = null;
     if (null != timestamp) {
       result = new DateTime(timestamp);
@@ -35,25 +36,28 @@ public class RepairRunMapper implements ResultSetMapper<RepairRun> {
     return result;
   }
 
-  public RepairRun map(int index, ResultSet r, StatementContext ctx) throws SQLException {
-    RepairRun.RunState runState = RepairRun.RunState.valueOf(r.getString("state"));
-    RepairParallelism repairParallelism =
-        RepairParallelism.fromName(r.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel"));
-    RepairRun.Builder repairRunBuilder =
-        new RepairRun.Builder(r.getString("cluster_name"),
-                              UuidUtil.fromSequenceId(r.getLong("repair_unit_id")),
-                              getDateTimeOrNull(r, "creation_time"),
-                              r.getFloat("intensity"),
-                              r.getInt("segment_count"),
-                              repairParallelism);
+  @Override
+  public RepairRun map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
+    RepairRun.RunState runState = RepairRun.RunState.valueOf(rs.getString("state"));
+    RepairParallelism repairParallelism = RepairParallelism.fromName(
+        rs.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel"));
+
+    RepairRun.Builder repairRunBuilder = new RepairRun.Builder(
+        rs.getString("cluster_name"),
+        UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")),
+        getDateTimeOrNull(rs, "creation_time"),
+        rs.getFloat("intensity"),
+        rs.getInt("segment_count"),
+        repairParallelism);
+
     return repairRunBuilder
         .runState(runState)
-        .owner(r.getString("owner"))
-        .cause(r.getString("cause"))
-        .startTime(getDateTimeOrNull(r, "start_time"))
-        .endTime(getDateTimeOrNull(r, "end_time"))
-        .pauseTime(getDateTimeOrNull(r, "pause_time"))
-        .lastEvent(r.getString("last_event"))
-        .build(UuidUtil.fromSequenceId(r.getLong("id")));
+        .owner(rs.getString("owner"))
+        .cause(rs.getString("cause"))
+        .startTime(getDateTimeOrNull(rs, "start_time"))
+        .endTime(getDateTimeOrNull(rs, "end_time"))
+        .pauseTime(getDateTimeOrNull(rs, "pause_time"))
+        .lastEvent(rs.getString("last_event"))
+        .build(UuidUtil.fromSequenceId(rs.getLong("id")));
   }
 }

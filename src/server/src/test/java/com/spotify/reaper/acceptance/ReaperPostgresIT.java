@@ -11,29 +11,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.spotify.reaper.acceptance;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package com.spotify.reaper.acceptance;
 
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.acceptance.ReaperTestJettyRunner.ReaperJettyTestSupport;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
     features = "classpath:com.spotify.reaper.acceptance/integration_reaper_functionality.feature"
-)
-public class ReaperPostgresIT {
+    )
+public final class ReaperPostgresIT {
+
   private static final Logger LOG = LoggerFactory.getLogger(ReaperPostgresIT.class);
   private static ReaperJettyTestSupport runnerInstance;
-  private static final String POSTGRES_CONFIG_FILE="cassandra-reaper-postgres-at.yaml";
+  private static final String POSTGRES_CONFIG_FILE = "cassandra-reaper-postgres-at.yaml";
 
+  private ReaperPostgresIT() {}
 
   @BeforeClass
   public static void setUp() throws Exception {

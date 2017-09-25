@@ -11,42 +11,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.storage.postgresql;
 
-import com.google.common.collect.ImmutableSet;
 
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.resources.view.RepairScheduleStatus;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import com.google.common.collect.ImmutableSet;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
-public class RepairScheduleStatusMapper implements ResultSetMapper<RepairScheduleStatus> {
+public final class RepairScheduleStatusMapper implements ResultSetMapper<RepairScheduleStatus> {
 
   @Override
-  public RepairScheduleStatus map(int index, ResultSet r, StatementContext ctx)
-      throws SQLException {
+  public RepairScheduleStatus map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
 
     return new RepairScheduleStatus(
-        UuidUtil.fromSequenceId(r.getLong("id")),
-        r.getString("owner"),
-        r.getString("cluster_name"),
-        r.getString("keyspace_name"),
-        ImmutableSet.copyOf((String[]) r.getArray("column_families").getArray()),
-        RepairSchedule.State.valueOf(r.getString("state")),
-        RepairRunMapper.getDateTimeOrNull(r, "creation_time"),
-        RepairRunMapper.getDateTimeOrNull(r, "next_activation"),
-        RepairRunMapper.getDateTimeOrNull(r, "pause_time"),
-        r.getDouble("intensity"),
-        r.getBoolean("incremental_repair"),
-        r.getInt("segment_count"),
-        RepairParallelism.fromName(r.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel")),
-        r.getInt("days_between"), ImmutableSet.copyOf((String[]) r.getArray("nodes").getArray()),
-        ImmutableSet.copyOf((String[]) r.getArray("datacenters").getArray())
-    );
+        UuidUtil.fromSequenceId(rs.getLong("id")),
+        rs.getString("owner"),
+        rs.getString("cluster_name"),
+        rs.getString("keyspace_name"),
+        ImmutableSet.copyOf((String[]) rs.getArray("column_families").getArray()),
+        RepairSchedule.State.valueOf(rs.getString("state")),
+        RepairRunMapper.getDateTimeOrNull(rs, "creation_time"),
+        RepairRunMapper.getDateTimeOrNull(rs, "next_activation"),
+        RepairRunMapper.getDateTimeOrNull(rs, "pause_time"),
+        rs.getDouble("intensity"),
+        rs.getBoolean("incremental_repair"),
+        rs.getInt("segment_count"),
+        RepairParallelism.fromName(
+            rs.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel")),
+        rs.getInt("days_between"),
+        ImmutableSet.copyOf((String[]) rs.getArray("nodes").getArray()),
+        ImmutableSet.copyOf((String[]) rs.getArray("datacenters").getArray()));
   }
 }

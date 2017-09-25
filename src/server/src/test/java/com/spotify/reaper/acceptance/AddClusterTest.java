@@ -11,17 +11,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.acceptance;
 
-import org.junit.runner.RunWith;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
+import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
     features = "classpath:com.spotify.reaper.acceptance/basic_reaper_functionality.feature"
-)
-public class AddClusterTest {
+    )
+public final class AddClusterTest {
   // Required only to get the Cucumber acceptance tests actually run.
 }

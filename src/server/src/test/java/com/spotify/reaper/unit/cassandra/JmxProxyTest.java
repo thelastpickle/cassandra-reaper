@@ -11,17 +11,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.unit.cassandra;
 
 import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.cassandra.JmxConnectionFactory;
 import com.spotify.reaper.cassandra.JmxProxy;
 
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class JmxProxyTest {
+public final class JmxProxyTest {
 
   @Test
   public void testVersionCompare() throws ReaperException {
@@ -33,8 +33,10 @@ public class JmxProxyTest {
     assertEquals(Integer.valueOf(1), JmxProxy.versionCompare("99.0.0", "9.0"));
     assertEquals(Integer.valueOf(1), JmxProxy.versionCompare("99.0.10", "99.0.1"));
     assertEquals(Integer.valueOf(-1), JmxProxy.versionCompare("99.0.10~1", "99.0.10~2"));
-    assertEquals(Integer.valueOf(0), JmxProxy.versionCompare("1.2.18-1~1.2.15.219.gec18fb4.9",
-                                                             "1.2.18-1~1.2.15.219.gec17fb4.10"));
+
+    assertEquals(
+        Integer.valueOf(0),
+        JmxProxy.versionCompare("1.2.18-1~1.2.15.219.gec18fb4.9", "1.2.18-1~1.2.15.219.gec17fb4.10"));
   }
 
 }

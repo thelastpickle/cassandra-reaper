@@ -1,13 +1,31 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.spotify.reaper.service;
 
 import com.spotify.reaper.AppContext;
+import com.spotify.reaper.ReaperException;
 import com.spotify.reaper.core.Cluster;
+
+import java.util.Collection;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-
-public class AutoSchedulingManager extends TimerTask {
+public final class AutoSchedulingManager extends TimerTask {
 
   private static final Logger LOG = LoggerFactory.getLogger(AutoSchedulingManager.class);
   private static AutoSchedulingManager repairAutoSchedulingManager;
@@ -23,24 +41,25 @@ public class AutoSchedulingManager extends TimerTask {
     this.context = context;
     this.clusterRepairScheduler = clusterRepairScheduler;
   }
-  
+
   public static synchronized void start(AppContext context) {
     if (null == repairAutoSchedulingManager) {
-      LOG.info("Starting new {} instance. First check in {}ms. Subsequent polls every {}ms",
+      LOG.info(
+          "Starting new {} instance. First check in {}ms. Subsequent polls every {}ms",
           AutoSchedulingManager.class.getSimpleName(),
           context.config.getAutoScheduling().getInitialDelayPeriod().toMillis(),
-          context.config.getAutoScheduling().getPeriodBetweenPolls().toMillis()
-      );
+          context.config.getAutoScheduling().getPeriodBetweenPolls().toMillis());
 
       repairAutoSchedulingManager = new AutoSchedulingManager(context);
       Timer timer = new Timer("AutoSchedulingManagerTimer");
       timer.schedule(
           repairAutoSchedulingManager,
           context.config.getAutoScheduling().getInitialDelayPeriod().toMillis(),
-          context.config.getAutoScheduling().getPeriodBetweenPolls().toMillis()
-      );
+          context.config.getAutoScheduling().getPeriodBetweenPolls().toMillis());
     } else {
-      LOG.warn("there is already one instance of {} running, not starting new one", AutoSchedulingManager.class.getSimpleName());
+      LOG.warn(
+          "there is already one instance of {} running, not starting new one",
+          AutoSchedulingManager.class.getSimpleName());
     }
   }
 
@@ -51,10 +70,9 @@ public class AutoSchedulingManager extends TimerTask {
     for (Cluster cluster : clusters) {
       try {
         clusterRepairScheduler.scheduleRepairs(cluster);
-      } catch (Exception e) {
+      } catch (ReaperException | RuntimeException e) {
         LOG.error("Error while scheduling repairs for cluster {}", cluster, e);
       }
     }
   }
-
 }

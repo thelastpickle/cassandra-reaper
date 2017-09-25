@@ -11,21 +11,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.storage.postgresql;
 
 import com.spotify.reaper.core.RepairRun;
+
+import java.sql.PreparedStatement;
 
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.Argument;
 import org.skife.jdbi.v2.tweak.ArgumentFactory;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
 /**
  * Provides JDBI a method to map RunState value to a TEXT value in database.
  */
-public class RunStateArgumentFactory implements ArgumentFactory<RepairRun.RunState> {
+public final class RunStateArgumentFactory implements ArgumentFactory<RepairRun.RunState> {
 
   @Override
   public boolean accepts(Class<?> expectedType, Object value, StatementContext ctx) {
@@ -33,13 +33,9 @@ public class RunStateArgumentFactory implements ArgumentFactory<RepairRun.RunSta
   }
 
   @Override
-  public Argument build(Class<?> expectedType, final RepairRun.RunState value,
-                        StatementContext ctx) {
-    return new Argument() {
-      public void apply(int position, PreparedStatement statement, StatementContext ctx)
-          throws SQLException {
-        statement.setString(position, value.toString());
-      }
+  public Argument build(Class<?> expectedType, final RepairRun.RunState value, StatementContext ctx) {
+    return (int position, PreparedStatement statement, StatementContext ctx1) -> {
+      statement.setString(position, value.toString());
     };
   }
 }

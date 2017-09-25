@@ -11,27 +11,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.resources.view;
+
+import com.spotify.reaper.core.RepairRun;
+import com.spotify.reaper.core.RepairUnit;
+import com.spotify.reaper.resources.CommonTools;
 
 import java.util.Collection;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.format.ISODateTimeFormat;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.spotify.reaper.core.RepairRun;
-import com.spotify.reaper.core.RepairUnit;
-import com.spotify.reaper.resources.CommonTools;
-
 /**
  * Contains the data to be shown when querying repair run status.
  */
-public class RepairRunStatus {
+public final class RepairRunStatus {
 
   @JsonProperty
   private String cause;
@@ -102,11 +103,27 @@ public class RepairRunStatus {
   public RepairRunStatus() {
   }
 
-  public RepairRunStatus(UUID runId, String clusterName, String keyspaceName,
-      Collection<String> columnFamilies, int segmentsRepaired, int totalSegments,
-      RepairRun.RunState state, DateTime startTime, DateTime endTime, String cause, String owner,
-      String lastEvent, DateTime creationTime, DateTime pauseTime, double intensity, boolean incrementalRepair,
-      RepairParallelism repairParallelism, Collection<String> nodes, Collection<String> datacenters) {
+  public RepairRunStatus(
+      UUID runId,
+      String clusterName,
+      String keyspaceName,
+      Collection<String> columnFamilies,
+      int segmentsRepaired,
+      int totalSegments,
+      RepairRun.RunState state,
+      DateTime startTime,
+      DateTime endTime,
+      String cause,
+      String owner,
+      String lastEvent,
+      DateTime creationTime,
+      DateTime pauseTime,
+      double intensity,
+      boolean incrementalRepair,
+      RepairParallelism repairParallelism,
+      Collection<String> nodes,
+      Collection<String> datacenters) {
+
     this.id = runId;
     this.cause = cause;
     this.owner = owner;
@@ -131,18 +148,18 @@ public class RepairRunStatus {
       duration = null;
     } else {
       duration = DurationFormatUtils.formatDurationWords(
-          new Duration(startTime.toInstant(), endTime.toInstant()).getMillis(),
-          true, false);
+          new Duration(startTime.toInstant(), endTime.toInstant()).getMillis(), true, false);
     }
 
     if (startTime == null || endTime != null) {
       estimatedTimeOfArrival = null;
     } else {
-      if (state == RepairRun.RunState.ERROR || state == RepairRun.RunState.DELETED ||
-          state == RepairRun.RunState.ABORTED || segmentsRepaired == 0) {
+      if (state == RepairRun.RunState.ERROR
+          || state == RepairRun.RunState.DELETED
+          || state == RepairRun.RunState.ABORTED
+          || segmentsRepaired == 0) {
         estimatedTimeOfArrival = null;
-      }
-      else {
+      } else {
         long now = DateTime.now().getMillis();
         long currentDuration = now - startTime.getMillis();
         long millisecondsPerSegment = currentDuration / segmentsRepaired;
@@ -170,53 +187,54 @@ public class RepairRunStatus {
         repairRun.getPauseTime(),
         repairRun.getIntensity(),
         repairUnit.getIncrementalRepair(),
-        repairRun.getRepairParallelism(), repairUnit.getNodes(), repairUnit.getDatacenters()
-    );
+        repairRun.getRepairParallelism(),
+        repairUnit.getNodes(),
+        repairUnit.getDatacenters());
   }
 
   @JsonProperty("creation_time")
-  public String getCreationTimeISO8601() {
-    return CommonTools.dateTimeToISO8601(creationTime);
+  public String getCreationTimeIso8601() {
+    return CommonTools.dateTimeToIso8601(creationTime);
   }
 
   @JsonProperty("creation_time")
-  public void setCreationTimeISO8601(String dateStr) {
+  public void setCreationTimeIso8601(String dateStr) {
     if (null != dateStr) {
       creationTime = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
     }
   }
 
   @JsonProperty("start_time")
-  public String getStartTimeISO8601() {
-    return CommonTools.dateTimeToISO8601(startTime);
+  public String getStartTimeIso8601() {
+    return CommonTools.dateTimeToIso8601(startTime);
   }
 
   @JsonProperty("start_time")
-  public void setStartTimeISO8601(String dateStr) {
+  public void setStartTimeIso8601(String dateStr) {
     if (null != dateStr) {
       startTime = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
     }
   }
 
   @JsonProperty("end_time")
-  public String getEndTimeISO8601() {
-    return CommonTools.dateTimeToISO8601(endTime);
+  public String getEndTimeIso8601() {
+    return CommonTools.dateTimeToIso8601(endTime);
   }
 
   @JsonProperty("end_time")
-  public void setEndTimeISO8601(String dateStr) {
+  public void setEndTimeIso8601(String dateStr) {
     if (null != dateStr) {
       endTime = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
     }
   }
 
   @JsonProperty("pause_time")
-  public String getPauseTimeISO8601() {
-    return CommonTools.dateTimeToISO8601(pauseTime);
+  public String getPauseTimeIso8601() {
+    return CommonTools.dateTimeToIso8601(pauseTime);
   }
 
   @JsonProperty("pause_time")
-  public void setPauseTimeISO8601(String dateStr) {
+  public void setPauseTimeIso8601(String dateStr) {
     if (null != dateStr) {
       pauseTime = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
     }
@@ -319,11 +337,11 @@ public class RepairRunStatus {
   }
 
   public boolean getIncrementalRepair() {
-	return incrementalRepair;
+    return incrementalRepair;
   }
 
   public void setIncrementalRepair(boolean incrementalRepair) {
-	this.incrementalRepair = incrementalRepair;
+    this.incrementalRepair = incrementalRepair;
   }
 
   public int getTotalSegments() {
@@ -367,12 +385,12 @@ public class RepairRunStatus {
   }
 
   @JsonProperty("estimated_time_of_arrival")
-  public String getEstimatedTimeOfArrivalISO8601() {
-    return CommonTools.dateTimeToISO8601(estimatedTimeOfArrival);
+  public String getEstimatedTimeOfArrivalIso8601() {
+    return CommonTools.dateTimeToIso8601(estimatedTimeOfArrival);
   }
 
   @JsonProperty("estimated_time_of_arrival")
-  public void setEstimatedTimeOfArrivalISO8601(String dateStr) {
+  public void setEstimatedTimeOfArrivalIso8601(String dateStr) {
     if (null != dateStr) {
       estimatedTimeOfArrival = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
     }

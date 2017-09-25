@@ -11,25 +11,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.core;
 
 import java.util.Set;
 
-public class Cluster {
+import com.google.common.base.Preconditions;
+
+public final class Cluster {
 
   private final String name;
   private final String partitioner; // Full name of the partitioner class
   private final Set<String> seedHosts;
 
-  public static String toSymbolicName(String s) {
-    assert s != null : "cannot turn null into symbolic name";
-    return s.toLowerCase().replaceAll("[^a-z0-9_\\-\\.]", "");
-  }
-
   public Cluster(String name, String partitioner, Set<String> seedHosts) {
     this.name = toSymbolicName(name);
     this.partitioner = partitioner;
     this.seedHosts = seedHosts;
+  }
+
+  public static String toSymbolicName(String name) {
+    Preconditions.checkNotNull(name, "cannot turn null into symbolic name");
+    return name.toLowerCase().replaceAll("[^a-z0-9_\\-\\.]", "");
   }
 
   public String getName() {

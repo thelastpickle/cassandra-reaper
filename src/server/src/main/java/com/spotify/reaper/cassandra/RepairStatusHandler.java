@@ -11,27 +11,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.cassandra;
 
+import com.google.common.base.Optional;
 import org.apache.cassandra.service.ActiveRepairService;
-import org.apache.cassandra.streaming.StreamEvent;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 
-import com.google.common.base.Optional;
 
 public interface RepairStatusHandler {
 
   /**
    * Handle an event representing a change in the state of a running repair.
    *
-   * Implementation of this method is intended to persist the repair state change in Reaper's
-   * state.
+   * <p>
+   * Implementation of this method is intended to persist the repair state change in Reaper's state.
    *
    * @param repairNumber repair sequence number, obtained when triggering a repair
-   * @param status       new status of the repair (old API)
-   * @param progress     new status of the repair (new API)
-   * @param message      additional information about the repair
+   * @param status new status of the repair (old API)
+   * @param progress new status of the repair (new API)
+   * @param message additional information about the repair
    */
-  void handle(int repairNumber, Optional<ActiveRepairService.Status> status, Optional<ProgressEventType> progress, String message);
-
+  void handle(
+      int repairNumber,
+      Optional<ActiveRepairService.Status> status,
+      Optional<ProgressEventType> progress,
+      String message);
 }

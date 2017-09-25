@@ -1,22 +1,19 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.spotify.reaper.unit.service;
 
-import static java.lang.String.format;
-import static org.fest.assertions.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.time.Duration;
-import java.util.Collection;
-import java.util.Collections;
-
-import org.apache.cassandra.repair.RepairParallelism;
-import org.joda.time.DateTime;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.spotify.reaper.AppContext;
 import com.spotify.reaper.ReaperApplicationConfiguration;
 import com.spotify.reaper.ReaperException;
@@ -28,7 +25,25 @@ import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.service.ClusterRepairScheduler;
 import com.spotify.reaper.storage.MemoryStorage;
 
-public class ClusterRepairSchedulerTest {
+import java.time.Duration;
+import java.util.Collection;
+import java.util.Collections;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import org.apache.cassandra.repair.RepairParallelism;
+import org.joda.time.DateTime;
+import org.junit.Before;
+import org.junit.Test;
+
+import static java.lang.String.format;
+import static org.fest.assertions.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+public final class ClusterRepairSchedulerTest {
 
   private static final Cluster CLUSTER = new Cluster("cluster1", null, Collections.singleton("127.0.0.1"));
   private static final DateTime TWO_HOURS_AGO = DateTime.now().minusHours(2);
@@ -50,7 +65,16 @@ public class ClusterRepairSchedulerTest {
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     clusterRepairAuto = new ClusterRepairScheduler(context);
     jmxProxy = mock(JmxProxy.class);
-    when(context.jmxConnectionFactory.connectAny(CLUSTER, context.config.getJmxConnectionTimeoutInSeconds())).thenReturn(jmxProxy);
+
+    when(context.jmxConnectionFactory.connectAny(CLUSTER, context.config.getJmxConnectionTimeoutInSeconds()))
+        .thenReturn(jmxProxy);
+
+    when(
+        context.jmxConnectionFactory.connectAny(
+            Optional.absent(),
+            CLUSTER.getSeedHosts(),
+            context.config.getJmxConnectionTimeoutInSeconds()))
+        .thenReturn(jmxProxy);
   }
 
   @Test
@@ -153,9 +177,14 @@ public class ClusterRepairSchedulerTest {
     clusterRepairAuto.scheduleRepairs(CLUSTER);
     assertThatClusterRepairSchedules(context.storage.getRepairSchedulesForCluster(CLUSTER.getName()))
         .hasScheduleCount(3)
-        .repairScheduleForKeyspace("keyspace1").hasNextActivationDateCloseTo(timeOfFirstSchedule()).andThen()
-        .repairScheduleForKeyspace("keyspace2").hasNextActivationDateCloseTo(timeOfFirstSchedule().plusHours(6)).andThen()
-        .repairScheduleForKeyspace("keyspace4").hasNextActivationDateCloseTo(timeOfFirstSchedule().plusHours(12));
+        .repairScheduleForKeyspace("keyspace1")
+        .hasNextActivationDateCloseTo(timeOfFirstSchedule())
+        .andThen()
+        .repairScheduleForKeyspace("keyspace2")
+        .hasNextActivationDateCloseTo(timeOfFirstSchedule().plusHours(6))
+        .andThen()
+        .repairScheduleForKeyspace("keyspace4")
+        .hasNextActivationDateCloseTo(timeOfFirstSchedule().plusHours(12));
   }
 
   private DateTime timeOfFirstSchedule() {
@@ -187,34 +216,38 @@ public class ClusterRepairSchedulerTest {
   }
 
   private class ClusterRepairScheduleAssertion {
+
     private final Collection<RepairSchedule> repairSchedules;
 
-    public ClusterRepairScheduleAssertion(Collection<RepairSchedule> repairSchedules) {
+    ClusterRepairScheduleAssertion(Collection<RepairSchedule> repairSchedules) {
       this.repairSchedules = repairSchedules;
     }
 
-    public ClusterRepairScheduleAssertion hasScheduleCount(int size) {
+    ClusterRepairScheduleAssertion hasScheduleCount(int size) {
       assertThat(size).isEqualTo(size);
       return this;
     }
 
-    public ClusterRepairScheduleAssertion.RepairScheduleAssertion repairScheduleForKeyspace(String keyspace) {
+    ClusterRepairScheduleAssertion.RepairScheduleAssertion repairScheduleForKeyspace(String keyspace) {
       RepairSchedule keyspaceRepairSchedule = repairSchedules.stream()
-          .filter(repairSchedule -> context.storage.getRepairUnit(repairSchedule.getRepairUnitId()).get().getKeyspaceName().equals(keyspace))
+          .filter(repairSchedule
+              -> context.storage
+                  .getRepairUnit(repairSchedule.getRepairUnitId()).get().getKeyspaceName().equals(keyspace))
           .findFirst()
           .orElseThrow(() -> new AssertionError(format("No repair schedule found for keyspace %s", keyspace)));
       return new ClusterRepairScheduleAssertion.RepairScheduleAssertion(keyspaceRepairSchedule);
     }
 
-    public class RepairScheduleAssertion {
+    private final class RepairScheduleAssertion {
 
       private final RepairSchedule repairSchedule;
 
-      public RepairScheduleAssertion(RepairSchedule repairSchedule) {
+      RepairScheduleAssertion(RepairSchedule repairSchedule) {
         this.repairSchedule = repairSchedule;
       }
 
-      public ClusterRepairScheduleAssertion.RepairScheduleAssertion hasSameConfigItemsAs(ReaperApplicationConfiguration config) {
+      RepairScheduleAssertion hasSameConfigItemsAs(ReaperApplicationConfiguration config) {
+
         assertThat(repairSchedule.getDaysBetween()).isEqualTo(config.getScheduleDaysBetween());
         assertThat(repairSchedule.getIntensity()).isEqualTo(config.getRepairIntensity());
         assertThat(repairSchedule.getSegmentCount()).isEqualTo(config.getSegmentCount());
@@ -222,27 +255,35 @@ public class ClusterRepairSchedulerTest {
         return this;
       }
 
-      public ClusterRepairScheduleAssertion.RepairScheduleAssertion hasNextActivationDateCloseTo(DateTime dateTime) {
-        assertThat(repairSchedule.getNextActivation().toDate()).isCloseTo(dateTime.toDate(), Duration.ofSeconds(10).toMillis());
+      RepairScheduleAssertion hasNextActivationDateCloseTo(DateTime dateTime) {
+
+        assertThat(
+            repairSchedule.getNextActivation().toDate()).isCloseTo(dateTime.toDate(),
+            Duration.ofSeconds(10).toMillis());
+
         return this;
       }
 
-      public ClusterRepairScheduleAssertion.RepairScheduleAssertion hasOwner(String owner) {
+      RepairScheduleAssertion hasOwner(String owner) {
         assertThat(repairSchedule.getOwner()).isEqualTo(owner);
         return this;
       }
 
-      public ClusterRepairScheduleAssertion.RepairScheduleAssertion hasCreationTimeCloseTo(DateTime dateTime) {
-        assertThat(repairSchedule.getCreationTime().toDate()).isCloseTo(dateTime.toDate(), Duration.ofSeconds(10).toMillis());
+      RepairScheduleAssertion hasCreationTimeCloseTo(DateTime dateTime) {
+
+        assertThat(
+            repairSchedule.getCreationTime().toDate()).isCloseTo(dateTime.toDate(),
+            Duration.ofSeconds(10).toMillis());
+
         return this;
       }
 
-      public ClusterRepairScheduleAssertion.RepairScheduleAssertion hasCreationTime(DateTime dateTime) {
+      RepairScheduleAssertion hasCreationTime(DateTime dateTime) {
         assertThat(repairSchedule.getCreationTime()).isEqualTo(dateTime);
         return this;
       }
 
-      public ClusterRepairScheduleAssertion andThen() {
+      ClusterRepairScheduleAssertion andThen() {
         return ClusterRepairScheduleAssertion.this;
       }
     }

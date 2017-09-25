@@ -11,22 +11,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.spotify.reaper.resources.view;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.reaper.core.RepairSchedule;
 import com.spotify.reaper.core.RepairUnit;
 import com.spotify.reaper.resources.CommonTools;
 
+import java.util.Collection;
+import java.util.UUID;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 
-import java.util.Collection;
-import java.util.UUID;
-
-public class RepairScheduleStatus {
+public final class RepairScheduleStatus {
 
   @JsonProperty
   private UUID id;
@@ -82,11 +83,24 @@ public class RepairScheduleStatus {
   public RepairScheduleStatus() {
   }
 
-  public RepairScheduleStatus(UUID id, String owner, String clusterName, String keyspaceName,
-      Collection<String> columnFamilies, RepairSchedule.State state,
-      DateTime creationTime, DateTime nextActivation,
-      DateTime pauseTime, double intensity, boolean incrementalRepair, int segmentCount, RepairParallelism repairParallelism,
-      int daysBetween, Collection<String> nodes, Collection<String> datacenters) {
+  public RepairScheduleStatus(
+      UUID id,
+      String owner,
+      String clusterName,
+      String keyspaceName,
+      Collection<String> columnFamilies,
+      RepairSchedule.State state,
+      DateTime creationTime,
+      DateTime nextActivation,
+      DateTime pauseTime,
+      double intensity,
+      boolean incrementalRepair,
+      int segmentCount,
+      RepairParallelism repairParallelism,
+      int daysBetween,
+      Collection<String> nodes,
+      Collection<String> datacenters) {
+
     this.id = id;
     this.owner = owner;
     this.clusterName = clusterName;
@@ -120,8 +134,9 @@ public class RepairScheduleStatus {
         repairUnit.getIncrementalRepair(),
         repairSchedule.getSegmentCount(),
         repairSchedule.getRepairParallelism(),
-        repairSchedule.getDaysBetween(), repairUnit.getNodes(), repairUnit.getDatacenters()
-    );
+        repairSchedule.getDaysBetween(),
+        repairUnit.getNodes(),
+        repairUnit.getDatacenters());
   }
 
   public UUID getId() {
@@ -209,12 +224,13 @@ public class RepairScheduleStatus {
   }
 
   public boolean getIncrementalRepair() {
-	return incrementalRepair;
+    return incrementalRepair;
   }
 
   public void setIncrementalRepair(boolean incrementalRepair) {
-	this.incrementalRepair = incrementalRepair;
+    this.incrementalRepair = incrementalRepair;
   }
+
   public void setSegmentCount(int segmentCount) {
     this.segmentCount = segmentCount;
   }
@@ -236,36 +252,36 @@ public class RepairScheduleStatus {
   }
 
   @JsonProperty("creation_time")
-  public String getCreationTimeISO8601() {
-    return CommonTools.dateTimeToISO8601(creationTime);
+  public String getCreationTimeIso8601() {
+    return CommonTools.dateTimeToIso8601(creationTime);
   }
 
   @JsonProperty("creation_time")
-  public void setCreationTimeISO8601(String dateStr) {
+  public void setCreationTimeIso8601(String dateStr) {
     if (null != dateStr) {
       creationTime = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
     }
   }
 
   @JsonProperty("next_activation")
-  public String getNextActivationISO8601() {
-    return CommonTools.dateTimeToISO8601(nextActivation);
+  public String getNextActivationIso8601() {
+    return CommonTools.dateTimeToIso8601(nextActivation);
   }
 
   @JsonProperty("next_activation")
-  public void setNextActivationISO8601(String dateStr) {
+  public void setNextActivationIso8601(String dateStr) {
     if (null != dateStr) {
       nextActivation = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
     }
   }
 
   @JsonProperty("pause_time")
-  public String getPauseTimeISO8601() {
-    return CommonTools.dateTimeToISO8601(pauseTime);
+  public String getPauseTimeIso8601() {
+    return CommonTools.dateTimeToIso8601(pauseTime);
   }
 
   @JsonProperty("pause_time")
-  public void setPauseTimeISO8601(String dateStr) {
+  public void setPauseTimeIso8601(String dateStr) {
     if (null != dateStr) {
       pauseTime = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
     }
@@ -290,5 +306,4 @@ public class RepairScheduleStatus {
   public void setDatacenters(Collection<String> datacenters) {
     this.datacenters = datacenters;
   }
-
 }
