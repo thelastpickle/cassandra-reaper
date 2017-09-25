@@ -7,8 +7,7 @@ weight = 3
 
 # Postgres Backend
 
-The schema will be initialized/upgraded automatically upon startup in the configured database.
-Make sure to specify the correct credentials in your JDBC settings in `cassandra-reaper.yaml` to allow objects creation.
+To use PostgreSQL as the persistent storage for Reaper, the `storageType` setting must be set to **database** in the Reaper configuration YAML file. The schema will be initialized/upgraded automatically upon startup in the configured database. Ensure that the correct JDBC credentials are specified in the `cassandra-reaper.yaml` to allow object creation.
 
 
 ```yaml

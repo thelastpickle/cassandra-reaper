@@ -7,9 +7,9 @@ weight = 1
 
 # Memory Backend
 
-Running Reaper with memory storage, which is not persistent, means that all
-the registered clusters, column families, and repair runs will be lost upon service restart.
-The memory based storage is meant to be used for testing purposes only. Enable this type of storage by using the `storageType: memory` setting in your config file (enabled by default).
+To use in memory storage as the storage type for Reaper, the `storageType` setting must be set to **memory** in the Reaper configuration YAML file. Note that the in memory storage is enabled by default.
+
+In memory storage is volatile and as such all registered cluster, column families and repair un information will be lost upon service restart. This storage setting is intended for testing purposes only.
 
 ```yaml
 storageType: memory
