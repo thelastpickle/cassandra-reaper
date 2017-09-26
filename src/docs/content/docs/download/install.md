@@ -1,9 +1,11 @@
 +++
 [menu.docs]
-name = "Download and Install"
+name = "Install and Run"
 weight = 1
-identifier = "download_install"
+identifier = "install"
+parent = "download"
 +++
+
 
 
 # Running Reaper

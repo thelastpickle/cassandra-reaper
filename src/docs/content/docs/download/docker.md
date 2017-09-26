@@ -2,7 +2,7 @@
 [menu.docs]
 name = "Docker"
 weight = 50
-parent = "download_install"
+parent = "download"
 +++
 
 # Docker

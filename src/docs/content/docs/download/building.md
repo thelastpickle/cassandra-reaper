@@ -3,7 +3,7 @@
 name = "Building from Source"
 identifier = "building"
 weight = 4
-parent = "download_install"
+parent = "download"
 +++
 
 # Building Install Packages

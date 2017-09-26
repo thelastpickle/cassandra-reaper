@@ -1,12 +1,9 @@
 +++
 [menu.docs]
-name = "Pre built packages"
-identifier = "packages"
+name = "Downloads"
 weight = 1
-parent = "download_install"
+identifier = "download"
 +++
-
-
 
 
 # Downloads and Installation
@@ -25,3 +22,6 @@ The latest beta version is [0.7.0-beta-25082017](https://github.com/thelastpickl
  
 
 For a docker image, please see the Docker section.
+
+
+Once you've downloaded the proper package for your OS, head over to the [Install and Run](install) section.
