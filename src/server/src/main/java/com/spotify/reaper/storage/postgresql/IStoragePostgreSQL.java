@@ -130,7 +130,7 @@ public interface IStoragePostgreSQL {
           + "FROM repair_segment "
           + "JOIN repair_run ON run_id = repair_run.id "
           + "JOIN repair_unit ON repair_run.repair_unit_id = repair_unit.id "
-          + "WHERE repair_segment.state = 1 AND repair_unit.cluster_name = :clusterName";
+          + "WHERE repair_segment.state = 1 AND repair_run.state = 'RUNNING' AND repair_unit.cluster_name = :clusterName";
   String SQL_GET_NEXT_FREE_REPAIR_SEGMENT =
       "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE run_id = :runId "
       + "AND state = 0 ORDER BY fail_count ASC, start_token ASC LIMIT 1";
