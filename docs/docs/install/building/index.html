@@ -54,13 +54,14 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs//" />
+  <meta property="og:url" content="/docs/install/building//" />
   <meta property="og:image" content="" />
 
 </head>
 
 
   <body>
+
     <div id="all">
 
         <header>
@@ -155,10 +156,12 @@
 
 
         <div id="content">
+
+            
+
             <div class="container">
                 <div class="row">
-                    
-                    <div class = "col-md-3">
+                    <div class="col-md-3">
                         <ul class="sidebar-menu">
     
     
@@ -233,24 +236,56 @@
     
 </ul>
                     </div>
-                    <div class="col-md-9" id="blog-listing-medium">
 
-                        
+                    <div class="col-md-9">
+                        <div>
+                          
 
-<h2 id="welcome-to-the-cassandra-reaper-documentation">Welcome to the Cassandra Reaper documentation!</h2>
+<h1 id="building-install-packages">Building Install Packages</h1>
 
+<p>Debian packages and RPMs can be built from this project using Make, for example:</p>
+
+<pre><code class="language-bash">make deb
+make rpm
+</code></pre>
+
+<h1 id="building-jars-from-source">Building JARs from source</h1>
+
+<p>The easiest way to build is to use the following make command:</p>
+
+<pre><code class="language-bash">make package
+</code></pre>
+
+<p>To build Reaper without rebuilding the UI, run the following command :</p>
+
+<p><code>mvn clean package</code></p>
+
+<p>To only regenerate the UI (requires npm and bower) :</p>
+
+<p><code>mvn generate-sources -Pbuild-ui</code></p>
+
+<p>To rebuild both the UI and Reaper :</p>
+
+<p><code>mvn clean package -Pbuild-ui</code></p>
+
+<h1 id="building-docker-image">Building Docker Image</h1>
+
+<p><code>mvn clean package docker:build</code></p>
+
+<h1 id="building-using-docker">Building Using Docker</h1>
+
+<p>To simplify the build toolchain it&rsquo;s possible to build everything using Docker itself.  See the <a href="http://cassandra-reaper.io/docs/install/docker/">Docker</a> section for details.</p>
+
+                        </div>
 
                     </div>
-                    
-
-                    
-
-
-                    
 
                 </div>
                 
+
             </div>
+            
+
             
         </div>
         

@@ -54,13 +54,14 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs//" />
+  <meta property="og:url" content="/docs/backends/postgres//" />
   <meta property="og:image" content="" />
 
 </head>
 
 
   <body>
+
     <div id="all">
 
         <header>
@@ -155,10 +156,12 @@
 
 
         <div id="content">
+
+            
+
             <div class="container">
                 <div class="row">
-                    
-                    <div class = "col-md-3">
+                    <div class="col-md-3">
                         <ul class="sidebar-menu">
     
     
@@ -233,24 +236,34 @@
     
 </ul>
                     </div>
-                    <div class="col-md-9" id="blog-listing-medium">
 
-                        
+                    <div class="col-md-9">
+                        <div>
+                          
 
-<h2 id="welcome-to-the-cassandra-reaper-documentation">Welcome to the Cassandra Reaper documentation!</h2>
+<h1 id="postgres-backend">Postgres Backend</h1>
 
+<p>To use PostgreSQL as the persistent storage for Reaper, the <code>storageType</code> setting must be set to <strong>database</strong> in the Reaper configuration YAML file. The schema will be initialized/upgraded automatically upon startup in the configured database. Ensure that the correct JDBC credentials are specified in the <code>cassandra-reaper.yaml</code> to allow object creation.</p>
+
+<pre><code class="language-yaml">storageType: database
+database:
+  # PostgreSQL JDBC settings
+  driverClass: org.postgresql.Driver
+  user: postgres
+  password: 
+  url: jdbc:postgresql://127.0.0.1/reaper
+</code></pre>
+
+                        </div>
 
                     </div>
-                    
-
-                    
-
-
-                    
 
                 </div>
                 
+
             </div>
+            
+
             
         </div>
         

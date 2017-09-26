@@ -54,13 +54,14 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs//" />
+  <meta property="og:url" content="/docs/install/docker//" />
   <meta property="og:image" content="" />
 
 </head>
 
 
   <body>
+
     <div id="all">
 
         <header>
@@ -155,10 +156,12 @@
 
 
         <div id="content">
+
+            
+
             <div class="container">
                 <div class="row">
-                    
-                    <div class = "col-md-3">
+                    <div class="col-md-3">
                         <ul class="sidebar-menu">
     
     
@@ -233,24 +236,148 @@
     
 </ul>
                     </div>
-                    <div class="col-md-9" id="blog-listing-medium">
 
-                        
+                    <div class="col-md-9">
+                        <div>
+                          
 
-<h2 id="welcome-to-the-cassandra-reaper-documentation">Welcome to the Cassandra Reaper documentation!</h2>
+<h1 id="docker">Docker</h1>
 
+<p><a href="https://docs.docker.com/engine/installation/">Docker</a> and <a href="https://docs.docker.com/compose/install/">Docker Compose</a> will need to be installed in order to use the commands in this section.</p>
+
+<h2 id="building-reaper-packages-with-docker">Building Reaper Packages with Docker</h2>
+
+<p>Building Reaper packages requires quite a few dependencies, especially when making changes to the web interface code. In an effort to simplify the build process, Dockerfiles have been created that implement the build actions required to package Reaper.</p>
+
+<p>To build the JAR and other packages which are then placed in the <em>packages</em> directory run the following commands from the top level directory:</p>
+
+<pre><code class="language-bash">cd src/packaging
+docker-compose build reaper-build-packages &amp;&amp; docker-compose run reaper-build-packages
+</code></pre>
+
+<h2 id="building-reaper-docker-image">Building Reaper Docker Image</h2>
+
+<p>To build the Reaper Docker Image which is then added to the local image cache using the <code>cassandra-reaper:latest</code> tag, run the following commands from the top level directory:</p>
+
+<pre><code class="language-bash">cd src/server
+mvn package docker:build
+</code></pre>
+
+<p>Note that the above command will build the Reaper JAR and place it in the <em>src/server/target</em> directory prior to creating the Docker Image. It is also possible to build the JAR file using the <a href="building-reaper-packages-with-docker">Docker package build</a> instructions and omitting the <code>package</code> command from the above Maven commands.</p>
+
+<h1 id="start-docker-environment">Start Docker Environment</h1>
+
+<p>The <code>docker-compose</code> services available allow for orchestration of an environment that uses default settings. In addition, services are provided that allow orchestration of an environment in which the connections between the services are SSL encrypted. Services which use SSL encryption contain a <code>-ssl</code> suffix in their name.</p>
+
+<h2 id="default-settings-environment">Default Settings Environment</h2>
+
+<p>From the top level directory change to the <em>src/packaging</em> directory:</p>
+
+<pre><code class="language-bash">cd src/packaging
+</code></pre>
+
+<p>Start the Cassandra cluster:</p>
+
+<pre><code class="language-bash">docker-compose up cassandra
+</code></pre>
+
+<p>The <code>nodetool</code> Docker Compose service can be used to check on the Cassandra node&rsquo;s status:</p>
+
+<pre><code class="language-bash">docker-compose run nodetool status
+</code></pre>
+
+<p>Once the Cassandra node is online and accepting CQL connections, create the required <code>reaper_db</code> Cassandra keyspace to allow Reaper to save its cluster and scheduling data.</p>
+
+<p>By default, the <code>reaper_db</code> keyspace is created using a replication factor of 1. To change this replication factor, provide the intended replication factor as an optional argument:</p>
+
+<pre><code class="language-bash">docker-compose run cqlsh-initialize-reaper_db [$REPLICATION_FACTOR]
+</code></pre>
+
+<p>Wait a few moments for the <code>reaper_db</code> schema change to propagate, then start Reaper:</p>
+
+<pre><code class="language-bash">docker-compose up reaper
+</code></pre>
+
+<h2 id="ssl-encrypted-connections-environment">SSL Encrypted Connections Environment</h2>
+
+<p>From the top level directory change to the <em>src/packaging</em> directory:</p>
+
+<pre><code class="language-bash">cd src/packaging
+</code></pre>
+
+<p>Generate the SSL Keystore and Truststore which will be used to encrypt the connections between Reaper and Cassandra.</p>
+
+<pre><code class="language-bash">docker-compose run generate-ssl-stores
+</code></pre>
+
+<p>Start the Cassandra cluster which encrypts both the JMX and Native Protocol:</p>
+
+<pre><code class="language-bash">docker-compose up cassandra-ssl
+</code></pre>
+
+<p>The <code>nodetool-ssl</code> Docker Compose service can be used to check on the Cassandra node&rsquo;s status:</p>
+
+<pre><code class="language-bash">docker-compose run nodetool-ssl status
+</code></pre>
+
+<p>Once the Cassandra node is online and accepting encrypted SSL connections via the Native Transport protocol, create the required <code>reaper_db</code> Cassandra keyspace to allow Reaper to save its cluster and scheduling data.</p>
+
+<p>By default, the <code>reaper_db</code> keyspace is created using a replication factor of 1. To change this replication factor, provide the intended replication factor as an optional argument:</p>
+
+<pre><code class="language-bash">docker-compose run cqlsh-initialize-reaper_db-ssl [$REPLICATION_FACTOR]
+</code></pre>
+
+<p>Wait a few moments for the <code>reaper_db</code> schema change to propagate, then start the Reaper service that will establish encrypted connections to Cassandra:</p>
+
+<pre><code class="language-bash">docker-compose up reaper-ssl
+</code></pre>
+
+<h2 id="access-the-environment">Access The Environment</h2>
+
+<p>Once started, the UI can be accessed through:</p>
+
+<p><a href="http://127.0.0.1:8080/webui/">http://127.0.0.1:8080/webui/</a></p>
+
+<p>When adding the Cassandra node to the Reaper UI, use the IP address found via:</p>
+
+<pre><code class="language-bash">docker-compose run nodetool status
+</code></pre>
+
+<p>The helper <code>cqlsh</code> Docker Compose service has also been included for both the default and SSL encrypted environments:</p>
+
+<h2 id="default-environment">Default Environment</h2>
+
+<pre><code class="language-bash">docker-compose run cqlsh
+</code></pre>
+
+<h2 id="ssl-encrypted-environment">SSL Encrypted Environment</h2>
+
+<pre><code class="language-bash">docker-compose run cqlsh-ssl
+</code></pre>
+
+<h2 id="destroying-the-docker-environment">Destroying the Docker Environment</h2>
+
+<p>When terminating the infrastructure, use the following command to stop
+all related Docker Compose services:</p>
+
+<pre><code class="language-bash">docker-compose down
+</code></pre>
+
+<p>To completely clean up all persistent data, delete the <code>./data/</code> directory:</p>
+
+<pre><code class="language-bash">rm -rf ./data/
+</code></pre>
+
+                        </div>
 
                     </div>
-                    
-
-                    
-
-
-                    
 
                 </div>
                 
+
             </div>
+            
+
             
         </div>
         

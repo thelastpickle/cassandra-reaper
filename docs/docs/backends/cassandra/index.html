@@ -54,13 +54,14 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs//" />
+  <meta property="og:url" content="/docs/backends/cassandra//" />
   <meta property="og:image" content="" />
 
 </head>
 
 
   <body>
+
     <div id="all">
 
         <header>
@@ -155,10 +156,12 @@
 
 
         <div id="content">
+
+            
+
             <div class="container">
                 <div class="row">
-                    
-                    <div class = "col-md-3">
+                    <div class="col-md-3">
                         <ul class="sidebar-menu">
     
     
@@ -233,24 +236,59 @@
     
 </ul>
                     </div>
-                    <div class="col-md-9" id="blog-listing-medium">
 
-                        
+                    <div class="col-md-9">
+                        <div>
+                          
 
-<h2 id="welcome-to-the-cassandra-reaper-documentation">Welcome to the Cassandra Reaper documentation!</h2>
+<h1 id="cassandra-backend">Cassandra Backend</h1>
 
+<p>To use Apache Cassandra as the persistent storage for Reaper, the storageType setting must be set to cassandra in the Reaper configuration YAML file. In addition, the connection details for the Apache Cassandra cluster being used to store Reaper data must be specified in the configuration YAML file.</p>
+
+<p>For example:</p>
+
+<pre><code class="language-yaml">storageType: cassandra
+cassandra:
+  clusterName: &quot;test&quot;
+  contactPoints: [&quot;127.0.0.1&quot;]
+  keyspace: reaper_db
+  queryOptions:
+    consistencyLevel: LOCAL_QUORUM
+    serialConsistencyLevel: SERIAL
+</code></pre>
+
+<p>If you&rsquo;re using authentication or SSL:</p>
+
+<pre><code class="language-yaml">cassandra:
+  storageType: cassandra
+  clusterName: &quot;test&quot;
+  contactPoints: [&quot;127.0.0.1&quot;]
+  keyspace: reaper_db
+  authProvider:
+    type: plainText
+    username: cassandra
+    password: cassandra
+  ssl:
+    type: jdk
+</code></pre>
+
+<p>The Apache Cassandra backend is the only one that allows running several Reaper instances at once. This provides high availability and allows to repair multi DC clusters.</p>
+
+<p>To run Reaper using the Cassandra backend, create a reaper_db keyspace with an appropriate placement strategy. This is installation specific, and names of the data centers in the cluster that will host the Reaper data must be specified. For example:</p>
+
+<pre><code class="language-none">CREATE KEYSPACE reaper_db WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3};
+</code></pre>
+
+                        </div>
 
                     </div>
-                    
-
-                    
-
-
-                    
 
                 </div>
                 
+
             </div>
+            
+
             
         </div>
         

@@ -54,7 +54,7 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs//" />
+  <meta property="og:url" content="/docs/install//" />
   <meta property="og:image" content="" />
 
 </head>
@@ -237,7 +237,45 @@
 
                         
 
-<h2 id="welcome-to-the-cassandra-reaper-documentation">Welcome to the Cassandra Reaper documentation!</h2>
+<h1 id="running-reaper">Running Reaper</h1>
+
+<p>After modifying the <code>resource/cassandra-reaper.yaml</code> config file, Reaper can be started using the following command line :</p>
+
+<p><code>java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml</code></p>
+
+<p>Once started, the UI can be accessed through : <a href="http://127.0.0.1:8080/webui/">http://127.0.0.1:8080/webui/</a></p>
+
+<p>Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool <code>bin/spreaper</code></p>
+
+<h2 id="installing-and-running-as-a-service">Installing and Running as a Service</h2>
+
+<p>We provide prebuilt packages for reaper on the <a href="https://github.com/thelastpickle/cassandra-reaper/releases">GitHub release page</a>.  We&rsquo;ve linked the recommended versions above for convenience.</p>
+
+<h3 id="rpm-install-centos-fedora-rhek">RPM Install (CentOS, Fedora, RHEK)</h3>
+
+<p>Grab the RPM from GitHub and install using the <code>rpm</code> command:</p>
+
+<p><code>bash
+sudo rpm -ivh reaper-*.*.*.x86_64.rpm
+</code></p>
+
+<h3 id="deb-debian-based-distros-like-ubuntu">DEB (Debian based distros like Ubuntu)</h3>
+
+<p>After downloading the DEB package, install using the <code>dpkg</code> command:</p>
+
+<p><code>
+sudo dpkg -i reaper_*.*.*_amd64.deb
+</code></p>
+
+<h2 id="service-configuration">Service Configuration</h2>
+
+<p>The yaml file used by the service is located at <code>/etc/cassandra-reaper/cassandra-reaper.yaml</code> and alternate config templates can be found under <code>/etc/cassandra-reaper/configs</code>.
+It is recommended to create a new file with your specific configuration and symlink it as <code>/etc/cassandra-reaper/cassandra-reaper.yaml</code> to avoid your configuration from being overwritten during upgrades.<br />
+Adapt the config file to suit your setup and then run <code>sudo service cassandra-reaper start</code>.</p>
+
+<p>Log files can be found at <code>/var/log/cassandra-reaper.log</code> and <code>/var/log/cassandra-reaper.err</code>.</p>
+
+<p>Stop the service by running : <code>sudo service cassandra-reaper stop</code></p>
 
 
                     </div>

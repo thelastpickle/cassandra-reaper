@@ -7,6 +7,54 @@
   </url>
   
   <url>
+    <loc>http://cassandra-reaper.io/docs/api/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/backends/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/backends/cassandra/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/backends/h2/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/backends/memory/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/backends/postgres/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/community/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/configuration/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/install/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/install/building/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/install/docker/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/install/packages/</loc>
+  </url>
+  
+  <url>
     <loc>http://cassandra-reaper.io/download/</loc>
   </url>
   
