@@ -46,4 +46,4 @@ To rebuild both the UI and Reaper :
 
 # Building Using Docker
 
-To simplify the build toolchain it's possible to build everything using Docker itself.  See the [Docker]({{<ref "docs/install/docker.md">}}) section for details.
+To simplify the build toolchain it's possible to build everything using Docker itself.  See the [Docker]({{<ref "docs/download/docker.md">}}) section for details.
