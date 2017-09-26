@@ -15,7 +15,7 @@ publishDir = "../../docs"
 
 [[menu.main]]
     name = "Downloads"
-    url = "/download/"
+    url = "/docs/install/"
 
 [[menu.main]]
     name = "FAQ"
