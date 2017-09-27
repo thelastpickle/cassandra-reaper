@@ -54,14 +54,13 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs/backends/h2//" />
+  <meta property="og:url" content="/docs/download//" />
   <meta property="og:image" content="" />
 
 </head>
 
 
   <body>
-
     <div id="all">
 
         <header>
@@ -156,12 +155,10 @@
 
 
         <div id="content">
-
-            
-
             <div class="container">
                 <div class="row">
-                    <div class="col-md-3">
+                    
+                    <div class = "col-md-3">
                         <ul class="sidebar-menu">
     
     
@@ -236,35 +233,36 @@
     
 </ul>
                     </div>
+                    <div class="col-md-9" id="blog-listing-medium">
 
-                    <div class="col-md-9">
-                        <div>
-                          
+                        
 
-<h1 id="h2-backend">H2 Backend</h1>
+<h1 id="downloads-and-installation">Downloads and Installation</h1>
 
-<p>To use H2 as the persistent storage for Reaper, the storageType setting must be set to database in the Reaper configuration YAML file. When using H2 storage, the database will be automatically created under the path configured in the configuration YAML file. An example of how to configure H2 as persistent storage for Reaper can be found in the cassandra-reaper-h2.yaml.</p>
+<p>The current stable version is <a href="https://github.com/thelastpickle/cassandra-reaper/releases/tag/0.7.0">0.7.0</a></p>
 
-<pre><code class="language-yaml">storageType: database
-database:
-  # H2 JDBC settings
-  driverClass: org.h2.Driver
-  url: jdbc:h2:~/reaper-db/db;MODE=PostgreSQL
-  user:
-  password:
-  
-</code></pre>
+<ul>
+<li><a href="https://github.com/thelastpickle/cassandra-reaper/releases/download/0.7.0/reaper_0.7.0_amd64.deb">Deb Package</a></li>
+<li><a href="https://github.com/thelastpickle/cassandra-reaper/releases/download/0.7.0/reaper-0.7.0-1.x86_64.rpm">RPM</a></li>
+<li><a href="https://github.com/thelastpickle/cassandra-reaper/releases/download/0.7.0/cassandra-reaper-0.7.0-release.tar.gz">Tarball</a></li>
+</ul>
 
-                        </div>
+<p>For a docker image, please see the Docker section.</p>
+
+<p>Once you&rsquo;ve downloaded the proper package for your OS, head over to the <a href="install">Install and Run</a> section.</p>
+
 
                     </div>
+                    
+
+                    
+
+
+                    
 
                 </div>
                 
-
             </div>
-            
-
             
         </div>
         

@@ -39,23 +39,19 @@
   </url>
   
   <url>
-    <loc>http://cassandra-reaper.io/docs/install/</loc>
+    <loc>http://cassandra-reaper.io/docs/download/</loc>
   </url>
   
   <url>
-    <loc>http://cassandra-reaper.io/docs/install/building/</loc>
+    <loc>http://cassandra-reaper.io/docs/download/building/</loc>
   </url>
   
   <url>
-    <loc>http://cassandra-reaper.io/docs/install/docker/</loc>
+    <loc>http://cassandra-reaper.io/docs/download/docker/</loc>
   </url>
   
   <url>
-    <loc>http://cassandra-reaper.io/docs/install/packages/</loc>
-  </url>
-  
-  <url>
-    <loc>http://cassandra-reaper.io/download/</loc>
+    <loc>http://cassandra-reaper.io/docs/download/install/</loc>
   </url>
   
   <url>

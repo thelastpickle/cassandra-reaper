@@ -54,7 +54,7 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs/backends/h2//" />
+  <meta property="og:url" content="/docs/download/building//" />
   <meta property="og:image" content="" />
 
 </head>
@@ -241,19 +241,40 @@
                         <div>
                           
 
-<h1 id="h2-backend">H2 Backend</h1>
+<h1 id="building-install-packages">Building Install Packages</h1>
 
-<p>To use H2 as the persistent storage for Reaper, the storageType setting must be set to database in the Reaper configuration YAML file. When using H2 storage, the database will be automatically created under the path configured in the configuration YAML file. An example of how to configure H2 as persistent storage for Reaper can be found in the cassandra-reaper-h2.yaml.</p>
+<p>Debian packages and RPMs can be built from this project using Make, for example:</p>
 
-<pre><code class="language-yaml">storageType: database
-database:
-  # H2 JDBC settings
-  driverClass: org.h2.Driver
-  url: jdbc:h2:~/reaper-db/db;MODE=PostgreSQL
-  user:
-  password:
-  
+<pre><code class="language-bash">make deb
+make rpm
 </code></pre>
+
+<h1 id="building-jars-from-source">Building JARs from source</h1>
+
+<p>The easiest way to build is to use the following make command:</p>
+
+<pre><code class="language-bash">make package
+</code></pre>
+
+<p>To build Reaper without rebuilding the UI, run the following command :</p>
+
+<p><code>mvn clean package</code></p>
+
+<p>To only regenerate the UI (requires npm and bower) :</p>
+
+<p><code>mvn generate-sources -Pbuild-ui</code></p>
+
+<p>To rebuild both the UI and Reaper :</p>
+
+<p><code>mvn clean package -Pbuild-ui</code></p>
+
+<h1 id="building-docker-image">Building Docker Image</h1>
+
+<p><code>mvn clean package docker:build</code></p>
+
+<h1 id="building-using-docker">Building Using Docker</h1>
+
+<p>To simplify the build toolchain it&rsquo;s possible to build everything using Docker itself.  See the <a href="http://cassandra-reaper.io/docs/download/docker/">Docker</a> section for details.</p>
 
                         </div>
 
