@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.spotify</groupId>
+        <groupId>io.cassandrareaper</groupId>
         <artifactId>cassandra-reaper-pom</artifactId>
         <version>0.8-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
@@ -331,7 +331,7 @@
                                     implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                                 <transformer
                                     implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.spotify.reaper.ReaperApplication</mainClass>
+                                    <mainClass>io.cassandrareaper.ReaperApplication</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

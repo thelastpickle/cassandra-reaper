@@ -371,7 +371,7 @@ Limitations of this setup are:</p>
 
 <h2 id="rest-api">Rest API</h2>
 
-<p>Source code for all the REST resources can be found from package com.spotify.reaper.resources.</p>
+<p>Source code for all the REST resources can be found from package io.cassandrareaper.resources.</p>
 
 <h2 id="ping-resource">Ping Resource</h2>
 
@@ -448,7 +448,7 @@ or the request will fail. Delete repair runs and schedules first before calling 
 <ul>
 <li>Optional query parameters:</li>
 <li><em>state</em>: Comma separated list of repair run state names. Only names found in
-com.spotify.reaper.core.RunState are accepted.</li>
+io.cassandrareaper.core.RunState are accepted.</li>
 <li>Returns a list of repair runs, optionally fetching only the ones with <em>state</em> state.</li>
 </ul></li>
 
@@ -459,7 +459,7 @@ com.spotify.reaper.core.RunState are accepted.</li>
 <li>Returns a repair run object identified by the given &ldquo;id&rdquo; path parameter.</li>
 </ul></li>
 
-<li><p>GET     /repair_run/cluster/{cluster_name} (com.spotify.reaper.resources.RepairRunResource)</p>
+<li><p>GET     /repair_run/cluster/{cluster_name} (io.cassandrareaper.resources.RepairRunResource)</p>
 
 <ul>
 <li>Expected query parameters: <em>None</em></li>
