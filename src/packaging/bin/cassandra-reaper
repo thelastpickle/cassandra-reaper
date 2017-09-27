@@ -43,5 +43,5 @@ JVM_OPTS=(
 
 exec java ${JVM_OPTS[@]} \
     -cp ${CLASS_PATH} \
-    com.spotify.reaper.ReaperApplication \
+    io.cassandrareaper.ReaperApplication \
     server ${CONFIG_PATH}

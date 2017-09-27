@@ -7,7 +7,7 @@ weight = 75
 # Rest API
 
 
-Source code for all the REST resources can be found from package com.spotify.reaper.resources.
+Source code for all the REST resources can be found from package io.cassandrareaper.resources.
 
 ## Ping Resource
 
@@ -50,14 +50,14 @@ Source code for all the REST resources can be found from package com.spotify.rea
 * GET     /repair_run
   * Optional query parameters:
     * *state*: Comma separated list of repair run state names. Only names found in
-    com.spotify.reaper.core.RunState are accepted.
+    io.cassandrareaper.core.RunState are accepted.
   * Returns a list of repair runs, optionally fetching only the ones with *state* state.
 
 * GET     /repair_run/{id}
   * Expected query parameters: *None*
   * Returns a repair run object identified by the given "id" path parameter.
 
-* GET     /repair_run/cluster/{cluster_name} (com.spotify.reaper.resources.RepairRunResource)
+* GET     /repair_run/cluster/{cluster_name} (io.cassandrareaper.resources.RepairRunResource)
   * Expected query parameters: *None*
   * Returns a list of all repair run statuses found for the given "cluster_name" path parameter.
 

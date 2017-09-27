@@ -6,6 +6,4 @@
   <suppress checks="MethodName" files="[/\\]src[/\\]test[/\\]java[/\\]" />
   <suppress checks="AbbreviationAsWordInName" files="[/\\]src[/\\]test[/\\]java[/\\]" />
 
-  <!-- RingRangeTest local varible names make sense as-is -->
-  <suppress checks="LocalVariableName" files="[/\\]src[/\\]test[/\\]java[/\\]com[/\\]spotify[/\\]reaper[/\\]unit[/\\]service[/\\]RingRangeTest" />
 </suppressions>
