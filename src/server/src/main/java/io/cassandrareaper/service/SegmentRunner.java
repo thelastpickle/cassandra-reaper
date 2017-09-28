@@ -675,7 +675,9 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         } finally {
           // if someone else does hold the lease, ie renewLead(..) was true,
           // then their writes to repair_run table and any call to releaseLead(..) will throw an exception
-          releaseLead();
+          try {
+            releaseLead();
+          } catch (AssertionError ignore) { }
         }
       }
     }
