@@ -596,7 +596,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(UUID runId, List<RingRange> localRanges) {
-    LOG.debug("Getting ranges for local node {}", localRanges);
+    LOG.trace("Getting ranges for local node {}", localRanges);
     Collection<RepairSegment> segments = Lists.newArrayList();
 
     // First gather segments ids
@@ -685,7 +685,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       }
     }
 
-    LOG.debug("found ongoing repairs {} {}", repairs.size(), repairs);
+    LOG.trace("found ongoing repairs {} {}", repairs.size(), repairs);
 
     return repairs;
   }
@@ -698,7 +698,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       repairRunIds.add(result.getUUID("id"));
     }
 
-    LOG.debug("repairRunIds : {}", repairRunIds);
+    LOG.trace("repairRunIds : {}", repairRunIds);
     return repairRunIds;
   }
 
@@ -899,7 +899,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   private RepairRun buildRepairRunFromRow(Row repairRunResult, UUID id) {
-    LOG.debug("buildRepairRunFromRow {} / {}", id, repairRunResult);
+    LOG.trace("buildRepairRunFromRow {} / {}", id, repairRunResult);
     return new RepairRun.Builder(
         repairRunResult.getString("cluster_name"),
         repairRunResult.getUUID("repair_unit_id"),

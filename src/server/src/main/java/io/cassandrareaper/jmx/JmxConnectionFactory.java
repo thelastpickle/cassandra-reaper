@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.codahale.metrics.MetricRegistry;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -37,14 +38,25 @@ import org.slf4j.LoggerFactory;
 
 public class JmxConnectionFactory {
 
-  private static final ConcurrentMap<String, AtomicInteger> SUCCESSFULL_CONNECTIONS = Maps.newConcurrentMap();
   private static final Logger LOG = LoggerFactory.getLogger(JmxConnectionFactory.class);
 
+  private final MetricRegistry metricRegistry;
+  private final HostConnectionCounters hostConnectionCounters;
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
   private EC2MultiRegionAddressTranslator addressTranslator;
   private boolean localMode = false;
-  private MetricRegistry metricRegistry;
+
+  @VisibleForTesting
+  public JmxConnectionFactory() {
+    this.metricRegistry = new MetricRegistry();
+    hostConnectionCounters = new HostConnectionCounters(metricRegistry);
+  }
+
+  public JmxConnectionFactory(MetricRegistry metricRegistry) {
+    this.metricRegistry = metricRegistry;
+    hostConnectionCounters = new HostConnectionCounters(metricRegistry);
+  }
 
   public JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
       throws ReaperException {
@@ -86,13 +98,13 @@ public class JmxConnectionFactory {
         String host = hostIterator.next();
 
         // First loop, we try the most accessible nodes, then second loop we try all nodes
-        if (null != host && (SUCCESSFULL_CONNECTIONS.getOrDefault(host, new AtomicInteger(0)).get() >= 0 || 1 == i)) {
+        if (null != host && (hostConnectionCounters.getSuccessfulConnections(host) >= 0 || 1 == i)) {
           try {
             JmxProxy jmxProxy = connect(handler, host, connectionTimeout);
-            incrementSuccessfullConnections(host);
+            hostConnectionCounters.incrementSuccessfulConnections(host);
             return jmxProxy;
           } catch (ReaperException | RuntimeException e) {
-            decrementSuccessfullConnections(host);
+            hostConnectionCounters.decrementSuccessfulConnections(host);
             LOG.info("Unreachable host", e);
           }
         }
@@ -126,41 +138,55 @@ public class JmxConnectionFactory {
     this.localMode = localMode;
   }
 
-  public final void setMetricRegistry(MetricRegistry metricRegistry) {
-    this.metricRegistry = metricRegistry;
-  }
+  private static final class HostConnectionCounters {
+    private final ConcurrentMap<String, AtomicInteger> successfulConnections = Maps.newConcurrentMap();
 
-  private void incrementSuccessfullConnections(String host) {
-    try {
-      AtomicInteger successes = SUCCESSFULL_CONNECTIONS.putIfAbsent(host, new AtomicInteger(1));
-      if (null != successes && successes.get() <= 20) {
-        successes.incrementAndGet();
-      }
-      LOG.debug("Host {} has {} successfull connections", host, successes);
-      if (null != metricRegistry) {
-        metricRegistry
-            .counter(MetricRegistry.name(JmxConnectionFactory.class, "connections", host.replace('.', '-')))
-            .inc();
-      }
-    } catch (RuntimeException e) {
-      LOG.warn("Could not increment JMX successfull connections counter for host {}", host, e);
+    private final MetricRegistry metricRegistry;
+
+    HostConnectionCounters(MetricRegistry metricRegistry) {
+      this.metricRegistry = metricRegistry;
     }
-  }
 
-  private void decrementSuccessfullConnections(String host) {
-    try {
-      AtomicInteger successes = SUCCESSFULL_CONNECTIONS.putIfAbsent(host, new AtomicInteger(-1));
-      if (null != successes && successes.get() >= -5) {
-        successes.decrementAndGet();
+    void incrementSuccessfulConnections(String host) {
+      try {
+        AtomicInteger successes = successfulConnections.putIfAbsent(host, new AtomicInteger(1));
+        if (null != successes && successes.get() <= 20) {
+          successes.incrementAndGet();
+        }
+        LOG.debug("Host {} has {} successfull connections", host, successes);
+        if (null != metricRegistry) {
+          metricRegistry
+              .counter(
+                  MetricRegistry.name(
+                      JmxConnectionFactory.class, "connections", host.replace('.', '-')))
+              .inc();
+        }
+      } catch (RuntimeException e) {
+        LOG.warn("Could not increment JMX successfull connections counter for host {}", host, e);
       }
-      LOG.debug("Host {} has {} successfull connections", host, successes);
-      if (null != metricRegistry) {
-        metricRegistry
-            .counter(MetricRegistry.name(JmxConnectionFactory.class, "connections", host.replace('.', '-')))
-            .dec();
+    }
+
+    void decrementSuccessfulConnections(String host) {
+      try {
+        AtomicInteger successes = successfulConnections.putIfAbsent(host, new AtomicInteger(-1));
+        if (null != successes && successes.get() >= -5) {
+          successes.decrementAndGet();
+        }
+        LOG.debug("Host {} has {} successfull connections", host, successes);
+        if (null != metricRegistry) {
+          metricRegistry
+              .counter(
+                  MetricRegistry.name(
+                      JmxConnectionFactory.class, "connections", host.replace('.', '-')))
+              .dec();
+        }
+      } catch (RuntimeException e) {
+        LOG.warn("Could not decrement JMX successfull connections counter for host {}", host, e);
       }
-    } catch (RuntimeException e) {
-      LOG.warn("Could not decrement JMX successfull connections counter for host {}", host, e);
+    }
+
+    int getSuccessfulConnections(String host) {
+      return successfulConnections.getOrDefault(host, new AtomicInteger(0)).get();
     }
   }
 }
