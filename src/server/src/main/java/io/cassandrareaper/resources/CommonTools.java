@@ -362,10 +362,15 @@ public final class CommonTools {
   }
 
   private static boolean isConflictingSchedules(RepairUnit newRepairUnit, RepairUnit existingRepairUnit) {
-    return (newRepairUnit.getColumnFamilies().isEmpty() && existingRepairUnit.getColumnFamilies().isEmpty())
-        || newRepairUnit.getColumnFamilies().isEmpty() && !existingRepairUnit.getColumnFamilies().isEmpty()
-        || !newRepairUnit.getColumnFamilies().isEmpty() && existingRepairUnit.getColumnFamilies().isEmpty()
-        || !Sets.intersection(existingRepairUnit.getColumnFamilies(), newRepairUnit.getColumnFamilies()).isEmpty();
+    return (newRepairUnit.getColumnFamilies().isEmpty()
+            && existingRepairUnit.getColumnFamilies().isEmpty())
+        || (newRepairUnit.getColumnFamilies().isEmpty()
+            && !existingRepairUnit.getColumnFamilies().isEmpty())
+        || (!newRepairUnit.getColumnFamilies().isEmpty()
+            && existingRepairUnit.getColumnFamilies().isEmpty())
+        || (!Sets.intersection(
+                existingRepairUnit.getColumnFamilies(), newRepairUnit.getColumnFamilies())
+            .isEmpty());
   }
 
   public static Set<String> getTableNamesBasedOnParam(

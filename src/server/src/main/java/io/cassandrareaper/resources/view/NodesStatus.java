@@ -166,7 +166,7 @@ public final class NodesStatus {
     ENDPOINT_TOKENS_PATTERNS.add(ENDPOINT_TOKENS_22_PATTERN);
   }
 
-  public final class GossipInfo {
+  public static final class GossipInfo {
 
     @JsonProperty
     public final String sourceNode;
@@ -193,7 +193,7 @@ public final class NodesStatus {
     }
   }
 
-  public final class EndpointState {
+  public static final class EndpointState {
 
     @JsonProperty
     public final String endpoint;
