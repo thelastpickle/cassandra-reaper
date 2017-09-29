@@ -32,6 +32,8 @@ else
 fi
 
 JVM_OPTS=(
+    -XX:+IgnoreUnrecognizedVMOptions
+    --add-modules=java.xml.bind
     -da
     -Xms2G
     -Xmx2G

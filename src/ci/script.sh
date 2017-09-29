@@ -10,7 +10,9 @@ case "${TEST_TYPE}" in
         exit 1
         ;;
     "ccm")
-        ccm start -v
+        # ccm is not yet Java9 compatible
+        export JDK_SWITCHER=`which jdk_switcher`
+        sh -c '$JDK_SWITCHER use oraclejdk8 ; ccm start -v'
         sleep 30
         ccm status
         ccm node1 nodetool status

@@ -14,6 +14,7 @@
     <packaging>jar</packaging>
 
     <properties>
+        <surefireArgLine></surefireArgLine>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dropwizard.version>1.0.8</dropwizard.version>
         <dropwizard.cassandra.version>4.1.0</dropwizard.cassandra.version>
@@ -206,6 +207,21 @@
     </dependencies>
 
     <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <version>2.20.1</version>
+              <inherited>true</inherited>
+              <configuration>
+                <forkCount>1</forkCount>
+                <reuseForks>false</reuseForks>
+                <argLine>-XX:+IgnoreUnrecognizedVMOptions --add-modules=java.xml.bind ${surefireArgLine}</argLine>
+                <workingDirectory>${project.build.directory}</workingDirectory>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -252,28 +268,6 @@
                             <goal>check</goal>
                         </goals>
                     </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.20</version>
-                <executions>
-                  <execution>
-                    <id>integration-tests</id>
-                    <goals>
-                      <goal>integration-test</goal>
-                      <goal>verify</goal>
-                    </goals>
-                    <configuration>
-                      <skipTests>true</skipTests>
-                      <argLine>${failsafeArgLine}</argLine>
-                      <failIfNoTests>false</failIfNoTests>
-                      <includes>
-                        <include>**/ReaperIT.java</include>
-                      </includes>
-                    </configuration>
-                  </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -393,14 +387,8 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.20</version>
                         <configuration>
-                          <skipTests>false</skipTests>
-                          <forkCount>1</forkCount>
-                          <reuseForks>false</reuseForks>
-                          <argLine>${surefireArgLine}</argLine>
-                          <failIfNoTests>false</failIfNoTests>
-                          <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+                          <failIfNoSpecifiedTests>true</failIfNoSpecifiedTests>
                           <includes>
                                 <include>**/*IT.java</include>
                           </includes>
@@ -408,7 +396,6 @@
                             <exclude>**/Test*.java</exclude>
                             <exclude>**/*Test.java</exclude>
                           </excludes>
-                          <workingDirectory>${project.build.directory}</workingDirectory>
                         </configuration>
                     </plugin>
                 </plugins>
