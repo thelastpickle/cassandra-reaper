@@ -16,6 +16,7 @@ package io.cassandrareaper;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
+import io.cassandrareaper.jmx.JmxConnectionsInitializer;
 import io.cassandrareaper.resources.ClusterResource;
 import io.cassandrareaper.resources.PingResource;
 import io.cassandrareaper.resources.ReaperHealthCheck;
@@ -39,6 +40,8 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
@@ -65,7 +68,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
   private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
   private final AppContext context;
 
   public ReaperApplication() {
@@ -142,9 +144,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     if (context.jmxConnectionFactory == null) {
       LOG.info("no JMX connection factory given in context, creating default");
-      context.jmxConnectionFactory = new JmxConnectionFactory();
+      context.jmxConnectionFactory = new JmxConnectionFactory(context.metricRegistry);
       context.jmxConnectionFactory.setLocalMode(context.config.getLocalJmxMode());
-      context.jmxConnectionFactory.setMetricRegistry(context.metricRegistry);
 
       // read jmx host/port mapping from config and provide to jmx con.factory
       Map<String, Integer> jmxPorts = config.getJmxPorts();
@@ -200,6 +201,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       AutoSchedulingManager.start(context);
     }
 
+    initializeJmxSeedsForAllClusters();
     LOG.info("resuming pending repair runs");
 
     if (context.storage instanceof IDistributedStorage) {
@@ -221,6 +223,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       // Storage is different than Cassandra, assuming we have a single instance
       context.repairManager.resumeRunningRepairRuns(context);
     }
+    LOG.info("Initialization complete! Reaper is ready to get things done!");
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config, Environment environment)
@@ -286,5 +289,27 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     }
     flyway.setBaselineOnMigrate(true);
     flyway.migrate();
+  }
+
+  private void initializeJmxSeedsForAllClusters() {
+    LOG.info("Initializing JMX seed list for all clusters...");
+    try (JmxConnectionsInitializer jmxConnectionsIntializer =
+            new JmxConnectionsInitializer(context);
+        Timer.Context cxt =
+            context
+                .metricRegistry
+                .timer(MetricRegistry.name(JmxConnectionFactory.class, "jmxConnectionsIntializer"))
+                .time()) {
+
+      context
+          .storage
+          .getClusters()
+          .parallelStream()
+          .forEach(cluster -> jmxConnectionsIntializer.on(cluster));
+
+      LOG.info("Initialized JMX seed list for all clusters.");
+    } catch (RuntimeException e) {
+      LOG.error("Failed initializing JMX seed list", e);
+    }
   }
 }
