@@ -58,6 +58,7 @@ import javax.ws.rs.core.UriInfo;
 
 import com.google.common.base.Optional;
 import jersey.repackaged.com.google.common.collect.Lists;
+import jersey.repackaged.com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,6 +132,28 @@ public final class ClusterResource {
         return Response.ok().entity(view).build();
       }
     }
+  }
+
+  @GET
+  @Path("/{cluster_name}/tables")
+  public Response getClusterTables(@PathParam("cluster_name") String clusterName)
+      throws ReaperException {
+    Map<String, List<String>> tablesByKeyspace = Maps.newHashMap();
+
+    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
+    if (cluster.isPresent()) {
+      try (JmxProxy jmxProxy =
+          context.jmxConnectionFactory.connectAny(
+              cluster.get(), context.config.getJmxConnectionTimeoutInSeconds())) {
+        tablesByKeyspace = jmxProxy.listTablesByKeyspace();
+        jmxProxy.close();
+      } catch (RuntimeException e) {
+        LOG.error("Couldn't retrieve the list of tables for cluster {}", clusterName, e);
+        return Response.status(400).entity(e).build();
+      }
+    }
+
+    return Response.ok().entity(tablesByKeyspace).build();
   }
 
   @POST

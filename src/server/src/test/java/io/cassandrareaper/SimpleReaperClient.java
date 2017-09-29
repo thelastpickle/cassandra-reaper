@@ -144,6 +144,10 @@ public final class SimpleReaperClient {
     });
   }
 
+  public static Map<String, List<String>> parseTableListJSON(String json) {
+    return parseJSON(json, new TypeReference<Map<String, List<String>>>() {});
+  }
+
   public List<RepairScheduleStatus> getRepairSchedulesForCluster(String clusterName) {
     Response response = doHttpCall("GET", reaperHost, reaperPort,
         "/repair_schedule/cluster/" + clusterName, EMPTY_PARAMS);

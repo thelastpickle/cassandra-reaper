@@ -1016,6 +1016,26 @@ public final class BasicSteps {
     }
   }
 
+  @And("^the last added cluster has a keyspace called reaper_db$")
+  public void the_last_added_cluster_has_a_keyspace_called_reaper_db() throws Throwable {
+    synchronized (BasicSteps.class) {
+      RUNNERS
+          .parallelStream()
+          .forEach(
+              runner -> {
+                Response response =
+                    runner.callReaper(
+                        "GET", "/cluster/" + TestContext.TEST_CLUSTER + "/tables", EMPTY_PARAMS);
+                assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+                String responseData = response.readEntity(String.class);
+                Map<String, List<String>> tablesByKeyspace =
+                    SimpleReaperClient.parseTableListJSON(responseData);
+                assertTrue(tablesByKeyspace.containsKey("reaper_db"));
+                assertTrue(tablesByKeyspace.get("reaper_db").contains("repair_run"));
+              });
+    }
+  }
+
   private static void createKeyspace(String keyspaceName) {
     try (Cluster cluster = buildCluster(); Session tmpSession = cluster.connect()) {
       tmpSession.execute("CREATE KEYSPACE IF NOT EXISTS " + keyspaceName
