@@ -8,13 +8,26 @@ parent = "usage"
 
 # Cluster Health 
 
-Once you've added a cluster it will show up in your dashboard.
+
+<div class = "row">
+    <div class = "col-md-6">
+        {{< photo src="/img/cluster_view.png" >}}
+    </div>
+    <div>
+        Once you've added a cluster it will show up in your dashboard.  
+    </div>
+
+</div>
+
+<div class = "row">
+    <div class = "col-md-6">
+        {{< photo src="/img/node.png" >}}
+    </div>
+    <div>
+        Click one of the nodes to get a popup with details on the machine's state.
+    </div>
+</div>
 
 
-<img class = "img-responsive" src = "/img/cluster_view.png" >
 
-
-Click one of the nodes to get a popup with details on the machine's state.
-
-<img class = "img-responsive" src = "/img/node.png" >
 
