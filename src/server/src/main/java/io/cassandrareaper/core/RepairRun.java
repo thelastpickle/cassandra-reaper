@@ -145,7 +145,7 @@ public final class RepairRun implements Comparable<RepairRun> {
       return false;
     }
     RepairRun run = (RepairRun) other;
-    return this.id == run.id && this.repairUnitId == run.repairUnitId;
+    return this.id.equals(run.id) && this.repairUnitId.equals(run.repairUnitId);
   }
 
   @Override
