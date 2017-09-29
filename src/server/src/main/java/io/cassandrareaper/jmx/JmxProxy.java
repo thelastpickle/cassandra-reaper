@@ -27,6 +27,7 @@ import java.net.UnknownHostException;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMISocketFactory;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -39,6 +40,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
@@ -60,6 +62,7 @@ import javax.validation.constraints.NotNull;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
 import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.compaction.CompactionManagerMBean;
@@ -564,6 +567,35 @@ public final class JmxProxy implements NotificationListener, AutoCloseable {
     return true;
   }
 
+  /** Checks if table exists in the cluster by instantiating a MBean for that table. */
+  public Map<String, List<String>> listTablesByKeyspace() {
+    Map<String, List<String>> tablesByKeyspace = Maps.newHashMap();
+    try {
+      Set<ObjectName> beanSet =
+          mbeanServer.queryNames(
+              new ObjectName(
+                  "org.apache.cassandra.db:type=ColumnFamilies,keyspace=*,columnfamily=*"),
+              null);
+
+      tablesByKeyspace =
+          beanSet
+              .stream()
+              .map(
+                  bean ->
+                      new JmxColumnFamily(
+                          bean.getKeyProperty("keyspace"), bean.getKeyProperty("columnfamily")))
+              .collect(
+                  Collectors.groupingBy(
+                      JmxColumnFamily::getKeyspace,
+                      Collectors.mapping(JmxColumnFamily::getColumnFamily, Collectors.toList())));
+
+    } catch (MalformedObjectNameException | IOException e) {
+      LOG.warn("Couldn't get a list of tables through JMX", e);
+    }
+
+    return Collections.unmodifiableMap(tablesByKeyspace);
+  }
+
   public String getCassandraVersion() {
     return ((StorageServiceMBean) ssProxy).getReleaseVersion();
   }
@@ -947,5 +979,24 @@ public final class JmxProxy implements NotificationListener, AutoCloseable {
     return Boolean.parseBoolean(System.getProperty("ssl.enable"))
         ? new SslRMIClientSocketFactory()
         : RMISocketFactory.getDefaultSocketFactory();
+  }
+
+  private static final class JmxColumnFamily {
+    private final String keyspace;
+    private final String columnFamily;
+
+    JmxColumnFamily(String keyspace, String columnFamily) {
+      super();
+      this.keyspace = keyspace;
+      this.columnFamily = columnFamily;
+    }
+
+    public String getKeyspace() {
+      return keyspace;
+    }
+
+    public String getColumnFamily() {
+      return columnFamily;
+    }
   }
 }

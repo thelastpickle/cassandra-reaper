@@ -10,6 +10,7 @@ Feature: Using Reaper to launch repairs and schedule them
     Given that we are going to use "127.0.0.1" as cluster seed host
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
+    And the last added cluster has a keyspace called reaper_db
     Then reaper has the last added cluster in storage
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
