@@ -4,7 +4,4 @@
 
 
 ALTER TABLE "repair_unit" 
-ADD "nodes" TEXT [];
-
-ALTER TABLE "repair_unit" 
-ADD "datacenters" TEXT [];
+ADD "blacklisted_tables" TEXT [] NOT NULL;

@@ -3,7 +3,4 @@
 --
 
 ALTER TABLE repair_unit 
-ADD nodes ARRAY;
-
-ALTER TABLE repair_unit 
-ADD datacenters ARRAY;
+ADD blacklisted_tables ARRAY NOT NULL;
