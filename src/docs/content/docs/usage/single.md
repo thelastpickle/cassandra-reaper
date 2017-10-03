@@ -8,12 +8,18 @@ parent = "usage"
 
 # Repairing A Cluster
 
+
+{{< screenshot src="/img/repair_page.png" title="Run a manual repair" >}}
+
 Start by clicking the repair menu item on the left side, you should see a repair page. 
 
-<img class = "img-responsive" src = "/img/repair_page.png" >
+Click "Start a new repair"
 
-Click "Start a new repair":
+{{< /screenshot >}}
 
 
+{{< screenshot src="/img/single_repair.png" title="Fill in the details" >}}
 
-<img class = "img-responsive" src = "/img/single_repair.png" >
+Enter the keyspace, tables, and other details to start a manual repair.
+
+{{< /screenshot >}}

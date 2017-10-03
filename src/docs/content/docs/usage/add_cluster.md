@@ -9,12 +9,18 @@ parent = "usage"
 
 # Add A Cluster
 
-Adding a cluster for Reaper to manage repairs on.  
 
-
-<img class = "img-responsive" src = "/img/add_cluster.png" >
-
-
+{{< screenshot src="/img/add_cluster.png" title="Add a cluster for Reaper to manage repairs on.">}}
+        
 Enter an address of one of the nodes in the cluster.  Reaper will contact that node and find the rest of the nodes in the cluster automatically.
 
 Once you've done this, you'll see the [Cluster Health](../health).
+
+{{< /screenshot >}}
+
+
+
+
+
+
+
