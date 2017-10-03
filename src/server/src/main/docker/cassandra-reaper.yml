@@ -7,6 +7,7 @@ repairRunThreadCount: ${REAPER_REPAIR_RUN_THREADS}
 hangingRepairTimeoutMins: ${REAPER_HANING_REPAIR_TIMEOUT_MINS}
 storageType: ${REAPER_STORAGE_TYPE}
 enableCrossOrigin: ${REAPER_ENABLE_CORS}
+jmxConnectionTimeoutInSeconds: ${REAPER_JMX_CONNECTION_TIMEOUT_IN_SECONDS}
 incrementalRepair: ${REAPER_INCREMENTAL_REPAIR}
 enableDynamicSeedList: ${REAPER_ENABLE_DYNAMIC_SEEDS}
 repairManagerSchedulingIntervalSeconds: ${REAPER_REPAIR_MANAGER_SCHEDULING_INTERVAL_SECONDS}
