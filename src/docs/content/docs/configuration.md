@@ -72,6 +72,11 @@ If you are using the recommended (persistent) storage type "database" or "cassan
 the database client parameters in a database/cassandra section in the configuration file. See the example
 settings in provided testing configuration in *src/test/resources/cassandra-reaper.yaml*.
 
+`useAddressTranslator`:
+
+When running multi region clusters in AWS, turn this setting to `true` in order to use the EC2MultiRegionAddressTranslator from the Datastax Java Driver. This will allow translating the public address that the nodes broadcast to the private IP address that is used to expose JMX.  
+Defaults to `false`.
+
 `jmxPorts`:
 
 Optional mapping of custom JMX ports to use for individual hosts. The used default JMX port
