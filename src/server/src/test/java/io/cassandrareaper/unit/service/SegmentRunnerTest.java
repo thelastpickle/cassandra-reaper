@@ -73,9 +73,16 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
     context.storage = new MemoryStorage();
-    RepairUnit cf = context.storage.addRepairUnit(
-        new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), false, Sets.newHashSet("127.0.0.1"),
-            Collections.emptySet()));
+    RepairUnit cf =
+        context.storage.addRepairUnit(
+            new RepairUnit.Builder(
+                "reaper",
+                "reaper",
+                Sets.newHashSet("reaper"),
+                false,
+                Sets.newHashSet("127.0.0.1"),
+                Collections.emptySet(),
+                Collections.emptySet()));
     RepairRun run = context.storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
         Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf.getId())));
@@ -158,9 +165,16 @@ public final class SegmentRunnerTest {
   @Test
   public void successTest() throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
-    RepairUnit cf = storage.addRepairUnit(
-        new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), false, Sets.newHashSet("127.0.0.1"),
-            Collections.emptySet()));
+    RepairUnit cf =
+        storage.addRepairUnit(
+            new RepairUnit.Builder(
+                "reaper",
+                "reaper",
+                Sets.newHashSet("reaper"),
+                false,
+                Sets.newHashSet("127.0.0.1"),
+                Collections.emptySet(),
+                Collections.emptySet()));
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
         Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf.getId())));
@@ -266,9 +280,16 @@ public final class SegmentRunnerTest {
   @Test
   public void failureTest() throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
-    RepairUnit cf = storage.addRepairUnit(
-        new RepairUnit.Builder("reaper", "reaper", Sets.newHashSet("reaper"), false, Sets.newHashSet("127.0.0.1"),
-            Collections.emptySet()));
+    RepairUnit cf =
+        storage.addRepairUnit(
+            new RepairUnit.Builder(
+                "reaper",
+                "reaper",
+                Sets.newHashSet("reaper"),
+                false,
+                Sets.newHashSet("127.0.0.1"),
+                Collections.emptySet(),
+                Collections.emptySet()));
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
         Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf.getId())));

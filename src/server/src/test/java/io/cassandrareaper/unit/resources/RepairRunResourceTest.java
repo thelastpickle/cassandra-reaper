@@ -75,6 +75,7 @@ public final class RepairRunResourceTest {
   private static final Set<String> NODES = Collections.emptySet();
   private static final Set<String> DATACENTERS = Collections.emptySet();
   private static final Map<String, String> NODES_MAP = Maps.newHashMap("node1", "127.0.0.1");
+  private static final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
   private static final String OWNER = "test";
   private static final int THREAD_CNT = 1;
   private static final int REPAIR_TIMEOUT_S = 60;
@@ -135,14 +136,25 @@ public final class RepairRunResourceTest {
       }
     };
 
-    RepairUnit.Builder repairUnitBuilder = new RepairUnit
-        .Builder(CLUSTER_NAME, KEYSPACE, TABLES, INCREMENTAL, NODES, DATACENTERS);
+    RepairUnit.Builder repairUnitBuilder =
+        new RepairUnit.Builder(
+            CLUSTER_NAME, KEYSPACE, TABLES, INCREMENTAL, NODES, DATACENTERS, BLACKLISTED_TABLES);
 
     context.storage.addRepairUnit(repairUnitBuilder);
   }
 
   private Response addDefaultRepairRun(RepairRunResource resource) {
-    return addRepairRun(resource, uriInfo, CLUSTER_NAME, KEYSPACE, TABLES, OWNER, "", SEGMENT_CNT, NODES);
+    return addRepairRun(
+        resource,
+        uriInfo,
+        CLUSTER_NAME,
+        KEYSPACE,
+        TABLES,
+        OWNER,
+        "",
+        SEGMENT_CNT,
+        NODES,
+        BLACKLISTED_TABLES);
   }
 
   private Response addRepairRun(
@@ -154,20 +166,26 @@ public final class RepairRunResourceTest {
       String owner,
       String cause,
       Integer segments,
-      Set<String> nodes) {
+      Set<String> nodes,
+      Set<String> blacklistedTables) {
 
     return resource.addRepairRun(
         uriInfo,
         Optional.fromNullable(clusterName),
         Optional.fromNullable(keyspace),
-        columnFamilies == null ? Optional.<String>absent() : Optional .of(columnFamilies.iterator().next()),
+        columnFamilies == null
+            ? Optional.<String>absent()
+            : Optional.of(columnFamilies.iterator().next()),
         Optional.fromNullable(owner),
         Optional.fromNullable(cause),
         Optional.fromNullable(segments),
         Optional.of(REPAIR_PARALLELISM.name()),
         Optional.<String>absent(),
         Optional.<String>absent(),
-        nodes == null || nodes.isEmpty() ? Optional.<String>absent() : Optional.of(nodes.iterator().next()),
+        nodes == null || nodes.isEmpty()
+            ? Optional.<String>absent()
+            : Optional.of(nodes.iterator().next()),
+        Optional.<String>absent(),
         Optional.<String>absent());
   }
 
@@ -281,8 +299,18 @@ public final class RepairRunResourceTest {
   @Test
   public void testAddRunMissingArgument() {
     RepairRunResource resource = new RepairRunResource(context);
-    Response response = addRepairRun(resource, uriInfo, CLUSTER_NAME, null,
-        TABLES, OWNER, null, SEGMENT_CNT, NODES);
+    Response response =
+        addRepairRun(
+            resource,
+            uriInfo,
+            CLUSTER_NAME,
+            null,
+            TABLES,
+            OWNER,
+            null,
+            SEGMENT_CNT,
+            NODES,
+            BLACKLISTED_TABLES);
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
   }
@@ -292,8 +320,18 @@ public final class RepairRunResourceTest {
     context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
         RETRY_DELAY_S, TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(context);
-    Response response = addRepairRun(resource, uriInfo, CLUSTER_NAME, null, TABLES, OWNER,
-        null, SEGMENT_CNT, NODES);
+    Response response =
+        addRepairRun(
+            resource,
+            uriInfo,
+            CLUSTER_NAME,
+            null,
+            TABLES,
+            OWNER,
+            null,
+            SEGMENT_CNT,
+            NODES,
+            BLACKLISTED_TABLES);
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
   }

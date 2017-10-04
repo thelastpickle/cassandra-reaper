@@ -207,8 +207,14 @@ public final class ClusterRepairSchedulerTest {
   }
 
   private RepairUnit.Builder aRepair(Cluster cluster, String keyspace) {
-    return new RepairUnit.Builder(cluster.getName(), keyspace, Collections.emptySet(), Boolean.FALSE,
-        Collections.emptySet(), Collections.emptySet());
+    return new RepairUnit.Builder(
+        cluster.getName(),
+        keyspace,
+        Collections.emptySet(),
+        Boolean.FALSE,
+        Collections.emptySet(),
+        Collections.emptySet(),
+        Collections.emptySet());
   }
 
   private ClusterRepairScheduleAssertion assertThatClusterRepairSchedules(Collection<RepairSchedule> repairSchedules) {

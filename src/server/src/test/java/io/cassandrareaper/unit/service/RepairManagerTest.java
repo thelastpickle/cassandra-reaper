@@ -78,7 +78,14 @@ public class RepairManagerTest {
     context.config.setLocalJmxMode(false);
 
     final RepairUnit cf =
-        new RepairUnit.Builder(clusterName, ksName, cfNames, incrementalRepair, nodes, datacenters)
+        new RepairUnit.Builder(
+                clusterName,
+                ksName,
+                cfNames,
+                incrementalRepair,
+                nodes,
+                datacenters,
+                Collections.emptySet())
             .build(UUIDs.timeBased());
 
     final RepairRun run =
@@ -141,7 +148,14 @@ public class RepairManagerTest {
     context.config.setLocalJmxMode(false);
 
     final RepairUnit cf =
-        new RepairUnit.Builder(clusterName, ksName, cfNames, incrementalRepair, nodes, datacenters)
+        new RepairUnit.Builder(
+                clusterName,
+                ksName,
+                cfNames,
+                incrementalRepair,
+                nodes,
+                datacenters,
+                Collections.emptySet())
             .build(UUIDs.timeBased());
 
     final RepairRun run =
@@ -206,7 +220,14 @@ public class RepairManagerTest {
     context.config.setLocalJmxMode(false);
 
     final RepairUnit cf =
-        new RepairUnit.Builder(clusterName, ksName, cfNames, incrementalRepair, nodes, datacenters)
+        new RepairUnit.Builder(
+                clusterName,
+                ksName,
+                cfNames,
+                incrementalRepair,
+                nodes,
+                datacenters,
+                Collections.emptySet())
             .build(UUIDs.timeBased());
 
     final RepairRun run =
@@ -268,7 +289,14 @@ public class RepairManagerTest {
     context.config.setLocalJmxMode(false);
 
     final RepairUnit cf =
-        new RepairUnit.Builder(clusterName, ksName, cfNames, incrementalRepair, nodes, datacenters)
+        new RepairUnit.Builder(
+                clusterName,
+                ksName,
+                cfNames,
+                incrementalRepair,
+                nodes,
+                datacenters,
+                Collections.emptySet())
             .build(UUIDs.timeBased());
 
     final RepairRun run =

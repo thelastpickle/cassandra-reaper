@@ -83,20 +83,25 @@ public interface IStoragePostgreSql {
 
   // RepairUni
   //
-  String SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID
-      = "cluster_name, keyspace_name, column_families, incremental_repair, nodes, datacenters";
+  String SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID =
+      "cluster_name, keyspace_name, column_families, "
+          + "incremental_repair, nodes, datacenters, blacklisted_tables";
   String SQL_REPAIR_UNIT_ALL_FIELDS = "repair_unit.id, " + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID;
-  String SQL_INSERT_REPAIR_UNIT = "INSERT INTO repair_unit ("
-      + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID
-      + ") VALUES "
-      + "(:clusterName, :keyspaceName, :columnFamilies, :incrementalRepair, :nodes, :datacenters)";
+  String SQL_INSERT_REPAIR_UNIT =
+      "INSERT INTO repair_unit ("
+          + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID
+          + ") VALUES "
+          + "(:clusterName, :keyspaceName, :columnFamilies, "
+          + ":incrementalRepair, :nodes, :datacenters, :blacklistedTables)";
   String SQL_GET_REPAIR_UNIT = "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM repair_unit WHERE id = :id";
 
-  String SQL_GET_REPAIR_UNIT_BY_CLUSTER_AND_TABLES = "SELECT "
-      + SQL_REPAIR_UNIT_ALL_FIELDS
-      + " FROM repair_unit "
-      + "WHERE cluster_name = :clusterName AND keyspace_name = :keyspaceName "
-      + "AND column_families = :columnFamilies";
+  String SQL_GET_REPAIR_UNIT_BY_CLUSTER_AND_TABLES =
+      "SELECT "
+          + SQL_REPAIR_UNIT_ALL_FIELDS
+          + " FROM repair_unit "
+          + "WHERE cluster_name = :clusterName AND keyspace_name = :keyspaceName "
+          + "AND column_families = :columnFamilies AND nodes = :nodes AND datacenters = :datacenters "
+          + "AND blackListed_tables = :blacklisted_tables";
 
   String SQL_DELETE_REPAIR_UNIT = "DELETE FROM repair_unit WHERE id = :id";
 
@@ -188,26 +193,30 @@ public interface IStoragePostgreSql {
 
   // View-specific queries
   //
-  String SQL_CLUSTER_RUN_OVERVIEW = "SELECT repair_run.id, repair_unit.cluster_name, keyspace_name, column_families, "
-      + "(SELECT COUNT(case when state = 2 then 1 else null end) FROM repair_segment "
-      + "WHERE run_id = repair_run.id) AS segments_repaired, "
-      + "(SELECT COUNT(*) FROM repair_segment WHERE run_id = repair_run.id) AS segments_total, "
-      + "repair_run.state, repair_run.start_time, "
-      + "repair_run.end_time, cause, owner, last_event, "
-      + "creation_time, pause_time, intensity, repair_parallelism, incremental_repair "
-      + "FROM repair_run "
-      + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
-      + "WHERE repair_unit.cluster_name = :clusterName "
-      + "ORDER BY COALESCE(end_time, start_time) DESC, start_time DESC "
-      + "LIMIT :limit";
+  String SQL_CLUSTER_RUN_OVERVIEW =
+      "SELECT repair_run.id, repair_unit.cluster_name, keyspace_name, column_families, "
+          + "nodes, datacenters, blacklisted_tables, "
+          + "(SELECT COUNT(case when state = 2 then 1 else null end) "
+          + "FROM repair_segment "
+          + "WHERE run_id = repair_run.id) AS segments_repaired, "
+          + "(SELECT COUNT(*) FROM repair_segment WHERE run_id = repair_run.id) AS segments_total, "
+          + "repair_run.state, repair_run.start_time, "
+          + "repair_run.end_time, cause, owner, last_event, "
+          + "creation_time, pause_time, intensity, repair_parallelism, incremental_repair "
+          + "FROM repair_run "
+          + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
+          + "WHERE repair_unit.cluster_name = :clusterName "
+          + "ORDER BY COALESCE(end_time, start_time) DESC, start_time DESC "
+          + "LIMIT :limit";
 
-  String SQL_CLUSTER_SCHEDULE_OVERVIEW
-      = "SELECT repair_schedule.id, owner, cluster_name, keyspace_name, column_families, state, "
-      + "creation_time, next_activation, pause_time, intensity, segment_count, "
-      + "repair_parallelism, days_between, incremental_repair "
-      + "FROM repair_schedule "
-      + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
-      + "WHERE cluster_name = :clusterName";
+  String SQL_CLUSTER_SCHEDULE_OVERVIEW =
+      "SELECT repair_schedule.id, owner, cluster_name, keyspace_name, column_families, state, "
+          + "creation_time, next_activation, pause_time, intensity, segment_count, "
+          + "repair_parallelism, days_between, incremental_repair, nodes, "
+          + "datacenters, blacklisted_tables "
+          + "FROM repair_schedule "
+          + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
+          + "WHERE cluster_name = :clusterName";
 
   @SqlQuery("SELECT CURRENT_TIMESTAMP")
   String getCurrentDate();
@@ -276,7 +285,10 @@ public interface IStoragePostgreSql {
   RepairUnit getRepairUnitByClusterAndTables(
       @Bind("clusterName") String clusterName,
       @Bind("keyspaceName") String keyspaceName,
-      @Bind("columnFamilies") Collection<String> columnFamilies);
+      @Bind("columnFamilies") Collection<String> columnFamilies,
+      @Bind("nodes") Collection<String> nodes,
+      @Bind("datacenters") Collection<String> datacenters,
+      @Bind("blacklisted_tables") Collection<String> blacklistedTables);
 
   @SqlUpdate(SQL_INSERT_REPAIR_UNIT)
   @GetGeneratedKeys

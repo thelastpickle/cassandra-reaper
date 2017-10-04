@@ -186,9 +186,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         = session.prepare("DELETE FROM repair_run_by_cluster WHERE id = ? and cluster_name = ?");
     deleteRepairRunByUnitPrepStmt = session.prepare("DELETE FROM repair_run_by_unit "
         + "WHERE id = ? and repair_unit_id= ?");
-    insertRepairUnitPrepStmt = session.prepare(
-        "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
-            + "incremental_repair, nodes, datacenters) VALUES(?, ?, ?, ?, ?, ?, ?)");
+    insertRepairUnitPrepStmt =
+        session.prepare(
+            "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
+                + "incremental_repair, nodes, datacenters, blacklisted_tables) VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
     getRepairUnitPrepStmt = session.prepare("SELECT * FROM repair_unit_v1 WHERE id = ?");
     insertRepairSegmentPrepStmt = session
         .prepare(
@@ -496,7 +497,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             repairUnit.getColumnFamilies(),
             repairUnit.getIncrementalRepair(),
             repairUnit.getNodes(),
-            repairUnit.getDatacenters()));
+            repairUnit.getDatacenters(),
+            repairUnit.getBlacklistedTables()));
     return repairUnit;
   }
 
@@ -505,20 +507,28 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     RepairUnit repairUnit = null;
     Row repairUnitRow = session.execute(getRepairUnitPrepStmt.bind(id)).one();
     if (repairUnitRow != null) {
-      repairUnit = new RepairUnit.Builder(
-          repairUnitRow.getString("cluster_name"),
-          repairUnitRow.getString("keyspace_name"),
-          repairUnitRow.getSet("column_families", String.class),
-          repairUnitRow.getBool("incremental_repair"),
-          repairUnitRow.getSet("nodes", String.class),
-          repairUnitRow.getSet("datacenters", String.class))
-          .build(id);
+      repairUnit =
+          new RepairUnit.Builder(
+                  repairUnitRow.getString("cluster_name"),
+                  repairUnitRow.getString("keyspace_name"),
+                  repairUnitRow.getSet("column_families", String.class),
+                  repairUnitRow.getBool("incremental_repair"),
+                  repairUnitRow.getSet("nodes", String.class),
+                  repairUnitRow.getSet("datacenters", String.class),
+                  repairUnitRow.getSet("blacklisted_tables", String.class))
+              .build(id);
     }
     return Optional.fromNullable(repairUnit);
   }
 
   @Override
-  public Optional<RepairUnit> getRepairUnit(String cluster, String keyspace, Set<String> columnFamilyNames) {
+  public Optional<RepairUnit> getRepairUnit(
+      String cluster,
+      String keyspace,
+      Set<String> columnFamilyNames,
+      Set<String> nodes,
+      Set<String> datacenters,
+      Set<String> blacklistedTables) {
     // brute force again
     RepairUnit repairUnit = null;
     Statement stmt = new SimpleStatement(SELECT_REPAIR_UNIT);
@@ -527,15 +537,20 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     for (Row repairUnitRow : results) {
       if (repairUnitRow.getString("cluster_name").equals(cluster)
           && repairUnitRow.getString("keyspace_name").equals(keyspace)
-          && repairUnitRow.getSet("column_families", String.class).equals(columnFamilyNames)) {
-        repairUnit = new RepairUnit.Builder(
-            repairUnitRow.getString("cluster_name"),
-            repairUnitRow.getString("keyspace_name"),
-            repairUnitRow.getSet("column_families", String.class),
-            repairUnitRow.getBool("incremental_repair"),
-            repairUnitRow.getSet("nodes", String.class),
-            repairUnitRow.getSet("datacenters", String.class))
-            .build(repairUnitRow.getUUID("id"));
+          && repairUnitRow.getSet("column_families", String.class).equals(columnFamilyNames)
+          && repairUnitRow.getSet("nodes", String.class).equals(nodes)
+          && repairUnitRow.getSet("datacenters", String.class).equals(datacenters)
+          && repairUnitRow.getSet("blacklisted_tables", String.class).equals(blacklistedTables)) {
+        repairUnit =
+            new RepairUnit.Builder(
+                    repairUnitRow.getString("cluster_name"),
+                    repairUnitRow.getString("keyspace_name"),
+                    repairUnitRow.getSet("column_families", String.class),
+                    repairUnitRow.getBool("incremental_repair"),
+                    repairUnitRow.getSet("nodes", String.class),
+                    repairUnitRow.getSet("datacenters", String.class),
+                    repairUnitRow.getSet("blacklisted_tables", String.class))
+                .build(repairUnitRow.getUUID("id"));
         // exit the loop once we find a match
         break;
       }

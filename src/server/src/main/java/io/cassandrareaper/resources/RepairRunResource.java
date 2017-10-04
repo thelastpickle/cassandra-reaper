@@ -72,15 +72,16 @@ public final class RepairRunResource {
   }
 
   /**
-   * Endpoint used to create a repair run. Does not allow triggering the run. triggerRepairRun() must be called to
-   * initiate the repair. Creating a repair run includes generating the repair segments.
+   * Endpoint used to create a repair run. Does not allow triggering the run. triggerRepairRun()
+   * must be called to initiate the repair. Creating a repair run includes generating the repair
+   * segments.
    *
-   * <p>
-   * Notice that query parameter "tables" can be a single String, or a comma-separated list of table names. If the
-   * "tables" parameter is omitted, and only the keyspace is defined, then created repair run will target all the tables
-   * in the keyspace.
+   * <p>Notice that query parameter "tables" can be a single String, or a comma-separated list of
+   * table names. If the "tables" parameter is omitted, and only the keyspace is defined, then
+   * created repair run will target all the tables in the keyspace.
    *
-   * @return repair run ID in case of everything going well, and a status code 500 in case of errors.
+   * @return repair run ID in case of everything going well, and a status code 500 in case of
+   *     errors.
    */
   @POST
   public Response addRepairRun(
@@ -95,12 +96,13 @@ public final class RepairRunResource {
       @QueryParam("intensity") Optional<String> intensityStr,
       @QueryParam("incrementalRepair") Optional<String> incrementalRepairStr,
       @QueryParam("nodes") Optional<String> nodesToRepairParam,
-      @QueryParam("datacenters") Optional<String> datacentersToRepairParam) {
+      @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
+      @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam) {
 
     LOG.info(
         "add repair run called with: clusterName = {}, keyspace = {}, tables = {}, owner = {},"
-        + " cause = {}, segmentCount = {}, repairParallelism = {}, intensity = {}, incrementalRepair = {},"
-        + " nodes = {}, datacenters = {} ",
+            + " cause = {}, segmentCount = {}, repairParallelism = {}, intensity = {}, incrementalRepair = {},"
+            + " nodes = {}, datacenters = {}, blacklistedTables = {} ",
         clusterName,
         keyspace,
         tableNamesParam,
@@ -111,7 +113,8 @@ public final class RepairRunResource {
         intensityStr,
         incrementalRepairStr,
         nodesToRepairParam,
-        datacentersToRepairParam);
+        datacentersToRepairParam,
+        blacklistedTableNamesParam);
     try {
       final Response possibleFailedResponse = RepairRunResource.checkRequestForAddRepair(
           context,
@@ -168,6 +171,16 @@ public final class RepairRunResource {
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
 
+      Set<String> blacklistedTableNames;
+      try {
+        blacklistedTableNames =
+            CommonTools.getTableNamesBasedOnParam(
+                context, cluster, keyspace.get(), blacklistedTableNamesParam);
+      } catch (IllegalArgumentException ex) {
+        LOG.error(ex.getMessage(), ex);
+        return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
+      }
+
       final Set<String> nodesToRepair;
       try {
         nodesToRepair = CommonTools.getNodesToRepairBasedOnParam(context, cluster, nodesToRepairParam);
@@ -186,14 +199,16 @@ public final class RepairRunResource {
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
 
-      final RepairUnit theRepairUnit = CommonTools.getNewOrExistingRepairUnit(
-          context,
-          cluster,
-          keyspace.get(),
-          tableNames,
-          incrementalRepair,
-          nodesToRepair,
-          datacentersToRepair);
+      final RepairUnit theRepairUnit =
+          CommonTools.getNewOrExistingRepairUnit(
+              context,
+              cluster,
+              keyspace.get(),
+              tableNames,
+              incrementalRepair,
+              nodesToRepair,
+              datacentersToRepair,
+              blacklistedTableNames);
 
       if (theRepairUnit.getIncrementalRepair().booleanValue() != incrementalRepair) {
         return Response.status(Response.Status.BAD_REQUEST)
@@ -449,7 +464,8 @@ public final class RepairRunResource {
     LOG.debug("get repair_run called with: id = {}", repairRunId);
     final Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     if (repairRun.isPresent()) {
-      return Response.ok().entity(getRepairRunStatus(repairRun.get())).build();
+      RepairRunStatus repairRunStatus = getRepairRunStatus(repairRun.get());
+      return Response.ok().entity(repairRunStatus).build();
     } else {
       return Response.status(404).entity("repair run with id " + repairRunId + " doesn't exist").build();
     }

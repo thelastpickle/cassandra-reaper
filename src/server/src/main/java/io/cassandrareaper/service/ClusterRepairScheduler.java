@@ -104,23 +104,25 @@ public final class ClusterRepairScheduler {
   private void createRepairSchedule(Cluster cluster, String keyspace, DateTime nextActivationTime) {
     try {
       boolean incrementalRepair = context.config.getIncrementalRepair();
-      RepairSchedule repairSchedule = CommonTools.storeNewRepairSchedule(
-          context,
-          cluster,
-          CommonTools.getNewOrExistingRepairUnit(
+      RepairSchedule repairSchedule =
+          CommonTools.storeNewRepairSchedule(
               context,
               cluster,
-              keyspace,
-              Collections.emptySet(),
-              incrementalRepair,
-              Collections.emptySet(),
-              Collections.emptySet()),
-          context.config.getScheduleDaysBetween(),
-          nextActivationTime,
-          REPAIR_OWNER,
-          context.config.getSegmentCount(),
-          context.config.getRepairParallelism(),
-          context.config.getRepairIntensity());
+              CommonTools.getNewOrExistingRepairUnit(
+                  context,
+                  cluster,
+                  keyspace,
+                  Collections.emptySet(),
+                  incrementalRepair,
+                  Collections.emptySet(),
+                  Collections.emptySet(),
+                  Collections.emptySet()),
+              context.config.getScheduleDaysBetween(),
+              nextActivationTime,
+              REPAIR_OWNER,
+              context.config.getSegmentCount(),
+              context.config.getRepairParallelism(),
+              context.config.getRepairIntensity());
       LOG.info("Scheduled repair created: {}", repairSchedule);
     } catch (ReaperException e) {
       throw Throwables.propagate(e);

@@ -205,8 +205,14 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder repairUnit) {
-    Optional<RepairUnit> existing
-        = getRepairUnit(repairUnit.clusterName, repairUnit.keyspaceName, repairUnit.columnFamilies);
+    Optional<RepairUnit> existing =
+        getRepairUnit(
+            repairUnit.clusterName,
+            repairUnit.keyspaceName,
+            repairUnit.columnFamilies,
+            repairUnit.nodes,
+            repairUnit.datacenters,
+            repairUnit.blacklistedTables);
     if (existing.isPresent() && repairUnit.incrementalRepair == existing.get().getIncrementalRepair()) {
       return existing.get();
     } else {
@@ -224,8 +230,16 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairUnit> getRepairUnit(String cluster, String keyspace, Set<String> tables) {
-    return Optional.fromNullable(repairUnitsByKey.get(new RepairUnitKey(cluster, keyspace, tables)));
+  public Optional<RepairUnit> getRepairUnit(
+      String cluster,
+      String keyspace,
+      Set<String> tables,
+      Set<String> nodes,
+      Set<String> datacenters,
+      Set<String> blacklistedTables) {
+    return Optional.fromNullable(
+        repairUnitsByKey.get(
+            new RepairUnitKey(cluster, keyspace, tables, nodes, datacenters, blacklistedTables)));
   }
 
   private void addRepairSegments(Collection<RepairSegment.Builder> segments, UUID runId) {
@@ -444,7 +458,8 @@ public final class MemoryStorage implements IStorage {
                 unit.getIncrementalRepair(),
                 run.getRepairParallelism(),
                 unit.getNodes(),
-                unit.getDatacenters()));
+                unit.getDatacenters(),
+                unit.getBlacklistedTables()));
       }
       return runStatuses;
     }
@@ -471,15 +486,33 @@ public final class MemoryStorage implements IStorage {
     public final String cluster;
     public final String keyspace;
     public final Set<String> tables;
+    public final Set<String> nodes;
+    public final Set<String> datacenters;
+    public final Set<String> blacklistedTables;
 
     public RepairUnitKey(RepairUnit unit) {
-      this(unit.getClusterName(), unit.getKeyspaceName(), unit.getColumnFamilies());
+      this(
+          unit.getClusterName(),
+          unit.getKeyspaceName(),
+          unit.getColumnFamilies(),
+          unit.getNodes(),
+          unit.getDatacenters(),
+          unit.getBlacklistedTables());
     }
 
-    public RepairUnitKey(String cluster, String keyspace, Set<String> tables) {
+    public RepairUnitKey(
+        String cluster,
+        String keyspace,
+        Set<String> tables,
+        Set<String> nodes,
+        Set<String> datacenters,
+        Set<String> blacklistedTables) {
       this.cluster = cluster;
       this.keyspace = keyspace;
       this.tables = tables;
+      this.nodes = nodes;
+      this.datacenters = datacenters;
+      this.blacklistedTables = blacklistedTables;
     }
 
     @Override
@@ -487,7 +520,10 @@ public final class MemoryStorage implements IStorage {
       return other instanceof RepairUnitKey
           && cluster.equals(((RepairUnitKey) other).cluster)
           && keyspace.equals(((RepairUnitKey) other).keyspace)
-          && tables.equals(((RepairUnitKey) other).tables);
+          && tables.equals(((RepairUnitKey) other).tables)
+          && nodes.equals(((RepairUnitKey) other).nodes)
+          && datacenters.equals(((RepairUnitKey) other).datacenters)
+          && blacklistedTables.equals(((RepairUnitKey) other).blacklistedTables);
     }
 
     @Override

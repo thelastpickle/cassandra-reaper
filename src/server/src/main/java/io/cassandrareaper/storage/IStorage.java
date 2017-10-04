@@ -86,7 +86,13 @@ public interface IStorage {
    * @param columnFamilyNames Set of column families targeted by the RepairUnit.
    * @return Instance of a RepairUnit matching the parameters, or null if not found.
    */
-  Optional<RepairUnit> getRepairUnit(String cluster, String keyspace, Set<String> columnFamilyNames);
+  Optional<RepairUnit> getRepairUnit(
+      String cluster,
+      String keyspace,
+      Set<String> columnFamilyNames,
+      Set<String> nodes,
+      Set<String> datacenters,
+      Set<String> blacklistedTables);
 
   boolean updateRepairSegment(RepairSegment newRepairSegment);
 

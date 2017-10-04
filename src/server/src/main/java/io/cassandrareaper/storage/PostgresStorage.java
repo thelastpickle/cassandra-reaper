@@ -273,11 +273,19 @@ public final class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairUnit> getRepairUnit(String clusterName, String keyspaceName, Set<String> columnFamilies) {
+  public Optional<RepairUnit> getRepairUnit(
+      String clusterName,
+      String keyspaceName,
+      Set<String> columnFamilies,
+      Set<String> nodes,
+      Set<String> datacenters,
+      Set<String> blacklistedTables) {
     RepairUnit result;
     try (Handle h = jdbi.open()) {
       IStoragePostgreSql storage = getPostgresStorage(h);
-      result = storage.getRepairUnitByClusterAndTables(clusterName, keyspaceName, columnFamilies);
+      result =
+          storage.getRepairUnitByClusterAndTables(
+              clusterName, keyspaceName, columnFamilies, nodes, datacenters, blacklistedTables);
     }
     return Optional.fromNullable(result);
   }

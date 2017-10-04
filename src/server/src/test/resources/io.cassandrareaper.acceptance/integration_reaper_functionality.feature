@@ -10,7 +10,6 @@ Feature: Using Reaper to launch repairs and schedule them
     Given that we are going to use "127.0.0.1" as cluster seed host
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
-    And the last added cluster has a keyspace called reaper_db
     Then reaper has the last added cluster in storage
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
@@ -54,7 +53,8 @@ Feature: Using Reaper to launch repairs and schedule them
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage
     And reaper has 0 repairs for the last added cluster
-    When a new repair is added for the last added cluster and keyspace "booya"
+    When a new repair is added for the last added cluster and keyspace "booya" with the table "booya2" blacklisted
+    And the last added repair has table "booya2" in the blacklist
     And deleting the last added cluster fails
     And the last added repair is activated
     And we wait for at least 1 segments to be repaired
