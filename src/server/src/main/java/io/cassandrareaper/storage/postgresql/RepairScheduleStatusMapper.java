@@ -19,8 +19,10 @@ import io.cassandrareaper.resources.view.RepairScheduleStatus;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
@@ -35,7 +37,7 @@ public final class RepairScheduleStatusMapper implements ResultSetMapper<RepairS
         rs.getString("owner"),
         rs.getString("cluster_name"),
         rs.getString("keyspace_name"),
-        ImmutableSet.copyOf((String[]) rs.getArray("column_families").getArray()),
+        ImmutableSet.copyOf(getStringArray(rs.getArray("column_families").getArray())),
         RepairSchedule.State.valueOf(rs.getString("state")),
         RepairRunMapper.getDateTimeOrNull(rs, "creation_time"),
         RepairRunMapper.getDateTimeOrNull(rs, "next_activation"),
@@ -44,9 +46,21 @@ public final class RepairScheduleStatusMapper implements ResultSetMapper<RepairS
         rs.getBoolean("incremental_repair"),
         rs.getInt("segment_count"),
         RepairParallelism.fromName(
-            rs.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel")),
+            rs.getString("repair_parallelism")
+                .toLowerCase()
+                .replace("datacenter_aware", "dc_parallel")),
         rs.getInt("days_between"),
-        ImmutableSet.copyOf((String[]) rs.getArray("nodes").getArray()),
-        ImmutableSet.copyOf((String[]) rs.getArray("datacenters").getArray()));
+        ImmutableSet.copyOf(getStringArray(rs.getArray("nodes").getArray())),
+        ImmutableSet.copyOf(getStringArray(rs.getArray("datacenters").getArray())),
+        ImmutableSet.copyOf(getStringArray(rs.getArray("blacklisted_tables").getArray())));
+  }
+
+  private String[] getStringArray(Object array) {
+    String[] stringArray = new String[((Object[]) array).length];
+    return Lists.newArrayList(((Object[]) array))
+        .stream()
+        .map(element -> (String) element)
+        .collect(Collectors.toList())
+        .toArray(stringArray);
   }
 }

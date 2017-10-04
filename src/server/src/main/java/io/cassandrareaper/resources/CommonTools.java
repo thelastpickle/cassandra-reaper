@@ -452,10 +452,13 @@ public final class CommonTools {
       Set<String> tableNames,
       Boolean incrementalRepair,
       Set<String> nodesToRepair,
-      Set<String> datacenters)
+      Set<String> datacenters,
+      Set<String> blacklistedTables)
       throws ReaperException {
 
-    Optional<RepairUnit> storedRepairUnit = context.storage.getRepairUnit(cluster.getName(), keyspace, tableNames);
+    Optional<RepairUnit> storedRepairUnit =
+        context.storage.getRepairUnit(
+            cluster.getName(), keyspace, tableNames, nodesToRepair, datacenters, blacklistedTables);
     RepairUnit theRepairUnit;
 
     Optional<String> cassandraVersion = Optional.absent();
@@ -477,7 +480,9 @@ public final class CommonTools {
     if (storedRepairUnit.isPresent()
         && storedRepairUnit.get().getIncrementalRepair().equals(incrementalRepair)
         && storedRepairUnit.get().getNodes().equals(nodesToRepair)
-        && storedRepairUnit.get().getDatacenters().equals(datacenters)) {
+        && storedRepairUnit.get().getDatacenters().equals(datacenters)
+        && storedRepairUnit.get().getBlacklistedTables().equals(blacklistedTables)
+        && storedRepairUnit.get().getColumnFamilies().equals(tableNames)) {
       LOG.info(
           "use existing repair unit for cluster '{}', keyspace '{}', "
               + "column families: {}, nodes: {} and datacenters: {}",
@@ -495,9 +500,16 @@ public final class CommonTools {
           tableNames,
           nodesToRepair,
           datacenters);
-      theRepairUnit = context.storage.addRepairUnit(
-          new RepairUnit.Builder(
-              cluster.getName(), keyspace, tableNames, incrementalRepair, nodesToRepair, datacenters));
+      theRepairUnit =
+          context.storage.addRepairUnit(
+              new RepairUnit.Builder(
+                  cluster.getName(),
+                  keyspace,
+                  tableNames,
+                  incrementalRepair,
+                  nodesToRepair,
+                  datacenters,
+                  blacklistedTables));
     }
     return theRepairUnit;
   }
@@ -518,6 +530,42 @@ public final class CommonTools {
 
   public static Set<String> parseSeedHosts(String seedHost) {
     return Arrays.stream(seedHost.split(",")).map(String::trim).collect(Collectors.toSet());
+  }
+
+  /**
+   * Applies blacklist filter on tables for the given repair unit.
+   *
+   * @param coordinator : a JMX proxy instance
+   * @param unit : the repair unit for the current run
+   * @return the list of tables to repair for the keyspace without the blacklisted ones
+   * @throws ReaperException, IllegalStateException
+   */
+  public static Set<String> getTablesToRepair(JmxProxy coordinator, RepairUnit unit)
+      throws ReaperException, IllegalStateException {
+    Set<String> tables = unit.getColumnFamilies();
+
+    if (!unit.getBlacklistedTables().isEmpty() && unit.getColumnFamilies().isEmpty()) {
+      tables =
+          coordinator
+              .getTableNamesForKeyspace(unit.getKeyspaceName())
+              .stream()
+              .filter(tableName -> !unit.getBlacklistedTables().contains(tableName))
+              .collect(Collectors.toSet());
+    }
+
+    if (!unit.getBlacklistedTables().isEmpty() && !unit.getColumnFamilies().isEmpty()) {
+      tables =
+          unit.getColumnFamilies()
+              .stream()
+              .filter(tableName -> !unit.getBlacklistedTables().contains(tableName))
+              .collect(Collectors.toSet());
+    }
+
+    Preconditions.checkState(
+        !(!unit.getBlacklistedTables().isEmpty()
+            && tables.isEmpty())); // if we have a blacklist, we should have tables in the output.
+
+    return tables;
   }
 
 }

@@ -4,4 +4,4 @@
 
 
 ALTER TABLE "repair_unit" 
-ADD "blacklisted_tables" TEXT [] NOT NULL;
+ADD "blacklisted_tables" TEXT [];

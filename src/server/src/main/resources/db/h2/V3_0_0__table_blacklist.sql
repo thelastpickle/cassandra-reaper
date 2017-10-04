@@ -3,4 +3,4 @@
 --
 
 ALTER TABLE repair_unit 
-ADD blacklisted_tables ARRAY NOT NULL;
+ADD blacklisted_tables ARRAY;

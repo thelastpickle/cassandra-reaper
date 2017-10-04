@@ -26,6 +26,7 @@ public final class RepairUnit {
   private final Boolean incrementalRepair;
   private final Set<String> nodes;
   private final Set<String> datacenters;
+  private final Set<String> blacklistedTables;
 
   private RepairUnit(Builder builder, UUID id) {
     this.id = id;
@@ -35,6 +36,7 @@ public final class RepairUnit {
     this.incrementalRepair = builder.incrementalRepair;
     this.nodes = builder.nodes;
     this.datacenters = builder.datacenters;
+    this.blacklistedTables = builder.blacklistedTables;
   }
 
   public UUID getId() {
@@ -65,6 +67,10 @@ public final class RepairUnit {
     return datacenters;
   }
 
+  public Set<String> getBlacklistedTables() {
+    return blacklistedTables;
+  }
+
   public Builder with() {
     return new Builder(this);
   }
@@ -77,6 +83,7 @@ public final class RepairUnit {
     public final boolean incrementalRepair;
     public final Set<String> nodes;
     public final Set<String> datacenters;
+    public final Set<String> blacklistedTables;
 
     public Builder(
         String clusterName,
@@ -84,13 +91,15 @@ public final class RepairUnit {
         Set<String> columnFamilies,
         Boolean incrementalRepair,
         Set<String> nodes,
-        Set<String> datacenters) {
+        Set<String> datacenters,
+        Set<String> blacklistedTables) {
       this.clusterName = clusterName;
       this.keyspaceName = keyspaceName;
       this.columnFamilies = columnFamilies;
       this.incrementalRepair = incrementalRepair;
       this.nodes = nodes;
       this.datacenters = datacenters;
+      this.blacklistedTables = blacklistedTables;
     }
 
     private Builder(RepairUnit original) {
@@ -100,6 +109,7 @@ public final class RepairUnit {
       incrementalRepair = original.incrementalRepair;
       nodes = original.nodes;
       datacenters = original.datacenters;
+      blacklistedTables = original.blacklistedTables;
     }
 
     public RepairUnit build(UUID id) {

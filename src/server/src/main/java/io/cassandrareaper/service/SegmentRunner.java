@@ -18,10 +18,12 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.NodeMetrics;
+import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
+import io.cassandrareaper.resources.CommonTools;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.lang.management.ManagementFactory;
@@ -225,9 +227,6 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       String keyspace = repairUnit.getKeyspaceName();
       boolean fullRepair = !repairUnit.getIncrementalRepair();
 
-      // If this segment is blocked by other repairs on the hosts involved, we will want to double-
-      // check with storage, whether those hosts really should be busy with repairs. This listing of
-      // busy hosts isn't a cheap operation, so only do it (once) when repairs block the segment.
       LazyInitializer<Set<String>> busyHosts = new LazyInitializer<Set<String>>() {
         @Override
         protected Set<String> initialize() {
@@ -247,6 +246,31 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       }
 
       try (Timer.Context cxt1 = context.metricRegistry.timer(metricNameForRepairing(segment)).time()) {
+        Set<String> tablesToRepair;
+        try {
+          tablesToRepair = CommonTools.getTablesToRepair(coordinator, repairUnit);
+        } catch (IllegalStateException e) {
+          String msg = "Invalid blacklist definition. It filtered all tables in the keyspace.";
+          LOG.error(msg, e);
+          RepairRun repairRun = context.storage.getRepairRun(segment.getRunId()).get();
+          context.storage.updateRepairRun(
+              repairRun
+                  .with()
+                  .runState(RepairRun.RunState.ERROR)
+                  .lastEvent(String.format(msg))
+                  .endTime(DateTime.now())
+                  .build(segment.getRunId()));
+          repairRunner.killAndCleanupRunner();
+          context.storage.updateRepairSegment(
+              segment
+                  .with()
+                  .state(RepairSegment.State.DONE)
+                  .endTime(DateTime.now())
+                  .build(segmentId));
+          return false;
+
+        }
+
         LOG.debug("Enter synchronized section with segment ID {}", segmentId);
         synchronized (condition) {
           commandId = coordinator.triggerRepair(
@@ -254,31 +278,22 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
               segment.getEndToken(),
               keyspace,
               validationParallelism,
-              repairUnit.getColumnFamilies(),
+              tablesToRepair,
               fullRepair,
               repairUnit.getDatacenters());
 
           if (commandId == 0) {
-            // From cassandra source in "forceRepairAsync":
-            // if (ranges.isEmpty() || Keyspace.open(keyspace).getReplicationStrategy().getReplicationFactor() < 2)
-            //  return 0;
             LOG.info("Nothing to repair for keyspace {}", keyspace);
             context.storage.updateRepairSegment(
                 segment.with().coordinatorHost(coordinator.getHost()).state(RepairSegment.State.DONE).build(segmentId));
-
             SEGMENT_RUNNERS.remove(segment.getId());
             closeJmxConnection(Optional.fromNullable(coordinator));
             return true;
           }
 
-          LOG.debug("Triggered repair with command id {}", commandId);
-
-          // incremental repair can take way more time for a segment so we're extending the timeou
-          // MAX_TIMEOUT_EXTENSIONS times
           long timeout = repairUnit.getIncrementalRepair() ? timeoutMillis * MAX_TIMEOUT_EXTENSIONS : timeoutMillis;
           context.storage.updateRepairSegment(
               segment.with().coordinatorHost(coordinator.getHost()).repairCommandId(commandId).build(segmentId));
-
           String eventMsg
               = String.format("Triggered repair of segment %s via host %s", segment.getId(), coordinator.getHost());
 
@@ -287,21 +302,16 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
           try {
             long startTime = System.currentTimeMillis();
             long maxTime = startTime + timeoutMillis;
-
-            // If timeout is lower than 1mn, use timeout, otherwise we'll loop every minute to renew lead on segmen
             long waitTime = timeoutMillis < 60000 ? timeoutMillis : 60000;
-
             long lastLoopTime = System.currentTimeMillis();
             while (System.currentTimeMillis() < maxTime) {
               condition.await(waitTime, TimeUnit.MILLISECONDS);
               if (lastLoopTime + 60_000 > System.currentTimeMillis()
                   || context.storage.getRepairSegment(segment.getRunId(), segmentId).get().getState()
                         == RepairSegment.State.DONE) {
-                // The condition has been interrupted, meaning the repair might be over
                 break;
               }
 
-              // Repair is still running, we'll renew lead on the segment when using Cassandra as storage backend
               renewLead();
               lastLoopTime = System.currentTimeMillis();
             }

@@ -68,13 +68,12 @@ public final class RepairScheduleResource {
   }
 
   /**
-   * Endpoint used to create a repair schedule. Does not allow triggering the run. Repair schedule will create new
-   * repair runs based on the schedule.
+   * Endpoint used to create a repair schedule. Does not allow triggering the run. Repair schedule
+   * will create new repair runs based on the schedule.
    *
-   * <p>
-   * Notice that query parameter "tables" can be a single String, or a comma-separated list of table names. If the
-   * "tables" parameter is omitted, and only the keyspace is defined, then created repair runs will target all the
-   * tables in the keyspace.
+   * <p>Notice that query parameter "tables" can be a single String, or a comma-separated list of
+   * table names. If the "tables" parameter is omitted, and only the keyspace is defined, then
+   * created repair runs will target all the tables in the keyspace.
    *
    * @return created repair schedule data as JSON.
    */
@@ -92,22 +91,8 @@ public final class RepairScheduleResource {
       @QueryParam("scheduleDaysBetween") Optional<Integer> scheduleDaysBetween,
       @QueryParam("scheduleTriggerTime") Optional<String> scheduleTriggerTime,
       @QueryParam("nodes") Optional<String> nodesToRepairParam,
-      @QueryParam("datacenters") Optional<String> datacentersToRepairParam) {
-
-    LOG.info(
-        "add repair schedule called with: clusterName = {}, keyspace = {}, tables = {}, "
-        + "owner = {}, segmentCount = {}, repairParallelism = {}, "
-        + "intensity = {}, incrementalRepair = {}, scheduleDaysBetween = {}, scheduleTriggerTime = {}",
-        clusterName,
-        keyspace,
-        tableNamesParam,
-        owner,
-        segmentCount,
-        repairParallelism,
-        intensityStr,
-        incrementalRepairStr,
-        scheduleDaysBetween,
-        scheduleTriggerTime);
+      @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
+      @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam) {
 
     try {
       Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
@@ -157,6 +142,16 @@ public final class RepairScheduleResource {
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
 
+      Set<String> blacklistedTableNames;
+      try {
+        blacklistedTableNames =
+            CommonTools.getTableNamesBasedOnParam(
+                context, cluster, keyspace.get(), blacklistedTableNamesParam);
+      } catch (IllegalArgumentException ex) {
+        LOG.error(ex.getMessage(), ex);
+        return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
+      }
+
       final Set<String> nodesToRepair;
       try {
         nodesToRepair = CommonTools.getNodesToRepairBasedOnParam(context, cluster, nodesToRepairParam);
@@ -176,14 +171,16 @@ public final class RepairScheduleResource {
 
       Boolean incrementalRepair = isIncrementalRepair(incrementalRepairStr);
 
-      RepairUnit theRepairUnit = CommonTools.getNewOrExistingRepairUnit(
-          context,
-          cluster,
-          keyspace.get(),
-          tableNames,
-          incrementalRepair,
-          nodesToRepair,
-          datacentersToRepair);
+      RepairUnit theRepairUnit =
+          CommonTools.getNewOrExistingRepairUnit(
+              context,
+              cluster,
+              keyspace.get(),
+              tableNames,
+              incrementalRepair,
+              nodesToRepair,
+              datacentersToRepair,
+              blacklistedTableNames);
 
       if (theRepairUnit.getIncrementalRepair().booleanValue() != incrementalRepair) {
         return Response.status(Response.Status.BAD_REQUEST)

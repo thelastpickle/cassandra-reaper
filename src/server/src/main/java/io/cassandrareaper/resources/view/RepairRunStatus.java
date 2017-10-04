@@ -97,6 +97,9 @@ public final class RepairRunStatus {
   @JsonProperty("datacenters")
   private Collection<String> datacenters;
 
+  @JsonProperty("blacklisted_tables")
+  private Collection<String> blacklistedTables;
+
   /**
    * Default public constructor Required for Jackson JSON parsing.
    */
@@ -122,7 +125,8 @@ public final class RepairRunStatus {
       boolean incrementalRepair,
       RepairParallelism repairParallelism,
       Collection<String> nodes,
-      Collection<String> datacenters) {
+      Collection<String> datacenters,
+      Collection<String> blacklistedTables) {
 
     this.id = runId;
     this.cause = cause;
@@ -141,8 +145,10 @@ public final class RepairRunStatus {
     this.repairParallelism = repairParallelism;
     this.segmentsRepaired = segmentsRepaired;
     this.lastEvent = lastEvent;
+
     this.nodes = nodes;
     this.datacenters = datacenters;
+    this.blacklistedTables = blacklistedTables;
 
     if (startTime == null || endTime == null) {
       duration = null;
@@ -189,7 +195,8 @@ public final class RepairRunStatus {
         repairUnit.getIncrementalRepair(),
         repairRun.getRepairParallelism(),
         repairUnit.getNodes(),
-        repairUnit.getDatacenters());
+        repairUnit.getDatacenters(),
+        repairUnit.getBlacklistedTables());
   }
 
   @JsonProperty("creation_time")
@@ -410,5 +417,14 @@ public final class RepairRunStatus {
 
   public void setDatacenters(Collection<String> datacenters) {
     this.datacenters = datacenters;
+  }
+
+  @JsonProperty("blacklisted_tables")
+  public Collection<String> getBlacklistedTables() {
+    return blacklistedTables;
+  }
+
+  public void setBlacklistedTables(Collection<String> blacklistedTables) {
+    this.blacklistedTables = blacklistedTables;
   }
 }

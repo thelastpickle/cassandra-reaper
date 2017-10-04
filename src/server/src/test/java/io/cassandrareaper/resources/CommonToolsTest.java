@@ -16,6 +16,7 @@ package io.cassandrareaper.resources;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.service.RingRange;
 
 import java.util.Arrays;
@@ -29,6 +30,7 @@ import jersey.repackaged.com.google.common.collect.Maps;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -106,5 +108,76 @@ public final class CommonToolsTest {
         CommonTools.buildEndpointToRangeMap(rangeToEndpoint));
     assertEquals(filtered.size(), 6);
 
+  }
+
+  @Test
+  public void getTablesToRepairRemoveOneTableTest() throws ReaperException {
+    JmxProxy coord = mock(JmxProxy.class);
+    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
+        .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
+
+
+    RepairUnit unit = mock(RepairUnit.class);
+    when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1"));
+    when(unit.getColumnFamilies()).thenReturn(Sets.newHashSet());
+    when(unit.getKeyspaceName()).thenReturn("test");
+
+    assertEquals(Sets.newHashSet("table2", "table3"), CommonTools.getTablesToRepair(coord, unit));
+  }
+
+  @Test
+  public void getTablesToRepairRemoveTwoTablesTest() throws ReaperException {
+    JmxProxy coord = mock(JmxProxy.class);
+    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
+        .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
+
+    RepairUnit unit = mock(RepairUnit.class);
+    when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1", "table3"));
+    when(unit.getColumnFamilies()).thenReturn(Sets.newHashSet());
+    when(unit.getKeyspaceName()).thenReturn("test");
+
+    assertEquals(Sets.newHashSet("table2"), CommonTools.getTablesToRepair(coord, unit));
+  }
+
+  @Test
+  public void getTablesToRepairRemoveOneTableFromListTest() throws ReaperException {
+    JmxProxy coord = mock(JmxProxy.class);
+    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
+        .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
+
+    RepairUnit unit = mock(RepairUnit.class);
+    when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1"));
+    when(unit.getColumnFamilies()).thenReturn(Sets.newHashSet("table1", "table2"));
+    when(unit.getKeyspaceName()).thenReturn("test");
+
+    assertEquals(Sets.newHashSet("table2"), CommonTools.getTablesToRepair(coord, unit));
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void getTablesToRepairRemoveAllFailingTest() throws ReaperException {
+    JmxProxy coord = mock(JmxProxy.class);
+    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
+        .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
+
+    RepairUnit unit = mock(RepairUnit.class);
+    when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1", "table2", "table3"));
+    when(unit.getColumnFamilies()).thenReturn(Sets.newHashSet());
+    when(unit.getKeyspaceName()).thenReturn("test");
+
+    CommonTools.getTablesToRepair(coord, unit);
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void getTablesToRepairRemoveAllFromListFailingTest() throws ReaperException {
+    JmxProxy coord = mock(JmxProxy.class);
+    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
+        .thenReturn(Sets.newHashSet("table1", "table2", "table3", "table4"));
+
+    RepairUnit unit = mock(RepairUnit.class);
+    when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1", "table2", "table3"));
+    when(unit.getColumnFamilies()).thenReturn(Sets.newHashSet("table1", "table2", "table3"));
+    when(unit.getKeyspaceName()).thenReturn("test");
+
+    CommonTools.getTablesToRepair(coord, unit);
   }
 }
