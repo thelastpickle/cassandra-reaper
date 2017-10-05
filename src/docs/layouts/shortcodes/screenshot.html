@@ -1,0 +1,19 @@
+<div class = "row">
+    <div class = "col-md-6">
+        <a data-fancybox="gallery" href="{{ .Get "src" }}">
+        <img src="{{ .Get "src" }}" class="img-responsive">
+        </a>
+    </div>
+    <div>
+        <h4>{{ .Get "title" }}</h4>
+
+        {{ .Inner | markdownify }}
+    </div>
+
+</div>
+
+
+
+
+
+
