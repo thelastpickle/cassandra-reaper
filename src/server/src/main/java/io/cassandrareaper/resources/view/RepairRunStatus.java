@@ -157,7 +157,7 @@ public final class RepairRunStatus {
           new Duration(startTime.toInstant(), endTime.toInstant()).getMillis(), true, false);
     }
 
-    if (startTime == null || endTime != null) {
+    if (startTime == null || (endTime != null && endTime.isAfter(startTime))) {
       estimatedTimeOfArrival = null;
     } else {
       if (state == RepairRun.RunState.ERROR

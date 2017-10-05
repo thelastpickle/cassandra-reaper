@@ -56,6 +56,10 @@ const TableRowDetails = React.createClass({
                     <td><CFsListRender list={this.props.row.column_families} /></td>
                 </tr>
                 <tr>
+                    <td>Blacklist</td>
+                    <td><CFsListRender list={this.props.row.blacklisted_tables} /></td>
+                </tr>
+                <tr>
                     <td>Nodes</td>
                     <td><CFsListRender list={this.props.row.nodes} /></td>
                 </tr>
