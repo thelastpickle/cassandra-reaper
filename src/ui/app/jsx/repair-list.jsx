@@ -1,37 +1,61 @@
 import React from "react";
 import moment from "moment";
 import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
+import ProgressBar from 'react-bootstrap/lib/ProgressBar';
 
 const TableRow = React.createClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin, RowAbortMixin],
 
   render: function() {
-
+    let progressStyle = {
+      marginTop: "0.25em",
+      marginBottom: "0.25em"
+    }
+    let startTime = null;
+    if(this.props.row.start_time) {
+      startTime = moment(this.props.row.start_time).format("LLL");
+    }
     const rowID = `#details_${this.props.row.id}`;
+    const progressID = `#progress_${this.props.row.id}`;
     const segsRepaired = this.props.row.segments_repaired;
     const segsTotal = this.props.row.total_segments;
     const segsPerc = (100/segsTotal)*segsRepaired;
-    const incremental = this.props.row.incremental_repair == true ? "true" : "false";
     const state = this.props.row.state;
+    let etaOrDuration = moment(this.props.row.estimated_time_of_arrival).fromNow();
+    if (!(state == 'RUNNING' || state == 'PAUSED')) {
+      etaOrDuration = this.props.row.duration;
+    } else if (segsPerc < 5) {
+      etaOrDuration = 'TBD';
+    }
+
+    let progressStyleColor = "success";
+    if (state == 'PAUSED') {
+      progressStyleColor = "info";
+    }
+    else if (state != 'DONE' && state != 'RUNNING'){
+      progressStyleColor = "danger";
+    }
+
+
+    
     const btnStartStop = this.props.row.state == 'ABORTED' ? null : this.statusUpdateButton();
     const btnAbort = state == 'RUNNING' || state == 'PAUSED' ? this.abortButton() : this.deleteButton();
+    const active = state == 'RUNNING';
+    let repairProgress = <ProgressBar now={Math.round((segsRepaired*100)/segsTotal)} active={active} bsStyle={progressStyleColor} 
+                   label={segsRepaired + '/' + segsTotal}
+                   key={progressID}/>
 
     return (
     <tr>
-        <td data-toggle="collapse" data-target={rowID}>{this.props.row.id}</td>
+        <td data-toggle="collapse" data-target={rowID}>{startTime}</td>
+        <td data-toggle="collapse" data-target={rowID}>{etaOrDuration}</td>
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.state}</td>
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.cluster_name}</td>
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.keyspace_name}</td>
         <td data-toggle="collapse" data-target={rowID}><CFsListRender list={this.props.row.column_families} /></td>
-        <td data-toggle="collapse" data-target={rowID}>{incremental}</td>
         <td data-toggle="collapse" data-target={rowID}>
           <div className="progress">
-            <div className="progress-bar" role="progressbar"
-              aria-valuenow={segsRepaired} aria-valuemin="0"
-              aria-valuemax={segsTotal}
-              style={{width: segsPerc+'%'}}>
-              {segsRepaired}/{segsTotal}
-            </div>
+          {repairProgress}
           </div>
         </td>
         <td>
@@ -69,6 +93,10 @@ const TableRowDetails = React.createClass({
         <td colSpan="7">
           <table className="table table-condensed">
             <tbody>
+                <tr>
+                    <td>ID</td>
+                    <td>{this.props.row.id}</td>
+                </tr>
                 <tr>
                     <td>Owner</td>
                     <td>{this.props.row.owner}</td>
@@ -120,6 +148,10 @@ const TableRowDetails = React.createClass({
                 <tr>
                     <td>Datacenters</td>
                     <td><CFsListRender list={this.props.row.datacenters}/></td>
+                </tr>
+                <tr>
+                    <td>Blacklist</td>
+                    <td><CFsListRender list={this.props.row.blacklisted_tables} /></td>
                 </tr>
                 <tr>
                     <td>Creation time</td>
@@ -253,12 +285,12 @@ const repairList = React.createClass({
                   <table className="table table-bordered table-hover table-striped">
                       <thead>
                           <tr>
-                              <th>ID</th>
+                              <th>Start</th>
+                              <th>ETA</th>
                               <th>State</th>
                               <th>Cluster</th>
                               <th>Keyspace</th>
                               <th>CFs</th>
-                              <th>Incremental</th>
                               <th>Repaired</th>
                               <th></th>
                           </tr>
@@ -281,12 +313,12 @@ const repairList = React.createClass({
                   <table className="table table-bordered table-hover table-striped">
                       <thead>
                           <tr>
-                              <th>ID</th>
+                              <th>Start</th>
+                              <th>Duration</th>
                               <th>State</th>
                               <th>Cluster</th>
                               <th>Keyspace</th>
                               <th>CFs</th>
-                              <th>Incremental</th>
                               <th>Repaired</th>
                               <th></th>
                           </tr>
