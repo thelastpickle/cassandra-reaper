@@ -55,6 +55,26 @@
   </url>
   
   <url>
+    <loc>http://cassandra-reaper.io/docs/usage/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/usage/add_cluster/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/usage/health/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/usage/schedule/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/usage/single/</loc>
+  </url>
+  
+  <url>
     <loc>http://cassandra-reaper.io/faq/</loc>
   </url>
   
