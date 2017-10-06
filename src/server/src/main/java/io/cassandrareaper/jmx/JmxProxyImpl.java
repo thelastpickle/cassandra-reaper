@@ -60,6 +60,8 @@ import javax.validation.constraints.NotNull;
 
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.google.common.base.Optional;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
@@ -327,8 +329,19 @@ final class JmxProxyImpl implements JmxProxy {
     }
   }
 
-  private String getLocalEndpoint() {
-    return ((StorageServiceMBean) ssProxy).getHostIdToEndpoint().get(((StorageServiceMBean) ssProxy).getLocalHostId());
+  public String getLocalEndpoint() throws ReaperException {
+    String cassandraVersion = getCassandraVersion();
+    if (versionCompare(cassandraVersion, "2.1.10") >= 0) {
+      return ((StorageServiceMBean) ssProxy)
+          .getHostIdToEndpoint()
+          .get(((StorageServiceMBean) ssProxy).getLocalHostId());
+    } else {
+      // pre-2.1.10 compatibility
+      BiMap<String, String> hostIdBiMap =
+          ImmutableBiMap.copyOf(((StorageServiceMBean) ssProxy).getHostIdMap());
+      String localHostId = ((StorageServiceMBean) ssProxy).getLocalHostId();
+      return hostIdBiMap.inverse().get(localHostId);
+    }
   }
 
   @NotNull
