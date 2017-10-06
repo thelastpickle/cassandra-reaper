@@ -13,8 +13,6 @@
  */
 package com.spotify.reaper.cassandra;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.io.IOException;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.math.BigInteger;
@@ -31,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.rmi.ssl.SslRMIClientSocketFactory;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,8 +47,18 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
+import javax.rmi.ssl.SslRMIClientSocketFactory;
 import javax.validation.constraints.NotNull;
 
+import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
+import com.google.common.base.Optional;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.spotify.reaper.ReaperException;
+import com.spotify.reaper.core.Cluster;
+import com.spotify.reaper.service.RingRange;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
 import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.compaction.CompactionManagerMBean;
@@ -67,13 +74,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
-import com.spotify.reaper.ReaperException;
-import com.spotify.reaper.core.Cluster;
-import com.spotify.reaper.service.RingRange;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class JmxProxy implements NotificationListener, AutoCloseable {
 
@@ -322,8 +323,19 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
     }
   }
 
-  public String getLocalEndpoint() {
-    return ((StorageServiceMBean) ssProxy).getHostIdToEndpoint().get(((StorageServiceMBean) ssProxy).getLocalHostId());
+  public String getLocalEndpoint() throws ReaperException {
+    String cassandraVersion = getCassandraVersion();
+    if (versionCompare(cassandraVersion, "2.1.10") >= 0) {
+      return ((StorageServiceMBean) ssProxy)
+          .getHostIdToEndpoint()
+          .get(((StorageServiceMBean) ssProxy).getLocalHostId());
+    } else {
+      // pre-2.1.10 compatibility
+      BiMap<String, String> hostIdBiMap =
+          ImmutableBiMap.copyOf(((StorageServiceMBean) ssProxy).getHostIdMap());
+      String localHostId = ((StorageServiceMBean) ssProxy).getLocalHostId();
+      return hostIdBiMap.inverse().get(localHostId);
+    }
   }
 
 
@@ -855,8 +867,8 @@ public class JmxProxy implements NotificationListener, AutoCloseable {
 class ColumnFamilyStoreMBeanIterator
     implements Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> {
 
-  private Iterator<ObjectName> resIter;
-  private MBeanServerConnection mbeanServerConn;
+  private final Iterator<ObjectName> resIter;
+  private final MBeanServerConnection mbeanServerConn;
 
   public ColumnFamilyStoreMBeanIterator(MBeanServerConnection mbeanServerConn)
       throws MalformedObjectNameException, NullPointerException, IOException {
