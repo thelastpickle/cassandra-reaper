@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.CodecRegistry;
 import com.datastax.driver.core.ConsistencyLevel;
+import com.datastax.driver.core.PoolingOptions;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.QueryLogger;
 import com.datastax.driver.core.QueryOptions;
@@ -66,6 +67,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
 import io.dropwizard.setup.Environment;
+import io.dropwizard.util.Duration;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.cognitor.cassandra.migration.Database;
 import org.cognitor.cassandra.migration.MigrationRepository;
@@ -74,6 +76,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
+import systems.composable.dropwizard.cassandra.pooling.PoolingOptionsFactory;
 import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 public final class CassandraStorage implements IStorage, IDistributedStorage {
@@ -126,21 +129,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
     CassandraFactory cassandraFactory = config.getCassandraFactory();
-    // all INSERT and DELETE stmt prepared in this class are idempoten
-    if (cassandraFactory.getQueryOptions().isPresent()
-        && ConsistencyLevel.LOCAL_ONE != cassandraFactory.getQueryOptions().get().getConsistencyLevel()) {
-      LOG.warn("Customization of cassandra's queryOptions is not supported and will be overridden");
-    }
-    cassandraFactory.setQueryOptions(java.util.Optional.of(new QueryOptions().setDefaultIdempotence(true)));
-    if (cassandraFactory.getRetryPolicy().isPresent()) {
-      LOG.warn("Customization of cassandra's retry policy is not supported and will be overridden");
-    }
-    cassandraFactory.setRetryPolicy(java.util.Optional.of((RetryPolicyFactory) () -> new RetryPolicyImpl()));
+    overrideQueryOptions(cassandraFactory);
+    overrideRetryPolicy(cassandraFactory);
+    overridePoolingOptions(cassandraFactory);
     cassandra = cassandraFactory.build(environment);
     if (config.getActivateQueryLogger()) {
       cassandra.register(QueryLogger.builder().build());
     }
-
     CodecRegistry codecRegistry = cassandra.getConfiguration().getCodecRegistry();
     codecRegistry.register(new DateTimeCodec());
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());
@@ -1032,6 +1027,43 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
       lastHeartBeat = now;
     }
+  }
+
+
+  private static void overrideQueryOptions(CassandraFactory cassandraFactory) {
+    // all INSERT and DELETE stmt prepared in this class are idempoten
+    if (cassandraFactory.getQueryOptions().isPresent()
+        && ConsistencyLevel.LOCAL_ONE != cassandraFactory.getQueryOptions().get().getConsistencyLevel()) {
+      LOG.warn("Customization of cassandra's queryOptions is not supported and will be overridden");
+    }
+    cassandraFactory.setQueryOptions(java.util.Optional.of(new QueryOptions().setDefaultIdempotence(true)));
+  }
+
+  private static void overrideRetryPolicy(CassandraFactory cassandraFactory) {
+    if (cassandraFactory.getRetryPolicy().isPresent()) {
+      LOG.warn("Customization of cassandra's retry policy is not supported and will be overridden");
+    }
+    cassandraFactory.setRetryPolicy(java.util.Optional.of((RetryPolicyFactory) () -> new RetryPolicyImpl()));
+  }
+
+  private static void overridePoolingOptions(CassandraFactory cassandraFactory) {
+    PoolingOptionsFactory newPoolingOptionsFactory = new PoolingOptionsFactory() {
+      @Override
+      public PoolingOptions build() {
+        if (null == getPoolTimeout()) {
+          setPoolTimeout(Duration.minutes(2));
+        }
+        return super.build().setMaxQueueSize(40960);
+      }
+    };
+    cassandraFactory.getPoolingOptions().ifPresent((originalPoolingOptions) -> {
+      newPoolingOptionsFactory.setHeartbeatInterval(originalPoolingOptions.getHeartbeatInterval());
+      newPoolingOptionsFactory.setIdleTimeout(originalPoolingOptions.getIdleTimeout());
+      newPoolingOptionsFactory.setLocal(originalPoolingOptions.getLocal());
+      newPoolingOptionsFactory.setRemote(originalPoolingOptions.getRemote());
+      newPoolingOptionsFactory.setPoolTimeout(originalPoolingOptions.getPoolTimeout());
+    });
+    cassandraFactory.setPoolingOptions(java.util.Optional.of(newPoolingOptionsFactory));
   }
 
   private static boolean withinRange(RepairSegment segment, Optional<RingRange> range) {
