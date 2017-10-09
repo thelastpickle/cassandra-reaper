@@ -4,7 +4,7 @@ repairParallelism: ${REAPER_REPAIR_PARALELLISM}
 repairIntensity: ${REAPER_REPAIR_INTENSITY}
 scheduleDaysBetween: ${REAPER_SCHEDULE_DAYS_BETWEEN}
 repairRunThreadCount: ${REAPER_REPAIR_RUN_THREADS}
-hangingRepairTimeoutMins: ${REAPER_HANING_REPAIR_TIMEOUT_MINS}
+hangingRepairTimeoutMins: ${REAPER_HANGING_REPAIR_TIMEOUT_MINS}
 storageType: ${REAPER_STORAGE_TYPE}
 enableCrossOrigin: ${REAPER_ENABLE_CORS}
 incrementalRepair: ${REAPER_INCREMENTAL_REPAIR}
