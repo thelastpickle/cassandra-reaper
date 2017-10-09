@@ -82,6 +82,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
   private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
   private static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
+  private static final String SELECT_LEADERS = "SELECT * FROM leader";
 
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
 
@@ -949,6 +950,17 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     assert false : "Could not renew lead on segment " + leaderId;
     LOG.error("Failed to renew lead on segment {}", leaderId);
     return false;
+  }
+
+  @Override
+  public List<UUID> getLeaders() {
+    Statement stmt = new SimpleStatement(SELECT_LEADERS);
+    ResultSet result = session.execute(stmt);
+    return result
+        .all()
+        .stream()
+        .map(leader -> leader.getUUID("leader_id"))
+        .collect(Collectors.toList());
   }
 
   @Override

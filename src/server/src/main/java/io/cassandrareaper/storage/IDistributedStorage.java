@@ -33,6 +33,8 @@ public interface IDistributedStorage {
 
   boolean renewLead(UUID leaderId);
 
+  List<UUID> getLeaders();
+
   void releaseLead(UUID leaderId);
 
   Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(UUID runId, List<RingRange> localRanges);

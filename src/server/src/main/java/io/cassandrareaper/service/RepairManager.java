@@ -23,10 +23,13 @@ import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -82,11 +85,12 @@ public final class RepairManager {
     heartbeat(context);
     Collection<RepairRun> running = context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
     for (RepairRun repairRun : running) {
-      if (!repairRunners.containsKey(repairRun.getId())) {
-        Collection<RepairSegment> runningSegments
-            = context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
+      Collection<RepairSegment> runningSegments =
+          context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
 
-        abortSegments(runningSegments, context, repairRun);
+      abortSegmentsWithNoLeader(context, repairRun, runningSegments);
+
+      if (!repairRunners.containsKey(repairRun.getId())) {
         LOG.info("Restarting run id {} that has no runner", repairRun.getId());
         startRepairRun(context, repairRun);
       }
@@ -108,10 +112,30 @@ public final class RepairManager {
     }
   }
 
-  private static void abortSegments(
-      Collection<RepairSegment> runningSegments,
-      AppContext context,
-      RepairRun repairRun) {
+  private void abortSegmentsWithNoLeader(
+      AppContext context, RepairRun repairRun, Collection<RepairSegment> runningSegments) {
+    if (context.storage instanceof IDistributedStorage
+        || !repairRunners.containsKey(repairRun.getId())) {
+      // When multiple Reapers are in use, we can get stuck segments when one instance is rebooted
+      // Any segment in RUNNING state but with no leader should be killed
+      List<UUID> activeLeaders =
+          context.storage instanceof IDistributedStorage
+              ? ((IDistributedStorage) context.storage).getLeaders()
+              : Collections.emptyList();
+
+      abortSegments(
+          runningSegments
+              .stream()
+              .filter(segment -> !activeLeaders.contains(segment.getId()))
+              .collect(Collectors.toSet()),
+          context,
+          repairRun);
+    }
+  }
+
+  @VisibleForTesting
+  public void abortSegments(
+      Collection<RepairSegment> runningSegments, AppContext context, RepairRun repairRun) {
 
     RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId()).get();
     for (RepairSegment segment : runningSegments) {
@@ -239,7 +263,8 @@ public final class RepairManager {
     repairRunners.remove(runner.getRepairRunId());
   }
 
-  private static void heartbeat(AppContext context) {
+  @VisibleForTesting
+  public void heartbeat(AppContext context) {
     if (context.storage instanceof IDistributedStorage) {
       ((IDistributedStorage) context.storage).saveHeartbeat();
     }
