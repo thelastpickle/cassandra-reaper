@@ -11,6 +11,14 @@ cassandra:
   clusterName: ${REAPER_CASS_CLUSTER_NAME}
   contactPoints: ${REAPER_CASS_CONTACT_POINTS}
   keyspace: ${REAPER_CASS_KEYSPACE}
+  loadBalancingPolicy:
+    type: tokenAware
+    shuffleReplicas: true
+    subPolicy:
+      type: dcAwareRoundRobin
+      localDC: ${REAPER_CASS_LOCAL_DC}
+      usedHostsPerRemoteDC: 0
+      allowRemoteDCsForLocalConsistencyLevel: false
 EOT
 
 if [ "true" = "${REAPER_CASS_AUTH_ENABLED}" ]; then
