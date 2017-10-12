@@ -1114,7 +1114,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
           Thread.sleep(100);
         } catch (InterruptedException expected) { }
       }
-      return stmt.isIdempotent()
+      return null != stmt && stmt.isIdempotent()
           ? retry < 10 ? RetryDecision.retry(cl) : RetryDecision.rethrow()
           : DefaultRetryPolicy.INSTANCE.onReadTimeout(stmt, cl, required, received, retrieved, retry);
     }
@@ -1128,7 +1128,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         int received,
         int retry) {
 
-      return stmt.isIdempotent()
+      return null != stmt && stmt.isIdempotent()
           ? RetryDecision.retry(cl)
           : DefaultRetryPolicy.INSTANCE.onWriteTimeout(stmt, cl, type, required, received, retry);
     }
