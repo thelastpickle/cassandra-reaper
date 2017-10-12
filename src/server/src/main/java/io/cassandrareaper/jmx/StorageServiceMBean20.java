@@ -22,7 +22,7 @@ import javax.management.NotificationEmitter;
 
 import org.apache.cassandra.service.StorageServiceMBean;
 
-public interface StorageServiceMBean20 extends NotificationEmitter, StorageServiceMBean {
+interface StorageServiceMBean20 extends NotificationEmitter, StorageServiceMBean {
 
   /**
    * Numeric load value.

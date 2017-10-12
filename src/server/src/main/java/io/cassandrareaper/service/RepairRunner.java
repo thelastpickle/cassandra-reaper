@@ -476,12 +476,8 @@ public final class RepairRunner implements Runnable {
   public void killAndCleanupRunner() {
     context.repairManager.removeRunner(this);
     if (jmxConnection != null) {
-      try {
-        jmxConnection.close();
-        jmxConnection = null;
-      } catch (ReaperException e) {
-        LOG.warn("failed closing JMX connection on runner exit: " + e);
-      }
+      jmxConnection.close();
+      jmxConnection = null;
     }
     Thread.currentThread().interrupt();
   }
