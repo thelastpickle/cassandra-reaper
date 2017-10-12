@@ -356,11 +356,19 @@ public final class BasicSteps {
         RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
         TestContext.LAST_MODIFIED_ID = schedule.getId();
       } else {
-        response = runner.callReaper("GET", "/repair_schedule/cluster/" + clusterName, EMPTY_PARAMS);
-        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-        List<RepairScheduleStatus> schedules = SimpleReaperClient.parseRepairScheduleStatusListJSON(keyspace);
-        Assertions.assertThat(schedules).hasSize(1);
-        TestContext.LAST_MODIFIED_ID = schedules.get(0).getId();
+        // if the original request to create the schedule failed then we have to wait til we can find it
+        await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+          try {
+            List<RepairScheduleStatus> schedules = runner.getClient().getRepairSchedulesForCluster(clusterName);
+            LOG.info("Got " + schedules.size() + " schedules");
+            Assertions.assertThat(schedules).hasSize(1);
+            TestContext.LAST_MODIFIED_ID = schedules.get(0).getId();
+          } catch (AssertionError ex) {
+            LOG.warn(ex.getMessage());
+            return false;
+          }
+          return true;
+        });
       }
     }
   }
@@ -391,11 +399,21 @@ public final class BasicSteps {
         RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
         TestContext.LAST_MODIFIED_ID = schedule.getId();
       } else {
-        response = runner.callReaper("GET", "/repair_schedule/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
-        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-        List<RepairScheduleStatus> schedules = SimpleReaperClient.parseRepairScheduleStatusListJSON(keyspace);
-        Assertions.assertThat(schedules).hasSize(1);
-        TestContext.LAST_MODIFIED_ID = schedules.get(0).getId();
+        // if the original request to create the schedule failed then we have to wait til we can find it
+        await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+          try {
+            List<RepairScheduleStatus> schedules
+                = runner.getClient().getRepairSchedulesForCluster(TestContext.TEST_CLUSTER);
+
+            LOG.info("Got " + schedules.size() + " schedules");
+            Assertions.assertThat(schedules).hasSize(1);
+            TestContext.LAST_MODIFIED_ID = schedules.get(0).getId();
+          } catch (AssertionError ex) {
+            LOG.warn(ex.getMessage());
+            return false;
+          }
+          return true;
+        });
       }
     }
   }
@@ -427,11 +445,21 @@ public final class BasicSteps {
         RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
         TestContext.LAST_MODIFIED_ID = schedule.getId();
       } else {
-        response = runner.callReaper("GET", "/repair_schedule/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
-        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-        List<RepairScheduleStatus> schedules = SimpleReaperClient.parseRepairScheduleStatusListJSON(keyspace);
-        Assertions.assertThat(schedules).hasSize(1);
-        TestContext.LAST_MODIFIED_ID = schedules.get(0).getId();
+        // if the original request to create the schedule failed then we have to wait til we can find it
+        await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+          try {
+            List<RepairScheduleStatus> schedules
+                = runner.getClient().getRepairSchedulesForCluster(TestContext.TEST_CLUSTER);
+
+            LOG.info("Got " + schedules.size() + " schedules");
+            Assertions.assertThat(schedules).hasSize(1);
+            TestContext.LAST_MODIFIED_ID = schedules.get(0).getId();
+          } catch (AssertionError ex) {
+            LOG.warn(ex.getMessage());
+            return false;
+          }
+          return true;
+        });
       }
     }
   }
@@ -491,15 +519,17 @@ public final class BasicSteps {
   }
 
   @And("^reaper has (\\d+) scheduled repairs for cluster called \"([^\"]*)\"$")
-  public void reaper_has_scheduled_repairs_for_cluster_called(int repairAmount, String clusterName) throws Throwable {
+  public void reaper_has_scheduled_repairs_for_cluster_called(
+      int expectedSchedules,
+      String clusterName) throws Throwable {
+
     synchronized (BasicSteps.class) {
       CLIENTS.parallelStream().forEach(client -> {
-
         await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
           try {
             List<RepairScheduleStatus> schedules = client.getRepairSchedulesForCluster(clusterName);
             LOG.info("Got " + schedules.size() + " schedules");
-            assertEquals(repairAmount, schedules.size());
+            Assertions.assertThat(schedules).hasSize(expectedSchedules);
           } catch (AssertionError ex) {
             LOG.warn(ex.getMessage());
             return false;
@@ -511,14 +541,14 @@ public final class BasicSteps {
   }
 
   @And("^reaper has (\\d+) scheduled repairs for the last added cluster$")
-  public void reaper_has_scheduled_repairs_for_the_last_added_cluster(int repairAmount) throws Throwable {
+  public void reaper_has_scheduled_repairs_for_the_last_added_cluster(int expectedSchedules) throws Throwable {
     synchronized (BasicSteps.class) {
       CLIENTS.parallelStream().forEach(client -> {
         await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
           try {
             List<RepairScheduleStatus> schedules = client.getRepairSchedulesForCluster(TestContext.TEST_CLUSTER);
             LOG.info("Got " + schedules.size() + " schedules");
-            assertEquals(repairAmount, schedules.size());
+            Assertions.assertThat(schedules).hasSize(expectedSchedules);
           } catch (AssertionError ex) {
             LOG.warn(ex.getMessage());
             return false;
