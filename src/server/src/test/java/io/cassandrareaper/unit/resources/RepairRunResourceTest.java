@@ -119,7 +119,6 @@ public final class RepairRunResourceTest {
     when(proxy.getTableNamesForKeyspace(KEYSPACE)).thenReturn(TABLES);
     when(proxy.getEndpointToHostId()).thenReturn(NODES_MAP);
     when(proxy.getTokens()).thenReturn(TOKENS);
-    when(proxy.tableExists(anyString(), anyString())).thenReturn(Boolean.TRUE);
     when(proxy.isConnectionAlive()).thenReturn(Boolean.TRUE);
     when(proxy.tokenRangeToEndpoint(anyString(), any(RingRange.class))).thenReturn(
         Collections.singletonList(""));

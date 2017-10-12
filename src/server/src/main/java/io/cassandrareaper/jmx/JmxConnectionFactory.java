@@ -74,7 +74,7 @@ public class JmxConnectionFactory {
       username = jmxAuth.getUsername();
       password = jmxAuth.getPassword();
     }
-    return JmxProxy.connect(handler, host, username, password, addressTranslator, connectionTimeout);
+    return JmxProxyImpl.connect(handler, host, username, password, addressTranslator, connectionTimeout);
   }
 
   public final JmxProxy connect(String host, int connectionTimeout) throws ReaperException {

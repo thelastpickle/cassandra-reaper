@@ -24,22 +24,27 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.google.common.base.Optional;
-import jersey.repackaged.com.google.common.collect.Lists;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JmxConnectionsInitializer implements AutoCloseable {
+public final class JmxConnectionsInitializer implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(JmxConnectionsInitializer.class);
   private final ExecutorService executor = Executors.newFixedThreadPool(10);
 
   private final AppContext context;
 
-  public JmxConnectionsInitializer(AppContext context) {
+  private JmxConnectionsInitializer(AppContext context) {
     this.context = context;
+  }
+
+  public static JmxConnectionsInitializer create(AppContext context) {
+    return new JmxConnectionsInitializer(context);
   }
 
   public void on(Cluster cluster) {
@@ -59,9 +64,8 @@ public class JmxConnectionsInitializer implements AutoCloseable {
 
   private Callable<Optional<String>> connectToJmx(List<String> endpoints) {
     return () -> {
-      try (JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connectAny(
-              Optional.absent(), endpoints, JmxProxy.JMX_CONNECTION_TIMEOUT)) {
+      try (JmxProxy jmxProxy = context.jmxConnectionFactory
+              .connectAny(Optional.absent(), endpoints, (int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds())) {
 
         return Optional.of(endpoints.get(0));
 
@@ -75,11 +79,11 @@ public class JmxConnectionsInitializer implements AutoCloseable {
   private void tryConnectingToJmxSeeds(List<Callable<Optional<String>>> jmxTasks) {
     try {
       List<Future<Optional<String>>> endpointFutures
-          = executor.invokeAll(jmxTasks, JmxProxy.JMX_CONNECTION_TIMEOUT, JmxProxy.JMX_CONNECTION_TIMEOUT_UNIT);
+          = executor.invokeAll(jmxTasks, (int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds(), TimeUnit.SECONDS);
 
       for (Future<Optional<String>> endpointFuture : endpointFutures) {
         try {
-          endpointFuture.get(JmxProxy.JMX_CONNECTION_TIMEOUT, JmxProxy.JMX_CONNECTION_TIMEOUT_UNIT);
+          endpointFuture.get((int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds(), TimeUnit.SECONDS);
         } catch (RuntimeException | ExecutionException | TimeoutException expected) {
           LOG.trace("Failed accessing one node through JMX", expected);
         }

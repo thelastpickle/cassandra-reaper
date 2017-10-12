@@ -357,8 +357,7 @@ public final class ClusterResource {
 
       } catch (RuntimeException e) {
         LOG.debug("failed to create cluster with seed hosts: {}", seeds, e);
-        Thread.sleep(
-            TimeUnit.MILLISECONDS.convert(JmxProxy.JMX_CONNECTION_TIMEOUT, JmxProxy.JMX_CONNECTION_TIMEOUT_UNIT));
+        Thread.sleep((int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds() * 1000);
         return Optional.absent();
       }
     };
@@ -383,17 +382,17 @@ public final class ClusterResource {
 
       try {
         nodesStatus = CLUSTER_STATUS_EXECUTOR.invokeAny(
-            endpointStateTasks, JmxProxy.JMX_CONNECTION_TIMEOUT, JmxProxy.JMX_CONNECTION_TIMEOUT_UNIT);
+            endpointStateTasks,
+            (int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds(),
+            TimeUnit.SECONDS);
 
       } catch (InterruptedException | ExecutionException | TimeoutException e) {
         LOG.debug("failed grabbing nodes status", e);
       }
-
       if (nodesStatus.isPresent()) {
         return nodesStatus;
       }
     }
-
     return nodesStatus;
   }
 }
