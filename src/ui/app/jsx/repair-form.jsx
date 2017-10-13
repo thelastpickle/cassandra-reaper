@@ -21,7 +21,7 @@ const repairForm = React.createClass({
       parallism: null, intensity: null, cause: null, incrementalRepair: null, formCollapsed: true, nodes: "", datacenters: "", blacklistedTables: "",
       nodeList: [], datacenterList: [], clusterStatus: {}, urlPrefix: URL_PREFIX, nodeSuggestions: [], datacenterSuggestions: [], tableSuggestions: [], 
       clusterTables: {}, blacklistSuggestions: [], tableList: [], blacklistList: [], keyspaceList: [], keyspaceSuggestions: [],
-      blacklistReadOnly: false, tablelistReadOnly: false
+      blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true
     };
   },
 
@@ -142,6 +142,15 @@ const repairForm = React.createClass({
     }
     else {
       this.setState({formCollapsed: true});
+    }
+  },
+
+  _toggleAdvancedSettingsDisplay: function() {
+    if(this.state.advancedFormCollapsed == true) {
+      this.setState({advancedFormCollapsed: false});
+    }
+    else {
+      this.setState({advancedFormCollapsed: true});
     }
   },
 
@@ -318,6 +327,29 @@ const repairForm = React.createClass({
       <option key={name} value={name}>{name}</option>
     );
 
+    let advancedMenuDownStyle = {
+      display: "inline-block" 
+    }
+
+    let advancedMenuUpStyle = {
+      display: "none" 
+    }
+
+    if(this.state.advancedFormCollapsed == false) {
+      advancedMenuDownStyle = {
+        display: "none"
+      }
+      advancedMenuUpStyle = {
+        display: "inline-block"
+      }
+    }
+
+    const advancedSettingsHeader = <div className="panel-title" >
+    <a href="#advanced-form" data-toggle="collapse" onClick={this._toggleAdvancedSettingsDisplay}>Advanced settings</a>
+    &nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={advancedMenuDownStyle}></span>
+           <span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={advancedMenuUpStyle}></span></div>
+
+
     const form = <div className="row">
         <div className="col-lg-12">
 
@@ -348,68 +380,7 @@ const repairForm = React.createClass({
                   }}/>
               </div>
             </div>
-            <div className="form-group">
-            <label htmlFor="in_tables" className="col-sm-3 control-label">Tables</label>
-            <div className="col-sm-9 col-md-7 col-lg-5">
-              <ReactTags id={'in_tables'} tags={this.state.tableList}
-                suggestions={this.state.tableSuggestions}
-                labelField={'text'} handleAddition={this._handleTableAddition} 
-                handleInputBlur={this._handleTableAddition} 
-                handleDelete={this._handleTableDelete}
-                readOnly={this.state.tablelistReadOnly}
-                placeholder={'Add a table (optional)'}
-                handleFilterSuggestions={this._handleBlacklistFilterSuggestions}
-                classNames={{
-                    tagInputField: 'form-control'
-                  }}/>
-              </div>
-            </div>
-            <div className="form-group">
-            <label htmlFor="in_blacklist" className="col-sm-3 control-label">Blacklist</label>
-            <div className="col-sm-9 col-md-7 col-lg-5">
-              <ReactTags id={'in_blacklist'} tags={this.state.blacklistList}
-                suggestions={this.state.tableSuggestions}
-                labelField={'text'} handleAddition={this._handleBlacklistAddition} 
-                handleInputBlur={this._handleBlacklistAddition}
-                handleDelete={this._handleBlacklistDelete}
-                readOnly={this.state.blacklistReadOnly}
-                placeholder={'Add a table (optional)'}
-                handleFilterSuggestions={this._handleBlacklistFilterSuggestions}
-                classNames={{
-                    tagInputField: 'form-control'
-                  }}/>
-              </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="in_nodes" className="col-sm-3 control-label">Nodes</label>
-              <div className="col-sm-9 col-md-7 col-lg-5">
-              <ReactTags id={'in_nodes'} tags={this.state.nodeList}
-                suggestions={this.state.nodeSuggestions}
-                labelField={'text'} handleAddition={this._handleAddition} 
-                handleInputBlur={this._handleAddition} 
-                handleDelete={this._handleDelete}
-                placeholder={'Add a node (optional)'}
-                handleFilterSuggestions={this._handleNodeFilterSuggestions}
-                classNames={{
-                    tagInputField: 'form-control'
-                  }}/>
-              </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="in_datacenters" className="col-sm-3 control-label">Datacenters</label>
-              <div className="col-sm-9 col-md-7 col-lg-5">
-              <ReactTags id={'in_datacenters'} tags={this.state.datacenterList}
-              suggestions={this.state.datacenterSuggestions}
-              labelField={'text'} handleAddition={this._handleDcAddition} 
-              handleInputBlur={this._handleDcAddition} 
-              handleDelete={this._handleDcDelete}
-              placeholder={'Add a datacenter (optional)'}
-              handleFilterSuggestions={this._handleDcFilterSuggestions}
-              classNames={{
-                  tagInputField: 'form-control'
-                }}/>
-              </div>
-            </div>
+            
             <div className="form-group">
               <label htmlFor="in_owner" className="col-sm-3 control-label">Owner*</label>
               <div className="col-sm-9 col-md-7 col-lg-5">
@@ -417,33 +388,8 @@ const repairForm = React.createClass({
                   onChange={this._handleChange} id="in_owner" placeholder="owner name for the repair run (any string)"/>
               </div>
             </div>
-            <div className="form-group">
-              <label htmlFor="in_segments" className="col-sm-3 control-label">Segment count</label>
-              <div className="col-sm-9 col-md-7 col-lg-5">
-                <input type="number" className="form-control" value={this.state.segments}
-                  onChange={this._handleChange} id="in_segments" placeholder="amount of segments to create for repair"/>
-              </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="in_parallism" className="col-sm-3 control-label">Parallism</label>
-              <div className="col-sm-9 col-md-7 col-lg-5">
-                <select className="form-control" id="in_parallism"
-                  onChange={this._handleChange} value={this.state.parallism}>
-                  <option value=""></option>
-                  <option value="SEQUENTIAL">Sequential</option>
-                  <option value="PARALLEL">Parallel</option>
-                  <option value="DATACENTER_AWARE">DC-Aware</option>
-                </select>
-              </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="in_intensity" className="col-sm-3 control-label">Repair intensity</label>
-              <div className="col-sm-9 col-md-7 col-lg-5">
-                <input type="number" className="form-control" value={this.state.intensity}
-                  min="0" max="1"
-                  onChange={this._handleChange} id="in_intensity" placeholder="repair intensity"/>
-              </div>
-            </div>
+ 
+
             <div className="form-group">
               <label htmlFor="in_cause" className="col-sm-3 control-label">Cause</label>
               <div className="col-sm-9 col-md-7 col-lg-5">
@@ -451,14 +397,115 @@ const repairForm = React.createClass({
                   onChange={this._handleChange} id="in_cause" placeholder="reason repair was started"/>
               </div>
             </div>
+
             <div className="form-group">
-              <label htmlFor="in_incrementalRepair" className="col-sm-3 control-label">Incremental</label>
-              <div className="col-sm-9 col-md-7 col-lg-5">
-                <select className="form-control" id="in_incrementalRepair"
-                  onChange={this._handleChange} value={this.state.incrementalRepair}>
-                  <option value="false">false</option>
-                  <option value="true">true</option>
-                </select>
+              <div className="col-sm-offset-1 col-sm-9">
+                <div className="panel panel-info">
+                  <div className="panel-heading">
+                    {advancedSettingsHeader}
+                  </div>
+                  <div className="panel-body collapse" id="advanced-form">
+                    <div className="form-group">
+                    <label htmlFor="in_tables" className="col-sm-3 control-label">Tables</label>
+                    <div className="col-sm-14 col-md-12 col-lg-9">
+                      <ReactTags id={'in_tables'} tags={this.state.tableList}
+                        suggestions={this.state.tableSuggestions}
+                        labelField={'text'} handleAddition={this._handleTableAddition} 
+                        handleInputBlur={this._handleTableAddition} 
+                        handleDelete={this._handleTableDelete}
+                        readOnly={this.state.tablelistReadOnly}
+                        placeholder={'Add a table (optional)'}
+                        handleFilterSuggestions={this._handleBlacklistFilterSuggestions}
+                        classNames={{
+                            tagInputField: 'form-control'
+                          }}/>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                    <label htmlFor="in_blacklist" className="col-sm-3 control-label">Blacklist</label>
+                    <div className="col-sm-14 col-md-12 col-lg-9">
+                      <ReactTags id={'in_blacklist'} tags={this.state.blacklistList}
+                        suggestions={this.state.tableSuggestions}
+                        labelField={'text'} handleAddition={this._handleBlacklistAddition} 
+                        handleInputBlur={this._handleBlacklistAddition}
+                        handleDelete={this._handleBlacklistDelete}
+                        readOnly={this.state.blacklistReadOnly}
+                        placeholder={'Add a table (optional)'}
+                        handleFilterSuggestions={this._handleBlacklistFilterSuggestions}
+                        classNames={{
+                            tagInputField: 'form-control'
+                          }}/>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_nodes" className="col-sm-3 control-label">Nodes</label>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                      <ReactTags id={'in_nodes'} tags={this.state.nodeList}
+                        suggestions={this.state.nodeSuggestions}
+                        labelField={'text'} handleAddition={this._handleAddition} 
+                        handleInputBlur={this._handleAddition} 
+                        handleDelete={this._handleDelete}
+                        placeholder={'Add a node (optional)'}
+                        handleFilterSuggestions={this._handleNodeFilterSuggestions}
+                        classNames={{
+                            tagInputField: 'form-control'
+                          }}/>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_datacenters" className="col-sm-3 control-label">Datacenters</label>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                      <ReactTags id={'in_datacenters'} tags={this.state.datacenterList}
+                      suggestions={this.state.datacenterSuggestions}
+                      labelField={'text'} handleAddition={this._handleDcAddition} 
+                      handleInputBlur={this._handleDcAddition} 
+                      handleDelete={this._handleDcDelete}
+                      placeholder={'Add a datacenter (optional)'}
+                      handleFilterSuggestions={this._handleDcFilterSuggestions}
+                      classNames={{
+                          tagInputField: 'form-control'
+                        }}/>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_segments" className="col-sm-3 control-label">Segment count</label>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                        <input type="number" className="form-control" value={this.state.segments}
+                          onChange={this._handleChange} id="in_segments" placeholder="amount of segments to create for repair"/>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_parallism" className="col-sm-3 control-label">Parallism</label>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                        <select className="form-control" id="in_parallism"
+                          onChange={this._handleChange} value={this.state.parallism}>
+                          <option value=""></option>
+                          <option value="SEQUENTIAL">Sequential</option>
+                          <option value="PARALLEL">Parallel</option>
+                          <option value="DATACENTER_AWARE">DC-Aware</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_intensity" className="col-sm-3 control-label">Repair intensity</label>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                        <input type="number" className="form-control" value={this.state.intensity}
+                          min="0" max="1"
+                          onChange={this._handleChange} id="in_intensity" placeholder="repair intensity"/>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_incrementalRepair" className="col-sm-3 control-label">Incremental</label>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                        <select className="form-control" id="in_incrementalRepair"
+                          onChange={this._handleChange} value={this.state.incrementalRepair}>
+                          <option value="false">false</option>
+                          <option value="true">true</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="form-group">
