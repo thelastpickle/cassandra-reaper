@@ -38,6 +38,18 @@ const TableRowDetails = React.createClass({
     const rowID = `details_${this.props.row.id}`;
     const incremental = this.props.row.incremental_repair == true ? "true" : "false";
 
+    let segmentCount = <tr>
+                        <td>Segment count per node</td>
+                        <td>{this.props.row.segment_count_per_node}</td>
+                      </tr>;
+    
+    if (this.props.row.segment_count > 0) {
+      segmentCount = <tr>
+                      <td>Global segment count</td>
+                      <td>{this.props.row.segment_count}</td>
+                    </tr>;
+    }
+
     return (
       <tr id={rowID} className="collapse out">
         <td colSpan="7">
@@ -71,10 +83,7 @@ const TableRowDetails = React.createClass({
                     <td>Incremental</td>
                     <td>{incremental}</td>
                 </tr>
-                <tr>
-                    <td>Segment count</td>
-                    <td>{this.props.row.segment_count}</td>
-                </tr>
+                {segmentCount}
                 <tr>
                     <td>Intensity</td>
                     <td>{this.props.row.intensity}</td>
