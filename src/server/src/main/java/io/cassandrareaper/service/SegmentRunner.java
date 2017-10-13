@@ -530,7 +530,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
           = context.jmxConnectionFactory.connect(hostName, context.config.getJmxConnectionTimeoutInSeconds())) {
         hostProxy.cancelAllRepairs();
         hostProxy.close();
-      } catch (ReaperException | RuntimeException e) {
+      } catch (ReaperException | RuntimeException | InterruptedException e) {
         LOG.debug("failed to cancel repairs on host {}", hostName, e);
       }
     }
@@ -587,7 +587,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
         if (hostProxy.isRepairRunning()) {
           return true;
         }
-      } catch (ReaperException | JMException e) {
+      } catch (ReaperException | JMException | NumberFormatException | InterruptedException e) {
         LOG.error(
             "Unreachable node when trying to determine if repair is running on a node."
                 + " Crossing fingers and continuing...",
@@ -840,7 +840,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
           // there is no way of telling if the snapshot was cleared or not :(
           jmx.clearSnapshot(repairId, keyspace);
           jmx.close();
-        } catch (ReaperException e) {
+        } catch (ReaperException | NumberFormatException | InterruptedException e) {
           LOG.warn(
               "Failed to clear snapshot after failed session for host {}, keyspace {}: {}",
               involvedNode,

@@ -84,7 +84,7 @@ public final class RepairScheduleResource {
       @QueryParam("keyspace") Optional<String> keyspace,
       @QueryParam("tables") Optional<String> tableNamesParam,
       @QueryParam("owner") Optional<String> owner,
-      @QueryParam("segmentCount") Optional<Integer> segmentCount,
+      @QueryParam("segmentCountPerNode") Optional<Integer> segmentCountPerNode,
       @QueryParam("repairParallelism") Optional<String> repairParallelism,
       @QueryParam("intensity") Optional<String> intensityStr,
       @QueryParam("incrementalRepair") Optional<String> incrementalRepairStr,
@@ -95,17 +95,18 @@ public final class RepairScheduleResource {
       @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam) {
 
     try {
-      Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
-          context,
-          clusterName,
-          keyspace,
-          owner,
-          segmentCount,
-          repairParallelism,
-          intensityStr,
-          incrementalRepairStr,
-          nodesToRepairParam,
-          datacentersToRepairParam);
+      Response possibleFailResponse =
+          RepairRunResource.checkRequestForAddRepair(
+              context,
+              clusterName,
+              keyspace,
+              owner,
+              segmentCountPerNode,
+              repairParallelism,
+              intensityStr,
+              incrementalRepairStr,
+              nodesToRepairParam,
+              datacentersToRepairParam);
 
       if (null != possibleFailResponse) {
         return possibleFailResponse;
@@ -130,7 +131,7 @@ public final class RepairScheduleResource {
             .build();
       }
 
-      int segments = getSegmentCount(segmentCount);
+      int segments = getSegmentCount(segmentCountPerNode);
       int daysBetween = getDaysBetween(scheduleDaysBetween);
 
       Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get())).get();
@@ -251,12 +252,9 @@ public final class RepairScheduleResource {
   }
 
   private int getSegmentCount(Optional<Integer> segmentCount) {
-    int segments = context.config.getSegmentCount();
+    int segments = 0;
     if (segmentCount.isPresent()) {
-      LOG.debug(
-          "using given segment count {} instead of configured value {}",
-          segmentCount.get(),
-          context.config.getSegmentCount());
+      LOG.debug("using given segment count {}", segmentCount.get());
       segments = segmentCount.get();
     }
     return segments;

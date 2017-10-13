@@ -33,9 +33,13 @@ import systems.composable.dropwizard.cassandra.CassandraFactory;
 
 public final class ReaperApplicationConfiguration extends Configuration {
 
+  private static final int DEFAULT_SEGMENT_COUNT_PER_NODE = 16;
+
+  @Deprecated
   @JsonProperty
-  @NotNull
   private Integer segmentCount;
+
+  @JsonProperty private Integer segmentCountPerNode;
 
   @JsonProperty
   @NotNull
@@ -118,6 +122,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setSegmentCount(int segmentCount) {
     this.segmentCount = segmentCount;
+  }
+
+  public int getSegmentCountPerNode() {
+    return segmentCountPerNode == null ? DEFAULT_SEGMENT_COUNT_PER_NODE : segmentCountPerNode;
+  }
+
+  public void setSegmentCountPerNode(int segmentCountPerNode) {
+    this.segmentCountPerNode = segmentCountPerNode;
   }
 
   public RepairParallelism getRepairParallelism() {

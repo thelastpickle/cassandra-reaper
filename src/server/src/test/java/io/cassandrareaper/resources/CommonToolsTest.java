@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import jersey.repackaged.com.google.common.collect.Maps;
 import org.joda.time.DateTime;
@@ -179,5 +180,56 @@ public final class CommonToolsTest {
     when(unit.getKeyspaceName()).thenReturn("test");
 
     CommonTools.getTablesToRepair(coord, unit);
+  }
+
+  @Test
+  public void computeGlobalSegmentCountSubdivisionOkTest() {
+
+    Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
+    for (int i = 0; i < 10; i++) {
+      rangeToEndpoint.put(
+          Arrays.asList(i + "", (i + 1) + ""), Arrays.asList("node1", "node2", "node3"));
+    }
+
+    Map<String, List<RingRange>> endpointToRange = Maps.newHashMap();
+    endpointToRange.put("node1", Lists.newArrayList());
+    endpointToRange.put("node2", Lists.newArrayList());
+    endpointToRange.put("node3", Lists.newArrayList());
+
+    assertEquals(30, CommonTools.computeGlobalSegmentCount(10, rangeToEndpoint, endpointToRange));
+  }
+
+  @Test
+  public void computeGlobalSegmentCountSubdivisionNotOkTest() {
+
+    Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
+    for (int i = 0; i < 60; i++) {
+      rangeToEndpoint.put(
+          Arrays.asList(i + "", (i + 1) + ""), Arrays.asList("node1", "node2", "node3"));
+    }
+
+    Map<String, List<RingRange>> endpointToRange = Maps.newHashMap();
+    endpointToRange.put("node1", Lists.newArrayList());
+    endpointToRange.put("node2", Lists.newArrayList());
+    endpointToRange.put("node3", Lists.newArrayList());
+
+    assertEquals(60, CommonTools.computeGlobalSegmentCount(10, rangeToEndpoint, endpointToRange));
+  }
+
+  @Test
+  public void computeGlobalSegmentCountSingleTokenPerNodeTest() {
+
+    Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
+    for (int i = 0; i < 3; i++) {
+      rangeToEndpoint.put(
+          Arrays.asList(i + "", (i + 1) + ""), Arrays.asList("node1", "node2", "node3"));
+    }
+
+    Map<String, List<RingRange>> endpointToRange = Maps.newHashMap();
+    endpointToRange.put("node1", Lists.newArrayList());
+    endpointToRange.put("node2", Lists.newArrayList());
+    endpointToRange.put("node3", Lists.newArrayList());
+
+    assertEquals(48, CommonTools.computeGlobalSegmentCount(0, rangeToEndpoint, endpointToRange));
   }
 }

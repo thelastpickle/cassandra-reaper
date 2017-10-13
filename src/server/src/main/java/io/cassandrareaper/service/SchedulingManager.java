@@ -250,6 +250,7 @@ public final class SchedulingManager extends TimerTask {
         Optional.of(getCauseName(schedule)),
         schedule.getOwner(),
         schedule.getSegmentCount(),
+        schedule.getSegmentCountPerNode(),
         schedule.getRepairParallelism(),
         schedule.getIntensity());
   }

@@ -62,16 +62,19 @@ public final class RepairScheduleMapper implements ResultSetMapper<RepairSchedul
     RepairSchedule.State scheduleState = RepairSchedule.State.valueOf(stateStr);
 
     return new RepairSchedule.Builder(
-        UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")),
-        scheduleState,
-        rs.getInt("days_between"),
-        RepairRunMapper.getDateTimeOrNull(rs, "next_activation"),
-        ImmutableList.copyOf(runHistoryUuids),
-        rs.getInt("segment_count"),
-        RepairParallelism.fromName(
-            rs.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel")),
-        rs.getDouble("intensity"),
-        RepairRunMapper.getDateTimeOrNull(rs, "creation_time"))
+            UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")),
+            scheduleState,
+            rs.getInt("days_between"),
+            RepairRunMapper.getDateTimeOrNull(rs, "next_activation"),
+            ImmutableList.copyOf(runHistoryUuids),
+            rs.getInt("segment_count"),
+            RepairParallelism.fromName(
+                rs.getString("repair_parallelism")
+                    .toLowerCase()
+                    .replace("datacenter_aware", "dc_parallel")),
+            rs.getDouble("intensity"),
+            RepairRunMapper.getDateTimeOrNull(rs, "creation_time"),
+            rs.getInt("segment_count_per_node"))
         .owner(rs.getString("owner"))
         .pauseTime(RepairRunMapper.getDateTimeOrNull(rs, "pause_time"))
         .build(UuidUtil.fromSequenceId(rs.getLong("id")));

@@ -217,12 +217,14 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     getRepairSegmentsByRunIdPrepStmt = session.prepare(
         "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
             + "segment_end_time,fail_count FROM repair_run WHERE id = ?");
-    insertRepairSchedulePrepStmt = session
-        .prepare(
-            "INSERT INTO repair_schedule_v1(id, repair_unit_id, state, days_between, next_activation, run_history, "
-                + "segment_count, repair_parallelism, intensity, creation_time, owner, pause_time) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    insertRepairSchedulePrepStmt =
+        session
+            .prepare(
+                "INSERT INTO repair_schedule_v1(id, repair_unit_id, state, days_between, next_activation, run_history, "
+                    + "segment_count, repair_parallelism, intensity, "
+                    + "creation_time, owner, pause_time, segment_count_per_node) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .setConsistencyLevel(ConsistencyLevel.QUORUM);
     getRepairSchedulePrepStmt
         = session.prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?").setConsistencyLevel(ConsistencyLevel.QUORUM);
     insertRepairScheduleByClusterAndKsPrepStmt = session.prepare(
@@ -791,15 +793,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private RepairSchedule createRepairScheduleFromRow(Row repairScheduleRow) {
     return new RepairSchedule.Builder(
-        repairScheduleRow.getUUID("repair_unit_id"),
-        RepairSchedule.State.valueOf(repairScheduleRow.getString("state")),
-        repairScheduleRow.getInt("days_between"),
-        new DateTime(repairScheduleRow.getTimestamp("next_activation")),
-        ImmutableList.copyOf(repairScheduleRow.getSet("run_history", UUID.class)),
-        repairScheduleRow.getInt("segment_count"),
-        RepairParallelism.fromName(repairScheduleRow.getString("repair_parallelism")),
-        repairScheduleRow.getDouble("intensity"),
-        new DateTime(repairScheduleRow.getTimestamp("creation_time")))
+            repairScheduleRow.getUUID("repair_unit_id"),
+            RepairSchedule.State.valueOf(repairScheduleRow.getString("state")),
+            repairScheduleRow.getInt("days_between"),
+            new DateTime(repairScheduleRow.getTimestamp("next_activation")),
+            ImmutableList.copyOf(repairScheduleRow.getSet("run_history", UUID.class)),
+            repairScheduleRow.getInt("segment_count"),
+            RepairParallelism.fromName(repairScheduleRow.getString("repair_parallelism")),
+            repairScheduleRow.getDouble("intensity"),
+            new DateTime(repairScheduleRow.getTimestamp("creation_time")),
+            repairScheduleRow.getInt("segment_count_per_node"))
         .owner(repairScheduleRow.getString("owner"))
         .pauseTime(new DateTime(repairScheduleRow.getTimestamp("pause_time")))
         .build(repairScheduleRow.getUUID("id"));
@@ -881,7 +884,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                 newRepairSchedule.getIntensity(),
                 newRepairSchedule.getCreationTime(),
                 newRepairSchedule.getOwner(),
-                newRepairSchedule.getPauseTime())));
+                newRepairSchedule.getPauseTime(),
+                newRepairSchedule.getSegmentCountPerNode())));
 
     futures.add(
         session.executeAsync(

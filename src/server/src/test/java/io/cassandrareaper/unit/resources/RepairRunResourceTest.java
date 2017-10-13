@@ -209,9 +209,11 @@ public final class RepairRunResourceTest {
     assertNull(run.getStartTime());
     assertNull(run.getEndTime());
 
-    // apparently, tokens [0, 100, 200] and 6 requested segments causes generating 8 RepairSegments
-    assertEquals(8, context.storage.getSegmentAmountForRepairRunWithState(run.getId(),
-        RepairSegment.State.NOT_STARTED));
+    // tokens [0, 100, 200], 6 requested segments per node and 6 nodes causes generating 38 RepairSegments
+    assertEquals(
+        38,
+        context.storage.getSegmentAmountForRepairRunWithState(
+            run.getId(), RepairSegment.State.NOT_STARTED));
 
     // adding another repair run should work as well
     response = addDefaultRepairRun(resource);

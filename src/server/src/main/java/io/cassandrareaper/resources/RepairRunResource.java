@@ -91,7 +91,7 @@ public final class RepairRunResource {
       @QueryParam("tables") Optional<String> tableNamesParam,
       @QueryParam("owner") Optional<String> owner,
       @QueryParam("cause") Optional<String> cause,
-      @QueryParam("segmentCount") Optional<Integer> segmentCount,
+      @QueryParam("segmentCount") Optional<Integer> segmentCountPerNode,
       @QueryParam("repairParallelism") Optional<String> repairParallelism,
       @QueryParam("intensity") Optional<String> intensityStr,
       @QueryParam("incrementalRepair") Optional<String> incrementalRepairStr,
@@ -99,29 +99,13 @@ public final class RepairRunResource {
       @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
       @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam) {
 
-    LOG.info(
-        "add repair run called with: clusterName = {}, keyspace = {}, tables = {}, owner = {},"
-            + " cause = {}, segmentCount = {}, repairParallelism = {}, intensity = {}, incrementalRepair = {},"
-            + " nodes = {}, datacenters = {}, blacklistedTables = {} ",
-        clusterName,
-        keyspace,
-        tableNamesParam,
-        owner,
-        cause,
-        segmentCount,
-        repairParallelism,
-        intensityStr,
-        incrementalRepairStr,
-        nodesToRepairParam,
-        datacentersToRepairParam,
-        blacklistedTableNamesParam);
     try {
       final Response possibleFailedResponse = RepairRunResource.checkRequestForAddRepair(
           context,
           clusterName,
           keyspace,
           owner,
-          segmentCount,
+          segmentCountPerNode,
           repairParallelism,
           intensityStr,
           incrementalRepairStr,
@@ -147,18 +131,17 @@ public final class RepairRunResource {
         LOG.debug("no incremental repair given, so using default value: {}", incrementalRepair);
       }
 
-      int segments = context.config.getSegmentCount();
+      int segments = context.config.getSegmentCountPerNode();
       if (!incrementalRepair) {
-        if (segmentCount.isPresent()) {
+        if (segmentCountPerNode.isPresent()) {
           LOG.debug(
               "using given segment count {} instead of configured value {}",
-              segmentCount.get(),
+              segmentCountPerNode.get(),
               context.config.getSegmentCount());
-          segments = segmentCount.get();
+          segments = segmentCountPerNode.get();
         }
       } else {
         // hijack the segment count in case of incremental repair
-        // since unit subrange incremental repairs are highly inefficient...
         segments = -1;
       }
 
@@ -235,8 +218,17 @@ public final class RepairRunResource {
         parallelism = RepairParallelism.PARALLEL;
       }
 
-      final RepairRun newRepairRun = CommonTools
-          .registerRepairRun(context, cluster, theRepairUnit, cause, owner.get(), segments, parallelism, intensity);
+      final RepairRun newRepairRun =
+          CommonTools.registerRepairRun(
+              context,
+              cluster,
+              theRepairUnit,
+              cause,
+              owner.get(),
+              0,
+              segments,
+              parallelism,
+              intensity);
 
       return Response.created(buildRepairRunUri(uriInfo, newRepairRun))
           .entity(new RepairRunStatus(newRepairRun, theRepairUnit, 0))
@@ -257,7 +249,7 @@ public final class RepairRunResource {
       Optional<String> clusterName,
       Optional<String> keyspace,
       Optional<String> owner,
-      Optional<Integer> segmentCount,
+      Optional<Integer> segmentCountPerNode,
       Optional<String> repairParallelism,
       Optional<String> intensityStr,
       Optional<String> incrementalRepairStr,
@@ -273,9 +265,10 @@ public final class RepairRunResource {
     if (!owner.isPresent()) {
       return Response.status(Response.Status.BAD_REQUEST).entity("missing query parameter \"owner\"").build();
     }
-    if (segmentCount.isPresent() && (segmentCount.get() < 1 || segmentCount.get() > 100000)) {
+    if (segmentCountPerNode.isPresent()
+        && (segmentCountPerNode.get() < 0 || segmentCountPerNode.get() > 1000)) {
       return Response.status(Response.Status.BAD_REQUEST)
-          .entity("invalid query parameter \"segmentCount\", maximum value is 100000")
+          .entity("invalid query parameter \"segmentCountPerNode\", maximum value is 100000")
           .build();
     }
     if (repairParallelism.isPresent()) {
