@@ -202,8 +202,8 @@ public final class ClusterRepairSchedulerTest {
         10,
         RepairParallelism.DATACENTER_AWARE,
         0.9,
-        creationTime
-    );
+        creationTime,
+        0);
   }
 
   private RepairUnit.Builder aRepair(Cluster cluster, String keyspace) {
@@ -256,7 +256,9 @@ public final class ClusterRepairSchedulerTest {
 
         assertThat(repairSchedule.getDaysBetween()).isEqualTo(config.getScheduleDaysBetween());
         assertThat(repairSchedule.getIntensity()).isEqualTo(config.getRepairIntensity());
-        assertThat(repairSchedule.getSegmentCount()).isEqualTo(config.getSegmentCount());
+        assertThat(repairSchedule.getSegmentCount()).isEqualTo(0);
+        assertThat(repairSchedule.getSegmentCountPerNode())
+            .isEqualTo(config.getSegmentCountPerNode());
         assertThat(repairSchedule.getRepairParallelism()).isEqualTo(config.getRepairParallelism());
         return this;
       }

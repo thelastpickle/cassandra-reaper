@@ -59,8 +59,7 @@ public class JmxConnectionFactory {
   }
 
   public JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
-      throws ReaperException {
-
+      throws ReaperException, NumberFormatException, InterruptedException {
     // use configured jmx port for host if provided
     if (localMode) {
       host = "127.0.0.1";
@@ -85,7 +84,8 @@ public class JmxConnectionFactory {
     }
   }
 
-  public final JmxProxy connect(String host, int connectionTimeout) throws ReaperException {
+  public final JmxProxy connect(String host, int connectionTimeout)
+      throws ReaperException, NumberFormatException, InterruptedException {
     return connect(Optional.<RepairStatusHandler>absent(), host, connectionTimeout);
   }
 
@@ -108,6 +108,8 @@ public class JmxConnectionFactory {
             return connect(handler, host, connectionTimeout);
           } catch (ReaperException | RuntimeException e) {
             LOG.info("Unreachable host", e);
+          } catch (InterruptedException expected) {
+            LOG.trace("Expected exception", expected);
           }
         }
       }

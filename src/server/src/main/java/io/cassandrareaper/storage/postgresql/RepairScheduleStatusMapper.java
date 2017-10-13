@@ -52,7 +52,8 @@ public final class RepairScheduleStatusMapper implements ResultSetMapper<RepairS
         rs.getInt("days_between"),
         ImmutableSet.copyOf(getStringArray(rs.getArray("nodes").getArray())),
         ImmutableSet.copyOf(getStringArray(rs.getArray("datacenters").getArray())),
-        ImmutableSet.copyOf(getStringArray(rs.getArray("blacklisted_tables").getArray())));
+        ImmutableSet.copyOf(getStringArray(rs.getArray("blacklisted_tables").getArray())),
+        rs.getInt("segment_count_per_node"));
   }
 
   private String[] getStringArray(Object array) {

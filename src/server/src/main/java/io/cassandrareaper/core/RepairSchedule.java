@@ -33,12 +33,13 @@ public final class RepairSchedule {
   private final int daysBetween;
   private final DateTime nextActivation;
   private final ImmutableList<UUID> runHistory;
-  private final int segmentCount;
+  @Deprecated private final int segmentCount;
   private final RepairParallelism repairParallelism;
   private final double intensity;
   private final DateTime creationTime;
   private final String owner;
   private final DateTime pauseTime;
+  private final int segmentCountPerNode;
 
   private RepairSchedule(Builder builder, UUID id) {
     this.id = id;
@@ -53,6 +54,7 @@ public final class RepairSchedule {
     this.creationTime = builder.creationTime;
     this.owner = builder.owner;
     this.pauseTime = builder.pauseTime;
+    this.segmentCountPerNode = builder.segmentCountPerNode;
   }
 
   public UUID getId() {
@@ -95,6 +97,10 @@ public final class RepairSchedule {
     return segmentCount;
   }
 
+  public int getSegmentCountPerNode() {
+    return segmentCountPerNode;
+  }
+
   public RepairParallelism getRepairParallelism() {
     return repairParallelism;
   }
@@ -132,12 +138,14 @@ public final class RepairSchedule {
     private int daysBetween;
     private DateTime nextActivation;
     private ImmutableList<UUID> runHistory;
-    private int segmentCount;
+    @Deprecated private int segmentCount;
     private RepairParallelism repairParallelism;
     private double intensity;
     private DateTime creationTime;
     private String owner;
     private DateTime pauseTime;
+    private int segmentCountPerNode;
+
 
     public Builder(
         UUID repairUnitId,
@@ -148,7 +156,8 @@ public final class RepairSchedule {
         int segmentCount,
         RepairParallelism repairParallelism,
         double intensity,
-        DateTime creationTime) {
+        DateTime creationTime,
+        int segmentCountPerNode) {
       this.repairUnitId = repairUnitId;
       this.state = state;
       this.daysBetween = daysBetween;
@@ -158,6 +167,7 @@ public final class RepairSchedule {
       this.repairParallelism = repairParallelism;
       this.intensity = intensity;
       this.creationTime = creationTime;
+      this.segmentCountPerNode = segmentCountPerNode;
     }
 
     private Builder(RepairSchedule original) {
@@ -173,6 +183,7 @@ public final class RepairSchedule {
       owner = original.owner;
       pauseTime = original.pauseTime;
       intensity = original.intensity;
+      segmentCountPerNode = original.segmentCountPerNode;
     }
 
     public Builder state(State state) {
@@ -222,6 +233,11 @@ public final class RepairSchedule {
 
     public Builder pauseTime(DateTime pauseTime) {
       this.pauseTime = pauseTime;
+      return this;
+    }
+
+    public Builder segmentCountPerNode(int segmentCountPerNode) {
+      this.segmentCountPerNode = segmentCountPerNode;
       return this;
     }
 

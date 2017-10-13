@@ -69,9 +69,8 @@ public final class CommonTools {
   /**
    * Creates a repair run but does not start it immediately.
    *
-   * <p>
-   * Creating a repair run involves: 1) split token range into segments 2) create a RepairRun instance 3) create
-   * RepairSegment instances linked to RepairRun.
+   * <p>Creating a repair run involves: 1) split token range into segments 2) create a RepairRun
+   * instance 3) create RepairSegment instances linked to RepairRun.
    *
    * @throws ReaperException if repair run fails to be stored into Reaper's storage.
    */
@@ -82,13 +81,15 @@ public final class CommonTools {
       Optional<String> cause,
       String owner,
       int segments,
+      int segmentsPerNode,
       RepairParallelism repairParallelism,
       Double intensity)
       throws ReaperException {
 
     // preparing a repair run involves several steps
     // the first step is to generate token segments
-    List<RingRange> tokenSegments = generateSegments(context, cluster, segments, repairUnit);
+    List<RingRange> tokenSegments =
+        generateSegments(context, cluster, segments, segmentsPerNode, repairUnit);
     checkNotNull(tokenSegments, "failed generating repair segments");
 
     Map<String, RingRange> nodes = getClusterNodes(context, cluster, repairUnit);
@@ -120,14 +121,16 @@ public final class CommonTools {
    * Splits a token range for given table into segments
    *
    * @return the created segments
-   * @throws ReaperException when fails to discover seeds for the cluster or fails to connect to any of the nodes in the
-   *        Cluster.
+   * @throws ReaperException when fails to discover seeds for the cluster or fails to connect to any
+   *     of the nodes in the Cluster.
    */
   private static List<RingRange> generateSegments(
       AppContext context,
       Cluster targetCluster,
       int segmentCount,
-      RepairUnit repairUnit) throws ReaperException {
+      int segmentCountPerNode,
+      RepairUnit repairUnit)
+      throws ReaperException {
 
     List<RingRange> segments = null;
 
@@ -150,10 +153,18 @@ public final class CommonTools {
       Map<List<String>, List<String>> rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());
       Map<String, List<RingRange>> endpointToRange = buildEndpointToRangeMap(rangeToEndpoint);
 
-      segments = filterSegmentsByNodes(
-          sg.generateSegments(segmentCount, tokens, repairUnit.getIncrementalRepair()),
-          repairUnit,
-          endpointToRange);
+      int globalSegmentCount = segmentCount;
+      if (globalSegmentCount == 0) {
+        globalSegmentCount =
+            CommonTools.computeGlobalSegmentCount(
+                segmentCountPerNode, rangeToEndpoint, endpointToRange);
+      }
+
+      segments =
+          filterSegmentsByNodes(
+              sg.generateSegments(globalSegmentCount, tokens, repairUnit.getIncrementalRepair()),
+              repairUnit,
+              endpointToRange);
     } catch (ReaperException e) {
       LOG.warn("couldn't connect to any host: {}, life sucks...", seedHosts, e);
     }
@@ -164,6 +175,25 @@ public final class CommonTools {
       throw new ReaperException(errMsg);
     }
     return segments;
+  }
+
+  @VisibleForTesting
+  static int computeGlobalSegmentCount(
+      int segmentCountPerNode,
+      Map<List<String>, List<String>> rangeToEndpoint,
+      Map<String, List<RingRange>> endpointToRange) {
+    int nodeCount = Math.max(1, endpointToRange.keySet().size());
+    int tokenRangeCount = rangeToEndpoint.keySet().size();
+
+    if (segmentCountPerNode < (tokenRangeCount / nodeCount) && segmentCountPerNode > 0) {
+      return tokenRangeCount;
+    }
+
+    if (segmentCountPerNode == 0) {
+      return Math.max(16 * nodeCount, tokenRangeCount);
+    }
+
+    return segmentCountPerNode * nodeCount;
   }
 
   @VisibleForTesting
@@ -311,21 +341,23 @@ public final class CommonTools {
       int daysBetween,
       DateTime nextActivation,
       String owner,
-      int segments,
+      int segmentCountPerNode,
       RepairParallelism repairParallelism,
       Double intensity)
       throws ReaperException {
 
-    RepairSchedule.Builder scheduleBuilder = new RepairSchedule.Builder(
-        repairUnit.getId(),
-        RepairSchedule.State.ACTIVE,
-        daysBetween,
-        nextActivation,
-        ImmutableList.<UUID>of(),
-        segments,
-        repairParallelism,
-        intensity,
-        DateTime.now());
+    RepairSchedule.Builder scheduleBuilder =
+        new RepairSchedule.Builder(
+            repairUnit.getId(),
+            RepairSchedule.State.ACTIVE,
+            daysBetween,
+            nextActivation,
+            ImmutableList.<UUID>of(),
+            0,
+            repairParallelism,
+            intensity,
+            DateTime.now(),
+            segmentCountPerNode);
 
     scheduleBuilder.owner(owner);
 
@@ -361,16 +393,15 @@ public final class CommonTools {
     return newRepairSchedule;
   }
 
-  private static boolean isConflictingSchedules(RepairUnit newRepairUnit, RepairUnit existingRepairUnit) {
+  private static boolean isConflictingSchedules(
+      RepairUnit newRepairUnit, RepairUnit existingRepairUnit) {
     return (newRepairUnit.getColumnFamilies().isEmpty()
-            && existingRepairUnit.getColumnFamilies().isEmpty())
-        || (newRepairUnit.getColumnFamilies().isEmpty()
-            && !existingRepairUnit.getColumnFamilies().isEmpty())
-        || (!newRepairUnit.getColumnFamilies().isEmpty()
             && existingRepairUnit.getColumnFamilies().isEmpty())
         || (!Sets.intersection(
                 existingRepairUnit.getColumnFamilies(), newRepairUnit.getColumnFamilies())
-            .isEmpty());
+            .isEmpty())
+        || (!existingRepairUnit.getBlacklistedTables().isEmpty()
+            && !newRepairUnit.getBlacklistedTables().isEmpty());
   }
 
   public static Set<String> getTableNamesBasedOnParam(

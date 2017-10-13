@@ -80,6 +80,9 @@ public final class RepairScheduleStatus {
   @JsonProperty("blacklisted_tables")
   private Collection<String> blacklistedTables;
 
+  @JsonProperty("segment_count_per_node")
+  private int segmentCountPerNode;
+
   /**
    * Default public constructor Required for Jackson JSON parsing.
    */
@@ -103,7 +106,8 @@ public final class RepairScheduleStatus {
       int daysBetween,
       Collection<String> nodes,
       Collection<String> datacenters,
-      Collection<String> blacklistedTables) {
+      Collection<String> blacklistedTables,
+      int segmentCountPerNode) {
 
     this.id = id;
     this.owner = owner;
@@ -122,6 +126,7 @@ public final class RepairScheduleStatus {
     this.nodes = nodes;
     this.datacenters = datacenters;
     this.blacklistedTables = blacklistedTables;
+    this.segmentCountPerNode = segmentCountPerNode;
   }
 
   public RepairScheduleStatus(RepairSchedule repairSchedule, RepairUnit repairUnit) {
@@ -142,7 +147,8 @@ public final class RepairScheduleStatus {
         repairSchedule.getDaysBetween(),
         repairUnit.getNodes(),
         repairUnit.getDatacenters(),
-        repairUnit.getBlacklistedTables());
+        repairUnit.getBlacklistedTables(),
+        repairSchedule.getSegmentCountPerNode());
   }
 
   public UUID getId() {
@@ -320,5 +326,14 @@ public final class RepairScheduleStatus {
   @JsonProperty("blacklisted_tables")
   public Collection<String> getBlacklistedTables() {
     return this.blacklistedTables;
+  }
+
+  @JsonProperty("segment_count_per_node")
+  public int getSegmentCountPerNode() {
+    return segmentCountPerNode;
+  }
+
+  public void setSegmentCountPerNode(int segmentCountPerNode) {
+    this.segmentCountPerNode = segmentCountPerNode;
   }
 }

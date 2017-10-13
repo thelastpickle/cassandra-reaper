@@ -150,7 +150,7 @@ final class JmxProxyImpl implements JmxProxy {
       String password,
       final EC2MultiRegionAddressTranslator addressTranslator,
       int connectionTimeout)
-      throws ReaperException {
+      throws ReaperException, NumberFormatException, InterruptedException {
 
     if (host == null) {
       throw new ReaperException("Null host given to JmxProxy.connect()");
@@ -168,12 +168,14 @@ final class JmxProxyImpl implements JmxProxy {
   /**
    * Connect to JMX interface on the given host and port.
    *
-   * @param handler Implementation of {@link RepairStatusHandler} to process incoming notifications of repair events.
+   * @param handler Implementation of {@link RepairStatusHandler} to process incoming notifications
+   *     of repair events.
    * @param host hostname or ip address of Cassandra node
    * @param port port number to use for JMX connection
    * @param username username to use for JMX authentication
    * @param password password to use for JMX authentication
-   * @param addressTranslator if EC2MultiRegionAddressTranslator isn't null it will be used to translate addresses
+   * @param addressTranslator if EC2MultiRegionAddressTranslator isn't null it will be used to
+   *     translate addresses
    */
   static JmxProxy connect(
       Optional<RepairStatusHandler> handler,
@@ -183,7 +185,7 @@ final class JmxProxyImpl implements JmxProxy {
       String password,
       final EC2MultiRegionAddressTranslator addressTranslator,
       int connectionTimeout)
-      throws ReaperException {
+      throws ReaperException, InterruptedException {
 
     ObjectName ssMbeanName;
     ObjectName cmMbeanName;
@@ -248,9 +250,16 @@ final class JmxProxyImpl implements JmxProxy {
       LOG.debug("JMX connection to {} properly connected: {}", host, jmxUrl.toString());
 
       return proxy;
-    } catch (IOException | InterruptedException | ExecutionException | TimeoutException | InstanceNotFoundException e) {
+    } catch (IOException | ExecutionException | TimeoutException | InstanceNotFoundException e) {
       LOG.error("Failed to establish JMX connection to {}:{}", host, port);
       throw new ReaperException("Failure when establishing JMX connection", e);
+    } catch (InterruptedException expected) {
+      LOG.debug(
+          "JMX connection to {}:{} was interrupted by Reaper. "
+              + "Another JMX connection must have succeeded before this one.",
+          host,
+          port);
+      throw expected;
     }
   }
 

@@ -150,7 +150,7 @@ public final class RepairManager {
               segment.getCoordinatorHost(), context.config.getJmxConnectionTimeoutInSeconds())) {
 
             SegmentRunner.abort(context, segment, jmxProxy);
-          } catch (ReaperException e) {
+          } catch (ReaperException | NumberFormatException | InterruptedException e) {
             LOG.debug(
                 "Tried to abort repair on segment {} marked as RUNNING, "
                     + "but the host was down  (so abortion won't be needed)",
