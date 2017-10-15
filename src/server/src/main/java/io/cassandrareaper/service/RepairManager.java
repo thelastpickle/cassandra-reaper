@@ -56,7 +56,7 @@ public final class RepairManager {
   private long repairTimeoutMillis;
   private long retryDelayMillis;
 
-
+  private final Heart heart = Heart.create();
 
   public long getRepairTimeoutMillis() {
     return repairTimeoutMillis;
@@ -82,7 +82,7 @@ public final class RepairManager {
    * @param context Reaper's application context.
    */
   public void resumeRunningRepairRuns(AppContext context) throws ReaperException {
-    heartbeat(context);
+    heart.beat(context);
     Collection<RepairRun> running = context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
     for (RepairRun repairRun : running) {
       Collection<RepairSegment> runningSegments =
@@ -267,13 +267,6 @@ public final class RepairManager {
 
   public void removeRunner(RepairRunner runner) {
     repairRunners.remove(runner.getRepairRunId());
-  }
-
-  @VisibleForTesting
-  public void heartbeat(AppContext context) {
-    if (context.storage instanceof IDistributedStorage) {
-      ((IDistributedStorage) context.storage).saveHeartbeat();
-    }
   }
 
   private static boolean takeLead(AppContext context, UUID leaderElectionId) {

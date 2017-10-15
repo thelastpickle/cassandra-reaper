@@ -45,5 +45,8 @@ public interface IDistributedStorage {
 
   Optional<NodeMetrics> getNodeMetrics(String hostName);
 
+
+  Collection<NodeMetrics> getNodeMetrics();
+
   void storeNodeMetrics(NodeMetrics hostMetrics);
 }

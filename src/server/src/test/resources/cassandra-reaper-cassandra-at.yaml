@@ -9,7 +9,7 @@ hangingRepairTimeoutMins: 1
 storageType: cassandra
 incrementalRepair: false
 jmxConnectionTimeoutInSeconds: 300
-datacenterAvailability: LOCAL
+datacenterAvailability: EACH
 
 logging:
   level: WARN

@@ -101,7 +101,6 @@ public class RepairManagerTest {
     context.repairManager.repairRunners.put(run.getId(), mock(RepairRunner.class));
 
     Mockito.doNothing().when(context.repairManager).abortSegments(any(), any(), any());
-    Mockito.doNothing().when(context.repairManager).heartbeat(any(AppContext.class));
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(context, run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING))
         .thenReturn(Arrays.asList(run));
@@ -171,7 +170,6 @@ public class RepairManagerTest {
     context.repairManager.repairRunners.put(run.getId(), mock(RepairRunner.class));
 
     Mockito.doNothing().when(context.repairManager).abortSegments(any(), any(), any());
-    Mockito.doNothing().when(context.repairManager).heartbeat(any(AppContext.class));
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(context, run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING))
         .thenReturn(Arrays.asList(run));
@@ -243,7 +241,6 @@ public class RepairManagerTest {
     context.repairManager.repairRunners.put(run.getId(), mock(RepairRunner.class));
 
     Mockito.doNothing().when(context.repairManager).abortSegments(any(), any(), any());
-    Mockito.doNothing().when(context.repairManager).heartbeat(any(AppContext.class));
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(context, run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING))
         .thenReturn(Arrays.asList(run));
@@ -310,7 +307,6 @@ public class RepairManagerTest {
             .build(UUIDs.timeBased());
 
     Mockito.doNothing().when(context.repairManager).abortSegments(any(), any(), any());
-    Mockito.doNothing().when(context.repairManager).heartbeat(any(AppContext.class));
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(context, run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING))
         .thenReturn(Arrays.asList(run));
