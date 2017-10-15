@@ -86,6 +86,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
 
+  private static final String SELECT_NODE_METRICS = "SELECT * FROM node_metrics";
+
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
 
   private final com.datastax.driver.core.Cluster cassandra;
@@ -127,8 +129,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement storeNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsPrepStmt;
 
-  private volatile DateTime lastHeartBeat = DateTime.now();
-
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
     CassandraFactory cassandraFactory = config.getCassandraFactory();
     overrideQueryOptions(cassandraFactory);
@@ -148,7 +148,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     migration.migrate();
     Migration003.migrate(session);
     prepareStatements();
-    lastHeartBeat = lastHeartBeat.minusMinutes(1);
   }
 
   private void prepareStatements() {
@@ -1019,9 +1018,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public List<UUID> getLeaders() {
-    Statement stmt = new SimpleStatement(SELECT_LEADERS);
-    ResultSet result = session.execute(stmt);
-    return result
+    return session.execute(new SimpleStatement(SELECT_LEADERS))
         .all()
         .stream()
         .map(leader -> leader.getUUID("leader_id"))
@@ -1053,7 +1050,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public void storeNodeMetrics(NodeMetrics hostMetrics) {
-    session.execute(
+    session.executeAsync(
         storeNodeMetricsPrepStmt.bind(
             hostMetrics.getHostAddress(),
             hostMetrics.getDatacenter(),
@@ -1064,19 +1061,27 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Optional<NodeMetrics> getNodeMetrics(String hostName) {
-    Row metrics = session.execute(getNodeMetricsPrepStmt.bind(hostName)).one();
-    if (null != metrics) {
-      return Optional.of(
-          NodeMetrics.builder()
-              .withHostAddress(hostName)
-              .withDatacenter(metrics.getString("datacenter"))
-              .withPendingCompactions(metrics.getInt("pending_compactions"))
-              .withHasRepairRunning(metrics.getBool("has_repair_running"))
-              .withActiveAnticompactions(metrics.getInt("active_anticompactions"))
-              .build());
-    } else {
-      return Optional.absent();
-    }
+    Row row = session.execute(getNodeMetricsPrepStmt.bind(hostName)).one();
+    return null != row ? Optional.of(createNodeMetrics(row)) : Optional.absent();
+  }
+
+  @Override
+  public Collection<NodeMetrics> getNodeMetrics() {
+    return session.execute(new SimpleStatement(SELECT_NODE_METRICS))
+        .all()
+        .stream()
+        .map(row -> createNodeMetrics(row))
+        .collect(Collectors.toList());
+  }
+
+  private static NodeMetrics createNodeMetrics(Row row) {
+    return NodeMetrics.builder()
+        .withHostAddress(row.getString("host_address"))
+        .withDatacenter(row.getString("datacenter"))
+        .withPendingCompactions(row.getInt("pending_compactions"))
+        .withHasRepairRunning(row.getBool("has_repair_running"))
+        .withActiveAnticompactions(row.getInt("active_anticompactions"))
+        .build();
   }
 
   @Override
@@ -1089,14 +1094,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public void saveHeartbeat() {
-    DateTime now = DateTime.now();
-    // Send heartbeats every minute
-    if (now.minusSeconds(60).getMillis() >= lastHeartBeat.getMillis()) {
-      session.executeAsync(
-          saveHeartbeatPrepStmt.bind(AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS));
-
-      lastHeartBeat = now;
-    }
+    session.executeAsync(
+        saveHeartbeatPrepStmt.bind(AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS));
   }
 
 
