@@ -537,11 +537,15 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   Callable<Pair<String, Optional<NodeMetrics>>> getNodeMetrics(
-      String hostName, String localDatacenter, String hostDatacenter) {
+      String hostName,
+      String localDatacenter,
+      String hostDatacenter) {
+
     return () -> {
       LOG.debug("getMetricsForHost {} / {} / {}", hostName, localDatacenter, hostDatacenter);
       try (JmxProxy hostProxy
           = context.jmxConnectionFactory.connect(hostName, context.config.getJmxConnectionTimeoutInSeconds())) {
+
         int pendingCompactions = hostProxy.getPendingCompactions();
         boolean hasRepairRunning = hostProxy.isRepairRunning();
 
