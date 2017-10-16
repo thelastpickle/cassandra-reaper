@@ -16,8 +16,8 @@ Building Reaper packages requires quite a few dependencies, especially when maki
 To build the JAR and other packages which are then placed in the _packages_ directory run the following commands from the top level directory:
 
 ```bash
-cd src/packaging
-docker-compose build reaper-build-packages && docker-compose run reaper-build-packages
+docker-compose -f src/packaging/docker-build/docker-compose.yml build
+docker-compose -f src/packaging/docker-build/docker-compose.yml run build
 ```
 
 ## Building Reaper Docker Image
@@ -25,8 +25,7 @@ docker-compose build reaper-build-packages && docker-compose run reaper-build-pa
 To build the Reaper Docker Image which is then added to the local image cache using the `cassandra-reaper:latest` tag, run the following commands from the top level directory:
 
 ```bash
-cd src/server
-mvn package docker:build
+mvn -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
 ```
 
 Note that the above command will build the Reaper JAR and place it in the _src/server/target_ directory prior to creating the Docker Image. It is also possible to build the JAR file using the [Docker package build](building-reaper-packages-with-docker) instructions and omitting the `package` command from the above Maven commands.
