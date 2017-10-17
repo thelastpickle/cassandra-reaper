@@ -15,7 +15,6 @@ make deb
 make rpm
 ```
 
-
 # Building JARs from source
 
 The easiest way to build is to use the following make command:
@@ -24,25 +23,31 @@ The easiest way to build is to use the following make command:
 make package
 ```
 
-
 To build Reaper without rebuilding the UI, run the following command : 
 
-```mvn clean package```
+```bash
+mvn clean package
+```
 
 To only regenerate the UI (requires npm and bower) : 
 
-```mvn generate-sources -Pbuild-ui```
+```bash
+mvn generate-sources -Pbuild-ui
+```
 
 To rebuild both the UI and Reaper : 
 
-```mvn clean package -Pbuild-ui```
-
+```bash
+mvn clean package -Pbuild-ui
+```
 
 # Building Docker Image
 
+To build the Reaper docker image from source, run the following command :
 
-```mvn clean package docker:build```
-
+```bash
+mvn clean package -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
+```
 
 # Building Using Docker
 
