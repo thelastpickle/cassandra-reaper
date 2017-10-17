@@ -27,4 +27,4 @@ Sample yaml files are available in the `src/packaging/resource` directory for ea
 * cassandra-reaper-postgres.yaml
 * cassandra-reaper-h2.yaml
 
-For configuring other aspects of the service, see the available configuration options in the [Configuration Reference]({{<ref "configuration.md">}})
+For configuring other aspects of the service, see the available configuration options in the [Configuration Reference](../configuration)

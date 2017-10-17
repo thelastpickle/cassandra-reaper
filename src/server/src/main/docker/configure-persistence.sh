@@ -5,7 +5,7 @@ case ${REAPER_STORAGE_TYPE} in
 
 # BEGIN cassandra persistence options
 cat <<EOT >> /etc/cassandra-reaper.yml
-activateQueryLogger: ${REAPER_ACTIVATE_QUERY_LOGGER}
+activateQueryLogger: ${REAPER_CASS_ACTIVATE_QUERY_LOGGER}
 
 cassandra:
   clusterName: ${REAPER_CASS_CLUSTER_NAME}
