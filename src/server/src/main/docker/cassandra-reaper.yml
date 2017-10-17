@@ -6,9 +6,9 @@ scheduleDaysBetween: ${REAPER_SCHEDULE_DAYS_BETWEEN}
 repairRunThreadCount: ${REAPER_REPAIR_RUN_THREADS}
 hangingRepairTimeoutMins: ${REAPER_HANGING_REPAIR_TIMEOUT_MINS}
 storageType: ${REAPER_STORAGE_TYPE}
-enableCrossOrigin: ${REAPER_ENABLE_CORS}
+enableCrossOrigin: ${REAPER_ENABLE_CROSS_ORIGIN}
 incrementalRepair: ${REAPER_INCREMENTAL_REPAIR}
-enableDynamicSeedList: ${REAPER_ENABLE_DYNAMIC_SEEDS}
+enableDynamicSeedList: ${REAPER_ENABLE_DYNAMIC_SEED_LIST}
 repairManagerSchedulingIntervalSeconds: ${REAPER_REPAIR_MANAGER_SCHEDULING_INTERVAL_SECONDS}
 jmxConnectionTimeoutInSeconds: ${REAPER_JMX_CONNECTION_TIMEOUT_IN_SECONDS}
 useAddressTranslator: ${REAPER_USE_ADDRESS_TRANSLATOR}
@@ -25,36 +25,36 @@ datacenterAvailability: ${REAPER_DATACENTER_AVAILABILITY}
 
 
 autoScheduling:
-  enabled: ${REAPER_AUTO_SCHEDULE_ENABLED}
-  initialDelayPeriod: ${REAPER_AUTO_SCHEDULE_INITIAL_DELAY_PERIOD}
-  periodBetweenPolls: ${REAPER_AUTO_SCHEDULE_PERIOD_BETWEEN_POLLS}
-  timeBeforeFirstSchedule: ${REAPER_AUTO_SCHEDULE_TIME_BETWEEN_FIRST_SCHEDULE}
-  scheduleSpreadPeriod: ${REAPER_AUTO_SCHEDULE_TIME_BETWEEN_FIRST_SCHEDULE}
-  excludedKeyspaces: ${REAPER_AUTO_SCHEDULE_EXCLUDED_KEYSPACES}
+  enabled: ${REAPER_AUTO_SCHEDULING_ENABLED}
+  initialDelayPeriod: ${REAPER_AUTO_SCHEDULING_INITIAL_DELAY_PERIOD}
+  periodBetweenPolls: ${REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS}
+  timeBeforeFirstSchedule: ${REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE}
+  scheduleSpreadPeriod: ${REAPER_AUTO_SCHEDULING_SCHEDULE_SPREAD_PERIOD}
+  excludedKeyspaces: ${REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES}
 
 jmxPorts: ${REAPER_JMX_PORTS}
 
 jmxAuth:
-  username: ${REAPER_JMX_USERNAME}
-  password: ${REAPER_JMX_PASSWORD}
+  username: ${REAPER_JMX_AUTH_USERNAME}
+  password: ${REAPER_JMX_AUTH_PASSWORD}
 
 logging:
   level: ${REAPER_LOGGING_ROOT_LEVEL}
-  loggers: ${REAPER_LOGGERS}
+  loggers: ${REAPER_LOGGING_LOGGERS}
   appenders:
     - type: console
-      logFormat: ${REAPER_LOGGING_FORMAT}
+      logFormat: ${REAPER_LOGGING_APPENDERS_LOG_FORMAT}
 
 server:
   type: default
   applicationConnectors:
     - type: http
-      port: ${REAPER_APP_PORT}
-      bindHost: ${REAPER_APP_BIND_HOST}
+      port: ${REAPER_SERVER_APP_PORT}
+      bindHost: ${REAPER_SERVER_APP_BIND_HOST}
   adminConnectors:
     - type: http
-      port: ${REAPER_ADMIN_PORT}
-      bindHost: ${REAPER_ADMIN_BIND_HOST}
+      port: ${REAPER_SERVER_ADMIN_PORT}
+      bindHost: ${REAPER_SERVER_ADMIN_BIND_HOST}
   requestLog:
     appenders: []
 
