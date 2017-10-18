@@ -43,6 +43,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.BatchStatement;
+import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.CodecRegistry;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PoolingOptions;
@@ -290,13 +291,27 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     return Optional.fromNullable(new Cluster(clusterName, null, null));
   }
 
+  /**
+   * Unset all null columns to prevent Cassandra from creating tombstones. See Issue #240.
+   *
+   */
+  private BoundStatement unsetNullColumns(BoundStatement stmt) {
+    for (int col = 0; col < stmt.preparedStatement().getVariables().size(); col++) {
+      if (stmt.isNull(col)) {
+        stmt.unset(col);
+      }
+    }
+
+    return stmt;
+  }
+
   @Override
   public RepairRun addRepairRun(Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
     RepairRun newRepairRun = repairRun.build(UUIDs.timeBased());
     BatchStatement repairRunBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
     List<ResultSetFuture> futures = Lists.newArrayList();
 
-    repairRunBatch.add(
+    repairRunBatch.add( unsetNullColumns(
         insertRepairRunPrepStmt.bind(
             newRepairRun.getId(),
             newRepairRun.getClusterName(),
@@ -311,12 +326,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             newRepairRun.getIntensity(),
             newRepairRun.getLastEvent(),
             newRepairRun.getSegmentCount(),
-            newRepairRun.getRepairParallelism().toString()));
+            newRepairRun.getRepairParallelism().toString())));
 
     for (RepairSegment.Builder builder : newSegments) {
       RepairSegment segment = builder.withRunId(newRepairRun.getId()).build(UUIDs.timeBased());
 
-      repairRunBatch.add(
+      repairRunBatch.add( unsetNullColumns(
           insertRepairSegmentPrepStmt.bind(
               segment.getRunId(),
               segment.getId(),
@@ -327,7 +342,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               segment.getCoordinatorHost(),
               segment.getStartTime(),
               segment.getEndTime(),
-              segment.getFailCount()));
+              segment.getFailCount())));
 
       if (100 == repairRunBatch.size()) {
         futures.add(session.executeAsync(repairRunBatch));
@@ -352,7 +367,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public boolean updateRepairRun(RepairRun repairRun) {
-    session.execute(
+    session.execute( unsetNullColumns(
         insertRepairRunPrepStmt.bind(
             repairRun.getId(),
             repairRun.getClusterName(),
@@ -367,7 +382,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             repairRun.getIntensity(),
             repairRun.getLastEvent(),
             repairRun.getSegmentCount(),
-            repairRun.getRepairParallelism().toString()));
+            repairRun.getRepairParallelism().toString())));
     return true;
   }
 
