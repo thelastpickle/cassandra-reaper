@@ -1,6 +1,6 @@
 # Cassandra Reaper Configuration Example.
 # See a bit more complete example in:
-# src/test/resources/cassandra-reaper.yaml
+# src/server/src/test/resources/cassandra-reaper.yaml
 segmentCount: 200
 repairParallelism: DATACENTER_AWARE
 repairIntensity: 0.9
@@ -11,8 +11,10 @@ storageType: cassandra
 enableCrossOrigin: true
 incrementalRepair: false
 enableDynamicSeedList: true
-repairManagerSchedulingIntervalSeconds: 30
+repairManagerSchedulingIntervalSeconds: 10
 activateQueryLogger: false
+jmxConnectionTimeoutInSeconds: 5
+useAddressTranslator: false
 
 # datacenterAvailability has three possible values: ALL | LOCAL | EACH
 # the correct value to use depends on whether jmx ports to C* nodes in remote datacenters are accessible
@@ -73,7 +75,14 @@ cassandra:
   clusterName: "test"
   contactPoints: ["127.0.0.1"]
   keyspace: reaper_db
-
+  loadBalancingPolicy:
+    type: tokenAware
+    shuffleReplicas: true
+    subPolicy:
+      type: dcAwareRoundRobin
+      localDC:
+      usedHostsPerRemoteDC: 0
+      allowRemoteDCsForLocalConsistencyLevel: false
 autoScheduling:
   enabled: false
   initialDelayPeriod: PT15S

@@ -12,29 +12,153 @@
     
     <item>
       <title></title>
-      <link>http://cassandra-reaper.io/docs/</link>
+      <link>http://cassandra-reaper.io/docs/api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>http://cassandra-reaper.io/docs/</guid>
-      <description>Reaper Documentation Downloads See the download section for information on how to download and install reaper.
-Community We have a Mailing List and Gitter chat available.
-Configuration An example testing configuration YAML file can be found from within this project repository: src/test/resources/cassandra-reaper.yaml
-The configuration file structure is provided by Dropwizard, and help on configuring the server, database connection, or logging, can be found at:
-http://www.dropwizard.io/1.1.0/docs/manual/configuration.html
-Backends Cassandra Reaper can be used with either an ephemeral memory storage or persistent database.</description>
+      <guid>http://cassandra-reaper.io/docs/api/</guid>
+      <description>Rest API Source code for all the REST resources can be found from package io.cassandrareaper.resources.
+Ping Resource  GET /ping  Expected query parameters: None Simple ping resource that can be used to check whether the reaper is running.   Cluster Resource  GET /cluster
+ Expected query parameters:  seedHost: Limit the returned cluster list based on the given seed host. (Optional)  Returns a list of registered cluster names in the service.</description>
     </item>
     
     <item>
       <title></title>
-      <link>http://cassandra-reaper.io/download/</link>
+      <link>http://cassandra-reaper.io/docs/backends/cassandra/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>http://cassandra-reaper.io/download/</guid>
-      <description>Downloads and Installation The current stable version is 0.6.2 :
- Deb Package RPM Tarball  The latest beta version is 0.7.0-beta-25082017 :
- Deb Package RPM Tarball  For a docker image, please see the Docker section.
-Building Packages Debian and RPM packages can be built from this project using Make, for example:
-make deb make rpm  Docker A Docker build environment is also provided to build the entire project and can be run by using Docker Compose:</description>
+      <guid>http://cassandra-reaper.io/docs/backends/cassandra/</guid>
+      <description>Cassandra Backend To use Apache Cassandra as the persistent storage for Reaper, the storageType setting must be set to cassandra in the Reaper configuration YAML file. In addition, the connection details for the Apache Cassandra cluster being used to store Reaper data must be specified in the configuration YAML file.
+For example:
+storageType: cassandra cassandra: clusterName: &amp;quot;test&amp;quot; contactPoints: [&amp;quot;127.0.0.1&amp;quot;] keyspace: reaper_db queryOptions: consistencyLevel: LOCAL_QUORUM serialConsistencyLevel: SERIAL  If you&amp;rsquo;re using authentication or SSL:</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/backends/h2/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/backends/h2/</guid>
+      <description>H2 Backend To use H2 as the persistent storage for Reaper, the storageType setting must be set to database in the Reaper configuration YAML file. When using H2 storage, the database will be automatically created under the path configured in the configuration YAML file. An example of how to configure H2 as persistent storage for Reaper can be found in the cassandra-reaper-h2.yaml.
+storageType: database database: # H2 JDBC settings driverClass: org.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/backends/memory/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/backends/memory/</guid>
+      <description>Memory Backend To use in memory storage as the storage type for Reaper, the storageType setting must be set to memory in the Reaper configuration YAML file. Note that the in memory storage is enabled by default.
+In memory storage is volatile and as such all registered cluster, column families and repair un information will be lost upon service restart. This storage setting is intended for testing purposes only.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/backends/postgres/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/backends/postgres/</guid>
+      <description> Postgres Backend To use PostgreSQL as the persistent storage for Reaper, the storageType setting must be set to database in the Reaper configuration YAML file. The schema will be initialized/upgraded automatically upon startup in the configured database. Ensure that the correct JDBC credentials are specified in the cassandra-reaper.yaml to allow object creation.
+storageType: database database: # PostgreSQL JDBC settings driverClass: org.postgresql.Driver user: postgres password: url: jdbc:postgresql://127.0.0.1/reaper  </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/community/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/community/</guid>
+      <description>We have a Mailing List and Gitter chat available.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/configuration/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/configuration/</guid>
+      <description>Configuration An example testing configuration YAML file can be found from within this project repository: src/test/resources/cassandra-reaper.yaml
+The configuration file structure is provided by Dropwizard, and help on configuring the server, database connection, or logging, can be found at:
+http://www.dropwizard.io/1.1.0/docs/manual/configuration.html
+Reaper Specific Configuration Settings The Reaper service specific configuration settings are:
+segmentCount:
+Defines the default amount of repair segments to create for newly registered Cassandra repair runs (token rings). When running a repair run by the Reaper, each segment is repaired separately by the Reaper process, until all the segments in a token ring are repaired.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/download/building/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/download/building/</guid>
+      <description>Building Install Packages Debian packages and RPMs can be built from this project using Make, for example:
+make deb make rpm  Building JARs from source The easiest way to build is to use the following make command:
+make package  To build Reaper without rebuilding the UI, run the following command :
+mvn clean package
+To only regenerate the UI (requires npm and bower) :
+mvn generate-sources -Pbuild-ui</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/download/docker/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/download/docker/</guid>
+      <description>Docker Docker and Docker Compose will need to be installed in order to use the commands in this section.
+Building Reaper Packages with Docker Building Reaper packages requires quite a few dependencies, especially when making changes to the web interface code. In an effort to simplify the build process, Dockerfiles have been created that implement the build actions required to package Reaper.
+To build the JAR and other packages which are then placed in the packages directory run the following commands from the top level directory:</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/download/install/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/download/install/</guid>
+      <description>Running Reaper After modifying the resource/cassandra-reaper.yaml config file, Reaper can be started using the following command line :
+java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml
+Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
+Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool bin/spreaper
+Installing and Running as a Service We provide prebuilt packages for reaper on the GitHub release page.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/usage/add_cluster/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/usage/add_cluster/</guid>
+      <description> Add A Cluster    Add a cluster for Reaper to manage repairs on. Enter an address of one of the nodes in the cluster. Reaper will contact that node and find the rest of the nodes in the cluster automatically.
+Once you&amp;rsquo;ve done this, you&amp;rsquo;ll see the Cluster Health.   </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/usage/health/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/usage/health/</guid>
+      <description> Cluster Health    Dashboard Once you&amp;rsquo;ve added a cluster it will show up in your dashboard.      Node View Click one of the nodes to get a popup with details on the machine&amp;rsquo;s state.   </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/usage/schedule/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/usage/schedule/</guid>
+      <description>   Schedule a repair To set up a regular repair schedule, click schedule on the left menu to bring up the schedules page. Click &amp;ldquo;Add Schedule&amp;rdquo;      Schedule a repair Fill out the schedule form and click Add Schedule.   </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/usage/single/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/usage/single/</guid>
+      <description> Repairing A Cluster    Run a manual repair Start by clicking the repair menu item on the left side, you should see a repair page.
+Click &amp;ldquo;Start a new repair&amp;rdquo;      Fill in the details Enter the keyspace, tables, and other details to start a manual repair.   </description>
     </item>
     
     <item>

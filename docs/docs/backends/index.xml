@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Reaper: Easy Repair Management for Apache Cassandra</title>
+    <link>http://cassandra-reaper.io/docs/backends/</link>
+    <description>Recent content on Reaper: Easy Repair Management for Apache Cassandra</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="http://cassandra-reaper.io/docs/backends/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/backends/cassandra/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/backends/cassandra/</guid>
+      <description>Cassandra Backend To use Apache Cassandra as the persistent storage for Reaper, the storageType setting must be set to cassandra in the Reaper configuration YAML file. In addition, the connection details for the Apache Cassandra cluster being used to store Reaper data must be specified in the configuration YAML file.
+For example:
+storageType: cassandra cassandra: clusterName: &amp;quot;test&amp;quot; contactPoints: [&amp;quot;127.0.0.1&amp;quot;] keyspace: reaper_db queryOptions: consistencyLevel: LOCAL_QUORUM serialConsistencyLevel: SERIAL  If you&amp;rsquo;re using authentication or SSL:</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/backends/h2/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/backends/h2/</guid>
+      <description>H2 Backend To use H2 as the persistent storage for Reaper, the storageType setting must be set to database in the Reaper configuration YAML file. When using H2 storage, the database will be automatically created under the path configured in the configuration YAML file. An example of how to configure H2 as persistent storage for Reaper can be found in the cassandra-reaper-h2.yaml.
+storageType: database database: # H2 JDBC settings driverClass: org.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/backends/memory/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/backends/memory/</guid>
+      <description>Memory Backend To use in memory storage as the storage type for Reaper, the storageType setting must be set to memory in the Reaper configuration YAML file. Note that the in memory storage is enabled by default.
+In memory storage is volatile and as such all registered cluster, column families and repair un information will be lost upon service restart. This storage setting is intended for testing purposes only.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/backends/postgres/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/backends/postgres/</guid>
+      <description> Postgres Backend To use PostgreSQL as the persistent storage for Reaper, the storageType setting must be set to database in the Reaper configuration YAML file. The schema will be initialized/upgraded automatically upon startup in the configured database. Ensure that the correct JDBC credentials are specified in the cassandra-reaper.yaml to allow object creation.
+storageType: database database: # PostgreSQL JDBC settings driverClass: org.postgresql.Driver user: postgres password: url: jdbc:postgresql://127.0.0.1/reaper  </description>
+    </item>
+    
+  </channel>
+</rss>

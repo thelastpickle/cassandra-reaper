@@ -4,12 +4,14 @@ repairParallelism: ${REAPER_REPAIR_PARALELLISM}
 repairIntensity: ${REAPER_REPAIR_INTENSITY}
 scheduleDaysBetween: ${REAPER_SCHEDULE_DAYS_BETWEEN}
 repairRunThreadCount: ${REAPER_REPAIR_RUN_THREADS}
-hangingRepairTimeoutMins: ${REAPER_HANING_REPAIR_TIMEOUT_MINS}
+hangingRepairTimeoutMins: ${REAPER_HANGING_REPAIR_TIMEOUT_MINS}
 storageType: ${REAPER_STORAGE_TYPE}
 enableCrossOrigin: ${REAPER_ENABLE_CORS}
 incrementalRepair: ${REAPER_INCREMENTAL_REPAIR}
 enableDynamicSeedList: ${REAPER_ENABLE_DYNAMIC_SEEDS}
 repairManagerSchedulingIntervalSeconds: ${REAPER_REPAIR_MANAGER_SCHEDULING_INTERVAL_SECONDS}
+jmxConnectionTimeoutInSeconds: ${REAPER_JMX_CONNECTION_TIMEOUT_IN_SECONDS}
+useAddressTranslator: ${REAPER_USE_ADDRESS_TRANSLATOR}
 
 # datacenterAvailability has three possible values: ALL | LOCAL | EACH
 # the correct value to use depends on whether jmx ports to C* nodes in remote datacenters are accessible

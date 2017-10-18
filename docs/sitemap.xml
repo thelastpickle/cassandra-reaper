@@ -7,7 +7,71 @@
   </url>
   
   <url>
-    <loc>http://cassandra-reaper.io/download/</loc>
+    <loc>http://cassandra-reaper.io/docs/api/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/backends/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/backends/cassandra/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/backends/h2/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/backends/memory/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/backends/postgres/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/community/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/configuration/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/download/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/download/building/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/download/docker/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/download/install/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/usage/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/usage/add_cluster/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/usage/health/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/usage/schedule/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/usage/single/</loc>
   </url>
   
   <url>

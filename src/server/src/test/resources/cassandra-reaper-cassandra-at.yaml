@@ -52,6 +52,16 @@ cassandra:
   socketOptions:
       connectTimeoutMillis: 20000
       readTimeoutMillis: 40000
+  poolingOptions:
+      idleTimeout: 5s
+      local:
+        coreConnections: 1
+        maxConnections: 4
+        maxRequestsPerConnection: 16
+      remote:
+        coreConnections: 1
+        maxConnections: 1
+        maxRequestsPerConnection: 4
 
 metrics:
   frequency: 1 second

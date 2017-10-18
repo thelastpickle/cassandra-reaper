@@ -17,7 +17,7 @@ dependency-reduced-pom.xml
 .classpath
 .settings/
 .project
-packages/
+/src/server/build/
 src/packaging/build/
 *.deb
 *.rpm

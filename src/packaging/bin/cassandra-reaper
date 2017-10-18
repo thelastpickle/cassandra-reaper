@@ -32,7 +32,7 @@ else
 fi
 
 JVM_OPTS=(
-    -ea
+    -da
     -Xms2G
     -Xmx2G
     # Prefer binding to IPv4 network intefaces (when net.ipv6.bindv6only=1). See
@@ -43,5 +43,5 @@ JVM_OPTS=(
 
 exec java ${JVM_OPTS[@]} \
     -cp ${CLASS_PATH} \
-    com.spotify.reaper.ReaperApplication \
+    io.cassandrareaper.ReaperApplication \
     server ${CONFIG_PATH}

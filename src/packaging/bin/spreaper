@@ -196,6 +196,16 @@ def _arguments_for_repair_and_schedule(parser):
     parser.add_argument("--incremental", default="false",
                         help=("Incremental repair (true or false), "
                               "or use the configured default if not given (false)"))
+    parser.add_argument("--datacenters", default=None,
+                        help=("a comma separated list of datacenters to repair (do not use spaces after commas). "
+                              "Cannot be used in conjunction with --nodes."))
+    parser.add_argument("--nodes", default=None,
+                        help=("a comma separated list of nodes to repair, "
+                              "appropriate for repairing a specific list of nodes after an outage (do not use spaces after commas). "
+                              "Cannot be used in conjunction with --datacenters"))
+    parser.add_argument("--blacklisted-tables", default=None,
+                        help=("a comma separated list of tables that must not be repaired "
+                              "within the keyspace (do not use spaces after commas)"))
 
 
 def _arguments_for_scheduling(parser):
@@ -453,9 +463,18 @@ class ReaperCLI(object):
                                 segmentCount=args.segment_count,
                                 repairParallelism=args.repair_parallelism,
                                 intensity=args.intensity,
-                                incrementalRepair=args.incremental)
+                                incrementalRepair=args.incremental, 
+                                nodes=args.nodes,
+                                datacenters=args.datacenters,
+                                blacklistedTables=args.blacklisted_tables)
         else:
-            print ("# Registering repair run for cluster '{0}', and keyspace '{1}', "
+            if args.blacklisted_tables :
+                print ("# Registering repair run for cluster '{0}', and keyspace '{1}', "
+                   "targeting all tables in the keyspace except : {2}").format(args.cluster_name,
+                                                                  args.keyspace_name,
+                                                                  ",".join(args.blacklisted_tables.split(',')))
+            else:
+                print ("# Registering repair run for cluster '{0}', and keyspace '{1}', "
                    "targeting all tables in the keyspace").format(args.cluster_name,
                                                                   args.keyspace_name)
             reply = reaper.post("repair_run", clusterName=args.cluster_name,
@@ -463,7 +482,10 @@ class ReaperCLI(object):
                                 segmentCount=args.segment_count,
                                 repairParallelism=args.repair_parallelism,
                                 intensity=args.intensity,
-                                incrementalRepair=args.incremental)
+                                incrementalRepair=args.incremental, 
+                                nodes=args.nodes,
+                                datacenters=args.datacenters,
+                                blacklistedTables=args.blacklisted_tables)
         repair_run = json.loads(reply)
         print "# Repair run with id={0} created".format(repair_run.get('id'))
         if not args.dont_start_repair:
@@ -500,7 +522,10 @@ class ReaperCLI(object):
                                 intensity=args.intensity,
                                 scheduleDaysBetween=args.schedule_days_between,
                                 scheduleTriggerTime=args.schedule_trigger_time,
-                                incrementalRepair=args.incremental)
+                                incrementalRepair=args.incremental, 
+                                nodes=args.nodes,
+                                datacenters=args.datacenters,
+                                blacklistedTables=args.blacklisted_tables)
         else:
             print ("# Registering repair schedule for cluster '{0}', and keyspace '{1}', "
                    "targeting all tables in the keyspace, with scheduled days between "
@@ -514,7 +539,10 @@ class ReaperCLI(object):
                                 intensity=args.intensity,
                                 scheduleDaysBetween=args.schedule_days_between,
                                 scheduleTriggerTime=args.schedule_trigger_time,
-                                incrementalRepair=args.incremental)
+                                incrementalRepair=args.incremental, 
+                                nodes=args.nodes,
+                                datacenters=args.datacenters,
+                                blacklistedTables=args.blacklisted_tables)
         repair_schedule = json.loads(reply)
         print "# Repair schedule with id={0} created:".format(repair_schedule.get('id'))
         print json.dumps(repair_schedule, indent=2, sort_keys=True)

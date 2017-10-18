@@ -47,10 +47,10 @@ jobs:
               sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
               sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
               sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
-              sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' /home/circleci/.ccm/test/node1/conf/cassandra-env.sh
-              sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
-              sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
-              sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
+              sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node1/conf/cassandra-env.sh
+              sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
+              sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
+              sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
               sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
               sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
               sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
@@ -83,14 +83,14 @@ jobs:
               ccm status
               ccm checklogerror
               ccm node1 nodetool status
-              mvn clean package
+              MAVEN_OPTS="-Xmx1g" mvn clean install
               # TODO: parallelise the following
               mvn surefire:test -Dtest=ReaperIT
               mvn surefire:test -Dtest=ReaperH2IT
               #mvn surefire:test -Dtest=ReaperPostgresIT # TODO set up postgres
-              mvn surefire:test -Dtest=ReaperCassandraIT
-              mvn surefire:test -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
-              mvn surefire:test -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+              mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT
+              mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+              mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
 
       - store_test_results:
           path: target/surefire-reports

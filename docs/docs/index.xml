@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Reaper: Easy Repair Management for Apache Cassandra</title>
+    <link>http://cassandra-reaper.io/docs/</link>
+    <description>Recent content on Reaper: Easy Repair Management for Apache Cassandra</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="http://cassandra-reaper.io/docs/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/api/</guid>
+      <description>Rest API Source code for all the REST resources can be found from package io.cassandrareaper.resources.
+Ping Resource  GET /ping  Expected query parameters: None Simple ping resource that can be used to check whether the reaper is running.   Cluster Resource  GET /cluster
+ Expected query parameters:  seedHost: Limit the returned cluster list based on the given seed host. (Optional)  Returns a list of registered cluster names in the service.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/community/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/community/</guid>
+      <description>We have a Mailing List and Gitter chat available.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/configuration/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/configuration/</guid>
+      <description>Configuration An example testing configuration YAML file can be found from within this project repository: src/test/resources/cassandra-reaper.yaml
+The configuration file structure is provided by Dropwizard, and help on configuring the server, database connection, or logging, can be found at:
+http://www.dropwizard.io/1.1.0/docs/manual/configuration.html
+Reaper Specific Configuration Settings The Reaper service specific configuration settings are:
+segmentCount:
+Defines the default amount of repair segments to create for newly registered Cassandra repair runs (token rings). When running a repair run by the Reaper, each segment is repaired separately by the Reaper process, until all the segments in a token ring are repaired.</description>
+    </item>
+    
+  </channel>
+</rss>
