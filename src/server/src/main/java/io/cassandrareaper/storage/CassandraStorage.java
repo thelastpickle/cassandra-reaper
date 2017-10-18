@@ -311,7 +311,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     BatchStatement repairRunBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
     List<ResultSetFuture> futures = Lists.newArrayList();
 
-    repairRunBatch.add( unsetNullColumns(
+    repairRunBatch.add(
         insertRepairRunPrepStmt.bind(
             newRepairRun.getId(),
             newRepairRun.getClusterName(),
@@ -326,7 +326,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             newRepairRun.getIntensity(),
             newRepairRun.getLastEvent(),
             newRepairRun.getSegmentCount(),
-            newRepairRun.getRepairParallelism().toString())));
+            newRepairRun.getRepairParallelism().toString()));
 
     for (RepairSegment.Builder builder : newSegments) {
       RepairSegment segment = builder.withRunId(newRepairRun.getId()).build(UUIDs.timeBased());
