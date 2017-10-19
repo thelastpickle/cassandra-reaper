@@ -113,9 +113,11 @@ public final class RepairManager {
   }
 
   private void abortSegmentsWithNoLeader(
-      AppContext context, RepairRun repairRun, Collection<RepairSegment> runningSegments) {
-    if (context.storage instanceof IDistributedStorage
-        || !repairRunners.containsKey(repairRun.getId())) {
+      AppContext context,
+      RepairRun repairRun,
+      Collection<RepairSegment> runningSegments) {
+
+    if (context.storage instanceof IDistributedStorage || !repairRunners.containsKey(repairRun.getId())) {
       // When multiple Reapers are in use, we can get stuck segments when one instance is rebooted
       // Any segment in RUNNING state but with no leader should be killed
       List<UUID> activeLeaders =
@@ -141,20 +143,24 @@ public final class RepairManager {
     for (RepairSegment segment : runningSegments) {
       UUID leaderElectionId = repairUnit.getIncrementalRepair() ? repairRun.getId() : segment.getId();
       if (takeLead(context, leaderElectionId) || renewLead(context, leaderElectionId)) {
-        try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(
-            segment.getCoordinatorHost(), context.config.getJmxConnectionTimeoutInSeconds())) {
+        // refresh segment once we're inside leader-election
+        segment = context.storage.getRepairSegment(repairRun.getId(), segment.getId()).get();
+        if (RepairSegment.State.RUNNING == segment.getState()) {
+          try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(
+              segment.getCoordinatorHost(), context.config.getJmxConnectionTimeoutInSeconds())) {
 
-          SegmentRunner.abort(context, segment, jmxProxy);
-        } catch (ReaperException e) {
-          LOG.debug(
-              "Tried to abort repair on segment {} marked as RUNNING, "
-                  + "but the host was down  (so abortion won't be needed)",
-              segment.getId(),
-              e);
-        } finally {
-          // if someone else does hold the lease, ie renewLead(..) was true,
-          // then their writes to repair_run table and any call to releaseLead(..) will throw an exception
-          releaseLead(context, leaderElectionId);
+            SegmentRunner.abort(context, segment, jmxProxy);
+          } catch (ReaperException e) {
+            LOG.debug(
+                "Tried to abort repair on segment {} marked as RUNNING, "
+                    + "but the host was down  (so abortion won't be needed)",
+                segment.getId(),
+                e);
+          } finally {
+            // if someone else does hold the lease, ie renewLead(..) was true,
+            // then their writes to repair_run table and any call to releaseLead(..) will throw an exception
+            releaseLead(context, leaderElectionId);
+          }
         }
       }
     }

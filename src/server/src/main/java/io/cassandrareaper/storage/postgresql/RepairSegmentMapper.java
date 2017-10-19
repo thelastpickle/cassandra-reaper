@@ -30,13 +30,21 @@ public final class RepairSegmentMapper implements ResultSetMapper<RepairSegment>
     RingRange range
         = new RingRange(rs.getBigDecimal("start_token").toBigInteger(), rs.getBigDecimal("end_token").toBigInteger());
 
-    return new RepairSegment.Builder(range, UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")))
+    RepairSegment.Builder builder = RepairSegment
+        .builder(range, UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")))
         .withRunId(UuidUtil.fromSequenceId(rs.getLong("run_id")))
         .state(RepairSegment.State.values()[rs.getInt("state")])
-        .coordinatorHost(rs.getString("coordinator_host"))
-        .startTime(RepairRunMapper.getDateTimeOrNull(rs, "start_time"))
-        .endTime(RepairRunMapper.getDateTimeOrNull(rs, "end_time"))
-        .failCount(rs.getInt("fail_count"))
-        .build(UuidUtil.fromSequenceId(rs.getLong("id")));
+        .failCount(rs.getInt("fail_count"));
+
+    if (null != rs.getString("coordinator_host")) {
+      builder = builder.coordinatorHost(rs.getString("coordinator_host"));
+    }
+    if (null != RepairRunMapper.getDateTimeOrNull(rs, "start_time")) {
+      builder = builder.startTime(RepairRunMapper.getDateTimeOrNull(rs, "start_time"));
+    }
+    if (null != RepairRunMapper.getDateTimeOrNull(rs, "end_time")) {
+      builder = builder.endTime(RepairRunMapper.getDateTimeOrNull(rs, "end_time"));
+    }
+    return builder.build(UuidUtil.fromSequenceId(rs.getLong("id")));
   }
 }

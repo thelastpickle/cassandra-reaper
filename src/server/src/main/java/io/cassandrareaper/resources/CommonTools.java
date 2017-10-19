@@ -241,7 +241,7 @@ public final class CommonTools {
       RepairUnit repairUnit) {
 
     List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
-    tokenSegments.forEach(range -> repairSegmentBuilders.add(new RepairSegment.Builder(range, repairUnit.getId())));
+    tokenSegments.forEach(range -> repairSegmentBuilders.add(RepairSegment.builder(range, repairUnit.getId())));
     return repairSegmentBuilders;
   }
 
@@ -260,7 +260,7 @@ public final class CommonTools {
         .forEach(
             range
               -> repairSegmentBuilders.add(
-                  new RepairSegment.Builder(range.getValue(), repairUnit.getId()).coordinatorHost(range.getKey())));
+                  RepairSegment.builder(range.getValue(), repairUnit.getId()).coordinatorHost(range.getKey())));
 
     return repairSegmentBuilders;
   }
