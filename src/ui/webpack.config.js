@@ -1,6 +1,6 @@
 var path = require('path');
 var webpack = require('webpack');
-
+var HtmlWebpackPlugin = require('html-webpack-plugin');
 
 var _commonDeps = [
   "bootstrap.css", "sb-admin-2.css", "timeline.css", "font-awesome.css", "metisMenu.css", "style.css",
@@ -51,6 +51,30 @@ module.exports = {
     root:  path.join(__dirname, "node_modules")
   },
   plugins: [
+    new HtmlWebpackPlugin({  // Also generate a test.html
+      filename: 'index.html',
+      chunks: ['deps', 'index'],
+      hash: true,
+      title: ' - Clusters',
+      template: path.join(__dirname, 'app', 'html_template.ejs'),
+      inject: 'head'
+    }),
+    new HtmlWebpackPlugin({  // Also generate a test.html
+      filename: 'repair.html',
+      chunks: ['deps', 'repair'],
+      hash: true,
+      title: ' - Repair',
+      template: path.join(__dirname, 'app', 'html_template.ejs'),
+      inject: 'head'
+    }),
+    new HtmlWebpackPlugin({  // Also generate a test.html
+      filename: 'schedules.html',
+      chunks: ['deps', 'schedules'],
+      hash: true,
+      title: ' - Schedules',
+      template: path.join(__dirname, 'app', 'html_template.ejs'),
+      inject: 'head'
+    }),
     new webpack.ProvidePlugin({
       $: "jquery",
       jQuery: "jquery",
