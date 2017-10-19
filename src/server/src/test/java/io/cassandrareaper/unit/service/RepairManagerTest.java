@@ -94,7 +94,7 @@ public class RepairManagerTest {
             .build(UUIDs.timeBased());
 
     final RepairSegment segment =
-        new RepairSegment.Builder(new RingRange("-1", "1"), cf.getId())
+        RepairSegment.builder(new RingRange("-1", "1"), cf.getId())
             .withRunId(run.getId())
             .build(UUIDs.timeBased());
 
@@ -164,7 +164,7 @@ public class RepairManagerTest {
             .build(UUIDs.timeBased());
 
     final RepairSegment segment =
-        new RepairSegment.Builder(new RingRange("-1", "1"), cf.getId())
+        RepairSegment.builder(new RingRange("-1", "1"), cf.getId())
             .withRunId(run.getId())
             .build(UUIDs.timeBased());
 
@@ -236,7 +236,7 @@ public class RepairManagerTest {
             .build(UUIDs.timeBased());
 
     final RepairSegment segment =
-        new RepairSegment.Builder(new RingRange("-1", "1"), cf.getId())
+        RepairSegment.builder(new RingRange("-1", "1"), cf.getId())
             .withRunId(run.getId())
             .build(UUIDs.timeBased());
 
@@ -305,7 +305,7 @@ public class RepairManagerTest {
             .build(UUIDs.timeBased());
 
     final RepairSegment segment =
-        new RepairSegment.Builder(new RingRange("-1", "1"), cf.getId())
+        RepairSegment.builder(new RingRange("-1", "1"), cf.getId())
             .withRunId(run.getId())
             .build(UUIDs.timeBased());
 

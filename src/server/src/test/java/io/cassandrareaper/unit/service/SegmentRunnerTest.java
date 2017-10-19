@@ -85,7 +85,7 @@ public final class SegmentRunnerTest {
                 Collections.emptySet()));
     RepairRun run = context.storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
-        Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf.getId())));
+        Collections.singleton(RepairSegment.builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf.getId())));
 
     final UUID runId = run.getId();
     final UUID segmentId = context.storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
@@ -177,7 +177,7 @@ public final class SegmentRunnerTest {
                 Collections.emptySet()));
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
-        Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf.getId())));
+        Collections.singleton(RepairSegment.builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf.getId())));
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
@@ -292,7 +292,7 @@ public final class SegmentRunnerTest {
                 Collections.emptySet()));
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder("reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
-        Collections.singleton(new RepairSegment.Builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf.getId())));
+        Collections.singleton(RepairSegment.builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf.getId())));
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 

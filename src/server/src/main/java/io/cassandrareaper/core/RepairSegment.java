@@ -18,7 +18,9 @@ import io.cassandrareaper.service.RingRange;
 
 import java.math.BigInteger;
 import java.util.UUID;
+import javax.annotation.Nullable;
 
+import com.google.common.base.Preconditions;
 import org.joda.time.DateTime;
 
 public final class RepairSegment {
@@ -30,11 +32,10 @@ public final class RepairSegment {
   private final int failCount;
   private final State state;
   private final String coordinatorHost;
-  private final Integer repairCommandId; // received when triggering repair in Cassandra
   private final DateTime startTime;
   private final DateTime endTime;
 
-  private RepairSegment(Builder builder, UUID id) {
+  private RepairSegment(Builder builder, @Nullable UUID id) {
     this.id = id;
     this.runId = builder.runId;
     this.repairUnitId = builder.repairUnitId;
@@ -42,9 +43,12 @@ public final class RepairSegment {
     this.failCount = builder.failCount;
     this.state = builder.state;
     this.coordinatorHost = builder.coordinatorHost;
-    this.repairCommandId = builder.repairCommandId;
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
+  }
+
+  public static Builder builder(RingRange tokenRange, UUID repairUnitId) {
+    return new Builder(tokenRange, repairUnitId);
   }
 
   public UUID getId() {
@@ -79,18 +83,17 @@ public final class RepairSegment {
     return state;
   }
 
+  @Nullable
   public String getCoordinatorHost() {
     return coordinatorHost;
   }
 
-  public Integer getRepairCommandId() {
-    return repairCommandId;
-  }
-
+  @Nullable
   public DateTime getStartTime() {
     return startTime;
   }
 
+  @Nullable
   public DateTime getEndTime() {
     return endTime;
   }
@@ -105,7 +108,7 @@ public final class RepairSegment {
     DONE
   }
 
-  public static class Builder {
+  public static final class Builder {
 
     public final RingRange tokenRange;
     private final UUID repairUnitId;
@@ -113,11 +116,12 @@ public final class RepairSegment {
     private int failCount;
     private State state;
     private String coordinatorHost;
-    private Integer repairCommandId;
     private DateTime startTime;
     private DateTime endTime;
 
-    public Builder(RingRange tokenRange, UUID repairUnitId) {
+    private Builder(RingRange tokenRange, UUID repairUnitId) {
+      Preconditions.checkNotNull(tokenRange);
+      Preconditions.checkNotNull(repairUnitId);
       this.repairUnitId = repairUnitId;
       this.tokenRange = tokenRange;
       this.failCount = 0;
@@ -131,12 +135,12 @@ public final class RepairSegment {
       failCount = original.failCount;
       state = original.state;
       coordinatorHost = original.coordinatorHost;
-      repairCommandId = original.repairCommandId;
       startTime = original.startTime;
       endTime = original.endTime;
     }
 
     public Builder withRunId(UUID runId) {
+      Preconditions.checkNotNull(runId);
       this.runId = runId;
       return this;
     }
@@ -147,32 +151,42 @@ public final class RepairSegment {
     }
 
     public Builder state(State state) {
+      Preconditions.checkNotNull(state);
       this.state = state;
       return this;
     }
 
-    public Builder coordinatorHost(String coordinatorHost) {
+    public Builder coordinatorHost(@Nullable String coordinatorHost) {
       this.coordinatorHost = coordinatorHost;
       return this;
     }
 
-    public Builder repairCommandId(Integer repairCommandId) {
-      this.repairCommandId = repairCommandId;
-      return this;
-    }
+    public Builder startTime(@Nullable DateTime startTime) {
+      Preconditions.checkState(
+          null != startTime || null == endTime,
+          "unsetting startTime only permitted if endTime unset");
 
-    public Builder startTime(DateTime startTime) {
       this.startTime = startTime;
       return this;
     }
 
     public Builder endTime(DateTime endTime) {
+      Preconditions.checkNotNull(endTime);
       this.endTime = endTime;
       return this;
     }
 
-    public RepairSegment build(UUID id) {
-      return new RepairSegment(this, id);
+    public RepairSegment build(@Nullable UUID segmentId) {
+      // a null segmentId is a special case where the storage uses a sequence for it
+      Preconditions.checkNotNull(runId);
+      Preconditions.checkState(null != startTime || null == endTime, "if endTime is set, so must startTime be set");
+      Preconditions.checkState(null == endTime || State.DONE == state, "endTime can only be set if segment is DONE");
+
+      Preconditions.checkState(
+          null != startTime || State.NOT_STARTED == state,
+          "startTime can only be unset if segment is NOT_STARTED");
+
+      return new RepairSegment(this, segmentId);
     }
   }
 }
