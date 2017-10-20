@@ -10,6 +10,8 @@
 
     <name>Cassandra Reaper project</name>
     <url>https://cassandra-reaper.io</url>
+    <description>Reaper is a centralized, stateful, and highly configurable tool for running Apache Cassandra repairs against single or multi-site clusters</description>
+
     <licenses>
       <license>
         <name>Apache 2</name>
@@ -27,6 +29,83 @@
       <system>Github</system>
       <url>https://github.com/thelastpickle/cassandra-reaper/issues</url>
     </issueManagement>
+
+    <distributionManagement>
+      <repository>
+        <id>ossrh</id>
+        <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+      </repository>
+      <snapshotRepository>
+        <id>ossrh</id>
+        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      </snapshotRepository>
+    </distributionManagement>
+
+  <developers>
+    <developer>
+      <id>Bj0rnen</id>
+      <name>Björn Hegerfors</name>
+      <url>https://github.com/Bj0rnen</url>
+    </developer>
+    <developer>
+      <id>varjoranta</id>
+      <name>Hannu Varjoranta</name>
+      <url>http://varjosoft.fi</url>
+      <email>hannu.varjoranta@magine.com</email>
+    </developer>
+    <developer>
+      <id>djsly</id>
+      <name>Sylvain Boily</name>
+      <url>https://github.com/djsly</url>
+    </developer>
+    <developer>
+      <id>Yarin78</id>
+      <name>Jimmy Mårdelly</name>
+      <url>https://github.com/Yarin78</url>
+    </developer>
+    <developer>
+      <id>spodkowinski</id>
+      <name>Stefan Podkowinski</name>
+      <url>https://github.com/spodkowinski</url>
+    </developer>
+    <developer>
+      <id>mattnworb</id>
+      <name>Matt Brown</name>
+      <url>matt@mattnworb.com</url>
+      <email>hannu.varjoranta@magine.com</email>
+    </developer>
+    <developer>
+      <id>adejanovski</id>
+      <name>Alexander Dejanovski</name>
+      <email>adejanovski@gmail.com</email>
+    </developer>
+    <developer>
+      <id>mck</id>
+      <name>Mick Semb Wever</name>
+      <email>mick@thelastpickle.com</email>
+      <url>http://about.me/wever</url>
+    </developer>
+    <developer>
+      <id>rustyrazorblade</id>
+      <name>Jon Haddad</name>
+      <url>http://www.rustyrazorblade.com/</url>
+    </developer>
+    <developer>
+      <id>joaquincasares</id>
+      <name>Joaquin Casares</name>
+      <email>joaquin.casares@gmail.com</email>
+    </developer>
+    <developer>
+      <id>rzvoncek</id>
+      <name>Radovan</name>
+      <url>https://github.com/rzvoncek</url>
+    </developer>
+    <developer>
+      <id>ossarga</id>
+      <name>Anthony Grasso</name>
+      <url>http://thelastpickle.com</url>
+    </developer>
+  </developers>
 
     <modules>
         <module>src/server</module>
@@ -53,6 +132,76 @@
           </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+
+        <profile>
+
+            <id>release</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.8</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.0.0-M1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <configuration>
+                            <passphraseServerId>ossrh</passphraseServerId>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <phase>verify</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

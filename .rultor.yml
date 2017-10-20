@@ -1,0 +1,23 @@
+architect:
+- velo
+
+docker:
+  image: "velo/rultor8"
+
+assets:
+  secring.gpg: thelastpickle/rultor-assets#maven/secring.gpg
+  settings.xml: thelastpickle/rultor-assets#maven/settings.xml
+  pubring.gpg: thelastpickle/rultor-assets#maven/pubring.gpg
+
+env:
+  MAVEN_OPTS: -XX:MaxPermSize=256m -Xmx1g
+
+release:
+  script: |-
+    # first thing, change version on poms
+    mvn versions:set "-DnewVersion=${tag}"
+    git commit -am "${tag}"
+    # build and deploy to oss.sonatype.org
+    mvn deploy -B -Prelease --settings ../settings.xml -Dgpg.homedir=..
+  commanders:
+  - velo
