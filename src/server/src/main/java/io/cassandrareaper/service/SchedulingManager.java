@@ -19,7 +19,6 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.resources.CommonTools;
 
 import java.util.Collection;
 import java.util.Timer;
@@ -40,6 +39,7 @@ public final class SchedulingManager extends TimerTask {
   private static volatile TimerTask SCHEDULING_MANAGER;
 
   private final AppContext context;
+  private final RepairRunService repairRunService;
 
   /* nextActivatedSchedule used for nicer logging only */
   private RepairSchedule nextActivatedSchedule;
@@ -47,6 +47,7 @@ public final class SchedulingManager extends TimerTask {
 
   private SchedulingManager(AppContext context) {
     this.context = context;
+    this.repairRunService = RepairRunService.create(context);
   }
 
   public static void start(AppContext context) {
@@ -243,8 +244,7 @@ public final class SchedulingManager extends TimerTask {
 
   private RepairRun createNewRunForUnit(RepairSchedule schedule, RepairUnit repairUnit) throws ReaperException {
 
-    return CommonTools.registerRepairRun(
-        context,
+    return repairRunService.registerRepairRun(
         context.storage.getCluster(repairUnit.getClusterName()).get(),
         repairUnit,
         Optional.of(getCauseName(schedule)),
