@@ -20,9 +20,9 @@ import io.cassandrareaper.SimpleReaperClient;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
-import io.cassandrareaper.resources.CommonTools;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
+import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.storage.CassandraStorage;
 
 import java.math.BigInteger;
@@ -227,7 +227,7 @@ public final class BasicSteps {
   public void cluster_has_keyspace_with_tables(String clusterName, String keyspace,
       String tablesListStr) throws Throwable {
     synchronized (BasicSteps.class) {
-      Set<String> tables = Sets.newHashSet(CommonTools.COMMA_SEPARATED_LIST_SPLITTER.split(tablesListStr));
+      Set<String> tables = Sets.newHashSet(RepairRunService.COMMA_SEPARATED_LIST_SPLITTER.split(tablesListStr));
       TestContext.addClusterInfo(clusterName, keyspace, tables);
     }
   }
@@ -236,7 +236,7 @@ public final class BasicSteps {
   public void ccm_cluster_has_keyspace_with_tables(String clusterName, String keyspace,
       String tablesListStr) throws Throwable {
     synchronized (BasicSteps.class) {
-      Set<String> tables = Sets.newHashSet(CommonTools.COMMA_SEPARATED_LIST_SPLITTER.split(tablesListStr));
+      Set<String> tables = Sets.newHashSet(RepairRunService.COMMA_SEPARATED_LIST_SPLITTER.split(tablesListStr));
       createKeyspace(keyspace);
       tables.stream().forEach(tableName -> createTable(keyspace, tableName));
       TestContext.addClusterInfo(clusterName, keyspace, tables);

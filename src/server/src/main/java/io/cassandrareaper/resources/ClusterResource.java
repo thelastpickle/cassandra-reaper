@@ -29,6 +29,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -222,7 +223,7 @@ public final class ClusterResource {
     Optional<String> clusterName = Optional.absent();
     Optional<String> partitioner = Optional.absent();
     Optional<List<String>> liveNodes = Optional.absent();
-    Set<String> seedHosts = CommonTools.parseSeedHosts(seedHostInput);
+    Set<String> seedHosts = parseSeedHosts(seedHostInput);
 
     try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
         Optional.absent(), seedHosts, context.config.getJmxConnectionTimeoutInSeconds())) {
@@ -269,7 +270,7 @@ public final class ClusterResource {
           .build();
     }
 
-    Set<String> newSeeds = CommonTools.parseSeedHosts(seedHost.get());
+    Set<String> newSeeds = parseSeedHosts(seedHost.get());
 
     if (context.config.getEnableDynamicSeedList()) {
       try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
@@ -394,5 +395,9 @@ public final class ClusterResource {
       }
     }
     return nodesStatus;
+  }
+
+  static Set<String> parseSeedHosts(String seedHost) {
+    return Arrays.stream(seedHost.split(",")).map(String::trim).collect(Collectors.toSet());
   }
 }

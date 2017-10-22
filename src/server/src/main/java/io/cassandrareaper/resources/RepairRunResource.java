@@ -22,6 +22,8 @@ import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairRunStatus;
+import io.cassandrareaper.service.RepairRunService;
+import io.cassandrareaper.service.RepairUnitService;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -65,9 +67,13 @@ public final class RepairRunResource {
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunResource.class);
 
   private final AppContext context;
+  private final RepairUnitService repairUnitService;
+  private final RepairRunService repairRunService;
 
   public RepairRunResource(AppContext context) {
     this.context = context;
+    this.repairUnitService = RepairUnitService.create(context);
+    this.repairRunService = RepairRunService.create(context);
   }
 
   /**
@@ -147,7 +153,7 @@ public final class RepairRunResource {
       final Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get())).get();
       Set<String> tableNames;
       try {
-        tableNames = CommonTools.getTableNamesBasedOnParam(context, cluster, keyspace.get(), tableNamesParam);
+        tableNames = repairRunService.getTableNamesBasedOnParam(cluster, keyspace.get(), tableNamesParam);
       } catch (IllegalArgumentException ex) {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
@@ -155,9 +161,8 @@ public final class RepairRunResource {
 
       Set<String> blacklistedTableNames;
       try {
-        blacklistedTableNames =
-            CommonTools.getTableNamesBasedOnParam(
-                context, cluster, keyspace.get(), blacklistedTableNamesParam);
+        blacklistedTableNames
+            = repairRunService.getTableNamesBasedOnParam(cluster, keyspace.get(), blacklistedTableNamesParam);
       } catch (IllegalArgumentException ex) {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
@@ -165,7 +170,7 @@ public final class RepairRunResource {
 
       final Set<String> nodesToRepair;
       try {
-        nodesToRepair = CommonTools.getNodesToRepairBasedOnParam(context, cluster, nodesToRepairParam);
+        nodesToRepair = repairRunService.getNodesToRepairBasedOnParam(cluster, nodesToRepairParam);
       } catch (IllegalArgumentException ex) {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
@@ -173,8 +178,8 @@ public final class RepairRunResource {
 
       final Set<String> datacentersToRepair;
       try {
-        datacentersToRepair = CommonTools
-            .getDatacentersToRepairBasedOnParam(context, cluster, datacentersToRepairParam);
+        datacentersToRepair = RepairRunService
+            .getDatacentersToRepairBasedOnParam(cluster, datacentersToRepairParam);
 
       } catch (IllegalArgumentException ex) {
         LOG.error(ex.getMessage(), ex);
@@ -182,8 +187,7 @@ public final class RepairRunResource {
       }
 
       final RepairUnit theRepairUnit =
-          CommonTools.getNewOrExistingRepairUnit(
-              context,
+          repairUnitService.getNewOrExistingRepairUnit(
               cluster,
               keyspace.get(),
               tableNames,
@@ -218,8 +222,7 @@ public final class RepairRunResource {
       }
 
       final RepairRun newRepairRun =
-          CommonTools.registerRepairRun(
-              context,
+          repairRunService.registerRepairRun(
               cluster,
               theRepairUnit,
               cause,
@@ -567,7 +570,7 @@ public final class RepairRunResource {
 
   static Set splitStateParam(Optional<String> state) {
     if (state.isPresent()) {
-      final Iterable<String> chunks = CommonTools.COMMA_SEPARATED_LIST_SPLITTER.split(state.get());
+      final Iterable<String> chunks = RepairRunService.COMMA_SEPARATED_LIST_SPLITTER.split(state.get());
       for (final String chunk : chunks) {
         try {
           RepairRun.RunState.valueOf(chunk.toUpperCase());

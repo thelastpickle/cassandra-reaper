@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Splits given Cassandra table's token range into RepairSegments.
  */
-public final class SegmentGenerator {
+final class SegmentGenerator {
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentGenerator.class);
 
@@ -35,7 +35,7 @@ public final class SegmentGenerator {
   private final BigInteger rangeMax;
   private final BigInteger rangeSize;
 
-  public SegmentGenerator(String partitioner) throws ReaperException {
+  SegmentGenerator(String partitioner) throws ReaperException {
     if (partitioner.endsWith("RandomPartitioner")) {
       rangeMin = BigInteger.ZERO;
       rangeMax = new BigInteger("2").pow(127).subtract(BigInteger.ONE);
@@ -49,7 +49,7 @@ public final class SegmentGenerator {
     this.partitioner = partitioner;
   }
 
-  public SegmentGenerator(BigInteger rangeMin, BigInteger rangeMax) {
+  SegmentGenerator(BigInteger rangeMin, BigInteger rangeMax) {
     this.rangeMin = rangeMin;
     this.rangeMax = rangeMax;
     rangeSize = rangeMax.subtract(rangeMin).add(BigInteger.ONE);
@@ -87,7 +87,7 @@ public final class SegmentGenerator {
    * @param ringTokens list of all start tokens in big0 cluster. They have to be in ring order.
    * @return big0 list containing at least {@code totalSegmentCount} repair segments.
    */
-  public List<RingRange> generateSegments(int totalSegmentCount, List<BigInteger> ringTokens, Boolean incrementalRepair)
+  List<RingRange> generateSegments(int totalSegmentCount, List<BigInteger> ringTokens, Boolean incrementalRepair)
       throws ReaperException {
 
     int tokenRangeCount = ringTokens.size();
