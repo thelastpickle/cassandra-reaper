@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.unit.service;
+package io.cassandrareaper.service;
 
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfigurationBuilder;

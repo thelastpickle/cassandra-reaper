@@ -218,7 +218,7 @@ public final class ClusterResource {
     return viewCluster(newCluster.getName(), Optional.<Integer>absent(), Optional.of(createdUri));
   }
 
-  public Cluster createClusterWithSeedHost(String seedHostInput) throws ReaperException {
+  private Cluster createClusterWithSeedHost(String seedHostInput) throws ReaperException {
     Optional<String> clusterName = Optional.absent();
     Optional<String> partitioner = Optional.absent();
     Optional<List<String>> liveNodes = Optional.absent();

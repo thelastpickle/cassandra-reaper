@@ -43,7 +43,7 @@ final class SimpleCondition implements Condition {
     return set;
   }
 
-  public synchronized void reset() {
+  synchronized void reset() {
     set = false;
   }
 
@@ -58,7 +58,7 @@ final class SimpleCondition implements Condition {
     notifyAll();
   }
 
-  public synchronized boolean isSignaled() {
+  synchronized boolean isSignaled() {
     return set;
   }
 

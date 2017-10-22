@@ -33,7 +33,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
@@ -46,7 +45,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class RepairRunner implements Runnable {
+final class RepairRunner implements Runnable {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunner.class);
 
@@ -57,7 +56,7 @@ public final class RepairRunner implements Runnable {
   private final AtomicReferenceArray<UUID> currentlyRunningSegments;
   private final List<RingRange> parallelRanges;
 
-  public RepairRunner(AppContext context, UUID repairRunId) throws ReaperException {
+  RepairRunner(AppContext context, UUID repairRunId) throws ReaperException {
     LOG.debug("Creating RepairRunner for run with ID {}", repairRunId);
     this.context = context;
     this.repairRunId = repairRunId;
@@ -98,12 +97,11 @@ public final class RepairRunner implements Runnable {
         Lists.newArrayList(Collections2.transform(repairSegments, segment -> segment.getTokenRange())));
   }
 
-  public UUID getRepairRunId() {
+  UUID getRepairRunId() {
     return repairRunId;
   }
 
-  @VisibleForTesting
-  public static int getPossibleParallelRepairsCount(
+  static int getPossibleParallelRepairsCount(
       Map<List<String>, List<String>> ranges,
       Map<String, String> hostsInRing) throws ReaperException {
 
@@ -118,8 +116,7 @@ public final class RepairRunner implements Runnable {
         Math.max(1, hostsInRing.keySet().size() / ranges.values().iterator().next().size()));
   }
 
-  @VisibleForTesting
-  public static List<RingRange> getParallelRanges(int parallelRepairs, List<RingRange> segments)
+  static List<RingRange> getParallelRanges(int parallelRepairs, List<RingRange> segments)
       throws ReaperException {
 
     if (parallelRepairs == 0) {
@@ -403,7 +400,7 @@ public final class RepairRunner implements Runnable {
     return true;
   }
 
-  private List<String> filterPotentialCoordinatorsByDatacenters(
+  private static List<String> filterPotentialCoordinatorsByDatacenters(
       Collection<String> datacenters,
       List<String> potentialCoordinators,
       JmxProxy jmxProxy) {
@@ -424,7 +421,7 @@ public final class RepairRunner implements Runnable {
     return coordinators;
   }
 
-  private Pair<String, String> getNodeDatacenterPair(String node, JmxProxy jmxProxy) {
+  private static Pair<String, String> getNodeDatacenterPair(String node, JmxProxy jmxProxy) {
     Pair<String, String> result = Pair.of(node, jmxProxy.getDataCenter(node));
     LOG.debug("[getNodeDatacenterPair] node/datacenter association {}", result);
     return result;
@@ -461,19 +458,20 @@ public final class RepairRunner implements Runnable {
     }
   }
 
-  public void updateLastEvent(String newEvent) {
+  void updateLastEvent(String newEvent) {
     synchronized (this) {
       RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
       if (repairRun.getRunState().isTerminated()) {
         LOG.warn(
-            "Will not update lastEvent of run that has already terminated. The message was: " + "\"{}\"", newEvent);
+            "Will not update lastEvent of run that has already terminated. The message was: " + "\"{}\"",
+            newEvent);
       } else {
         context.storage.updateRepairRun(repairRun.with().lastEvent(newEvent).build(repairRunId));
       }
     }
   }
 
-  public void killAndCleanupRunner() {
+  void killAndCleanupRunner() {
     context.repairManager.removeRunner(this);
     if (jmxConnection != null) {
       jmxConnection.close();

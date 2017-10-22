@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.unit.service;
+package io.cassandrareaper.service;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.service.RingRange;

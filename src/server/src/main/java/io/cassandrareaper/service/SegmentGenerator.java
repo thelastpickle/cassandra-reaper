@@ -19,7 +19,6 @@ import io.cassandrareaper.ReaperException;
 import java.math.BigInteger;
 import java.util.List;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,33 +56,27 @@ public final class SegmentGenerator {
     partitioner = "(" + rangeMin + "," + rangeMax + ")";
   }
 
-  @VisibleForTesting
-  public static BigInteger max(BigInteger big0, BigInteger big1) {
+  static BigInteger max(BigInteger big0, BigInteger big1) {
     return greaterThan(big0, big1) ? big0 : big1;
   }
 
-  @VisibleForTesting
-  public static BigInteger min(BigInteger big0, BigInteger big1) {
+  static BigInteger min(BigInteger big0, BigInteger big1) {
     return lowerThan(big0, big1) ? big0 : big1;
   }
 
-  @VisibleForTesting
-  public static boolean lowerThan(BigInteger big0, BigInteger big1) {
+  static boolean lowerThan(BigInteger big0, BigInteger big1) {
     return big0.compareTo(big1) < 0;
   }
 
-  @VisibleForTesting
-  public static boolean lowerThanOrEqual(BigInteger big0, BigInteger big1) {
+  static boolean lowerThanOrEqual(BigInteger big0, BigInteger big1) {
     return big0.compareTo(big1) <= 0;
   }
 
-  @VisibleForTesting
-  public static boolean greaterThan(BigInteger big0, BigInteger big1) {
+  static boolean greaterThan(BigInteger big0, BigInteger big1) {
     return big0.compareTo(big1) > 0;
   }
 
-  @VisibleForTesting
-  public static boolean greaterThanOrEqual(BigInteger big0, BigInteger big1) {
+  static boolean greaterThanOrEqual(BigInteger big0, BigInteger big1) {
     return big0.compareTo(big1) >= 0;
   }
 

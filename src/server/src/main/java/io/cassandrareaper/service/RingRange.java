@@ -19,8 +19,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import com.google.common.annotations.VisibleForTesting;
-
 
 // TODO: Check if this duplicates org.apache.cassandra.dht.Range.
 public final class RingRange {
@@ -82,7 +80,6 @@ public final class RingRange {
   /**
    * @return true if 0 is inside of this range. Note that if start == end, then wrapping is true
    */
-  @VisibleForTesting
   public boolean isWrapping() {
     return SegmentGenerator.greaterThanOrEqual(start, end);
   }
