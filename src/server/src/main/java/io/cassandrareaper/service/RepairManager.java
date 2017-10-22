@@ -49,8 +49,7 @@ public final class RepairManager {
   private static final Logger LOG = LoggerFactory.getLogger(RepairManager.class);
 
   // Caching all active RepairRunners.
-  @VisibleForTesting
-  public Map<UUID, RepairRunner> repairRunners = Maps.newConcurrentMap();
+  final Map<UUID, RepairRunner> repairRunners = Maps.newConcurrentMap();
 
   private ListeningScheduledExecutorService executor;
   private long repairTimeoutMillis;
@@ -58,10 +57,11 @@ public final class RepairManager {
 
   private final Heart heart = Heart.create();
 
-  public long getRepairTimeoutMillis() {
+  long getRepairTimeoutMillis() {
     return repairTimeoutMillis;
   }
 
+  @VisibleForTesting
   public void initializeThreadPool(
       int threadAmount,
       long repairTimeout,
@@ -135,9 +135,10 @@ public final class RepairManager {
     }
   }
 
-  @VisibleForTesting
-  public void abortSegments(
-      Collection<RepairSegment> runningSegments, AppContext context, RepairRun repairRun) {
+  void abortSegments(
+      Collection<RepairSegment> runningSegments,
+      AppContext context,
+      RepairRun repairRun) {
 
     RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId()).get();
     for (RepairSegment segment : runningSegments) {
@@ -257,15 +258,15 @@ public final class RepairManager {
     return updatedRun;
   }
 
-  public void scheduleRetry(RepairRunner runner) {
+  void scheduleRetry(RepairRunner runner) {
     executor.schedule(runner, retryDelayMillis, TimeUnit.MILLISECONDS);
   }
 
-  public ListenableFuture<?> submitSegment(SegmentRunner runner) {
+  ListenableFuture<?> submitSegment(SegmentRunner runner) {
     return executor.submit(runner);
   }
 
-  public void removeRunner(RepairRunner runner) {
+  void removeRunner(RepairRunner runner) {
     repairRunners.remove(runner.getRepairRunId());
   }
 

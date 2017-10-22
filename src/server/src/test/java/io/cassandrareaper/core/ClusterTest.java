@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.unit.core;
+package io.cassandrareaper.core;
 
 import io.cassandrareaper.core.Cluster;
 
