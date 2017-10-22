@@ -275,6 +275,7 @@
                       <argLine>${failsafeArgLine}</argLine>
                       <failIfNoTests>false</failIfNoTests>
                       <includes>
+                        <include>**/AddClusterIT.java</include>
                         <include>**/ReaperIT.java</include>
                       </includes>
                     </configuration>
