@@ -16,7 +16,6 @@ package io.cassandrareaper.resources.view;
 
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.resources.CommonTools;
 
 import java.util.Collection;
 import java.util.UUID;
@@ -118,7 +117,7 @@ public final class RepairScheduleStatus {
     this.creationTime = creationTime;
     this.nextActivation = nextActivation;
     this.pauseTime = pauseTime;
-    this.intensity = CommonTools.roundDoubleNicely(intensity);
+    this.intensity = RepairRunStatus.roundDoubleNicely(intensity);
     this.incrementalRepair = incrementalRepair;
     this.segmentCount = segmentCount;
     this.repairParallelism = repairParallelism;
@@ -265,7 +264,7 @@ public final class RepairScheduleStatus {
 
   @JsonProperty("creation_time")
   public String getCreationTimeIso8601() {
-    return CommonTools.dateTimeToIso8601(creationTime);
+    return RepairRunStatus.dateTimeToIso8601(creationTime);
   }
 
   @JsonProperty("creation_time")
@@ -277,7 +276,7 @@ public final class RepairScheduleStatus {
 
   @JsonProperty("next_activation")
   public String getNextActivationIso8601() {
-    return CommonTools.dateTimeToIso8601(nextActivation);
+    return RepairRunStatus.dateTimeToIso8601(nextActivation);
   }
 
   @JsonProperty("next_activation")
@@ -289,7 +288,7 @@ public final class RepairScheduleStatus {
 
   @JsonProperty("pause_time")
   public String getPauseTimeIso8601() {
-    return CommonTools.dateTimeToIso8601(pauseTime);
+    return RepairRunStatus.dateTimeToIso8601(pauseTime);
   }
 
   @JsonProperty("pause_time")

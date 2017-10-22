@@ -23,7 +23,6 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
-import io.cassandrareaper.resources.CommonTools;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.lang.management.ManagementFactory;
@@ -246,7 +245,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       try (Timer.Context cxt1 = context.metricRegistry.timer(metricNameForRepairing(segment)).time()) {
         Set<String> tablesToRepair;
         try {
-          tablesToRepair = CommonTools.getTablesToRepair(coordinator, repairUnit);
+          tablesToRepair = getTablesToRepair(coordinator, repairUnit);
         } catch (IllegalStateException e) {
           String msg = "Invalid blacklist definition. It filtered all tables in the keyspace.";
           LOG.error(msg, e);
@@ -964,4 +963,41 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         ? ((IDistributedStorage) context.storage).countRunningReapers()
         : 1;
   }
+
+  /**
+   * Applies blacklist filter on tables for the given repair unit.
+   *
+   * @param coordinator : a JMX proxy instance
+   * @param unit : the repair unit for the current run
+   * @return the list of tables to repair for the keyspace without the blacklisted ones
+   * @throws ReaperException, IllegalStateException
+   */
+  static Set<String> getTablesToRepair(JmxProxy coordinator, RepairUnit unit)
+      throws ReaperException, IllegalStateException {
+    Set<String> tables = unit.getColumnFamilies();
+
+    if (!unit.getBlacklistedTables().isEmpty() && unit.getColumnFamilies().isEmpty()) {
+      tables =
+          coordinator
+              .getTableNamesForKeyspace(unit.getKeyspaceName())
+              .stream()
+              .filter(tableName -> !unit.getBlacklistedTables().contains(tableName))
+              .collect(Collectors.toSet());
+    }
+
+    if (!unit.getBlacklistedTables().isEmpty() && !unit.getColumnFamilies().isEmpty()) {
+      tables =
+          unit.getColumnFamilies()
+              .stream()
+              .filter(tableName -> !unit.getBlacklistedTables().contains(tableName))
+              .collect(Collectors.toSet());
+    }
+
+    Preconditions.checkState(
+        !(!unit.getBlacklistedTables().isEmpty()
+            && tables.isEmpty())); // if we have a blacklist, we should have tables in the output.
+
+    return tables;
+  }
+
 }

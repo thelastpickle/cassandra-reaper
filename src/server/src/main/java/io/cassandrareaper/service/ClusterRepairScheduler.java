@@ -20,7 +20,6 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.resources.CommonTools;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -44,10 +43,15 @@ public final class ClusterRepairScheduler {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterRepairScheduler.class);
   private static final String REPAIR_OWNER = "auto-scheduling";
   private static final String SYSTEM_KEYSPACE_PREFIX = "system";
+
   private final AppContext context;
+  private final RepairUnitService repairUnitService;
+  private final RepairScheduleService repairScheduleService;
 
   public ClusterRepairScheduler(AppContext context) {
     this.context = context;
+    this.repairUnitService = RepairUnitService.create(context);
+    this.repairScheduleService = RepairScheduleService.create(context);
   }
 
   public void scheduleRepairs(Cluster cluster) throws ReaperException {
@@ -104,12 +108,11 @@ public final class ClusterRepairScheduler {
   private void createRepairSchedule(Cluster cluster, String keyspace, DateTime nextActivationTime) {
     try {
       boolean incrementalRepair = context.config.getIncrementalRepair();
+
       RepairSchedule repairSchedule =
-          CommonTools.storeNewRepairSchedule(
-              context,
+          repairScheduleService.storeNewRepairSchedule(
               cluster,
-              CommonTools.getNewOrExistingRepairUnit(
-                  context,
+              repairUnitService.getNewOrExistingRepairUnit(
                   cluster,
                   keyspace,
                   Collections.emptySet(),
@@ -123,6 +126,7 @@ public final class ClusterRepairScheduler {
               context.config.getSegmentCountPerNode(),
               context.config.getRepairParallelism(),
               context.config.getRepairIntensity());
+
       LOG.info("Scheduled repair created: {}", repairSchedule);
     } catch (ReaperException e) {
       throw Throwables.propagate(e);

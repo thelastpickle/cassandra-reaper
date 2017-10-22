@@ -19,7 +19,11 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
+import io.cassandrareaper.service.RepairRunService;
+import io.cassandrareaper.service.RepairScheduleService;
+import io.cassandrareaper.service.RepairUnitService;
 import io.cassandrareaper.service.SchedulingManager;
 
 import java.net.MalformedURLException;
@@ -62,9 +66,15 @@ public final class RepairScheduleResource {
   private static final Logger LOG = LoggerFactory.getLogger(RepairScheduleResource.class);
 
   private final AppContext context;
+  private final RepairUnitService repairUnitService;
+  private final RepairScheduleService repairScheduleService;
+  private final RepairRunService repairRunService;
 
   public RepairScheduleResource(AppContext context) {
     this.context = context;
+    this.repairUnitService = RepairUnitService.create(context);
+    this.repairScheduleService = RepairScheduleService.create(context);
+    this.repairRunService = RepairRunService.create(context);
   }
 
   /**
@@ -117,7 +127,8 @@ public final class RepairScheduleResource {
         nextActivation = getNextActivationTime(scheduleTriggerTime);
         if (nextActivation.isBeforeNow()) {
           return Response.status(Response.Status.BAD_REQUEST)
-              .entity("given schedule_trigger_time is in the past: " + CommonTools.dateTimeToIso8601(nextActivation))
+              .entity("given schedule_trigger_time is in the past: "
+                  + RepairRunStatus.dateTimeToIso8601(nextActivation))
               .build();
         }
       } catch (IllegalArgumentException ex) {
@@ -137,7 +148,7 @@ public final class RepairScheduleResource {
       Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get())).get();
       Set<String> tableNames;
       try {
-        tableNames = CommonTools.getTableNamesBasedOnParam(context, cluster, keyspace.get(), tableNamesParam);
+        tableNames = repairRunService.getTableNamesBasedOnParam(cluster, keyspace.get(), tableNamesParam);
       } catch (IllegalArgumentException ex) {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
@@ -145,9 +156,8 @@ public final class RepairScheduleResource {
 
       Set<String> blacklistedTableNames;
       try {
-        blacklistedTableNames =
-            CommonTools.getTableNamesBasedOnParam(
-                context, cluster, keyspace.get(), blacklistedTableNamesParam);
+        blacklistedTableNames
+            = repairRunService.getTableNamesBasedOnParam(cluster, keyspace.get(), blacklistedTableNamesParam);
       } catch (IllegalArgumentException ex) {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
@@ -155,7 +165,7 @@ public final class RepairScheduleResource {
 
       final Set<String> nodesToRepair;
       try {
-        nodesToRepair = CommonTools.getNodesToRepairBasedOnParam(context, cluster, nodesToRepairParam);
+        nodesToRepair = repairRunService.getNodesToRepairBasedOnParam(cluster, nodesToRepairParam);
       } catch (final IllegalArgumentException ex) {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
@@ -163,8 +173,8 @@ public final class RepairScheduleResource {
 
       final Set<String> datacentersToRepair;
       try {
-        datacentersToRepair = CommonTools
-            .getDatacentersToRepairBasedOnParam(context, cluster, datacentersToRepairParam);
+        datacentersToRepair = RepairRunService
+            .getDatacentersToRepairBasedOnParam(cluster, datacentersToRepairParam);
       } catch (final IllegalArgumentException ex) {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
@@ -173,8 +183,7 @@ public final class RepairScheduleResource {
       Boolean incrementalRepair = isIncrementalRepair(incrementalRepairStr);
 
       RepairUnit theRepairUnit =
-          CommonTools.getNewOrExistingRepairUnit(
-              context,
+          repairUnitService.getNewOrExistingRepairUnit(
               cluster,
               keyspace.get(),
               tableNames,
@@ -215,8 +224,7 @@ public final class RepairScheduleResource {
 
       Double intensity = getIntensity(intensityStr);
       try {
-        RepairSchedule newRepairSchedule = CommonTools.storeNewRepairSchedule(
-            context,
+        RepairSchedule newRepairSchedule = repairScheduleService.storeNewRepairSchedule(
             cluster,
             theRepairUnit,
             daysBetween,
@@ -530,13 +538,14 @@ public final class RepairScheduleResource {
     DateTime nextActivation;
     if (scheduleTriggerTime.isPresent()) {
       nextActivation = DateTime.parse(scheduleTriggerTime.get());
-      LOG.info("first schedule activation will be: {}", CommonTools.dateTimeToIso8601(nextActivation));
+      LOG.info("first schedule activation will be: {}", RepairRunStatus.dateTimeToIso8601(nextActivation));
     } else {
       nextActivation = DateTime.now().plusDays(1).withTimeAtStartOfDay();
       LOG.info(
           "no schedule_trigger_time given, so setting first scheduling next night: {}",
-          CommonTools.dateTimeToIso8601(nextActivation));
+          RepairRunStatus.dateTimeToIso8601(nextActivation));
     }
     return nextActivation;
   }
+
 }

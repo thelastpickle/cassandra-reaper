@@ -16,10 +16,10 @@ package io.cassandrareaper.resources.view;
 
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.resources.CommonTools;
 
 import java.util.Collection;
 import java.util.UUID;
+import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -139,7 +139,7 @@ public final class RepairRunStatus {
     this.startTime = startTime;
     this.endTime = endTime;
     this.pauseTime = pauseTime;
-    this.intensity = CommonTools.roundDoubleNicely(intensity);
+    this.intensity = roundDoubleNicely(intensity);
     this.incrementalRepair = incrementalRepair;
     this.totalSegments = totalSegments;
     this.repairParallelism = repairParallelism;
@@ -201,7 +201,7 @@ public final class RepairRunStatus {
 
   @JsonProperty("creation_time")
   public String getCreationTimeIso8601() {
-    return CommonTools.dateTimeToIso8601(creationTime);
+    return dateTimeToIso8601(creationTime);
   }
 
   @JsonProperty("creation_time")
@@ -213,7 +213,7 @@ public final class RepairRunStatus {
 
   @JsonProperty("start_time")
   public String getStartTimeIso8601() {
-    return CommonTools.dateTimeToIso8601(startTime);
+    return dateTimeToIso8601(startTime);
   }
 
   @JsonProperty("start_time")
@@ -225,7 +225,7 @@ public final class RepairRunStatus {
 
   @JsonProperty("end_time")
   public String getEndTimeIso8601() {
-    return CommonTools.dateTimeToIso8601(endTime);
+    return dateTimeToIso8601(endTime);
   }
 
   @JsonProperty("end_time")
@@ -237,7 +237,7 @@ public final class RepairRunStatus {
 
   @JsonProperty("pause_time")
   public String getPauseTimeIso8601() {
-    return CommonTools.dateTimeToIso8601(pauseTime);
+    return dateTimeToIso8601(pauseTime);
   }
 
   @JsonProperty("pause_time")
@@ -393,7 +393,7 @@ public final class RepairRunStatus {
 
   @JsonProperty("estimated_time_of_arrival")
   public String getEstimatedTimeOfArrivalIso8601() {
-    return CommonTools.dateTimeToIso8601(estimatedTimeOfArrival);
+    return dateTimeToIso8601(estimatedTimeOfArrival);
   }
 
   @JsonProperty("estimated_time_of_arrival")
@@ -426,5 +426,14 @@ public final class RepairRunStatus {
 
   public void setBlacklistedTables(Collection<String> blacklistedTables) {
     this.blacklistedTables = blacklistedTables;
+  }
+
+  static double roundDoubleNicely(double intensity) {
+    return Math.round(intensity * 10000f) / 10000f;
+  }
+
+  @Nullable
+  public static String dateTimeToIso8601(@Nullable DateTime dateTime) {
+    return null != dateTime ? ISODateTimeFormat.dateTimeNoMillis().print(dateTime) : null;
   }
 }
