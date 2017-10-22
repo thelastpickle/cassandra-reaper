@@ -32,3 +32,4 @@ src/packaging/data
 
 # SSL stores directory
 src/packaging/ssl-stores
+/src/server/nbproject/

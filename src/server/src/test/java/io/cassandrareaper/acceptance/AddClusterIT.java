@@ -22,6 +22,6 @@ import org.junit.runner.RunWith;
 @CucumberOptions(
     features = "classpath:io.cassandrareaper.acceptance/basic_reaper_functionality.feature"
     )
-public final class AddClusterTest {
+public final class AddClusterIT {
   // Required only to get the Cucumber acceptance tests actually run.
 }
