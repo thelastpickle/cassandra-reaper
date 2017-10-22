@@ -112,7 +112,6 @@ final class Heart implements AutoCloseable {
                       .filter(nodeMetrics -> nodeMetrics.isRequested())
                       .forEach(req -> {
 
-
                         LOG.info("Got metric request for node {} in {}", req.getNode(), req.getCluster());
                         try (Timer.Context t1 = timer(context, req.getCluster(), req.getNode())) {
 
@@ -122,15 +121,13 @@ final class Heart implements AutoCloseable {
                             storage.storeNodeMetrics(
                                 runId,
                                 NodeMetrics.builder()
-
                                     .withNode(req.getNode())
                                     .withCluster(req.getCluster())
-                                    .withDatacenter(nodeProxy.getDataCenter())
+                                    .withDatacenter(req.getDatacenter())
                                     .withPendingCompactions(nodeProxy.getPendingCompactions())
                                     .withHasRepairRunning(nodeProxy.isRepairRunning())
                                     .withActiveAnticompactions(0) // for future use
                                     .build());
-
 
                             LOG.info("Responded to metric request for node {}", req.getNode());
                           } catch (ReaperException | RuntimeException | InterruptedException ex) {

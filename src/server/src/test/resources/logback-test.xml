@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <appender name="file" class="ch.qos.logback.core.FileAppender">
+    <file>tests.log</file>
+    <encoder>
+      <pattern>%d %-5p [%c{0}] %m%n</pattern>
+    </encoder>
+  </appender>
+  <root>
+    <level value="DEBUG" />
+    <appender-ref ref="file"/>
+  </root>
+</configuration>
