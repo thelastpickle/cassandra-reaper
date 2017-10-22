@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.unit.resources;
+package io.cassandrareaper.resources;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
@@ -20,9 +20,8 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
-import io.cassandrareaper.resources.ClusterResource;
+import io.cassandrareaper.service.TestRepairConfiguration;
 import io.cassandrareaper.storage.MemoryStorage;
-import io.cassandrareaper.unit.service.TestRepairConfiguration;
 
 import java.net.URI;
 import java.time.Duration;

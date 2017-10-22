@@ -49,7 +49,6 @@ import javax.management.JMException;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
@@ -67,11 +66,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public final class SegmentRunner implements RepairStatusHandler, Runnable {
+final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   // Caching all active SegmentRunners.
-  @VisibleForTesting
-  public static final Map<UUID, SegmentRunner> SEGMENT_RUNNERS = Maps.newConcurrentMap();
+  static final Map<UUID, SegmentRunner> SEGMENT_RUNNERS = Maps.newConcurrentMap();
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentRunner.class);
 
@@ -100,7 +98,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final UUID leaderElectionId;
 
 
-  public SegmentRunner(
+  SegmentRunner(
       AppContext context,
       UUID segmentId,
       Collection<String> potentialCoordinators,
@@ -167,7 +165,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-  public static void abort(AppContext context, RepairSegment segment, JmxProxy jmxConnection) {
+  static void abort(AppContext context, RepairSegment segment, JmxProxy jmxConnection) {
     postpone(context, segment, context.storage.getRepairUnit(segment.getRepairUnitId()));
     LOG.info("Aborting repair on segment with id {} on coordinator {}", segment.getId(), segment.getCoordinatorHost());
     String metric = MetricRegistry.name(SegmentRunner.class, "abort", segment.getCoordinatorHost());
@@ -182,7 +180,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   /**
    * Remember to call method postponeCurrentSegment() outside of synchronized(condition) block.
    */
-  public void postponeCurrentSegment() {
+  void postponeCurrentSegment() {
     synchronized (condition) {
       RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
       postpone(context, segment, context.storage.getRepairUnit(segment.getRepairUnitId()));
@@ -510,8 +508,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-  @VisibleForTesting
-  public static boolean okToRepairSegment(
+  static boolean okToRepairSegment(
       boolean allHostsInLocalDc,
       boolean allHosts,
       DatacenterAvailability dcAvailability) {
@@ -863,8 +860,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   /**
    * Attempts to clear snapshots that are possibly left behind after failed repair sessions.
    */
-  @VisibleForTesting
-  protected void tryClearSnapshots(String message) {
+  void tryClearSnapshots(String message) {
     String keyspace = repairUnit.getKeyspaceName();
     String repairId = parseRepairId(message);
     if (repairId != null) {
@@ -886,7 +882,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-  public static String parseRepairId(String message) {
+  static String parseRepairId(String message) {
     Matcher uuidMatcher = REPAIR_UUID_PATTERN.matcher(message);
     if (uuidMatcher.find()) {
       return uuidMatcher.group();

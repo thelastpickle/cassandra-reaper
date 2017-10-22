@@ -48,7 +48,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -244,7 +243,7 @@ public final class RepairRunResource {
    * @return Response instance in case there is a problem, or null if everything is ok.
    */
   @Nullable
-  public static Response checkRequestForAddRepair(
+  static Response checkRequestForAddRepair(
       AppContext context,
       Optional<String> clusterName,
       Optional<String> keyspace,
@@ -400,23 +399,23 @@ public final class RepairRunResource {
     }
   }
 
-  private boolean isStarting(RepairRun.RunState oldState, RepairRun.RunState newState) {
+  private static boolean isStarting(RepairRun.RunState oldState, RepairRun.RunState newState) {
     return oldState == RepairRun.RunState.NOT_STARTED && newState == RepairRun.RunState.RUNNING;
   }
 
-  private boolean isPausing(RepairRun.RunState oldState, RepairRun.RunState newState) {
+  private static boolean isPausing(RepairRun.RunState oldState, RepairRun.RunState newState) {
     return oldState == RepairRun.RunState.RUNNING && newState == RepairRun.RunState.PAUSED;
   }
 
-  private boolean isResuming(RepairRun.RunState oldState, RepairRun.RunState newState) {
+  private static boolean isResuming(RepairRun.RunState oldState, RepairRun.RunState newState) {
     return oldState == RepairRun.RunState.PAUSED && newState == RepairRun.RunState.RUNNING;
   }
 
-  private boolean isRetrying(RepairRun.RunState oldState, RepairRun.RunState newState) {
+  private static boolean isRetrying(RepairRun.RunState oldState, RepairRun.RunState newState) {
     return oldState == RepairRun.RunState.ERROR && newState == RepairRun.RunState.RUNNING;
   }
 
-  private boolean isAborting(RepairRun.RunState oldState, RepairRun.RunState newState) {
+  private static boolean isAborting(RepairRun.RunState oldState, RepairRun.RunState newState) {
     return oldState != RepairRun.RunState.ERROR && newState == RepairRun.RunState.ABORTED;
   }
 
@@ -566,8 +565,7 @@ public final class RepairRunResource {
     return runStatuses;
   }
 
-  @VisibleForTesting
-  public Set splitStateParam(Optional<String> state) {
+  static Set splitStateParam(Optional<String> state) {
     if (state.isPresent()) {
       final Iterable<String> chunks = CommonTools.COMMA_SEPARATED_LIST_SPLITTER.split(state.get());
       for (final String chunk : chunks) {

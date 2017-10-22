@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.unit.resources;
+package io.cassandrareaper.resources;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
@@ -24,13 +24,11 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
-import io.cassandrareaper.resources.RepairRunResource;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.RepairManager;
+import io.cassandrareaper.service.RepairRunnerTest;
 import io.cassandrareaper.service.RingRange;
-import io.cassandrareaper.service.SegmentRunner;
 import io.cassandrareaper.storage.MemoryStorage;
-import io.cassandrareaper.unit.service.RepairRunnerTest;
 
 import java.math.BigInteger;
 import java.net.URI;
@@ -97,7 +95,7 @@ public final class RepairRunResourceTest {
 
   @Before
   public void setUp() throws Exception {
-    SegmentRunner.SEGMENT_RUNNERS.clear();
+    //SegmentRunner.SEGMENT_RUNNERS.clear();
 
     context = new AppContext();
     context.repairManager = new RepairManager();
