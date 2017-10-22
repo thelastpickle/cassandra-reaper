@@ -98,7 +98,7 @@ public final class RepairRunResourceTest {
     //SegmentRunner.SEGMENT_RUNNERS.clear();
 
     context = new AppContext();
-    context.repairManager = new RepairManager();
+    context.repairManager = RepairManager.create(context);
     context.storage = new MemoryStorage();
     Cluster cluster = new Cluster(CLUSTER_NAME, PARTITIONER, Sets.newHashSet(SEED_HOST));
     context.storage.addCluster(cluster);

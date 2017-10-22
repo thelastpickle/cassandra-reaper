@@ -51,11 +51,20 @@ public final class RepairManager {
   // Caching all active RepairRunners.
   final Map<UUID, RepairRunner> repairRunners = Maps.newConcurrentMap();
 
+  private final AppContext context;
+  private final Heart heart;
   private ListeningScheduledExecutorService executor;
   private long repairTimeoutMillis;
   private long retryDelayMillis;
 
-  private final Heart heart = Heart.create();
+  private RepairManager(AppContext context)  {
+    this.context = context;
+    this.heart = Heart.create(context);
+  }
+
+  public static RepairManager create(AppContext context)  {
+    return new RepairManager(context);
+  }
 
   long getRepairTimeoutMillis() {
     return repairTimeoutMillis;
@@ -81,18 +90,19 @@ public final class RepairManager {
    *
    * @param context Reaper's application context.
    */
-  public void resumeRunningRepairRuns(AppContext context) throws ReaperException {
-    heart.beat(context);
+  public void resumeRunningRepairRuns() throws ReaperException {
+    heart.beat();
     Collection<RepairRun> running = context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
     for (RepairRun repairRun : running) {
-      Collection<RepairSegment> runningSegments =
-          context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
 
-      abortSegmentsWithNoLeader(context, repairRun, runningSegments);
+      Collection<RepairSegment> runningSegments
+          = context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
+
+      abortSegmentsWithNoLeader(repairRun, runningSegments);
 
       if (!repairRunners.containsKey(repairRun.getId())) {
         LOG.info("Restarting run id {} that has no runner", repairRun.getId());
-        startRepairRun(context, repairRun);
+        startRepairRun(repairRun);
       }
     }
 
@@ -103,19 +113,16 @@ public final class RepairManager {
         Collection<RepairSegment> runningSegments
             = context.storage.getSegmentsWithState(pausedRepairRun.getId(), RepairSegment.State.RUNNING);
 
-        abortSegments(runningSegments, context, pausedRepairRun);
+        abortSegments(runningSegments, pausedRepairRun);
       }
 
       if (!repairRunners.containsKey(pausedRepairRun.getId())) {
-        startRunner(context, pausedRepairRun.getId());
+        startRunner(pausedRepairRun.getId());
       }
     }
   }
 
-  private void abortSegmentsWithNoLeader(
-      AppContext context,
-      RepairRun repairRun,
-      Collection<RepairSegment> runningSegments) {
+  private void abortSegmentsWithNoLeader(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
 
     if (context.storage instanceof IDistributedStorage || !repairRunners.containsKey(repairRun.getId())) {
       // When multiple Reapers are in use, we can get stuck segments when one instance is rebooted
@@ -130,15 +137,11 @@ public final class RepairManager {
               .stream()
               .filter(segment -> !activeLeaders.contains(segment.getId()))
               .collect(Collectors.toSet()),
-          context,
           repairRun);
     }
   }
 
-  void abortSegments(
-      Collection<RepairSegment> runningSegments,
-      AppContext context,
-      RepairRun repairRun) {
+  void abortSegments(Collection<RepairSegment> runningSegments, RepairRun repairRun) {
 
     RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId()).get();
     for (RepairSegment segment : runningSegments) {
@@ -167,7 +170,7 @@ public final class RepairManager {
     }
   }
 
-  public RepairRun startRepairRun(AppContext context, RepairRun runToBeStarted) throws ReaperException {
+  public RepairRun startRepairRun(RepairRun runToBeStarted) throws ReaperException {
     assert null != executor : "you need to initialize the thread pool first";
     UUID runId = runToBeStarted.getId();
     LOG.info("Starting a run with id #{} with current state '{}'", runId, runToBeStarted.getRunState());
@@ -181,7 +184,7 @@ public final class RepairManager {
         if (!context.storage.updateRepairRun(updatedRun)) {
           throw new ReaperException("failed updating repair run " + updatedRun.getId());
         }
-        startRunner(context, runId);
+        startRunner(runId);
         return updatedRun;
       }
       case PAUSED: {
@@ -199,7 +202,7 @@ public final class RepairManager {
         Preconditions.checkState(
             !repairRunners.containsKey(runId), "trying to re-trigger run that is already running, with id " + runId);
         LOG.info("re-trigger a running run after restart, with id {}", runId);
-        startRunner(context, runId);
+        startRunner(runId);
         return runToBeStarted;
       case ERROR: {
         RepairRun updatedRun
@@ -207,7 +210,7 @@ public final class RepairManager {
         if (!context.storage.updateRepairRun(updatedRun)) {
           throw new ReaperException("failed updating repair run " + updatedRun.getId());
         }
-        startRunner(context, runId);
+        startRunner(runId);
         return updatedRun;
       }
       default:
@@ -215,7 +218,7 @@ public final class RepairManager {
     }
   }
 
-  private void startRunner(AppContext context, UUID runId) {
+  private void startRunner(UUID runId) {
     if (!repairRunners.containsKey(runId)) {
       LOG.info("scheduling repair for repair run #{}", runId);
       try {
@@ -233,7 +236,7 @@ public final class RepairManager {
     }
   }
 
-  public RepairRun pauseRepairRun(AppContext context, RepairRun runToBePaused) throws ReaperException {
+  public RepairRun pauseRepairRun(RepairRun runToBePaused) throws ReaperException {
     RepairRun updatedRun = runToBePaused.with()
         .runState(RepairRun.RunState.PAUSED)
         .pauseTime(DateTime.now())
@@ -245,7 +248,7 @@ public final class RepairManager {
     return updatedRun;
   }
 
-  public RepairRun abortRepairRun(AppContext context, RepairRun runToBeAborted) throws ReaperException {
+  public RepairRun abortRepairRun(RepairRun runToBeAborted) throws ReaperException {
     RepairRun updatedRun = runToBeAborted
         .with()
         .runState(RepairRun.RunState.ABORTED)

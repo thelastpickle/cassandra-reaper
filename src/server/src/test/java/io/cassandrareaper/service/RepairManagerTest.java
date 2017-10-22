@@ -45,7 +45,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RepairManagerTest {
+public final class RepairManagerTest {
 
   /**
    * Verifies that when a RUNNING segment exists that has no leader it will get aborted. Will happen
@@ -64,18 +64,17 @@ public class RepairManagerTest {
     final double intensity = 0.5f;
 
     final IStorage storage = mock(ICassandraStorageInterface.class);
-    RepairManager repairManager = new RepairManager();
-    repairManager = Mockito.spy(repairManager);
 
     storage.addCluster(new Cluster(clusterName, null, Collections.<String>singleton("127.0.0.1")));
 
     AppContext context = new AppContext();
     context.storage = storage;
-    context.repairManager = repairManager;
-    context.repairManager.initializeThreadPool(
-        1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
     context.config = new ReaperApplicationConfiguration();
     context.config.setLocalJmxMode(false);
+    RepairManager repairManager = RepairManager.create(context);
+    repairManager = Mockito.spy(repairManager);
+    context.repairManager = repairManager;
+    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     final RepairUnit cf =
         new RepairUnit.Builder(
@@ -100,8 +99,8 @@ public class RepairManagerTest {
 
     context.repairManager.repairRunners.put(run.getId(), mock(RepairRunner.class));
 
-    Mockito.doNothing().when(context.repairManager).abortSegments(any(), any(), any());
-    Mockito.doReturn(run).when(context.repairManager).startRepairRun(context, run);
+    Mockito.doNothing().when(context.repairManager).abortSegments(any(), any());
+    Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING))
         .thenReturn(Arrays.asList(run));
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED))
@@ -109,11 +108,11 @@ public class RepairManagerTest {
     when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
     when(((IDistributedStorage) context.storage).getLeaders()).thenReturn(Collections.emptyList());
 
-    context.repairManager.resumeRunningRepairRuns(context);
+    context.repairManager.resumeRunningRepairRuns();
 
     // Check that abortSegments was invoked is at least one segment, meaning abortion occurs
     Mockito.verify(context.repairManager, Mockito.times(1))
-        .abortSegments(Mockito.argThat(new NotEmptyList()), any(), any());
+        .abortSegments(Mockito.argThat(new NotEmptyList()), any());
   }
 
   /**
@@ -133,18 +132,17 @@ public class RepairManagerTest {
     final double intensity = 0.5f;
 
     final IStorage storage = mock(ICassandraStorageInterface.class);
-    RepairManager repairManager = new RepairManager();
-    repairManager = Mockito.spy(repairManager);
 
     storage.addCluster(new Cluster(clusterName, null, Collections.<String>singleton("127.0.0.1")));
 
     AppContext context = new AppContext();
     context.storage = storage;
-    context.repairManager = repairManager;
-    context.repairManager.initializeThreadPool(
-        1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
     context.config = new ReaperApplicationConfiguration();
     context.config.setLocalJmxMode(false);
+    RepairManager repairManager = RepairManager.create(context);
+    repairManager = Mockito.spy(repairManager);
+    context.repairManager = repairManager;
+    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     final RepairUnit cf =
         new RepairUnit.Builder(
@@ -169,8 +167,8 @@ public class RepairManagerTest {
 
     context.repairManager.repairRunners.put(run.getId(), mock(RepairRunner.class));
 
-    Mockito.doNothing().when(context.repairManager).abortSegments(any(), any(), any());
-    Mockito.doReturn(run).when(context.repairManager).startRepairRun(context, run);
+    Mockito.doNothing().when(context.repairManager).abortSegments(any(), any());
+    Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING))
         .thenReturn(Arrays.asList(run));
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED))
@@ -179,11 +177,11 @@ public class RepairManagerTest {
     when(((IDistributedStorage) context.storage).getLeaders())
         .thenReturn(Arrays.asList(segment.getId()));
 
-    context.repairManager.resumeRunningRepairRuns(context);
+    context.repairManager.resumeRunningRepairRuns();
 
     // Check that abortSegments was invoked with an empty list, meaning no abortion occurs
     Mockito.verify(context.repairManager, Mockito.times(1))
-        .abortSegments(Mockito.argThat(new EmptyList()), any(), any());
+        .abortSegments(Mockito.argThat(new EmptyList()), any());
   }
 
   /**
@@ -204,18 +202,17 @@ public class RepairManagerTest {
     final double intensity = 0.5f;
 
     final IStorage storage = mock(IStorage.class);
-    RepairManager repairManager = new RepairManager();
-    repairManager = Mockito.spy(repairManager);
 
     storage.addCluster(new Cluster(clusterName, null, Collections.<String>singleton("127.0.0.1")));
 
     AppContext context = new AppContext();
-    context.storage = storage;
-    context.repairManager = repairManager;
-    context.repairManager.initializeThreadPool(
-        1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
     context.config = new ReaperApplicationConfiguration();
     context.config.setLocalJmxMode(false);
+    context.storage = storage;
+    RepairManager repairManager = RepairManager.create(context);
+    repairManager = Mockito.spy(repairManager);
+    context.repairManager = repairManager;
+    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     final RepairUnit cf =
         new RepairUnit.Builder(
@@ -240,18 +237,18 @@ public class RepairManagerTest {
 
     context.repairManager.repairRunners.put(run.getId(), mock(RepairRunner.class));
 
-    Mockito.doNothing().when(context.repairManager).abortSegments(any(), any(), any());
-    Mockito.doReturn(run).when(context.repairManager).startRepairRun(context, run);
+    Mockito.doNothing().when(context.repairManager).abortSegments(any(), any());
+    Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING))
         .thenReturn(Arrays.asList(run));
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED))
         .thenReturn(Collections.emptyList());
     when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
 
-    context.repairManager.resumeRunningRepairRuns(context);
+    context.repairManager.resumeRunningRepairRuns();
 
     // Check that abortSegments was not invoked at all, meaning no abortion occurs
-    Mockito.verify(context.repairManager, Mockito.times(0)).abortSegments(any(), any(), any());
+    Mockito.verify(context.repairManager, Mockito.times(0)).abortSegments(any(), any());
   }
 
   /**
@@ -272,18 +269,17 @@ public class RepairManagerTest {
     final double intensity = 0.5f;
 
     final IStorage storage = mock(IStorage.class);
-    RepairManager repairManager = new RepairManager();
-    repairManager = Mockito.spy(repairManager);
 
     storage.addCluster(new Cluster(clusterName, null, Collections.<String>singleton("127.0.0.1")));
 
     AppContext context = new AppContext();
     context.storage = storage;
-    context.repairManager = repairManager;
-    context.repairManager.initializeThreadPool(
-        1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
     context.config = new ReaperApplicationConfiguration();
     context.config.setLocalJmxMode(false);
+    RepairManager repairManager = RepairManager.create(context);
+    repairManager = Mockito.spy(repairManager);
+    context.repairManager = repairManager;
+    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     final RepairUnit cf =
         new RepairUnit.Builder(
@@ -306,19 +302,19 @@ public class RepairManagerTest {
             .withRunId(run.getId())
             .build(UUIDs.timeBased());
 
-    Mockito.doNothing().when(context.repairManager).abortSegments(any(), any(), any());
-    Mockito.doReturn(run).when(context.repairManager).startRepairRun(context, run);
+    Mockito.doNothing().when(context.repairManager).abortSegments(any(), any());
+    Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING))
         .thenReturn(Arrays.asList(run));
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED))
         .thenReturn(Collections.emptyList());
     when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
 
-    context.repairManager.resumeRunningRepairRuns(context);
+    context.repairManager.resumeRunningRepairRuns();
 
     // Check that abortSegments was invoked with an non empty list, meaning abortion occurs
     Mockito.verify(context.repairManager, Mockito.times(1))
-        .abortSegments(Mockito.argThat(new NotEmptyList()), any(), any());
+        .abortSegments(Mockito.argThat(new NotEmptyList()), any());
   }
 
   private static class NotEmptyList implements ArgumentMatcher<Collection<RepairSegment>> {
