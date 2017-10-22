@@ -127,7 +127,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         .addMapping("/prometheusMetrics");
 
     LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
-    context.repairManager = new RepairManager();
+    context.repairManager = RepairManager.create(context);
     context.repairManager.initializeThreadPool(
         config.getRepairRunThreadCount(),
         config.getHangingRepairTimeoutMins(),
@@ -211,7 +211,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       scheduler.scheduleWithFixedDelay(
           () -> {
             try {
-              context.repairManager.resumeRunningRepairRuns(context);
+              context.repairManager.resumeRunningRepairRuns();
             } catch (ReaperException e) {
               LOG.error("Couldn't resume running repair runs", e);
             }
@@ -221,7 +221,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
           TimeUnit.SECONDS);
     } else {
       // Storage is different than Cassandra, assuming we have a single instance
-      context.repairManager.resumeRunningRepairRuns(context);
+      context.repairManager.resumeRunningRepairRuns();
     }
     LOG.info("Initialization complete! Reaper is ready to get things done!");
   }
