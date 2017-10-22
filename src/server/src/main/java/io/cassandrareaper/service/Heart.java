@@ -45,23 +45,25 @@ final class Heart implements AutoCloseable {
 
   private final AtomicLong lastBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
   private final ForkJoinPool forkJoinPool = new ForkJoinPool(64);
+  private final AppContext context;
   private final long maxBeatFrequencyMillis;
   private final AtomicBoolean updatingNodeMetrics = new AtomicBoolean(false);
 
-  private Heart(long maxBeatFrequency) {
+  private Heart(AppContext context, long maxBeatFrequency) {
+    this.context = context;
     this.maxBeatFrequencyMillis = maxBeatFrequency;
   }
 
-  static Heart create() {
-    return new Heart(DEFAULT_MAX_FREQUENCY);
+  static Heart create(AppContext context) {
+    return new Heart(context, DEFAULT_MAX_FREQUENCY);
   }
 
   @VisibleForTesting
-  static Heart create(long maxBeatFrequencyMillis) {
-    return new Heart(maxBeatFrequencyMillis);
+  static Heart create(AppContext context, long maxBeatFrequencyMillis) {
+    return new Heart(context, maxBeatFrequencyMillis);
   }
 
-  synchronized void beat(AppContext context) {
+  synchronized void beat() {
     if (context.storage instanceof IDistributedStorage
         && lastBeat.get() + maxBeatFrequencyMillis < System.currentTimeMillis()) {
 
@@ -69,7 +71,7 @@ final class Heart implements AutoCloseable {
       ((IDistributedStorage) context.storage).saveHeartbeat();
 
       if (ReaperApplicationConfiguration.DatacenterAvailability.EACH == context.config.getDatacenterAvailability()) {
-        updateRequestedNodeMetrics(context);
+        updateRequestedNodeMetrics();
       }
     }
   }
@@ -89,10 +91,10 @@ final class Heart implements AutoCloseable {
     }
   }
 
-  private void updateRequestedNodeMetrics(AppContext context) {
+  private void updateRequestedNodeMetrics() {
     Preconditions.checkArgument(context.storage instanceof IDistributedStorage);
     IDistributedStorage storage = ((IDistributedStorage) context.storage);
-    registerGauges(context);
+    registerGauges();
 
     if (!updatingNodeMetrics.getAndSet(true)) {
       int jmxTimeoutSeconds = context.config.getJmxConnectionTimeoutInSeconds();
@@ -154,7 +156,7 @@ final class Heart implements AutoCloseable {
     return context.metricRegistry.timer(MetricRegistry.name(Heart.class, names)).time();
   }
 
-  private void registerGauges(AppContext context) throws IllegalArgumentException {
+  private void registerGauges() throws IllegalArgumentException {
     if (!GAUGES_REGISTERED.getAndSet(true)) {
 
       context.metricRegistry.register(

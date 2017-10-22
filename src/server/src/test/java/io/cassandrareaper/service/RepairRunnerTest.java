@@ -109,10 +109,10 @@ public final class RepairRunnerTest {
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
     context.storage = storage;
-    context.repairManager = new RepairManager();
-    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
     context.config = new ReaperApplicationConfiguration();
     context.config.setLocalJmxMode(false);
+    context.repairManager = RepairManager.create(context);
+    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     final Semaphore mutex = new Semaphore(0);
 
@@ -208,7 +208,7 @@ public final class RepairRunnerTest {
         return jmx;
       }
     };
-    context.repairManager.startRepairRun(context, run);
+    context.repairManager.startRepairRun(run);
 
     await().with().atMost(20, TimeUnit.SECONDS).until(()
         -> {
@@ -261,10 +261,10 @@ public final class RepairRunnerTest {
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
     context.storage = storage;
-    context.repairManager = new RepairManager();
-    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
     context.config = new ReaperApplicationConfiguration();
     context.config.setLocalJmxMode(false);
+    context.repairManager = RepairManager.create(context);
+    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     final Semaphore mutex = new Semaphore(0);
 
@@ -337,7 +337,7 @@ public final class RepairRunnerTest {
         return jmx;
       }
     };
-    context.repairManager.startRepairRun(context, run);
+    context.repairManager.startRepairRun(run);
 
     await().with().atMost(20, TimeUnit.SECONDS).until(()
         -> {
@@ -370,9 +370,9 @@ public final class RepairRunnerTest {
     final IStorage storage = new MemoryStorage();
     AppContext context = new AppContext();
     context.storage = storage;
-    context.repairManager = new RepairManager();
     context.config = new ReaperApplicationConfiguration();
     context.config.setLocalJmxMode(false);
+    context.repairManager = RepairManager.create(context);
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
     UUID cf =
@@ -451,10 +451,10 @@ public final class RepairRunnerTest {
     };
 
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
-    context.repairManager.resumeRunningRepairRuns(context);
+    context.repairManager.resumeRunningRepairRuns();
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
     storage.updateRepairRun(run.with().runState(RepairRun.RunState.RUNNING).build(RUN_ID));
-    context.repairManager.resumeRunningRepairRuns(context);
+    context.repairManager.resumeRunningRepairRuns();
     Thread.sleep(1000);
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
   }

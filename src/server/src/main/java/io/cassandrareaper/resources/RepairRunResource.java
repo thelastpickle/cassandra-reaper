@@ -424,7 +424,7 @@ public final class RepairRunResource {
 
   private Response startRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) throws ReaperException {
     LOG.info("Starting run {}", repairRun.getId());
-    final RepairRun newRun = context.repairManager.startRepairRun(context, repairRun);
+    final RepairRun newRun = context.repairManager.startRepairRun(repairRun);
     return Response.status(Response.Status.OK)
         .entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired))
         .build();
@@ -432,19 +432,19 @@ public final class RepairRunResource {
 
   private Response pauseRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) throws ReaperException {
     LOG.info("Pausing run {}", repairRun.getId());
-    final RepairRun newRun = context.repairManager.pauseRepairRun(context, repairRun);
+    final RepairRun newRun = context.repairManager.pauseRepairRun(repairRun);
     return Response.ok().entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired)).build();
   }
 
   private Response resumeRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) throws ReaperException {
     LOG.info("Resuming run {}", repairRun.getId());
-    final RepairRun newRun = context.repairManager.startRepairRun(context, repairRun);
+    final RepairRun newRun = context.repairManager.startRepairRun(repairRun);
     return Response.ok().entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired)).build();
   }
 
   private Response abortRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) throws ReaperException {
     LOG.info("Aborting run {}", repairRun.getId());
-    final RepairRun newRun = context.repairManager.abortRepairRun(context, repairRun);
+    final RepairRun newRun = context.repairManager.abortRepairRun(repairRun);
     return Response.ok().entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired)).build();
   }
 
