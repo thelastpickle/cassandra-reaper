@@ -206,6 +206,38 @@ Allows the sending of Reaper metrics to a metrics reporting system such as Graph
 
 The Docker environment variables listed in this section map directly to Cassandra backend specific settings in the *cassandra-reaper.yaml* configuration file. The following table below lists the Docker environment variables, their associated Cassandra backend specific setting in the *cassandra-reaper.yaml* configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.
 
+In order for the Cassandra backend to be used, `REAPER_STORAGE_TYPE` must be set to `cassandra`.
+
+**Note:**
+
+Some variable names and defaults have changed between the release of
+Docker-support and Reaper for Apache Cassandra 1.0.
+
+The following variable name changes that have occurred in an effort to match
+closely with our yaml parameter names:
+
+* `REAPER_ENABLE_CORS` -> `REAPER_ENABLE_CROSS_ORIGIN`
+* `REAPER_ENABLE_DYNAMIC_SEEDS` -> `REAPER_ENABLE_DYNAMIC_SEED_LIST`
+* `REAPER_AUTO_SCHEDULE_ENABLED` -> `REAPER_AUTO_SCHEDULING_ENABLED`
+* `REAPER_AUTO_SCHEDULE_INITIAL_DELAY_PERIOD` -> `REAPER_AUTO_SCHEDULING_INITIAL_DELAY_PERIOD`
+* `REAPER_AUTO_SCHEDULE_PERIOD_BETWEEN_POLLS` -> `REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS`
+* `REAPER_AUTO_SCHEDULE_TIME_BETWEEN_FIRST_SCHEDULE` -> `REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE`
+* `REAPER_AUTO_SCHEDULE_EXCLUDED_KEYSPACES` -> `REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES`
+* `REAPER_JMX_USERNAME` -> `REAPER_JMX_AUTH_USERNAME`
+* `REAPER_JMX_PASSWORD` -> `REAPER_JMX_AUTH_PASSWORD`
+* `REAPER_LOGGERS` -> `REAPER_LOGGING_LOGGERS`
+* `REAPER_LOGGING_FORMAT` -> `REAPER_LOGGING_APPENDERS_LOG_FORMAT`
+* `REAPER_APP_PORT` -> `REAPER_SERVER_APP_PORT`
+* `REAPER_APP_BIND_HOST` -> `REAPER_SERVER_APP_BIND_HOST`
+* `REAPER_ADMIN_PORT` -> `REAPER_SERVER_ADMIN_PORT`
+* `REAPER_ADMIN_BIND_HOST` -> `REAPER_SERVER_ADMIN_BIND_HOST`
+* `REAPER_ACTIVATE_QUERY_LOGGER` -> `REAPER_CASS_ACTIVATE_QUERY_LOGGER`
+
+The following default values have changed:
+
+* `REAPER_CASS_KEYSPACE`:
+    * Previous default: `cassandra-reaper`
+    * New default: `reaper_db`
 
 <table class="vartable">
     <tr>
