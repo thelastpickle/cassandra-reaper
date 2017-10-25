@@ -8,7 +8,7 @@ weight = 10
 # Configuration
 
 An example testing configuration YAML file can be found from within this project repository:
-`src/test/resources/cassandra-reaper.yaml`
+[src/server/src/test/resources/cassandra-reaper.yaml](https://github.com/thelastpickle/cassandra-reaper/blob/master/src/server/src/test/resources/cassandra-reaper.yaml).
 
 The configuration file structure is provided by Dropwizard, and help on configuring the server,
 database connection, or logging, can be found at:
