@@ -18,6 +18,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.NodeMetrics;
+import io.cassandrareaper.core.NodeMetricsRequest;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.Builder;
 import io.cassandrareaper.core.RepairRun.RunState;
@@ -72,6 +73,7 @@ import org.cognitor.cassandra.migration.Database;
 import org.cognitor.cassandra.migration.MigrationRepository;
 import org.cognitor.cassandra.migration.MigrationTask;
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
@@ -128,6 +130,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement saveHeartbeatPrepStmt;
   private PreparedStatement storeNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsPrepStmt;
+  private PreparedStatement requestNodeMetricsPrepStmt;
+  private PreparedStatement listNodeMetricsRequestsPrepStmt;
+  private PreparedStatement deleteNodeMetricsRequestsPrepStmt;
 
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
     CassandraFactory cassandraFactory = config.getCassandraFactory();
@@ -259,6 +264,24 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                 + "has_repair_running, active_anticompactions) VALUES(?, ?, ?, ?, ?)")
         .setIdempotent(false);
     getNodeMetricsPrepStmt = session.prepare("SELECT * FROM node_metrics WHERE host_address = ?");
+    requestNodeMetricsPrepStmt =
+        session
+            .prepare(
+                "INSERT INTO node_metrics_request(time_partition, node, run_id, segment_id) "
+                    + " values(?, ?, ?, ?)")
+            .setConsistencyLevel(ConsistencyLevel.QUORUM)
+            .setIdempotent(Boolean.TRUE);
+    listNodeMetricsRequestsPrepStmt =
+        session
+            .prepare("SELECT * from node_metrics_request WHERE run_id = ? and time_partition = ?")
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
+            .setIdempotent(Boolean.TRUE);
+    deleteNodeMetricsRequestsPrepStmt =
+        session
+            .prepare(
+                "DELETE FROM node_metrics_request WHERE run_id = ? and time_partition = ? and node = ?")
+            .setConsistencyLevel(ConsistencyLevel.QUORUM)
+            .setIdempotent(Boolean.TRUE);
   }
 
   @Override
@@ -1204,5 +1227,67 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     @Override
     public void close() {
     }
+  }
+
+  @Override
+  public void requestNodeMetrics(NodeMetricsRequest request) {
+    session.executeAsync(
+        requestNodeMetricsPrepStmt.bind(
+            DateTimeFormat.forPattern("yyyy-MM-dd HH:mm").print(DateTime.now()),
+            request.getHostAddress(),
+            request.getRunId(),
+            request.getSegmentId()));
+  }
+
+  @Override
+  public Collection<NodeMetricsRequest> listNodeMetricsRequests(UUID runId) {
+    List<NodeMetricsRequest> requests = Lists.newArrayList();
+    List<ResultSetFuture> futures = Lists.newArrayList();
+    futures.add(
+        session.executeAsync(
+            listNodeMetricsRequestsPrepStmt.bind(
+                runId, DateTimeFormat.forPattern("yyyy-MM-dd HH:mm").print(DateTime.now()))));
+    futures.add(
+        session.executeAsync(
+            listNodeMetricsRequestsPrepStmt.bind(
+                runId,
+                DateTimeFormat.forPattern("yyyy-MM-dd HH:mm")
+                    .print(DateTime.now().minusMinutes(1)))));
+
+    try {
+      List<ResultSet> results = Futures.allAsList(futures).get();
+      results
+          .stream()
+          .forEach(
+              resultSet ->
+                  requests.addAll(
+                      resultSet
+                          .all()
+                          .stream()
+                          .map(
+                              row ->
+                                  NodeMetricsRequest.builder()
+                                      .withHostAddress(row.getString("node"))
+                                      .withRunId(row.getUUID("run_id"))
+                                      .withSegmentId(row.getUUID("segment_id"))
+                                      .build())
+                          .collect(Collectors.toList())));
+    } catch (InterruptedException | ExecutionException e) {
+      LOG.error("Failed listing node metrics requests", e);
+    }
+
+    return requests;
+  }
+
+  @Override
+  public void removeNodeMetricsRequests(UUID runId, String node) {
+    session.executeAsync(
+        deleteNodeMetricsRequestsPrepStmt.bind(
+            runId, DateTimeFormat.forPattern("yyyy-MM-dd HH:mm").print(DateTime.now()), node));
+    session.executeAsync(
+        deleteNodeMetricsRequestsPrepStmt.bind(
+            runId,
+            DateTimeFormat.forPattern("yyyy-MM-dd HH:mm").print(DateTime.now().minusMinutes(1)),
+            node));
   }
 }

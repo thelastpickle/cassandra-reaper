@@ -15,6 +15,7 @@
 package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.NodeMetrics;
+import io.cassandrareaper.core.NodeMetricsRequest;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.service.RingRange;
 
@@ -45,8 +46,13 @@ public interface IDistributedStorage {
 
   Optional<NodeMetrics> getNodeMetrics(String hostName);
 
-
   Collection<NodeMetrics> getNodeMetrics();
 
   void storeNodeMetrics(NodeMetrics hostMetrics);
+
+  void requestNodeMetrics(NodeMetricsRequest request);
+
+  Collection<NodeMetricsRequest> listNodeMetricsRequests(UUID runId);
+
+  void removeNodeMetricsRequests(UUID runId, String node);
 }

@@ -130,7 +130,8 @@ const repairForm = React.createClass({
   },
 
   _checkValidity: function() {
-    const valid = this.state.keyspace && this.state.clusterName && this.state.owner 
+    console.log("Keyspaces : " + this.state.keyspaceList.length);
+    const valid = this.state.keyspaceList.length > 0 && this.state.clusterName && this.state.owner 
                                       && ((this.state.datacenterList.length>0 && this.state.nodeList.length==0)
                                       || (this.state.datacenterList.length==0 && this.state.nodeList.length > 0) || (this.state.datacenterList.length==0  && this.state.nodeList==0) );
     this.setState({submitEnabled: valid});
@@ -344,6 +345,8 @@ const repairForm = React.createClass({
       }
     }
 
+    const keyspaceInputStyle = this.state.keyspaceList.length > 0 ? 'form-control-hidden':'form-control';
+
     const advancedSettingsHeader = <div className="panel-title" >
     <a href="#advanced-form" data-toggle="collapse" onClick={this._toggleAdvancedSettingsDisplay}>Advanced settings</a>
     &nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={advancedMenuDownStyle}></span>
@@ -376,7 +379,7 @@ const repairForm = React.createClass({
                 placeholder={'Add a keyspace'}
                 handleFilterSuggestions={this._handleKeyspaceFilterSuggestions}
                 classNames={{
-                    tagInputField: 'form-control'
+                    tagInputField: keyspaceInputStyle
                   }}/>
               </div>
             </div>
@@ -468,10 +471,10 @@ const repairForm = React.createClass({
                       </div>
                     </div>
                     <div className="form-group">
-                      <label htmlFor="in_segments" className="col-sm-3 control-label">Segment count</label>
+                      <label htmlFor="in_segments" className="col-sm-3 control-label">Segments per node</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
                         <input type="number" className="form-control" value={this.state.segments}
-                          onChange={this._handleChange} id="in_segments" placeholder="amount of segments to create for repair"/>
+                          onChange={this._handleChange} id="in_segments" placeholder="amount of segments per node to create for the repair run"/>
                       </div>
                     </div>
                     <div className="form-group">
