@@ -131,7 +131,7 @@ const scheduleForm = React.createClass({
   }, 
 
   _checkValidity: function() {
-    const valid = this.state.keyspace && this.state.clusterName && this.state.owner
+    const valid = this.state.keyspaceList.length > 0 && this.state.clusterName && this.state.owner
     && this.state.startTime && this.state.intervalDays 
     && ((this.state.datacenterList.length>0 && this.state.nodeList.length==0)
            || (this.state.datacenterList.length==0 && this.state.nodeList.length > 0) || (this.state.datacenterList.length==0  && this.state.nodeList==0) );
@@ -355,6 +355,8 @@ const scheduleForm = React.createClass({
       }
     }
 
+    const keyspaceInputStyle = this.state.keyspaceList.length > 0 ? 'form-control-hidden':'form-control';
+
     const advancedSettingsHeader = <div className="panel-title" >
     <a href="#advanced-form" data-toggle="collapse" onClick={this._toggleAdvancedSettingsDisplay}>Advanced settings</a>
     &nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={advancedMenuDownStyle}></span>
@@ -385,7 +387,7 @@ const scheduleForm = React.createClass({
                 placeholder={'Add a keyspace'}
                 handleFilterSuggestions={this._handleKeyspaceFilterSuggestions}
                 classNames={{
-                    tagInputField: 'form-control'
+                    tagInputField: keyspaceInputStyle
                   }}/>
               </div>
             </div>
