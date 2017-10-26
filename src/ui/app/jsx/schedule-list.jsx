@@ -13,10 +13,11 @@ const TableRow = React.createClass({
 
     return (
     <tr>
-        <td data-toggle="collapse" data-target={rowID}>{this.props.row.id}</td>
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.state}</td>
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.cluster_name}</td>
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.keyspace_name}</td>
+        <td data-toggle="collapse" data-target={rowID}><CFsListRender list={this.props.row.column_families} /></td>
+        <td data-toggle="collapse" data-target={rowID}><CFsListRender list={this.props.row.blacklisted_tables} /></td>
         <td data-toggle="collapse" data-target={rowID}>{incremental}</td>
         <td data-toggle="collapse" data-target={rowID}>{next}</td>
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.scheduled_days_between} days</td>
@@ -56,20 +57,16 @@ const TableRowDetails = React.createClass({
           <table className="table table-condensed">
             <tbody>
                 <tr>
+                    <td>ID</td>
+                    <td>{this.props.id}</td>
+                </tr>
+                <tr>
                     <td>Next run</td>
                     <td>{nextAt}</td>
                 </tr>
                 <tr>
                     <td>Owner</td>
                     <td>{this.props.row.owner}</td>
-                </tr>
-                <tr>
-                    <td>CFs</td>
-                    <td><CFsListRender list={this.props.row.column_families} /></td>
-                </tr>
-                <tr>
-                    <td>Blacklist</td>
-                    <td><CFsListRender list={this.props.row.blacklisted_tables} /></td>
                 </tr>
                 <tr>
                     <td>Nodes</td>
@@ -199,10 +196,11 @@ const scheduleList = React.createClass({
                   <table className="table table-bordered table-hover table-striped">
                       <thead>
                           <tr>
-                              <th>ID</th>
                               <th>State</th>
                               <th>Cluster</th>
                               <th>Keyspace</th>
+                              <th>Tables</th>
+                              <th>Blacklist</th>
                               <th>Incremental</th>
                               <th>Next run</th>
                               <th>Interval</th>
