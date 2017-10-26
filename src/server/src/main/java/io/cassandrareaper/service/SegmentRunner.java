@@ -18,6 +18,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.NodeMetrics;
+import io.cassandrareaper.core.NodeMetricsRequest;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
@@ -45,7 +46,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javax.management.AttributeNotFoundException;
 import javax.management.JMException;
+import javax.management.MBeanException;
+import javax.management.ReflectionException;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -66,6 +70,8 @@ import org.joda.time.Seconds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
+
 
 public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
@@ -82,6 +88,10 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private static final long SLEEP_TIME_AFTER_POSTPONE_IN_MS = 10000;
   private static final ExecutorService METRICS_GRABBER_EXECUTOR = Executors.newFixedThreadPool(10);
+  private static final int NODE_METRICS_POLL_INTERVAL = 10;
+  private static final TimeUnit NODE_METRICS_POLL_INTERVAL_UNIT = TimeUnit.SECONDS;
+  private static final int NODE_METRICS_MAX_WAIT = 2;
+  private static final TimeUnit NODE_METRICS_MAX_WAIT_UNIT = TimeUnit.MINUTES;
 
   private final AppContext context;
   private final UUID segmentId;
@@ -521,16 +531,24 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       throws ConcurrentException {
 
     if (!busyHosts.get().contains(hostName) && context.storage instanceof IDistributedStorage) {
-      LOG.warn(
-          "A host ({}) reported that it is involved in a repair, but there is no record "
-          + "of any ongoing repair involving the host. Sending command to abort all repairs "
-          + "on the host.",
-          hostName);
       try (JmxProxy hostProxy
           = context.jmxConnectionFactory.connect(hostName, context.config.getJmxConnectionTimeoutInSeconds())) {
-        hostProxy.cancelAllRepairs();
-        hostProxy.close();
-      } catch (ReaperException | RuntimeException | InterruptedException e) {
+        // We double check that repair is still running there before actually canceling repairs
+        if (hostProxy.isRepairRunning()) {
+          LOG.warn(
+              "A host ({}) reported that it is involved in a repair, but there is no record "
+                  + "of any ongoing repair involving the host. Sending command to abort all repairs "
+                  + "on the host.",
+              hostName);
+          hostProxy.cancelAllRepairs();
+          hostProxy.close();
+        }
+      } catch (ReaperException
+          | RuntimeException
+          | InterruptedException
+          | AttributeNotFoundException
+          | MBeanException
+          | ReflectionException e) {
         LOG.debug("failed to cancel repairs on host {}", hostName, e);
       }
     }
@@ -578,9 +596,41 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
   private Optional<NodeMetrics> getNodeMetrics(String hostName) {
     Preconditions.checkState(!DatacenterAvailability.ALL.equals(context.config.getDatacenterAvailability()));
 
-    return context.storage instanceof IDistributedStorage
-        ? ((IDistributedStorage) context.storage).getNodeMetrics(hostName)
-        : Optional.absent();
+    Optional<NodeMetrics> result =
+        context.storage instanceof IDistributedStorage
+            ? ((IDistributedStorage) context.storage).getNodeMetrics(hostName)
+            : Optional.absent();
+
+    if (!result.isPresent()
+        && DatacenterAvailability.EACH.equals(context.config.getDatacenterAvailability())) {
+      // Sending a request for metrics to the other reaper instances through the Cassandra backend
+      ((IDistributedStorage) context.storage)
+          .requestNodeMetrics(
+              NodeMetricsRequest.builder()
+                  .withCluster(clusterName)
+                  .withHostAddress(hostName)
+                  .withRunId(repairRunner.getRepairRunId())
+                  .withSegmentId(segmentId)
+                  .build());
+
+      // Waiting for other Reaper instances to put the metrics in the database for that node
+      await()
+          .pollInterval(NODE_METRICS_POLL_INTERVAL, NODE_METRICS_POLL_INTERVAL_UNIT)
+          .atMost(NODE_METRICS_MAX_WAIT, NODE_METRICS_MAX_WAIT_UNIT)
+          .ignoreExceptions()
+          .until(
+              () -> {
+                LOG.info("Trying to get metrics from remote DCs for {}", hostName);
+                return ((IDistributedStorage) context.storage).getNodeMetrics(hostName).isPresent();
+              });
+
+      result =
+          context.storage instanceof IDistributedStorage
+              ? ((IDistributedStorage) context.storage).getNodeMetrics(hostName)
+              : Optional.absent();
+    }
+
+    return result;
   }
 
   private boolean isRepairRunningOnOneNode(RepairSegment segment) {

@@ -89,7 +89,10 @@ public final class CommonTools {
     // preparing a repair run involves several steps
     // the first step is to generate token segments
     List<RingRange> tokenSegments =
-        generateSegments(context, cluster, segments, segmentsPerNode, repairUnit);
+        repairUnit.getIncrementalRepair()
+            ? Lists.newArrayList()
+            : generateSegments(context, cluster, segments, segmentsPerNode, repairUnit);
+
     checkNotNull(tokenSegments, "failed generating repair segments");
 
     Map<String, RingRange> nodes = getClusterNodes(context, cluster, repairUnit);
@@ -132,7 +135,7 @@ public final class CommonTools {
       RepairUnit repairUnit)
       throws ReaperException {
 
-    List<RingRange> segments = null;
+    List<RingRange> segments = Lists.newArrayList();
 
     Preconditions.checkNotNull(
         targetCluster.getPartitioner(),
