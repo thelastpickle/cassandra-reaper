@@ -43,10 +43,10 @@ public interface IDistributedStorage {
 
   void saveHeartbeat();
 
-  Optional<NodeMetrics> getNodeMetrics(String hostName);
+  Collection<NodeMetrics> getNodeMetrics(UUID runId);
 
+  Optional<NodeMetrics> getNodeMetrics(UUID runId, String hostName);
 
-  Collection<NodeMetrics> getNodeMetrics();
+  void storeNodeMetrics(UUID runId, NodeMetrics hostMetrics);
 
-  void storeNodeMetrics(NodeMetrics hostMetrics);
 }

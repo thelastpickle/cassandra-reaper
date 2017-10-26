@@ -17,14 +17,18 @@ package io.cassandrareaper.core;
 public final class NodeMetrics {
 
   private final String hostAddress;
+  private final String cluster;
   private final String datacenter;
+  private final boolean requested;
   private final int pendingCompactions;
   private final boolean hasRepairRunning;
   private final int activeAnticompactions;
 
   private NodeMetrics(Builder builder) {
     this.hostAddress = builder.hostAddress;
+    this.cluster = builder.cluster;
     this.datacenter = builder.datacenter;
+    this.requested = builder.requested;
     this.pendingCompactions = builder.pendingCompactions;
     this.hasRepairRunning = builder.hasRepairRunning;
     this.activeAnticompactions = builder.activeAnticompactions;
@@ -34,8 +38,16 @@ public final class NodeMetrics {
     return hostAddress;
   }
 
+  public String getCluster() {
+    return cluster;
+  }
+
   public String getDatacenter() {
     return datacenter;
+  }
+
+  public boolean isRequested() {
+    return requested;
   }
 
   public int getPendingCompactions() {
@@ -65,7 +77,9 @@ public final class NodeMetrics {
   public static final class Builder {
 
     private String hostAddress;
+    private String cluster;
     private String datacenter;
+    private boolean requested = false;
     private int pendingCompactions;
     private boolean hasRepairRunning;
     private int activeAnticompactions;
@@ -78,8 +92,18 @@ public final class NodeMetrics {
       return this;
     }
 
+    public Builder withCluster(String cluster) {
+      this.cluster = cluster;
+      return this;
+    }
+
     public Builder withDatacenter(String datacenter) {
       this.datacenter = datacenter;
+      return this;
+    }
+
+    public Builder withRequested(boolean requested) {
+      this.requested = requested;
       return this;
     }
 

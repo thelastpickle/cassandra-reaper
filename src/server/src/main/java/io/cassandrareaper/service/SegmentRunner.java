@@ -82,6 +82,8 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private static final long SLEEP_TIME_AFTER_POSTPONE_IN_MS = 10000;
   private static final ExecutorService METRICS_GRABBER_EXECUTOR = Executors.newFixedThreadPool(10);
+  private static final long METRICS_POLL_INTERVAL_MS = TimeUnit.SECONDS.toMillis(10);
+  private static final long METRICS_MAX_WAIT_MS = TimeUnit.MINUTES.toMillis(2);
 
   private final AppContext context;
   private final UUID segmentId;
@@ -521,16 +523,19 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
       throws ConcurrentException {
 
     if (!busyHosts.get().contains(hostName) && context.storage instanceof IDistributedStorage) {
-      LOG.warn(
-          "A host ({}) reported that it is involved in a repair, but there is no record "
-          + "of any ongoing repair involving the host. Sending command to abort all repairs "
-          + "on the host.",
-          hostName);
       try (JmxProxy hostProxy
           = context.jmxConnectionFactory.connect(hostName, context.config.getJmxConnectionTimeoutInSeconds())) {
-        hostProxy.cancelAllRepairs();
-        hostProxy.close();
-      } catch (ReaperException | RuntimeException | InterruptedException e) {
+        // We double check that repair is still running there before actually canceling repairs
+        if (hostProxy.isRepairRunning()) {
+          LOG.warn(
+              "A host ({}) reported that it is involved in a repair, but there is no record "
+                  + "of any ongoing repair involving the host. Sending command to abort all repairs "
+                  + "on the host.",
+              hostName);
+          hostProxy.cancelAllRepairs();
+          hostProxy.close();
+        }
+      } catch (ReaperException | RuntimeException | InterruptedException | JMException e) {
         LOG.debug("failed to cancel repairs on host {}", hostName, e);
       }
     }
@@ -557,7 +562,6 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             .withActiveAnticompactions(0) // for future use
             .build();
 
-        storeNodeMetrics(metrics);
         return Pair.of(hostName, Optional.of(metrics));
       } catch (RuntimeException | ReaperException e) {
         LOG.debug("failed to query metrics for host {}, trying to get metrics from storage...", hostName, e);
@@ -565,7 +569,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
             && !hostDatacenter.equals(localDatacenter)) {
 
           // We can get metrics for remote datacenters from storage
-          Optional<NodeMetrics> metrics = getNodeMetrics(hostName);
+          Optional<NodeMetrics> metrics = getRemoteNodeMetrics(hostName, hostDatacenter);
           if (metrics.isPresent()) {
             return Pair.of(hostName, metrics);
           }
@@ -575,12 +579,38 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     };
   }
 
-  private Optional<NodeMetrics> getNodeMetrics(String hostName) {
+  private Optional<NodeMetrics> getRemoteNodeMetrics(String hostName, String hostDatacenter) {
     Preconditions.checkState(!DatacenterAvailability.ALL.equals(context.config.getDatacenterAvailability()));
 
-    return context.storage instanceof IDistributedStorage
-        ? ((IDistributedStorage) context.storage).getNodeMetrics(hostName)
-        : Optional.absent();
+    Optional<NodeMetrics> result = Optional.absent();
+    if (context.storage instanceof IDistributedStorage) {
+      IDistributedStorage storage = ((IDistributedStorage) context.storage);
+      result = storage.getNodeMetrics(repairRunner.getRepairRunId(), hostName);
+
+      if (!result.isPresent() && DatacenterAvailability.EACH.equals(context.config.getDatacenterAvailability())) {
+        // Sending a request for metrics to the other reaper instances through the Cassandra backend
+        storeNodeMetrics(
+            NodeMetrics.builder()
+                .withCluster(clusterName)
+                .withDatacenter(hostDatacenter)
+                .withHostAddress(hostName)
+                .withRequested(true)
+                .build());
+
+        long start = System.currentTimeMillis();
+
+        while ( (!result.isPresent() || result.get().isRequested())
+            && start + METRICS_MAX_WAIT_MS > System.currentTimeMillis()) {
+
+          try {
+            Thread.sleep(METRICS_POLL_INTERVAL_MS);
+          } catch (InterruptedException ignore) { }
+          LOG.info("Trying to get metrics from remote DCs for {} in {} of {}", hostName, hostDatacenter, clusterName);
+          result = storage.getNodeMetrics(repairRunner.getRepairRunId(), hostName);
+        }
+      }
+    }
+    return result;
   }
 
   private boolean isRepairRunningOnOneNode(RepairSegment segment) {
@@ -618,7 +648,7 @@ public final class SegmentRunner implements RepairStatusHandler, Runnable {
     if (context.storage instanceof IDistributedStorage
         && !DatacenterAvailability.ALL.equals(context.config.getDatacenterAvailability())) {
 
-      ((IDistributedStorage) context.storage).storeNodeMetrics(metrics);
+      ((IDistributedStorage) context.storage).storeNodeMetrics(repairRunner.getRepairRunId(), metrics);
     }
   }
 

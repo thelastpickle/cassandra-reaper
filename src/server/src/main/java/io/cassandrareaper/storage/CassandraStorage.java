@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.BatchStatement;
@@ -86,8 +87,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
 
-  private static final String SELECT_NODE_METRICS = "SELECT * FROM node_metrics";
-
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
 
   private final com.datastax.driver.core.Cluster cassandra;
@@ -128,6 +127,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement saveHeartbeatPrepStmt;
   private PreparedStatement storeNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsPrepStmt;
+  private PreparedStatement getNodeMetricsByNodePrepStmt;
 
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
     CassandraFactory cassandraFactory = config.getCassandraFactory();
@@ -255,10 +255,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .setIdempotent(false);
     storeNodeMetricsPrepStmt = session
         .prepare(
-            "INSERT INTO node_metrics (host_address, datacenter, pending_compactions, "
-                + "has_repair_running, active_anticompactions) VALUES(?, ?, ?, ?, ?)")
+            "INSERT INTO node_metrics_v1 (time_partition,run_id,node,datacenter,cluster,requested,pending_compactions,"
+                + "has_repair_running,active_anticompactions) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setIdempotent(false);
-    getNodeMetricsPrepStmt = session.prepare("SELECT * FROM node_metrics WHERE host_address = ?");
+    getNodeMetricsPrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
+        + " WHERE time_partition = ? AND run_id = ?");
+    getNodeMetricsByNodePrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
+        + " WHERE time_partition = ? AND run_id = ? AND node = ?");
   }
 
   @Override
@@ -1049,35 +1052,49 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public void storeNodeMetrics(NodeMetrics hostMetrics) {
+  public void storeNodeMetrics(UUID runId, NodeMetrics hostMetrics) {
+    long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
+    storeNodeMetricsImpl(runId, hostMetrics, minute);
+    storeNodeMetricsImpl(runId, hostMetrics, minute + 1);
+    storeNodeMetricsImpl(runId, hostMetrics, minute + 2);
+  }
+
+  private void storeNodeMetricsImpl(UUID runId, NodeMetrics hostMetrics, long minute) {
     session.executeAsync(
         storeNodeMetricsPrepStmt.bind(
+            minute,
+            runId,
             hostMetrics.getHostAddress(),
             hostMetrics.getDatacenter(),
+            hostMetrics.getCluster(),
+            hostMetrics.isRequested(),
             hostMetrics.getPendingCompactions(),
             hostMetrics.hasRepairRunning(),
             hostMetrics.getActiveAnticompactions()));
   }
 
   @Override
-  public Optional<NodeMetrics> getNodeMetrics(String hostName) {
-    Row row = session.execute(getNodeMetricsPrepStmt.bind(hostName)).one();
-    return null != row ? Optional.of(createNodeMetrics(row)) : Optional.absent();
+  public Collection<NodeMetrics> getNodeMetrics(UUID runId) {
+    long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
+
+    return session.execute(getNodeMetricsPrepStmt.bind(minute, runId)).all().stream()
+        .map((row) -> createNodeMetrics(row))
+        .collect(Collectors.toSet());
   }
 
   @Override
-  public Collection<NodeMetrics> getNodeMetrics() {
-    return session.execute(new SimpleStatement(SELECT_NODE_METRICS))
-        .all()
-        .stream()
-        .map(row -> createNodeMetrics(row))
-        .collect(Collectors.toList());
+  public Optional<NodeMetrics> getNodeMetrics(UUID runId, String hostName) {
+    long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
+    Row row = session.execute(getNodeMetricsByNodePrepStmt.bind(minute, runId, hostName)).one();
+    return null != row ? Optional.of(createNodeMetrics(row)) : Optional.absent();
   }
 
   private static NodeMetrics createNodeMetrics(Row row) {
     return NodeMetrics.builder()
-        .withHostAddress(row.getString("host_address"))
+        .withHostAddress(row.getString("node"))
         .withDatacenter(row.getString("datacenter"))
+        .withCluster(row.getString("cluster"))
+        .withRequested(row.getBool("requested"))
         .withPendingCompactions(row.getInt("pending_compactions"))
         .withHasRepairRunning(row.getBool("has_repair_running"))
         .withActiveAnticompactions(row.getInt("active_anticompactions"))
@@ -1205,4 +1222,5 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     public void close() {
     }
   }
+
 }
