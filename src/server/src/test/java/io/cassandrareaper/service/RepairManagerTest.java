@@ -70,7 +70,6 @@ public final class RepairManagerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    context.config.setLocalJmxMode(false);
     RepairManager repairManager = RepairManager.create(context);
     repairManager = Mockito.spy(repairManager);
     context.repairManager = repairManager;
@@ -138,7 +137,6 @@ public final class RepairManagerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    context.config.setLocalJmxMode(false);
     RepairManager repairManager = RepairManager.create(context);
     repairManager = Mockito.spy(repairManager);
     context.repairManager = repairManager;
@@ -207,7 +205,6 @@ public final class RepairManagerTest {
 
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.config.setLocalJmxMode(false);
     context.storage = storage;
     RepairManager repairManager = RepairManager.create(context);
     repairManager = Mockito.spy(repairManager);
@@ -275,7 +272,6 @@ public final class RepairManagerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    context.config.setLocalJmxMode(false);
     RepairManager repairManager = RepairManager.create(context);
     repairManager = Mockito.spy(repairManager);
     context.repairManager = repairManager;

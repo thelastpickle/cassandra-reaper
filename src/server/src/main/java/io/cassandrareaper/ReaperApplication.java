@@ -145,7 +145,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     if (context.jmxConnectionFactory == null) {
       LOG.info("no JMX connection factory given in context, creating default");
       context.jmxConnectionFactory = new JmxConnectionFactory(context.metricRegistry);
-      context.jmxConnectionFactory.setLocalMode(context.config.getLocalJmxMode());
 
       // read jmx host/port mapping from config and provide to jmx con.factory
       Map<String, Integer> jmxPorts = config.getJmxPorts();

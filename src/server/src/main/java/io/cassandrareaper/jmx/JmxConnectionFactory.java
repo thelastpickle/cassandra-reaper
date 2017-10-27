@@ -42,7 +42,6 @@ public class JmxConnectionFactory {
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
   private EC2MultiRegionAddressTranslator addressTranslator;
-  private boolean localMode = false;
 
   @VisibleForTesting
   public JmxConnectionFactory() {
@@ -58,9 +57,6 @@ public class JmxConnectionFactory {
   public JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
       throws ReaperException, NumberFormatException, InterruptedException {
     // use configured jmx port for host if provided
-    if (localMode) {
-      host = "127.0.0.1";
-    }
     if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
       host = host + ":" + jmxPorts.get(host);
     }
@@ -132,10 +128,6 @@ public class JmxConnectionFactory {
 
   public final void setAddressTranslator(EC2MultiRegionAddressTranslator addressTranslator) {
     this.addressTranslator = addressTranslator;
-  }
-
-  public final void setLocalMode(boolean localMode) {
-    this.localMode = localMode;
   }
 
   public final HostConnectionCounters getHostConnectionCounters() {
