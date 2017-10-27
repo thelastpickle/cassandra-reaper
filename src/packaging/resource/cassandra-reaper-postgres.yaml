@@ -7,7 +7,7 @@ repairIntensity: 0.9
 scheduleDaysBetween: 7
 repairRunThreadCount: 15
 hangingRepairTimeoutMins: 30
-storageType: database
+storageType: postgres
 enableCrossOrigin: true
 incrementalRepair: false
 enableDynamicSeedList: true
@@ -62,9 +62,7 @@ server:
   requestLog:
     appenders: []
 
-database:
-  # PostgreSQL JDBC settings
-  driverClass: org.postgresql.Driver
+postgres:
   user: postgres
   password: 
   url: jdbc:postgresql://127.0.0.1/reaper

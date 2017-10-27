@@ -6,7 +6,7 @@ repairIntensity: 0.95
 scheduleDaysBetween: 7
 repairRunThreadCount: 15
 hangingRepairTimeoutMins: 1
-storageType: database
+storageType: postgres
 incrementalRepair: false
 jmxConnectionTimeoutInSeconds: 300
 
@@ -40,9 +40,7 @@ jmxPorts:
   127.0.0.8: 7800
 
 # database section will be ignored if storageType is set to "memory"
-database:
-  # H2 JDBC settings
-  driverClass: org.postgresql.Driver
+postgres:
   user: postgres
   password:
   url: jdbc:postgresql://127.0.0.1/reaper

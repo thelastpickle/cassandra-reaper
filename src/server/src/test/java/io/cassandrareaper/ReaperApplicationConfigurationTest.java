@@ -46,7 +46,7 @@ public final class ReaperApplicationConfigurationTest {
     CassandraFactory cassandraFactory = new CassandraFactory();
     cassandraFactory.setContactPoints(new String[]{"127.0.0.1"});
     config.setCassandraFactory(cassandraFactory);
-    config.setDataSourceFactory(dataSourceFactory);
+    config.setPostgresDataSourceFactory(dataSourceFactory);
     config.setHangingRepairTimeoutMins(1);
     config.setRepairParallelism(RepairParallelism.DATACENTER_AWARE);
     config.setRepairRunThreadCount(1);

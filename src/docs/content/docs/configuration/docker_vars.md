@@ -52,7 +52,7 @@ Environment Variable | Configuration Setting | Default Value
 
 **Note:**
 
-Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with our YAML parameter names:
+Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with the YAML parameter names:
 
 Pre Reaper 1.0 | Post Reaper 1.0
 ---|---
@@ -151,11 +151,20 @@ Allows Reaper to establish an encrypted connection when establishing a connectio
 
 The Docker environment variables listed in this section map directly to H2/Postgres backend specific settings in the *cassandra-reaper.yaml* configuration file. The following table below lists the Docker environment variables, their associated H2/Postgres backend specific setting in the *cassandra-reaper.yaml* configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.
 
-In order to use the following settings, `REAPER_STORAGE_TYPE` must be set to `database`.
+In order to use the following settings, `REAPER_STORAGE_TYPE` must be set to `h2` or `postgres`.
 
 Environment Variable | Configuration Setting | Default Value
 ---|---|---
-<code class="codeLarge">REAPER_DB_DRIVER_CLASS</code> | <a href="../backend_specific#driverclass">driverClass</a> | org.h2.Driver
 <code class="codeLarge">REAPER_DB_URL</code> | <a href="../backend_specific#url">url</a> | jdbc:h2:/var/lib/cassandra-reaper/db;MODE=PostgreSQL
 <code class="codeLarge">REAPER_DB_USERNAME</code> | <a href="../backend_specific#user">user</a> |
 <code class="codeLarge">REAPER_DB_PASSWORD</code> | <a href="../backend_specific#password-1">password</a> |
+
+<br/>
+
+**Note:**
+
+Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with the YAML parameter names:
+
+Pre Reaper 1.0 | Post Reaper 1.0
+---|---
+`REAPER_DB_DRIVER_CLASS` | N/A - The associated parameter has been deprecated

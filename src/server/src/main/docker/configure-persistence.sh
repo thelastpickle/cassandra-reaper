@@ -39,16 +39,27 @@ fi
 # END cassandra persistence options
 
     ;;
-    "database")
+    "postgres")
 
-# BEGIN database persistence options
+# BEGIN postgres persistence options
 cat <<EOT >> /etc/cassandra-reaper.yml
-database:
-  driverClass: ${REAPER_DB_DRIVER_CLASS}
+postgres:
   url: ${REAPER_DB_URL}
   user: ${REAPER_DB_USERNAME}
   password: ${REAPER_DB_PASSWORD}
 EOT
-# END database persistence options
+# END postgres persistence options
+
+    ;;
+    "h2")
+
+# BEGIN h2 persistence options
+cat <<EOT >> /etc/cassandra-reaper.yml
+h2:
+  url: ${REAPER_DB_URL}
+  user: ${REAPER_DB_USERNAME}
+  password: ${REAPER_DB_PASSWORD}
+EOT
+# END h2 persistence options
 
 esac
