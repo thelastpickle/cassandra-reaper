@@ -666,30 +666,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     return segments;
   }
 
-  @Override
-  public Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(UUID runId, List<RingRange> localRanges) {
-    LOG.trace("Getting ranges for local node {}", localRanges);
-    Collection<RepairSegment> segments = Lists.newArrayList();
-
-    // First gather segments ids
-    ResultSet segmentsResultSet = session.execute(getRepairSegmentsByRunIdPrepStmt.bind(runId));
-    segmentsResultSet.forEach(
-        segmentRow -> {
-          RepairSegment seg = createRepairSegmentFromRow(segmentRow);
-          RingRange range = new RingRange(seg.getStartToken(), seg.getEndToken());
-          localRanges
-              .stream()
-              .forEach(
-                  localRange -> {
-                    if (localRange.encloses(range)) {
-                      segments.add(seg);
-                    }
-                  });
-        });
-
-    return segments;
-  }
-
   private static boolean segmentIsWithinRange(RepairSegment segment, RingRange range) {
     return range.encloses(new RingRange(segment.getStartToken(), segment.getEndToken()));
   }

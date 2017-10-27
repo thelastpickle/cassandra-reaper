@@ -15,8 +15,6 @@
 package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.NodeMetrics;
-import io.cassandrareaper.core.RepairSegment;
-import io.cassandrareaper.service.RingRange;
 
 import java.util.Collection;
 import java.util.List;
@@ -36,8 +34,6 @@ public interface IDistributedStorage {
   List<UUID> getLeaders();
 
   void releaseLead(UUID leaderId);
-
-  Collection<RepairSegment> getRepairSegmentsForRunInLocalMode(UUID runId, List<RingRange> localRanges);
 
   int countRunningReapers();
 

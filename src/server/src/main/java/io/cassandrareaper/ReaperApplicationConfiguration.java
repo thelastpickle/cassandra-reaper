@@ -86,19 +86,11 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private JmxCredentials jmxAuth;
 
   @JsonProperty
-  @DefaultValue("false")
-  private Boolean allowUnreachableNodes;
-
-  @JsonProperty
   private AutoSchedulingConfiguration autoScheduling;
 
   @JsonProperty
   @DefaultValue("true")
   private Boolean enableDynamicSeedList;
-
-  @JsonProperty
-  @DefaultValue("false")
-  private Boolean localJmxMode;
 
   @JsonProperty
   private Integer repairManagerSchedulingIntervalSeconds;
@@ -243,14 +235,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public boolean getEnableDynamicSeedList() {
     return this.enableDynamicSeedList == null ? true : this.enableDynamicSeedList;
-  }
-
-  public void setLocalJmxMode(boolean localJmxMode) {
-    this.localJmxMode = localJmxMode;
-  }
-
-  public boolean getLocalJmxMode() {
-    return this.localJmxMode == null ? false : this.localJmxMode;
   }
 
   public void setActivateQueryLogger(boolean activateQueryLogger) {

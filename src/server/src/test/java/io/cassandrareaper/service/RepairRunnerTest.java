@@ -110,7 +110,6 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    context.config.setLocalJmxMode(false);
     context.repairManager = RepairManager.create(context);
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
@@ -262,7 +261,6 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    context.config.setLocalJmxMode(false);
     context.repairManager = RepairManager.create(context);
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
@@ -371,7 +369,6 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    context.config.setLocalJmxMode(false);
     context.repairManager = RepairManager.create(context);
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));

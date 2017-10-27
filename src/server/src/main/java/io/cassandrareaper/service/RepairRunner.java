@@ -21,7 +21,6 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -80,7 +79,7 @@ final class RepairRunner implements Runnable {
     int parallelRepairs
         = getPossibleParallelRepairsCount(jmx.getRangeToEndpointMap(keyspace), jmx.getEndpointToHostId());
 
-    if ((repairUnitOpt.isPresent() && repairUnitOpt.get().getIncrementalRepair()) || context.config.getLocalJmxMode()) {
+    if ((repairUnitOpt.isPresent() && repairUnitOpt.get().getIncrementalRepair())) {
       // with incremental repair, can't have more parallel repairs than nodes
       // Same goes for local mode
       parallelRepairs = 1;
@@ -89,12 +88,8 @@ final class RepairRunner implements Runnable {
     for (int i = 0; i < parallelRepairs; i++) {
       currentlyRunningSegments.set(i, null);
     }
-    List<RingRange> ranges = jmx.getRangesForLocalEndpoint(keyspace);
 
-    Collection<RepairSegment> repairSegments = context.config.getLocalJmxMode()
-        && context.storage instanceof IDistributedStorage
-            ? ((IDistributedStorage) context.storage).getRepairSegmentsForRunInLocalMode(repairRunId, ranges)
-            : context.storage.getRepairSegmentsForRun(repairRunId);
+    Collection<RepairSegment> repairSegments = context.storage.getRepairSegmentsForRun(repairRunId);
 
     parallelRanges = getParallelRanges(
         parallelRepairs,
