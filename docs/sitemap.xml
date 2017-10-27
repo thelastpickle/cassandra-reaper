@@ -39,6 +39,18 @@
   </url>
   
   <url>
+    <loc>http://cassandra-reaper.io/docs/configuration/backend_specific/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/configuration/docker_vars/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/configuration/reaper_specific/</loc>
+  </url>
+  
+  <url>
     <loc>http://cassandra-reaper.io/docs/download/</loc>
   </url>
   

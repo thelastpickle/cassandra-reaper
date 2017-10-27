@@ -64,7 +64,6 @@
 
 
   <body>
-
     <div id="all">
 
         <header>
@@ -159,12 +158,10 @@
 
 
         <div id="content">
-
-            
-
             <div class="container">
                 <div class="row">
-                    <div class="col-md-3">
+                    
+                    <div class = "col-md-3">
                         <ul class="sidebar-menu">
     
     
@@ -213,6 +210,26 @@
     
 
     <li class="sub-menu">
+    <a href="/docs/configuration/" class="">
+        
+        <span>Configuration Reference</span>
+        <span class="menu-arrow arrow_carrot-right"></span>
+    </a>
+    <ul class="sub">
+        
+        <li><a href="/docs/configuration/reaper_specific/"> Reaper Specific Settings </a> </li>
+        
+        <li><a href="/docs/configuration/backend_specific/"> Backend Specific Settings </a> </li>
+        
+        <li><a href="/docs/configuration/docker_vars/"> Docker Variables </a> </li>
+        
+    </ul>
+    
+    </li>
+    
+    
+
+    <li class="sub-menu">
     <a href="/docs/usage/" class="">
         
         <span>Usage</span>
@@ -230,15 +247,6 @@
         
     </ul>
     
-    </li>
-    
-    
-    <li>
-        <a href="/docs/configuration/">
-            
-            <span>Configuration Reference</span>
-        </a>
-        
     </li>
     
     
@@ -261,145 +269,39 @@
     
 </ul>
                     </div>
+                    <div class="col-md-9" id="blog-listing-medium">
 
-                    <div class="col-md-9">
-                        <div>
-                          
+                        
 
 <h1 id="configuration">Configuration</h1>
 
 <p>An example testing configuration YAML file can be found from within this project repository:
-<code>src/test/resources/cassandra-reaper.yaml</code></p>
+<a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/resource/cassandra-reaper-cassandra.yaml">src/server/src/test/resources/cassandra-reaper.yaml</a>.</p>
 
-<p>The configuration file structure is provided by Dropwizard, and help on configuring the server,
-database connection, or logging, can be found at:</p>
+<p>The configuration file structure is provided by Dropwizard, and help on configuring the server, database connection, or logging, can be found on the <a href="http://www.dropwizard.io/1.1.0/docs/manual/configuration.html">Dropwizard Configuration Reference</a></p>
 
-<p><a href="http://www.dropwizard.io/1.1.0/docs/manual/configuration.html">http://www.dropwizard.io/1.1.0/docs/manual/configuration.html</a></p>
+<p>The configuration is broken into the following sections:</p>
 
-<h3 id="reaper-specific-configuration-settings">Reaper Specific Configuration Settings</h3>
+<ul>
+<li><a href="http://cassandra-reaper.io/docs/configuration/reaper_specific/">Reaper Specific</a> - Provides details on settings specific to Reaper.</li>
+<li><a href="http://cassandra-reaper.io/docs/configuration/backend_specific/">Backend Specific</a> - Provides details on settings specific to the different backends that can be used with Reaper; Cassandra, H2 and Postgres.</li>
+<li><a href="http://cassandra-reaper.io/docs/configuration/docker_vars/">Docker Variables</a> - Provides details on the Docker Variables that can be used to configure Reaper.</li>
+</ul>
 
-<p>The Reaper service specific configuration settings are:</p>
+<p>Note that Cassandra backend configuration relies on the <a href="https://github.com/composable-systems/dropwizard-cassandra">Dropwizard-Cassandra</a> module.</p>
 
-<p><code>segmentCount</code>:</p>
-
-<p>Defines the default amount of repair segments to create for newly registered Cassandra
-repair runs (token rings). When running a repair run by the Reaper, each segment is
-repaired separately by the Reaper process, until all the segments in a token ring
-are repaired. The count might be slightly off the defined value, as clusters residing
-in multiple data centers require additional small token ranges in addition to the expected.
-You can overwrite this value per repair run, when calling the Reaper.</p>
-
-<p><code>repairParallelism</code>:</p>
-
-<p>Defines the default type of parallelism to use for repairs.
-Repair parallelism value must be one of: &ldquo;sequential&rdquo;, &ldquo;parallel&rdquo;, or &ldquo;datacenter_aware&rdquo;.
-If you try to use &ldquo;datacenter_aware&rdquo; in clusters that don&rsquo;t support it yet (older than 2.0.12),
-Reaper will fall back into using &ldquo;sequential&rdquo; for those clusters.</p>
-
-<p><code>repairIntensity</code>:</p>
-
-<p>Repair intensity is a value between 0.0 and 1.0, but not zero. Repair intensity defines the amount of time to sleep between triggering each repair segment while running a repair run. When intensity is one, it means that Reaper doesn&rsquo;t sleep at all before triggering next segment, and otherwise the sleep time is defined by how much time it took to repair the last segment divided by the intensity value. 0.5 means half of the time is spent sleeping, and half running. Intensity 0.75 means that 25% of the total time is used sleeping and 75% running. This value can also be overwritten per repair run when invoking repairs.</p>
-
-<p><code>incrementalRepair</code>:</p>
-
-<p>Incremental repair is a boolean value (true | false). Note that this is only supported with the PARALLEL repairParallelism setting. For more details in incremental repair, please refer to the following article.<a href="http://www.datastax.com/dev/blog/more-efficient-repairs">http://www.datastax.com/dev/blog/more-efficient-repairs</a></p>
-
-<p><em>Note</em>: We do not currently recommend using incremental repair before Cassandra 4.0 as subtle bugs can lead to overstreaming and cluster instabililty.</p>
-
-<p><code>repairRunThreadCount</code>:</p>
-
-<p>The amount of threads to use for handling the Reaper tasks. Have this big enough not to cause
-blocking in cause some thread is waiting for I/O, like calling a Cassandra cluster through JMX.</p>
-
-<p><code>hangingRepairTimeoutMins</code>:</p>
-
-<p>The amount of time in minutes to wait for a single repair to finish. If this timeout is reached,
-the repair segment in question will be cancelled, if possible, and then scheduled for later
-repair again within the same repair run process.</p>
-
-<p><code>scheduleDaysBetween</code>:</p>
-
-<p>Defines the amount of days to wait between scheduling new repairs.
-The value configured here is the default for new repair schedules, but you can also
-define it separately for each new schedule. Using value 0 for continuous repairs
-is also supported.</p>
-
-<p><code>storageType</code>:</p>
-
-<p>Whether to use database or memory based storage for storing the system state.
-Value can be either &ldquo;memory&rdquo;, &ldquo;database&rdquo; or &ldquo;cassandra&rdquo;.
-If you are using the recommended (persistent) storage type &ldquo;database&rdquo; or &ldquo;cassandra&rdquo;, you need to define
-the database client parameters in a database/cassandra section in the configuration file. See the example
-settings in provided testing configuration in <em>src/test/resources/cassandra-reaper.yaml</em>.</p>
-
-<p><code>useAddressTranslator</code>:</p>
-
-<p>When running multi region clusters in AWS, turn this setting to <code>true</code> in order to use the EC2MultiRegionAddressTranslator from the Datastax Java Driver. This will allow translating the public address that the nodes broadcast to the private IP address that is used to expose JMX.<br />
-Defaults to <code>false</code>.</p>
-
-<p><code>jmxPorts</code>:</p>
-
-<p>Optional mapping of custom JMX ports to use for individual hosts. The used default JMX port
-value is 7199. <a href="https://github.com/pcmanus/ccm">CCM</a> users will find IP and port number
-to add in <code>~/.ccm/&lt;cluster&gt;/*/node.conf</code> or by running <code>ccm &lt;node&gt; show</code>.</p>
-
-<p><code>jmxAuth</code>:</p>
-
-<p>Optional setting for giving username and password credentials for the used JMX connections
-in case you are using password based JMX authentication with your Cassandra clusters.</p>
-
-<pre><code>jmxAuth:
-  username: cassandra
-  password: cassandra
-</code></pre>
-
-<p><code>enableCrossOrigin</code>:</p>
-
-<p>Optional setting which you can set to be &ldquo;true&rdquo;, if you wish to enable the CORS headers
-for running an external GUI application, like <a href="https://github.com/spodkowinski/cassandra-reaper-ui">this project</a>.</p>
-
-<p><code>autoScheduling</code>:</p>
-
-<p>Optional setting to automatically setup repair schedules for all non-system keyspaces in a cluster.
-If enabled, adding a new cluster will automatically setup a schedule repair
-for each keyspace. Cluster keyspaces are monitored based on a configurable frequency,
-so that adding or removing a keyspace will result in adding / removing the corresponding scheduled repairs.</p>
-
-<p><code>repairManagerSchedulingIntervalSeconds</code>:</p>
-
-<p>Controls the pace at which the Repair Manager will schedule processing of the next segment. Reducing this value from 30s (default) to a lower value can speed up fast repairs by orders of magnitude.</p>
-
-<p><code>jmxConnectionTimeoutInSeconds</code>:</p>
-
-<p>Controls the timeout for establishing JMX connections. The value should be low enough to avoid stalling simple operations in multi region clusters, but high enough to allow connections under normal conditions.<br />
-The default is set to 5 seconds.</p>
-
-<p>Notice that in the <em>server</em> section of the configuration, if you want to bind the service
-to all interfaces, use value &ldquo;0.0.0.0&rdquo;, or just leave the <em>bindHost</em> line away completely.
-Using &ldquo;*&rdquo; as bind value won&rsquo;t work.</p>
-
-<p><code>datacenterAvailability</code>:</p>
-
-<p>Indicates to Reapers its deployment in relation to cluster data center network locality. The value can be either <strong>ALL</strong> (default value), <strong>LOCAL</strong>, or <strong>EACH</strong>. Note that the <code>datacenterAvailability</code> setting controls the behavior for metrics collection.</p>
-
-<p>For security reasons, it is possible that Reaper will have access limited to nodes in a single datacenter via JMX (multi region clusters for example). In this case, it is possible to deploy an operate an instance of Reaper in each datacenter where each instance only has access via JMX (with or without authentication) to the nodes in its local datacenter. Where multiple instances of Reaper are in operation in this configuration, only the Apache Cassandra storage option can be used with Reaper. All other storage options are unsuitable in this case. This is because Reaper instances will rely on lightweight transactions to get leadership on segments before processing them. In addition, Reaper will check the number of pending compactions and actively running repairs on all replicas prior to processing a segment.</p>
-
-<p>Setting the value to <strong>ALL</strong> requires Reaper to have access via JMX to all nodes across all datacenters. In this mode Reaper can be backed by all available storage types.</p>
-
-<p>Setting the value to <strong>LOCAL</strong> requires Reaper to have access via JMX to all nodes only in the same datacenter local to Reaper. A single Reaper instance can operate in this mode and repair its local data center. In this case, can be backed by all available storage types and repairs to any remote datacenters are be handled internally by Cassandra. A Reaper instance can be deployed to each datacenter and be configured to operate in this mode. In this case, Reaper can only use Apache Cassandra as its storage. In addition, metrics can be collected asynchronously through the Apache Cassandra storage.</p>
-
-<p>Setting the value to <strong>EACH</strong> requires a minimum of one Reaper instance operating in each datacenter. Each Reaper instance is required to have access via JMX to all nodes only in its local datacenter. When operating in this mode, Reaper can only use Apache Cassandra as its storage. In addition, metrics from nodes in remote datacenters must be collected through the Cassandra storage backend. If all metrics are unavailable, the segment will be postponed for later processing.</p>
-
-                        </div>
 
                     </div>
+                    
+
+                    
+
+
+                    
 
                 </div>
                 
-
             </div>
-            
-
             
         </div>
         

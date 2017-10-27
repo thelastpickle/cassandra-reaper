@@ -213,6 +213,26 @@
     
 
     <li class="sub-menu">
+    <a href="/docs/configuration/" class="">
+        
+        <span>Configuration Reference</span>
+        <span class="menu-arrow arrow_carrot-right"></span>
+    </a>
+    <ul class="sub">
+        
+        <li><a href="/docs/configuration/reaper_specific/"> Reaper Specific Settings </a> </li>
+        
+        <li><a href="/docs/configuration/backend_specific/"> Backend Specific Settings </a> </li>
+        
+        <li><a href="/docs/configuration/docker_vars/"> Docker Variables </a> </li>
+        
+    </ul>
+    
+    </li>
+    
+    
+
+    <li class="sub-menu">
     <a href="/docs/usage/" class="">
         
         <span>Usage</span>
@@ -230,15 +250,6 @@
         
     </ul>
     
-    </li>
-    
-    
-    <li>
-        <a href="/docs/configuration/">
-            
-            <span>Configuration Reference</span>
-        </a>
-        
     </li>
     
     
@@ -283,19 +294,25 @@ make rpm
 
 <p>To build Reaper without rebuilding the UI, run the following command :</p>
 
-<p><code>mvn clean package</code></p>
+<pre><code class="language-bash">mvn clean package
+</code></pre>
 
 <p>To only regenerate the UI (requires npm and bower) :</p>
 
-<p><code>mvn generate-sources -Pbuild-ui</code></p>
+<pre><code class="language-bash">mvn generate-sources -Pbuild-ui
+</code></pre>
 
 <p>To rebuild both the UI and Reaper :</p>
 
-<p><code>mvn clean package -Pbuild-ui</code></p>
+<pre><code class="language-bash">mvn clean package -Pbuild-ui
+</code></pre>
 
 <h1 id="building-docker-image">Building Docker Image</h1>
 
-<p><code>mvn clean package docker:build</code></p>
+<p>To build the Reaper docker image from source, run the following command :</p>
+
+<pre><code class="language-bash">mvn clean package -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
+</code></pre>
 
 <h1 id="building-using-docker">Building Using Docker</h1>
 

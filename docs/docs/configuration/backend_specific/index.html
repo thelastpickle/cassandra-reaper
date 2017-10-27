@@ -57,7 +57,7 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs/usage/schedule//" />
+  <meta property="og:url" content="/docs/configuration/backend_specific//" />
   <meta property="og:image" content="" />
 
 </head>
@@ -275,47 +275,152 @@
 
                     <div class="col-md-9">
                         <div>
-                          <div class = "row">
-    <div class = "col-md-6">
-        <a data-fancybox="gallery" href="/img/schedule.png">
-        <img src="/img/schedule.png" class="img-responsive">
-        </a>
-    </div>
-    <div>
-        <h4>Schedule a repair</h4>
+                          
 
-        To set up a regular repair schedule, click <em>schedule</em> on the left menu to bring up the schedules page.  Click &ldquo;Add Schedule&rdquo;
-    </div>
+<h1 id="backend-specific-settings">Backend Specific Settings</h1>
 
-</div>
+<p>Configuration settings in the <em>cassandra-reaper.yaml</em> that are specific to a particular backend.</p>
 
+<h2 id="cassandra-settings">Cassandra Settings</h2>
 
+<p>The following settings are specific to a Reaper deployment that is backed by an Apache Cassandra database.
+Note that Cassandra backend configuration relies on the <a href="https://github.com/composable-systems/dropwizard-cassandra">Dropwizard-Cassandra</a> module.</p>
 
+<p></br></p>
 
+<h3 id="activatequerylogger"><code>activateQueryLogger</code></h3>
 
+<p>Type: <em>Boolean</em></p>
 
+<p>Default: <em>false</em></p>
 
+<p>Records the CQL calls made to the Cassandra backend in the log output.</p>
 
-<p><div class = "row">
-    <div class = "col-md-6">
-        <a data-fancybox="gallery" href="/img/add_schedule.png">
-        <img src="/img/add_schedule.png" class="img-responsive">
-        </a>
-    </div>
-    <div>
-        <h4>Schedule a repair</h4>
+<p></br></p>
 
-        Fill out the schedule form and click Add Schedule.
-    </div>
+<h3 id="cassandra"><code>cassandra</code></h3>
 
-</div>
+<p>Settings to configure Reaper to use Cassandra for storage of its control data. Reaper uses the Cassandra Java driver version <a href="http://docs.datastax.com/en/developer/java-driver/3.1/">3.1.4</a> to perform operations on the cluster. An example of the configuration settings for the driver are as follows.</p>
 
+<pre><code class="language-yaml">cassandra:
+  clusterName: &quot;test&quot;
+  contactPoints: [&quot;127.0.0.1&quot;]
+  keyspace: reaper_db
+  loadBalancingPolicy:
+    type: tokenAware
+    shuffleReplicas: true
+    subPolicy:
+      type: dcAwareRoundRobin
+      localDC:
+      usedHostsPerRemoteDC: 0
+      allowRemoteDCsForLocalConsistencyLevel: false
+  authProvider:
+    type: plainText
+    username: cassandra
+    password: cassandra
+</code></pre>
 
+<p>Definitions for some of the above sub-settings are as follows.</p>
 
+<h4 id="clustername"><code>clusterName</code></h4>
 
+<p>Type: <em>String</em></p>
 
+<p>Name of the cluster to use to store the Reaper control data.</p>
 
-</p>
+<h4 id="contactpoints"><code>contactPoints</code></h4>
+
+<p>Type: <em>Array</em> (comma separated <em>Strings</em>)</p>
+
+<p>Seed nodes in the Cassandra cluster to contact.</p>
+
+<pre><code class="language-yaml">[&quot;127.0.0.1&quot;, &quot;127.0.0.2&quot;, &quot;127.0.0.3&quot;]
+</code></pre>
+
+<h4 id="keyspace"><code>keyspace</code></h4>
+
+<p>Type: <em>String</em></p>
+
+<p>Name of the keyspace to store the Reaper control data.</p>
+
+<h4 id="loadbalancingpolicy"><code>loadBalancingPolicy</code></h4>
+
+<p>Settings to configure the policies used to generate the query plan which determines the nodes to connect to when performing query operations. Further information can be found in the Cassandra Java driver <a href="http://docs.datastax.com/en/developer/java-driver/3.1/manual/load_balancing/">Load balancing</a> section.</p>
+
+<h4 id="subpolicy"><code>subPolicy</code></h4>
+
+<p>Settings to configure a child policy which used if the initial policy fails to determine a node to connect to.</p>
+
+<h4 id="type"><code>type</code></h4>
+
+<p>Type: <em>String</em></p>
+
+<p>The policy type used to contribute to the computation of the query plan.</p>
+
+<h4 id="localdc"><code>localDC</code></h4>
+
+<p>Type: <em>String</em></p>
+
+<p>Specifies the name of the datacenter closest to Reaper when using the <code>dcAwareRoundRobin</code> policy.</p>
+
+<h4 id="authprovider"><code>authProvider</code></h4>
+
+<p>If native protocol authentication is enabled on Cassandra,  settings configure Reaper to pass credentials to Cassandra when establishing a connection.</p>
+
+<h4 id="username"><code>username</code></h4>
+
+<p>Type: <em>String</em></p>
+
+<p>Cassandra native protocol username.</p>
+
+<h4 id="password"><code>password</code></h4>
+
+<p>Type: <em>String</em></p>
+
+<p>Cassandra native protocol password.</p>
+
+<h2 id="h2-or-postgres-database-settings">H2 or Postgres Database Settings</h2>
+
+<p>The following settings are specific to a Reaper deployment that is backed by either a H2 or Postgres database. An example of the configuration settings for a Postgres database are as follows.</p>
+
+<pre><code class="language-yaml">database:
+  driverClass: org.postgresql.Driver
+  url: jdbc:postgresql://127.0.0.1/reaper
+  user: postgres
+  password:
+</code></pre>
+
+<p>Definitions for the above sub-settings are as follows.</p>
+
+<p></br></p>
+
+<h3 id="database"><code>database</code></h3>
+
+<p>Settings to configure Reaper to use Cassandra for storage of its control data.</p>
+
+<h4 id="driverclass"><code>driverClass</code></h4>
+
+<p>Type: <em>String</em></p>
+
+<p>Specifies the driver to use to connect to the database.</p>
+
+<h4 id="url"><code>url</code></h4>
+
+<p>Type: <em>String</em></p>
+
+<p>Specifies the URL to connect to the database on.</p>
+
+<h4 id="user"><code>user</code></h4>
+
+<p>Type: <em>String</em></p>
+
+<p>Database username.</p>
+
+<h4 id="password-1"><code>password</code></h4>
+
+<p>Type: <em>String</em></p>
+
+<p>Database password.</p>
 
                         </div>
 

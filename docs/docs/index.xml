@@ -30,19 +30,5 @@ Ping Resource  GET /ping  Expected query parameters: None Simple ping resource t
       <description>We have a Mailing List and Gitter chat available.</description>
     </item>
     
-    <item>
-      <title></title>
-      <link>http://cassandra-reaper.io/docs/configuration/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>http://cassandra-reaper.io/docs/configuration/</guid>
-      <description>Configuration An example testing configuration YAML file can be found from within this project repository: src/test/resources/cassandra-reaper.yaml
-The configuration file structure is provided by Dropwizard, and help on configuring the server, database connection, or logging, can be found at:
-http://www.dropwizard.io/1.1.0/docs/manual/configuration.html
-Reaper Specific Configuration Settings The Reaper service specific configuration settings are:
-segmentCount:
-Defines the default amount of repair segments to create for newly registered Cassandra repair runs (token rings). When running a repair run by the Reaper, each segment is repaired separately by the Reaper process, until all the segments in a token ring are repaired.</description>
-    </item>
-    
   </channel>
 </rss>
