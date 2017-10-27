@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Reaper: Easy Repair Management for Apache Cassandra</title>
+    <link>http://cassandra-reaper.io/docs/configuration/</link>
+    <description>Recent content on Reaper: Easy Repair Management for Apache Cassandra</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="http://cassandra-reaper.io/docs/configuration/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/configuration/backend_specific/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/configuration/backend_specific/</guid>
+      <description>Backend Specific Settings Configuration settings in the cassandra-reaper.yaml that are specific to a particular backend.
+Cassandra Settings The following settings are specific to a Reaper deployment that is backed by an Apache Cassandra database. Note that Cassandra backend configuration relies on the Dropwizard-Cassandra module.
+
+activateQueryLogger Type: Boolean
+Default: false
+Records the CQL calls made to the Cassandra backend in the log output.
+
+cassandra Settings to configure Reaper to use Cassandra for storage of its control data.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/configuration/docker_vars/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/configuration/docker_vars/</guid>
+      <description>Docker Variables The Reaper Docker container has been designed to be highly configurable. Many of the environment variables map directly or indirectly to a settings in the cassandra-reaper.yaml configuration file.
+Direct Mapping to Reaper Specific Configuration Settings The Docker environment variables listed in this section map directly to Reaper specific settings in the cassandra-reaper.yaml configuration file. The following table below lists the Docker environment variables, their associated Reaper specific setting in the cassandra-reaper.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/configuration/reaper_specific/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/configuration/reaper_specific/</guid>
+      <description>Reaper Specific Settings Configuration settings in the cassandra-reaper.yaml that are specific to Reaper
+
+autoScheduling Optional setting to automatically setup repair schedules for all non-system keyspaces in a cluster. If enabled, adding a new cluster will automatically setup a schedule repair for each keyspace. Cluster keyspaces are monitored based on a configurable frequency, so that adding or removing a keyspace will result in adding / removing the corresponding scheduled repairs.</description>
+    </item>
+    
+  </channel>
+</rss>

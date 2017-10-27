@@ -213,6 +213,26 @@
     
 
     <li class="sub-menu">
+    <a href="/docs/configuration/" class="">
+        
+        <span>Configuration Reference</span>
+        <span class="menu-arrow arrow_carrot-right"></span>
+    </a>
+    <ul class="sub">
+        
+        <li><a href="/docs/configuration/reaper_specific/"> Reaper Specific Settings </a> </li>
+        
+        <li><a href="/docs/configuration/backend_specific/"> Backend Specific Settings </a> </li>
+        
+        <li><a href="/docs/configuration/docker_vars/"> Docker Variables </a> </li>
+        
+    </ul>
+    
+    </li>
+    
+    
+
+    <li class="sub-menu">
     <a href="/docs/usage/" class="">
         
         <span>Usage</span>
@@ -230,15 +250,6 @@
         
     </ul>
     
-    </li>
-    
-    
-    <li>
-        <a href="/docs/configuration/">
-            
-            <span>Configuration Reference</span>
-        </a>
-        
     </li>
     
     
@@ -276,16 +287,15 @@
 
 <p>To build the JAR and other packages which are then placed in the <em>packages</em> directory run the following commands from the top level directory:</p>
 
-<pre><code class="language-bash">cd src/packaging
-docker-compose build reaper-build-packages &amp;&amp; docker-compose run reaper-build-packages
+<pre><code class="language-bash">docker-compose -f src/packaging/docker-build/docker-compose.yml build
+docker-compose -f src/packaging/docker-build/docker-compose.yml run build
 </code></pre>
 
 <h2 id="building-reaper-docker-image">Building Reaper Docker Image</h2>
 
 <p>To build the Reaper Docker Image which is then added to the local image cache using the <code>cassandra-reaper:latest</code> tag, run the following commands from the top level directory:</p>
 
-<pre><code class="language-bash">cd src/server
-mvn package docker:build
+<pre><code class="language-bash">mvn -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
 </code></pre>
 
 <p>Note that the above command will build the Reaper JAR and place it in the <em>src/server/target</em> directory prior to creating the Docker Image. It is also possible to build the JAR file using the <a href="building-reaper-packages-with-docker">Docker package build</a> instructions and omitting the <code>package</code> command from the above Maven commands.</p>
