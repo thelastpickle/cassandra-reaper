@@ -1,3 +1,11 @@
+0.7.1
+* Fix issue with pre-2.1.10 versions of Cassandra that don't have the SS.getHostIdToEndpoint() operation
+0.7.0
+* Added fault tolerant features when using Cassandra as a backend 
+  (ability to have multiple Reaper instances sharing work)
+* Support for multi region clusters with the Cassandra backend
+* New configuration defaults
+* 
 0.6.2
  * Fix coordinator node being nulled by abort() in incremental repairs
  * Added delete-schedule to the cli (spreaper)
