@@ -116,8 +116,7 @@ Cassandra native protocol password.
 The following settings are specific to a Reaper deployment that is backed by either a H2 or Postgres database. An example of the configuration settings for a Postgres database are as follows.
 
 ```yaml
-database:
-  driverClass: org.postgresql.Driver
+postgres:
   url: jdbc:postgresql://127.0.0.1/reaper
   user: postgres
   password:
@@ -127,13 +126,19 @@ Definitions for the above sub-settings are as follows.
 
 </br>
 
-### `database`
+### `h2`
 
-Settings to configure Reaper to use Cassandra for storage of its control data.
+Settings to configure Reaper to use H2 for storage of its control data.
+
+### `postgres`
+
+Settings to configure Reaper to use Postgres for storage of its control data.
 
 #### `driverClass`
 
 Type: *String*
+
+**WARNING** this setting is **DEPRECATED** and its usage should be avoided.
 
 Specifies the driver to use to connect to the database.
 
@@ -141,7 +146,7 @@ Specifies the driver to use to connect to the database.
 
 Type: *String*
 
-Specifies the URL to connect to the database on.
+Specifies the URL to connect to the database (either H2 or Postgres) on.
 
 #### `user`
 

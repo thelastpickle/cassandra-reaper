@@ -50,6 +50,7 @@ import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
+import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
@@ -59,7 +60,6 @@ import io.prometheus.client.exporter.MetricsServlet;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.flywaydb.core.Flyway;
 import org.joda.time.DateTimeZone;
-import org.skife.jdbi.v2.DBI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.misc.Signal;
@@ -228,18 +228,17 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   private IStorage initializeStorage(ReaperApplicationConfiguration config, Environment environment)
       throws ReaperException {
     IStorage storage;
+
     if ("memory".equalsIgnoreCase(config.getStorageType())) {
       storage = new MemoryStorage();
     } else if ("cassandra".equalsIgnoreCase(config.getStorageType())) {
       storage = new CassandraStorage(config, environment);
-    } else if ("database".equalsIgnoreCase(config.getStorageType())) {
+    } else if ("postgres".equalsIgnoreCase(config.getStorageType()) || "h2".equalsIgnoreCase(config.getStorageType())) {
       // create DBI instance
-      DBI jdbi;
       final DBIFactory factory = new DBIFactory();
-      jdbi = factory.build(environment, config.getDataSourceFactory(), "postgresql");
 
       // instanciate store
-      storage = new PostgresStorage(jdbi);
+      storage = new PostgresStorage(factory.build(environment, config.getDataSourceFactory(), "postgresql"));
       initDatabase(config);
 
     } else {
@@ -277,15 +276,13 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
   private void initDatabase(ReaperApplicationConfiguration config) throws ReaperException {
     Flyway flyway = new Flyway();
+    DataSourceFactory dsfactory = config.getDataSourceFactory();
     flyway.setDataSource(
-        config.getDataSourceFactory().getUrl(),
-        config.getDataSourceFactory().getUser(),
-        config.getDataSourceFactory().getPassword());
-    if ("org.h2.Driver".equals(config.getDataSourceFactory().getDriverClass())) {
-      flyway.setLocations("/db/h2");
-    } else {
-      flyway.setLocations("/db/postgres");
-    }
+        dsfactory.getUrl(),
+        dsfactory.getUser(),
+        dsfactory.getPassword());
+
+    flyway.setLocations("/db/".concat(config.getStorageType().toLowerCase()));
     flyway.setBaselineOnMigrate(true);
     flyway.repair();
     flyway.migrate();

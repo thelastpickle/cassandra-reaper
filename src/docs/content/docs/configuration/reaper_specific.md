@@ -332,7 +332,7 @@ Note that to bind the service to all interfaces use value **0.0.0.0** or leave t
 
 Type: *String*
 
-Whether to use database or memory based storage for storing the system state. The value must be either **cassandra**, **database** or **memory**. If the recommended (persistent) storage type **database** or **cassandra** is being used, the database client parameters must be specified in the respective `database` or `cassandra` section in the configuration file. See the example settings in provided the *[src/packaging/resources](https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource)* directory of the repository.
+The storage type to use in which Reaper will store its control data. The value must be either **cassandra**, **h2**, **memory**, or **postgres**. If the recommended (persistent) storage type **cassandra**, **h2**, or **postgres** is being used, the database client parameters must be specified in the respective `cassandra`, `h2`, or `postgres` section in the configuration file. See the example settings in provided the *[src/packaging/resources](https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource)* directory of the repository.
 
 </br>
 

@@ -7,7 +7,7 @@ repairIntensity: 0.9
 scheduleDaysBetween: 7
 repairRunThreadCount: 15
 hangingRepairTimeoutMins: 30
-storageType: database
+storageType: h2
 enableCrossOrigin: true
 incrementalRepair: false
 enableDynamicSeedList: true
@@ -62,9 +62,7 @@ server:
   requestLog:
     appenders: []
 
-database:
-  # H2 JDBC settings
-  driverClass: org.h2.Driver
+h2:
   url: jdbc:h2:~/reaper-db/db;MODE=PostgreSQL
   user:
   password:

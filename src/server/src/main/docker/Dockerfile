@@ -41,7 +41,6 @@ ENV REAPER_SEGMENT_COUNT=200 \
     REAPER_CASS_AUTH_USERNAME="cassandra" \
     REAPER_CASS_AUTH_PASSWORD="cassandra" \
     REAPER_CASS_NATIVE_PROTOCOL_SSL_ENCRYPTION_ENABLED="false" \
-    REAPER_DB_DRIVER_CLASS="org.h2.Driver" \
     REAPER_DB_URL="jdbc:h2:/var/lib/cassandra-reaper/db;MODE=PostgreSQL" \
     REAPER_DB_USERNAME="" \
     REAPER_DB_PASSWORD="" \

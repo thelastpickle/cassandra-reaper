@@ -77,9 +77,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private String enableCrossOrigin;
 
   @JsonProperty
-  private DataSourceFactory database = new DataSourceFactory();
-
-  @JsonProperty
   private Map<String, Integer> jmxPorts;
 
   @JsonProperty
@@ -107,6 +104,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private DatacenterAvailability datacenterAvailability;
 
   private CassandraFactory cassandra = new CassandraFactory();
+
+  private DataSourceFactory relationalDb = new DataSourceFactory();
 
   public int getSegmentCount() {
     return segmentCount;
@@ -185,11 +184,27 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   public DataSourceFactory getDataSourceFactory() {
-    return database;
+    return relationalDb;
   }
 
-  public void setDataSourceFactory(DataSourceFactory database) {
-    this.database = database;
+  @JsonProperty("h2")
+  public DataSourceFactory getH2DataSourceFactory() {
+    return relationalDb;
+  }
+
+  @JsonProperty("h2")
+  public void setH2DataSourceFactory(DataSourceFactory h2) {
+    this.relationalDb = h2;
+  }
+
+  @JsonProperty("postgres")
+  public DataSourceFactory getPostgresDataSourceFactory() {
+    return relationalDb;
+  }
+
+  @JsonProperty("postgres")
+  public void setPostgresDataSourceFactory(DataSourceFactory postgres) {
+    this.relationalDb = postgres;
   }
 
   public int getRepairManagerSchedulingIntervalSeconds() {

@@ -38,10 +38,8 @@ jmxPorts:
   127.0.0.7: 7700
   127.0.0.8: 7800
 
-# database section will be ignored if storageType is set to "memory"
-database:
-  # H2 JDBC settings
-  driverClass: org.h2.Driver
+# database section will be ignored if storageType is set to "cassandra"
+h2:
   url: jdbc:h2:mem:reaper-db;MODE=PostgreSQL
   user:
   password:
