@@ -6,7 +6,7 @@
     <name>Cassandra Reaper project</name>
     <groupId>com.spotify</groupId>
     <artifactId>cassandra-reaper-pom</artifactId>
-    <version>0.7.1-SNAPSHOT</version>
+    <version>0.7.1</version>
     <packaging>pom</packaging>
 
     <properties>
