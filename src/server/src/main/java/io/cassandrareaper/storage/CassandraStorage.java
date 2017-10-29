@@ -1052,25 +1052,25 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public void storeNodeMetrics(UUID runId, NodeMetrics hostMetrics) {
+  public void storeNodeMetrics(UUID runId, NodeMetrics nodeMetrics) {
     long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
-    storeNodeMetricsImpl(runId, hostMetrics, minute);
-    storeNodeMetricsImpl(runId, hostMetrics, minute + 1);
-    storeNodeMetricsImpl(runId, hostMetrics, minute + 2);
+    storeNodeMetricsImpl(runId, nodeMetrics, minute);
+    storeNodeMetricsImpl(runId, nodeMetrics, minute + 1);
+    storeNodeMetricsImpl(runId, nodeMetrics, minute + 2);
   }
 
-  private void storeNodeMetricsImpl(UUID runId, NodeMetrics hostMetrics, long minute) {
+  private void storeNodeMetricsImpl(UUID runId, NodeMetrics nodeMetrics, long minute) {
     session.executeAsync(
         storeNodeMetricsPrepStmt.bind(
             minute,
             runId,
-            hostMetrics.getHostAddress(),
-            hostMetrics.getDatacenter(),
-            hostMetrics.getCluster(),
-            hostMetrics.isRequested(),
-            hostMetrics.getPendingCompactions(),
-            hostMetrics.hasRepairRunning(),
-            hostMetrics.getActiveAnticompactions()));
+            nodeMetrics.getNode(),
+            nodeMetrics.getDatacenter(),
+            nodeMetrics.getCluster(),
+            nodeMetrics.isRequested(),
+            nodeMetrics.getPendingCompactions(),
+            nodeMetrics.hasRepairRunning(),
+            nodeMetrics.getActiveAnticompactions()));
   }
 
   @Override
@@ -1083,15 +1083,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Optional<NodeMetrics> getNodeMetrics(UUID runId, String hostName) {
+  public Optional<NodeMetrics> getNodeMetrics(UUID runId, String node) {
     long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
-    Row row = session.execute(getNodeMetricsByNodePrepStmt.bind(minute, runId, hostName)).one();
+    Row row = session.execute(getNodeMetricsByNodePrepStmt.bind(minute, runId, node)).one();
     return null != row ? Optional.of(createNodeMetrics(row)) : Optional.absent();
   }
 
   private static NodeMetrics createNodeMetrics(Row row) {
     return NodeMetrics.builder()
-        .withHostAddress(row.getString("node"))
+        .withNode(row.getString("node"))
         .withDatacenter(row.getString("datacenter"))
         .withCluster(row.getString("cluster"))
         .withRequested(row.getBool("requested"))

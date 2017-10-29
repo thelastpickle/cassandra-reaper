@@ -100,7 +100,7 @@ final class Heart implements AutoCloseable {
       int jmxTimeoutSeconds = context.config.getJmxConnectionTimeoutInSeconds();
 
       forkJoinPool.submit(() -> {
-        try (Timer.Context t0 = timer(context, "metrics", "all")) {
+        try (Timer.Context t0 = timer(context, "updatingNodeMetrics")) {
 
           forkJoinPool.submit(() -> {
             context.repairManager.repairRunners.keySet()
@@ -112,16 +112,18 @@ final class Heart implements AutoCloseable {
                       .filter(nodeMetrics -> nodeMetrics.isRequested())
                       .forEach(req -> {
 
-                        LOG.info("Got metric request for node {} in {}", req.getHostAddress(), req.getCluster());
-                        try (Timer.Context t1 = timer(context, req.getCluster(), req.getHostAddress())) {
+
+                        LOG.info("Got metric request for node {} in {}", req.getNode(), req.getCluster());
+                        try (Timer.Context t1 = timer(context, req.getCluster(), req.getNode())) {
 
                           try (JmxProxy nodeProxy
-                              = context.jmxConnectionFactory.connect(req.getHostAddress(), jmxTimeoutSeconds)) {
+                              = context.jmxConnectionFactory.connect(req.getNode(), jmxTimeoutSeconds)) {
 
                             storage.storeNodeMetrics(
                                 runId,
                                 NodeMetrics.builder()
-                                    .withHostAddress(req.getHostAddress())
+
+                                    .withNode(req.getNode())
                                     .withCluster(req.getCluster())
                                     .withDatacenter(nodeProxy.getDataCenter())
                                     .withPendingCompactions(nodeProxy.getPendingCompactions())
@@ -129,13 +131,14 @@ final class Heart implements AutoCloseable {
                                     .withActiveAnticompactions(0) // for future use
                                     .build());
 
-                            LOG.info("Responded to metric request for node {}", req.getHostAddress());
+
+                            LOG.info("Responded to metric request for node {}", req.getNode());
                           } catch (ReaperException | RuntimeException | InterruptedException ex) {
                             LOG.debug("failed seed connection in cluster " + req.getCluster(), ex);
                           } catch (JMException e) {
                             LOG.warn(
                                 "failed querying JMX MBean for metrics on node {} of cluster {} due to {}",
-                                req.getHostAddress(), req.getCluster(), e.getMessage());
+                                req.getNode(), req.getCluster(), e.getMessage());
                           }
                         }
                       });
