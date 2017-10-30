@@ -5,7 +5,7 @@
 DROP TABLE IF EXISTS node_metrics;
 
 CREATE TABLE IF NOT EXISTS node_metrics_v1 (
-  time_partition          int,
+  time_partition          bigint,
   run_id                  uuid,
   node                    text,
   cluster                 text,
