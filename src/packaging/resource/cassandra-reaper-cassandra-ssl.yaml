@@ -26,6 +26,7 @@ useAddressTranslator: false
 datacenterAvailability: ALL
 
 
+# any cassandra nodes on 127.0.0.x addresses we presume are ccm nodes
 jmxPorts:
   127.0.0.1: 7198
   127.0.0.2: 7200
@@ -43,11 +44,25 @@ jmxAuth:
 logging:
   level: INFO
   loggers:
+    com.datastax.driver.core.QueryLogger.NORMAL:
+      level: DEBUG
+      additive: false
+      appenders:
+        - type: file
+          currentLogFilename: /var/log/cassandra-reaper/query-logger.log
+          archivedLogFilenamePattern: /var/log/cassandra-reaper/query-logger-%d.log.gz
+          archivedFileCount: 2
     io.dropwizard: WARN
     org.eclipse.jetty: WARN
   appenders:
     - type: console
       logFormat: "%-6level [%d] [%t] %logger{5} - %msg %n"
+      threshold: WARN
+    - type: file
+      logFormat: "%-6level [%t] %logger{5} - %msg %n"
+      currentLogFilename: /var/log/cassandra-reaper/reaper.log
+      archivedLogFilenamePattern: /var/log/cassandra-reaper/reaper-%d.log.gz
+      archivedFileCount: 99
 
 server:
   type: default

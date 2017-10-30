@@ -272,7 +272,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       // Storage is different than Cassandra, assuming we have a single instance
       context.repairManager.resumeRunningRepairRuns();
     }
-    LOG.info("Initialization complete! Reaper is ready to get things done!");
+    LOG.info("Initialization complete!");
+    LOG.warn("Reaper is ready to get things done!");
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config, Environment environment)
