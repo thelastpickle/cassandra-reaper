@@ -31,6 +31,7 @@ import io.cassandrareaper.service.RepairParameters;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.cassandra.DateTimeCodec;
 import io.cassandrareaper.storage.cassandra.Migration003;
+import io.cassandrareaper.storage.cassandra.Migration009;
 
 import java.math.BigInteger;
 import java.util.Collection;
@@ -142,12 +143,25 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     codecRegistry.register(new DateTimeCodec());
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());
 
+    initializeAndUpgradeSchema(cassandra, session, config.getCassandraFactory().getKeyspace());
+    prepareStatements();
+  }
+
+  private static void initializeAndUpgradeSchema(
+      com.datastax.driver.core.Cluster cassandra,
+      Session session,
+      String keyspace) {
+
     // initialize/upgrade db schema
-    Database database = new Database(cassandra, config.getCassandraFactory().getKeyspace());
+    Database database = new Database(cassandra, keyspace);
+    if (database.getVersion() > 3 && database.getVersion() < 9) {
+      // only applicable after `003_switch_to_uuids.cql`
+      // Migration009 needs to happen before `migration.migrate()` in case it fails and needs re-trying
+      Migration009.migrate(session);
+    }
     MigrationTask migration = new MigrationTask(database, new MigrationRepository("db/cassandra"));
     migration.migrate();
     Migration003.migrate(session);
-    prepareStatements();
   }
 
   private void prepareStatements() {
