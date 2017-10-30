@@ -30,9 +30,18 @@ public final class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
   public RepairUnit map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
 
     String[] columnFamilies = parseStringArray(rs.getArray("column_families").getArray());
-    String[] nodes = parseStringArray(rs.getArray("nodes").getArray());
-    String[] datacenters = parseStringArray(rs.getArray("datacenters").getArray());
-    String[] blacklistedTables = parseStringArray(rs.getArray("blacklisted_tables").getArray());
+    String[] nodes =
+        rs.getArray("nodes") == null
+            ? new String[] {}
+            : parseStringArray(rs.getArray("nodes").getArray());
+    String[] datacenters =
+        rs.getArray("datacenters") == null
+            ? new String[] {}
+            : parseStringArray(rs.getArray("datacenters").getArray());
+    String[] blacklistedTables =
+        rs.getArray("blacklisted_tables") == null
+            ? new String[] {}
+            : parseStringArray(rs.getArray("blacklisted_tables").getArray());
 
     RepairUnit.Builder builder =
         new RepairUnit.Builder(

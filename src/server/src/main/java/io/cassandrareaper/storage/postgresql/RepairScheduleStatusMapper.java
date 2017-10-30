@@ -50,9 +50,18 @@ public final class RepairScheduleStatusMapper implements ResultSetMapper<RepairS
                 .toLowerCase()
                 .replace("datacenter_aware", "dc_parallel")),
         rs.getInt("days_between"),
-        ImmutableSet.copyOf(getStringArray(rs.getArray("nodes").getArray())),
-        ImmutableSet.copyOf(getStringArray(rs.getArray("datacenters").getArray())),
-        ImmutableSet.copyOf(getStringArray(rs.getArray("blacklisted_tables").getArray())),
+        ImmutableSet.copyOf(
+            rs.getArray("nodes") == null
+                ? new String[] {}
+                : getStringArray(rs.getArray("nodes").getArray())),
+        ImmutableSet.copyOf(
+            rs.getArray("datacenters") == null
+                ? new String[] {}
+                : getStringArray(rs.getArray("datacenters").getArray())),
+        ImmutableSet.copyOf(
+            rs.getArray("blacklisted_tables") == null
+                ? new String[] {}
+                : getStringArray(rs.getArray("blacklisted_tables").getArray())),
         rs.getInt("segment_count_per_node"));
   }
 
