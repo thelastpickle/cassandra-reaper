@@ -21,6 +21,8 @@
         <cassandra.version>2.2.7</cassandra.version>
         <cucumber.version>1.2.5</cucumber.version>
         <docker.directory>src/main/docker</docker.directory>
+        <timestamp>${maven.build.timestamp}</timestamp>
+        <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     </properties>
 
     <dependencies>
@@ -213,6 +215,24 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>buildnumber-maven-plugin</artifactId>
+                <version>1.4</version>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>create</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <doCheck>false</doCheck>
+                    <doUpdate>false</doUpdate>
+                    <shortRevisionLength>7</shortRevisionLength>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.7.0</version>
@@ -397,6 +417,37 @@
             </activation>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>com.google.code.maven-replacer-plugin</groupId>
+                        <artifactId>replacer</artifactId>
+                        <version>1.5.3</version>
+                        <executions>
+                            <execution>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>replace</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <file>src/ui/app/navbar.template.jsx</file>
+                            <outputFile>src/ui/app/jsx/navbar.jsx</outputFile>
+                            <replacements>
+                                <replacement>
+                                     <token>##VERSION##</token>
+                                    <value>${project.version}</value>
+                                </replacement>
+                                <replacement>
+                                    <token>##GIT-SHA##</token>
+                                    <value>${buildNumber}</value>
+                                </replacement>
+                                 <replacement>
+                                    <token>##BUILD-DATE##</token>
+                                    <value>${timestamp}</value>
+                                </replacement>
+                            </replacements>
+                        </configuration>
+                    </plugin>
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>

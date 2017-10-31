@@ -7,9 +7,9 @@ const sidebar = React.createClass({
   },
 
   render: function() {
-
+    const sideBarStyle = {marginTop: 0};
     return (
-      <div className="navbar-default sidebar" role="navigation">
+      <div className="navbar-default sidebar" style={sideBarStyle} role="navigation">
           <div className="sidebar-nav navbar-collapse">
               <ul className="nav" id="side-menu">
                   <li>
