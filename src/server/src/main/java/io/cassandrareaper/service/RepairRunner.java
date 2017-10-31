@@ -33,6 +33,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Optional;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
@@ -55,6 +57,8 @@ final class RepairRunner implements Runnable {
   private JmxProxy jmxConnection;
   private final AtomicReferenceArray<UUID> currentlyRunningSegments;
   private final List<RingRange> parallelRanges;
+  private final String metricNameForMillisSinceLastRepair;
+  private float repairProgress;
 
   RepairRunner(AppContext context, UUID repairRunId) throws ReaperException {
     LOG.debug("Creating RepairRunner for run with ID {}", repairRunId);
@@ -95,6 +99,11 @@ final class RepairRunner implements Runnable {
     parallelRanges = getParallelRanges(
         parallelRepairs,
         Lists.newArrayList(Collections2.transform(repairSegments, segment -> segment.getTokenRange())));
+
+    String repairUnitClusterName = repairUnitOpt.get().getClusterName();
+    String metricNameForRepairProgress = metricName("repairProgress",  repairUnitClusterName, repairRunId);
+    context.metricRegistry.register(metricNameForRepairProgress, (Gauge<Float>) ()  -> repairProgress);
+    metricNameForMillisSinceLastRepair = metricName("millisSinceLastRepair", repairUnitClusterName, repairRunId);
   }
 
   UUID getRepairRunId() {
@@ -197,14 +206,20 @@ final class RepairRunner implements Runnable {
     LOG.info("Repairs for repair run #{} done", repairRunId);
     synchronized (this) {
       RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
+      DateTime repairRunCompleted = DateTime.now();
       context.storage.updateRepairRun(
           repairRun
               .with()
               .runState(RepairRun.RunState.DONE)
-              .endTime(DateTime.now())
+              .endTime(repairRunCompleted)
               .lastEvent("All done")
               .build(repairRun.getId()));
       killAndCleanupRunner();
+
+      context.metricRegistry.remove(metricNameForMillisSinceLastRepair);
+      context.metricRegistry.register(
+          metricNameForMillisSinceLastRepair,
+          (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
     }
   }
 
@@ -287,9 +302,13 @@ final class RepairRunner implements Runnable {
     }
 
     if (!repairStarted && !anythingRunningStill) {
-      int amountDone = context.storage.getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
-      LOG.info("Repair amount done {}", amountDone);
-      if (amountDone == context.storage.getSegmentAmountForRepairRun(repairRunId)) {
+      int segmentsDone = context.storage.getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
+      int segmentsTotal = context.storage.getSegmentAmountForRepairRun(repairRunId);
+
+      LOG.info("Repair amount done {}", segmentsDone);
+      repairProgress = (float) segmentsDone / segmentsTotal;
+
+      if (segmentsDone == segmentsTotal) {
         endRepairRun();
         scheduleRetry = false;
       }
@@ -318,6 +337,9 @@ final class RepairRunner implements Runnable {
       unitId = repairRun.getRepairUnitId();
       intensity = repairRun.getIntensity();
       validationParallelism = repairRun.getRepairParallelism();
+
+      int amountDone = context.storage.getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
+      repairProgress = (float) amountDone / repairRun.getSegmentCount();
     }
 
     RepairUnit repairUnit = context.storage.getRepairUnit(unitId).get();
@@ -479,4 +501,11 @@ final class RepairRunner implements Runnable {
     }
     Thread.currentThread().interrupt();
   }
+
+  private String metricName(String metric, String clusterName, UUID repairRunId) {
+    String cleanClusterName = clusterName.replaceAll("[^A-Za-z0-9]", "");
+    String cleanRepairRunId = repairRunId.toString().replaceAll("-", "");
+    return MetricRegistry.name(RepairRunner.class, metric, cleanClusterName, cleanRepairRunId);
+  }
+
 }
