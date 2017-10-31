@@ -4,6 +4,7 @@ import ServerStatus from "jsx/server-status";
 import Sidebar from "jsx/sidebar";
 import ScheduleForm from "jsx/schedule-form";
 import ScheduleList from "jsx/schedule-list";
+import NavBar from "jsx/navbar";
 import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
 
 const ScheduleScreen = React.createClass({
@@ -37,15 +38,7 @@ const ScheduleScreen = React.createClass({
     <div id="wrapper">
         <!-- Navigation -->
         <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
-            <div className="navbar-header">
-                <button type="button" className="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                    <span className="sr-only">Toggle navigation</span>
-                    <span className="icon-bar"></span>
-                    <span className="icon-bar"></span>
-                    <span className="icon-bar"></span>
-                </button>
-                <a className="navbar-brand" href="index.html">Cassandra Reaper</a>
-            </div>
+            <NavBar></NavBar>
             <!-- /.navbar-header -->
 
             <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster}> </Sidebar>
