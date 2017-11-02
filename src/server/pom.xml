@@ -430,8 +430,8 @@
                             </execution>
                         </executions>
                         <configuration>
-                            <file>src/ui/app/navbar.template.jsx</file>
-                            <outputFile>src/ui/app/jsx/navbar.jsx</outputFile>
+                            <file>${project.parent.basedir}/src/ui/app/navbar.template.jsx</file>
+                            <outputFile>${project.parent.basedir}/src/ui/app/jsx/navbar.jsx</outputFile>
                             <replacements>
                                 <replacement>
                                      <token>##VERSION##</token>
