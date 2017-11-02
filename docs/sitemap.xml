@@ -79,6 +79,10 @@
   </url>
   
   <url>
+    <loc>http://cassandra-reaper.io/docs/usage/multi_dc/</loc>
+  </url>
+  
+  <url>
     <loc>http://cassandra-reaper.io/docs/usage/schedule/</loc>
   </url>
   
