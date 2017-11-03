@@ -105,6 +105,10 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   private CassandraFactory cassandra = new CassandraFactory();
 
+  @Deprecated
+  @JsonProperty
+  private DataSourceFactory database;
+
   private DataSourceFactory relationalDb = new DataSourceFactory();
 
   public int getSegmentCount() {
@@ -184,7 +188,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   public DataSourceFactory getDataSourceFactory() {
-    return relationalDb;
+    return database != null ? database : relationalDb;
   }
 
   @JsonProperty("h2")
