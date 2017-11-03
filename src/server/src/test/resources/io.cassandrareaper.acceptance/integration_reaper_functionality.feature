@@ -39,7 +39,7 @@ Feature: Using Reaper to launch repairs and schedule them
     And deleting the last added cluster fails
     When we wait for a scheduled repair run has started for cluster "test_cluster"
     And we wait for at least 1 segments to be repaired
-    Then reaper has 1 repairs for the last added cluster
+    Then reaper has 1 started or done repairs for the last added cluster
     When the last added repair is stopped
     And the last added repair run is deleted
     And deleting the last added cluster fails
@@ -58,7 +58,7 @@ Feature: Using Reaper to launch repairs and schedule them
     And deleting the last added cluster fails
     And the last added repair is activated
     And we wait for at least 1 segments to be repaired
-    Then reaper has 1 repairs for the last added cluster
+    Then reaper has 1 started or done repairs for the last added cluster
     When the last added repair is stopped
     And the last added repair run is deleted
     And the last added cluster is deleted
@@ -74,7 +74,7 @@ Feature: Using Reaper to launch repairs and schedule them
     And deleting the last added cluster fails
     And the last added repair is activated
     And we wait for at least 1 segments to be repaired
-    Then reaper has 1 repairs for the last added cluster
+    Then reaper has 1 started or done repairs for the last added cluster
     When the last added repair is stopped
     And the last added repair run is deleted
     And the last added cluster is deleted

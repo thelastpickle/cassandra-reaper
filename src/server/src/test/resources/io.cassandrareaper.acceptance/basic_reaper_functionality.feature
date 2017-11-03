@@ -63,7 +63,7 @@ Feature: Using Reaper to launch repairs
     And deleting cluster called "other_cluster" fails
     When the last added schedule is deleted for cluster called "other_cluster"
     And a new repair is added for "other_cluster" and keyspace "system"
-    Then reaper has 1 repairs for cluster called "other_cluster"
+    Then reaper has 1 started or done repairs for cluster called "other_cluster"
     And deleting cluster called "other_cluster" fails
     When the last added repair run is deleted
     And cluster called "other_cluster" is deleted
