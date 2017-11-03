@@ -17,6 +17,7 @@ package io.cassandrareaper.acceptance;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.SimpleReaperClient;
+import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
@@ -27,6 +28,7 @@ import io.cassandrareaper.storage.CassandraStorage;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -927,6 +929,23 @@ public final class BasicSteps {
     }
   }
 
+  @Then("^reaper has (\\d+) started or done repairs for cluster called \"([^\"]*)\"$")
+  public void reaper_has_running_repairs_for_cluster_called(int runAmount, String clusterName) throws Throwable {
+
+    Set<RepairRun.RunState> startedStates = EnumSet.copyOf(
+        Sets.newHashSet(RepairRun.RunState.RUNNING, RepairRun.RunState.DONE));
+
+    synchronized (BasicSteps.class) {
+      RUNNERS.parallelStream().forEach(runner -> {
+        Response response = runner.callReaper("GET", "/repair_run/cluster/" + clusterName, EMPTY_PARAMS);
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        String responseData = response.readEntity(String.class);
+        List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
+        assertEquals(runAmount, runs.stream().filter(rrs -> startedStates.contains(rrs.getState())).count());
+      });
+    }
+  }
+
   @Then("^reaper has (\\d+) repairs for the last added cluster$")
   public void reaper_has_repairs_for_the_last_added_cluster(int runAmount) throws Throwable {
     synchronized (BasicSteps.class) {
@@ -936,6 +955,23 @@ public final class BasicSteps {
         String responseData = response.readEntity(String.class);
         List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
         assertEquals(runAmount, runs.size());
+      });
+    }
+  }
+
+  @Then("^reaper has (\\d+) started or done repairs for the last added cluster$")
+  public void reaper_has_started_repairs_for_the_last_added_cluster(int runAmount) throws Throwable {
+
+    Set<RepairRun.RunState> startedStates = EnumSet.copyOf(
+        Sets.newHashSet(RepairRun.RunState.RUNNING, RepairRun.RunState.DONE));
+
+    synchronized (BasicSteps.class) {
+      RUNNERS.parallelStream().forEach(runner -> {
+        Response response = runner.callReaper("GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        String responseData = response.readEntity(String.class);
+        List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
+        assertEquals(runAmount, runs.stream().filter(rrs -> startedStates.contains(rrs.getState())).count());
       });
     }
   }
