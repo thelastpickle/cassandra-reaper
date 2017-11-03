@@ -234,14 +234,15 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       storage = new MemoryStorage();
     } else if ("cassandra".equalsIgnoreCase(config.getStorageType())) {
       storage = new CassandraStorage(config, environment);
-    } else if ("postgres".equalsIgnoreCase(config.getStorageType()) || "h2".equalsIgnoreCase(config.getStorageType())) {
+    } else if ("postgres".equalsIgnoreCase(config.getStorageType())
+        || "h2".equalsIgnoreCase(config.getStorageType())
+        || "database".equalsIgnoreCase(config.getStorageType())) {
       // create DBI instance
       final DBIFactory factory = new DBIFactory();
 
       // instanciate store
       storage = new PostgresStorage(factory.build(environment, config.getDataSourceFactory(), "postgresql"));
       initDatabase(config);
-
     } else {
       LOG.error("invalid storageType: {}", config.getStorageType());
       throw new ReaperException("invalid storage type: " + config.getStorageType());
@@ -283,7 +284,17 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         dsfactory.getUser(),
         dsfactory.getPassword());
 
-    flyway.setLocations("/db/".concat(config.getStorageType().toLowerCase()));
+    if ("database".equals(config.getStorageType())) {
+      LOG.warn("!!!!!!!!!!    USAGE 'database' AS STORAGE TYPE IS NOW DEPRECATED   !!!!!!!!!!!!!!");
+      LOG.warn("!!!!!!!!!!    PLEASE USE EITHER 'postgres' OR 'h2' FROM NOW ON     !!!!!!!!!!!!!!");
+      if (config.getDataSourceFactory().getUrl().contains("h2")) {
+        flyway.setLocations("/db/h2");
+      } else {
+        flyway.setLocations("/db/postgres");
+      }
+    } else {
+      flyway.setLocations("/db/".concat(config.getStorageType().toLowerCase()));
+    }
     flyway.setBaselineOnMigrate(true);
     flyway.repair();
     flyway.migrate();
