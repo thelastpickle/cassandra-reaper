@@ -150,7 +150,7 @@ final class JmxProxyImpl implements JmxProxy {
       String password,
       final EC2MultiRegionAddressTranslator addressTranslator,
       int connectionTimeout)
-      throws ReaperException, NumberFormatException, InterruptedException {
+      throws ReaperException, InterruptedException {
 
     if (host == null) {
       throw new ReaperException("Null host given to JmxProxy.connect()");
@@ -177,7 +177,7 @@ final class JmxProxyImpl implements JmxProxy {
    * @param addressTranslator if EC2MultiRegionAddressTranslator isn't null it will be used to
    *     translate addresses
    */
-  static JmxProxy connect(
+  private static JmxProxy connect(
       Optional<RepairStatusHandler> handler,
       String originalHost,
       int port,
@@ -251,8 +251,7 @@ final class JmxProxyImpl implements JmxProxy {
 
       return proxy;
     } catch (IOException | ExecutionException | TimeoutException | InstanceNotFoundException e) {
-      LOG.error("Failed to establish JMX connection to {}:{}", host, port);
-      throw new ReaperException("Failure when establishing JMX connection", e);
+      throw new ReaperException("Failure when establishing JMX connection to " + host + ":" + port, e);
     } catch (InterruptedException expected) {
       LOG.debug(
           "JMX connection to {}:{} was interrupted by Reaper. "

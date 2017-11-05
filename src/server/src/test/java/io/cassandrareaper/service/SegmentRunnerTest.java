@@ -192,7 +192,7 @@ public final class SegmentRunnerTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
+      protected JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
           throws ReaperException {
 
         JmxProxy jmx = mock(JmxProxy.class);
@@ -307,7 +307,7 @@ public final class SegmentRunnerTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
+      protected JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
           throws ReaperException {
 
         JmxProxy jmx = mock(JmxProxy.class);

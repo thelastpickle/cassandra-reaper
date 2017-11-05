@@ -132,7 +132,7 @@ public final class BasicSteps {
 
       context.jmxConnectionFactory = new JmxConnectionFactory() {
         @Override
-        public JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
+        protected JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
             throws ReaperException {
 
           return proxies.get(host);

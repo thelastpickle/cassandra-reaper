@@ -54,8 +54,8 @@ public class JmxConnectionFactory {
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
   }
 
-  public JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
-      throws ReaperException, NumberFormatException, InterruptedException {
+  protected JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
+      throws ReaperException, InterruptedException {
     // use configured jmx port for host if provided
     if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
       host = host + ":" + jmxPorts.get(host);
@@ -77,8 +77,7 @@ public class JmxConnectionFactory {
     }
   }
 
-  public final JmxProxy connect(String host, int connectionTimeout)
-      throws ReaperException, NumberFormatException, InterruptedException {
+  public final JmxProxy connect(String host, int connectionTimeout) throws ReaperException, InterruptedException {
     return connect(Optional.<RepairStatusHandler>absent(), host, connectionTimeout);
   }
 
@@ -100,7 +99,8 @@ public class JmxConnectionFactory {
           try {
             return connect(handler, host, connectionTimeout);
           } catch (ReaperException | RuntimeException e) {
-            LOG.info("Unreachable host", e);
+            LOG.info("Unreachable host: {}: {}", e.getMessage(), e.getCause().getMessage());
+            LOG.debug("Unreachable host: ", e);
           } catch (InterruptedException expected) {
             LOG.trace("Expected exception", expected);
           }
