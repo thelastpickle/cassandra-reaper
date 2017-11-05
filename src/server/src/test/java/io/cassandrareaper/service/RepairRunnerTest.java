@@ -119,7 +119,7 @@ public final class RepairRunnerTest {
       final AtomicInteger repairAttempts = new AtomicInteger(1);
 
       @Override
-      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
+      protected JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
           throws ReaperException {
 
         final JmxProxy jmx = mock(JmxProxy.class);
@@ -270,7 +270,7 @@ public final class RepairRunnerTest {
       final AtomicInteger repairAttempts = new AtomicInteger(1);
 
       @Override
-      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
+      protected JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
           throws ReaperException {
 
         final JmxProxy jmx = mock(JmxProxy.class);
@@ -403,7 +403,7 @@ public final class RepairRunnerTest {
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
       @Override
-      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
+      protected JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
           throws ReaperException {
 
         final JmxProxy jmx = mock(JmxProxy.class);
