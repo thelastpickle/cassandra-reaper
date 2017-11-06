@@ -15,7 +15,7 @@ The Docker environment variables listed in this section map directly to Reaper s
 
 Environment Variable | Configuration Setting | Default Value
 --- | --- | ---
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_ENABLED</code> | <a href="../reaper_specific#endabled">endabled</a> | false
+<code class="codeLarge">REAPER_AUTO_SCHEDULING_ENABLED</code> | <a href="../reaper_specific#enabled">enabled</a> | false
 <code class="codeLarge">REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES</code> | <a href="../reaper_specific#excludedkeyspaces">excludedKeyspaces</a> | []
 <code class="codeLarge">REAPER_AUTO_SCHEDULING_INITIAL_DELAY_PERIOD</code> | <a href="../reaper_specific#initialdelayperiod">initialDelayPeriod</a> | PT15S
 <code class="codeLarge">REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS</code> | <a href="../reaper_specific#periodbetweenpolls">periodBetweenPolls</a> | PT10M
