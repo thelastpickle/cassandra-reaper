@@ -25,7 +25,7 @@ Optional setting to automatically setup repair schedules for all non-system keys
 
 Definitions for the above sub-settings are as follows.
 
-#### `endabled`
+#### `enabled`
 
 Type: *Boolean*
 
