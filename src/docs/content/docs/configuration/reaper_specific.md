@@ -262,7 +262,7 @@ Type of parallelism to apply by default to repair runs. The value must be either
 
 **PARALLEL** - all replicas at the same time, no snapshot
 
-**DATACENTER_AWARE** - all replicas in only one DC at a time, no snapshots. If this value is used in clusters older than 2.0.12, Reaper will fall back into using **SEQUENTIAL** for those clusters.
+**DATACENTER_AWARE** - one replica in each DC at the same time, with snapshots. If this value is used in clusters older than 2.0.12, Reaper will fall back into using **SEQUENTIAL** for those clusters.
 
 </br>
 
