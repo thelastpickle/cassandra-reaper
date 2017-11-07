@@ -32,7 +32,7 @@ else
 fi
 
 JVM_OPTS=(
-    -da
+    -ea
     -Xms2G
     -Xmx2G
     # Prefer binding to IPv4 network intefaces (when net.ipv6.bindv6only=1). See
