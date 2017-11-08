@@ -184,4 +184,92 @@ public final class NodesStatusTest {
     assertTrue(nodesStatus.endpointStates.get(0).endpointNames.contains("127.0.0.3"));
   }
 
+  @Test
+  public void testParseEndpointElassandraStatusString() {
+    Map<String, String> simpleStates = Maps.newHashMap();
+
+    String endpointsStatusString =
+        "/10.0.0.1 "
+            + "  generation:1506371953"
+            + "  heartbeat:360312"
+            + "  STATUS:17:NORMAL,-1046276550383960957"
+            + "  LOAD:360290:2.07524381E8"
+            + "  SCHEMA:160565:c09883c3-ac39-3bd5-8982-6e35a425d7a3"
+            + "  DC:8:us-west-2"
+            + "  RACK:10:a"
+            + "  RELEASE_VERSION:4:3.11.0"
+            + "  INTERNAL_IP:6:172.0.0.1"
+            + "  RPC_ADDRESS:3:xx.xx.xx.xx"
+            + "  NET_VERSION:1:11"
+            + "  HOST_ID:2:a05fd32d-4bd8-44a4-9265-2a47f8ef7130"
+            + "  RPC_READY:29:true"
+            + "  X1:37:{\"siq_test1\":3,\"siq_test3\":3}"
+            + "  X2:73550:9d0e8942-20dd-4bb8-878d-f20b4e847d8f/15"
+            + "  TOKENS:16:<hidden> \r"
+            + "/10.0.0.2"
+            + "  generation:1506368075"
+            + "  heartbeat:364340"
+            + "  STATUS:17:NORMAL,-1278741951029486876"
+            + "  LOAD:364339:1.9967795187E10"
+            + "  SCHEMA:164592:c09883c3-ac39-3bd5-8982-6e35a425d7a3"
+            + "  DC:8:us-west-2"
+            + "  RACK:10:a"
+            + "  RELEASE_VERSION:4:3.11.0"
+            + "  INTERNAL_IP:6:172.0.0.2"
+            + "  RPC_ADDRESS:3:xx.xx.xx.xx"
+            + "  NET_VERSION:1:11"
+            + "  HOST_ID:2:9d0e8942-20dd-4bb8-878d-f20b4e847d8f"
+            + "  RPC_READY:30:true"
+            + "  X1:36:{\"siq_test1\":3,\"siq_test3\":3}"
+            + "  X2:641:9d0e8942-20dd-4bb8-878d-f20b4e847d8f/15"
+            + "  TOKENS:16:<hidden> \r"
+            + "/10.0.0.3"
+            + "  generation:1506368359"
+            + "  heartbeat:364021"
+            + "  STATUS:17:NORMAL,-1065832441861161765"
+            + "  LOAD:364005:2.7071009691E10"
+            + "  SCHEMA:164276:c09883c3-ac39-3bd5-8982-6e35a425d7a3"
+            + "  DC:8:us-west-2"
+            + "  RACK:10:a"
+            + "  RELEASE_VERSION:4:3.11.0"
+            + "  INTERNAL_IP:6:172.0.0.3"
+            + "  RPC_ADDRESS:3:xx.xx.xx.xx"
+            + "  NET_VERSION:1:11"
+            + "  HOST_ID:2:aa9a2c53-b7d6-4c48-b094-4233e97e8e84"
+            + "  RPC_READY:30:true"
+            + "  X1:36:{\"siq_test1\":3,\"siq_test3\":3}"
+            + "  X2:324:9d0e8942-20dd-4bb8-878d-f20b4e847d8f/15"
+            + "  TOKENS:16:<hidden> \r";
+
+    simpleStates.put("/10.0.0.3", "UP");
+    simpleStates.put("/10.0.0.1", "DOWN");
+
+    NodesStatus nodesStatus = new NodesStatus("10.0.0.1", endpointsStatusString, simpleStates);
+
+    assertEquals(nodesStatus.endpointStates.size(), 1);
+    assertEquals(nodesStatus.endpointStates.get(0).sourceNode, "10.0.0.1");
+
+    Map<String, Map<String, List<EndpointState>>> endpoints =
+        nodesStatus.endpointStates.get(0).endpoints;
+    assertEquals(1, endpoints.get("us-west-2").keySet().size());
+    assertEquals(3, endpoints.get("us-west-2").get("a").size());
+    assertEquals("NORMAL - DOWN", endpoints.get("us-west-2").get("a").get(0).status);
+    assertEquals("NORMAL - UNKNOWN", endpoints.get("us-west-2").get("a").get(1).status);
+    assertEquals("NORMAL - UP", endpoints.get("us-west-2").get("a").get(2).status);
+    assertEquals("10.0.0.1", endpoints.get("us-west-2").get("a").get(0).endpoint);
+    assertEquals(
+        "a05fd32d-4bd8-44a4-9265-2a47f8ef7130", endpoints.get("us-west-2").get("a").get(0).hostId);
+    assertTrue(endpoints.get("us-west-2").get("a").get(0).severity.equals(0.0));
+    assertEquals("3.11.0", endpoints.get("us-west-2").get("a").get(0).releaseVersion);
+    assertEquals("us-west-2", endpoints.get("us-west-2").get("a").get(0).dc);
+    assertEquals("a", endpoints.get("us-west-2").get("a").get(1).rack);
+    assertEquals("us-west-2", endpoints.get("us-west-2").get("a").get(0).dc);
+    assertEquals("a", endpoints.get("us-west-2").get("a").get(2).rack);
+    assertTrue(endpoints.get("us-west-2").get("a").get(2).load.equals(27071009691.0));
+
+    assertTrue(nodesStatus.endpointStates.get(0).endpointNames.contains("10.0.0.1"));
+    assertTrue(nodesStatus.endpointStates.get(0).endpointNames.contains("10.0.0.2"));
+    assertTrue(nodesStatus.endpointStates.get(0).endpointNames.contains("10.0.0.3"));
+  }
+
 }
