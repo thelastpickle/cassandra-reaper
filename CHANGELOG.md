@@ -1,5 +1,11 @@
 ## Change Log
 
+### 1.0.0-RC2 (2017/11/09 16:50 +00:00)
+- [02e53d0](https://github.com/thelastpickle/cassandra-reaper/commit/02e53d0f421d27f62d9da5355ef4d250ce0b6f46) Should resolve current Docker image issues (@joaquincasares)
+- [d75ba7b](https://github.com/thelastpickle/cassandra-reaper/commit/d75ba7b2123af27b3971181893a46a839894200d) Don't log every jmx connection failure within JmxProxyImpl. The thrown exception is logged appropriately when caught. (@michaelsembwever)
+- [5d3d469](https://github.com/thelastpickle/cassandra-reaper/commit/5d3d46932ba03d2a0d00040b1c2560bc7bf5bbb6) enable assertions by default when running Reaper. (@michaelsembwever)
+- [257bab2](https://github.com/thelastpickle/cassandra-reaper/commit/257bab2aa468e7631c469ad4076f6f364790d39b) Fix typo: endabled -> enabled (@SaaldjorMike)
+
 ### 1.0.0-RC1 (2017/11/03 11:44 +00:00)
 - [dc9c00d](https://github.com/thelastpickle/cassandra-reaper/commit/dc9c00dfc890091015272358af902fc23c552e45) Pulled back the "database" setting for storage type to ensure backwards compatibility (@adejanovski)
 - [92a120c](https://github.com/thelastpickle/cassandra-reaper/commit/92a120c7e16344bc0b6275421a27066f8883507f) Split 'database' configuration setting (@ossarga)
