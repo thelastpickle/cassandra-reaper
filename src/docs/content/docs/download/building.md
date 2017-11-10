@@ -23,27 +23,27 @@ The easiest way to build is to use the following make command:
 make package
 ```
 
-To build Reaper without rebuilding the UI, run the following command : 
+To build Reaper without rebuilding the UI, run the following command:
 
 ```bash
 mvn clean package
 ```
 
-To only regenerate the UI (requires npm and bower) : 
+To only regenerate the UI (requires npm and bower):
 
 ```bash
 mvn generate-sources -Pbuild-ui
 ```
 
-To rebuild both the UI and Reaper : 
+To rebuild both the UI and Reaper:
 
 ```bash
 mvn clean package -Pbuild-ui
 ```
 
-# Building Docker Image
+# Building Docker Image from source
 
-To build the Reaper docker image from source, run the following command :
+To build the Reaper docker image from source, run the following command:
 
 ```bash
 mvn clean package -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
