@@ -106,8 +106,3 @@ services:
     volumes:
       - ./ssl-stores/reaper-server-keystore.jks:/etc/ssl/reaper-server-keystore.jks
       - ./ssl-stores/generic-server-truststore.jks:/etc/ssl/generic-server-truststore.jks
-
-  reaper-build-packages:
-    extends:
-      file: ./docker-build/docker-compose.yml
-      service: build
