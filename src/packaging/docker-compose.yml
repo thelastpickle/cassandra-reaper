@@ -1,14 +1,31 @@
 version: '2.1'
 
 services:
+  cassandra-common:
+    image: cassandra:3.11
+    env_file:
+      - ./docker-services/cassandra/cassandra.env
+    mem_limit: 4g
+    memswap_limit: 4g
+    mem_swappiness: 0
+    ports:
+      - "7000:7000"
+      - "7001:7001"
+      - "7199:7199"
+      - "9042:9042"
+    volumes:
+      - ./data/cassandra:/var/lib/cassandra
+      - ./docker-services/cassandra/jmxremote.access:/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+      - ./docker-services/cassandra/jmxremote.password:/etc/cassandra/jmxremote.password
+
   cassandra:
     extends:
-      file: ./common-services.yml
+      file: ./docker-compose.yml
       service: cassandra-common
 
   cassandra-ssl:
     extends:
-      file: ./common-services.yml
+      file: ./docker-compose.yml
       service: cassandra-common
     entrypoint: /docker-alt-entrypoint.sh cassandra -f
     env_file:
@@ -18,16 +35,21 @@ services:
       - ./ssl-stores/generic-server-truststore.jks:/etc/ssl/generic-server-truststore.jks
       - ./docker-services/cassandra-ssl/docker-entrypoint.sh:/docker-alt-entrypoint.sh
 
+  cqlsh-common:
+    build: ./docker-services/cqlsh
+    env_file:
+      - ./docker-services/cqlsh/cql.env
+
   cqlsh:
     extends:
-      file: ./common-services.yml
+      file: ./docker-compose.yml
       service: cqlsh-common
     links:
       - cassandra
 
   cqlsh-ssl:
     extends:
-      file: ./common-services.yml
+      file: ./docker-compose.yml
       service: cqlsh-common
     env_file:
       - ./docker-services/cqlsh-ssl/cqlsh-ssl.env
@@ -39,7 +61,7 @@ services:
 
   cqlsh-initialize-reaper_db:
     extends:
-      file: ./common-services.yml
+      file: ./docker-compose.yml
       service: cqlsh-common
     entrypoint: /docker-alt-entrypoint.sh
     env_file:
@@ -51,7 +73,7 @@ services:
 
   cqlsh-initialize-reaper_db-ssl:
     extends:
-      file: ./common-services.yml
+      file: ./docker-compose.yml
       service: cqlsh-common
     entrypoint: /docker-alt-entrypoint.sh
     env_file:
@@ -69,16 +91,21 @@ services:
       - ./resource/ca_cert.conf:/usr/src/app/ca_cert.conf
       - ./ssl-stores:/usr/src/app/ssl-stores
 
+  nodetool-common:
+    build: ./docker-services/nodetool
+    env_file:
+      - ./docker-services/nodetool/nodetool.env
+
   nodetool:
     extends:
-      file: ./common-services.yml
+      file: ./docker-compose.yml
       service: nodetool-common
     links:
       - cassandra
 
   nodetool-ssl:
     extends:
-      file: ./common-services.yml
+      file: ./docker-compose.yml
       service: nodetool-common
     env_file:
       - ./docker-services/nodetool-ssl/nodetool-ssl.env
@@ -88,16 +115,24 @@ services:
       - ./ssl-stores/cassandra-server-keystore.jks:/etc/ssl/cassandra-server-keystore.jks
       - ./ssl-stores/generic-server-truststore.jks:/etc/ssl/generic-server-truststore.jks
 
+  reaper-common:
+    image: cassandra-reaper:latest
+    env_file:
+      - ./docker-services/reaper/reaper.env
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+
   reaper:
     extends:
-      file: ./common-services.yml
+      file: ./docker-compose.yml
       service: reaper-common
     links:
       - cassandra
 
   reaper-ssl:
     extends:
-      file: ./common-services.yml
+      file: ./docker-compose.yml
       service: reaper-common
     env_file:
       - ./docker-services/reaper-ssl/reaper-ssl.env
@@ -109,7 +144,7 @@ services:
 
   reaper-in-memory:
     extends:
-      file: ./common-services.yml
+      file: ./docker-compose.yml
       service: reaper-common
     env_file:
       - ./docker-services/reaper-in-memory/reaper-in-memory.env
