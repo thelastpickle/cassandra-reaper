@@ -13,28 +13,99 @@ parent = "download"
 
 Building Reaper packages requires quite a few dependencies, especially when making changes to the web interface code. In an effort to simplify the build process, Dockerfiles have been created that implement the build actions required to package Reaper.
 
-To build the JAR and other packages which are then placed in the _packages_ directory run the following commands from the top level directory:
+To build the JAR and other packages which are then placed in the _src/packages_ directory run the following commands:
 
 ```bash
-docker-compose -f src/packaging/docker-build/docker-compose.yml build
-docker-compose -f src/packaging/docker-build/docker-compose.yml run build
+cd src/packaging/docker-build
+docker-compose build
+docker-compose run build
 ```
 
 ## Building Reaper Docker Image
 
-To build the Reaper Docker Image which is then added to the local image cache using the `cassandra-reaper:latest` tag, run the following commands from the top level directory:
+### Prerequisite
+
+The generation of the Docker image requires that the JAR file be built and placed in the _src/packages_ directory. If the JAR package is missing from the directory then it can built using either the steps in the [Docker package build](building-reaper-packages-with-docker) section (above), or in the <a href="../building#building-jars-from-source">Building from Source</a> section. 
+
+### Building Image
+
+To build the Reaper Docker Image which is then added to the local image cache using the `cassandra-reaper:latest` tag, run the following command from the top level directory.
 
 ```bash
 mvn -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
 ```
 
-Note that the above command will build the Reaper JAR and place it in the _src/server/target_ directory prior to creating the Docker Image. It is also possible to build the JAR file using the [Docker package build](building-reaper-packages-with-docker) instructions and omitting the `package` command from the above Maven commands.
+## Docker Hub Image
+
+A prebuilt Docker Image is available for download from [Docker Hub](https://hub.docker.com/r/thelastpickle/cassandra-reaper/). The image `TAG` can be specified when pulling the image from Docker Hub to pull a particular version. Set:
+
+* `TAG=master` to run Reaper with the latest commits
+* `TAG=latest` to run Reaper with the latest stable release
+
+To pull the image from Docker Hub with a particular tag, run the following command.
+
+```bash
+docker pull thelastpickle/cassandra-reaper:${TAG}
+```
 
 # Start Docker Environment
 
+## Using Docker
+
+Reaper can be executed with a Docker container whilst backed with either an ephemeral memory storage or persistent database.
+
+### In-Memory Backend
+
+To launch a Reaper container backed by an In-Memory backend, use the following example with the appropriate JMX authentication settings for the cluster it will manage repairs for.
+
+```bash
+TAG=latest
+
+REAPER_JMX_AUTH_USERNAME=reaperUser
+REAPER_JMX_AUTH_PASSWORD=reaperPass
+
+docker run \
+    -p 8080:8080 \
+    -p 8081:8081 \
+    -e "REAPER_JMX_AUTH_USERNAME=${REAPER_JMX_AUTH_USERNAME}" \
+    -e "REAPER_JMX_AUTH_PASSWORD=${REAPER_JMX_AUTH_PASSWORD}" \
+    thelastpickle/cassandra-reaper:${TAG}
+```
+
+Then visit the the Reaper UI: [http://localhost:8080/webui/](http://localhost:8080/webui/).
+
+### Cassandra Backend
+
+To launch a Reaper container backed by Cassandra, use the following example to connect to a Cassandra cluster that already has the `reaper_db` keyspace. Set the appropriate JMX authentication settings for the cluster that Reaper will manage repairs for.
+
+```bash
+TAG=latest
+
+REAPER_JMX_AUTH_USERNAME=reaperUser
+REAPER_JMX_AUTH_PASSWORD=reaperPass
+
+REAPER_CASS_CLUSTER_NAME=reaper-cluster
+REAPER_CASS_CONTACT_POINTS=["192.168.2.185"]
+
+docker run \
+    -p 8080:8080 \
+    -p 8081:8081 \
+    -e "REAPER_JMX_AUTH_USERNAME=${REAPER_JMX_AUTH_USERNAME}" \
+    -e "REAPER_JMX_AUTH_PASSWORD=${REAPER_JMX_AUTH_PASSWORD}" \
+    -e "REAPER_STORAGE_TYPE=cassandra" \
+    -e "REAPER_CASS_CLUSTER_NAME=${REAPER_CASS_CLUSTER_NAME}" \
+    -e "REAPER_CASS_CONTACT_POINTS=${REAPER_CASS_CONTACT_POINTS}" \
+    -e "REAPER_CASS_KEYSPACE=reaper_db" \
+    thelastpickle/cassandra-reaper:${TAG}
+```
+
+Then visit the the Reaper UI: [http://localhost:8080/webui/](http://localhost:8080/webui/).
+
+## Using Docker Compose
+
 The `docker-compose` services available allow for orchestration of an environment that uses default settings. In addition, services are provided that allow orchestration of an environment in which the connections between the services are SSL encrypted. Services which use SSL encryption contain a `-ssl` suffix in their name.
 
-## Default Settings Environment
+### Default Settings Environment
 
 From the top level directory change to the _src/packaging_ directory:
 
@@ -68,7 +139,7 @@ Wait a few moments for the `reaper_db` schema change to propagate, then start Re
 docker-compose up reaper
 ```
 
-## SSL Encrypted Connections Environment
+### SSL Encrypted Connections Environment
 
 From the top level directory change to the _src/packaging_ directory:
 

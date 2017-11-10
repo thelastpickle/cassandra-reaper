@@ -12,7 +12,9 @@ parent = "download"
 
 After modifying the `resource/cassandra-reaper.yaml` config file, Reaper can be started using the following command line :
 
-```java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml```
+```bash
+java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml
+```
 
 Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
 
@@ -28,17 +30,17 @@ We provide prebuilt packages for reaper on the [GitHub release page](https://git
 
 Grab the RPM from GitHub and install using the `rpm` command:
 
-`bash
+```bash
 sudo rpm -ivh reaper-*.*.*.x86_64.rpm
-`  
+```
 
 ### DEB (Debian based distros like Ubuntu)
 
 After downloading the DEB package, install using the `dpkg` command: 
 
-`
+```bash
 sudo dpkg -i reaper_*.*.*_amd64.deb
-`
+```
 
 ## Service Configuration
 
