@@ -22,7 +22,7 @@ import javax.management.NotificationEmitter;
 
 import org.apache.cassandra.service.StorageServiceMBean;
 
-interface StorageServiceMBean20 extends NotificationEmitter, StorageServiceMBean {
+public interface StorageServiceMBean20 extends NotificationEmitter, StorageServiceMBean {
 
   /**
    * Numeric load value.
@@ -32,16 +32,14 @@ interface StorageServiceMBean20 extends NotificationEmitter, StorageServiceMBean
   @Deprecated
   double getLoad();
 
-  /**
-   * Forces major compaction of a single keyspace
-   */
+  /** Forces major compaction of a single keyspace */
   void forceKeyspaceCompaction(String keyspaceName, String... columnFamilies)
       throws IOException, ExecutionException, InterruptedException;
 
   /**
-   * Invoke repair asynchronously. You can track repair progress by subscribing JMX notification sent from this
-   * StorageServiceMBean. Notification format is: type: "repair" userObject: int array of length 2, [0]=command number,
-   * [1]=ordinal of AntiEntropyService.Status
+   * Invoke repair asynchronously. You can track repair progress by subscribing JMX notification
+   * sent from this StorageServiceMBean. Notification format is: type: "repair" userObject: int
+   * array of length 2, [0]=command number, [1]=ordinal of AntiEntropyService.Status
    *
    * @return Repair command number, or 0 if nothing to repair
    */
@@ -54,9 +52,9 @@ interface StorageServiceMBean20 extends NotificationEmitter, StorageServiceMBean
       String... columnFamilies);
 
   /**
-   * Invoke repair asynchronously. You can track repair progress by subscribing JMX notification sent from this
-   * StorageServiceMBean. Notification format is: type: "repair" userObject: int array of length 2, [0]=command number,
-   * [1]=ordinal of AntiEntropyService.Status
+   * Invoke repair asynchronously. You can track repair progress by subscribing JMX notification
+   * sent from this StorageServiceMBean. Notification format is: type: "repair" userObject: int
+   * array of length 2, [0]=command number, [1]=ordinal of AntiEntropyService.Status
    *
    * @param parallelismDegree 0: sequential, 1: parallel, 2: DC parallel
    * @return Repair command number, or 0 if nothing to repair
@@ -70,19 +68,21 @@ interface StorageServiceMBean20 extends NotificationEmitter, StorageServiceMBean
       String... columnFamilies);
 
   /**
-   * Invoke repair asynchronously. You can track repair progress by subscribing JMX notification sent from this
-   * StorageServiceMBean. Notification format is: type: "repair" userObject: int array of length 2, [0]=command number,
-   * [1]=ordinal of AntiEntropyService.Status
+   * Invoke repair asynchronously. You can track repair progress by subscribing JMX notification
+   * sent from this StorageServiceMBean. Notification format is: type: "repair" userObject: int
+   * array of length 2, [0]=command number, [1]=ordinal of AntiEntropyService.Status
    *
    * @return Repair command number, or 0 if nothing to repair
    * @see #forceKeyspaceRepair(String, boolean, boolean, String...)
    */
   int forceRepairAsync(
-      String keyspace, boolean isSequential, boolean isLocal, boolean primaryRange, String... columnFamilies);
+      String keyspace,
+      boolean isSequential,
+      boolean isLocal,
+      boolean primaryRange,
+      String... columnFamilies);
 
-  /**
-   * Same as forceRepairAsync, but handles a specified range
-   */
+  /** Same as forceRepairAsync, but handles a specified range */
   int forceRepairRangeAsync(
       String beginToken,
       String endToken,
@@ -106,9 +106,7 @@ interface StorageServiceMBean20 extends NotificationEmitter, StorageServiceMBean
       final Collection<String> hosts,
       final String... columnFamilies);
 
-  /**
-   * Same as forceRepairAsync, but handles a specified range
-   */
+  /** Same as forceRepairAsync, but handles a specified range */
   int forceRepairRangeAsync(
       String beginToken,
       String endToken,
@@ -118,24 +116,23 @@ interface StorageServiceMBean20 extends NotificationEmitter, StorageServiceMBean
       final String... columnFamilies);
 
   /**
-   * Triggers proactive repair for given column families, or all columnfamilies for the given keyspace if none are
-   * explicitly listed.
+   * Triggers proactive repair for given column families, or all columnfamilies for the given
+   * keyspace if none are explicitly listed.
    */
-  void forceKeyspaceRepair(String keyspaceName, boolean isSequential, boolean isLocal, String... columnFamilies)
+  void forceKeyspaceRepair(
+      String keyspaceName, boolean isSequential, boolean isLocal, String... columnFamilies)
       throws IOException;
 
-  /**
-   * Triggers proactive repair but only for the node primary range.
-   */
+  /** Triggers proactive repair but only for the node primary range. */
   void forceKeyspaceRepairPrimaryRange(
-      String keyspaceName, boolean isSequential, boolean isLocal, String... columnFamilies) throws IOException;
+      String keyspaceName, boolean isSequential, boolean isLocal, String... columnFamilies)
+      throws IOException;
 
   /**
    * Perform repair of a specific range.
    *
-   * <p>
-   * This allows incremental repair to be performed by having an external controller submitting repair jobs. Note
-   * that the provided range much be a subset of one of the node local range.
+   * <p>This allows incremental repair to be performed by having an external controller submitting
+   * repair jobs. Note that the provided range much be a subset of one of the node local range.
    */
   void forceKeyspaceRepairRange(
       String beginToken,
@@ -146,9 +143,7 @@ interface StorageServiceMBean20 extends NotificationEmitter, StorageServiceMBean
       String... columnFamilies)
       throws IOException;
 
-  /**
-   * set the logging level at runtime
-   */
+  /** set the logging level at runtime */
   void setLog4jLevel(String classQualifier, String level);
 
   @Deprecated
