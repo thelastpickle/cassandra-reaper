@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.cassandrareaper</groupId>
         <artifactId>cassandra-reaper-pom</artifactId>
-        <version>1.0.0-RC2</version>
+        <version>1.0.0-RC3</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <name>Cassandra Reaper server</name>
