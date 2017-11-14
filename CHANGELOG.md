@@ -1,5 +1,11 @@
 ## Change Log
 
+### 1.0.0 (2017/11/14 20:58 +00:00)
+- [ba9ca5f](https://github.com/thelastpickle/cassandra-reaper/commit/ba9ca5f7f6b9a44a56c1c665f35142be1384baa2) Release 1.0.0 final (@adejanovski)
+
+### 1.0.0-RC3 (2017/11/13 10:01 +00:00)
+- [91b2737](https://github.com/thelastpickle/cassandra-reaper/commit/91b273720ae04fbb10a9a73ec71f8a0294979189) Ninja fix to have Reaper work with 2.0 again (@adejanovski)
+
 ### 1.0.0-RC2 (2017/11/09 16:50 +00:00)
 - [02e53d0](https://github.com/thelastpickle/cassandra-reaper/commit/02e53d0f421d27f62d9da5355ef4d250ce0b6f46) Should resolve current Docker image issues (@joaquincasares)
 - [d75ba7b](https://github.com/thelastpickle/cassandra-reaper/commit/d75ba7b2123af27b3971181893a46a839894200d) Don't log every jmx connection failure within JmxProxyImpl. The thrown exception is logged appropriately when caught. (@michaelsembwever)
