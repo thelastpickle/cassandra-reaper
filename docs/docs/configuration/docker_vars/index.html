@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.26" />
+  <meta name="generator" content="Hugo 0.29" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -200,7 +200,7 @@
         
         <li><a href="/docs/backends/memory/"> In Memory </a> </li>
         
-        <li><a href="/docs/backends/h2/"> H2 (Local Storage) </a> </li>
+        <li><a href="/docs/backends/h2/"> H2 </a> </li>
         
         <li><a href="/docs/backends/postgres/"> Postgres </a> </li>
         
@@ -495,7 +495,7 @@
 
 <p><strong>Note:</strong></p>
 
-<p>Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with our YAML parameter names:</p>
+<p>Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with the YAML parameter names:</p>
 
 <table>
 <thead>
@@ -736,7 +736,7 @@
 
 <p>The Docker environment variables listed in this section map directly to H2/Postgres backend specific settings in the <em>cassandra-reaper.yaml</em> configuration file. The following table below lists the Docker environment variables, their associated H2/Postgres backend specific setting in the <em>cassandra-reaper.yaml</em> configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.</p>
 
-<p>In order to use the following settings, <code>REAPER_STORAGE_TYPE</code> must be set to <code>database</code>.</p>
+<p>In order to use the following settings, <code>REAPER_STORAGE_TYPE</code> must be set to <code>h2</code> or <code>postgres</code>.</p>
 
 <table>
 <thead>
@@ -748,12 +748,6 @@
 </thead>
 
 <tbody>
-<tr>
-<td><code class="codeLarge">REAPER_DB_DRIVER_CLASS</code></td>
-<td><a href="../backend_specific#driverclass">driverClass</a></td>
-<td>org.h2.Driver</td>
-</tr>
-
 <tr>
 <td><code class="codeLarge">REAPER_DB_URL</code></td>
 <td><a href="../backend_specific#url">url</a></td>
@@ -770,6 +764,28 @@
 <td><code class="codeLarge">REAPER_DB_PASSWORD</code></td>
 <td><a href="../backend_specific#password-1">password</a></td>
 <td></td>
+</tr>
+</tbody>
+</table>
+
+<p><br/></p>
+
+<p><strong>Note:</strong></p>
+
+<p>Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with the YAML parameter names:</p>
+
+<table>
+<thead>
+<tr>
+<th>Pre Reaper 1.0</th>
+<th>Post Reaper 1.0</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>REAPER_DB_DRIVER_CLASS</code></td>
+<td>N/A - The associated parameter has been deprecated</td>
 </tr>
 </tbody>
 </table>

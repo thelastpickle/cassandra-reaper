@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.26" />
+  <meta name="generator" content="Hugo 0.29" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -197,7 +197,7 @@
         
         <li><a href="/docs/backends/memory/"> In Memory </a> </li>
         
-        <li><a href="/docs/backends/h2/"> H2 (Local Storage) </a> </li>
+        <li><a href="/docs/backends/h2/"> H2 </a> </li>
         
         <li><a href="/docs/backends/postgres/"> Postgres </a> </li>
         
@@ -277,11 +277,9 @@
 
 <h1 id="backends">Backends</h1>
 
-<p>Cassandra Reaper can be used with either an ephemeral memory storage or persistent database.</p>
+<p>Cassandra Reaper can be used with either an ephemeral memory storage or persistent database. For persistent scalable database storage, a Cassandra cluster can be set up to back Reaper. To use a Cassandra cluster as the backed storage for Reaper set <code>storageType</code> to a value of <strong>cassandra</strong> in the Reaper configuration file. Alternatively, a relational database storage; either H2 or Postgres can be set up to back Reaper. To use one of the relational database options as the backed storage for Reaper set <code>storageType</code> to a value of either <strong>h2</strong> or <strong>postrges</strong> in the Reaper configuration file.</p>
 
-<p>For persistent relational database storage, you must either setup PostgreSQL or H2. You also need to set <code>storageType: database</code> in the config file.</p>
-
-<p>Reaper provides a number of backend storage options:</p>
+<p>Further information on the available storage options is provided in the following section.</p>
 
 <ul>
 <li><a href="http://cassandra-reaper.io/docs/backends/memory/">In-Memory</a></li>
@@ -290,7 +288,7 @@
 <li><a href="http://cassandra-reaper.io/docs/backends/h2/">H2</a></li>
 </ul>
 
-<p>Sample yaml files are available in the <code>src/packaging/resource</code> directory for each of the above storage backends:</p>
+<p>Sample YAML files are available in the <em><a href="https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource">src/packaging/resource</a></em> directory for each of the above storage options:</p>
 
 <ul>
 <li>cassandra-reaper-memory.yaml</li>
@@ -299,7 +297,7 @@
 <li>cassandra-reaper-h2.yaml</li>
 </ul>
 
-<p>For configuring other aspects of the service, see the available configuration options in the <a href="../configuration">Configuration Reference</a></p>
+<p>For configuring other aspects of the service, see the available configuration options in the <a href="../configuration">Configuration Reference</a>.</p>
 
 
                     </div>

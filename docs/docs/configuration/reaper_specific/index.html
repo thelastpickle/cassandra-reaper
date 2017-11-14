@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.26" />
+  <meta name="generator" content="Hugo 0.29" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -200,7 +200,7 @@
         
         <li><a href="/docs/backends/memory/"> In Memory </a> </li>
         
-        <li><a href="/docs/backends/h2/"> H2 (Local Storage) </a> </li>
+        <li><a href="/docs/backends/h2/"> H2 </a> </li>
         
         <li><a href="/docs/backends/postgres/"> Postgres </a> </li>
         
@@ -541,7 +541,7 @@ repair again within the same repair run process.</p>
 
 <p><strong>PARALLEL</strong> - all replicas at the same time, no snapshot</p>
 
-<p><strong>DATACENTER_AWARE</strong> - all replicas in only one DC at a time, no snapshots. If this value is used in clusters older than 2.0.12, Reaper will fall back into using <strong>SEQUENTIAL</strong> for those clusters.</p>
+<p><strong>DATACENTER_AWARE</strong> - one replica in each DC at the same time, with snapshots. If this value is used in clusters older than 2.0.12, Reaper will fall back into using <strong>SEQUENTIAL</strong> for those clusters.</p>
 
 <p></br></p>
 
@@ -612,7 +612,7 @@ blocking in cause some thread is waiting for I/O, like calling a Cassandra clust
 
 <p>Type: <em>String</em></p>
 
-<p>Whether to use database or memory based storage for storing the system state. The value must be either <strong>cassandra</strong>, <strong>database</strong> or <strong>memory</strong>. If the recommended (persistent) storage type <strong>database</strong> or <strong>cassandra</strong> is being used, the database client parameters must be specified in the respective <code>database</code> or <code>cassandra</code> section in the configuration file. See the example settings in provided the <em><a href="https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource">src/packaging/resources</a></em> directory of the repository.</p>
+<p>The storage type to use in which Reaper will store its control data. The value must be either <strong>cassandra</strong>, <strong>h2</strong>, <strong>memory</strong>, or <strong>postgres</strong>. If the recommended (persistent) storage type <strong>cassandra</strong>, <strong>h2</strong>, or <strong>postgres</strong> is being used, the database client parameters must be specified in the respective <code>cassandra</code>, <code>h2</code>, or <code>postgres</code> section in the configuration file. See the example settings in provided the <em><a href="https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource">src/packaging/resources</a></em> directory of the repository.</p>
 
 <p></br></p>
 

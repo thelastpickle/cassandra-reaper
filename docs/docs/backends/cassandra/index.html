@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.26" />
+  <meta name="generator" content="Hugo 0.29" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -200,7 +200,7 @@
         
         <li><a href="/docs/backends/memory/"> In Memory </a> </li>
         
-        <li><a href="/docs/backends/h2/"> H2 (Local Storage) </a> </li>
+        <li><a href="/docs/backends/h2/"> H2 </a> </li>
         
         <li><a href="/docs/backends/postgres/"> Postgres </a> </li>
         
@@ -281,9 +281,7 @@
 
 <h1 id="cassandra-backend">Cassandra Backend</h1>
 
-<p>To use Apache Cassandra as the persistent storage for Reaper, the storageType setting must be set to cassandra in the Reaper configuration YAML file. In addition, the connection details for the Apache Cassandra cluster being used to store Reaper data must be specified in the configuration YAML file.</p>
-
-<p>For example:</p>
+<p>To use Apache Cassandra as the persistent storage for Reaper, the <code>storageType</code> setting must be set to <strong>cassandra</strong> in the Reaper configuration YAML file. In addition, the connection details for the Apache Cassandra cluster being used to store Reaper data must be specified in the configuration YAML file. An example of how to configure H2 as persistent storage for Reaper can be found in the <em><a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/resource/cassandra-reaper-cassandra.yaml">cassandra-reaper-cassandra.yaml</a></em>.</p>
 
 <pre><code class="language-yaml">storageType: cassandra
 cassandra:

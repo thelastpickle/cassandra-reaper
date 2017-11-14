@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.26" />
+  <meta name="generator" content="Hugo 0.29" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -200,7 +200,7 @@
         
         <li><a href="/docs/backends/memory/"> In Memory </a> </li>
         
-        <li><a href="/docs/backends/h2/"> H2 (Local Storage) </a> </li>
+        <li><a href="/docs/backends/h2/"> H2 </a> </li>
         
         <li><a href="/docs/backends/postgres/"> Postgres </a> </li>
         
@@ -385,8 +385,7 @@ Note that Cassandra backend configuration relies on the <a href="https://github.
 
 <p>The following settings are specific to a Reaper deployment that is backed by either a H2 or Postgres database. An example of the configuration settings for a Postgres database are as follows.</p>
 
-<pre><code class="language-yaml">database:
-  driverClass: org.postgresql.Driver
+<pre><code class="language-yaml">postgres:
   url: jdbc:postgresql://127.0.0.1/reaper
   user: postgres
   password:
@@ -396,13 +395,19 @@ Note that Cassandra backend configuration relies on the <a href="https://github.
 
 <p></br></p>
 
-<h3 id="database"><code>database</code></h3>
+<h3 id="h2"><code>h2</code></h3>
 
-<p>Settings to configure Reaper to use Cassandra for storage of its control data.</p>
+<p>Settings to configure Reaper to use H2 for storage of its control data.</p>
+
+<h3 id="postgres"><code>postgres</code></h3>
+
+<p>Settings to configure Reaper to use Postgres for storage of its control data.</p>
 
 <h4 id="driverclass"><code>driverClass</code></h4>
 
 <p>Type: <em>String</em></p>
+
+<p><strong>WARNING</strong> this setting is <strong>DEPRECATED</strong> and its usage should be avoided.</p>
 
 <p>Specifies the driver to use to connect to the database.</p>
 
@@ -410,7 +415,7 @@ Note that Cassandra backend configuration relies on the <a href="https://github.
 
 <p>Type: <em>String</em></p>
 
-<p>Specifies the URL to connect to the database on.</p>
+<p>Specifies the URL to connect to the database (either H2 or Postgres) on.</p>
 
 <h4 id="user"><code>user</code></h4>
 
