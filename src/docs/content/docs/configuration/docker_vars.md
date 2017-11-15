@@ -15,38 +15,38 @@ The Docker environment variables listed in this section map directly to Reaper s
 
 Environment Variable | Configuration Setting | Default Value
 --- | --- | ---
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_ENABLED</code> | <a href="../reaper_specific#enabled">enabled</a> | false
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES</code> | <a href="../reaper_specific#excludedkeyspaces">excludedKeyspaces</a> | []
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_INITIAL_DELAY_PERIOD</code> | <a href="../reaper_specific#initialdelayperiod">initialDelayPeriod</a> | PT15S
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS</code> | <a href="../reaper_specific#periodbetweenpolls">periodBetweenPolls</a> | PT10M
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_SCHEDULE_SPREAD_PERIOD</code> | <a href="../reaper_specific#schedulespreadperiod">scheduleSpreadPeriod</a> | PT6H
-<code class="codeLarge">REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE</code> | <a href="../reaper_specific#timebeforefirstschedule">timeBeforeFirstSchedule</a> | PT5M
-<code class="codeLarge">REAPER_DATACENTER_AVAILABILITY</code> | <a href="../reaper_specific#datacenteravailability">datacenterAvailability</a> | ALL
-<code class="codeLarge">REAPER_ENABLE_CROSS_ORIGIN</code> | <a href="../reaper_specific#enablecrossorigin">enableCrossOrigin</a> | true
-<code class="codeLarge">REAPER_ENABLE_DYNAMIC_SEED_LIST</code> | <a href="../reaper_specific#enabledynamicseedlist">enableDynamicSeedList</a> | true
-<code class="codeLarge">REAPER_HANGING_REPAIR_TIMEOUT_MINS</code> | <a href="../reaper_specific#hangingrepairtimeoutmins">hangingRepairTimeoutMins</a> | 30
-<code class="codeLarge">REAPER_INCREMENTAL_REPAIR</code> | <a href="../reaper_specific#incrementalrepair">incrementalRepair</a> | false
-<code class="codeLarge">REAPER_JMX_AUTH_PASSWORD</code> | <a href="../reaper_specific#password">password</a> |
-<code class="codeLarge">REAPER_JMX_AUTH_USERNAME</code> | <a href="../reaper_specific#username">username</a> |
-<code class="codeLarge">REAPER_JMX_CONNECTION_TIMEOUT_IN_SECONDS</code> | <a href="../reaper_specific#jmxconnectiontimeoutinseconds">jmxConnectionTimeoutInSeconds</a> | 20
-<code class="codeLarge">REAPER_JMX_PORTS</code> | <a href="../reaper_specific#jmxports">jmxPorts</a> | {}
-<code class="codeLarge">REAPER_LOGGING_APPENDERS_LOG_FORMAT</code> | <a href="../reaper_specific#logformat">logFormat</a> | "%-6level [%d] [%t] %logger{5} - %msg %n"
-<code class="codeLarge">REAPER_LOGGING_LOGGERS</code> | <a href="../reaper_specific#loggers">loggers</a> | {}
-<code class="codeLarge">REAPER_LOGGING_ROOT_LEVEL</code> | <a href="../reaper_specific#level">level</a> | INFO
-<code class="codeLarge">REAPER_METRICS_FREQUENCY</code> | <a href="../reaper_specific#fequency">fequency</a> | 1 minute
-<code class="codeLarge">REAPER_METRICS_REPORTERS</code> | <a href="../reaper_specific#reporters">reporters</a> | []
-<code class="codeLarge">REAPER_REPAIR_INTENSITY</code> | <a href="../reaper_specific#repairintensity">repairIntensity</a> | 0.9
-<code class="codeLarge">REAPER_REPAIR_MANAGER_SCHEDULING_INTERVAL_SECONDS</code> | <a href="../reaper_specific#repairmanagerschedulingintervalseconds">repairManagerSchedulingIntervalSeconds</a> | 30
-<code class="codeLarge">REAPER_REPAIR_PARALELLISM</code> | <a href="../reaper_specific#repairparallelism">repairParallelism</a> | DATACENTER_AWARE
-<code class="codeLarge">REAPER_REPAIR_RUN_THREADS</code> | <a href="../reaper_specific#repairrunthreadcount">repairRunThreadCount</a> | 15
-<code class="codeLarge">REAPER_SCHEDULE_DAYS_BETWEEN</code> | <a href="../reaper_specific#scheduledaysbetween">scheduleDaysBetween</a> | 7
-<code class="codeLarge">REAPER_SEGMENT_COUNT</code> | <a href="../reaper_specific#segmentcount">segmentCount</a> | 200
-<code class="codeLarge">REAPER_SERVER_ADMIN_BIND_HOST</code> | <a href="../reaper_specific#bindhost">bindHost</a> | 0.0.0.0
-<code class="codeLarge">REAPER_SERVER_ADMIN_PORT</code> | <a href="../reaper_specific#port">port</a> | 8081
-<code class="codeLarge">REAPER_SERVER_APP_BIND_HOST</code> | <a href="../reaper_specific#bindhost">bindHost</a> | 0.0.0.0
-<code class="codeLarge">REAPER_SERVER_APP_PORT</code> | <a href="../reaper_specific#port">port</a> | 8080
-<code class="codeLarge">REAPER_STORAGE_TYPE</code> | <a href="../reaper_specific#storagetype">storageType</a> | memory
-<code class="codeLarge">REAPER_USE_ADDRESS_TRANSLATOR</code> | <a href="../reaper_specific#useaddresstranslator">useAddressTranslator</a> | false
+<code class="codeLarge">REAPER_AUTO_SCHEDULING_ENABLED</code> | [enabled]({{< relref "reaper_specific.md#enabled" >}}) | false
+<code class="codeLarge">REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES</code> | [excludedKeyspaces]({{< relref "reaper_specific.md#excludedkeyspaces" >}}) | []
+<code class="codeLarge">REAPER_AUTO_SCHEDULING_INITIAL_DELAY_PERIOD</code> | [initialDelayPeriod]({{< relref "reaper_specific.md#initialdelayperiod" >}}) | PT15S
+<code class="codeLarge">REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS</code> | [periodBetweenPolls]({{< relref "reaper_specific.md#periodbetweenpolls" >}}) | PT10M
+<code class="codeLarge">REAPER_AUTO_SCHEDULING_SCHEDULE_SPREAD_PERIOD</code> | [scheduleSpreadPeriod]({{< relref "reaper_specific.md#schedulespreadperiod" >}}) | PT6H
+<code class="codeLarge">REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE</code> | [timeBeforeFirstSchedule]({{< relref "reaper_specific.md#timebeforefirstschedule" >}}) | PT5M
+<code class="codeLarge">REAPER_DATACENTER_AVAILABILITY</code> | [datacenterAvailability]({{< relref "reaper_specific.md#datacenteravailability" >}}) | ALL
+<code class="codeLarge">REAPER_ENABLE_CROSS_ORIGIN</code> | [enableCrossOrigin]({{< relref "reaper_specific.md#enablecrossorigin" >}}) | true
+<code class="codeLarge">REAPER_ENABLE_DYNAMIC_SEED_LIST</code> | [enableDynamicSeedList]({{< relref "reaper_specific.md#enabledynamicseedlist" >}}) | true
+<code class="codeLarge">REAPER_HANGING_REPAIR_TIMEOUT_MINS</code> | [hangingRepairTimeoutMins]({{< relref "reaper_specific.md#hangingrepairtimeoutmins" >}}) | 30
+<code class="codeLarge">REAPER_INCREMENTAL_REPAIR</code> | [incrementalRepair]({{< relref "reaper_specific.md#incrementalrepair" >}}) | false
+<code class="codeLarge">REAPER_JMX_AUTH_PASSWORD</code> | [password]({{< relref "reaper_specific.md#password" >}}) |
+<code class="codeLarge">REAPER_JMX_AUTH_USERNAME</code> | [username]({{< relref "reaper_specific.md#username" >}}) |
+<code class="codeLarge">REAPER_JMX_CONNECTION_TIMEOUT_IN_SECONDS</code> | [jmxConnectionTimeoutInSeconds]({{< relref "reaper_specific.md#jmxconnectiontimeoutinseconds" >}}) | 20
+<code class="codeLarge">REAPER_JMX_PORTS</code> | [jmxPorts]({{< relref "reaper_specific.md#jmxports" >}}) | {}
+<code class="codeLarge">REAPER_LOGGING_APPENDERS_LOG_FORMAT</code> | [logFormat]({{< relref "reaper_specific.md#logformat" >}}) | "%-6level [%d] [%t] %logger{5} - %msg %n"
+<code class="codeLarge">REAPER_LOGGING_LOGGERS</code> | [loggers]({{< relref "reaper_specific.md#loggers" >}}) | {}
+<code class="codeLarge">REAPER_LOGGING_ROOT_LEVEL</code> | [level]({{< relref "reaper_specific.md#level" >}}) | INFO
+<code class="codeLarge">REAPER_METRICS_FREQUENCY</code> | [fequency]({{< relref "reaper_specific.md#fequency" >}}) | 1 minute
+<code class="codeLarge">REAPER_METRICS_REPORTERS</code> | [reporters]({{< relref "reaper_specific.md#reporters" >}}) | []
+<code class="codeLarge">REAPER_REPAIR_INTENSITY</code> | [repairIntensity]({{< relref "reaper_specific.md#repairintensity" >}}) | 0.9
+<code class="codeLarge">REAPER_REPAIR_MANAGER_SCHEDULING_INTERVAL_SECONDS</code> | [repairManagerSchedulingIntervalSeconds]({{< relref "reaper_specific.md#repairmanagerschedulingintervalseconds" >}}) | 30
+<code class="codeLarge">REAPER_REPAIR_PARALELLISM</code> | [repairParallelism]({{< relref "reaper_specific.md#repairparallelism" >}}) | DATACENTER_AWARE
+<code class="codeLarge">REAPER_REPAIR_RUN_THREADS</code> | [repairRunThreadCount]({{< relref "reaper_specific.md#repairrunthreadcount" >}}) | 15
+<code class="codeLarge">REAPER_SCHEDULE_DAYS_BETWEEN</code> | [scheduleDaysBetween]({{< relref "reaper_specific.md#scheduledaysbetween" >}}) | 7
+<code class="codeLarge">REAPER_SEGMENT_COUNT</code> | [segmentCount]({{< relref "reaper_specific.md#segmentcount" >}}) | 200
+<code class="codeLarge">REAPER_SERVER_ADMIN_BIND_HOST</code> | [bindHost]({{< relref "reaper_specific.md#bindhost" >}}) | 0.0.0.0
+<code class="codeLarge">REAPER_SERVER_ADMIN_PORT</code> | [port]({{< relref "reaper_specific.md#port" >}}) | 8081
+<code class="codeLarge">REAPER_SERVER_APP_BIND_HOST</code> | [bindHost]({{< relref "reaper_specific.md#bindhost" >}}) | 0.0.0.0
+<code class="codeLarge">REAPER_SERVER_APP_PORT</code> | [port]({{< relref "reaper_specific.md#port" >}}) | 8080
+<code class="codeLarge">REAPER_STORAGE_TYPE</code> | [storageType]({{< relref "reaper_specific.md#storagetype" >}}) | memory
+<code class="codeLarge">REAPER_USE_ADDRESS_TRANSLATOR</code> | [useAddressTranslator]({{< relref "reaper_specific.md#useaddresstranslator" >}}) | false
 
 <br/>
 
@@ -97,13 +97,13 @@ In order for the Cassandra backend to be used, `REAPER_STORAGE_TYPE` must be set
 
 Environment Variable | Configuration Setting | Default Value
 ---|---|---
-<code class="codeLarge">REAPER_CASS_ACTIVATE_QUERY_LOGGER</code> | <a href="../backend_specific#activatequerylogger">activateQueryLogger</a> | false
-<code class="codeLarge">REAPER_CASS_CLUSTER_NAME</code> | <a href="../backend_specific#clustername">clusterName</a> | clustername
-<code class="codeLarge">REAPER_CASS_CONTACT_POINTS</code> | <a href="../backend_specific#contactpoints">contactPoints</a> | []
-<code class="codeLarge">REAPER_CASS_KEYSPACE</code> | <a href="../backend_specific#keyspace">keyspace</a> | cassandra-reaper
-<code class="codeLarge">REAPER_CASS_LOCAL_DC</code> | <a href="../backend_specific#localdc">localDC</a> |
-<code class="codeLarge">REAPER_CASS_AUTH_USERNAME</code> | <a href="../backend_specific#username">username</a> | cassandra
-<code class="codeLarge">REAPER_CASS_AUTH_PASSWORD</code> | <a href="../backend_specific#password">password</a> | cassandra
+<code class="codeLarge">REAPER_CASS_ACTIVATE_QUERY_LOGGER</code> | [activateQueryLogger]({{< relref "backend_specific.md#activatequerylogger" >}}) | false
+<code class="codeLarge">REAPER_CASS_CLUSTER_NAME</code> | [clusterName]({{< relref "backend_specific.md#clustername" >}}) | clustername
+<code class="codeLarge">REAPER_CASS_CONTACT_POINTS</code> | [contactPoints]({{< relref "backend_specific.md#contactpoints" >}}) | []
+<code class="codeLarge">REAPER_CASS_KEYSPACE</code> | [keyspace]({{< relref "backend_specific.md#keyspace" >}}) | cassandra-reaper
+<code class="codeLarge">REAPER_CASS_LOCAL_DC</code> | [localDC]({{< relref "backend_specific.md#localdc" >}}) |
+<code class="codeLarge">REAPER_CASS_AUTH_USERNAME</code> | [username]({{< relref "backend_specific.md#username" >}}) | cassandra
+<code class="codeLarge">REAPER_CASS_AUTH_PASSWORD</code> | [password]({{< relref "backend_specific.md#password" >}}) | cassandra
 
 <br/>
 
@@ -155,9 +155,9 @@ In order to use the following settings, `REAPER_STORAGE_TYPE` must be set to `h2
 
 Environment Variable | Configuration Setting | Default Value
 ---|---|---
-<code class="codeLarge">REAPER_DB_URL</code> | <a href="../backend_specific#url">url</a> | jdbc:h2:/var/lib/cassandra-reaper/db;MODE=PostgreSQL
-<code class="codeLarge">REAPER_DB_USERNAME</code> | <a href="../backend_specific#user">user</a> |
-<code class="codeLarge">REAPER_DB_PASSWORD</code> | <a href="../backend_specific#password-1">password</a> |
+<code class="codeLarge">REAPER_DB_URL</code> | [url]({{< relref "backend_specific.md#url" >}}) | jdbc:h2:/var/lib/cassandra-reaper/db;MODE=PostgreSQL
+<code class="codeLarge">REAPER_DB_USERNAME</code> | [user]({{< relref "backend_specific.md#user" >}}) |
+<code class="codeLarge">REAPER_DB_PASSWORD</code> | [password]({{< relref "backend_specific.md#password-1" >}}) |
 
 <br/>
 

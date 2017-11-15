@@ -25,7 +25,7 @@ docker-compose run build
 
 ### Prerequisite
 
-The generation of the Docker image requires that the JAR file be built and placed in the _src/packages_ directory. If the JAR package is missing from the directory then it can built using either the steps in the [Docker package build](building-reaper-packages-with-docker) section (above), or in the <a href="../building#building-jars-from-source">Building from Source</a> section. 
+The generation of the Docker image requires that the JAR file be built and placed in the _src/packages_ directory. If the JAR package is missing from the directory then it can built using either the steps in the [Docker package build](building-reaper-packages-with-docker) section (above), or in the [Building from Source]({{< relref "building.md#building-jars-from-source" >}}) section.
 
 ### Building Image
 
