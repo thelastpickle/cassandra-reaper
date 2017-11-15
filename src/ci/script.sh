@@ -27,8 +27,8 @@ case "${TEST_TYPE}" in
         fi
         ;;
     "docker")
-        docker-compose -f ./src/packaging/docker-compose.yml build reaper-build-packages
-        docker-compose -f ./src/packaging/docker-compose.yml run reaper-build-packages
+        docker-compose -f ./src/packaging/docker-build/docker-compose.yml build
+        docker-compose -f ./src/packaging/docker-build/docker-compose.yml run build
 
         # Need to change the permissions after building the packages using the Docker image because they
         # are set to root and if left unchanged they will cause Maven to fail
