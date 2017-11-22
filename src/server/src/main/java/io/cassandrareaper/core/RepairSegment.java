@@ -18,12 +18,17 @@ import io.cassandrareaper.service.RingRange;
 
 import java.math.BigInteger;
 import java.util.UUID;
+
 import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class RepairSegment {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RepairSegment.class);
 
   private final UUID id;
   private final UUID runId;
@@ -178,13 +183,47 @@ public final class RepairSegment {
 
     public RepairSegment build(@Nullable UUID segmentId) {
       // a null segmentId is a special case where the storage uses a sequence for it
-      Preconditions.checkNotNull(runId);
-      Preconditions.checkState(null != startTime || null == endTime, "if endTime is set, so must startTime be set");
-      Preconditions.checkState(null == endTime || State.DONE == state, "endTime can only be set if segment is DONE");
+      //Preconditions.checkNotNull(runId);
+      //Preconditions.checkState(null != startTime || null == endTime, "if endTime is set, so must startTime be set");
+      //Preconditions.checkState(null == endTime || State.DONE == state, "endTime can only be set if segment is DONE");
+      if (null == startTime && null != endTime) {
+        LOG.warn(
+            "endTime is set but startTime is not on segment {} for repair {}. This should not be happening :(",
+            segmentId,
+            runId);
+      }
 
-      Preconditions.checkState(
-          null != startTime || State.NOT_STARTED == state,
-          "startTime can only be unset if segment is NOT_STARTED");
+      if (null != endTime && State.DONE != state) {
+        LOG.warn(
+            "endTime is set but segment state is {} is not on segment {} for repair {}. "
+                + "This should not be happening :(",
+            state,
+            segmentId,
+            runId);
+      }
+
+      if (null != endTime && State.DONE != state) {
+        LOG.warn(
+            "endTime is set but segment state is {} is not on segment {} for repair {}. "
+                + "This should not be happening :(",
+            state,
+            segmentId,
+            runId);
+      }
+
+      /* Preconditions.checkState(
+      null != startTime || State.NOT_STARTED == state,
+      "startTime can only be unset if segment is NOT_STARTED"); */
+
+      if (null == startTime && State.NOT_STARTED != state) {
+        LOG.warn(
+            "startTime can only be unset if segment state is {} (currently = {}) on segment {} "
+                + "for repair {}. This should not be happening :(",
+            State.NOT_STARTED,
+            state,
+            segmentId,
+            runId);
+      }
 
       return new RepairSegment(this, segmentId);
     }
