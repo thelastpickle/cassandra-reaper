@@ -1,5 +1,8 @@
 ## Change Log
 
+### 1.0.1 (2017/11/22 13:29 +00:00)
+- [ed418ce](https://github.com/thelastpickle/cassandra-reaper/commit/ed418ce2c80aa9194ce87603fed241fecb94233e) Remove precondition checks that break Reaper when endTime/startTime are inconsistently set (@adejanovski)
+
 ### 1.0.0 (2017/11/14 20:58 +00:00)
 - [ba9ca5f](https://github.com/thelastpickle/cassandra-reaper/commit/ba9ca5f7f6b9a44a56c1c665f35142be1384baa2) Release 1.0.0 final (@adejanovski)
 

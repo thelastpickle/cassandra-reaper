@@ -29,22 +29,22 @@ const NavBar = React.createClass({
                   <span className="icon-bar"></span>
                   <span className="icon-bar"></span>
               </button>
-              <Button onClick={this.open} bsStyle="link" bsSize="xsmall" className="navbar-brand">Cassandra Reaper <span style={smallFont}>1.0.0-RC1</span></Button>
+              <Button onClick={this.open} bsStyle="link" bsSize="xsmall" className="navbar-brand">Cassandra Reaper <span style={smallFont}>1.0.1-SNAPSHOT</span></Button>
               </div>
               </div>
               <div className="col-lg-4">
-                <span className="navbar-brand" style={floatRight}><Button href="https://github.com/thelastpickle/cassandra-reaper/issues/new?body=**Spotted on 1.0.0-RC1 (dc9c00d)**" bsStyle="warning" bsSize="xsmall">Report a bug</Button>
+                <span className="navbar-brand" style={floatRight}><Button href="https://github.com/thelastpickle/cassandra-reaper/issues/new?body=**Spotted on 1.0.1-SNAPSHOT (cbad80e)**" bsStyle="warning" bsSize="xsmall">Report a bug</Button>
               </span>
             </div>
             <Modal show={this.state.showModal} onHide={this.close}>
                 <Modal.Header closeButton>
-                  <Modal.Title>Version 1.0.0-RC1</Modal.Title>
+                  <Modal.Title>Version 1.0.1-SNAPSHOT</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                   <h4>Git commit :</h4>
-                  <p><a href="https://github.com/thelastpickle/cassandra-reaper/commit/dc9c00d" target="_blank">https://github.com/thelastpickle/cassandra-reaper/commit/dc9c00d</a></p>
+                  <p><a href="https://github.com/thelastpickle/cassandra-reaper/commit/cbad80e" target="_blank">https://github.com/thelastpickle/cassandra-reaper/commit/cbad80e</a></p>
                   <h4>Build date :</h4>
-                  <p>2017-11-03 17:27:53</p>
+                  <p>2017-11-22 13:21:24</p>
                 </Modal.Body>
                 <Modal.Footer>
                   <Button onClick={this.close}>Close</Button>
