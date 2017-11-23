@@ -184,7 +184,7 @@ public final class RepairSegment {
 
       Preconditions.checkState(
           null != startTime || State.NOT_STARTED == state,
-          "startTime can only be unset if segment is NOT_STARTED");
+          "startTime must be set if segment is RUNNING or DONE");
 
       return new RepairSegment(this, segmentId);
     }

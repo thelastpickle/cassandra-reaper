@@ -287,9 +287,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             closeJmxConnection(Optional.fromNullable(coordinator));
             return true;
           }
-
           long timeout = repairUnit.getIncrementalRepair() ? timeoutMillis * MAX_TIMEOUT_EXTENSIONS : timeoutMillis;
-          context.storage.updateRepairSegment(segment.with().coordinatorHost(coordinator.getHost()).build(segmentId));
+          context.storage.updateRepairSegment(
+              segment.with().coordinatorHost(coordinator.getHost()).startTime(DateTime.now()).build(segmentId));
           String eventMsg
               = String.format("Triggered repair of segment %s via host %s", segment.getId(), coordinator.getHost());
 
@@ -709,10 +709,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       case START:
         try {
           if (renewLead()) {
-            DateTime now = DateTime.now();
-
             context.storage.updateRepairSegment(
-                currentSegment.with().state(RepairSegment.State.RUNNING).startTime(now).build(segmentId));
+                currentSegment.with().state(RepairSegment.State.RUNNING).build(segmentId));
 
             LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
             break;
@@ -780,10 +778,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       case STARTED:
         try {
           if (renewLead()) {
-            DateTime now = DateTime.now();
-
             context.storage.updateRepairSegment(
-                currentSegment.with().state(RepairSegment.State.RUNNING).startTime(now).build(segmentId));
+                currentSegment.with().state(RepairSegment.State.RUNNING).build(segmentId));
 
             LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
             break;
