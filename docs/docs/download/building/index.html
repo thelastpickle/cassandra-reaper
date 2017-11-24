@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.29" />
+  <meta name="generator" content="Hugo 0.26" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -294,24 +294,24 @@ make rpm
 <pre><code class="language-bash">make package
 </code></pre>
 
-<p>To build Reaper without rebuilding the UI, run the following command :</p>
+<p>To build Reaper without rebuilding the UI, run the following command:</p>
 
 <pre><code class="language-bash">mvn clean package
 </code></pre>
 
-<p>To only regenerate the UI (requires npm and bower) :</p>
+<p>To only regenerate the UI (requires npm and bower):</p>
 
 <pre><code class="language-bash">mvn generate-sources -Pbuild-ui
 </code></pre>
 
-<p>To rebuild both the UI and Reaper :</p>
+<p>To rebuild both the UI and Reaper:</p>
 
 <pre><code class="language-bash">mvn clean package -Pbuild-ui
 </code></pre>
 
-<h1 id="building-docker-image">Building Docker Image</h1>
+<h1 id="building-docker-image-from-source">Building Docker Image from source</h1>
 
-<p>To build the Reaper docker image from source, run the following command :</p>
+<p>To build the Reaper docker image from source, run the following command:</p>
 
 <pre><code class="language-bash">mvn clean package -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
 </code></pre>

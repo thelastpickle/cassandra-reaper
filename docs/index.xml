@@ -47,8 +47,8 @@ storageType: h2 h2: # H2 JDBC settings url: jdbc:h2:~/reaper-db/db;MODE=PostgreS
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/backends/memory/</guid>
-      <description>Memory Backend To use in memory storage as the storage type for Reaper, the storageType setting must be set to memory in the Reaper configuration YAML file. Note that the in memory storage is enabled by default. An example of how to configure H2 as persistent storage for Reaper can be found in the cassandra-reaper-memory.yaml.
-storageType: memory  In memory storage is volatile and as such all registered cluster, column families and repair un information will be lost upon service restart.</description>
+      <description>In-Memory Backend To use in memory storage as the storage type for Reaper, the storageType setting must be set to memory in the Reaper configuration YAML file. Note that the in memory storage is enabled by default. An example of how to configure Reaper with In-Menory storage can be found in the cassandra-reaper-memory.yaml.
+storageType: memory  In-memory storage is volatile and as such all registered cluster, column families and repair information will be lost upon service restart.</description>
     </item>
     
     <item>
@@ -114,9 +114,9 @@ autoScheduling Optional setting to automatically setup repair schedules for all 
       <guid>http://cassandra-reaper.io/docs/download/building/</guid>
       <description>Building Install Packages Debian packages and RPMs can be built from this project using Make, for example:
 make deb make rpm  Building JARs from source The easiest way to build is to use the following make command:
-make package  To build Reaper without rebuilding the UI, run the following command :
-mvn clean package  To only regenerate the UI (requires npm and bower) :
-mvn generate-sources -Pbuild-ui  To rebuild both the UI and Reaper :</description>
+make package  To build Reaper without rebuilding the UI, run the following command:
+mvn clean package  To only regenerate the UI (requires npm and bower):
+mvn generate-sources -Pbuild-ui  To rebuild both the UI and Reaper:</description>
     </item>
     
     <item>
@@ -127,7 +127,7 @@ mvn generate-sources -Pbuild-ui  To rebuild both the UI and Reaper :</descriptio
       <guid>http://cassandra-reaper.io/docs/download/docker/</guid>
       <description>Docker Docker and Docker Compose will need to be installed in order to use the commands in this section.
 Building Reaper Packages with Docker Building Reaper packages requires quite a few dependencies, especially when making changes to the web interface code. In an effort to simplify the build process, Dockerfiles have been created that implement the build actions required to package Reaper.
-To build the JAR and other packages which are then placed in the packages directory run the following commands from the top level directory:</description>
+To build the JAR and other packages which are then placed in the src/packages directory run the following commands:</description>
     </item>
     
     <item>
@@ -137,8 +137,7 @@ To build the JAR and other packages which are then placed in the packages direct
       
       <guid>http://cassandra-reaper.io/docs/download/install/</guid>
       <description>Running Reaper After modifying the resource/cassandra-reaper.yaml config file, Reaper can be started using the following command line :
-java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml
-Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
+java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml  Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
 Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool bin/spreaper
 Installing and Running as a Service We provide prebuilt packages for reaper on the GitHub release page.</description>
     </item>
@@ -150,8 +149,7 @@ Installing and Running as a Service We provide prebuilt packages for reaper on t
       
       <guid>http://cassandra-reaper.io/docs/usage/add_cluster/</guid>
       <description> Add A Cluster    Add a cluster for Reaper to manage repairs on. Enter an address of one of the nodes in the cluster. Reaper will contact that node and find the rest of the nodes in the cluster automatically.
-Once you&amp;rsquo;ve done this, you&amp;rsquo;ll see the Cluster Health.
-  </description>
+Once you&amp;rsquo;ve done this, you&amp;rsquo;ll see the Cluster Health.   </description>
     </item>
     
     <item>
@@ -189,8 +187,7 @@ datacenterAvailability: ALL  This setup works with all backends : Apache Cassand
       
       <guid>http://cassandra-reaper.io/docs/usage/single/</guid>
       <description> Repairing A Cluster    Run a manual repair Start by clicking the repair menu item on the left side, you should see a repair page.
-Click &amp;ldquo;Start a new repair&amp;rdquo;
-     Fill in the details Enter the keyspace, tables, and other details to start a manual repair.   </description>
+Click &amp;ldquo;Start a new repair&amp;rdquo;      Fill in the details Enter the keyspace, tables, and other details to start a manual repair.   </description>
     </item>
     
     <item>

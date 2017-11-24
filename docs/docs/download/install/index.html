@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.29" />
+  <meta name="generator" content="Hugo 0.26" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -283,7 +283,8 @@
 
 <p>After modifying the <code>resource/cassandra-reaper.yaml</code> config file, Reaper can be started using the following command line :</p>
 
-<p><code>java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml</code></p>
+<pre><code class="language-bash">java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml
+</code></pre>
 
 <p>Once started, the UI can be accessed through : <a href="http://127.0.0.1:8080/webui/">http://127.0.0.1:8080/webui/</a></p>
 
@@ -297,17 +298,15 @@
 
 <p>Grab the RPM from GitHub and install using the <code>rpm</code> command:</p>
 
-<p><code>bash
-sudo rpm -ivh reaper-*.*.*.x86_64.rpm
-</code></p>
+<pre><code class="language-bash">sudo rpm -ivh reaper-*.*.*.x86_64.rpm
+</code></pre>
 
 <h3 id="deb-debian-based-distros-like-ubuntu">DEB (Debian based distros like Ubuntu)</h3>
 
 <p>After downloading the DEB package, install using the <code>dpkg</code> command:</p>
 
-<p><code>
-sudo dpkg -i reaper_*.*.*_amd64.deb
-</code></p>
+<pre><code class="language-bash">sudo dpkg -i reaper_*.*.*_amd64.deb
+</code></pre>
 
 <h2 id="service-configuration">Service Configuration</h2>
 

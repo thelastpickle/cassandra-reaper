@@ -36,8 +36,8 @@ storageType: h2 h2: # H2 JDBC settings url: jdbc:h2:~/reaper-db/db;MODE=PostgreS
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/backends/memory/</guid>
-      <description>Memory Backend To use in memory storage as the storage type for Reaper, the storageType setting must be set to memory in the Reaper configuration YAML file. Note that the in memory storage is enabled by default. An example of how to configure H2 as persistent storage for Reaper can be found in the cassandra-reaper-memory.yaml.
-storageType: memory  In memory storage is volatile and as such all registered cluster, column families and repair un information will be lost upon service restart.</description>
+      <description>In-Memory Backend To use in memory storage as the storage type for Reaper, the storageType setting must be set to memory in the Reaper configuration YAML file. Note that the in memory storage is enabled by default. An example of how to configure Reaper with In-Menory storage can be found in the cassandra-reaper-memory.yaml.
+storageType: memory  In-memory storage is volatile and as such all registered cluster, column families and repair information will be lost upon service restart.</description>
     </item>
     
     <item>

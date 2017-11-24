@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.29" />
+  <meta name="generator" content="Hugo 0.26" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -279,14 +279,14 @@
                         <div>
                           
 
-<h1 id="memory-backend">Memory Backend</h1>
+<h1 id="in-memory-backend">In-Memory Backend</h1>
 
-<p>To use in memory storage as the storage type for Reaper, the <code>storageType</code> setting must be set to <strong>memory</strong> in the Reaper configuration YAML file. Note that the in memory storage is enabled by default. An example of how to configure H2 as persistent storage for Reaper can be found in the <em><a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/resource/cassandra-reaper-memory.yaml">cassandra-reaper-memory.yaml</a></em>.</p>
+<p>To use in memory storage as the storage type for Reaper, the <code>storageType</code> setting must be set to <strong>memory</strong> in the Reaper configuration YAML file. Note that the in memory storage is enabled by default. An example of how to configure Reaper with In-Menory storage can be found in the <em><a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/resource/cassandra-reaper-memory.yaml">cassandra-reaper-memory.yaml</a></em>.</p>
 
 <pre><code class="language-yaml">storageType: memory
 </code></pre>
 
-<p>In memory storage is volatile and as such all registered cluster, column families and repair un information will be lost upon service restart. This storage setting is intended for testing purposes only.</p>
+<p>In-memory storage is volatile and as such all registered cluster, column families and repair information will be lost upon service restart. This storage setting is intended for testing purposes only.</p>
 
                         </div>
 
