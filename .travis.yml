@@ -54,7 +54,10 @@ deploy:
   provider: releases
   api_key: $GITHUB_TOKEN
   file_glob: true
-  file: "cassandra-reaper-${TRAVIS_TAG}-release.tar.gz"
+  file:
+    - "cassandra-reaper-${TRAVIS_TAG}-release.tar.gz"
+    - "src/packages/reaper-*-1.x86_64.rpm"
+    - "src/packages/reaper_*_amd64.deb"
   skip_cleanup: true
   on:
     tags: true

@@ -85,7 +85,7 @@ public final class NodesStatus {
     Set<String> endpoints = Sets.newHashSet();
     Matcher matcher;
 
-    String[] strEndpoints = allEndpointStates.split("/");
+    String[] strEndpoints = allEndpointStates.split("(?<![0-9a-zA-Z ])/");
     Double totalLoad = 0.0;
 
     for (int i = 1; i < strEndpoints.length; i++) {

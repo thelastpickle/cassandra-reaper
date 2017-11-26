@@ -1,5 +1,13 @@
 ## Change Log
 
+### 1.0.1 (2017/11/26 11:15 +00:00)
+- [e3b2cd7](https://github.com/thelastpickle/cassandra-reaper/commit/e3b2cd74108c3a9093606ab1019a4475c352fc95) Fix for Elassandra's gossip info output parsing (@adejanovski)
+- [5a14d92](https://github.com/thelastpickle/cassandra-reaper/commit/5a14d92c3ae840383505f91f5187dcdb71c65e3f) Duplicate the Migration009 script so it can run again to fix missing RepairSegment startTimes (@michaelsembwever)
+- [b56ce12](https://github.com/thelastpickle/cassandra-reaper/commit/b56ce1274479a7ee91ab403a9497ead945a895f0) breakup the `SegmentRunner.runRepair(..)` method, the bulk of the body going into `SegmentRunner.processTriggeredSegment(..)` (@michaelsembwever)
+- [f9ea67e](https://github.com/thelastpickle/cassandra-reaper/commit/f9ea67e27f683fe919b4f7f863a2da09176ebf7f) if endTime is set, so must startTime be set #281 (@michaelsembwever)
+- [2d386b7](https://github.com/thelastpickle/cassandra-reaper/commit/2d386b7eb3e3c3a65ef4bca762caee25e5a2e5ca) Revert "Remove precondition checks that break Reaper when endTime/startTime are inconsistently set" (@michaelsembwever)
+- [ed418ce](https://github.com/thelastpickle/cassandra-reaper/commit/ed418ce2c80aa9194ce87603fed241fecb94233e) Remove precondition checks that break Reaper when endTime/startTime are inconsistently set (@adejanovski)
+
 ### 1.0.0 (2017/11/14 20:58 +00:00)
 - [ba9ca5f](https://github.com/thelastpickle/cassandra-reaper/commit/ba9ca5f7f6b9a44a56c1c665f35142be1384baa2) Release 1.0.0 final (@adejanovski)
 
