@@ -271,7 +271,13 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           if (commandId == 0) {
             LOG.info("Nothing to repair for keyspace {}", keyspace);
             context.storage.updateRepairSegment(
-                segment.with().coordinatorHost(coordinator.getHost()).state(RepairSegment.State.DONE).build(segmentId));
+                segment
+                    .with()
+                    .coordinatorHost(coordinator.getHost())
+                    .startTime(DateTime.now())
+                    .endTime(DateTime.now())
+                    .state(RepairSegment.State.DONE)
+                    .build(segmentId));
             SEGMENT_RUNNERS.remove(segment.getId());
             closeJmxConnection(Optional.fromNullable(coordinator));
             return true;
