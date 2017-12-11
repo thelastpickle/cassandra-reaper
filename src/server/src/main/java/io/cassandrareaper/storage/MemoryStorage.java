@@ -18,6 +18,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.core.RepairSegment.State;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
@@ -257,9 +258,22 @@ public final class MemoryStorage implements IStorage {
     if (getRepairSegment(newRepairSegment.getRunId(), newRepairSegment.getId()) == null) {
       return false;
     } else {
-      repairSegments.put(newRepairSegment.getId(), newRepairSegment);
-      LinkedHashMap<UUID, RepairSegment> updatedSegment = repairSegmentsByRunId.get(newRepairSegment.getRunId());
-      updatedSegment.put(newRepairSegment.getId(), newRepairSegment);
+      RepairSegment segment = newRepairSegment;
+      if (!segment.isConsistentOnTimesAndState()) {
+        // if endTime is not null but startTime is then we ran into a race condition.
+        // We'll reset the segment so it can get reprocessed.
+        segment =
+            newRepairSegment
+                .with()
+                .state(State.NOT_STARTED)
+                .startTime(null)
+                .endTime(null)
+                .build(segment.getId());
+      }
+      repairSegments.put(segment.getId(), segment);
+      LinkedHashMap<UUID, RepairSegment> updatedSegment =
+          repairSegmentsByRunId.get(segment.getRunId());
+      updatedSegment.put(segment.getId(), segment);
       return true;
     }
   }

@@ -172,29 +172,26 @@ public final class RepairSegment {
     }
 
     public Builder endTime(DateTime endTime) {
-      Preconditions.checkNotNull(endTime);
       this.endTime = endTime;
       return this;
     }
 
     public RepairSegment build(@Nullable UUID segmentId) {
-      // a null segmentId is a special case where the storage uses a sequence for it
-      Preconditions.checkNotNull(runId);
-      //Preconditions.checkState(null != startTime || null == endTime, "if endTime is set, so must startTime be set");
-      //Preconditions.checkState(null == endTime || State.DONE == state, "endTime can only be set if segment is DONE");
-      /* Preconditions.checkState(
-      null != startTime || State.NOT_STARTED == state,
-      "startTime must be set if segment is RUNNING or DONE"); */
-
-      if (null != endTime && State.DONE != state) {
-        endTime = null;
-      }
-
-      if (startTime == null && endTime != null) {
-        startTime = endTime.minusSeconds(1);
-      }
-
       return new RepairSegment(this, segmentId);
     }
+  }
+
+  public boolean isConsistentOnTimesAndState() {
+    if (null == startTime && null != endTime) {
+      return false;
+    }
+    if (null != endTime && State.DONE != state) {
+      return false;
+    }
+    if (null == startTime && State.NOT_STARTED != state) {
+      return false;
+    }
+
+    return true;
   }
 }
