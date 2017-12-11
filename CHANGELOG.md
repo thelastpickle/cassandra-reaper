@@ -1,5 +1,8 @@
 ## Change Log
 
+### 1.0.2 (2017/12/07 18:06 +00:00)
+- [5c9ca98](https://github.com/thelastpickle/cassandra-reaper/commit/5c9ca985de9f5df59661d4cb476558f1acdb67b5) Ugly shameful fix for the endTime/startTime infamous bug (@adejanovski)
+
 ### 1.0.1 (2017/11/26 11:15 +00:00)
 - [e3b2cd7](https://github.com/thelastpickle/cassandra-reaper/commit/e3b2cd74108c3a9093606ab1019a4475c352fc95) Fix for Elassandra's gossip info output parsing (@adejanovski)
 - [5a14d92](https://github.com/thelastpickle/cassandra-reaper/commit/5a14d92c3ae840383505f91f5187dcdb71c65e3f) Duplicate the Migration009 script so it can run again to fix missing RepairSegment startTimes (@michaelsembwever)

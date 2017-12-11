@@ -18,6 +18,7 @@ import io.cassandrareaper.service.RingRange;
 
 import java.math.BigInteger;
 import java.util.UUID;
+
 import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
@@ -179,12 +180,19 @@ public final class RepairSegment {
     public RepairSegment build(@Nullable UUID segmentId) {
       // a null segmentId is a special case where the storage uses a sequence for it
       Preconditions.checkNotNull(runId);
-      Preconditions.checkState(null != startTime || null == endTime, "if endTime is set, so must startTime be set");
-      Preconditions.checkState(null == endTime || State.DONE == state, "endTime can only be set if segment is DONE");
+      //Preconditions.checkState(null != startTime || null == endTime, "if endTime is set, so must startTime be set");
+      //Preconditions.checkState(null == endTime || State.DONE == state, "endTime can only be set if segment is DONE");
+      /* Preconditions.checkState(
+      null != startTime || State.NOT_STARTED == state,
+      "startTime must be set if segment is RUNNING or DONE"); */
 
-      Preconditions.checkState(
-          null != startTime || State.NOT_STARTED == state,
-          "startTime must be set if segment is RUNNING or DONE");
+      if (null != endTime && State.DONE != state) {
+        endTime = null;
+      }
+
+      if (startTime == null && endTime != null) {
+        startTime = endTime.minusSeconds(1);
+      }
 
       return new RepairSegment(this, segmentId);
     }
