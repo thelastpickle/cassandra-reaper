@@ -18,6 +18,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.core.RepairSegment.State;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
@@ -304,9 +305,25 @@ public final class PostgresStorage implements IStorage {
   public boolean updateRepairSegment(RepairSegment repairSegment) {
     boolean result = false;
     try (Handle h = jdbi.open()) {
-      int rowsAdded = getPostgresStorage(h).updateRepairSegment(repairSegment);
+      RepairSegment segment = repairSegment;
+      if (!segment.isValid()) {
+        // if endTime is not null but startTime is then we ran into a race condition.
+        // We'll reset the segment so it can get reprocessed.
+        LOG.warn(
+            "Resetting segment {} of repair run {} because start time, end time and state were inconsistent",
+            segment.getId(),
+            segment.getRunId());
+        segment =
+            repairSegment
+                .with()
+                .state(State.NOT_STARTED)
+                .startTime(null)
+                .endTime(null)
+                .build(segment.getId());
+      }
+      int rowsAdded = getPostgresStorage(h).updateRepairSegment(segment);
       if (rowsAdded < 1) {
-        LOG.warn("failed updating repair segment with id: {}", repairSegment.getId());
+        LOG.warn("failed updating repair segment with id: {}", segment.getId());
       } else {
         result = true;
       }

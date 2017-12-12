@@ -612,14 +612,40 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public boolean updateRepairSegment(RepairSegment segment) {
+  public boolean updateRepairSegment(RepairSegment originalSegment) {
 
-    assert hasLeadOnSegment(segment.getId())
-        || (hasLeadOnSegment(segment.getRunId())
-          && getRepairUnit(segment.getRepairUnitId()).get().getIncrementalRepair())
-        : "non-leader trying to update repair segment " + segment.getId() + " of run " + segment.getRunId();
+    assert hasLeadOnSegment(originalSegment.getId())
+            || (hasLeadOnSegment(originalSegment.getRunId())
+                && getRepairUnit(originalSegment.getRepairUnitId()).get().getIncrementalRepair())
+        : "non-leader trying to update repair segment "
+            + originalSegment.getId()
+            + " of run "
+            + originalSegment.getRunId();
 
     BatchStatement updateRepairSegmentBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
+
+    RepairSegment segment = originalSegment;
+    if (!segment.isValid()) {
+      // if endTime is not null but startTime is, then we ran into a race condition.
+      // We'll reset the segment so it can get reprocessed.
+      LOG.warn(
+          "Resetting segment {} of repair run {} because start time, end time and state were inconsistent",
+          segment.getId(),
+          segment.getRunId());
+      segment =
+          originalSegment
+              .with()
+              .state(State.NOT_STARTED)
+              .startTime(null)
+              .endTime(null)
+              .build(segment.getId());
+
+      updateRepairSegmentBatch.add(
+          insertRepairSegmentEndTimePrepStmt.bind(
+              segment.getRunId(),
+              segment.getId(),
+              null)); //endTime
+    }
 
     updateRepairSegmentBatch.add(
         updateRepairSegmentPrepStmt.bind(
@@ -630,7 +656,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             null != segment.getStartTime() ? segment.getStartTime().toDate() : null,
             segment.getFailCount()));
 
-    if (null != segment.getEndTime()) {
+    if (null != segment.getEndTime() && null != segment.getStartTime()) {
       assert RepairSegment.State.DONE == segment.getState();
 
       updateRepairSegmentBatch.add(
