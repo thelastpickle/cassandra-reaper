@@ -306,9 +306,13 @@ public final class PostgresStorage implements IStorage {
     boolean result = false;
     try (Handle h = jdbi.open()) {
       RepairSegment segment = repairSegment;
-      if (!segment.isConsistentOnTimesAndState()) {
+      if (!segment.isValid()) {
         // if endTime is not null but startTime is then we ran into a race condition.
         // We'll reset the segment so it can get reprocessed.
+        LOG.warn(
+            "Resetting segment {} of repair run {} because start time, end time and state were inconsistent",
+            segment.getId(),
+            segment.getRunId());
         segment =
             repairSegment
                 .with()

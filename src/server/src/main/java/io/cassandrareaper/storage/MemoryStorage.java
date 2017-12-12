@@ -41,11 +41,14 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implements the StorageAPI using transient Java classes.
  */
 public final class MemoryStorage implements IStorage {
+  private static final Logger LOG = LoggerFactory.getLogger(MemoryStorage.class);
 
   private final ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairRun> repairRuns = Maps.newConcurrentMap();
@@ -259,9 +262,13 @@ public final class MemoryStorage implements IStorage {
       return false;
     } else {
       RepairSegment segment = newRepairSegment;
-      if (!segment.isConsistentOnTimesAndState()) {
+      if (!segment.isValid()) {
         // if endTime is not null but startTime is then we ran into a race condition.
         // We'll reset the segment so it can get reprocessed.
+        LOG.warn(
+            "Resetting segment {} of repair run {} because start time, end time and state were inconsistent",
+            segment.getId(),
+            segment.getRunId());
         segment =
             newRepairSegment
                 .with()

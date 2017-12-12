@@ -36,7 +36,7 @@ public class RepairSegmentTest {
             .state(State.NOT_STARTED)
             .build(UUID.randomUUID());
 
-    assertEquals(true, segment.isConsistentOnTimesAndState());
+    assertEquals(true, segment.isValid());
   }
 
   @Test
@@ -49,7 +49,7 @@ public class RepairSegmentTest {
             .state(State.DONE)
             .build(UUID.randomUUID());
 
-    assertEquals(true, segment.isConsistentOnTimesAndState());
+    assertEquals(true, segment.isValid());
   }
 
   @Test
@@ -62,7 +62,7 @@ public class RepairSegmentTest {
             .state(State.DONE)
             .build(UUID.randomUUID());
 
-    assertEquals(false, segment.isConsistentOnTimesAndState());
+    assertEquals(false, segment.isValid());
   }
 
   @Test
@@ -75,7 +75,7 @@ public class RepairSegmentTest {
             .state(State.RUNNING)
             .build(UUID.randomUUID());
 
-    assertEquals(false, segment.isConsistentOnTimesAndState());
+    assertEquals(false, segment.isValid());
   }
 
   @Test
@@ -88,7 +88,7 @@ public class RepairSegmentTest {
             .state(State.RUNNING)
             .build(UUID.randomUUID());
 
-    assertEquals(false, segment.isConsistentOnTimesAndState());
+    assertEquals(false, segment.isValid());
   }
 
 

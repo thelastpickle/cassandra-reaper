@@ -23,8 +23,11 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class RepairSegment {
+  private static final Logger LOG = LoggerFactory.getLogger(RepairSegment.class);
 
   private final UUID id;
   private final UUID runId;
@@ -109,6 +112,24 @@ public final class RepairSegment {
     DONE
   }
 
+  public boolean isValid() {
+    if (null == startTime && null != endTime) {
+      LOG.debug("Invalid repair segment {} : startTime is null but endTime is not", this.id);
+      return false;
+    }
+    if (null != endTime && State.DONE != state) {
+      LOG.debug("Invalid repair segment {} : endTime is not null but state is not DONE", this.id);
+      return false;
+    }
+    if (null == startTime && State.NOT_STARTED != state) {
+      LOG.debug(
+          "Invalid repair segment {} : startTime is null but state is not NOT_STARTED", this.id);
+      return false;
+    }
+
+    return true;
+  }
+
   public static final class Builder {
 
     public final RingRange tokenRange;
@@ -171,7 +192,7 @@ public final class RepairSegment {
       return this;
     }
 
-    public Builder endTime(DateTime endTime) {
+    public Builder endTime(@Nullable DateTime endTime) {
       this.endTime = endTime;
       return this;
     }
@@ -179,19 +200,5 @@ public final class RepairSegment {
     public RepairSegment build(@Nullable UUID segmentId) {
       return new RepairSegment(this, segmentId);
     }
-  }
-
-  public boolean isConsistentOnTimesAndState() {
-    if (null == startTime && null != endTime) {
-      return false;
-    }
-    if (null != endTime && State.DONE != state) {
-      return false;
-    }
-    if (null == startTime && State.NOT_STARTED != state) {
-      return false;
-    }
-
-    return true;
   }
 }
