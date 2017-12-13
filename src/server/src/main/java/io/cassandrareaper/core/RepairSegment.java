@@ -104,6 +104,23 @@ public final class RepairSegment {
     return new Builder(this);
   }
 
+  public boolean hasStartTime() {
+    return null != startTime;
+  }
+
+  public boolean hasEndTime() {
+    return null != endTime;
+  }
+
+  /** Reset to NOT_STARTED state, with nulled startTime and endTime. */
+  public Builder reset() {
+    Builder builder = new Builder(this);
+    builder.state = State.NOT_STARTED;
+    builder.startTime = null;
+    builder.endTime = null;
+    return builder;
+  }
+
   public enum State {
     NOT_STARTED,
     RUNNING,
@@ -163,7 +180,7 @@ public final class RepairSegment {
       return this;
     }
 
-    public Builder startTime(@Nullable DateTime startTime) {
+    public Builder startTime(DateTime startTime) {
       Preconditions.checkState(
           null != startTime || null == endTime,
           "unsetting startTime only permitted if endTime unset");

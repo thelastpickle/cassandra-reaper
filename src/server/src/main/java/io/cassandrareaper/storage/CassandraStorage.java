@@ -63,6 +63,7 @@ import com.datastax.driver.core.policies.DowngradingConsistencyRetryPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -627,17 +628,28 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             segment.getId(),
             segment.getState().ordinal(),
             segment.getCoordinatorHost(),
-            null != segment.getStartTime() ? segment.getStartTime().toDate() : null,
+            segment.hasStartTime() ? segment.getStartTime().toDate() : null,
             segment.getFailCount()));
 
-    if (null != segment.getEndTime()) {
-      assert RepairSegment.State.DONE == segment.getState();
+    if (null != segment.getEndTime() || State.NOT_STARTED == segment.getState()) {
+
+      Preconditions.checkArgument(
+          RepairSegment.State.RUNNING != segment.getState() ,
+          "un/setting endTime not permitted when state is RUNNING");
+
+      Preconditions.checkArgument(
+          RepairSegment.State.NOT_STARTED != segment.getState() || !segment.hasEndTime(),
+          "endTime can only be nulled when state is NOT_STARTED");
+
+      Preconditions.checkArgument(
+          RepairSegment.State.DONE != segment.getState() || segment.hasEndTime(),
+          "endTime can't be null when state is DONE");
 
       updateRepairSegmentBatch.add(
           insertRepairSegmentEndTimePrepStmt.bind(
               segment.getRunId(),
               segment.getId(),
-              segment.getEndTime().toDate()));
+              segment.hasEndTime() ? segment.getEndTime().toDate() : null));
     }
     session.execute(updateRepairSegmentBatch);
     return true;
