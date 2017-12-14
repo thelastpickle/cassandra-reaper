@@ -149,13 +149,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     try {
       context.storage.updateRepairSegment(
           segment
-              .with()
-              .state(RepairSegment.State.NOT_STARTED)
+              .reset()
               .coordinatorHost(
                   repairUnit.isPresent() && repairUnit.get().getIncrementalRepair()
                   ? segment.getCoordinatorHost()
                   : null) // set coordinator host to null only for full repairs
-              .startTime(null)
               .failCount(segment.getFailCount() + 1)
               .build(segment.getId()));
     } finally {
