@@ -547,6 +547,53 @@ public final class RepairRunResource {
   }
 
   /**
+   * @return list the segments of a repair run.
+   */
+  @GET
+  @Path("/{id}/segments")
+  public Response getRepairRunSegments(@PathParam("id") UUID repairRunId) {
+
+    LOG.debug("get repair_run called with: id = {}", repairRunId);
+    final Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+    if (repairRun.isPresent()) {
+      Collection<RepairSegment> segments = context.storage.getRepairSegmentsForRun(repairRunId);
+      return Response.ok().entity(segments).build();
+    } else {
+      return Response.status(404)
+          .entity("repair run with id " + repairRunId + " doesn't exist")
+          .build();
+    }
+  }
+
+  /**
+   * @return Aborts a running segment.
+   */
+  @GET
+  @Path("/{id}/segments/abort/{segment_id}")
+  public Response getRepairRunSegments(
+      @PathParam("id") UUID repairRunId, @PathParam("segment_id") UUID segmentId) {
+
+    LOG.debug("abort segment called with: run id = {} and segment id = {}", repairRunId, segmentId);
+    final Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+    if (repairRun.isPresent()) {
+      if (RepairRun.RunState.RUNNING == repairRun.get().getRunState()
+          || RepairRun.RunState.PAUSED == repairRun.get().getRunState()) {
+        RepairSegment segment = context.repairManager.abortSegment(repairRunId, segmentId);
+        return Response.ok().entity(segment).build();
+      } else {
+        return Response.status(Response.Status.FORBIDDEN)
+            .entity(
+                "Cannot abort segment on repair run with status " + repairRun.get().getRunState())
+            .build();
+      }
+    } else {
+      return Response.status(404)
+          .entity("repair run with id " + repairRunId + " doesn't exist")
+          .build();
+    }
+  }
+
+  /**
    * @return all know repair runs for a cluster.
    */
   @GET

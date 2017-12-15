@@ -14,6 +14,7 @@
 
 package io.cassandrareaper;
 
+import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 
@@ -146,6 +147,10 @@ public final class SimpleReaperClient {
 
   public static Map<String, List<String>> parseTableListJSON(String json) {
     return parseJSON(json, new TypeReference<Map<String, List<String>>>() {});
+  }
+
+  public static List<RepairSegment> parseRepairSegmentsJSON(String json) {
+    return parseJSON(json, new TypeReference<List<RepairSegment>>() {});
   }
 
   public List<RepairScheduleStatus> getRepairSchedulesForCluster(String clusterName) {

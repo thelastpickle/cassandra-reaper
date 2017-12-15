@@ -144,18 +144,24 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-  static void postpone(AppContext context, RepairSegment segment, Optional<RepairUnit> repairUnit) {
+  static void postponeSegment(AppContext context, RepairSegment segment) {
+    postpone(context, segment, context.storage.getRepairUnit(segment.getRepairUnitId()));
+  }
+
+  private static void postpone(
+      AppContext context, RepairSegment segment, Optional<RepairUnit> repairUnit) {
     LOG.info("Postponing segment {}", segment.getId());
     try {
       context.storage.updateRepairSegment(
           segment
               .reset()
-              .coordinatorHost(
+              .withCoordinatorHost(
                   repairUnit.isPresent() && repairUnit.get().getIncrementalRepair()
-                  ? segment.getCoordinatorHost()
-                  : null) // set coordinator host to null only for full repairs
-              .failCount(segment.getFailCount() + 1)
-              .build(segment.getId()));
+                      ? segment.getCoordinatorHost()
+                      : null) // set coordinator host to null only for full repairs
+              .withFailCount(segment.getFailCount() + 1)
+              .withId(segment.getId())
+              .build());
     } finally {
       SEGMENT_RUNNERS.remove(segment.getId());
       context.metricRegistry.counter(metricNameForPostpone(repairUnit, segment)).inc();
@@ -249,11 +255,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           context.storage.updateRepairSegment(
               segment
                   .with()
-                  .state(RepairSegment.State.DONE)
-                  .startTime(DateTime.now())
-                  .endTime(DateTime.now())
-                  .build(segmentId));
-
+                  .withState(RepairSegment.State.DONE)
+                  .withStartTime(DateTime.now())
+                  .withEndTime(DateTime.now())
+                  .withId(segmentId)
+                  .build());
           return false;
         }
 
@@ -261,7 +267,13 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           LOG.debug("Enter synchronized section with segment ID {}", segmentId);
           synchronized (condition) {
 
-            segment = segment.with().coordinatorHost(coordinator.getHost()).startTime(DateTime.now()).build(segmentId);
+            segment =
+                segment
+                    .with()
+                    .withCoordinatorHost(coordinator.getHost())
+                    .withStartTime(DateTime.now())
+                    .withId(segmentId)
+                    .build();
             context.storage.updateRepairSegment(segment);
 
             commandId = coordinator.triggerRepair(
@@ -279,7 +291,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
               LOG.info("Nothing to repair for segment {} in keyspace {}", segmentId, keyspace);
 
               context.storage.updateRepairSegment(
-                  segment.with().state(RepairSegment.State.DONE).endTime(DateTime.now()).build(segmentId));
+                  segment
+                      .with()
+                      .withState(RepairSegment.State.DONE)
+                      .withEndTime(DateTime.now())
+                      .withId(segmentId)
+                      .build());
 
               SEGMENT_RUNNERS.remove(segment.getId());
               closeJmxConnection(Optional.fromNullable(coordinator));
@@ -732,7 +749,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         try {
           if (renewLead()) {
             context.storage.updateRepairSegment(
-                currentSegment.with().state(RepairSegment.State.RUNNING).build(segmentId));
+                currentSegment
+                    .with()
+                    .withState(RepairSegment.State.RUNNING)
+                    .withId(segmentId)
+                    .build());
 
             LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
             break;
@@ -757,7 +778,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                 repairNumber);
 
             context.storage.updateRepairSegment(
-                currentSegment.with().state(RepairSegment.State.DONE).endTime(DateTime.now()).build(segmentId));
+                currentSegment
+                    .with()
+                    .withState(RepairSegment.State.DONE)
+                    .withEndTime(DateTime.now())
+                    .withId(segmentId)
+                    .build());
             break;
           }
         } catch (AssertionError er) {
@@ -801,7 +827,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         try {
           if (renewLead()) {
             context.storage.updateRepairSegment(
-                currentSegment.with().state(RepairSegment.State.RUNNING).build(segmentId));
+                currentSegment
+                    .with()
+                    .withState(RepairSegment.State.RUNNING)
+                    .withId(segmentId)
+                    .build());
 
             LOG.debug("updated segment {} with state {}", segmentId, RepairSegment.State.RUNNING);
             break;
@@ -826,7 +856,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                 repairNumber);
 
             context.storage.updateRepairSegment(
-                currentSegment.with().state(RepairSegment.State.DONE).endTime(DateTime.now()).build(segmentId));
+                currentSegment
+                    .with()
+                    .withState(RepairSegment.State.DONE)
+                    .withEndTime(DateTime.now())
+                    .withId(segmentId)
+                    .build());
 
             break;
           }

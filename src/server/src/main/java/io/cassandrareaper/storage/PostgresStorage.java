@@ -293,7 +293,7 @@ public final class PostgresStorage implements IStorage {
   private void addRepairSegments(Collection<RepairSegment.Builder> newSegments, UUID runId) {
     List<RepairSegment> insertableSegments = new ArrayList<>();
     for (RepairSegment.Builder segment : newSegments) {
-      insertableSegments.add(segment.withRunId(runId).build(null));
+      insertableSegments.add(segment.withRunId(runId).withId(null).build());
     }
     try (Handle h = jdbi.open()) {
       getPostgresStorage(h).insertRepairSegments(insertableSegments.iterator());

@@ -2,9 +2,21 @@ import React from "react";
 import moment from "moment";
 import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
 import ProgressBar from 'react-bootstrap/lib/ProgressBar';
+import Button from 'react-bootstrap/lib/Button';
+import Modal from 'react-bootstrap/lib/Modal';
+import segmentList from 'jsx/segment-list'
 
 const TableRow = React.createClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin, RowAbortMixin],
+
+  _viewSegments: function(id) {
+    console.log("Segments for run " + id );
+    this.props.showSegments(id);
+  },
+
+  segmentsButton: function(id) {
+    return <Button bsSize="xs" bsStyle="info" onClick={() => this._viewSegments(id)}>View segments</Button>
+  },
 
   render: function() {
     let progressStyle = {
@@ -40,6 +52,7 @@ const TableRow = React.createClass({
     
     const btnStartStop = this.props.row.state == 'ABORTED' ? null : this.statusUpdateButton();
     const btnAbort = state == 'RUNNING' || state == 'PAUSED' ? this.abortButton() : this.deleteButton();
+    const btnSegment = this.segmentsButton(this.props.row.id);
     const active = state == 'RUNNING';
     let repairProgress = <ProgressBar now={Math.round((segsRepaired*100)/segsTotal)} active={active} bsStyle={progressStyleColor} 
                    label={segsRepaired + '/' + segsTotal}
@@ -59,6 +72,7 @@ const TableRow = React.createClass({
           </div>
         </td>
         <td>
+          {btnSegment}
           {btnStartStop}
           {btnAbort}
         </td>
@@ -208,7 +222,11 @@ const repairList = React.createClass({
   },
 
   getInitialState: function() {
-    return {repairs: [], deleteResultMsg: null, clusterNames:[], currentCluster:this.props.currentCluster, runningCollapsed: false, doneCollapsed: false};
+    return {repairs: [], deleteResultMsg: null, clusterNames:[], 
+      currentCluster:this.props.currentCluster, 
+      runningCollapsed: false, doneCollapsed: false,
+      modalShow: false, repairRunId: '',
+      height: 0, width: 0};
   },
 
   componentWillMount: function() {
@@ -223,11 +241,19 @@ const repairList = React.createClass({
         this.setState({repairs: sortedRepairs});
       })
     );
+
+    window.addEventListener('resize', this.updateWindowDimensions);
+    this.updateWindowDimensions();
   },
 
   componentWillUnmount: function() {
     this._repairsSubscription.dispose();
     this._clustersSubscription.dispose();
+    window.removeEventListener('resize', this.updateWindowDimensions);
+  },
+
+  updateWindowDimensions: function() {
+    this.setState({ width: window.innerWidth, height: window.innerHeight });
   },
 
   _handleChange: function(e) {
@@ -264,16 +290,25 @@ const repairList = React.createClass({
     }
   },
 
+  _displaySegments: function(repairRunId) {
+    console.log("Displaying segments for run " + repairRunId)
+    this.setState({ modalShow: true, repairRunId: repairRunId });
+  },
+
   render: function() {
 
+
+    let modalClose = () => this.setState({ modalShow:false, repairRunId: ''});
+
+    const segmentModal = <SegmentModal show={this.state.modalShow} onHide={modalClose} repairRunId={this.state.repairRunId} height={this.state.height} width={this.state.width}/>;
     const rowsRunning = this.state.repairs
-    .filter(repair => this.state.currentCluster == "all" || this.state.currentCluster == repair.cluster_name)
-    .filter(repair => (repair.state == "RUNNING" || repair.state == "PAUSED" || repair.state == "NOT_STARTED"))
-    .map(repair =>
+      .filter(repair => this.state.currentCluster == "all" || this.state.currentCluster == repair.cluster_name)
+      .filter(repair => (repair.state == "RUNNING" || repair.state == "PAUSED" || repair.state == "NOT_STARTED"))
+      .map(repair =>
       <tbody key={repair.id+'-rows'}>
       <TableRow row={repair} key={repair.id+'-head'}
         deleteSubject={this.props.deleteSubject}
-        updateStatusSubject={this.props.updateStatusSubject}/>
+        updateStatusSubject={this.props.updateStatusSubject} showSegments={this._displaySegments}/>
       <TableRowDetails row={repair} key={repair.id+'-details'} updateIntensitySubject={this.props.updateIntensitySubject} />
       </tbody>
     );
@@ -282,8 +317,8 @@ const repairList = React.createClass({
       <tbody key={repair.id+'-rows'}>
       <TableRow row={repair} key={repair.id+'-head'}
         deleteSubject={this.props.deleteSubject}
-        updateStatusSubject={this.props.updateStatusSubject}/>
-      <TableRowDetails row={repair} key={repair.id+'-details'} />
+        updateStatusSubject={this.props.updateStatusSubject} showSegments={this._displaySegments}/>
+      <TableRowDetails row={repair} key={repair.id+'-details'}/>
       </tbody>
     );
 
@@ -402,6 +437,7 @@ const repairList = React.createClass({
 
     return (
             <div>
+              {segmentModal}
               {clusterFilter}
               <div className="panel panel-primary">
                 <div className="panel-heading">
@@ -422,5 +458,27 @@ const repairList = React.createClass({
             </div>);
   }
 });
+
+const SegmentModal = React.createClass({
+  getInitialState: function() {
+    return {height: this.props.height};
+  },
+  render() {
+    return (
+      <Modal  {...this.props} bsSize="large" aria-labelledby="contained-modal-title-lg" dialogClassName="large-modal">
+        <Modal.Header closeButton>
+          <Modal.Title id="contained-modal-title-lg">Segments</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <iframe src={"segments.html?repairRunId="+this.props.repairRunId} width="100%" height={parseInt(this.props.height)-200} frameBorder="0"/>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={this.props.onHide}>Close</Button>
+        </Modal.Footer>
+      </Modal>
+    );
+  },
+});
+
 
 export default repairList;

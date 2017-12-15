@@ -19,8 +19,15 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import com.google.common.base.Preconditions;
 
 // TODO: Check if this duplicates org.apache.cassandra.dht.Range.
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonDeserialize(builder = RingRange.Builder.class)
 public final class RingRange {
 
   public static final Comparator<RingRange> START_COMPARATOR
@@ -80,6 +87,7 @@ public final class RingRange {
   /**
    * @return true if 0 is inside of this range. Note that if start == end, then wrapping is true
    */
+  @JsonIgnore
   public boolean isWrapping() {
     return SegmentGenerator.greaterThanOrEqual(start, end);
   }
@@ -90,7 +98,6 @@ public final class RingRange {
   }
 
   public static RingRange merge(List<RingRange> ranges) {
-
     // sor
     Collections.sort(ranges, START_COMPARATOR);
 
@@ -109,6 +116,42 @@ public final class RingRange {
       return new RingRange(ranges.get(0).start, ranges.get(gap).end);
     } else {
       return new RingRange(ranges.get(gap + 1).start, ranges.get(gap).end);
+    }
+  }
+
+  @JsonPOJOBuilder(buildMethodName = "build", withPrefix = "with")
+  public static final class Builder {
+
+    private BigInteger start;
+    private BigInteger end;
+
+    public Builder() {}
+
+    public Builder withStart(BigInteger start) {
+      this.start = start;
+      return this;
+    }
+
+    public Builder withStart(String start) {
+      this.start = new BigInteger(start);
+      return this;
+    }
+
+    public Builder withEnd(BigInteger end) {
+      this.end = end;
+      return this;
+    }
+
+    public Builder withEnd(String end) {
+      this.end = new BigInteger(end);
+      return this;
+    }
+
+    public RingRange build() {
+      Preconditions.checkNotNull(start);
+      Preconditions.checkNotNull(end);
+
+      return new RingRange(this.start, this.end);
     }
   }
 }

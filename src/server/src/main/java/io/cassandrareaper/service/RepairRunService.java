@@ -274,7 +274,7 @@ public final class RepairRunService {
         .forEach(
             range
               -> repairSegmentBuilders.add(
-                  RepairSegment.builder(range.getValue(), repairUnit.getId()).coordinatorHost(range.getKey())));
+                  RepairSegment.builder(range.getValue(), repairUnit.getId()).withCoordinatorHost(range.getKey())));
 
     return repairSegmentBuilders;
   }

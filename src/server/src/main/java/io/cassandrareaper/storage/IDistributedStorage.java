@@ -35,6 +35,8 @@ public interface IDistributedStorage {
 
   void releaseLead(UUID leaderId);
 
+  void forceReleaseLead(UUID leaderId);
+
   int countRunningReapers();
 
   void saveHeartbeat();

@@ -25,6 +25,9 @@ module.exports = {
     repair: [
       path.join(__dirname, 'app', 'repair.js')
     ],
+    segments: [
+      path.join(__dirname, 'app', 'segments.js')
+    ],
     deps: _commonDeps
   },
   output: {
@@ -72,6 +75,14 @@ module.exports = {
       chunks: ['deps', 'schedules'],
       hash: true,
       title: ' - Schedules',
+      template: path.join(__dirname, 'app', 'html_template.ejs'),
+      inject: 'head'
+    }),
+    new HtmlWebpackPlugin({  // Also generate a test.html
+      filename: 'segments.html',
+      chunks: ['deps', 'segments'],
+      hash: true,
+      title: ' - Segments',
       template: path.join(__dirname, 'app', 'html_template.ejs'),
       inject: 'head'
     }),

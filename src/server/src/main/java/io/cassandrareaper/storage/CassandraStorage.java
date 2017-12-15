@@ -125,6 +125,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement takeLeadPrepStmt;
   private PreparedStatement renewLeadPrepStmt;
   private PreparedStatement releaseLeadPrepStmt;
+  private PreparedStatement forceReleaseLeadPrepStmt;
   private PreparedStatement getRunningReapersCountPrepStmt;
   private PreparedStatement saveHeartbeatPrepStmt;
   private PreparedStatement storeNodeMetricsPrepStmt;
@@ -262,6 +263,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                 + "WHERE leader_id = ? IF reaper_instance_id = ?")
         .setIdempotent(false);
     releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?");
+    forceReleaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ?");
     getRunningReapersCountPrepStmt = session.prepare("SELECT count(*) as nb_reapers FROM running_reapers");
     saveHeartbeatPrepStmt = session
         .prepare(
@@ -351,7 +353,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             newRepairRun.getRepairParallelism().toString()));
 
     for (RepairSegment.Builder builder : newSegments) {
-      RepairSegment segment = builder.withRunId(newRepairRun.getId()).build(UUIDs.timeBased());
+      RepairSegment segment =
+          builder.withRunId(newRepairRun.getId()).withId(UUIDs.timeBased()).build();
       isIncremental = null == isIncremental ? null != segment.getCoordinatorHost() : isIncremental;
 
       assert RepairSegment.State.NOT_STARTED == segment.getState();
@@ -690,19 +693,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               new BigInteger(segmentRow.getVarint("end_token") + "")),
           segmentRow.getUUID("repair_unit_id"))
         .withRunId(segmentRow.getUUID("id"))
-        .state(State.values()[segmentRow.getInt("segment_state")])
-        .failCount(segmentRow.getInt("fail_count"));
+        .withState(State.values()[segmentRow.getInt("segment_state")])
+        .withFailCount(segmentRow.getInt("fail_count"));
 
     if (null != segmentRow.getString("coordinator_host")) {
-      builder = builder.coordinatorHost(segmentRow.getString("coordinator_host"));
+      builder = builder.withCoordinatorHost(segmentRow.getString("coordinator_host"));
     }
     if (null != segmentRow.getTimestamp("segment_start_time")) {
-      builder = builder.startTime(new DateTime(segmentRow.getTimestamp("segment_start_time")));
+      builder = builder.withStartTime(new DateTime(segmentRow.getTimestamp("segment_start_time")));
     }
     if (null != segmentRow.getTimestamp("segment_end_time")) {
-      builder = builder.endTime(new DateTime(segmentRow.getTimestamp("segment_end_time")));
+      builder = builder.withEndTime(new DateTime(segmentRow.getTimestamp("segment_end_time")));
     }
-    return builder.build(segmentRow.getUUID("segment_id"));
+    return builder.withId(segmentRow.getUUID("segment_id")).build();
   }
 
   @Override
@@ -1040,6 +1043,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       assert false : "Could not release lead on segment " + leaderId;
       LOG.error("Could not release lead on segment {}", leaderId);
     }
+  }
+
+  @Override
+  public void forceReleaseLead(UUID leaderId) {
+    session.execute(forceReleaseLeadPrepStmt.bind(leaderId));
+
+    LOG.debug("Force released lead on segment {}", leaderId);
   }
 
   private boolean hasLeadOnSegment(UUID leaderId) {

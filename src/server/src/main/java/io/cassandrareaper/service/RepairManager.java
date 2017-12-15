@@ -22,6 +22,7 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -34,7 +35,6 @@ import java.util.stream.Collectors;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -118,7 +118,7 @@ public final class RepairManager {
               context.storage.getSegmentsWithState(
                   pausedRepairRun.getId(), RepairSegment.State.RUNNING);
 
-          abortSegments(runningSegments, pausedRepairRun, false);
+          abortSegments(runningSegments, pausedRepairRun, false, false);
         }
 
         if (!repairRunners.containsKey(pausedRepairRun.getId())) {
@@ -157,31 +157,42 @@ public final class RepairManager {
               .filter(segment -> !activeLeaders.contains(segment.getId()))
               .collect(Collectors.toSet()),
           repairRun,
+          false,
           true);
     }
   }
 
-  void abortSegments(
-      Collection<RepairSegment> runningSegments,
-      RepairRun repairRun) {
+  public RepairSegment abortSegment(UUID repairRunId, UUID segmentId) {
+    RepairSegment segment = context.storage.getRepairSegment(repairRunId, segmentId).get();
+    RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
+    if (context.storage instanceof IDistributedStorage) {
+      ((IDistributedStorage) context.storage).forceReleaseLead(segmentId);
+      ((IDistributedStorage) context.storage).takeLead(segmentId);
+    }
+    if (null == segment.getCoordinatorHost() || RepairSegment.State.DONE == segment.getState()) {
+      SegmentRunner.postponeSegment(context, segment);
+    } else {
+      abortSegments(Arrays.asList(segment), repairRun, true, false);
+    }
 
-    abortSegments(
-        runningSegments,
-        repairRun,
-        false);
+    return context.storage.getRepairSegment(repairRunId, segmentId).get();
   }
 
-  void abortSegments(
+  void abortSegments(Collection<RepairSegment> runningSegments, RepairRun repairRun) {
+    abortSegments(runningSegments, repairRun, false, false);
+  }
+
+  public void abortSegments(
       Collection<RepairSegment> runningSegments,
       RepairRun repairRun,
+      boolean forced,
       boolean postponeWithoutAborting) {
-
     RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId()).get();
     for (RepairSegment segment : runningSegments) {
       LOG.debug(
           "Trying to abort stuck segment {} in repair run {}", segment.getId(), repairRun.getId());
       UUID leaderElectionId = repairUnit.getIncrementalRepair() ? repairRun.getId() : segment.getId();
-      if (takeLead(context, leaderElectionId) || renewLead(context, leaderElectionId)) {
+      if (forced || takeLead(context, leaderElectionId) || renewLead(context, leaderElectionId)) {
         // refresh segment once we're inside leader-election
         segment = context.storage.getRepairSegment(repairRun.getId(), segment.getId()).get();
         if (RepairSegment.State.RUNNING == segment.getState()) {
@@ -199,7 +210,7 @@ public final class RepairManager {
                     + "Postponing the segment.",
                 segment.getId(),
                 e);
-            SegmentRunner.postpone(context, segment, Optional.fromNullable(repairUnit));
+            SegmentRunner.postponeSegment(context, segment);
           } finally {
             // if someone else does hold the lease, ie renewLead(..) was true,
             // then their writes to repair_run table and any call to releaseLead(..) will throw an exception
