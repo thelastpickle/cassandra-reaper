@@ -41,6 +41,7 @@ Feature: Using Reaper to launch repairs and schedule them
     And we wait for at least 1 segments to be repaired
     Then reaper has 1 started or done repairs for the last added cluster
     When the last added repair is stopped
+    Then reseting one segment sets its state to not started
     And the last added repair run is deleted
     And deleting the last added cluster fails
     When all added schedules are deleted for the last added cluster

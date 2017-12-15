@@ -138,6 +138,9 @@ def _arguments_for_status_keyspace(parser):
     parser.add_argument("cluster_name", help="the cluster name")
     parser.add_argument("keyspace_name", help="the keyspace name")
 
+def _arguments_for_list_segments(parser):
+    """Arguments relevant for querying a repair status"""
+    parser.add_argument("run_id", help="identifier of the run to fetch segments from")
 
 def _arguments_for_status_repair(parser):
     """Arguments relevant for querying a repair status"""
@@ -234,6 +237,10 @@ def _arguments_for_abort_repair(parser):
     """Arguments needed for aborting a repair"""
     parser.add_argument("run_id", help="ID of the repair run to abort")
 
+def _arguments_for_abort_segment(parser):
+    """Arguments needed for aborting a repair"""
+    parser.add_argument("run_id", help="ID of the repair run to abort")
+    parser.add_argument("segment_id", help="ID of the segment to abort")
 
 def _arguments_for_start_schedule(parser):
     """Arguments relevant for resuming a repair schedule"""
@@ -286,6 +293,7 @@ Usage: spreaper [<global_args>] <command> [<command_args>]
     list-clusters   List all registered Cassandra clusters.
     list-runs       List registered repair runs.
     list-schedules  List registered repair schedules.
+    list-segments   List all segments for a given repair run.
     status-cluster  Show status of a Cassandra cluster,
                     and any existing repair runs for the cluster.
     status-keyspace Show status of a keyspace in a cluster.
@@ -300,6 +308,7 @@ Usage: spreaper [<global_args>] <command> [<command_args>]
     resume-repair   Resume a paused, start a not started or reattempt a failed repair run.
     pause-repair    Pause a repair run.
     abort-repair    Abort a repair run.
+    abort-segment   Abort a segment.
     start-schedule  Resume a paused repair schedule.
     pause-schedule  Pause a repair schedule.
     delete-schedule Delete a repair schedule.
@@ -376,6 +385,17 @@ class ReaperCLI(object):
         repair_runs = json.loads(reaper.get(endpoint))
         print "# Found {0} repair runs".format(len(repair_runs))
         print json.dumps(repair_runs, indent=2, sort_keys=True)
+
+    def list_segments(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "list-segments",
+            "List segments for a given repair run",
+            extra_arguments=_arguments_for_list_segments
+        )
+        print "# Listing segments for repair run '{0}'".format(args.run_id)
+        segments = json.loads(reaper.get("repair_run/{0}/segments".format(args.run_id)))
+        print "# Found {0} segments".format(len(segments))
+        print json.dumps(segments, indent=2, sort_keys=True)
 
     def list_schedules(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -577,6 +597,16 @@ class ReaperCLI(object):
         reaper.put("repair_run/{0}".format(args.run_id), state="ABORTED")
         print "# Repair run '{0}' aborted".format(args.run_id)
 
+    def abort_segment(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "abort-segment",
+            "Abort a segment.",
+            extra_arguments=_arguments_for_abort_segment
+        )
+        print "# Aborting a segment with run id: {0} and segment id {1}".format(args.run_id, args.segment_id)
+        reaper.get("repair_run/{0}/segments/abort/{1}".format(args.run_id, args.segment_id))
+        print "# Segment '{0}' aborted".format(args.segment_id)
+
     def start_schedule(self):
         reaper, args = ReaperCLI.prepare_reaper(
             "start-schedule",
@@ -609,6 +639,6 @@ class ReaperCLI(object):
 
 
 if __name__ == '__main__':
-    print("# Report improvements/bugs at https://github.com/spotify/cassandra-reaper/issues")
-    print("# ------------------------------------------------------------------------------")
+    print("# Report improvements/bugs at https://github.com/thelastpickle/cassandra-reaper/issues")
+    print("# ------------------------------------------------------------------------------------")
     ReaperCLI()

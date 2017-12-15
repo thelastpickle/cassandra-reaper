@@ -33,18 +33,18 @@ public final class RepairSegmentMapper implements ResultSetMapper<RepairSegment>
     RepairSegment.Builder builder = RepairSegment
         .builder(range, UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")))
         .withRunId(UuidUtil.fromSequenceId(rs.getLong("run_id")))
-        .state(RepairSegment.State.values()[rs.getInt("state")])
-        .failCount(rs.getInt("fail_count"));
+        .withState(RepairSegment.State.values()[rs.getInt("state")])
+        .withFailCount(rs.getInt("fail_count"));
 
     if (null != rs.getString("coordinator_host")) {
-      builder = builder.coordinatorHost(rs.getString("coordinator_host"));
+      builder = builder.withCoordinatorHost(rs.getString("coordinator_host"));
     }
     if (null != RepairRunMapper.getDateTimeOrNull(rs, "start_time")) {
-      builder = builder.startTime(RepairRunMapper.getDateTimeOrNull(rs, "start_time"));
+      builder = builder.withStartTime(RepairRunMapper.getDateTimeOrNull(rs, "start_time"));
     }
     if (null != RepairRunMapper.getDateTimeOrNull(rs, "end_time")) {
-      builder = builder.endTime(RepairRunMapper.getDateTimeOrNull(rs, "end_time"));
+      builder = builder.withEndTime(RepairRunMapper.getDateTimeOrNull(rs, "end_time"));
     }
-    return builder.build(UuidUtil.fromSequenceId(rs.getLong("id")));
+    return builder.withId(UuidUtil.fromSequenceId(rs.getLong("id"))).build();
   }
 }

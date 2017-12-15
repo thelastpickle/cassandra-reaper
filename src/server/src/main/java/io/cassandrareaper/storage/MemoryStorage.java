@@ -245,7 +245,7 @@ public final class MemoryStorage implements IStorage {
   private void addRepairSegments(Collection<RepairSegment.Builder> segments, UUID runId) {
     LinkedHashMap<UUID, RepairSegment> newSegments = Maps.newLinkedHashMap();
     for (RepairSegment.Builder segment : segments) {
-      RepairSegment newRepairSegment = segment.withRunId(runId).build(UUIDs.timeBased());
+      RepairSegment newRepairSegment = segment.withRunId(runId).withId(UUIDs.timeBased()).build();
       repairSegments.put(newRepairSegment.getId(), newRepairSegment);
       newSegments.put(newRepairSegment.getId(), newRepairSegment);
     }

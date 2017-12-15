@@ -28,6 +28,7 @@ public final class TestContext {
   public static String TEST_USER = "test_user";
   public static String SEED_HOST;
   public static String TEST_CLUSTER;
+  public static UUID FINISHED_SEGMENT;
 
   /* Used for targeting an object accessed in last test step. */
   public static UUID LAST_MODIFIED_ID;

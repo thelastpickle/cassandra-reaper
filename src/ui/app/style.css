@@ -97,3 +97,7 @@ div.ReactTags__suggestions ul li.ReactTags__activeSuggestion {
 .form-control-hidden {
   display: none;
 }
+
+.large-modal {
+  width: 90%;
+}

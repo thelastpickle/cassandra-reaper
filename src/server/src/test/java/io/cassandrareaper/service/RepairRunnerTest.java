@@ -390,9 +390,9 @@ public final class RepairRunnerTest {
         new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
         Lists.newArrayList(
             RepairSegment.builder(new RingRange(BigInteger.ZERO, BigInteger.ONE), cf)
-                .state(RepairSegment.State.RUNNING)
-                .startTime(DateTime.now())
-                .coordinatorHost("reaper"),
+                .withState(RepairSegment.State.RUNNING)
+                .withStartTime(DateTime.now())
+                .withCoordinatorHost("reaper"),
             RepairSegment.builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf)));
 
     final UUID RUN_ID = run.getId();

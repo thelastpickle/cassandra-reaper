@@ -18,6 +18,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.SimpleReaperClient;
 import io.cassandrareaper.core.RepairRun;
+import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
@@ -35,6 +36,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
@@ -1119,6 +1121,94 @@ public final class BasicSteps {
           return nbSegmentsToBeRepaired <= run.getSegmentsRepaired();
         });
       });
+    }
+  }
+
+  @Then("^reseting one segment sets its state to not started$")
+  public void reseting_one_segment_sets_its_state_to_not_started() throws Throwable {
+    synchronized (BasicSteps.class) {
+      RUNNERS
+          .parallelStream()
+          .forEach(
+              runner -> {
+                await()
+                    .with()
+                    .pollInterval(10, SECONDS)
+                    .atMost(2, MINUTES)
+                    .until(
+                        () -> {
+                          Response response =
+                              runner.callReaper(
+                                  "GET",
+                                  "/repair_run/" + TestContext.LAST_MODIFIED_ID + "/segments",
+                                  EMPTY_PARAMS);
+
+                          assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+                          String responseData = response.readEntity(String.class);
+                          List<RepairSegment> segments =
+                              SimpleReaperClient.parseRepairSegmentsJSON(responseData);
+
+                          boolean gotDoneSegments =
+                              segments
+                                      .stream()
+                                      .filter(seg -> seg.getState() == RepairSegment.State.DONE)
+                                      .count()
+                                  > 0;
+
+                          if (gotDoneSegments) {
+                            TestContext.FINISHED_SEGMENT =
+                                segments
+                                    .stream()
+                                    .filter(seg -> seg.getState() == RepairSegment.State.DONE)
+                                    .map(segment -> segment.getId())
+                                    .collect(Collectors.toList())
+                                    .get(0);
+                          }
+
+                          return gotDoneSegments;
+                        });
+              });
+
+      RUNNERS
+          .parallelStream()
+          .forEach(
+              runner -> {
+                await()
+                    .with()
+                    .pollInterval(10, SECONDS)
+                    .atMost(2, MINUTES)
+                    .until(
+                        () -> {
+                          Response abort =
+                              runner.callReaper(
+                                  "GET",
+                                  "/repair_run/"
+                                      + TestContext.LAST_MODIFIED_ID
+                                      + "/segments/abort/"
+                                      + TestContext.FINISHED_SEGMENT,
+                                  EMPTY_PARAMS);
+
+                          Response response =
+                              runner.callReaper(
+                                  "GET",
+                                  "/repair_run/" + TestContext.LAST_MODIFIED_ID + "/segments",
+                                  EMPTY_PARAMS);
+
+                          assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+                          String responseData = response.readEntity(String.class);
+                          List<RepairSegment> segments =
+                              SimpleReaperClient.parseRepairSegmentsJSON(responseData);
+
+                          return segments
+                                  .stream()
+                                  .filter(
+                                      seg ->
+                                          seg.getId().equals(TestContext.FINISHED_SEGMENT)
+                                              && seg.getState() == RepairSegment.State.NOT_STARTED)
+                                  .count()
+                              > 0;
+                        });
+              });
     }
   }
 
