@@ -4,9 +4,11 @@ import {CFsListRender} from "jsx/mixin";
 import Button from 'react-bootstrap/lib/Button';
 import Modal from 'react-bootstrap/lib/Modal';
 import $ from "jquery";
+var NotificationSystem = require('react-notification-system');
 
 const SegmentList = React.createClass({
-  
+    _notificationSystem: null,
+
     propTypes: {
       repairRunId: React.PropTypes.string.isRequired
     },
@@ -25,6 +27,10 @@ const SegmentList = React.createClass({
   
     componentWillUnmount: function() {
       clearInterval(this.state.scheduler);
+    },
+
+    componentDidMount: function() {
+        this._notificationSystem = this.refs.notificationSystem;
     },
 
     _refreshSegments: function() {
@@ -65,6 +71,15 @@ const SegmentList = React.createClass({
         }
     },
 
+    _toast: function(message, type, uid) {
+        event.preventDefault();
+        this._notificationSystem.addNotification({
+        message: message,
+        level: type,
+        autoDismiss: 3
+    });
+    },
+
     render: function() {
   
         function compareByStartDate(a, b) {
@@ -101,7 +116,7 @@ const SegmentList = React.createClass({
       runningSegments.sort(compareByStartDate)
       const rowsRunning = runningSegments.map(segment =>
         <tbody key={segment.id+'-rows'}>
-            <Segment segment={segment} key={segment.id+'-head'} urlPrefix={this.state.urlPrefix} refreshSegments={this._refreshSegments}/>
+            <Segment segment={segment} key={segment.id+'-head'} urlPrefix={this.state.urlPrefix} refreshSegments={this._refreshSegments} notify={this._toast}/>
         </tbody>
       );
   
@@ -114,7 +129,7 @@ const SegmentList = React.createClass({
       let doneSegments = this.state.segments.filter(segment => segment.state == 'DONE');
       const rowsDone = doneSegments.sort(compareByEndDate).map(segment =>
         <tbody key={segment.id+'-rows'}>
-        <Segment segment={segment} key={segment.id+'-head'} urlPrefix={this.state.urlPrefix} refreshSegments={this._refreshSegments}/>
+        <Segment segment={segment} key={segment.id+'-head'} urlPrefix={this.state.urlPrefix} refreshSegments={this._refreshSegments} notify={this._toast}/>
         </tbody>
       );
     
@@ -262,6 +277,7 @@ const SegmentList = React.createClass({
   
   
       return (<div>
+                    <NotificationSystem ref="notificationSystem" />
                     <div className="panel panel-primary">
                     <div className="panel-heading">
                         {runningHeader}
@@ -294,7 +310,8 @@ const SegmentList = React.createClass({
 const Segment = React.createClass({
     propTypes: {
         segment: React.PropTypes.object.isRequired,
-        refreshSegments: React.PropTypes.func
+        refreshSegments: React.PropTypes.func,
+        notify: React.PropTypes.func
     },
     
     getInitialState: function() {
@@ -303,12 +320,19 @@ const Segment = React.createClass({
 
     _abortSegment: function() {
         console.log("Aborting segment " + this.props.segment.id);
+        this.props.notify("Aborting segment " + this.props.segment.id, "warning", this.props.segment.id);
         $.ajax({
             url: this.props.urlPrefix + '/repair_run/' + encodeURIComponent(this.props.segment.runId) + '/segments/abort/' + encodeURIComponent(this.props.segment.id),
             method: 'GET',
             component: this,
+            success: function(data) {
+                this.component.props.notify("Successfully aborted segment " + this.component.props.segment.id, "success", this.component.props.segment.id)
+            },
             complete: function(data) {
-              this.component.props.refreshSegments();
+                this.component.props.refreshSegments();
+            },
+            error: function(data) {
+                this.component.props.notify("Failed aborting segment " + this.component.props.segment.id  + " : " + data.responseText, "error", this.component.props.segment.id)
             }
         });
     },

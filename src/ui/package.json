@@ -28,7 +28,8 @@
     "webpack": "^1.7.3",
     "webpack-dev-server": "^1.7.0",
     "react-tag-input": "^4.7.2",
-    "html-webpack-plugin": "^2.30.1"
+    "html-webpack-plugin": "^2.30.1",
+    "react-notification-system": "^0.2.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
