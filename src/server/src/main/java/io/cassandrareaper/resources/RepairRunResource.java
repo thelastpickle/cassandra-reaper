@@ -581,7 +581,7 @@ public final class RepairRunResource {
         RepairSegment segment = context.repairManager.abortSegment(repairRunId, segmentId);
         return Response.ok().entity(segment).build();
       } else {
-        return Response.status(Response.Status.FORBIDDEN)
+        return Response.status(Response.Status.CONFLICT)
             .entity(
                 "Cannot abort segment on repair run with status " + repairRun.get().getRunState())
             .build();
