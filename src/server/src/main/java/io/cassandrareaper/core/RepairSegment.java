@@ -18,7 +18,6 @@ import io.cassandrareaper.service.RingRange;
 
 import java.math.BigInteger;
 import java.util.UUID;
-
 import javax.annotation.Nullable;
 
 import com.google.common.base.Preconditions;
