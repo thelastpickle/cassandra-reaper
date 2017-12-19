@@ -1,4 +1,0 @@
---
--- Intentionally blank
---
--- Placeholder for Migration012
