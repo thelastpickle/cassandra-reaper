@@ -15,6 +15,7 @@
 package io.cassandrareaper;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
+import io.cassandrareaper.jmx.CustomEC2MultiRegionAddressTranslator;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxConnectionsInitializer;
 import io.cassandrareaper.resources.ClusterResource;
@@ -42,7 +43,6 @@ import javax.servlet.FilterRegistration;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -154,7 +154,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       }
 
       if (config.useAddressTranslator()) {
-        context.jmxConnectionFactory.setAddressTranslator(new EC2MultiRegionAddressTranslator());
+        context.jmxConnectionFactory.setAddressTranslator(
+            new CustomEC2MultiRegionAddressTranslator(config.addressTranslatorRemoveDomain())
+        );
       }
 
       JmxCredentials jmxAuth = config.getJmxAuth();

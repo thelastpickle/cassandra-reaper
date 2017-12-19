@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
-import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -41,7 +40,7 @@ public class JmxConnectionFactory {
   private final HostConnectionCounters hostConnectionCounters;
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
-  private EC2MultiRegionAddressTranslator addressTranslator;
+  private CustomEC2MultiRegionAddressTranslator addressTranslator;
 
   @VisibleForTesting
   public JmxConnectionFactory() {
@@ -126,7 +125,7 @@ public class JmxConnectionFactory {
     this.jmxAuth = jmxAuth;
   }
 
-  public final void setAddressTranslator(EC2MultiRegionAddressTranslator addressTranslator) {
+  public final void setAddressTranslator(CustomEC2MultiRegionAddressTranslator addressTranslator) {
     this.addressTranslator = addressTranslator;
   }
 

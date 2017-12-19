@@ -64,6 +64,9 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Boolean useAddressTranslator;
 
   @JsonProperty
+  private String addressTranslatorRemoveDomain;
+
+  @JsonProperty
   @NotNull
   private Integer repairRunThreadCount;
 
@@ -272,6 +275,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
     return this.useAddressTranslator != null ? useAddressTranslator : false;
   }
 
+  public void setAddressTranslatorRemoveDomain(String addressTranslatorRemoveDomain) {
+    this.addressTranslatorRemoveDomain = addressTranslatorRemoveDomain;
+  }
+
+  public String addressTranslatorRemoveDomain() {
+    return this.addressTranslatorRemoveDomain;
+  }
+
   @JsonProperty("cassandra")
   public CassandraFactory getCassandraFactory() {
     return cassandra;
@@ -325,6 +336,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
       return password;
     }
   }
+
 
   public static final class AutoSchedulingConfiguration {
 
