@@ -18,7 +18,8 @@ const repairScreen = React.createClass({
     deleteSubject: React.PropTypes.object.isRequired,
     deleteResult: React.PropTypes.object.isRequired,
     updateStatusSubject: React.PropTypes.object.isRequired,
-    repairs: React.PropTypes.object.isRequired,    
+    updateIntensitySubject: React.PropTypes.object.isRequired,
+    repairs: React.PropTypes.object.isRequired,
     statusObservableTimer: React.PropTypes.object.isRequired
   },
 
@@ -71,6 +72,7 @@ const repairScreen = React.createClass({
                               deleteSubject={this.props.deleteSubject}
                               deleteResult={this.props.deleteResult}
                               updateStatusSubject={this.props.updateStatusSubject}
+                              updateIntensitySubject={this.props.updateIntensitySubject}
                               currentCluster={this.state.currentCluster}
                               changeCurrentCluster={this.changeCurrentCluster}> </RepairList>
                 </div>
