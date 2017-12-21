@@ -31,6 +31,7 @@ matrix:
   - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=2
   - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=4
   - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.11.0 GRIM_MIN=2 GRIM_MAX=4
+  - env: TEST_TYPE=docker
 
 services:
   - postgresql
