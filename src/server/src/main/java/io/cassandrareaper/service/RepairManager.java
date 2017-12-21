@@ -218,6 +218,14 @@ public final class RepairManager {
     }
   }
 
+  public RepairRun updateRepairRunIntensity(RepairRun repairRun, Double intensity) throws ReaperException {
+    RepairRun updatedRun = repairRun.with().intensity(intensity).build(repairRun.getId());
+    if (!context.storage.updateRepairRun(updatedRun)) {
+      throw new ReaperException("failed updating repair run " + updatedRun.getId());
+    }
+    return updatedRun;
+  }
+
   private void startRunner(UUID runId) {
     if (!repairRunners.containsKey(runId)) {
       LOG.info("scheduling repair for repair run #{}", runId);

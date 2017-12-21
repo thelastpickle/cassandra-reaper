@@ -230,7 +230,7 @@ public final class RepairRunResourceTest {
     Response response = resource.modifyRunState(uriInfo, UUIDs.timeBased(), newState);
     assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
-    assertTrue(response.getEntity().toString().contains("not found"));
+    assertTrue(response.getEntity().toString().contains("doesn't exist"));
   }
 
   @Test
@@ -370,21 +370,43 @@ public final class RepairRunResourceTest {
   }
 
   @Test
-  public void testSplitStateParam() {
+  public void testModifyIntensity() throws ReaperException {
+    DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
+
+    context.repairManager
+        .initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S, TimeUnit.SECONDS);
+
     RepairRunResource resource = new RepairRunResource(context);
+    Response response = addDefaultRepairRun(resource);
+    assertTrue(response.getEntity().toString(), response.getEntity() instanceof RepairRunStatus);
+    RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
+    UUID runId = repairRunStatus.getId();
+
+    response = resource.modifyRunState(uriInfo, runId, Optional.of(RepairRun.RunState.RUNNING.toString()));
+    assertEquals(200, response.getStatus());
+    response = resource.modifyRunState(uriInfo, runId, Optional.of(RepairRun.RunState.PAUSED.toString()));
+    assertEquals(200, response.getStatus());
+    response = resource.modifyRunIntensity(uriInfo, runId, Optional.of("0.1"));
+    assertTrue(response.getEntity() instanceof RepairRunStatus);
+    repairRunStatus = (RepairRunStatus) response.getEntity();
+    assertEquals(0.1, repairRunStatus.getIntensity(), 0.09);
+  }
+
+  @Test
+  public void testSplitStateParam() {
     Optional<String> stateParam = Optional.of("RUNNING");
-    assertEquals(Sets.newHashSet("RUNNING"), resource.splitStateParam(stateParam));
+    assertEquals(Sets.newHashSet("RUNNING"), RepairRunResource.splitStateParam(stateParam));
     stateParam = Optional.of("PAUSED,RUNNING");
-    assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), resource.splitStateParam(stateParam));
+    assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), RepairRunResource.splitStateParam(stateParam));
     stateParam = Optional.of("NOT_EXISTING");
-    assertEquals(null, resource.splitStateParam(stateParam));
+    assertEquals(null, RepairRunResource.splitStateParam(stateParam));
     stateParam = Optional.of("NOT_EXISTING,RUNNING");
-    assertEquals(null, resource.splitStateParam(stateParam));
+    assertEquals(null, RepairRunResource.splitStateParam(stateParam));
     stateParam = Optional.of("RUNNING,PAUSED,");
-    assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), resource.splitStateParam(stateParam));
+    assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), RepairRunResource.splitStateParam(stateParam));
     stateParam = Optional.of(",RUNNING,PAUSED,");
-    assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), resource.splitStateParam(stateParam));
+    assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), RepairRunResource.splitStateParam(stateParam));
     stateParam = Optional.of("PAUSED ,RUNNING");
-    assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), resource.splitStateParam(stateParam));
+    assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), RepairRunResource.splitStateParam(stateParam));
   }
 }
