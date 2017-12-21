@@ -12,7 +12,8 @@ import {
   addRepairSubject, addRepairResult,
   deleteRepairSubject, deleteRepairResult, updateRepairStatusSubject,
   clusterNames, deleteSubject, deleteResult, updateStatusSubject,
-  addClusterSubject, addClusterResult, deleteClusterSubject, deleteClusterResult
+  addClusterSubject, addClusterResult, deleteClusterSubject,
+  deleteClusterResult, updateRepairIntensitySubject
 } from "observable";
 
 jQuery(document).ready(function($){
@@ -21,7 +22,7 @@ jQuery(document).ready(function($){
     var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
     if (results != null) {
       return results[1] || 0;
-    } 
+    }
     else {
       return null;
     }
@@ -30,11 +31,14 @@ jQuery(document).ready(function($){
   let currentCluster: string = $.urlParam('currentCluster');
   if(!currentCluster) {
     currentCluster = 'all';
-  } 
+  }
 
   ReactDOM.render(
     React.createElement(repairScreen, {clusterNames, addRepairSubject, addRepairResult, currentCluster, repairs, deleteSubject: deleteRepairSubject,
-    deleteResult: deleteRepairResult, updateStatusSubject: updateRepairStatusSubject, statusObservableTimer}),
+    deleteResult: deleteRepairResult,
+    updateStatusSubject: updateRepairStatusSubject,
+    updateIntensitySubject: updateRepairIntensitySubject,
+    statusObservableTimer}),
     document.getElementById('wrapper')
   );
 
