@@ -69,6 +69,19 @@ const TableRow = React.createClass({
 });
 
 const TableRowDetails = React.createClass({
+  getInitialState() {
+      return { intensity: this.props.row.intensity };
+  },
+
+  _handleIntensityChange: function(e) {
+      const value = e.target.value;
+      const state = this.state;
+      state["intensity"] = value;
+      this.replaceState(state);
+
+      this.props.updateIntensitySubject.onNext({id: this.props.row.id, intensity: value});
+  },
+
   render: function() {
 
     const rowID = `details_${this.props.row.id}`;
@@ -87,6 +100,19 @@ const TableRowDetails = React.createClass({
     }
 
     const incremental = this.props.row.incremental_repair == true ? "true" : "false";
+
+    let intensity = this.props.row.intensity;
+    if (this.props.row.state === 'PAUSED' && !!this.props.updateIntensitySubject) {
+      intensity =
+        <input
+          type="number"
+          className="form-control"
+          value={this.state.intensity}
+          min="0" max="1"
+          onChange={this._handleIntensityChange}
+          id={`${rowID}_in_intensity`}
+          placeholder="repair intensity" />;
+    }
 
     return (
       <tr id={rowID} className="collapse out">
@@ -131,7 +157,7 @@ const TableRowDetails = React.createClass({
                 </tr>
                 <tr>
                     <td>Intensity</td>
-                    <td>{this.props.row.intensity}</td>
+                    <td>{intensity}</td>
                 </tr>
                 <tr>
                     <td>Repair parallism</td>
@@ -175,6 +201,7 @@ const repairList = React.createClass({
     deleteSubject: React.PropTypes.object.isRequired,
     deleteResult: React.PropTypes.object.isRequired,
     updateStatusSubject: React.PropTypes.object.isRequired,
+    updateIntensitySubject: React.PropTypes.object.isRequired,
     currentCluster: React.PropTypes.string.isRequired,
     changeCurrentCluster: React.PropTypes.func.isRequired
 
@@ -239,12 +266,15 @@ const repairList = React.createClass({
 
   render: function() {
 
-    const rowsRunning = this.state.repairs.filter(repair => this.state.currentCluster == "all" || this.state.currentCluster == repair.cluster_name).filter(repair => (repair.state == "RUNNING" || repair.state == "PAUSED" || repair.state == "NOT_STARTED")).map(repair =>
+    const rowsRunning = this.state.repairs
+    .filter(repair => this.state.currentCluster == "all" || this.state.currentCluster == repair.cluster_name)
+    .filter(repair => (repair.state == "RUNNING" || repair.state == "PAUSED" || repair.state == "NOT_STARTED"))
+    .map(repair =>
       <tbody key={repair.id+'-rows'}>
       <TableRow row={repair} key={repair.id+'-head'}
         deleteSubject={this.props.deleteSubject}
         updateStatusSubject={this.props.updateStatusSubject}/>
-      <TableRowDetails row={repair} key={repair.id+'-details'}/>
+      <TableRowDetails row={repair} key={repair.id+'-details'} updateIntensitySubject={this.props.updateIntensitySubject} />
       </tbody>
     );
 
@@ -253,7 +283,7 @@ const repairList = React.createClass({
       <TableRow row={repair} key={repair.id+'-head'}
         deleteSubject={this.props.deleteSubject}
         updateStatusSubject={this.props.updateStatusSubject}/>
-      <TableRowDetails row={repair} key={repair.id+'-details'}/>
+      <TableRowDetails row={repair} key={repair.id+'-details'} />
       </tbody>
     );
 

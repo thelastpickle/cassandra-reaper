@@ -17,10 +17,12 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Intensity;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Result;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.service.RepairUnitService;
@@ -281,21 +283,17 @@ public final class RepairRunResource {
         return Response.status(Response.Status.BAD_REQUEST).entity(ex.getMessage()).build();
       }
     }
+
     if (intensityStr.isPresent()) {
-      try {
-        final Double intensity = Double.parseDouble(intensityStr.get());
-        if (intensity <= 0.0 || intensity > 1.0) {
-          return Response.status(Response.Status.BAD_REQUEST)
-              .entity("query parameter \"intensity\" must be in half closed range (0.0, 1.0]: " + intensityStr.get())
-              .build();
-        }
-      } catch (NumberFormatException ex) {
-        LOG.error(ex.getMessage(), ex);
-        return Response.status(Response.Status.BAD_REQUEST)
-            .entity("invalid value for query parameter \"intensity\": " + intensityStr.get())
+      final Result<Intensity, String> intensityCreateResult = Intensity.tryCreate(intensityStr.get());
+      if (intensityCreateResult.isFailed()) {
+        return Response
+            .status(Response.Status.BAD_REQUEST)
+            .entity(intensityCreateResult.getFailure())
             .build();
       }
     }
+
     if (incrementalRepairStr.isPresent()
         && (!incrementalRepairStr.get().toUpperCase().contentEquals("TRUE")
         && !incrementalRepairStr.get().toUpperCase().contentEquals("FALSE"))) {
@@ -330,76 +328,257 @@ public final class RepairRunResource {
    *        transition is not supported.
    */
   @PUT
-  @Path("/{id}")
+  @Path("/{id}/state/{state}")
   public Response modifyRunState(
       @Context UriInfo uriInfo,
       @PathParam("id") UUID repairRunId,
-      @QueryParam("state") Optional<String> state)
+      @PathParam("state") Optional<String> stateStr)
       throws ReaperException {
 
-    LOG.info("modify repair run state called with: id = {}, state = {}", repairRunId, state);
+    LOG.info("modify repair run state called with: id = {}, state = {}", repairRunId, stateStr);
 
-    if (!state.isPresent()) {
-      return Response.status(Response.Status.BAD_REQUEST.getStatusCode()).entity("\"state\" argument missing").build();
+    final Result<String, Response> validateStateExistResult = validateStateExist(stateStr);
+    if (validateStateExistResult.isFailed()) {
+      return validateStateExistResult.getFailure();
     }
 
-    final Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
-    if (!repairRun.isPresent()) {
-      return Response.status(Response.Status.NOT_FOUND)
-          .entity("repair run with id " + repairRunId + " not found")
-          .build();
+    final Result<RepairRun, Response> repairRunGetResult = tryGetRepairRun(repairRunId);
+    if (repairRunGetResult.isFailed()) {
+      return repairRunGetResult.getFailure();
     }
 
-    final Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
-    if (!repairUnit.isPresent()) {
-      final String errMsg = "repair unit with id " + repairRun.get().getRepairUnitId() + " not found";
-      LOG.error(errMsg);
-      return Response.status(Response.Status.NOT_FOUND).entity(errMsg).build();
+    final RepairRun repairRun = repairRunGetResult.getSuccess();
+
+    final Result<RepairUnit, Response> repairUnitGetResult = tryGetRepairUnit(repairRun);
+    if (repairRunGetResult.isFailed()) {
+      return repairRunGetResult.getFailure();
     }
 
-    // Check that no other repair run exists with a status different than DONE for this repair uni
-    final Collection<RepairRun> repairRuns = context.storage.getRepairRunsForUnit(repairRun.get().getRepairUnitId());
-
-    for (final RepairRun run : repairRuns) {
-      if (!run.getId().equals(repairRunId) && run.getRunState().equals(RunState.RUNNING)) {
-        final String errMsg = "repair unit already has run " + run.getId() + " in RUNNING state";
-        LOG.error(errMsg);
-        return Response.status(Response.Status.CONFLICT).entity(errMsg).build();
-      }
+    final Result<?, Response> validateRepairRunsResult = validateRepairRuns(repairRun);
+    if (validateRepairRunsResult.isFailed()) {
+      return validateRepairRunsResult.getFailure();
     }
 
-    final int segmentsRepaired
-        = context.storage.getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
-
-    RepairRun.RunState newState;
-    try {
-      newState = RepairRun.RunState.valueOf(state.get().toUpperCase());
-    } catch (IllegalArgumentException ex) {
-      return Response.status(Response.Status.BAD_REQUEST.getStatusCode())
-          .entity("invalid \"state\" argument: " + state.get())
-          .build();
+    final String state = validateStateExistResult.getSuccess();
+    final Result<RunState, Response> validateStateResult = validateState(state);
+    if (validateStateResult.isFailed()) {
+      return validateStateResult.getFailure();
     }
-    final RepairRun.RunState oldState = repairRun.get().getRunState();
+
+    final RunState oldState = repairRun.getRunState();
+    final RunState newState = validateStateResult.getSuccess();
 
     if (oldState == newState) {
-      return Response.status(Response.Status.NOT_MODIFIED)
+      return Response
+          .status(Response.Status.NOT_MODIFIED)
           .entity("given \"state\" is same as the current run state")
           .build();
     }
 
+    final int segmentsRepaired = getSegmentAmountForRepairRun(repairRunId);
+    final RepairUnit repairUnit = repairUnitGetResult.getSuccess();
+
     if (isStarting(oldState, newState)) {
-      return startRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
+      return startRun(repairRun, repairUnit, segmentsRepaired);
     } else if (isPausing(oldState, newState)) {
-      return pauseRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
+      return pauseRun(repairRun, repairUnit, segmentsRepaired);
     } else if (isResuming(oldState, newState) || isRetrying(oldState, newState)) {
-      return resumeRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
+      return resumeRun(repairRun, repairUnit, segmentsRepaired);
     } else if (isAborting(oldState, newState)) {
-      return abortRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
+      return abortRun(repairRun, repairUnit, segmentsRepaired);
     } else {
       final String errMsg = String.format("Transition %s->%s not supported.", oldState.toString(), newState.toString());
       LOG.error(errMsg);
       return Response.status(Response.Status.METHOD_NOT_ALLOWED).entity(errMsg).build();
     }
+  }
+
+  /**
+   * Check that no other repair run exists with a status different than DONE for this repair uni
+   */
+  @Nullable
+  private Result<?, Response> validateRepairRuns(RepairRun repairRun) {
+    final UUID repairRunId = repairRun.getId();
+    final Collection<RepairRun> repairRuns = context.storage.getRepairRunsForUnit(repairRun.getRepairUnitId());
+
+    for (final RepairRun run : repairRuns) {
+
+      if (!run.getId().equals(repairRunId) && run.getRunState().equals(RunState.RUNNING)) {
+        final String errMsg = "repair unit already has run " + run.getId() + " in RUNNING state";
+        LOG.error(errMsg);
+        final Response response = Response
+            .status(Response.Status.CONFLICT)
+            .entity(errMsg)
+            .build();
+
+        return Result.fail(response);
+      }
+    }
+
+    return Result.success();
+  }
+
+  private int getSegmentAmountForRepairRun(UUID repairRunId) {
+    return context.storage.getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
+  }
+
+  /**
+   * Modifies a state of the repair run.
+   *
+   * <p>
+   * Currently supports NOT_STARTED|PAUSED -> RUNNING and RUNNING -> PAUSED.
+   *
+   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 501 (NOT_IMPLEMENTED) if
+   *        transition is not supported.
+   */
+  @PUT
+  @Path("/{id}/intensity/{intensity}")
+  public Response modifyRunIntensity(
+      @Context UriInfo uriInfo,
+      @PathParam("id") UUID repairRunId,
+      @PathParam("intensity") Optional<String> intensityStr)
+      throws ReaperException {
+
+    final Result<String, Response> validateIntensityExistResult = validateIntensityExist(intensityStr);
+    if (validateIntensityExistResult.isFailed()) {
+      return validateIntensityExistResult.getFailure();
+    }
+
+    final String intensityValue = validateIntensityExistResult.getSuccess();
+    final Result<Intensity, String> intensityCreateResult = Intensity.tryCreate(intensityValue);
+    if (intensityCreateResult.isFailed()) {
+      return Response
+          .status(Response.Status.BAD_REQUEST)
+          .entity(intensityCreateResult.getFailure())
+          .build();
+    }
+
+    final Result<RepairRun, Response> repairRunGetResult = tryGetRepairRun(repairRunId);
+    if (repairRunGetResult.isFailed()) {
+      return repairRunGetResult.getFailure();
+    }
+
+    final RepairRun repairRun = repairRunGetResult.getSuccess();
+
+    final Result<?, Response> validateRepairRunsResult = validateRepairRuns(repairRun);
+    if (validateRepairRunsResult.isFailed()) {
+      return validateRepairRunsResult.getFailure();
+    }
+
+    final Result<RepairUnit, Response> repairUnitGetResult = tryGetRepairUnit(repairRun);
+    if (repairRunGetResult.isFailed()) {
+      return repairRunGetResult.getFailure();
+    }
+
+    if (repairRun.getRunState() != RunState.PAUSED) {
+      return Response
+          .status(Response.Status.CONFLICT)
+          .entity("intensity can be modified when repair run already paused")
+          .build();
+    }
+
+    final Intensity intensity = intensityCreateResult.getSuccess();
+    final int segmentsRepaired = getSegmentAmountForRepairRun(repairRunId);
+    final RepairUnit repairUnit = repairUnitGetResult.getSuccess();
+
+    return updateRepairRunIntensity(repairRun, repairUnit, segmentsRepaired, intensity.get());
+  }
+
+  /**
+   * MOVED_PERMANENTLY to PUT repair_run/{id}/state/{state}
+   */
+  @PUT
+  @Path("/{id}")
+  @Deprecated
+  public Response oldModifyRunState(
+      @Context UriInfo uriInfo,
+      @PathParam("id") UUID repairRunId,
+      @QueryParam("state") Optional<String> stateStr)
+      throws ReaperException {
+
+    final Result<String, Response> validateStateExistResult = validateStateExist(stateStr);
+    if (validateStateExistResult.isFailed()) {
+      return validateStateExistResult.getFailure();
+    }
+
+    final Result<RepairRun, Response> repairRunGetResult = tryGetRepairRun(repairRunId);
+    if (repairRunGetResult.isFailed()) {
+      return repairRunGetResult.getFailure();
+    }
+
+    final RepairRun repairRun = repairRunGetResult.getSuccess();
+    final String state = validateStateExistResult.getSuccess();
+
+    final URI redirectUri = uriInfo
+        .getRequestUriBuilder()
+        .replacePath(String.format("repair_run/%s/state/%s", repairRun.getId().toString(), state))
+        .replaceQuery("")
+        .build();
+
+    return Response.seeOther(redirectUri).build();
+  }
+
+  private Result<String, Response> validateStateExist(Optional<String> state) {
+    return validateValueExist(state, "state");
+  }
+
+  private Result<String, Response> validateIntensityExist(Optional<String> intensity) {
+    return validateValueExist(intensity, "intensity");
+  }
+
+  private Result<String, Response> validateValueExist(Optional<String> value, String argumentName) {
+    if (value.isPresent()) {
+      return Result.success(value.get());
+    }
+
+    final Response response = Response
+        .status(Response.Status.BAD_REQUEST.getStatusCode())
+        .entity(String.format("\"%s\" argument missing", argumentName))
+        .build();
+    return Result.fail(response);
+  }
+
+  private Result<RunState, Response> validateState(String stateStr) {
+    try {
+      final RunState state = RunState.valueOf(stateStr.toUpperCase());
+      return Result.success(state);
+    } catch (IllegalArgumentException ex) {
+      final Response response = Response.status(Response.Status.BAD_REQUEST.getStatusCode())
+          .entity("invalid \"state\" argument: " + stateStr)
+          .build();
+      return Result.fail(response);
+    }
+  }
+
+  private Result<RepairRun, Response> tryGetRepairRun(UUID repairRunId) {
+    final Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+
+    if (repairRun.isPresent()) {
+      return Result.success(repairRun.get());
+    }
+
+    final Response response = Response
+        .status(Response.Status.NOT_FOUND)
+        .entity("repair run with id " + repairRunId + " doesn't exist")
+        .build();
+    return Result.fail(response);
+  }
+
+  private Result<RepairUnit, Response> tryGetRepairUnit(RepairRun repairRun) {
+    final Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
+    if (repairUnit.isPresent()) {
+      return Result.success(repairUnit.get());
+    }
+
+    final String errMsg = "repair unit with id " + repairRun.getRepairUnitId() + " not found";
+    LOG.error(errMsg);
+    final Response response = Response
+        .status(Response.Status.NOT_FOUND)
+        .entity(errMsg)
+        .build();
+
+    return Result.fail(response);
+
   }
 
   private static boolean isStarting(RepairRun.RunState oldState, RepairRun.RunState newState) {
@@ -448,6 +627,16 @@ public final class RepairRunResource {
     return Response.ok().entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired)).build();
   }
 
+  private Response updateRepairRunIntensity(
+          RepairRun repairRun,
+          RepairUnit repairUnit,
+          int segmentsRepaired,
+          double intensity) throws ReaperException {
+    LOG.info("Editing run {}", repairRun.getId());
+    final RepairRun newRun = context.repairManager.updateRepairRunIntensity(repairRun, intensity);
+    return Response.ok().entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired)).build();
+  }
+
   /**
    * @return detailed information about a repair run.
    */
@@ -457,13 +646,17 @@ public final class RepairRunResource {
       @PathParam("id") UUID repairRunId) {
 
     LOG.debug("get repair_run called with: id = {}", repairRunId);
-    final Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
-    if (repairRun.isPresent()) {
-      RepairRunStatus repairRunStatus = getRepairRunStatus(repairRun.get());
-      return Response.ok().entity(repairRunStatus).build();
-    } else {
-      return Response.status(404).entity("repair run with id " + repairRunId + " doesn't exist").build();
+
+    final Result<RepairRun, Response> repairRunGetResult = tryGetRepairRun(repairRunId);
+    if (repairRunGetResult.isFailed()) {
+      return repairRunGetResult.getFailure();
     }
+
+    final RepairRun repairRun = repairRunGetResult.getSuccess();
+    return Response
+        .ok()
+        .entity(getRepairRunStatus(repairRun))
+        .build();
   }
 
   /**
@@ -490,7 +683,7 @@ public final class RepairRunResource {
     final Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
     Preconditions.checkState(repairUnit.isPresent(), "no repair unit found with id: %s", repairRun.getRepairUnitId());
     final int segmentsRepaired
-        = context.storage.getSegmentAmountForRepairRunWithState(repairRun.getId(), RepairSegment.State.DONE);
+        = getSegmentAmountForRepairRun(repairRun.getId());
     return new RepairRunStatus(repairRun, repairUnit.get(), segmentsRepaired);
   }
 
@@ -554,7 +747,7 @@ public final class RepairRunResource {
         int segmentsRepaired = run.getSegmentCount();
         if (!run.getRunState().equals(RepairRun.RunState.DONE)) {
           segmentsRepaired
-              = context.storage.getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
+              = getSegmentAmountForRepairRun(run.getId());
         }
 
         runStatuses.add(new RepairRunStatus(run, runsUnit.get(), segmentsRepaired));
@@ -633,7 +826,7 @@ public final class RepairRunResource {
           = context.storage.getRepairUnit(runToDelete.get().getRepairUnitId());
 
       final int segmentsRepaired
-          = context.storage.getSegmentAmountForRepairRunWithState(runId, RepairSegment.State.DONE);
+          = getSegmentAmountForRepairRun(runId);
 
       final Optional<RepairRun> deletedRun = context.storage.deleteRepairRun(runId);
       if (deletedRun.isPresent()) {
