@@ -230,7 +230,7 @@ public final class RepairRunResourceTest {
     Response response = resource.modifyRunState(uriInfo, UUIDs.timeBased(), newState);
     assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
-    assertTrue(response.getEntity().toString().contains("not found"));
+    assertTrue(response.getEntity().toString().contains("doesn't exist"));
   }
 
   @Test
@@ -367,6 +367,27 @@ public final class RepairRunResourceTest {
         Optional.of(RepairRun.RunState.PAUSED.toString()));
     assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
     assertEquals(0, context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING).size());
+  }
+
+  @Test
+  public void testModifyIntensity() throws ReaperException {
+    DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
+    context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
+        RETRY_DELAY_S, TimeUnit.SECONDS);
+    RepairRunResource resource = new RepairRunResource(context);
+    Response response = addDefaultRepairRun(resource);
+    assertTrue(response.getEntity().toString(), response.getEntity() instanceof RepairRunStatus);
+    RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
+    UUID runId = repairRunStatus.getId();
+
+    response = resource.modifyRunState(uriInfo, runId, Optional.of(RepairRun.RunState.RUNNING.toString()));
+    assertEquals(200, response.getStatus());
+    response = resource.modifyRunState(uriInfo, runId, Optional.of(RepairRun.RunState.PAUSED.toString()));
+    assertEquals(200, response.getStatus());
+    response = resource.modifyRunIntensity(uriInfo, runId, Optional.of("0.1"));
+    assertTrue(response.getEntity() instanceof RepairRunStatus);
+    repairRunStatus = (RepairRunStatus) response.getEntity();
+    assertEquals(0.1, repairRunStatus.getIntensity(), 0.09);
   }
 
   @Test
