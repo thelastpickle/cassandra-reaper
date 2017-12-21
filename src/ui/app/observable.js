@@ -112,6 +112,7 @@ export const schedules = Rx.Observable.merge(
 export const addRepairSubject = new Rx.Subject();
 export const deleteRepairSubject = new Rx.Subject();
 export const updateRepairStatusSubject = new Rx.Subject();
+export const updateRepairIntensitySubject = new Rx.Subject();
 
 
 export const addRepairResult = addRepairSubject.map(repair => {
@@ -132,9 +133,17 @@ export const deleteRepairResult = deleteRepairSubject.map(repair => {
 }).share();
 
 export const updateRepairStatusResult = updateRepairStatusSubject.map(repair => {
-  console.info(`Updating repair run ${repair.id} status with state ${repair.state} `);
+  console.info(`Updating repair run ${repair.id} status with state ${repair.state}`);
   return Rx.Observable.fromPromise($.ajax({
-    url: `${URL_PREFIX}/repair_run/${encodeURIComponent(repair.id)}?state=${encodeURIComponent(repair.state)}`,
+    url: `${URL_PREFIX}/repair_run/${encodeURIComponent(repair.id)}/state/${encodeURIComponent(repair.state)}`,
+    method: 'PUT'
+  }).promise());
+}).share();
+
+export const updateRepairIntensityResult = updateRepairIntensitySubject.map(repair => {
+  console.info(`Updating repair run ${repair.id} status with intensity ${repair.intensity}`);
+  return Rx.Observable.fromPromise($.ajax({
+    url: `${URL_PREFIX}/repair_run/${encodeURIComponent(repair.id)}/intensity/${encodeURIComponent(repair.intensity)}`,
     method: 'PUT'
   }).promise());
 }).share();
@@ -144,7 +153,8 @@ export const repairs = Rx.Observable.merge(
     Rx.Observable.timer(0, POLLING_INTERVAL).map(t => Rx.Observable.just({})),
     addRepairResult,
     deleteRepairResult,
-    updateRepairStatusResult
+    updateRepairStatusResult,
+    updateRepairIntensityResult
   ).map(s =>
     s.flatMap(t => Rx.Observable.fromPromise($.ajax({
         url: `${URL_PREFIX}/repair_run`
