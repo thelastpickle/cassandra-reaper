@@ -15,6 +15,7 @@
 package io.cassandrareaper.resources.view;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,9 +25,9 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import jersey.repackaged.com.google.common.collect.Lists;
-import jersey.repackaged.com.google.common.collect.Maps;
 
 public final class NodesStatus {
 
@@ -85,11 +86,36 @@ public final class NodesStatus {
     Set<String> endpoints = Sets.newHashSet();
     Matcher matcher;
 
-    String[] strEndpoints = allEndpointStates.split("(?<![0-9a-zA-Z ])/");
+    // Split into endpointState record strings
+    String[] endpointLines = allEndpointStates.split("\n");
+    List<String> strEndpoints = Lists.newArrayList();
+    StringBuilder recordBuilder = null;
+    for (String line: endpointLines) {
+      if (!line.startsWith("  ")) {
+        if (recordBuilder != null) {
+          strEndpoints.add(recordBuilder.toString());
+        }
+        recordBuilder = new StringBuilder(line.substring(line.indexOf('/') + 1));
+      } else if (recordBuilder != null) {
+        recordBuilder.append('\n');
+        recordBuilder.append(line);
+      }
+    }
+    if (recordBuilder != null) {
+      strEndpoints.add(recordBuilder.toString());
+    }
+
+    // Cleanup hostnames from simpleStates keys
+    Map<String, String> simpleStatesCopy = new HashMap<>();
+    for (Map.Entry<String, String> entry: simpleStates.entrySet()) {
+      String entryKey = entry.getKey().substring(entry.getKey().indexOf('/'));
+      simpleStatesCopy.put(entryKey, entry.getValue());
+    }
+    simpleStates = simpleStatesCopy;
+
     Double totalLoad = 0.0;
 
-    for (int i = 1; i < strEndpoints.length; i++) {
-      String endpointString = strEndpoints[i];
+    for (String endpointString: strEndpoints) {
       Optional<String> status = Optional.absent();
       Optional<String> endpoint = parseEndpointState(ENDPOINT_NAME_PATTERNS, endpointString, 1, String.class);
 
