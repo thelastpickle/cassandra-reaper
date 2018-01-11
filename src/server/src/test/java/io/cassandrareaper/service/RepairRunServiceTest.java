@@ -103,7 +103,7 @@ public final class RepairRunServiceTest {
     endpointToRange.put("node2", Lists.newArrayList());
     endpointToRange.put("node3", Lists.newArrayList());
 
-    assertEquals(30, RepairRunService.computeGlobalSegmentCount(10, rangeToEndpoint, endpointToRange));
+    assertEquals(30, RepairRunService.computeGlobalSegmentCount(10, endpointToRange));
   }
 
   @Test
@@ -120,7 +120,7 @@ public final class RepairRunServiceTest {
     endpointToRange.put("node2", Lists.newArrayList());
     endpointToRange.put("node3", Lists.newArrayList());
 
-    assertEquals(60, RepairRunService.computeGlobalSegmentCount(10, rangeToEndpoint, endpointToRange));
+    assertEquals(30, RepairRunService.computeGlobalSegmentCount(10, endpointToRange));
   }
 
   @Test
@@ -137,6 +137,23 @@ public final class RepairRunServiceTest {
     endpointToRange.put("node2", Lists.newArrayList());
     endpointToRange.put("node3", Lists.newArrayList());
 
-    assertEquals(48, RepairRunService.computeGlobalSegmentCount(0, rangeToEndpoint, endpointToRange));
+    assertEquals(48, RepairRunService.computeGlobalSegmentCount(0, endpointToRange));
+  }
+
+  @Test
+  public void computeGlobalSegmentCount256TokenPerNodeTest() {
+
+    Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
+    for (int i = 0; i < 768; i++) {
+      rangeToEndpoint.put(
+          Arrays.asList(i + "", (i + 1) + ""), Arrays.asList("node1", "node2", "node3"));
+    }
+
+    Map<String, List<RingRange>> endpointToRange = Maps.newHashMap();
+    endpointToRange.put("node1", Lists.newArrayList());
+    endpointToRange.put("node2", Lists.newArrayList());
+    endpointToRange.put("node3", Lists.newArrayList());
+
+    assertEquals(48, RepairRunService.computeGlobalSegmentCount(0, endpointToRange));
   }
 }

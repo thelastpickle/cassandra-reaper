@@ -21,8 +21,6 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.service.RingRange;
-import io.cassandrareaper.service.SegmentGenerator;
 
 import java.math.BigInteger;
 import java.util.Collections;
@@ -32,7 +30,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CharMatcher;
@@ -53,6 +50,7 @@ public final class RepairRunService {
 
   public static final Splitter COMMA_SEPARATED_LIST_SPLITTER
       = Splitter.on(',').trimResults(CharMatcher.anyOf(" ()[]\"'")).omitEmptyStrings();
+  public static final int DEFAULT_SEGMENT_COUNT_PER_NODE = 16;
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunService.class);
 
@@ -156,7 +154,7 @@ public final class RepairRunService {
 
       int globalSegmentCount = segmentCount;
       if (globalSegmentCount == 0) {
-        globalSegmentCount = computeGlobalSegmentCount(segmentCountPerNode, rangeToEndpoint, endpointToRange);
+        globalSegmentCount = computeGlobalSegmentCount(segmentCountPerNode, endpointToRange);
       }
 
       segments = filterSegmentsByNodes(
@@ -177,21 +175,11 @@ public final class RepairRunService {
 
   static int computeGlobalSegmentCount(
       int segmentCountPerNode,
-      Map<List<String>, List<String>> rangeToEndpoint,
       Map<String, List<RingRange>> endpointToRange) {
+    Preconditions.checkArgument(1 <= endpointToRange.keySet().size());
 
-    int nodeCount = Math.max(1, endpointToRange.keySet().size());
-    int tokenRangeCount = rangeToEndpoint.keySet().size();
-
-    if (segmentCountPerNode < (tokenRangeCount / nodeCount) && segmentCountPerNode > 0) {
-      return tokenRangeCount;
-    }
-
-    if (segmentCountPerNode == 0) {
-      return Math.max(16 * nodeCount, tokenRangeCount);
-    }
-
-    return segmentCountPerNode * nodeCount;
+    return endpointToRange.keySet().size()
+        * (segmentCountPerNode != 0 ? segmentCountPerNode : DEFAULT_SEGMENT_COUNT_PER_NODE);
   }
 
   static List<RingRange> filterSegmentsByNodes(
