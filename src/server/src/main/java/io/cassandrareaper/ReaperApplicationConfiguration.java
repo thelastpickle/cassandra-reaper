@@ -112,7 +112,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private DataSourceFactory relationalDb = new DataSourceFactory();
 
   public int getSegmentCount() {
-    return segmentCount;
+    return segmentCount == null ? 0 : segmentCount;
   }
 
   public void setSegmentCount(int segmentCount) {
