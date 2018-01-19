@@ -10,10 +10,16 @@ case "${TEST_TYPE}" in
         exit 1
         ;;
     "ccm")
+        cp src/ci/jmxremote.password /home/travis/.local/jmxremote.password
+        chmod 400 /home/travis/.local/jmxremote.password
+        cat /usr/lib/jvm/java-8-oracle/jre/lib/management/jmxremote.access
+        sudo chmod 777 /usr/lib/jvm/java-8-oracle/jre/lib/management/jmxremote.access
+        echo "cassandra     readwrite" >> /usr/lib/jvm/java-8-oracle/jre/lib/management/jmxremote.access
+        cat /usr/lib/jvm/java-8-oracle/jre/lib/management/jmxremote.access
         ccm create test -v $CASSANDRA_VERSION > /dev/null
         ccm populate --vnodes -n 2 > /dev/null
-        sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/travis/.ccm/test/node1/conf/cassandra-env.sh
-        sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/travis/.ccm/test/node2/conf/cassandra-env.sh
+        sed -i 's/etc\/cassandra\/jmxremote.password/home\/travis\/.local\/jmxremote.password/' /home/travis/.ccm/test/node1/conf/cassandra-env.sh
+        sed -i 's/etc\/cassandra\/jmxremote.password/home\/travis\/.local\/jmxremote.password/' /home/travis/.ccm/test/node2/conf/cassandra-env.sh
         sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/travis/.ccm/test/node1/conf/cassandra-env.sh
         sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/travis/.ccm/test/node2/conf/cassandra-env.sh
         sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/travis/.ccm/test/node1/conf/cassandra.yaml

@@ -80,6 +80,9 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Map<String, Integer> jmxPorts;
 
   @JsonProperty
+  private Map<String, JmxCredentials> jmxCredentials;
+
+  @JsonProperty
   private JmxCredentials jmxAuth;
 
   @JsonProperty
@@ -234,6 +237,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setJmxAuth(JmxCredentials jmxAuth) {
     this.jmxAuth = jmxAuth;
+  }
+
+  public Map<String, JmxCredentials> getJmxCredentials() {
+    return jmxCredentials;
+  }
+
+  public void setJmxCredentials(Map<String, JmxCredentials> jmxCredentials) {
+    this.jmxCredentials = jmxCredentials;
   }
 
   public boolean hasAutoSchedulingEnabled() {

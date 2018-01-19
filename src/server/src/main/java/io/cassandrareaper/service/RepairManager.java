@@ -16,6 +16,7 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
@@ -197,15 +198,13 @@ public final class RepairManager {
           try {
             JmxProxy jmxProxy =
                 context.jmxConnectionFactory.connect(
-                    segment.getCoordinatorHost(),
+                    Node.builder()
+                        .withClusterName(repairRun.getClusterName())
+                        .withHostname(segment.getCoordinatorHost())
+                        .build(),
                     context.config.getJmxConnectionTimeoutInSeconds());
-            LOG.warn(
-                "Aborting stuck segment {} in repair run {}", segment.getId(), repairRun.getId());
-            if (postponeWithoutAborting) {
-              SegmentRunner.postponeSegment(context, segment);
-            } else {
-              SegmentRunner.abort(context, segment, jmxProxy);
-            }
+
+            SegmentRunner.abort(context, segment, jmxProxy);
           } catch (ReaperException | NumberFormatException | InterruptedException e) {
             LOG.debug(
                 "Tried to abort repair on segment {} marked as RUNNING, "

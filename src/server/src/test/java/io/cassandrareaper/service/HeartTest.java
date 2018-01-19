@@ -27,6 +27,7 @@ import io.cassandrareaper.storage.MemoryStorage;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
 import javax.management.JMException;
 
 import org.assertj.core.api.Assertions;
@@ -207,16 +208,18 @@ public final class HeartTest {
 
     JmxProxy nodeProxy = Mockito.mock(JmxProxy.class);
 
-    Mockito
-        .when(context.jmxConnectionFactory.connect(any(), eq(context.config.getJmxConnectionTimeoutInSeconds())))
+    Mockito.when(
+            context.jmxConnectionFactory.connect(
+                any(), eq(context.config.getJmxConnectionTimeoutInSeconds())))
         .thenReturn(nodeProxy);
 
     HostConnectionCounters hostConnectionCounters = Mockito.mock(HostConnectionCounters.class);
     Mockito.when(context.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(hostConnectionCounters);
 
-    Mockito
-      .when(context.jmxConnectionFactory.connect(any(), eq(context.config.getJmxConnectionTimeoutInSeconds())))
-      .thenThrow(InterruptedException.class);
+    Mockito.when(
+            context.jmxConnectionFactory.connect(
+                any(), eq(context.config.getJmxConnectionTimeoutInSeconds())))
+        .thenThrow(InterruptedException.class);
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
