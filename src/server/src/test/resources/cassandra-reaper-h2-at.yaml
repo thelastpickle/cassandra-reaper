@@ -38,6 +38,11 @@ jmxPorts:
   127.0.0.6: 7600
   127.0.0.7: 7700
   127.0.0.8: 7800
+  
+jmxCredentials:
+  test:
+    username: cassandra
+    password: cassandrapassword
 
 # database section will be ignored if storageType is set to "memory"
 #h2:

@@ -18,6 +18,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
@@ -90,54 +91,65 @@ public final class SegmentRunnerTest {
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
-      @Override
-      public JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
-          throws ReaperException {
+    context.jmxConnectionFactory =
+        new JmxConnectionFactory() {
+          @Override
+          public JmxProxy connect(
+              final Optional<RepairStatusHandler> handler, Node host, int connectionTimeout)
+              throws ReaperException {
 
-        JmxProxy jmx = mock(JmxProxy.class);
-        when(jmx.getClusterName()).thenReturn("reaper");
-        when(jmx.isConnectionAlive()).thenReturn(true);
-        when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class))).thenReturn(Lists.newArrayList(""));
-        when(jmx.getDataCenter()).thenReturn("dc1");
-        when(jmx.getDataCenter(anyString())).thenReturn("dc1");
+            JmxProxy jmx = mock(JmxProxy.class);
+            when(jmx.getClusterName()).thenReturn("reaper");
+            when(jmx.isConnectionAlive()).thenReturn(true);
+            when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
+                .thenReturn(Lists.newArrayList(""));
+            when(jmx.getDataCenter()).thenReturn("dc1");
+            when(jmx.getDataCenter(anyString())).thenReturn("dc1");
 
-        when(jmx.triggerRepair(
-              any(BigInteger.class),
-              any(BigInteger.class),
-              any(),
-              any(RepairParallelism.class),
-              any(),
-              anyBoolean(),
-              any(),
-              any()))
-            .then((invocation) -> {
+            when(jmx.triggerRepair(
+                any(BigInteger.class),
+                any(BigInteger.class),
+                any(),
+                any(RepairParallelism.class),
+                any(),
+                anyBoolean(),
+                any(),
+                any()))
+                .then(
+                    (invocation) -> {
+                      assertEquals(
+                          RepairSegment.State.NOT_STARTED,
+                          context.storage.getRepairSegment(runId, segmentId).get().getState());
 
-              assertEquals(
-                  RepairSegment.State.NOT_STARTED,
-                  context.storage.getRepairSegment(runId, segmentId).get().getState());
+                      future.setValue(
+                          executor.submit(
+                              new Thread() {
+                                @Override
+                                public void run() {
+                                  handler
+                                      .get()
+                                      .handle(
+                                          1,
+                                          Optional.of(ActiveRepairService.Status.STARTED),
+                                          Optional.absent(),
+                                          "Repair command 1 has started",
+                                          jmx);
 
-              future.setValue(executor.submit(new Thread() {
-                @Override
-                public void run() {
-                  handler.get().handle(
-                      1,
-                      Optional.of(ActiveRepairService.Status.STARTED),
-                      Optional.absent(),
-                      "Repair command 1 has started",
-                      jmx);
+                                  assertEquals(
+                                      RepairSegment.State.RUNNING,
+                                      context
+                                          .storage
+                                          .getRepairSegment(runId, segmentId)
+                                          .get()
+                                          .getState());
+                                }
+                              }));
+                      return 1;
+                    });
 
-                  assertEquals(
-                      RepairSegment.State.RUNNING,
-                      context.storage.getRepairSegment(runId, segmentId).get().getState());
-                }
-              }));
-              return 1;
-            });
-
-        return jmx;
-      }
-    };
+            return jmx;
+          }
+        };
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
 
@@ -189,75 +201,94 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
-      @Override
-      protected JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
-          throws ReaperException {
+    context.jmxConnectionFactory =
+        new JmxConnectionFactory() {
+          @Override
+          protected JmxProxy connect(
+              final Optional<RepairStatusHandler> handler, Node host, int connectionTimeout)
+              throws ReaperException {
 
-        JmxProxy jmx = mock(JmxProxy.class);
-        when(jmx.getClusterName()).thenReturn("reaper");
-        when(jmx.isConnectionAlive()).thenReturn(true);
-        when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class))).thenReturn(Lists.newArrayList(""));
-        when(jmx.getDataCenter()).thenReturn("dc1");
-        when(jmx.getDataCenter(anyString())).thenReturn("dc1");
+            JmxProxy jmx = mock(JmxProxy.class);
+            when(jmx.getClusterName()).thenReturn("reaper");
+            when(jmx.isConnectionAlive()).thenReturn(true);
+            when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
+                .thenReturn(Lists.newArrayList(""));
+            when(jmx.getDataCenter()).thenReturn("dc1");
+            when(jmx.getDataCenter(anyString())).thenReturn("dc1");
 
-        when(jmx.triggerRepair(
-              any(BigInteger.class),
-              any(BigInteger.class),
-              any(),
-              any(RepairParallelism.class),
-              any(),
-              anyBoolean(),
-              any(),
-              any()))
-            .then(invocation -> {
+            when(jmx.triggerRepair(
+                any(BigInteger.class),
+                any(BigInteger.class),
+                any(),
+                any(RepairParallelism.class),
+                any(),
+                anyBoolean(),
+                any(),
+                any()))
+                .then(
+                    invocation -> {
+                      assertEquals(
+                          RepairSegment.State.NOT_STARTED,
+                          storage.getRepairSegment(runId, segmentId).get().getState());
 
-              assertEquals(
-                  RepairSegment.State.NOT_STARTED,
-                  storage.getRepairSegment(runId, segmentId).get().getState());
+                      future.setValue(
+                          executor.submit(
+                              () -> {
+                                handler
+                                    .get()
+                                    .handle(
+                                        1,
+                                        Optional.of(ActiveRepairService.Status.STARTED),
+                                        Optional.absent(),
+                                        "Repair command 1 has started",
+                                        jmx);
 
-              future.setValue(executor.submit(() -> {
+                                assertEquals(
+                                    RepairSegment.State.RUNNING,
+                                    storage.getRepairSegment(runId, segmentId).get().getState());
+                                // report about an unrelated repair. Shouldn't affect anything.
+                                handler
+                                    .get()
+                                    .handle(
+                                        2,
+                                        Optional.of(ActiveRepairService.Status.SESSION_FAILED),
+                                        Optional.absent(),
+                                        "Repair command 2 has failed",
+                                        jmx);
 
-                handler.get().handle(
-                    1,
-                    Optional.of(ActiveRepairService.Status.STARTED),
-                    Optional.absent(),
-                    "Repair command 1 has started",
-                    jmx);
+                                handler
+                                    .get()
+                                    .handle(
+                                        1,
+                                        Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
+                                        Optional.absent(),
+                                        "Repair session succeeded in command 1",
+                                        jmx);
 
-                assertEquals(RepairSegment.State.RUNNING, storage.getRepairSegment(runId, segmentId).get().getState());
-                // report about an unrelated repair. Shouldn't affect anything.
-                handler.get().handle(
-                    2,
-                    Optional.of(ActiveRepairService.Status.SESSION_FAILED),
-                    Optional.absent(),
-                    "Repair command 2 has failed",
-                    jmx);
+                                assertEquals(
+                                    RepairSegment.State.DONE,
+                                    storage.getRepairSegment(runId, segmentId).get().getState());
 
-                handler.get().handle(
-                    1,
-                    Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
-                    Optional.absent(),
-                    "Repair session succeeded in command 1",
-                    jmx);
+                                handler
+                                    .get()
+                                    .handle(
+                                        1,
+                                        Optional.of(ActiveRepairService.Status.FINISHED),
+                                        Optional.absent(),
+                                        "Repair command 1 has finished",
+                                        jmx);
 
-                assertEquals(RepairSegment.State.DONE, storage.getRepairSegment(runId, segmentId).get().getState());
+                                assertEquals(
+                                    RepairSegment.State.DONE,
+                                    storage.getRepairSegment(runId, segmentId).get().getState());
+                              }));
+                      return 1;
+                    });
 
-                handler.get().handle(
-                    1,
-                    Optional.of(ActiveRepairService.Status.FINISHED),
-                    Optional.absent(),
-                    "Repair command 1 has finished",
-                    jmx);
+            return jmx;
+          }
+        };
 
-                assertEquals(RepairSegment.State.DONE, storage.getRepairSegment(runId, segmentId).get().getState());
-              }));
-              return 1;
-            });
-
-        return jmx;
-      }
-    };
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
 
@@ -309,73 +340,86 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
-      @Override
-      protected JmxProxy connect(final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
-          throws ReaperException {
+    context.jmxConnectionFactory =
+        new JmxConnectionFactory() {
+          @Override
+          protected JmxProxy connect(
+              final Optional<RepairStatusHandler> handler, Node host, int connectionTimeout)
+              throws ReaperException {
 
-        JmxProxy jmx = mock(JmxProxy.class);
-        when(jmx.getClusterName()).thenReturn("reaper");
-        when(jmx.isConnectionAlive()).thenReturn(true);
-        when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class))).thenReturn(Lists.newArrayList(""));
-        when(jmx.getDataCenter()).thenReturn("dc1");
-        when(jmx.getDataCenter(anyString())).thenReturn("dc1");
+            JmxProxy jmx = mock(JmxProxy.class);
+            when(jmx.getClusterName()).thenReturn("reaper");
+            when(jmx.isConnectionAlive()).thenReturn(true);
+            when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
+                .thenReturn(Lists.newArrayList(""));
+            when(jmx.getDataCenter()).thenReturn("dc1");
+            when(jmx.getDataCenter(anyString())).thenReturn("dc1");
 
-        when(jmx.triggerRepair(
-              any(BigInteger.class),
-              any(BigInteger.class),
-              any(),
-              any(RepairParallelism.class),
-              any(),
-              anyBoolean(),
-              any(),
-              any()))
-            .then((invocation) -> {
+            when(jmx.triggerRepair(
+                any(BigInteger.class),
+                any(BigInteger.class),
+                any(),
+                any(RepairParallelism.class),
+                any(),
+                anyBoolean(),
+                any(),
+                any()))
+                .then(
+                    (invocation) -> {
+                      assertEquals(
+                          RepairSegment.State.NOT_STARTED,
+                          storage.getRepairSegment(runId, segmentId).get().getState());
 
-              assertEquals(
-                  RepairSegment.State.NOT_STARTED,
-                  storage.getRepairSegment(runId, segmentId).get().getState());
+                      future.setValue(
+                          executor.submit(
+                              () -> {
+                                handler
+                                    .get()
+                                    .handle(
+                                        1,
+                                        Optional.of(ActiveRepairService.Status.STARTED),
+                                        Optional.absent(),
+                                        "Repair command 1 has started",
+                                        jmx);
 
-              future.setValue(executor.submit(() -> {
+                                assertEquals(
+                                    RepairSegment.State.RUNNING,
+                                    storage.getRepairSegment(runId, segmentId).get().getState());
 
-                handler.get().handle(
-                    1,
-                    Optional.of(ActiveRepairService.Status.STARTED),
-                    Optional.absent(),
-                    "Repair command 1 has started",
-                    jmx);
+                                handler
+                                    .get()
+                                    .handle(
+                                        1,
+                                        Optional.of(ActiveRepairService.Status.SESSION_FAILED),
+                                        Optional.absent(),
+                                        "Repair command 1 has failed",
+                                        jmx);
 
-                assertEquals(RepairSegment.State.RUNNING, storage.getRepairSegment(runId, segmentId).get().getState());
+                                assertEquals(
+                                    RepairSegment.State.NOT_STARTED,
+                                    storage.getRepairSegment(runId, segmentId).get().getState());
 
-                handler.get().handle(
-                    1,
-                    Optional.of(ActiveRepairService.Status.SESSION_FAILED),
-                    Optional.absent(),
-                    "Repair command 1 has failed",
-                    jmx);
+                                handler
+                                    .get()
+                                    .handle(
+                                        1,
+                                        Optional.of(ActiveRepairService.Status.FINISHED),
+                                        Optional.absent(),
+                                        "Repair command 1 has finished",
+                                        jmx);
 
-                assertEquals(
-                    RepairSegment.State.NOT_STARTED,
-                    storage.getRepairSegment(runId, segmentId).get().getState());
+                                assertEquals(
+                                    RepairSegment.State.NOT_STARTED,
+                                    storage.getRepairSegment(runId, segmentId).get().getState());
+                              }));
 
-                handler.get().handle(
-                    1,
-                    Optional.of(ActiveRepairService.Status.FINISHED),
-                    Optional.absent(),
-                    "Repair command 1 has finished",
-                    jmx);
+                      return 1;
+                    });
 
-                assertEquals(
-                    RepairSegment.State.NOT_STARTED,
-                    storage.getRepairSegment(runId, segmentId).get().getState());
-              }));
+            return jmx;
+          }
+        };
 
-              return 1;
-            });
-
-        return jmx;
-      }
-    };
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
 

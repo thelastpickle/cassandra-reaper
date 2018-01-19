@@ -42,6 +42,13 @@ jmxPorts:
 #    username: myuser
 #    password: mypassword
 
+# Use following settings for JMX authentication
+# if distinct clusters have different credentials
+jmxCredentials:
+  test:
+    username: cassandra
+    password: cassandrapassword
+
 logging:
   level: DEBUG
   loggers:

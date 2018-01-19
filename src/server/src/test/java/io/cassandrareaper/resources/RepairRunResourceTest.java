@@ -18,6 +18,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
@@ -132,13 +133,15 @@ public final class RepairRunResourceTest {
             any()))
         .thenReturn(1);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
-      @Override
-      protected JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
-          throws ReaperException {
-        return proxy;
-      }
-    };
+    context.jmxConnectionFactory =
+        new JmxConnectionFactory() {
+          @Override
+          protected JmxProxy connect(
+              Optional<RepairStatusHandler> handler, Node host, int connectionTimeout)
+              throws ReaperException {
+            return proxy;
+          }
+        };
 
     RepairUnit.Builder repairUnitBuilder =
         new RepairUnit.Builder(

@@ -40,6 +40,11 @@ jmxPorts:
   127.0.0.7: 7700
   127.0.0.8: 7800
 
+jmxCredentials:
+  test:
+    username: cassandra
+    password: cassandrapassword
+
 # Config used to automatically add/remove sheduled repair for all keyspaces
 autoScheduling:
   enabled: false

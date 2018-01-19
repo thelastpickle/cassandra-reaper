@@ -22,14 +22,12 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.service.ClusterRepairScheduler;
 import io.cassandrareaper.storage.MemoryStorage;
 
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -37,6 +35,7 @@ import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static java.lang.String.format;
 import static org.fest.assertions.api.Assertions.assertThat;
@@ -66,14 +65,12 @@ public final class ClusterRepairSchedulerTest {
     clusterRepairAuto = new ClusterRepairScheduler(context);
     jmxProxy = mock(JmxProxy.class);
 
-    when(context.jmxConnectionFactory.connectAny(CLUSTER, context.config.getJmxConnectionTimeoutInSeconds()))
+    when(context.jmxConnectionFactory.connectAny(
+            CLUSTER, context.config.getJmxConnectionTimeoutInSeconds()))
         .thenReturn(jmxProxy);
 
-    when(
-        context.jmxConnectionFactory.connectAny(
-            Optional.absent(),
-            CLUSTER.getSeedHosts(),
-            context.config.getJmxConnectionTimeoutInSeconds()))
+    when(context.jmxConnectionFactory.connectAny(
+            Mockito.any(), Mockito.anyCollection(), Mockito.anyInt()))
         .thenReturn(jmxProxy);
   }
 

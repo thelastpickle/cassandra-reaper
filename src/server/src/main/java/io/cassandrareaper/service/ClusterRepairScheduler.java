@@ -191,6 +191,7 @@ public final class ClusterRepairScheduler {
       JmxProxy jmxProxy =
           context.jmxConnectionFactory.connectAny(
               cluster, context.config.getJmxConnectionTimeoutInSeconds());
+
       List<String> keyspaces = jmxProxy.getKeyspaces();
       if (keyspaces.isEmpty()) {
         String message = format("No keyspace found in cluster %s", cluster.getName());

@@ -17,6 +17,7 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
@@ -175,6 +176,25 @@ public final class ClusterResourceTest {
     assertEquals(seedHostSet, seedHostExpectedSet);
   }
 
+  @Test
+  public void testParseSeedHostWithClusterName() {
+    String seedHostStringList = "127.0.0.1@cluster1 , 127.0.0.2@cluster1,  127.0.0.3@cluster1";
+    Set<String> seedHostSet = ClusterResource.parseSeedHosts(seedHostStringList);
+    Set<String> seedHostExpectedSet = Sets.newHashSet("127.0.0.2", "127.0.0.1", "127.0.0.3");
+
+    assertEquals(seedHostSet, seedHostExpectedSet);
+  }
+
+  @Test
+  public void testParseClusterNameInSeedHost() {
+    String seedHostStringList =
+        "127.0.0.1@cluster one , 127.0.0.2@cluster one,  127.0.0.3@cluster one";
+    Optional<String> clusterName = ClusterResource.parseClusterNameFromSeedHost(seedHostStringList);
+
+    assertEquals("cluster one", clusterName.get());
+  }
+
+
   private MockObjects initMocks() throws ReaperException {
     AppContext context = new AppContext();
     context.storage = new MemoryStorage();
@@ -188,13 +208,15 @@ public final class ClusterResourceTest {
     when(jmxProxy.getClusterName()).thenReturn(CLUSTER_NAME);
     when(jmxProxy.getPartitioner()).thenReturn(PARTITIONER);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
-      @Override
-      protected JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
-          throws ReaperException {
-        return jmxProxy;
-      }
-    };
+    context.jmxConnectionFactory =
+        new JmxConnectionFactory() {
+          @Override
+          protected JmxProxy connect(
+              Optional<RepairStatusHandler> handler, Node host, int connectionTimeout)
+              throws ReaperException {
+            return jmxProxy;
+          }
+        };
 
     return new MockObjects(context, uriInfo, jmxProxy);
   }

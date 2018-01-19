@@ -13,7 +13,6 @@ case "${TEST_TYPE}" in
         ccm start
         sleep 30
         ccm status
-        ccm node1 nodetool status
         if [ "${TRAVIS_BRANCH}" = "master" ]
             then
                 VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)

@@ -17,6 +17,7 @@ package io.cassandrareaper.service;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
@@ -148,7 +149,17 @@ public final class RepairRunService {
     try {
       JmxProxy jmxProxy =
           context.jmxConnectionFactory.connectAny(
-              Optional.absent(), seedHosts, context.config.getJmxConnectionTimeoutInSeconds());
+              Optional.absent(),
+              seedHosts
+                  .stream()
+                  .map(
+                      host ->
+                          Node.builder()
+                              .withClusterName(targetCluster.getName())
+                              .withHostname(host)
+                              .build())
+                  .collect(Collectors.toList()),
+              context.config.getJmxConnectionTimeoutInSeconds());
 
       List<BigInteger> tokens = jmxProxy.getTokens();
       Map<List<String>, List<String>> rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());
@@ -296,7 +307,12 @@ public final class RepairRunService {
     try {
       JmxProxy jmxProxy =
           context.jmxConnectionFactory.connectAny(
-              Optional.absent(), seedHosts, context.config.getJmxConnectionTimeoutInSeconds());
+              Optional.absent(),
+              seedHosts
+                  .stream()
+                  .map(host -> Node.builder().withCluster(targetCluster).withHostname(host).build())
+                  .collect(Collectors.toList()),
+              context.config.getJmxConnectionTimeoutInSeconds());
 
       rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());
     } catch (ReaperException e) {

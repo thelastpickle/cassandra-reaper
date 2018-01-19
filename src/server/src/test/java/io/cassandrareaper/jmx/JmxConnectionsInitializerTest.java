@@ -19,6 +19,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.PostgresStorage;
 
@@ -52,8 +53,8 @@ public class JmxConnectionsInitializerTest {
 
           @Override
           protected JmxProxy connect(
-              final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
-              throws ReaperException {
+              Optional<RepairStatusHandler> handler, Node node, int connectionTimeout)
+              throws ReaperException, InterruptedException {
 
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
@@ -96,8 +97,8 @@ public class JmxConnectionsInitializerTest {
 
           @Override
           protected JmxProxy connect(
-              final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
-              throws ReaperException {
+              Optional<RepairStatusHandler> handler, Node node, int connectionTimeout)
+              throws ReaperException, InterruptedException {
 
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
@@ -138,8 +139,8 @@ public class JmxConnectionsInitializerTest {
 
           @Override
           protected JmxProxy connect(
-              final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
-              throws ReaperException {
+              Optional<RepairStatusHandler> handler, Node node, int connectionTimeout)
+              throws ReaperException, InterruptedException {
 
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
@@ -180,8 +181,8 @@ public class JmxConnectionsInitializerTest {
 
           @Override
           protected JmxProxy connect(
-              final Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
-              throws ReaperException {
+              Optional<RepairStatusHandler> handler, Node node, int connectionTimeout)
+              throws ReaperException, InterruptedException {
 
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();

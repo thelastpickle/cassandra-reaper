@@ -17,6 +17,7 @@ package io.cassandrareaper.acceptance;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.SimpleReaperClient;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
@@ -132,14 +133,16 @@ public final class BasicSteps {
         proxies.put(seedHost, jmx);
       }
 
-      context.jmxConnectionFactory = new JmxConnectionFactory() {
-        @Override
-        protected JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
-            throws ReaperException {
+      context.jmxConnectionFactory =
+          new JmxConnectionFactory() {
+            @Override
+            protected JmxProxy connect(
+                Optional<RepairStatusHandler> handler, Node host, int connectionTimeout)
+                throws ReaperException {
 
-          return proxies.get(host);
-        }
-      };
+              return proxies.get(host.getHostname());
+            }
+          };
       ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
       runner.setup(context, MEMORY_CONFIG_FILE);
       addReaperRunner(runner);
