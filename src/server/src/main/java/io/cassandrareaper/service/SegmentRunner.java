@@ -245,38 +245,50 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                   .endTime(DateTime.now())
                   .build(segment.getRunId()));
           repairRunner.killAndCleanupRunner();
+
           context.storage.updateRepairSegment(
               segment
                   .with()
                   .state(RepairSegment.State.DONE)
+                  .startTime(DateTime.now())
                   .endTime(DateTime.now())
                   .build(segmentId));
+
           return false;
-
         }
 
-        LOG.debug("Enter synchronized section with segment ID {}", segmentId);
-        synchronized (condition) {
-          commandId = coordinator.triggerRepair(
-              segment.getStartToken(),
-              segment.getEndToken(),
-              keyspace,
-              validationParallelism,
-              tablesToRepair,
-              fullRepair,
-              repairUnit.getDatacenters());
+        try {
+          LOG.debug("Enter synchronized section with segment ID {}", segmentId);
+          synchronized (condition) {
 
-          if (commandId == 0) {
-            LOG.info("Nothing to repair for keyspace {}", keyspace);
             context.storage.updateRepairSegment(
-                segment.with().coordinatorHost(coordinator.getHost()).state(RepairSegment.State.DONE).build(segmentId));
-            SEGMENT_RUNNERS.remove(segment.getId());
-            closeJmxConnection(Optional.fromNullable(coordinator));
-            return true;
+                segment.with().coordinatorHost(coordinator.getHost()).startTime(DateTime.now()).build(segmentId));
+
+            commandId = coordinator.triggerRepair(
+                segment.getStartToken(),
+                segment.getEndToken(),
+                keyspace,
+                validationParallelism,
+                tablesToRepair,
+                fullRepair,
+                repairUnit.getDatacenters());
+
+            if (0 != commandId) {
+              processTriggeredSegment(segment, coordinator);
+            } else {
+              LOG.info("Nothing to repair for segment {} in keyspace {}", segmentId, keyspace);
+
+              context.storage.updateRepairSegment(
+                  segment.with().state(RepairSegment.State.DONE).endTime(DateTime.now()).build(segmentId));
+
+              SEGMENT_RUNNERS.remove(segment.getId());
+              closeJmxConnection(Optional.fromNullable(coordinator));
+            }
           }
-          processTriggeredSegment(segment, coordinator);
+          closeJmxConnection(Optional.fromNullable(coordinator));
+        } finally {
+          LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
         }
-        closeJmxConnection(Optional.fromNullable(coordinator));
       }
     } catch (ReaperException e) {
       LOG.warn("Failed to connect to a coordinator node for segment {}", segmentId, e);
@@ -290,14 +302,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           .histogram(MetricRegistry.name(SegmentRunner.class, "open-files"))
           .update(getOpenFilesAmount());
     }
-    LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
     return true;
   }
 
   private void processTriggeredSegment(final RepairSegment segment, final JmxProxy coordinator) {
-
-    context.storage.updateRepairSegment(
-        segment.with().coordinatorHost(coordinator.getHost()).startTime(DateTime.now()).build(segmentId));
 
     repairRunner.updateLastEvent(
         String.format("Triggered repair of segment %s via host %s", segment.getId(), coordinator.getHost()));
