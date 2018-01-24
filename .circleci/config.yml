@@ -93,7 +93,7 @@ jobs:
               mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
 
       - store_test_results:
-          path: target/surefire-reports
+          path: src/server/target/surefire-reports
 
 
 notify:
