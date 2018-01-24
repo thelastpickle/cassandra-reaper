@@ -14,8 +14,23 @@ case "${TEST_TYPE}" in
         sleep 30
         ccm status
         ccm node1 nodetool status
+        if [ "${TRAVIS_BRANCH}" = "master" ]
+            then
+                VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
+                DATE=$(date +"%Y%m%d")
+                # Bintray doesn't like snapshots, but accepts betas :)
+                BETA_VERSION=$(echo $VERSION | sed "s/SNAPSHOT/BETA/")
+                mvn versions:set "-DnewVersion=${BETA_VERSION}-${DATE}"
+        fi
+        
+        if [ "x${GRIM_MIN}" = "x" ]
+        then
+            # Rebuild the UI to get the right version number there
+            MAVEN_OPTS="-Xmx1g" mvn clean generate-sources -Pbuild-ui > /dev/null
+        fi
 
         MAVEN_OPTS="-Xmx1g" mvn clean install
+
         if [ "x${GRIM_MIN}" = "x" ]
         then
             mvn surefire:test -Dtest=ReaperIT

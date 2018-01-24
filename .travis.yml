@@ -3,24 +3,29 @@ language: java
 jdk:
   - oraclejdk8
 
+branches:
+  except:
+    - /^untagged-.*$/
+    - /^master-snapshot.*$/
+
 env:
   global:
     - LOCAL_JMX=no
     - TEST=""
   matrix:
-      # 2.1.18 runs all tests together because it's also for sonar reporting, see below
-    - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.18
-    - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.18 GRIM_MIN=2 GRIM_MAX=2
-    - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.18 GRIM_MIN=2 GRIM_MAX=4
-    - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.10 GRIM_MIN=1 GRIM_MAX=1
-    - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=2
-    - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=4
-    - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.10 GRIM_MIN=1 GRIM_MAX=1
-    - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=2
-    - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=4
-    - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.0 GRIM_MIN=1 GRIM_MAX=1
-    - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.0 GRIM_MIN=2 GRIM_MAX=2
-    - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.0 GRIM_MIN=2 GRIM_MAX=4
+      # 2.1.19 runs all tests together because it's also for sonar reporting, see below
+    - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.19
+    - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.19 GRIM_MIN=2 GRIM_MAX=2
+    - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.19 GRIM_MIN=2 GRIM_MAX=4
+    - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.11 GRIM_MIN=1 GRIM_MAX=1
+    - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.11 GRIM_MIN=2 GRIM_MAX=2
+    - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.11 GRIM_MIN=2 GRIM_MAX=4
+    - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.15 GRIM_MIN=1 GRIM_MAX=1
+    - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.15 GRIM_MIN=2 GRIM_MAX=2
+    - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.15 GRIM_MIN=2 GRIM_MAX=4
+    - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.1 GRIM_MIN=1 GRIM_MAX=1
+    - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.1 GRIM_MIN=2 GRIM_MAX=2
+    - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.1 GRIM_MIN=2 GRIM_MAX=4
     - TEST_TYPE=docker
 
 matrix:
@@ -28,9 +33,9 @@ matrix:
   allow_failures:
   - env: TEST_TYPE=ccm CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=2
   - env: TEST_TYPE=ccm CASSANDRA_VERSION=2.2.10 GRIM_MIN=2 GRIM_MAX=4
-  - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=2
-  - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.14 GRIM_MIN=2 GRIM_MAX=4
-  - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.11.0 GRIM_MIN=2 GRIM_MAX=4
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.15 GRIM_MIN=2 GRIM_MAX=2
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.15 GRIM_MIN=2 GRIM_MAX=4
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.11.1 GRIM_MIN=2 GRIM_MAX=4
   - env: TEST_TYPE=docker
 
 services:
@@ -52,16 +57,71 @@ after_failure: ./src/ci/after_failure.sh
 before_deploy: ./src/ci/before_deploy.sh
 
 deploy:
-  provider: releases
-  api_key: $GITHUB_TOKEN
-  file_glob: true
-  file:
-    - "cassandra-reaper-${TRAVIS_TAG}-release.tar.gz"
-    - "src/packages/reaper-*-1.x86_64.rpm"
-    - "src/packages/reaper_*_amd64.deb"
-  skip_cleanup: true
-  on:
-    tags: true
+  - provider: releases
+    api_key: $GITHUB_TOKEN
+    file_glob: true
+    file:
+      - "src/packages/cassandra-reaper-${TRAVIS_TAG}-release.tar.gz"
+      - "src/packages/reaper-*-1.x86_64.rpm"
+      - "src/packages/reaper_*_amd64.deb"
+    skip_cleanup: true
+    on:
+      tags: true
+  - provider: bintray
+    file: "src/ci/descriptor-rpm-beta.json"
+    user: "adejanovski"
+    key: $BINTRAY_API_KEY
+    dry-run: false
+    skip_cleanup: true
+    on:
+      branch: "master"
+      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+  - provider: bintray
+    file: "src/ci/descriptor-deb-beta.json"
+    user: "adejanovski"
+    key: $BINTRAY_API_KEY
+    dry-run: false
+    skip_cleanup: true
+    on:
+      branch: "master"
+      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+  - provider: bintray
+    file: "src/ci/descriptor-tarball-beta.json"
+    user: "adejanovski"
+    key: $BINTRAY_API_KEY
+    dry-run: false
+    skip_cleanup: true
+    on:
+      branch: "master"
+      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+  - provider: bintray
+    file: "src/ci/descriptor-rpm.json"
+    user: "adejanovski"
+    key: $BINTRAY_API_KEY
+    dry-run: false
+    skip_cleanup: true
+    on:
+      tags: true
+      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+  - provider: bintray
+    file: "src/ci/descriptor-deb.json"
+    user: "adejanovski"
+    key: $BINTRAY_API_KEY
+    dry-run: false
+    skip_cleanup: true
+    on:
+      tags: true
+      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+  - provider: bintray
+    file: "src/ci/descriptor-tarball.json"
+    user: "adejanovski"
+    key: $BINTRAY_API_KEY
+    dry-run: false
+    skip_cleanup: true
+    on:
+      tags: true
+      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+
 
 notifications:
   webhooks:
