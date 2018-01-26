@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -91,39 +92,49 @@ public final class RepairManager {
    * @param context Reaper's application context.
    */
   public void resumeRunningRepairRuns() throws ReaperException {
-    heart.beat();
-    Collection<RepairRun> running = context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
-    for (RepairRun repairRun : running) {
+    try {
+      heart.beat();
+      Collection<RepairRun> running =
+          context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
+      for (RepairRun repairRun : running) {
 
-      Collection<RepairSegment> runningSegments
-          = context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
+        Collection<RepairSegment> runningSegments =
+            context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
 
-      abortSegmentsWithNoLeader(repairRun, runningSegments);
+        abortSegmentsWithNoLeader(repairRun, runningSegments);
 
-      if (!repairRunners.containsKey(repairRun.getId())) {
-        LOG.info("Restarting run id {} that has no runner", repairRun.getId());
-        startRepairRun(repairRun);
-      }
-    }
-
-    Collection<RepairRun> paused = context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED);
-    for (RepairRun pausedRepairRun : paused) {
-      if (repairRunners.containsKey(pausedRepairRun.getId())) {
-        // Abort all running segments for paused repair runs
-        Collection<RepairSegment> runningSegments
-            = context.storage.getSegmentsWithState(pausedRepairRun.getId(), RepairSegment.State.RUNNING);
-
-        abortSegments(runningSegments, pausedRepairRun);
+        if (!repairRunners.containsKey(repairRun.getId())) {
+          LOG.info("Restarting run id {} that has no runner", repairRun.getId());
+          startRepairRun(repairRun);
+        }
       }
 
-      if (!repairRunners.containsKey(pausedRepairRun.getId())) {
-        startRunner(pausedRepairRun.getId());
+      Collection<RepairRun> paused =
+          context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED);
+      for (RepairRun pausedRepairRun : paused) {
+        if (repairRunners.containsKey(pausedRepairRun.getId())) {
+          // Abort all running segments for paused repair runs
+          Collection<RepairSegment> runningSegments =
+              context.storage.getSegmentsWithState(
+                  pausedRepairRun.getId(), RepairSegment.State.RUNNING);
+
+          abortSegments(runningSegments, pausedRepairRun, false);
+        }
+
+        if (!repairRunners.containsKey(pausedRepairRun.getId())) {
+          startRunner(pausedRepairRun.getId());
+        }
       }
+    } catch (RuntimeException e) {
+      throw new ReaperException(e);
     }
   }
 
   private void abortSegmentsWithNoLeader(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
 
+    LOG.debug(
+        "Checking leadership on the following segments : {}",
+        runningSegments.stream().map(seg -> seg.getId()).collect(Collectors.toList()));
     if (context.storage instanceof IDistributedStorage || !repairRunners.containsKey(repairRun.getId())) {
       // When multiple Reapers are in use, we can get stuck segments when one instance is rebooted
       // Any segment in RUNNING state but with no leader should be killed
@@ -132,19 +143,43 @@ public final class RepairManager {
               ? ((IDistributedStorage) context.storage).getLeaders()
               : Collections.emptyList();
 
+      LOG.debug(
+          "No leader on the following segments : {}",
+          runningSegments
+              .stream()
+              .filter(segment -> !activeLeaders.contains(segment.getId()))
+              .map(seg -> seg.getId())
+              .collect(Collectors.toSet()));
+
       abortSegments(
           runningSegments
               .stream()
               .filter(segment -> !activeLeaders.contains(segment.getId()))
               .collect(Collectors.toSet()),
-          repairRun);
+          repairRun,
+          true);
     }
   }
 
-  void abortSegments(Collection<RepairSegment> runningSegments, RepairRun repairRun) {
+  void abortSegments(
+      Collection<RepairSegment> runningSegments,
+      RepairRun repairRun) {
+
+    abortSegments(
+        runningSegments,
+        repairRun,
+        false);
+  }
+
+  void abortSegments(
+      Collection<RepairSegment> runningSegments,
+      RepairRun repairRun,
+      boolean postponeWithoutAborting) {
 
     RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId()).get();
     for (RepairSegment segment : runningSegments) {
+      LOG.debug(
+          "Trying to abort stuck segment {} in repair run {}", segment.getId(), repairRun.getId());
       UUID leaderElectionId = repairUnit.getIncrementalRepair() ? repairRun.getId() : segment.getId();
       if (takeLead(context, leaderElectionId) || renewLead(context, leaderElectionId)) {
         // refresh segment once we're inside leader-election
@@ -152,14 +187,19 @@ public final class RepairManager {
         if (RepairSegment.State.RUNNING == segment.getState()) {
           try (JmxProxy jmxProxy = context.jmxConnectionFactory.connect(
               segment.getCoordinatorHost(), context.config.getJmxConnectionTimeoutInSeconds())) {
-
-            SegmentRunner.abort(context, segment, jmxProxy);
+            LOG.warn(
+                "Aborting stuck segment {} in repair run {}", segment.getId(), repairRun.getId());
+            if (postponeWithoutAborting) {
+              SegmentRunner.abort(context, segment, jmxProxy);
+            }
           } catch (ReaperException | NumberFormatException | InterruptedException e) {
             LOG.debug(
                 "Tried to abort repair on segment {} marked as RUNNING, "
-                    + "but the host was down  (so abortion won't be needed)",
+                    + "but the host was down  (so abortion won't be needed). "
+                    + "Postponing the segment.",
                 segment.getId(),
                 e);
+            SegmentRunner.postpone(context, segment, Optional.fromNullable(repairUnit));
           } finally {
             // if someone else does hold the lease, ie renewLead(..) was true,
             // then their writes to repair_run table and any call to releaseLead(..) will throw an exception
