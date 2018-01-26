@@ -144,7 +144,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-  private static void postpone(AppContext context, RepairSegment segment, Optional<RepairUnit> repairUnit) {
+  static void postpone(AppContext context, RepairSegment segment, Optional<RepairUnit> repairUnit) {
     LOG.info("Postponing segment {}", segment.getId());
     try {
       context.storage.updateRepairSegment(
