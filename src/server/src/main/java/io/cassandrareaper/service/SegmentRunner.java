@@ -204,7 +204,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private boolean runRepair() {
     LOG.debug("Run repair for segment #{}", segmentId);
-    final RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
+    RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
 
     try (Timer.Context cxt = context.metricRegistry.timer(metricNameForRunRepair(segment)).time();
@@ -261,8 +261,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           LOG.debug("Enter synchronized section with segment ID {}", segmentId);
           synchronized (condition) {
 
-            context.storage.updateRepairSegment(
-                segment.with().coordinatorHost(coordinator.getHost()).startTime(DateTime.now()).build(segmentId));
+            segment = segment.with().coordinatorHost(coordinator.getHost()).startTime(DateTime.now()).build(segmentId);
+            context.storage.updateRepairSegment(segment);
 
             commandId = coordinator.triggerRepair(
                 segment.getStartToken(),
