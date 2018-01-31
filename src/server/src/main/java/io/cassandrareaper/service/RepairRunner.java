@@ -58,6 +58,8 @@ final class RepairRunner implements Runnable {
   private final List<RingRange> parallelRanges;
   private final String metricNameForMillisSinceLastRepair;
   private float repairProgress;
+  private float segmentsDone;
+  private float segmentsTotal;
 
   RepairRunner(AppContext context, UUID repairRunId) throws ReaperException {
     LOG.debug("Creating RepairRunner for run with ID {}", repairRunId);
@@ -98,6 +100,10 @@ final class RepairRunner implements Runnable {
     String repairUnitClusterName = repairUnitOpt.get().getClusterName();
     String metricNameForRepairProgress = metricName("repairProgress",  repairUnitClusterName, repairRunId);
     context.metricRegistry.register(metricNameForRepairProgress, (Gauge<Float>) ()  -> repairProgress);
+    String metricNameForSegmentsDone = metricName("segmentsDone",  repairUnitClusterName, repairRunId);
+    context.metricRegistry.register(metricNameForSegmentsDone, (Gauge<Float>) ()  -> segmentsDone);
+    String metricNameForSegmentsTotal = metricName("segmentsTotal",  repairUnitClusterName, repairRunId);
+    context.metricRegistry.register(metricNameForSegmentsTotal, (Gauge<Float>) ()  -> segmentsTotal);
     metricNameForMillisSinceLastRepair = metricName("millisSinceLastRepair", repairUnitClusterName, repairRunId);
   }
 
