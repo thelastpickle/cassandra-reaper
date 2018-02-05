@@ -58,7 +58,6 @@ import javax.management.remote.JMXServiceURL;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 import javax.validation.constraints.NotNull;
 
-import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.google.common.base.Optional;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
@@ -141,14 +140,14 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   /**
-   * @see JmxProxy#connect(Optional, String, int, String, String, EC2MultiRegionAddressTranslator)
+   * @see JmxProxy#connect(Optional, String, int, String, String, CustomEC2MultiRegionAddressTranslator)
    */
   static JmxProxy connect(
       Optional<RepairStatusHandler> handler,
       String host,
       String username,
       String password,
-      final EC2MultiRegionAddressTranslator addressTranslator,
+      final CustomEC2MultiRegionAddressTranslator addressTranslator,
       int connectionTimeout)
       throws ReaperException, InterruptedException {
 
@@ -174,7 +173,7 @@ final class JmxProxyImpl implements JmxProxy {
    * @param port port number to use for JMX connection
    * @param username username to use for JMX authentication
    * @param password password to use for JMX authentication
-   * @param addressTranslator if EC2MultiRegionAddressTranslator isn't null it will be used to
+   * @param addressTranslator if CustomEC2MultiRegionAddressTranslator isn't null it will be used to
    *     translate addresses
    */
   private static JmxProxy connect(
@@ -183,7 +182,7 @@ final class JmxProxyImpl implements JmxProxy {
       int port,
       String username,
       String password,
-      final EC2MultiRegionAddressTranslator addressTranslator,
+      final CustomEC2MultiRegionAddressTranslator addressTranslator,
       int connectionTimeout)
       throws ReaperException, InterruptedException {
 
