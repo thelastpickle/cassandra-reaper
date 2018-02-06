@@ -24,9 +24,6 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
-import io.cassandrareaper.service.RepairRunner;
-import io.cassandrareaper.service.RingRange;
-import io.cassandrareaper.service.SegmentRunner;
 import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorage;
 
@@ -388,7 +385,7 @@ public final class SegmentRunnerTest {
     executor.shutdown();
 
     assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(runId, segmentId).get().getState());
-    assertEquals(1, storage.getRepairSegment(runId, segmentId).get().getFailCount());
+    assertEquals(2, storage.getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test

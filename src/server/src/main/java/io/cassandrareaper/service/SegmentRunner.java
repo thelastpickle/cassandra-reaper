@@ -361,6 +361,16 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             Seconds.secondsBetween(resultingSegment.getStartTime(), resultingSegment.getEndTime()).getSeconds());
 
         SEGMENT_RUNNERS.remove(resultingSegment.getId());
+      } else {
+        // Something went wrong on the coordinator node and we never got the RUNNING notification
+        // or we are in an undetermined state.
+        // Let's just abort and reschedule the segment.
+        LOG.info(
+            "Repair command {} on segment {} never managed to start within timeout.",
+            commandId,
+            segmentId);
+        segmentFailed.set(true);
+        abort(resultingSegment, coordinator);
       }
       // Repair is still running, we'll renew lead on the segment when using Cassandra as storage backend
       renewLead();
@@ -835,7 +845,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         // This gets called through the JMX proxy at the end
         // regardless of succeeded or failed sessions.
         LOG.debug(
-            "repair session finished for segment with id '{}' and repair number '{}'", segmentId, repairNumber);
+            "repair session finished for segment with id '{}' and repair number '{}'",
+            segmentId,
+            repairNumber);
         condition.signalAll();
         break;
       default:
