@@ -3,6 +3,7 @@
 echo "Starting Before Deploy step..."
 
 set -xe
+mkdir -p src/packages
 
 if [ "${CASSANDRA_VERSION}" = "2.1.19" -a "x${GRIM_MIN}" = "x" ]
 then
@@ -24,12 +25,14 @@ then
         cp src/server/target/cassandra-reaper-*.jar cassandra-reaper-master/server/target
         cp -R src/packaging/resource cassandra-reaper-master/
         tar czf cassandra-reaper-${VERSION}.tar.gz cassandra-reaper-master/
-        docker-compose -f src/packaging/docker-build/docker-compose.yml build
-        docker-compose -f src/packaging/docker-build/docker-compose.yml run build > /dev/null
-        # Renaming the packages to avoid conflicts in Bintray
         sudo mv cassandra-reaper-${VERSION}.tar.gz src/packages/
-        #sudo mv src/packages/reaper_${VERSION}_amd64.deb src/packages/reaper_${VERSION}-${DATE}_amd64.deb
-        #sudo mv src/packages/reaper-*.x86_64.rpm src/packages/reaper-${RPM_VERSION}.x86_64.rpm
+        # docker-compose based build stopped working so we fell back to raw fpm
+        sudo apt-get install ruby ruby-dev build-essential rpm -y
+        gem install --no-ri --no-rdoc fpm
+        cd src/packaging
+        make all
+        sudo mv reaper_*_amd64.deb ../packages/
+        sudo mv reaper-*.x86_64.rpm ../packages/
     fi
     if [ "x${TRAVIS_TAG}" != "x" -a ! -d "cassandra-reaper-${TRAVIS_TAG}" ]
     then
@@ -48,7 +51,12 @@ then
         cp -R src/packaging/resource cassandra-reaper-${TRAVIS_TAG}/
         tar czf cassandra-reaper-${TRAVIS_TAG}-release.tar.gz cassandra-reaper-${TRAVIS_TAG}/
         sudo mv cassandra-reaper-${TRAVIS_TAG}-release.tar.gz src/packages/
-        docker-compose -f src/packaging/docker-build/docker-compose.yml build
-        docker-compose -f src/packaging/docker-build/docker-compose.yml run build > /dev/null
+        # docker-compose based build stopped working so we fell back to raw fpm
+        sudo apt-get install ruby ruby-dev build-essential rpm -y
+        gem install --no-ri --no-rdoc fpm
+        cd src/packaging
+        make all
+        sudo mv reaper_*_amd64.deb ../packages/
+        sudo mv reaper-*.x86_64.rpm ../packages/
     fi
 fi
