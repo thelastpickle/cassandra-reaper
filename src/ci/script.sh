@@ -10,7 +10,7 @@ case "${TEST_TYPE}" in
         exit 1
         ;;
     "ccm")
-        ccm start -v
+        ccm start
         sleep 30
         ccm status
         ccm node1 nodetool status
@@ -26,7 +26,7 @@ case "${TEST_TYPE}" in
         if [ "x${GRIM_MIN}" = "x" ]
         then
             # Rebuild the UI to get the right version number there
-            MAVEN_OPTS="-Xmx1g" mvn clean generate-sources -Pbuild-ui > /dev/null
+            MAVEN_OPTS="-Xmx1g" mvn clean generate-sources -Pbuild-ui 1> /dev/null
         fi
 
         MAVEN_OPTS="-Xmx1g" mvn clean install

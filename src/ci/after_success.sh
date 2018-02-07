@@ -17,7 +17,7 @@ case "${TEST_TYPE}" in
                 -Dsonar.login=${SONAR_TOKEN} \
                 -Dsonar.projectKey=tlp-cassandra-reaper \
                 -Dsonar.github.oauth=${GITHUB_TOKEN} \
-                -Dsonar.github.repository=thelastpickle/cassandra-reaper
+                -Dsonar.github.repository=thelastpickle/cassandra-reaper 1> /dev/null
         fi
         ;;
     *)
