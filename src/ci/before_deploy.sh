@@ -24,8 +24,8 @@ then
         cp src/server/target/cassandra-reaper-*.jar cassandra-reaper-master/server/target
         cp -R src/packaging/resource cassandra-reaper-master/
         tar czf cassandra-reaper-${VERSION}.tar.gz cassandra-reaper-master/
-        docker-compose -f src/packaging/docker-build/docker-compose.yml build &> /dev/null
-        docker-compose -f src/packaging/docker-build/docker-compose.yml run build &> /dev/null
+        docker-compose -f src/packaging/docker-build/docker-compose.yml build
+        docker-compose -f src/packaging/docker-build/docker-compose.yml run build > /dev/null
         # Renaming the packages to avoid conflicts in Bintray
         sudo mv cassandra-reaper-${VERSION}.tar.gz src/packages/
         #sudo mv src/packages/reaper_${VERSION}_amd64.deb src/packages/reaper_${VERSION}-${DATE}_amd64.deb
@@ -48,7 +48,7 @@ then
         cp -R src/packaging/resource cassandra-reaper-${TRAVIS_TAG}/
         tar czf cassandra-reaper-${TRAVIS_TAG}-release.tar.gz cassandra-reaper-${TRAVIS_TAG}/
         sudo mv cassandra-reaper-${TRAVIS_TAG}-release.tar.gz src/packages/
-        docker-compose -f src/packaging/docker-build/docker-compose.yml build &> /dev/null
-        docker-compose -f src/packaging/docker-build/docker-compose.yml run build &> /dev/null
+        docker-compose -f src/packaging/docker-build/docker-compose.yml build
+        docker-compose -f src/packaging/docker-build/docker-compose.yml run build > /dev/null
     fi
 fi
