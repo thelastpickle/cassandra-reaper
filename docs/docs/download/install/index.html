@@ -292,7 +292,7 @@
 
 <h2 id="installing-and-running-as-a-service">Installing and Running as a Service</h2>
 
-<p>We provide prebuilt packages for reaper on the <a href="https://github.com/thelastpickle/cassandra-reaper/releases">GitHub release page</a>.  We&rsquo;ve linked the recommended versions above for convenience.</p>
+<p>We provide prebuilt packages for reaper on the <a href="https://bintray.com/thelastpickle">Bintray</a>.</p>
 
 <h3 id="rpm-install-centos-fedora-rhek">RPM Install (CentOS, Fedora, RHEK)</h3>
 
@@ -301,11 +301,103 @@
 <pre><code class="language-bash">sudo rpm -ivh reaper-*.*.*.x86_64.rpm
 </code></pre>
 
+<h4 id="using-yum-stable-releases">Using yum (stable releases)</h4>
+
+<p>1/ Run the following to get a generated .repo file:</p>
+
+<pre><code>wget https://bintray.com/thelastpickle/reaper-rpm/rpm -O bintray-thelastpickle-reaper-rpm.repo
+</code></pre>
+
+<p>or - Copy this text into a &lsquo;bintray-thelastpickle-reaper-rpm.repo&rsquo; file on your Linux machine:</p>
+
+<pre><code>#bintraybintray-thelastpickle-reaper-rpm - packages by thelastpickle from Bintray
+[bintraybintray-thelastpickle-reaper-rpm]
+name=bintray-thelastpickle-reaper-rpm
+baseurl=https://dl.bintray.com/thelastpickle/reaper-rpm
+gpgcheck=0
+repo_gpgcheck=0
+enabled=1
+</code></pre>
+
+<p>2/ Run the following command :</p>
+
+<pre><code>sudo mv bintray-thelastpickle-reaper-rpm.repo /etc/yum.repos.d/
+</code></pre>
+
+<p>3/ Install reaper :</p>
+
+<pre><code>sudo yum install reaper
+</code></pre>
+
+<h4 id="using-yum-development-builds">Using yum (development builds)</h4>
+
+<p>1/ Run the following to get a generated .repo file:</p>
+
+<pre><code>wget https://bintray.com/thelastpickle/reaper-rpm-beta/rpm -O bintray-thelastpickle-reaper-rpm-beta.repo
+</code></pre>
+
+<p>or - Copy this text into a &lsquo;bintray-thelastpickle-reaper-rpm-beta.repo&rsquo; file on your Linux machine:</p>
+
+<pre><code>#bintraybintray-thelastpickle-reaper-rpm-beta - packages by thelastpickle from Bintray
+[bintraybintray-thelastpickle-reaper-rpm-beta]
+name=bintray-thelastpickle-reaper-rpm-beta
+baseurl=https://dl.bintray.com/thelastpickle/reaper-rpm-beta
+gpgcheck=0
+repo_gpgcheck=0
+enabled=1
+</code></pre>
+
+<p>2/ Run the following command :</p>
+
+<pre><code>sudo mv bintray-thelastpickle-reaper-rpm-beta.repo /etc/yum.repos.d/
+</code></pre>
+
+<p>3/ Install reaper :</p>
+
+<pre><code>sudo yum install reaper
+</code></pre>
+
 <h3 id="deb-debian-based-distros-like-ubuntu">DEB (Debian based distros like Ubuntu)</h3>
 
 <p>After downloading the DEB package, install using the <code>dpkg</code> command:</p>
 
 <pre><code class="language-bash">sudo dpkg -i reaper_*.*.*_amd64.deb
+</code></pre>
+
+<h4 id="using-apt-get-stable-releases">Using apt-get (stable releases)</h4>
+
+<p>1/ Using the command line, add the following to your /etc/apt/sources.list system config file:</p>
+
+<pre><code>echo &quot;deb https://dl.bintray.com/thelastpickle/reaper-deb wheezy main&quot; | sudo tee -a /etc/apt/sources.list
+</code></pre>
+
+<p>Or, add the repository URLs using the &ldquo;Software Sources&rdquo; admin UI:</p>
+
+<pre><code>deb https://dl.bintray.com/thelastpickle/reaper-deb wheezy main
+</code></pre>
+
+<p>2/ Install reaper :</p>
+
+<pre><code>sudo apt-get update
+sudo apt-get install reaper
+</code></pre>
+
+<h4 id="using-apt-get-development-builds">Using apt-get (development builds)</h4>
+
+<p>1/ Using the command line, add the following to your /etc/apt/sources.list system config file:</p>
+
+<pre><code>echo &quot;deb https://dl.bintray.com/thelastpickle/reaper-deb-beta wheezy main&quot; | sudo tee -a /etc/apt/sources.list
+</code></pre>
+
+<p>Or, add the repository URLs using the &ldquo;Software Sources&rdquo; admin UI:</p>
+
+<pre><code>deb https://dl.bintray.com/thelastpickle/reaper-deb-beta wheezy main
+</code></pre>
+
+<p>2/ Install reaper :</p>
+
+<pre><code>sudo apt-get update
+sudo apt-get install reaper
 </code></pre>
 
 <h2 id="service-configuration">Service Configuration</h2>

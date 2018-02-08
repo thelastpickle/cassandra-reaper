@@ -139,7 +139,7 @@ To build the JAR and other packages which are then placed in the src/packages di
       <description>Running Reaper After modifying the resource/cassandra-reaper.yaml config file, Reaper can be started using the following command line :
 java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml  Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
 Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool bin/spreaper
-Installing and Running as a Service We provide prebuilt packages for reaper on the GitHub release page.</description>
+Installing and Running as a Service We provide prebuilt packages for reaper on the Bintray.</description>
     </item>
     
     <item>
