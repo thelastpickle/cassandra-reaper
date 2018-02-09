@@ -22,7 +22,7 @@
         "released": "RELEASEDATE",
         "vcs_tag": "VERSION",
         "attributes": [],
-        "gpgSign": false
+        "gpgSign": true
     },
     "files":
         [
