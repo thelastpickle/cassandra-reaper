@@ -88,14 +88,15 @@ const Cluster = React.createClass({
   },
   
   getInitialState: function() {
-    const isDev = window != window.top;
+    const isDev = window.top.location.pathname.includes('webpack-dev-server');
     const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
-    return {clusterStatus: {}, clusterStatuses: null, urlPrefix: URL_PREFIX, nbNodes: 0, nodesDown:0};
+    return {clusterStatus: {}, clusterStatuses: null, urlPrefix: URL_PREFIX , nbNodes: 0, nodesDown:0};
   },
 
   componentWillMount: function() {
     this._refreshClusterStatus();
     this.setState({clusterStatuses: setInterval(this._refreshClusterStatus, 10000)}); 
+    console.log("Path " + window.location.pathname);
   },
 
   _refreshClusterStatus: function() {

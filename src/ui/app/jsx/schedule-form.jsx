@@ -13,7 +13,7 @@ const scheduleForm = React.createClass({
   },
 
   getInitialState: function() {
-    const isDev = window != window.top;
+    const isDev = window.top.location.pathname.includes('webpack-dev-server');
     const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
 
     return {
