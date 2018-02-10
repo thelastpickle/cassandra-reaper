@@ -49,7 +49,6 @@ public final class NodeMetrics {
   }
 
   /** If true indicates that metrics for this node have been requested.
-   *<p/>
    * A reaper instance that can jmx access the node will do so on its next heartbeat.
    */
   public boolean isRequested() {

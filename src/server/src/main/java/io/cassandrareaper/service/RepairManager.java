@@ -88,8 +88,6 @@ public final class RepairManager {
 
   /**
    * Consult storage to see if any repairs are running, and resume those repair runs.
-   *
-   * @param context Reaper's application context.
    */
   public void resumeRunningRepairRuns() throws ReaperException {
     try {

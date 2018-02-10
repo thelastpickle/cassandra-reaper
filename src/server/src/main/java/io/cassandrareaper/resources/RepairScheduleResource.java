@@ -293,11 +293,10 @@ public final class RepairScheduleResource {
   /**
    * Modifies a state of the repair schedule.
    *
-   * <p>
-   * Currently supports PAUSED -> ACTIVE and ACTIVE -> PAUSED.
+   * <p>Currently supports PAUSED to ACTIVE and ACTIVE to PAUSED.
    *
-   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 400 (BAD_REQUEST) if
-   *      transition is not supported.
+   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 400
+   *     (BAD_REQUEST) if transition is not supported.
    */
   @PUT
   @Path("/{id}")

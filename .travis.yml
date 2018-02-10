@@ -95,6 +95,15 @@ deploy:
       branch: "master"
       condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
   - provider: bintray
+    file: "src/ci/descriptor-maven-snapshot.json"
+    user: "adejanovski"
+    key: $BINTRAY_API_KEY
+    dry-run: false
+    skip_cleanup: true
+    on:
+      branch: "master"
+      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+  - provider: bintray
     file: "src/ci/descriptor-rpm.json"
     user: "adejanovski"
     key: $BINTRAY_API_KEY
@@ -114,6 +123,15 @@ deploy:
       condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
   - provider: bintray
     file: "src/ci/descriptor-tarball.json"
+    user: "adejanovski"
+    key: $BINTRAY_API_KEY
+    dry-run: false
+    skip_cleanup: true
+    on:
+      tags: true
+      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+  - provider: bintray
+    file: "src/ci/descriptor-maven.json"
     user: "adejanovski"
     key: $BINTRAY_API_KEY
     dry-run: false
