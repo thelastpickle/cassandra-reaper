@@ -26,11 +26,11 @@
     },
     "files":
         [
-            {"includePattern": "src/server/target/(cassandra.*\\.jar)", "uploadPattern": "io/cassandrareaper/cassandra-reaper/$1",
+            {"includePattern": "src/server/target/(cassandra.*\\.jar)", "uploadPattern": "io/cassandrareaper/cassandra-reaper/VERSION/$1",
                 "matrixParams": { "override": 1 }
             }
             ,
-            {"includePattern": "src/server/pom.xml", "uploadPattern": "io/cassandrareaper/cassandra-reaper/cassandra-reaper-VERSION.pom",
+            {"includePattern": "src/server/pom.xml", "uploadPattern": "io/cassandrareaper/cassandra-reaper/VERSION/cassandra-reaper-VERSION.pom",
                 "matrixParams": { "override": 1 }
             }
         ],
