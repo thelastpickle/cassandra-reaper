@@ -20,6 +20,8 @@ then
         sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-deb-beta.json
         sed -i "s/VERSION/${VERSION}/" src/ci/descriptor-tarball-beta.json
         sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-tarball-beta.json
+        sed -i "s/VERSION/${VERSION}/" src/ci/descriptor-maven-snapshot.json
+        sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-maven-snapshot.json
         mkdir -p cassandra-reaper-master/server/target
         cp -R src/packaging/bin cassandra-reaper-master/
         cp src/server/target/cassandra-reaper-*.jar cassandra-reaper-master/server/target
@@ -45,6 +47,8 @@ then
         sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-deb.json
         sed -i "s/VERSION/${VERSION}/" src/ci/descriptor-tarball.json
         sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-tarball.json
+        sed -i "s/VERSION/${VERSION}/" src/ci/descriptor-maven.json
+        sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-maven.json
         mkdir -p cassandra-reaper-${TRAVIS_TAG}/server/target
         cp -R src/packaging/bin cassandra-reaper-${TRAVIS_TAG}/
         cp src/server/target/cassandra-reaper-*.jar cassandra-reaper-${TRAVIS_TAG}/server/target

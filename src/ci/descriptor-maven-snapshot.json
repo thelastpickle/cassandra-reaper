@@ -20,15 +20,19 @@
         "name": "VERSION",
         "desc": "VERSION",
         "released": "RELEASEDATE",
-        "vcs_tag": "VERSION",
+        "vcs_tag": "",
         "attributes": [],
         "gpgSign": true
     },
     "files":
         [
-        {"includePattern": "src/server/target/(cassandra.*\\.jar)", "uploadPattern": "/$1",
-         "matrixParams": { "override": 1 }
-        }
+            {"includePattern": "src/server/target/(cassandra.*\\.jar)", "uploadPattern": "io/cassandrareaper/cassandra-reaper/$1",
+                "matrixParams": { "override": 1 }
+            }
+            ,
+            {"includePattern": "src/server/pom.xml", "uploadPattern": "io/cassandrareaper/cassandra-reaper/cassandra-reaper-VERSION.pom",
+                "matrixParams": { "override": 1 }
+            }
         ],
     "publish": true
 }
