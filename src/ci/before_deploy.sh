@@ -14,13 +14,13 @@ then
         RELEASEDATE=$(date +"%Y-%m-%d")
         RPM_VERSION=$(echo "${VERSION}" | sed "s/-/_/")
         # Update Bintray descriptor files with appropriate version numbers and release dates
-        sed -i "s/VERSION/${VERSION}/" src/ci/descriptor-rpm-beta.json
+        sed -i "s/VERSION/${VERSION}/g" src/ci/descriptor-rpm-beta.json
         sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-rpm-beta.json
-        sed -i "s/VERSION/${VERSION}/" src/ci/descriptor-deb-beta.json
+        sed -i "s/VERSION/${VERSION}/g" src/ci/descriptor-deb-beta.json
         sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-deb-beta.json
-        sed -i "s/VERSION/${VERSION}/" src/ci/descriptor-tarball-beta.json
+        sed -i "s/VERSION/${VERSION}/g" src/ci/descriptor-tarball-beta.json
         sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-tarball-beta.json
-        sed -i "s/VERSION/${VERSION}/" src/ci/descriptor-maven-snapshot.json
+        sed -i "s/VERSION/${VERSION}/g" src/ci/descriptor-maven-snapshot.json
         sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-maven-snapshot.json
         mkdir -p cassandra-reaper-master/server/target
         cp -R src/packaging/bin cassandra-reaper-master/
@@ -41,13 +41,13 @@ then
         VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
         RELEASEDATE=$(date +"%Y-%m-%d")
         # Update Bintray descriptor files with appropriate version numbers and release dates
-        sed -i "s/VERSION/${VERSION}/" src/ci/descriptor-rpm.json
+        sed -i "s/VERSION/${VERSION}/g" src/ci/descriptor-rpm.json
         sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-rpm.json
-        sed -i "s/VERSION/${VERSION}/" src/ci/descriptor-deb.json
+        sed -i "s/VERSION/${VERSION}/g" src/ci/descriptor-deb.json
         sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-deb.json
-        sed -i "s/VERSION/${VERSION}/" src/ci/descriptor-tarball.json
+        sed -i "s/VERSION/${VERSION}/g" src/ci/descriptor-tarball.json
         sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-tarball.json
-        sed -i "s/VERSION/${VERSION}/" src/ci/descriptor-maven.json
+        sed -i "s/VERSION/${VERSION}/g" src/ci/descriptor-maven.json
         sed -i "s/RELEASEDATE/${RELEASEDATE}/" src/ci/descriptor-maven.json
         mkdir -p cassandra-reaper-${TRAVIS_TAG}/server/target
         cp -R src/packaging/bin cassandra-reaper-${TRAVIS_TAG}/
