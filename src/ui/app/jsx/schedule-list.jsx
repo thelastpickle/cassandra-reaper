@@ -159,7 +159,15 @@ const scheduleList = React.createClass({
 
   render: function() {
 
-    const clusterItems = this.state.clusterNames.map(name =>
+    function compareNextActivationTime(a,b) {
+      if (a.next_activation < b.next_activation)
+        return -1;
+      if (a.next_activation > b.next_activation)
+        return 1;
+      return 0;
+    }
+
+    const clusterItems = this.state.clusterNames.sort().map(name =>
       <option key={name} value={name}>{name}</option>
     );
 
@@ -176,7 +184,7 @@ const scheduleList = React.createClass({
             </div>
     </form>
 
-    const rows = this.state.schedules.filter(schedule => this.state.currentCluster == "all" || this.state.currentCluster == schedule.cluster_name).map(schedule =>
+    const rows = this.state.schedules.sort(compareNextActivationTime).filter(schedule => this.state.currentCluster == "all" || this.state.currentCluster == schedule.cluster_name).map(schedule =>
       <tbody key={schedule.id+'-rows'}>
         <TableRow row={schedule} key={schedule.id+'-head'}
           deleteSubject={this.props.deleteSubject}

@@ -7,7 +7,7 @@ const POLLING_INTERVAL = 2000;
 
 // use reaper server url for ajax calls if running on dev server (will be run in iframe)
 const isDev = window.top.location.pathname.includes('webpack-dev-server');
-const URL_PREFIX = isDev ? 'http://128.0.0.1:8080' : '';
+const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
 
 export const statusObservableTimer = Rx.Observable.timer(0, POLLING_INTERVAL).map(t => {
   console.debug("Pinging reaper server..");

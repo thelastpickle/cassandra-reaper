@@ -226,7 +226,8 @@ const repairList = React.createClass({
       currentCluster:this.props.currentCluster, 
       runningCollapsed: false, doneCollapsed: false,
       modalShow: false, repairRunId: '',
-      height: 0, width: 0};
+      height: 0, width: 0,
+      numberOfElementsToDisplay: 10};
   },
 
   componentWillMount: function() {
@@ -297,11 +298,29 @@ const repairList = React.createClass({
 
   render: function() {
 
+    let rowsRunning = <div className="clusterLoader"></div>
+    let rowsDone = <div className="clusterLoader"></div>
+
+    function compareEndTimeReverse(a,b) {
+      if (a.end_time < b.end_time)
+        return 1;
+      if (a.end_time > b.end_time)
+        return -1;
+      return 0;
+    }
+
+    function compareStartTimeReverse(a,b) {
+      if (a.start_time < b.start_time)
+        return 1;
+      if (a.start_time > b.start_time)
+        return -1;
+      return 0;
+    }
 
     let modalClose = () => this.setState({ modalShow:false, repairRunId: ''});
 
     const segmentModal = <SegmentModal show={this.state.modalShow} onHide={modalClose} repairRunId={this.state.repairRunId} height={this.state.height} width={this.state.width}/>;
-    const rowsRunning = this.state.repairs
+    rowsRunning = this.state.repairs.sort(compareStartTimeReverse)
       .filter(repair => this.state.currentCluster == "all" || this.state.currentCluster == repair.cluster_name)
       .filter(repair => (repair.state == "RUNNING" || repair.state == "PAUSED" || repair.state == "NOT_STARTED"))
       .map(repair =>
@@ -313,7 +332,11 @@ const repairList = React.createClass({
       </tbody>
     );
 
-    const rowsDone = this.state.repairs.filter(repair => this.state.currentCluster == "all" || this.state.currentCluster == repair.cluster_name).filter(repair => (repair.state != "RUNNING" && repair.state != "PAUSED" && repair.state != "NOT_STARTED")).map(repair =>
+    rowsDone = this.state.repairs.sort(compareEndTimeReverse)
+                                 .filter(repair => this.state.currentCluster == "all" || this.state.currentCluster == repair.cluster_name)
+                                 .filter(repair => (repair.state != "RUNNING" && repair.state != "PAUSED" && repair.state != "NOT_STARTED"))
+                                 .slice(0, this.state.numberOfElementsToDisplay)
+                                 .map(repair =>
       <tbody key={repair.id+'-rows'}>
       <TableRow row={repair} key={repair.id+'-head'}
         deleteSubject={this.props.deleteSubject}
@@ -322,18 +345,28 @@ const repairList = React.createClass({
       </tbody>
     );
 
-    const clusterItems = this.state.clusterNames.map(name =>
+    const clusterItems = this.state.clusterNames.sort().map(name =>
       <option key={name} value={name}>{name}</option>
     );
 
     const clusterFilter = <form className="form-horizontal form-condensed">
             <div className="form-group">
-              <label htmlFor="in_clusterName" className="col-sm-3 control-label">Filter cluster :</label>
-              <div className="col-sm-9 col-md-7 col-lg-5">
+              <label htmlFor="in_currentCluster" className="col-sm-3 control-label">Filter cluster :</label>
+              <div className="col-sm-7 col-md-5 col-lg-3">
                 <select className="form-control" id="in_currentCluster"
                   onChange={this._handleChange} value={this.state.currentCluster}>
                   <option key="all" value="all">All</option>
                   {clusterItems}
+                </select>
+              </div>
+              <label htmlFor="in_numberOfElementsToDisplay" className="col-sm-1 control-label">Display :</label>
+              <div className="col-sm-5 col-md-3 col-lg-1">
+                <select className="form-control" id="in_numberOfElementsToDisplay"
+                  onChange={this._handleChange} value={this.state.numberOfElementsToDisplay}>
+                  <option key="10" value="10">Last 10</option>
+                  <option key="25" value="25">Last 25</option>
+                  <option key="50" value="50">Last 50</option>
+                  <option key="100" value="100">Last 100</option>
                 </select>
               </div>
             </div>

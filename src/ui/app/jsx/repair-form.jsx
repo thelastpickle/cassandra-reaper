@@ -116,15 +116,17 @@ const repairForm = React.createClass({
   _handleChange: function(e) {
     var v = e.target.value;
     var n = e.target.id.substring(3); // strip in_ prefix
-    if (n == 'clusterName') {
-      this._getClusterStatus();
-    }
+    console.log(n + " = " + v)
 
     // update state
     const state = this.state;
     state[n] = v;
     this.replaceState(state);
-
+    
+    if (n == 'clusterName') {
+      this._getClusterStatus();
+    }
+    
     // validate
     this._checkValidity();
   },
@@ -324,7 +326,7 @@ const repairForm = React.createClass({
       addMsg = <div className="alert alert-danger" role="alert">{this.state.addRepairResultMsg}</div>
     }
 
-    const clusterItems = this.state.clusterNames.map(name =>
+    const clusterItems = this.state.clusterNames.sort().map(name =>
       <option key={name} value={name}>{name}</option>
     );
 

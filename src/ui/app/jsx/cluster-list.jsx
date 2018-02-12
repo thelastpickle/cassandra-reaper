@@ -316,7 +316,7 @@ const clusterList = React.createClass({
   },
 
   getInitialState: function() {
-    return {clusterNames: [], deleteResultMsg: null};
+    return {clusterNames: [], deleteResultMsg: null, clusterFilter: ""};
   },
 
   componentWillMount: function() {
@@ -329,9 +329,20 @@ const clusterList = React.createClass({
     this._clusterNamesSubscription.dispose();
   },
 
+  _handleChange: function(e) {
+    var v = e.target.value;
+    var n = e.target.id.substring(3); // strip in_ prefix
+    
+    // update state
+    const state = this.state;
+    state[n] = v;
+    this.replaceState(state);
+  }, 
+
   render: function() {
 
-    const rows = this.state.clusterNames.map(name =>
+    const rows = this.state.clusterNames.filter(cluster => cluster.includes(this.state.clusterFilter))
+                                        .sort().map(name =>
       <Cluster name={name} key={name} deleteSubject={this.props.deleteSubject} getClusterStatus={this.props.getClusterStatus} getClusterSubject={this.props.getClusterSubject}/>);
 
     let table = null;
@@ -344,9 +355,24 @@ const clusterList = React.createClass({
               </div>
     }
 
+    let filterInput = <div className="row">
+    <div className="col-lg-12">
+      <form className="form-horizontal form-condensed">
+        <div className="form-group">
+          <label htmlFor="in_clusterName" className="col-sm-3 control-label">Filter: </label>
+          <div className="col-sm-9 col-md-7 col-lg-5">
+            <input type="text" required className="form-control" value={this.state.clusterFilter}
+                  onChange={this._handleChange} id="in_clusterFilter" placeholder="Start typing to filter clusters..."/>
+          </div>
+        </div>
+      </form>
+    </div>
+    </div>
+
     return (<div className="row">
               <div className="col-lg-12">
                 {this.deleteMessage()}
+                {filterInput}
                 {rows}
               </div>
             </div>);
