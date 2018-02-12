@@ -116,7 +116,12 @@ Or, add the repository URLs using the "Software Sources" admin UI:
 deb https://dl.bintray.com/thelastpickle/reaper-deb wheezy main
 ```
 
-2/ Install reaper :
+2/ Install the public key:
+```
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 2895100917357435
+```
+
+3/ Install reaper :
 
 ```
 sudo apt-get update
@@ -136,7 +141,12 @@ Or, add the repository URLs using the "Software Sources" admin UI:
 deb https://dl.bintray.com/thelastpickle/reaper-deb-beta wheezy main
 ```
 
-2/ Install reaper :
+2/ Install the public key:
+```
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 2895100917357435
+```
+
+3/ Install reaper :
 
 ```
 sudo apt-get update
