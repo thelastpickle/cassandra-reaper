@@ -23,7 +23,6 @@
         <docker.directory>src/main/docker</docker.directory>
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
-        <additionalparam>-Xdoclint:none</additionalparam>
     </properties>
 
     <dependencies>

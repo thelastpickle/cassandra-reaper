@@ -191,7 +191,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <additionalparam>-Xdoclint:none</additionalparam>
 
         <!--
         Properties that influence various parts of the NetBeans IDE, especially code formatting and the like.

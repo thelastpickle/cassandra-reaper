@@ -320,11 +320,10 @@ public final class RepairRunResource {
   /**
    * Modifies a state of the repair run.
    *
-   * <p>
-   * Currently supports NOT_STARTED|PAUSED -> RUNNING and RUNNING -> PAUSED.
+   * <p>Currently supports NOT_STARTED|PAUSED to RUNNING and RUNNING to PAUSED.
    *
-   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 501 (NOT_IMPLEMENTED) if
-   *        transition is not supported.
+   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 501
+   *     (NOT_IMPLEMENTED) if transition is not supported.
    */
   @PUT
   @Path("/{id}/state/{state}")
@@ -387,18 +386,18 @@ public final class RepairRunResource {
   /**
    * Modifies a state of the repair run.
    *
-   * <p>
-   * Currently supports NOT_STARTED|PAUSED -> RUNNING and RUNNING -> PAUSED.
+   * <p>Currently supports NOT_STARTED|PAUSED to RUNNING and RUNNING to PAUSED.
    *
-   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 501 (NOT_IMPLEMENTED) if
-   *        transition is not supported.
+   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 501
+   *     (NOT_IMPLEMENTED) if transition is not supported.
    */
   @PUT
   @Path("/{id}/intensity/{intensity}")
   public Response modifyRunIntensity(
       @Context UriInfo uriInfo,
       @PathParam("id") UUID repairRunId,
-      @PathParam("intensity") Optional<String> intensityStr) throws ReaperException {
+      @PathParam("intensity") Optional<String> intensityStr)
+      throws ReaperException {
 
     LOG.info("modify repair run intensity called with: id = {}, state = {}", repairRunId, intensityStr);
     try {
