@@ -143,11 +143,11 @@ public final class ClusterResource {
 
     Optional<Cluster> cluster = context.storage.getCluster(clusterName);
     if (cluster.isPresent()) {
-      try (JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connectAny(
-              cluster.get(), context.config.getJmxConnectionTimeoutInSeconds())) {
+      try {
+        JmxProxy jmxProxy =
+            context.jmxConnectionFactory.connectAny(
+                cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
         tablesByKeyspace = jmxProxy.listTablesByKeyspace();
-        jmxProxy.close();
       } catch (RuntimeException e) {
         LOG.error("Couldn't retrieve the list of tables for cluster {}", clusterName, e);
         return Response.status(400).entity(e).build();
@@ -225,8 +225,10 @@ public final class ClusterResource {
     Optional<List<String>> liveNodes = Optional.absent();
     Set<String> seedHosts = parseSeedHosts(seedHostInput);
 
-    try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-        Optional.absent(), seedHosts, context.config.getJmxConnectionTimeoutInSeconds())) {
+    try {
+      JmxProxy jmxProxy =
+          context.jmxConnectionFactory.connectAny(
+              Optional.absent(), seedHosts, context.config.getJmxConnectionTimeoutInSeconds());
 
       clusterName = Optional.of(jmxProxy.getClusterName());
       partitioner = Optional.of(jmxProxy.getPartitioner());
@@ -273,8 +275,10 @@ public final class ClusterResource {
     Set<String> newSeeds = parseSeedHosts(seedHost.get());
 
     if (context.config.getEnableDynamicSeedList()) {
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-          Optional.absent(), newSeeds, context.config.getJmxConnectionTimeoutInSeconds())) {
+      try {
+        JmxProxy jmxProxy =
+            context.jmxConnectionFactory.connectAny(
+                Optional.absent(), newSeeds, context.config.getJmxConnectionTimeoutInSeconds());
 
         Optional<List<String>> liveNodes = Optional.of(jmxProxy.getLiveNodes());
         newSeeds = liveNodes.get().stream().collect(Collectors.toSet());
@@ -347,14 +351,18 @@ public final class ClusterResource {
    */
   private Callable<Optional<NodesStatus>> getEndpointState(List<String> seeds) {
     return () -> {
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-          Optional.absent(), seeds, context.config.getJmxConnectionTimeoutInSeconds())) {
+      try {
+        JmxProxy jmxProxy =
+            context.jmxConnectionFactory.connectAny(
+                Optional.absent(), seeds, context.config.getJmxConnectionTimeoutInSeconds());
 
         Optional<String> allEndpointsState = Optional.fromNullable(jmxProxy.getAllEndpointsState());
-        Optional<Map<String, String>> simpleStates = Optional.fromNullable(jmxProxy.getSimpleStates());
+        Optional<Map<String, String>> simpleStates =
+            Optional.fromNullable(jmxProxy.getSimpleStates());
 
         return Optional.of(
-            new NodesStatus(jmxProxy.getHost(), allEndpointsState.or(""), simpleStates.or(new HashMap<>())));
+            new NodesStatus(
+                jmxProxy.getHost(), allEndpointsState.or(""), simpleStates.or(new HashMap<>())));
 
       } catch (RuntimeException e) {
         LOG.debug("failed to create cluster with seed hosts: {}", seeds, e);

@@ -91,14 +91,8 @@ public final class RepairRunnerTest {
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
     RepairUnit cf =
         storage.addRepairUnit(
-            new RepairUnit.Builder(
-                CLUSTER_NAME,
-                KS_NAME,
-                CF_NAMES,
-                INCREMENTAL_REPAIR,
-                NODES,
-                DATACENTERS,
-                BLACKLISTED_TABLES));
+            new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR, NODES,
+                DATACENTERS, BLACKLISTED_TABLES));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
         new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
@@ -137,6 +131,7 @@ public final class RepairRunnerTest {
             any(RepairParallelism.class),
             any(),
             anyBoolean(),
+            any(),
             any()))
             .then((invocation) -> {
 
@@ -154,7 +149,8 @@ public final class RepairRunnerTest {
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.STARTED),
                           Optional.absent(),
-                          null);
+                          null,
+                          jmx);
 
                       assertEquals(
                           RepairSegment.State.RUNNING,
@@ -171,7 +167,8 @@ public final class RepairRunnerTest {
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.STARTED),
                           Optional.absent(),
-                          null);
+                          null,
+                          jmx);
 
                       assertEquals(
                           RepairSegment.State.RUNNING,
@@ -181,7 +178,8 @@ public final class RepairRunnerTest {
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
                           Optional.absent(),
-                          null);
+                          null,
+                          jmx);
 
                       assertEquals(
                           RepairSegment.State.DONE,
@@ -191,7 +189,8 @@ public final class RepairRunnerTest {
                           repairNumber,
                           Optional.of(ActiveRepairService.Status.FINISHED),
                           Optional.absent(),
-                          null);
+                          null,
+                          jmx);
 
                       mutex.release();
                       LOG.info("MUTEX RELEASED");
@@ -289,6 +288,7 @@ public final class RepairRunnerTest {
             any(RepairParallelism.class),
             any(),
             anyBoolean(),
+            any(),
             any()))
             .then((invocation) -> {
 
@@ -302,7 +302,8 @@ public final class RepairRunnerTest {
                   new Thread() {
                     @Override
                     public void run() {
-                      handler.get().handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.START), null);
+                      handler.get().handle(repairNumber, Optional.absent(),
+                          Optional.of(ProgressEventType.START), null, jmx);
                       assertEquals(RepairSegment.State.RUNNING,
                           storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                     }
@@ -313,15 +314,15 @@ public final class RepairRunnerTest {
                     @Override
                     public void run() {
                       handler.get()
-                          .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.START), null);
+                          .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.START), null, jmx);
                       assertEquals(RepairSegment.State.RUNNING,
                           storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                       handler.get()
-                          .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.SUCCESS), null);
+                          .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.SUCCESS), null, jmx);
                       assertEquals(RepairSegment.State.DONE,
                           storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                       handler.get()
-                          .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.COMPLETE), null);
+                          .handle(repairNumber, Optional.absent(), Optional.of(ProgressEventType.COMPLETE), null, jmx);
                       mutex.release();
                       LOG.info("MUTEX RELEASED");
                     }
@@ -421,6 +422,7 @@ public final class RepairRunnerTest {
             any(RepairParallelism.class),
             any(),
             anyBoolean(),
+            any(),
             any()))
             .then((invocation) -> {
 
@@ -432,13 +434,14 @@ public final class RepairRunnerTest {
                 @Override
                 public void run() {
                   handler.get()
-                      .handle(1, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(), null);
+                      .handle(1, Optional.of(ActiveRepairService.Status.STARTED), Optional.absent(), null, jmx);
 
                   handler.get()
-                      .handle(1, Optional.of(ActiveRepairService.Status.SESSION_SUCCESS), Optional.absent(), null);
+                      .handle(1, Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
+                          Optional.absent(), null, jmx);
 
                   handler.get()
-                      .handle(1, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(), null);
+                      .handle(1, Optional.of(ActiveRepairService.Status.FINISHED), Optional.absent(), null, jmx);
                 }
               }.start();
               return 1;

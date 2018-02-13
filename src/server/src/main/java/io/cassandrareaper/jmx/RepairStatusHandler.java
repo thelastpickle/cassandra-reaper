@@ -24,8 +24,8 @@ public interface RepairStatusHandler {
   /**
    * Handle an event representing a change in the state of a running repair.
    *
-   * <p>
-   * Implementation of this method is intended to persist the repair state change in Reaper's state.
+   * <p>Implementation of this method is intended to persist the repair state change in Reaper's
+   * state.
    *
    * @param repairNumber repair sequence number, obtained when triggering a repair
    * @param status new status of the repair (old API)
@@ -36,5 +36,6 @@ public interface RepairStatusHandler {
       int repairNumber,
       Optional<ActiveRepairService.Status> status,
       Optional<ProgressEventType> progress,
-      String message);
+      String message,
+      JmxProxy jmxProxy);
 }

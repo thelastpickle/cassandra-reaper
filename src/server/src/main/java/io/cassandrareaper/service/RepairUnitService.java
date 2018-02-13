@@ -60,11 +60,12 @@ public final class RepairUnitService {
 
     Optional<String> cassandraVersion = Optional.absent();
 
-    try (JmxProxy jmxProxy = context.jmxConnectionFactory
-        .connectAny(
-            Optional.absent(),
-            cluster.getSeedHosts(),
-            context.config.getJmxConnectionTimeoutInSeconds())) {
+    try {
+      JmxProxy jmxProxy =
+          context.jmxConnectionFactory.connectAny(
+              Optional.absent(),
+              cluster.getSeedHosts(),
+              context.config.getJmxConnectionTimeoutInSeconds());
 
       cassandraVersion = Optional.fromNullable(jmxProxy.getCassandraVersion());
     } catch (ReaperException e) {

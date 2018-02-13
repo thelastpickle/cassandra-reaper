@@ -145,8 +145,10 @@ public final class RepairRunService {
       throw new ReaperException(errMsg);
     }
 
-    try (JmxProxy jmxProxy = context.jmxConnectionFactory
-        .connectAny(Optional.absent(), seedHosts, context.config.getJmxConnectionTimeoutInSeconds())) {
+    try {
+      JmxProxy jmxProxy =
+          context.jmxConnectionFactory.connectAny(
+              Optional.absent(), seedHosts, context.config.getJmxConnectionTimeoutInSeconds());
 
       List<BigInteger> tokens = jmxProxy.getTokens();
       Map<List<String>, List<String>> rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());
@@ -291,8 +293,10 @@ public final class RepairRunService {
 
     Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
 
-    try (JmxProxy jmxProxy = context.jmxConnectionFactory
-        .connectAny(Optional.absent(), seedHosts, context.config.getJmxConnectionTimeoutInSeconds())) {
+    try {
+      JmxProxy jmxProxy =
+          context.jmxConnectionFactory.connectAny(
+              Optional.absent(), seedHosts, context.config.getJmxConnectionTimeoutInSeconds());
 
       rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());
     } catch (ReaperException e) {
@@ -315,15 +319,17 @@ public final class RepairRunService {
       Optional<String> tableNamesParam) throws ReaperException {
 
     Set<String> knownTables;
-    try (JmxProxy jmxProxy = context.jmxConnectionFactory
-        .connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds())) {
 
-      knownTables = jmxProxy.getTableNamesForKeyspace(keyspace);
-      if (knownTables.isEmpty()) {
-        LOG.debug("no known tables for keyspace {} in cluster {}", keyspace, cluster.getName());
-        throw new IllegalArgumentException("no column families found for keyspace");
-      }
+    JmxProxy jmxProxy =
+        context.jmxConnectionFactory.connectAny(
+            cluster, context.config.getJmxConnectionTimeoutInSeconds());
+
+    knownTables = jmxProxy.getTableNamesForKeyspace(keyspace);
+    if (knownTables.isEmpty()) {
+      LOG.debug("no known tables for keyspace {} in cluster {}", keyspace, cluster.getName());
+      throw new IllegalArgumentException("no column families found for keyspace");
     }
+
     Set<String> tableNames = Collections.emptySet();
     if (tableNamesParam.isPresent() && !tableNamesParam.get().isEmpty()) {
       tableNames = Sets.newHashSet(COMMA_SEPARATED_LIST_SPLITTER.split(tableNamesParam.get()));
@@ -341,15 +347,17 @@ public final class RepairRunService {
       Optional<String> nodesToRepairParam) throws ReaperException {
 
     Set<String> nodesInCluster;
-    try (JmxProxy jmxProxy
-        = context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds())) {
 
-      nodesInCluster = jmxProxy.getEndpointToHostId().keySet();
-      if (nodesInCluster.isEmpty()) {
-        LOG.debug("no nodes found in cluster {}", cluster.getName());
-        throw new IllegalArgumentException("no nodes found in cluster");
-      }
+    JmxProxy jmxProxy =
+        context.jmxConnectionFactory.connectAny(
+            cluster, context.config.getJmxConnectionTimeoutInSeconds());
+
+    nodesInCluster = jmxProxy.getEndpointToHostId().keySet();
+    if (nodesInCluster.isEmpty()) {
+      LOG.debug("no nodes found in cluster {}", cluster.getName());
+      throw new IllegalArgumentException("no nodes found in cluster");
     }
+
     Set<String> nodesToRepair = Collections.emptySet();
     if (nodesToRepairParam.isPresent() && !nodesToRepairParam.get().isEmpty()) {
       nodesToRepair = Sets.newHashSet(COMMA_SEPARATED_LIST_SPLITTER.split(nodesToRepairParam.get()));

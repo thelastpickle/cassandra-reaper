@@ -109,6 +109,7 @@ public final class SegmentRunnerTest {
               any(RepairParallelism.class),
               any(),
               anyBoolean(),
+              any(),
               any()))
             .then((invocation) -> {
 
@@ -123,7 +124,8 @@ public final class SegmentRunnerTest {
                       1,
                       Optional.of(ActiveRepairService.Status.STARTED),
                       Optional.absent(),
-                      "Repair command 1 has started");
+                      "Repair command 1 has started",
+                      jmx);
 
                   assertEquals(
                       RepairSegment.State.RUNNING,
@@ -206,6 +208,7 @@ public final class SegmentRunnerTest {
               any(RepairParallelism.class),
               any(),
               anyBoolean(),
+              any(),
               any()))
             .then(invocation -> {
 
@@ -219,7 +222,8 @@ public final class SegmentRunnerTest {
                     1,
                     Optional.of(ActiveRepairService.Status.STARTED),
                     Optional.absent(),
-                    "Repair command 1 has started");
+                    "Repair command 1 has started",
+                    jmx);
 
                 assertEquals(RepairSegment.State.RUNNING, storage.getRepairSegment(runId, segmentId).get().getState());
                 // report about an unrelated repair. Shouldn't affect anything.
@@ -227,13 +231,15 @@ public final class SegmentRunnerTest {
                     2,
                     Optional.of(ActiveRepairService.Status.SESSION_FAILED),
                     Optional.absent(),
-                    "Repair command 2 has failed");
+                    "Repair command 2 has failed",
+                    jmx);
 
                 handler.get().handle(
                     1,
                     Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
                     Optional.absent(),
-                    "Repair session succeeded in command 1");
+                    "Repair session succeeded in command 1",
+                    jmx);
 
                 assertEquals(RepairSegment.State.DONE, storage.getRepairSegment(runId, segmentId).get().getState());
 
@@ -241,7 +247,8 @@ public final class SegmentRunnerTest {
                     1,
                     Optional.of(ActiveRepairService.Status.FINISHED),
                     Optional.absent(),
-                    "Repair command 1 has finished");
+                    "Repair command 1 has finished",
+                    jmx);
 
                 assertEquals(RepairSegment.State.DONE, storage.getRepairSegment(runId, segmentId).get().getState());
               }));
@@ -321,6 +328,7 @@ public final class SegmentRunnerTest {
               any(RepairParallelism.class),
               any(),
               anyBoolean(),
+              any(),
               any()))
             .then((invocation) -> {
 
@@ -334,7 +342,8 @@ public final class SegmentRunnerTest {
                     1,
                     Optional.of(ActiveRepairService.Status.STARTED),
                     Optional.absent(),
-                    "Repair command 1 has started");
+                    "Repair command 1 has started",
+                    jmx);
 
                 assertEquals(RepairSegment.State.RUNNING, storage.getRepairSegment(runId, segmentId).get().getState());
 
@@ -342,7 +351,8 @@ public final class SegmentRunnerTest {
                     1,
                     Optional.of(ActiveRepairService.Status.SESSION_FAILED),
                     Optional.absent(),
-                    "Repair command 1 has failed");
+                    "Repair command 1 has failed",
+                    jmx);
 
                 assertEquals(
                     RepairSegment.State.NOT_STARTED,
@@ -352,7 +362,8 @@ public final class SegmentRunnerTest {
                     1,
                     Optional.of(ActiveRepairService.Status.FINISHED),
                     Optional.absent(),
-                    "Repair command 1 has finished");
+                    "Repair command 1 has finished",
+                    jmx);
 
                 assertEquals(
                     RepairSegment.State.NOT_STARTED,

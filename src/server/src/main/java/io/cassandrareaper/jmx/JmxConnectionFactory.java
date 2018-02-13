@@ -24,19 +24,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JmxConnectionFactory {
 
   private static final Logger LOG = LoggerFactory.getLogger(JmxConnectionFactory.class);
-
+  private static final ConcurrentMap<String, JmxProxy> JMX_CONNECTIONS = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
   private Map<String, Integer> jmxPorts;
@@ -47,11 +51,19 @@ public class JmxConnectionFactory {
   public JmxConnectionFactory() {
     this.metricRegistry = new MetricRegistry();
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
+    registerConnectionsGauge();
   }
 
   public JmxConnectionFactory(MetricRegistry metricRegistry) {
     this.metricRegistry = metricRegistry;
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
+    registerConnectionsGauge();
+  }
+
+  private void registerConnectionsGauge() {
+    this.metricRegistry.register(
+        MetricRegistry.name(JmxConnectionFactory.class, "openJmxConnections"),
+        (Gauge<Integer>) () -> JMX_CONNECTIONS.size());
   }
 
   protected JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
@@ -61,19 +73,30 @@ public class JmxConnectionFactory {
       host = host + ":" + jmxPorts.get(host);
     }
 
-    String username = null;
-    String password = null;
-    if (jmxAuth != null) {
-      username = jmxAuth.getUsername();
-      password = jmxAuth.getPassword();
-    }
+    String username = (jmxAuth != null) ? jmxAuth.getUsername() : null;
+    String password = (jmxAuth != null) ? jmxAuth.getPassword() : null;
+
     try {
-      JmxProxy jmxProxy = JmxProxyImpl.connect(handler, host, username, password, addressTranslator, connectionTimeout);
-      hostConnectionCounters.incrementSuccessfulConnections(host);
-      return jmxProxy;
-    } catch (ReaperException | RuntimeException e) {
-      hostConnectionCounters.decrementSuccessfulConnections(host);
-      throw e;
+      JmxConnectionProvider provider =
+          new JmxConnectionProvider(
+              host, username, password, connectionTimeout, this.metricRegistry);
+      JMX_CONNECTIONS.computeIfAbsent(host, provider::apply);
+      JmxProxy proxy = JMX_CONNECTIONS.get(host);
+      if (!proxy.isConnectionAlive()) {
+        LOG.info("Adding new JMX Proxy for host {}", host);
+        JMX_CONNECTIONS.put(host, provider.apply(host)).close();
+        proxy.close();
+      }
+      return JMX_CONNECTIONS.get(host);
+    } catch (RuntimeException ex) {
+      // unpack any exception behind JmxConnectionProvider.apply(..)
+      if (ex.getCause() instanceof InterruptedException) {
+        throw (InterruptedException) ex.getCause();
+      }
+      if (ex.getCause() instanceof ReaperException) {
+        throw (ReaperException) ex.getCause();
+      }
+      throw ex;
     }
   }
 
@@ -132,5 +155,42 @@ public class JmxConnectionFactory {
 
   public final HostConnectionCounters getHostConnectionCounters() {
     return hostConnectionCounters;
+  }
+
+  private class JmxConnectionProvider implements Function<String, JmxProxy> {
+
+    private final String host;
+    private final String username;
+    private final String password;
+    private final int connectionTimeout;
+    private final MetricRegistry metricRegistry;
+
+    JmxConnectionProvider(
+        String host,
+        String username,
+        String password,
+        int connectionTimeout,
+        MetricRegistry metricRegistry) {
+      this.host = host;
+      this.username = username;
+      this.password = password;
+      this.connectionTimeout = connectionTimeout;
+      this.metricRegistry = metricRegistry;
+    }
+
+    @Override
+    public JmxProxy apply(String host) {
+      Preconditions.checkArgument(host.equals(this.host));
+      try {
+        JmxProxy proxy =
+            JmxProxyImpl.connect(
+                host, username, password, addressTranslator, connectionTimeout, metricRegistry);
+        hostConnectionCounters.incrementSuccessfulConnections(host);
+        return proxy;
+      } catch (ReaperException | InterruptedException ex) {
+        hostConnectionCounters.decrementSuccessfulConnections(host);
+        throw new RuntimeException(ex);
+      }
+    }
   }
 }

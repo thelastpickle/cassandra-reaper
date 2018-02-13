@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,6 +59,8 @@ import javax.management.remote.JMXServiceURL;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 import javax.validation.constraints.NotNull;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.google.common.base.Optional;
 import com.google.common.collect.BiMap;
@@ -107,14 +110,15 @@ final class JmxProxyImpl implements JmxProxy {
   private final EndpointSnitchInfoMBean endpointSnitchMbean;
   private final Object ssProxy;
   private final Object fdProxy;
-  private final Optional<RepairStatusHandler> repairStatusHandler;
   private final String host;
   private final String hostBeforeTranslation;
   private final JMXServiceURL jmxUrl;
   private final String clusterName;
+  private final ConcurrentMap<Integer, RepairStatusHandler> repairStatusHandlers =
+      Maps.newConcurrentMap();
+  private final MetricRegistry metricRegistry;
 
   private JmxProxyImpl(
-      Optional<RepairStatusHandler> handler,
       String host,
       String hostBeforeTranslation,
       JMXServiceURL jmxUrl,
@@ -124,7 +128,8 @@ final class JmxProxyImpl implements JmxProxy {
       MBeanServerConnection mbeanServer,
       CompactionManagerMBean cmProxy,
       EndpointSnitchInfoMBean endpointSnitchMbean,
-      FailureDetectorMBean fdProxy) {
+      FailureDetectorMBean fdProxy,
+      MetricRegistry metricRegistry) {
 
     this.host = host;
     this.hostBeforeTranslation = hostBeforeTranslation;
@@ -133,23 +138,24 @@ final class JmxProxyImpl implements JmxProxy {
     this.ssMbeanName = ssMbeanName;
     this.mbeanServer = mbeanServer;
     this.ssProxy = ssProxy;
-    this.repairStatusHandler = handler;
     this.cmProxy = cmProxy;
     this.endpointSnitchMbean = endpointSnitchMbean;
     this.clusterName = Cluster.toSymbolicName(((StorageServiceMBean) ssProxy).getClusterName());
     this.fdProxy = fdProxy;
+    this.metricRegistry = metricRegistry;
+    registerConnectionsGauge();
   }
 
   /**
    * @see JmxProxy#connect(Optional, String, int, String, String, EC2MultiRegionAddressTranslator)
    */
   static JmxProxy connect(
-      Optional<RepairStatusHandler> handler,
       String host,
       String username,
       String password,
       final EC2MultiRegionAddressTranslator addressTranslator,
-      int connectionTimeout)
+      int connectionTimeout,
+      MetricRegistry metricRegistry)
       throws ReaperException, InterruptedException {
 
     if (host == null) {
@@ -159,9 +165,16 @@ final class JmxProxyImpl implements JmxProxy {
     String[] parts = host.split(":");
     if (parts.length == 2) {
       return connect(
-          handler, parts[0], Integer.valueOf(parts[1]), username, password, addressTranslator, connectionTimeout);
+          parts[0],
+          Integer.valueOf(parts[1]),
+          username,
+          password,
+          addressTranslator,
+          connectionTimeout,
+          metricRegistry);
     } else {
-      return connect(handler, host, JMX_PORT, username, password, addressTranslator, connectionTimeout);
+      return connect(
+          host, JMX_PORT, username, password, addressTranslator, connectionTimeout, metricRegistry);
     }
   }
 
@@ -178,13 +191,13 @@ final class JmxProxyImpl implements JmxProxy {
    *     translate addresses
    */
   private static JmxProxy connect(
-      Optional<RepairStatusHandler> handler,
       String originalHost,
       int port,
       String username,
       String password,
       final EC2MultiRegionAddressTranslator addressTranslator,
-      int connectionTimeout)
+      int connectionTimeout,
+      MetricRegistry metricRegistry)
       throws ReaperException, InterruptedException {
 
     ObjectName ssMbeanName;
@@ -231,18 +244,19 @@ final class JmxProxyImpl implements JmxProxy {
       EndpointSnitchInfoMBean endpointSnitchProxy
           = JMX.newMBeanProxy(mbeanServerConn, endpointSnitchMbeanName, EndpointSnitchInfoMBean.class);
 
-      JmxProxy proxy = new JmxProxyImpl(
-          handler,
-          host,
-          originalHost,
-          jmxUrl,
-          jmxConn,
-          ssProxy,
-          ssMbeanName,
-          mbeanServerConn,
-          cmProxy,
-          endpointSnitchProxy,
-          fdProxy);
+      JmxProxy proxy =
+          new JmxProxyImpl(
+              host,
+              originalHost,
+              jmxUrl,
+              jmxConn,
+              ssProxy,
+              ssMbeanName,
+              mbeanServerConn,
+              cmProxy,
+              endpointSnitchProxy,
+              fdProxy,
+              metricRegistry);
 
       // registering a listener throws bunch of exceptions, so we do it here rather than in the
       // constructor
@@ -590,7 +604,8 @@ final class JmxProxyImpl implements JmxProxy {
       RepairParallelism repairParallelism,
       Collection<String> columnFamilies,
       boolean fullRepair,
-      Collection<String> datacenters)
+      Collection<String> datacenters,
+      RepairStatusHandler repairStatusHandler)
       throws ReaperException {
 
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
@@ -630,7 +645,8 @@ final class JmxProxyImpl implements JmxProxy {
             columnFamilies,
             beginToken,
             endToken,
-            datacenters.size() > 0 ? datacenters : null);
+            datacenters.size() > 0 ? datacenters : null,
+            repairStatusHandler);
       } else if (cassandraVersion.startsWith("2.1")) {
         return triggerRepair2dot1(
             fullRepair,
@@ -640,7 +656,8 @@ final class JmxProxyImpl implements JmxProxy {
             beginToken,
             endToken,
             cassandraVersion,
-            datacenters.size() > 0 ? datacenters : null);
+            datacenters.size() > 0 ? datacenters : null,
+            repairStatusHandler);
       } else {
         return triggerRepairPost2dot2(
             fullRepair,
@@ -650,7 +667,8 @@ final class JmxProxyImpl implements JmxProxy {
             beginToken,
             endToken,
             cassandraVersion,
-            datacenters);
+            datacenters,
+            repairStatusHandler);
       }
     } catch (RuntimeException e) {
       LOG.error("Segment repair failed", e);
@@ -666,7 +684,8 @@ final class JmxProxyImpl implements JmxProxy {
       BigInteger beginToken,
       BigInteger endToken,
       String cassandraVersion,
-      Collection<String> datacenters) {
+      Collection<String> datacenters,
+      RepairStatusHandler repairStatusHandler) {
 
     Map<String, String> options = new HashMap<>();
 
@@ -683,8 +702,10 @@ final class JmxProxyImpl implements JmxProxy {
 
     options.put(RepairOption.DATACENTERS_KEY, StringUtils.join(datacenters, ","));
     // options.put(RepairOption.HOSTS_KEY, StringUtils.join(specificHosts, ","));
+    int commandId = ((StorageServiceMBean) ssProxy).repairAsync(keyspace, options);
+    repairStatusHandlers.putIfAbsent(commandId, repairStatusHandler);
 
-    return ((StorageServiceMBean) ssProxy).repairAsync(keyspace, options);
+    return commandId;
   }
 
   private int triggerRepair2dot1(
@@ -695,46 +716,61 @@ final class JmxProxyImpl implements JmxProxy {
       BigInteger beginToken,
       BigInteger endToken,
       String cassandraVersion,
-      Collection<String> datacenters) {
+      Collection<String> datacenters,
+      RepairStatusHandler repairStatusHandler) {
 
     if (fullRepair) {
       // full repair
       if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
-        return ((StorageServiceMBean) ssProxy)
-            .forceRepairRangeAsync(
-                beginToken.toString(),
-                endToken.toString(),
-                keyspace,
-                repairParallelism.ordinal(),
-                datacenters,
-                cassandraVersion.startsWith("2.2") ? new HashSet<String>() : null,
-                fullRepair,
-                columnFamilies.toArray(new String[columnFamilies.size()]));
+        int commandId =
+            ((StorageServiceMBean) ssProxy)
+                .forceRepairRangeAsync(
+                    beginToken.toString(),
+                    endToken.toString(),
+                    keyspace,
+                    repairParallelism.ordinal(),
+                    datacenters,
+                    cassandraVersion.startsWith("2.2") ? new HashSet<String>() : null,
+                    fullRepair,
+                    columnFamilies.toArray(new String[columnFamilies.size()]));
+
+        repairStatusHandlers.putIfAbsent(commandId, repairStatusHandler);
+        return commandId;
       }
 
       boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
 
-      return ((StorageServiceMBean) ssProxy)
-          .forceRepairRangeAsync(
-              beginToken.toString(),
-              endToken.toString(),
-              keyspace,
-              snapshotRepair ? RepairParallelism.SEQUENTIAL.ordinal() : RepairParallelism.PARALLEL.ordinal(),
-              datacenters,
-              cassandraVersion.startsWith("2.2") ? new HashSet<String>() : null,
-              fullRepair,
-              columnFamilies.toArray(new String[columnFamilies.size()]));
+      int commandId =
+          ((StorageServiceMBean) ssProxy)
+              .forceRepairRangeAsync(
+                  beginToken.toString(),
+                  endToken.toString(),
+                  keyspace,
+                  snapshotRepair
+                      ? RepairParallelism.SEQUENTIAL.ordinal()
+                      : RepairParallelism.PARALLEL.ordinal(),
+                  datacenters,
+                  cassandraVersion.startsWith("2.2") ? new HashSet<String>() : null,
+                  fullRepair,
+                  columnFamilies.toArray(new String[columnFamilies.size()]));
+
+      repairStatusHandlers.putIfAbsent(commandId, repairStatusHandler);
+      return commandId;
     }
 
     // incremental repair
-    return ((StorageServiceMBean) ssProxy)
-        .forceRepairAsync(
-            keyspace,
-            Boolean.FALSE,
-            Boolean.FALSE,
-            Boolean.FALSE,
-            fullRepair,
-            columnFamilies.toArray(new String[columnFamilies.size()]));
+    int commandId =
+        ((StorageServiceMBean) ssProxy)
+            .forceRepairAsync(
+                keyspace,
+                Boolean.FALSE,
+                Boolean.FALSE,
+                Boolean.FALSE,
+                fullRepair,
+                columnFamilies.toArray(new String[columnFamilies.size()]));
+
+    repairStatusHandlers.putIfAbsent(commandId, repairStatusHandler);
+    return commandId;
   }
 
   private int triggerRepairPre2dot1(
@@ -743,29 +779,38 @@ final class JmxProxyImpl implements JmxProxy {
       Collection<String> columnFamilies,
       BigInteger beginToken,
       BigInteger endToken,
-      Collection<String> datacenters) {
+      Collection<String> datacenters,
+      RepairStatusHandler repairStatusHandler) {
 
     // Cassandra 1.2 and 2.0 compatibility
     if (repairParallelism.equals(RepairParallelism.DATACENTER_AWARE)) {
-      return ((StorageServiceMBean20) ssProxy)
-          .forceRepairRangeAsync(
-              beginToken.toString(),
-              endToken.toString(),
-              keyspace,
-              repairParallelism.ordinal(),
-              datacenters,
-              null,
-              columnFamilies.toArray(new String[columnFamilies.size()]));
+      int commandId =
+          ((StorageServiceMBean20) ssProxy)
+              .forceRepairRangeAsync(
+                  beginToken.toString(),
+                  endToken.toString(),
+                  keyspace,
+                  repairParallelism.ordinal(),
+                  datacenters,
+                  null,
+                  columnFamilies.toArray(new String[columnFamilies.size()]));
+
+      repairStatusHandlers.putIfAbsent(commandId, repairStatusHandler);
+      return commandId;
     }
     boolean snapshotRepair = repairParallelism.equals(RepairParallelism.SEQUENTIAL);
-    return ((StorageServiceMBean20) ssProxy)
-        .forceRepairRangeAsync(
-            beginToken.toString(),
-            endToken.toString(),
-            keyspace,
-            snapshotRepair,
-            false,
-            columnFamilies.toArray(new String[columnFamilies.size()]));
+    int commandId =
+        ((StorageServiceMBean20) ssProxy)
+            .forceRepairRangeAsync(
+                beginToken.toString(),
+                endToken.toString(),
+                keyspace,
+                snapshotRepair,
+                false,
+                columnFamilies.toArray(new String[columnFamilies.size()]));
+
+    repairStatusHandlers.putIfAbsent(commandId, repairStatusHandler);
+    return commandId;
   }
 
   @Override
@@ -789,13 +834,12 @@ final class JmxProxyImpl implements JmxProxy {
     Thread.currentThread().setName(clusterName);
     // we're interested in "repair"
     String type = notification.getType();
-    LOG.debug(
-        "Received notification: {} with type {} and repairStatusHandler {}", notification, type, repairStatusHandler);
-    if (repairStatusHandler.isPresent() && ("repair").equals(type)) {
+    LOG.debug("Received notification: {} with type {}", notification, type);
+    if (("repair").equals(type)) {
       processOldApiNotification(notification);
     }
 
-    if (repairStatusHandler.isPresent() && ("progress").equals(type)) {
+    if (("progress").equals(type)) {
       processNewApiNotification(notification);
     }
   }
@@ -813,7 +857,15 @@ final class JmxProxyImpl implements JmxProxy {
       // this is some text message like "Starting repair...", "Finished repair...", etc.
       String message = notification.getMessage();
       // let the handler process the even
-      repairStatusHandler.get().handle(repairNo, Optional.of(status), Optional.absent(), message);
+      if (repairStatusHandlers.containsKey(repairNo)) {
+        LOG.debug(
+            "Handling notification: {} with repair handler {}",
+            notification,
+            repairStatusHandlers.containsKey(repairNo));
+        repairStatusHandlers
+            .get(repairNo)
+            .handle(repairNo, Optional.of(status), Optional.absent(), message, this);
+      }
     } catch (RuntimeException e) {
       LOG.error("Error while processing JMX notification", e);
     }
@@ -832,7 +884,15 @@ final class JmxProxyImpl implements JmxProxy {
       // this is some text message like "Starting repair...", "Finished repair...", etc.
       String message = notification.getMessage();
       // let the handler process the even
-      repairStatusHandler.get().handle(repairNo, Optional.absent(), Optional.of(progress), message);
+      if (repairStatusHandlers.containsKey(repairNo)) {
+        LOG.debug(
+            "Handling notification: {} with repair handler {}",
+            notification,
+            repairStatusHandlers.containsKey(repairNo));
+        repairStatusHandlers
+            .get(repairNo)
+            .handle(repairNo, Optional.absent(), Optional.of(progress), message, this);
+      }
     } catch (RuntimeException e) {
       LOG.error("Error while processing JMX notification", e);
     }
@@ -848,24 +908,24 @@ final class JmxProxyImpl implements JmxProxy {
       String connectionId = getConnectionId();
       return null != connectionId && connectionId.length() > 0;
     } catch (IOException e) {
-      LOG.error("Couldn't get Connection Id", e);
+      LOG.debug("Couldn't get Connection Id", e);
+      return false;
     }
-    return false;
   }
 
-  /**
-   * Cleanly shut down by un-registering the listener and closing the JMX connection.
-   */
+  @Override
+  public void removeRepairStatusHandler(int commandId) {
+    repairStatusHandlers.remove(commandId);
+  }
+
+  /** Cleanly shut down by un-registering the listener and closing the JMX connection. */
   @Override
   public void close() {
-    LOG.debug("close JMX connection to '{}': {}", host, jmxUrl);
-    if (this.repairStatusHandler.isPresent()) {
-      try {
-        mbeanServer.removeNotificationListener(ssMbeanName, this);
-        LOG.debug("Successfully removed notification listener for '{}': {}", host, jmxUrl);
-      } catch (InstanceNotFoundException | ListenerNotFoundException | IOException e) {
-        LOG.debug("failed on removing notification listener", e);
-      }
+    try {
+      mbeanServer.removeNotificationListener(ssMbeanName, this);
+      LOG.debug("Successfully removed notification listener for '{}': {}", host, jmxUrl);
+    } catch (InstanceNotFoundException | ListenerNotFoundException | IOException e) {
+      LOG.debug("failed on removing notification listener", e);
     }
     try {
       jmxConnector.close();
@@ -979,5 +1039,12 @@ final class JmxProxyImpl implements JmxProxy {
     public String getColumnFamily() {
       return columnFamily;
     }
+  }
+
+  private void registerConnectionsGauge() {
+    this.metricRegistry.register(
+        MetricRegistry.name(
+            JmxProxyImpl.class, this.clusterName, this.host, "repairStatusHandlers"),
+        (Gauge<Integer>) () -> this.repairStatusHandlers.size());
   }
 }

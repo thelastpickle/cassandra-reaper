@@ -213,15 +213,13 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
 
-    try (Timer.Context cxt = context.metricRegistry.timer(metricNameForRunRepair(segment)).time();
-        JmxProxy coordinator = context.jmxConnectionFactory.connectAny(
-            Optional.<RepairStatusHandler>fromNullable(this),
-            potentialCoordinators,
-            context.config.getJmxConnectionTimeoutInSeconds())) {
-
+    try (Timer.Context cxt = context.metricRegistry.timer(metricNameForRunRepair(segment)).time()) {
+      JmxProxy coordinator = context.jmxConnectionFactory.connectAny(
+          Optional.<RepairStatusHandler>fromNullable(this),
+          potentialCoordinators,
+          context.config.getJmxConnectionTimeoutInSeconds());
       if (SEGMENT_RUNNERS.containsKey(segmentId)) {
         LOG.error("SegmentRunner already exists for segment with ID: {}", segmentId);
-        closeJmxConnection(Optional.fromNullable(coordinator));
         throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
       }
       SEGMENT_RUNNERS.put(segmentId, this);
@@ -231,7 +229,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       LazyInitializer<Set<String>> busyHosts = new BusyHostsInitializer(coordinator);
       if (!canRepair(segment, keyspace, coordinator, busyHosts)) {
         postponeCurrentSegment();
-        closeJmxConnection(Optional.fromNullable(coordinator));
         return false;
       }
 
@@ -276,17 +273,19 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                     .build();
             context.storage.updateRepairSegment(segment);
 
-            commandId = coordinator.triggerRepair(
-                segment.getStartToken(),
-                segment.getEndToken(),
-                keyspace,
-                validationParallelism,
-                tablesToRepair,
-                fullRepair,
-                repairUnit.getDatacenters());
+            commandId =
+                coordinator.triggerRepair(
+                    segment.getStartToken(),
+                    segment.getEndToken(),
+                    keyspace,
+                    validationParallelism,
+                    tablesToRepair,
+                    fullRepair,
+                    repairUnit.getDatacenters(),
+                    this);
 
             if (0 != commandId) {
-              processTriggeredSegment(segment, coordinator);
+              processTriggeredSegment(segment, coordinator, commandId);
             } else {
               LOG.info("Nothing to repair for segment {} in keyspace {}", segmentId, keyspace);
 
@@ -299,10 +298,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                       .build());
 
               SEGMENT_RUNNERS.remove(segment.getId());
-              closeJmxConnection(Optional.fromNullable(coordinator));
             }
           }
-          closeJmxConnection(Optional.fromNullable(coordinator));
         } finally {
           LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
         }
@@ -322,7 +319,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return true;
   }
 
-  private void processTriggeredSegment(final RepairSegment segment, final JmxProxy coordinator) {
+  private void processTriggeredSegment(
+      final RepairSegment segment, final JmxProxy coordinator, int repairNo) {
 
     repairRunner.updateLastEvent(
         String.format("Triggered repair of segment %s via host %s", segment.getId(), coordinator.getHost()));
@@ -355,7 +353,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     } catch (InterruptedException e) {
       LOG.warn("Repair command {} on segment {} interrupted", commandId, segmentId, e);
     } finally {
-
+      coordinator.removeRepairStatusHandler(repairNo);
       RepairSegment resultingSegment
           = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
 
@@ -424,12 +422,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         Optional.fromNullable(rs.getCoordinatorHost()).or("null").replace('.', '-'),
         clusterName,
         repairUnit.getKeyspaceName());
-  }
-
-  private void closeJmxConnection(Optional<JmxProxy> jmxProxy) {
-    if (jmxProxy.isPresent()) {
-      jmxProxy.get().close();
-    }
   }
 
   private void declineRun() {
@@ -549,8 +541,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       throws ConcurrentException {
 
     if (!busyHosts.get().contains(hostName) && context.storage instanceof IDistributedStorage) {
-      try (JmxProxy hostProxy
-          = context.jmxConnectionFactory.connect(hostName, context.config.getJmxConnectionTimeoutInSeconds())) {
+      try {
+        JmxProxy hostProxy =
+            context.jmxConnectionFactory.connect(
+                hostName, context.config.getJmxConnectionTimeoutInSeconds());
         // We double check that repair is still running there before actually canceling repairs
         if (hostProxy.isRepairRunning()) {
           LOG.warn(
@@ -559,7 +553,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                   + "on the host.",
               hostName);
           hostProxy.cancelAllRepairs();
-          hostProxy.close();
         }
       } catch (ReaperException | RuntimeException | InterruptedException | JMException e) {
         LOG.debug("failed to cancel repairs on host {}", hostName, e);
@@ -571,23 +564,28 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
     return () -> {
       LOG.debug("getMetricsForHost {} / {} / {}", node, localDc, nodeDc);
-      try (JmxProxy nodeProxy
-          = context.jmxConnectionFactory.connect(node, context.config.getJmxConnectionTimeoutInSeconds())) {
+      try {
+        JmxProxy nodeProxy =
+            context.jmxConnectionFactory.connect(
+                node, context.config.getJmxConnectionTimeoutInSeconds());
 
-        NodeMetrics metrics = NodeMetrics.builder()
-            .withNode(node)
-            .withDatacenter(nodeDc)
-            .withCluster(nodeProxy.getClusterName())
-            .withPendingCompactions(nodeProxy.getPendingCompactions())
-            .withHasRepairRunning(nodeProxy.isRepairRunning())
-            .withActiveAnticompactions(0) // for future use
-            .build();
+        NodeMetrics metrics =
+            NodeMetrics.builder()
+                .withNode(node)
+                .withDatacenter(nodeDc)
+                .withCluster(nodeProxy.getClusterName())
+                .withPendingCompactions(nodeProxy.getPendingCompactions())
+                .withHasRepairRunning(nodeProxy.isRepairRunning())
+                .withActiveAnticompactions(0) // for future use
+                .build();
 
         return Pair.of(node, Optional.of(metrics));
       } catch (RuntimeException | ReaperException e) {
-        LOG.debug("failed to query metrics for host {}, trying to get metrics from storage...", node, e);
+        LOG.debug(
+            "failed to query metrics for host {}, trying to get metrics from storage...", node, e);
 
-        if (DatacenterAvailability.ALL != context.config.getDatacenterAvailability() && !nodeDc.equals(localDc)) {
+        if (DatacenterAvailability.ALL != context.config.getDatacenterAvailability()
+            && !nodeDc.equals(localDc)) {
           // We can get metrics for remote datacenters from storage
           Optional<NodeMetrics> metrics = getRemoteNodeMetrics(node, nodeDc);
           if (metrics.isPresent()) {
@@ -635,9 +633,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private boolean isRepairRunningOnOneNode(RepairSegment segment) {
     for (RepairSegment segmentInRun : context.storage.getRepairSegmentsForRun(segment.getRunId())) {
-      try (JmxProxy hostProxy = context.jmxConnectionFactory.connect(
-          segmentInRun.getCoordinatorHost(), context.config.getJmxConnectionTimeoutInSeconds())) {
-
+      try {
+        JmxProxy hostProxy =
+            context.jmxConnectionFactory.connect(
+                segmentInRun.getCoordinatorHost(),
+                context.config.getJmxConnectionTimeoutInSeconds());
         if (hostProxy.isRepairRunning()) {
           return true;
         }
@@ -683,7 +683,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       int repairNumber,
       Optional<ActiveRepairService.Status> status,
       Optional<ProgressEventType> progress,
-      String message) {
+      String message,
+      JmxProxy jmxProxy) {
 
     final RepairSegment segment = context.storage.getRepairSegment(repairRunner.getRepairRunId(), segmentId).get();
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
@@ -710,15 +711,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             currentSegment,
             repairNumber,
             failOutsideSynchronizedBlock,
-            progress);
+            progress,
+            jmxProxy);
       }
       // New repair API – Cassandra-2.2 onwards
       if (progress.isPresent()) {
-        failOutsideSynchronizedBlock = handleJmxNotificationForCassandra22(
-            progress,
-            currentSegment,
-            repairNumber,
-            failOutsideSynchronizedBlock);
+        failOutsideSynchronizedBlock =
+            handleJmxNotificationForCassandra22(
+                progress, currentSegment, repairNumber, failOutsideSynchronizedBlock, jmxProxy);
       }
     }
 
@@ -742,7 +742,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       Optional<ProgressEventType> progress,
       RepairSegment currentSegment,
       int repairNumber,
-      boolean failOutsideSynchronizedBlock) {
+      boolean failOutsideSynchronizedBlock,
+      JmxProxy jmxProxy) {
 
     switch (progress.get()) {
       case START:
@@ -794,7 +795,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
       case ERROR:
       case ABORT:
-        LOG.warn("repair session failed for segment with id '{}' and repair number '{}'", segmentId, repairNumber);
+        LOG.warn(
+            "repair session failed for segment with id '{}' and repair number '{}'",
+            segmentId,
+            repairNumber);
         failOutsideSynchronizedBlock = true;
         break;
 
@@ -802,8 +806,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         // This gets called through the JMX proxy at the end
         // regardless of succeeded or failed sessions.
         LOG.debug(
-            "repair session finished for segment with id '{}' and repair number '{}'", segmentId, repairNumber);
+            "repair session finished for segment with id '{}' and repair number '{}'",
+            segmentId,
+            repairNumber);
         condition.signalAll();
+        jmxProxy.removeRepairStatusHandler(repairNumber);
         break;
       default:
         LOG.debug(
@@ -820,7 +827,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       RepairSegment currentSegment,
       int repairNumber,
       boolean failOutsideSynchronizedBlock,
-      Optional<ProgressEventType> progress) {
+      Optional<ProgressEventType> progress,
+      JmxProxy jmxProxy) {
 
     switch (status.get()) {
       case STARTED:
@@ -884,6 +892,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             segmentId,
             repairNumber);
         condition.signalAll();
+        jmxProxy.removeRepairStatusHandler(repairNumber);
         break;
       default:
         LOG.debug(
@@ -903,11 +912,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     String repairId = parseRepairId(message);
     if (repairId != null) {
       for (String involvedNode : potentialCoordinators) {
-        try (JmxProxy jmx
-            = context.jmxConnectionFactory.connect(involvedNode, context.config.getJmxConnectionTimeoutInSeconds())) {
+        try {
+          JmxProxy jmx =
+              context.jmxConnectionFactory.connect(
+                  involvedNode, context.config.getJmxConnectionTimeoutInSeconds());
           // there is no way of telling if the snapshot was cleared or not :(
           jmx.clearSnapshot(repairId, keyspace);
-          jmx.close();
         } catch (ReaperException | NumberFormatException | InterruptedException e) {
           LOG.warn(
               "Failed to clear snapshot after failed session for host {}, keyspace {}: {}",
