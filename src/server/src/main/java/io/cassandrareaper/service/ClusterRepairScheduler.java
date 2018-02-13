@@ -134,8 +134,10 @@ public final class ClusterRepairScheduler {
   }
 
   private boolean keyspaceHasNoTable(AppContext context, Cluster cluster, String keyspace) {
-    try (JmxProxy jmxProxy
-        = context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds())) {
+    try {
+      JmxProxy jmxProxy =
+          context.jmxConnectionFactory.connectAny(
+              cluster, context.config.getJmxConnectionTimeoutInSeconds());
 
       Set<String> tables = jmxProxy.getTableNamesForKeyspace(keyspace);
       return tables.isEmpty();
@@ -186,16 +188,16 @@ public final class ClusterRepairScheduler {
     }
 
     private Set<String> keyspacesInCluster(AppContext context, Cluster cluster) throws ReaperException {
-      try (JmxProxy jmxProxy
-          = context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds())) {
-        List<String> keyspaces = jmxProxy.getKeyspaces();
-        if (keyspaces.isEmpty()) {
-          String message = format("No keyspace found in cluster %s", cluster.getName());
-          LOG.debug(message);
-          throw new IllegalArgumentException(message);
-        }
-        return Sets.newHashSet(keyspaces);
+      JmxProxy jmxProxy =
+          context.jmxConnectionFactory.connectAny(
+              cluster, context.config.getJmxConnectionTimeoutInSeconds());
+      List<String> keyspaces = jmxProxy.getKeyspaces();
+      if (keyspaces.isEmpty()) {
+        String message = format("No keyspace found in cluster %s", cluster.getName());
+        LOG.debug(message);
+        throw new IllegalArgumentException(message);
       }
+      return Sets.newHashSet(keyspaces);
     }
   }
 }

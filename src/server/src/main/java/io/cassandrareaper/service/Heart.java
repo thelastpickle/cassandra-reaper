@@ -26,6 +26,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.management.JMException;
 
 import com.codahale.metrics.Gauge;
@@ -114,9 +115,8 @@ final class Heart implements AutoCloseable {
 
                         LOG.info("Got metric request for node {} in {}", req.getNode(), req.getCluster());
                         try (Timer.Context t1 = timer(context, req.getCluster(), req.getNode())) {
-
-                          try (JmxProxy nodeProxy
-                              = context.jmxConnectionFactory.connect(req.getNode(), jmxTimeoutSeconds)) {
+                          try {
+                            JmxProxy nodeProxy = context.jmxConnectionFactory.connect(req.getNode(), jmxTimeoutSeconds);
 
                             storage.storeNodeMetrics(
                                 runId,

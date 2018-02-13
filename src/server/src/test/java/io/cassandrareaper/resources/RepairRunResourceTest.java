@@ -121,8 +121,15 @@ public final class RepairRunResourceTest {
     when(proxy.tokenRangeToEndpoint(anyString(), any(RingRange.class))).thenReturn(
         Collections.singletonList(""));
     when(proxy.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
-    when(proxy.triggerRepair(any(BigInteger.class), any(BigInteger.class), anyString(),
-        any(RepairParallelism.class), anyCollectionOf(String.class), anyBoolean(), anyCollectionOf(String.class)))
+    when(proxy.triggerRepair(
+            any(BigInteger.class),
+            any(BigInteger.class),
+            anyString(),
+            any(RepairParallelism.class),
+            anyCollectionOf(String.class),
+            anyBoolean(),
+            anyCollectionOf(String.class),
+            any()))
         .thenReturn(1);
 
     context.jmxConnectionFactory = new JmxConnectionFactory() {

@@ -46,7 +46,7 @@ export const StatusUpdateMixin = {
     if(state == 'ACTIVE' || state == 'RUNNING') {
       toStatus = 'PAUSED';
     } else if(state == 'PAUSED' || state == 'NOT_STARTED') {
-      if(this.props.row.scheduled_days_between) {
+      if(this.props.row.next_activation) {
         toStatus = 'ACTIVE'; // repair schedule
       } else {
         toStatus = 'RUNNING'; // repair run

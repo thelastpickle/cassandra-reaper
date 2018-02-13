@@ -64,8 +64,13 @@ public final class JmxConnectionsInitializer implements AutoCloseable {
 
   private Callable<Optional<String>> connectToJmx(List<String> endpoints) {
     return () -> {
-      try (JmxProxy jmxProxy = context.jmxConnectionFactory
-              .connectAny(Optional.absent(), endpoints, (int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds())) {
+      try {
+
+        JmxProxy jmxProxy =
+            context.jmxConnectionFactory.connectAny(
+                Optional.absent(),
+                endpoints,
+                (int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds());
 
         return Optional.of(endpoints.get(0));
 

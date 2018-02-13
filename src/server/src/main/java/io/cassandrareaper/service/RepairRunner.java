@@ -496,10 +496,6 @@ final class RepairRunner implements Runnable {
 
   void killAndCleanupRunner() {
     context.repairManager.removeRunner(this);
-    if (jmxConnection != null) {
-      jmxConnection.close();
-      jmxConnection = null;
-    }
     Thread.currentThread().interrupt();
   }
 
