@@ -16,7 +16,7 @@ const NodeStatus = React.createClass({
   },
 
   getInitialState() {
-    return { showModal: false };
+    return { showModal: false};
   },
 
   close() {
@@ -84,19 +84,26 @@ const NodeStatus = React.createClass({
 const Cluster = React.createClass({
 
   propTypes: {
-    name: React.PropTypes.string.isRequired
+    name: React.PropTypes.string.isRequired,
+    clusterFilter: React.PropTypes.string.isRequired
   },
   
   getInitialState: function() {
     const isDev = window.top.location.pathname.includes('webpack-dev-server');
-    const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
-    return {clusterStatus: {}, clusterStatuses: null, urlPrefix: URL_PREFIX , nbNodes: 0, nodesDown:0};
+    //const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
+    const URL_PREFIX = isDev ? 'http://gew1-cassandrareaper-b-ptln.gew1.spotify.net:8080' : '';
+    return {clusterStatus: {}, 
+            clusterStatuses: null, 
+            urlPrefix: URL_PREFIX , 
+            nbNodes: 0, 
+            nodesDown:0,
+            refreshing: true,
+            nodes_status: null
+          };
   },
 
   componentWillMount: function() {
     this._refreshClusterStatus();
-    this.setState({clusterStatuses: setInterval(this._refreshClusterStatus, 10000)}); 
-    console.log("Path " + window.location.pathname);
   },
 
   _refreshClusterStatus: function() {
@@ -105,7 +112,19 @@ const Cluster = React.createClass({
           method: 'GET',
           component: this,
           complete: function(data) {
-            this.component.setState({clusterStatus: $.parseJSON(data.responseText)});
+            console.log(this.component.props.name + " complete.")
+            this.component.setState({clusterStatuses: setTimeout(this.component._refreshClusterStatus, 30000),
+                                     clusterStatus: $.parseJSON(data.responseText)});
+            
+            if(this.component.state.clusterStatus.nodes_status){
+              this.component.setState({nodes_status: this.component.state.clusterStatus.nodes_status});
+            }
+            console.log(this.component.props.name + " : Next attempt in 30s.")
+          },
+          error: function(data) {
+            console.log(this.component.props.name + " complete.")
+            this.component.setState({clusterStatuses: setTimeout(this.component._refreshClusterStatus, 30000)});
+
           }
       });
   },
@@ -126,13 +145,13 @@ const Cluster = React.createClass({
       marginBottom: "0.25em"
     }
 
-    let datacenters=<div className="clusterLoader"></div>
-
+    let datacenters = "";
     let runningRepairs = 0;
 
     let repairProgress = "";
     let totalLoad = 0;
-    if(this.state.clusterStatus.nodes_status){
+
+    if (this.state.clusterStatus.repair_runs) {
       runningRepairs = this.state.clusterStatus.repair_runs.reduce(function(previousValue, repairRun){
                               return previousValue + (repairRun.state=='RUNNING' ? 1: 0); 
                             }, 0);;
@@ -143,25 +162,39 @@ const Cluster = React.createClass({
                                    label={repairRun.keyspace_name}
                                    key={repairRun.id}/>
       )
-
-      datacenters = Object.keys(this.state.clusterStatus.nodes_status.endpointStates[0].endpoints).sort().map(dc => 
-                      <Datacenter datacenter={this.state.clusterStatus.nodes_status.endpointStates[0].endpoints[dc]} 
-                                  datacenterName={dc} 
-                                  nbDatacenters={Object.keys(this.state.clusterStatus.nodes_status.endpointStates[0].endpoints).length} 
-                                  clusterName={this.props.name} key={this.props.name + '-' + dc} 
-                                  totalLoad={this.state.clusterStatus.nodes_status.endpointStates[0].totalLoad}/>
-      )
-
-      totalLoad = this.state.clusterStatus.nodes_status.endpointStates[0].totalLoad;
     }
+    
+    if(this.state.nodes_status != null) {
+        datacenters = Object.keys(this.state.nodes_status.endpointStates[0].endpoints).sort().map(dc => 
+                        <Datacenter datacenter={this.state.nodes_status.endpointStates[0].endpoints[dc]} 
+                                    datacenterName={dc} 
+                                    nbDatacenters={Object.keys(this.state.nodes_status.endpointStates[0].endpoints).length} 
+                                    clusterName={this.props.name} key={this.props.name + '-' + dc} 
+                                    totalLoad={this.state.nodes_status.endpointStates[0].totalLoad}/>
+       ) 
+       totalLoad = this.state.nodes_status.endpointStates[0].totalLoad;
+      } 
+      else {
+        datacenters = <div className="clusterLoader"></div>
+      }
 
     let runningRepairsBadge = <span className="label label-default">{runningRepairs}</span>;
     if(runningRepairs > 0) {
       runningRepairsBadge = <span className="label label-success">{runningRepairs}</span>;
     }
 
+    let clusterDisplayStyle = {
+      display: "none" 
+    }
+
+    if(this.props.name.includes(this.props.clusterFilter)) {
+      clusterDisplayStyle = {
+        display: "block"
+      }
+    }
+
     return (
-      <div className="panel panel-default">
+      <div className="panel panel-default" style={clusterDisplayStyle}>
         <div className="panel-body">
           <div className="row">
               <div className="col-lg-2"><a href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name} <span className="badge">{humanFileSize(totalLoad,1024)}</span></h4></a><div>Running repairs : {runningRepairsBadge}<br/>{repairProgress}</div>
@@ -341,9 +374,8 @@ const clusterList = React.createClass({
 
   render: function() {
 
-    const rows = this.state.clusterNames.filter(cluster => cluster.includes(this.state.clusterFilter))
-                                        .sort().map(name =>
-      <Cluster name={name} key={name} deleteSubject={this.props.deleteSubject} getClusterStatus={this.props.getClusterStatus} getClusterSubject={this.props.getClusterSubject}/>);
+    const rows = this.state.clusterNames.sort().map(name =>
+      <Cluster name={name} key={name} deleteSubject={this.props.deleteSubject} getClusterStatus={this.props.getClusterStatus} getClusterSubject={this.props.getClusterSubject} clusterFilter={this.state.clusterFilter}/>);
 
     let table = null;
     if(rows.length == 0) {
