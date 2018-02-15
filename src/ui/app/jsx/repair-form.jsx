@@ -13,8 +13,9 @@ const repairForm = React.createClass({
 
   getInitialState: function() {
     const isDev = window.top.location.pathname.includes('webpack-dev-server');
-    const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
-
+    //const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
+    const URL_PREFIX = isDev ? 'http://gew1-cassandrareaper-b-ptln.gew1.spotify.net:8080' : '';
+    
     return {
       addRepairResultMsg: null, clusterNames: [], submitEnabled: false,
       clusterName: this.props.currentCluster!="all"?this.props.currentCluster:this.props.clusterNames[0], keyspace: "", tables: "", owner: null, segments: null,
