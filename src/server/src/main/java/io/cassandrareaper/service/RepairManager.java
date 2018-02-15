@@ -202,6 +202,8 @@ public final class RepairManager {
             LOG.warn(
                 "Aborting stuck segment {} in repair run {}", segment.getId(), repairRun.getId());
             if (postponeWithoutAborting) {
+              SegmentRunner.postponeSegment(context, segment);
+            } else {
               SegmentRunner.abort(context, segment, jmxProxy);
             }
           } catch (ReaperException | NumberFormatException | InterruptedException e) {
