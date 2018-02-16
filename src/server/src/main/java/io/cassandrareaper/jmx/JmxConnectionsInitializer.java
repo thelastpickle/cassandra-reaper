@@ -15,7 +15,9 @@
 package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.AppContext;
+import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.Arrays;
 import java.util.List;
@@ -48,16 +50,19 @@ public final class JmxConnectionsInitializer implements AutoCloseable {
   }
 
   public void on(Cluster cluster) {
-    LOG.info("Initializing JMX seed list for cluster {}...", cluster.getName());
-    List<Callable<Optional<String>>> jmxTasks = Lists.newArrayList();
-    List<String> seedHosts = Lists.newArrayList();
-    seedHosts.addAll(cluster.getSeedHosts());
+    if (context.storage instanceof IDistributedStorage
+        && context.config.getDatacenterAvailability() != DatacenterAvailability.ALL) {
+      LOG.info("Initializing JMX seed list for cluster {}...", cluster.getName());
+      List<Callable<Optional<String>>> jmxTasks = Lists.newArrayList();
+      List<String> seedHosts = Lists.newArrayList();
+      seedHosts.addAll(cluster.getSeedHosts());
 
-    for (int i = 0; i < seedHosts.size(); i++) {
-      jmxTasks.add(connectToJmx(Arrays.asList(seedHosts.get(i))));
-      if (i % 10 == 0 || i == seedHosts.size() - 1) {
-        tryConnectingToJmxSeeds(jmxTasks);
-        jmxTasks = Lists.newArrayList();
+      for (int i = 0; i < seedHosts.size(); i++) {
+        jmxTasks.add(connectToJmx(Arrays.asList(seedHosts.get(i))));
+        if (i % 10 == 0 || i == seedHosts.size() - 1) {
+          tryConnectingToJmxSeeds(jmxTasks);
+          jmxTasks = Lists.newArrayList();
+        }
       }
     }
   }
