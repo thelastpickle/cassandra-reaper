@@ -96,10 +96,11 @@ public class JmxConnectionFactory {
       }
       return JMX_CONNECTIONS.get(host);
     } catch (RuntimeException ex) {
-      LOG.error("Failed creating a new JMX connection to {}", host, ex);
       // unpack any exception behind JmxConnectionProvider.apply(..)
       if (ex.getCause() instanceof InterruptedException) {
         throw (InterruptedException) ex.getCause();
+      } else {
+        LOG.error("Failed creating a new JMX connection to {}", host, ex);
       }
       if (ex.getCause() instanceof ReaperException) {
         throw (ReaperException) ex.getCause();
