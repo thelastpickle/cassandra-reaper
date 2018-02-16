@@ -61,9 +61,17 @@ public class JmxConnectionFactory {
   }
 
   private void registerConnectionsGauge() {
-    this.metricRegistry.register(
-        MetricRegistry.name(JmxConnectionFactory.class, "openJmxConnections"),
-        (Gauge<Integer>) () -> JMX_CONNECTIONS.size());
+    try {
+      if (!this.metricRegistry
+          .getGauges()
+          .containsKey(MetricRegistry.name(JmxConnectionFactory.class, "openJmxConnections"))) {
+        this.metricRegistry.register(
+            MetricRegistry.name(JmxConnectionFactory.class, "openJmxConnections"),
+            (Gauge<Integer>) () -> JMX_CONNECTIONS.size());
+      }
+    } catch (IllegalArgumentException e) {
+      LOG.warn("Cannot create openJmxConnections metric gauge", e);
+    }
   }
 
   protected JmxProxy connect(Optional<RepairStatusHandler> handler, String host, int connectionTimeout)
@@ -85,10 +93,10 @@ public class JmxConnectionFactory {
       if (!proxy.isConnectionAlive()) {
         LOG.info("Adding new JMX Proxy for host {}", host);
         JMX_CONNECTIONS.put(host, provider.apply(host)).close();
-        proxy.close();
       }
       return JMX_CONNECTIONS.get(host);
     } catch (RuntimeException ex) {
+      LOG.error("Failed creating a new JMX connection to {}", host, ex);
       // unpack any exception behind JmxConnectionProvider.apply(..)
       if (ex.getCause() instanceof InterruptedException) {
         throw (InterruptedException) ex.getCause();
