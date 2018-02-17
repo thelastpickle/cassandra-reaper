@@ -278,6 +278,33 @@ def _arguments_for_list_runs(parser):
     parser.add_argument("cluster", nargs='?', default=None, help="the cluster name")
     parser.add_argument("keyspace", nargs='?', default=None, help="the keyspace name")
 
+def _arguments_for_list_snapshots(parser):
+    """Arguments needed to list snapshots"""
+    parser.add_argument("cluster", nargs='?', default=None, help="the cluster name")
+    parser.add_argument("--node", default=None,
+                        help=("A single node to get the snapshot list from"))
+
+
+def _arguments_for_create_snapshots(parser):
+    """Arguments needed to create snapshots"""
+    parser.add_argument("cluster_name", nargs='?', default=None, help="the cluster name")
+    parser.add_argument("--node", default=None,
+                        help=("A single node to get the snapshot list from"))
+    parser.add_argument("--keyspace", default=None,
+                        help=("A single keyspace to snapshot"))
+    parser.add_argument("--name", default="reaper",
+                        help=("Name that will prefix the snapshot"))
+    _argument_owner(parser)
+    _argument_cause(parser)
+
+def _arguments_for_delete_snapshots(parser):
+    """Arguments needed to delete snapshots"""
+    parser.add_argument("cluster_name", nargs='?', default=None, help="the cluster name")
+    parser.add_argument("snapshot_name", nargs='?', default=None, help="the snapshot name")
+    parser.add_argument("--node", default=None,
+                        help=("A single node to get the snapshot list from"))
+
+
 
 def _parse_arguments(command, description, usage=None, extra_arguments=None):
     """Generic argument parsing done by every command"""
@@ -330,6 +357,9 @@ Usage: spreaper [<global_args>] <command> [<command_args>]
     pause-schedule  Pause a repair schedule.
     delete-schedule Delete a repair schedule.
     ping            Test connectivity to the Reaper service.
+    list-snapshots  List all snapshots for a given cluster or node.
+    take-snapshot   Take a snapshot for a whole cluster or a specific node.
+    delete-snapshot Delete a named snapshot on a whole cluster or a specific node.
 """
 
 
@@ -427,6 +457,90 @@ class ReaperCLI(object):
             data = json.loads(reaper.get("repair_schedule"))
         printq("# Found {0} schedules:".format(len(data)))
         print json.dumps(data, indent=2, sort_keys=True)
+
+    def list_snapshots(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "list-snapshots",
+            "List snapshots for a given cluster or node",
+            extra_arguments=_arguments_for_list_snapshots
+        )
+        if not args.node:
+            printq("# Listing snapshots for cluster '{0}'".format(args.cluster))
+            snapshots = json.loads(reaper.get("snapshot/cluster/{0}".format(args.cluster)))
+            printq("# Found {0} snapshots".format(len(snapshots)))
+            print json.dumps(snapshots, indent=2, sort_keys=True)
+        else:
+            printq("# Listing snapshots for cluster '{0}' and node '{1}'".format(args.cluster, args.node))
+            snapshots = json.loads(reaper.get("snapshot/{0}/{1}".format(args.cluster, args.node)))
+            printq("# Found {0} snapshots".format(len(snapshots)))
+            print json.dumps(snapshots, indent=2, sort_keys=True)
+
+    def take_snapshot(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "take-snapshot",
+            "Take a snapshot. You need to register a cluster "
+            "into Reaper (add-cluster) before calling this.",
+            extra_arguments=_arguments_for_create_snapshots
+        )
+        if not args.cluster_name:
+            print("# Please specify a cluster")
+            exit(1)
+        if args.keyspace:
+            if args.node:
+                print ("# Taking a snapshot on cluster '{0}', node '{1}' and keyspace '{2}', " 
+                        ).format(args.cluster_name, args.node, args.keyspace)
+                reply = reaper.post("snapshot/{0}/{1}".format(args.cluster_name, args.node), 
+                                    keyspace=args.keyspace, 
+                                    owner=args.owner, cause=args.cause,
+                                    snapshot_name=args.name)
+            else:
+                print ("# Taking a snapshot on cluster '{0}' and keyspace '{1}', " 
+                        ).format(args.cluster_name, args.keyspace)
+                reply = reaper.post("snapshot/cluster/{0}".format(args.cluster_name), 
+                                    keyspace=args.keyspace, 
+                                    owner=args.owner, cause=args.cause,
+                                    snapshot_name=args.name)
+        else:
+            if args.node:
+                print ("# Taking a snapshot on cluster '{0}' and node '{1}', " 
+                        ).format(args.cluster_name, args.node)
+                reply = reaper.post("snapshot/{0}/{1}".format(args.cluster_name, args.node), 
+                                    keyspace=args.keyspace, 
+                                    owner=args.owner, cause=args.cause,
+                                    snapshot_name=args.name)
+            else:
+                print ("# Taking a snapshot on cluster '{0}', " 
+                        ).format(args.cluster_name)
+                reply = reaper.post("snapshot/cluster/{0}".format(args.cluster_name), 
+                                    keyspace=args.keyspace, 
+                                    owner=args.owner, cause=args.cause,
+                                    snapshot_name=args.name)
+
+        snapshot = json.loads(reply)
+        printq("# Snapshot taken")
+        print json.dumps(snapshot, indent=2, sort_keys=True)
+    
+    def delete_snapshot(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "delete-snapshot",
+            "Delete a snapshot.",
+            extra_arguments=_arguments_for_delete_snapshots
+        )
+        if not args.cluster_name or not args.snapshot_name:
+            print("# Please specify a cluster and a snapshot name")
+            exit(1)
+        
+        if args.node:
+            print ("# Deleting snapshot '{1}' on cluster '{0}' and node '{2}'" 
+                    ).format(args.snapshot_name, args.cluster_name, args.node)
+            reply = reaper.delete("snapshot/{0}/{1}/{2}".format(args.cluster_name, args.node, args.snapshot_name))
+        else:
+            print ("# Deleting snapshot '{1}' on cluster '{0}', " 
+                    ).format(args.cluster_name, args.snapshot_name)
+            reply = reaper.delete("snapshot/cluster/{0}/{1}".format(args.cluster_name, args.snapshot_name))
+
+        printq("# Snapshot deleted : {0}".format(reply))
+        
 
     def status_cluster(self):
         reaper, args = ReaperCLI.prepare_reaper(

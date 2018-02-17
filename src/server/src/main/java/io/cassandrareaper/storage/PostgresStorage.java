@@ -19,6 +19,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairParameters;
@@ -499,6 +500,44 @@ public final class PostgresStorage implements IStorage {
   public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
     try (Handle h = jdbi.open()) {
       return getPostgresStorage(h).getClusterScheduleOverview(clusterName);
+    }
+  }
+
+  @Override
+  public boolean saveSnapshot(Snapshot snapshot) {
+    boolean result = false;
+    try (Handle h = jdbi.open()) {
+      int rowsAdded = getPostgresStorage(h).saveSnapshot(snapshot);
+      if (rowsAdded < 1) {
+        LOG.warn(
+            "failed saving snapshot with name {} for cluster {}",
+            snapshot.getName(),
+            snapshot.getClusterName());
+      } else {
+        result = true;
+      }
+    }
+
+    return result;
+  }
+
+  @Override
+  public boolean deleteSnapshot(Snapshot snapshot) {
+    boolean result = false;
+    try (Handle h = jdbi.open()) {
+      IStoragePostgreSql pg = getPostgresStorage(h);
+      int rowsDeleted = pg.deleteSnapshot(snapshot.getClusterName(), snapshot.getName());
+      if (rowsDeleted > 0) {
+        result = true;
+      }
+    }
+    return result;
+  }
+
+  @Override
+  public Snapshot getSnapshot(String clusterName, String snapshotName) {
+    try (Handle h = jdbi.open()) {
+      return getPostgresStorage(h).getSnapshot(clusterName, snapshotName);
     }
   }
 }

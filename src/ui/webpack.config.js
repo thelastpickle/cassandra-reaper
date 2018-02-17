@@ -25,6 +25,9 @@ module.exports = {
     repair: [
       path.join(__dirname, 'app', 'repair.js')
     ],
+    snapshot: [
+      path.join(__dirname, 'app', 'snapshot.js')
+    ],
     segments: [
       path.join(__dirname, 'app', 'segments.js')
     ],
@@ -54,7 +57,7 @@ module.exports = {
     root:  path.join(__dirname, "node_modules")
   },
   plugins: [
-    new HtmlWebpackPlugin({  // Also generate a test.html
+    new HtmlWebpackPlugin({
       filename: 'index.html',
       chunks: ['deps', 'index'],
       hash: true,
@@ -62,7 +65,7 @@ module.exports = {
       template: path.join(__dirname, 'app', 'html_template.ejs'),
       inject: 'head'
     }),
-    new HtmlWebpackPlugin({  // Also generate a test.html
+    new HtmlWebpackPlugin({ 
       filename: 'repair.html',
       chunks: ['deps', 'repair'],
       hash: true,
@@ -70,7 +73,7 @@ module.exports = {
       template: path.join(__dirname, 'app', 'html_template.ejs'),
       inject: 'head'
     }),
-    new HtmlWebpackPlugin({  // Also generate a test.html
+    new HtmlWebpackPlugin({  
       filename: 'schedules.html',
       chunks: ['deps', 'schedules'],
       hash: true,
@@ -78,11 +81,19 @@ module.exports = {
       template: path.join(__dirname, 'app', 'html_template.ejs'),
       inject: 'head'
     }),
-    new HtmlWebpackPlugin({  // Also generate a test.html
+    new HtmlWebpackPlugin({
       filename: 'segments.html',
       chunks: ['deps', 'segments'],
       hash: true,
       title: ' - Segments',
+      template: path.join(__dirname, 'app', 'html_template.ejs'),
+      inject: 'head'
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'snapshot.html',
+      chunks: ['deps', 'snapshot'],
+      hash: true,
+      title: ' - Snapshots',
       template: path.join(__dirname, 'app', 'html_template.ejs'),
       inject: 'head'
     }),

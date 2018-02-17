@@ -25,6 +25,7 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairSegment.State;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairParameters;
@@ -131,6 +132,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement storeNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsByNodePrepStmt;
+  private PreparedStatement getSnapshotPrepStmt;
+  private PreparedStatement deleteSnapshotPrepStmt;
+  private PreparedStatement saveSnapshotPrepStmt;
 
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
     CassandraFactory cassandraFactory = config.getCassandraFactory();
@@ -279,6 +283,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         + " WHERE time_partition = ? AND run_id = ?");
     getNodeMetricsByNodePrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
         + " WHERE time_partition = ? AND run_id = ? AND node = ?");
+
+    getSnapshotPrepStmt =
+        session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
+    deleteSnapshotPrepStmt =
+        session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
+    saveSnapshotPrepStmt =
+        session.prepare(
+            "INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
+                + " VALUES(?,?,?,?,?)");
   }
 
   @Override
@@ -1233,6 +1246,41 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     @Override
     public void close() {
     }
+  }
+
+  @Override
+  public boolean saveSnapshot(Snapshot snapshot) {
+    session.execute(
+        saveSnapshotPrepStmt.bind(
+            snapshot.getClusterName(),
+            snapshot.getName(),
+            snapshot.getOwner().or("reaper"),
+            snapshot.getCause().or("taken with reaper"),
+            snapshot.getCreationDate().get()));
+
+    return true;
+  }
+
+  @Override
+  public boolean deleteSnapshot(Snapshot snapshot) {
+    session.execute(deleteSnapshotPrepStmt.bind(snapshot.getClusterName(), snapshot.getName()));
+    return false;
+  }
+
+  @Override
+  public Snapshot getSnapshot(String clusterName, String snapshotName) {
+    Snapshot.Builder snapshotBuilder =
+        Snapshot.builder().withClusterName(clusterName).withName(snapshotName);
+
+    ResultSet result = session.execute(getSnapshotPrepStmt.bind(clusterName, snapshotName));
+    for (Row row : result) {
+      snapshotBuilder
+          .withCause(row.getString("cause"))
+          .withOwner(row.getString("owner"))
+          .withCreationDate(new DateTime(row.getTimestamp("creation_time")));
+    }
+
+    return snapshotBuilder.build();
   }
 
 }

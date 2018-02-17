@@ -84,7 +84,7 @@ public final class JmxConnectionsInitializer implements AutoCloseable {
         return Optional.of(endpoints.get(0));
 
       } catch (RuntimeException e) {
-        LOG.debug("failed to connect to hosts {} through JMX", endpoints.get(0), e);
+        LOG.info("failed to connect to hosts {} through JMX", endpoints.get(0), e);
         return Optional.absent();
       }
     };

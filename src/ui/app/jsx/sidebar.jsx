@@ -21,7 +21,9 @@ const sidebar = React.createClass({
                   <li>
                       <a href={'repair.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-wrench fa-fw"></i> Repair</a>
                   </li>
-
+                  <li>
+                      <a href={'snapshot.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-camera fa-fw"></i> Snapshot</a>
+                  </li>
               </ul>
           </div>
       </div>
