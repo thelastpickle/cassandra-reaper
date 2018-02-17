@@ -20,6 +20,7 @@ import io.cassandrareaper.SimpleReaperClient;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
@@ -1234,6 +1235,124 @@ public final class BasicSteps {
               });
     }
   }
+
+  @When("^a cluster wide snapshot request is made to Reaper$")
+  public void a_cluster_wide_snapshot_request_is_made_to_reaper() throws Throwable {
+    synchronized (BasicSteps.class) {
+      callAndExpect(
+          "POST",
+          "/snapshot/cluster/" + TestContext.TEST_CLUSTER,
+          Optional.absent(),
+          Optional.absent(),
+          Response.Status.OK);
+    }
+  }
+
+  @Then("^there is (\\d+) snapshot returned when listing snapshots$")
+  public void there_is_1_snapshot_returned_when_listing_snapshots(int nbSnapshots)
+      throws Throwable {
+    synchronized (BasicSteps.class) {
+      RUNNERS
+          .parallelStream()
+          .forEach(
+              runner -> {
+                Response response =
+                    runner.callReaper(
+                        "GET",
+                        "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST,
+                        EMPTY_PARAMS);
+                assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+                String responseData = response.readEntity(String.class);
+                Map<String, List<Snapshot>> snapshots =
+                    SimpleReaperClient.parseSnapshotMapJSON(responseData);
+                assertEquals(nbSnapshots, snapshots.keySet().size());
+              });
+    }
+  }
+
+  @When("^a request is made to clear the existing snapshot cluster wide$")
+  public void a_request_is_made_to_clear_the_existing_snapshots_cluster_wide() throws Throwable {
+    synchronized (BasicSteps.class) {
+      RUNNERS
+          .parallelStream()
+          .forEach(
+              runner -> {
+                Response response =
+                    runner.callReaper(
+                        "GET",
+                        "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST,
+                        EMPTY_PARAMS);
+                assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+                String responseData = response.readEntity(String.class);
+                Map<String, List<Snapshot>> snapshots =
+                    SimpleReaperClient.parseSnapshotMapJSON(responseData);
+
+                snapshots
+                    .keySet()
+                    .stream()
+                    .forEach(
+                        snapshot -> {
+                          callAndExpect(
+                              "DELETE",
+                              "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + snapshot,
+                              Optional.absent(),
+                              Optional.absent(),
+                              Response.Status.OK);
+                        });
+              });
+    }
+  }
+
+  @When("^a snapshot request for the seed host is made to Reaper$")
+  public void a_host_snapshot_request_is_made_to_reaper() throws Throwable {
+    synchronized (BasicSteps.class) {
+      callAndExpect(
+          "POST",
+          "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST,
+          Optional.absent(),
+          Optional.absent(),
+          Response.Status.OK);
+    }
+  }
+
+  @When("^a request is made to clear the seed host existing snapshots$")
+  public void a_request_is_made_to_clear_the_existing_host_snapshots() throws Throwable {
+    synchronized (BasicSteps.class) {
+      RUNNERS
+          .parallelStream()
+          .forEach(
+              runner -> {
+                Response response =
+                    runner.callReaper(
+                        "GET",
+                        "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST,
+                        EMPTY_PARAMS);
+                assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+                String responseData = response.readEntity(String.class);
+                Map<String, List<Snapshot>> snapshots =
+                    SimpleReaperClient.parseSnapshotMapJSON(responseData);
+
+                snapshots
+                    .keySet()
+                    .stream()
+                    .forEach(
+                        snapshot -> {
+                          callAndExpect(
+                              "DELETE",
+                              "/snapshot/"
+                                  + TestContext.TEST_CLUSTER
+                                  + "/"
+                                  + TestContext.SEED_HOST
+                                  + "/"
+                                  + snapshot,
+                              Optional.absent(),
+                              Optional.absent(),
+                              Response.Status.OK);
+                        });
+              });
+    }
+  }
+
 
   private static void createKeyspace(String keyspaceName) {
     try (Cluster cluster = buildCluster(); Session tmpSession = cluster.connect()) {

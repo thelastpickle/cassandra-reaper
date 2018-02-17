@@ -19,6 +19,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairParameters;
@@ -53,6 +54,7 @@ public final class MemoryStorage implements IStorage {
   private final ConcurrentMap<UUID, RepairSegment> repairSegments = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, LinkedHashMap<UUID, RepairSegment>> repairSegmentsByRunId = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
+  private final ConcurrentMap<String, Snapshot> snapshots = Maps.newConcurrentMap();
 
   @Override
   public boolean isStorageConnected() {
@@ -530,5 +532,23 @@ public final class MemoryStorage implements IStorage {
     public int hashCode() {
       return cluster.hashCode() ^ keyspace.hashCode() ^ tables.hashCode();
     }
+  }
+
+  @Override
+  public boolean saveSnapshot(Snapshot snapshot) {
+    snapshots.put(snapshot.getClusterName() + "-" + snapshot.getName(), snapshot);
+    return true;
+  }
+
+  @Override
+  public boolean deleteSnapshot(Snapshot snapshot) {
+    snapshots.remove(snapshot.getClusterName() + "-" + snapshot.getName());
+    return true;
+  }
+
+  @Override
+  public Snapshot getSnapshot(String clusterName, String snapshotName) {
+    Snapshot snapshot = snapshots.get(clusterName + "-" + snapshotName);
+    return snapshot;
   }
 }

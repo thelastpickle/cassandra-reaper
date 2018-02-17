@@ -19,6 +19,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairParameters;
@@ -144,4 +145,11 @@ public interface IStorage {
   Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit);
 
   Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName);
+
+  boolean saveSnapshot(Snapshot snapshot);
+
+  boolean deleteSnapshot(Snapshot snapshot);
+
+  Snapshot getSnapshot(String clusterName, String snapshotName);
+
 }

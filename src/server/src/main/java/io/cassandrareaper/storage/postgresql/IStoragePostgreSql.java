@@ -19,6 +19,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairParameters;
@@ -224,6 +225,19 @@ public interface IStoragePostgreSql {
           + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
           + "WHERE cluster_name = :clusterName";
 
+  String SQL_SAVE_SNAPSHOT =
+      "INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
+          + " VALUES "
+          + "(:clusterName, :name, :owner, :cause, :creationDate)";
+
+  String SQL_DELETE_SNAPSHOT =
+      "DELETE FROM snapshot WHERE cluster = :clusterName AND snapshot_name = :snapshotName";
+
+  String SQL_GET_SNAPSHOT =
+      "SELECT cluster, snapshot_name, owner, cause, creation_time "
+          + " FROM snapshot WHERE cluster = :clusterName AND snapshot_name = :snapshotName";
+
+
   @SqlQuery("SELECT CURRENT_TIMESTAMP")
   String getCurrentDate();
 
@@ -419,4 +433,17 @@ public interface IStoragePostgreSql {
   @Mapper(RepairScheduleStatusMapper.class)
   Collection<RepairScheduleStatus> getClusterScheduleOverview(
       @Bind("clusterName") String clusterName);
+
+  @SqlQuery(SQL_GET_SNAPSHOT)
+  @Mapper(SnapshotMapper.class)
+  Snapshot getSnapshot(
+      @Bind("clusterName") String clusterName, @Bind("snapshotName") String snapshotName);
+
+  @SqlUpdate(SQL_DELETE_SNAPSHOT)
+  int deleteSnapshot(
+      @Bind("clusterName") String clusterName, @Bind("snapshotName") String snapshotName);
+
+  @SqlUpdate(SQL_SAVE_SNAPSHOT)
+  int saveSnapshot(@BindBean Snapshot snapshot);
+
 }

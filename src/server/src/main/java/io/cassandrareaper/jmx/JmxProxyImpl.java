@@ -16,6 +16,8 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Snapshot;
+import io.cassandrareaper.core.Snapshot.Builder;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -53,6 +55,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.Notification;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
+import javax.management.openmbean.TabularData;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
@@ -100,6 +103,13 @@ final class JmxProxyImpl implements JmxProxy {
   private static final String VALUE_ATTRIBUTE = "Value";
   private static final String FAILED_TO_CONNECT_TO_USING_JMX = "Failed to connect to {} using JMX";
   private static final String ERROR_GETTING_ATTR_JMX = "Error getting attribute from JMX";
+  private static final long KB_FACTOR = 1000;
+  private static final long KIB_FACTOR = 1024;
+  private static final long MB_FACTOR = 1000 * KB_FACTOR;
+  private static final long MIB_FACTOR = 1024 * KIB_FACTOR;
+  private static final long GB_FACTOR = 1000 * MB_FACTOR;
+  private static final long GIB_FACTOR = 1024 * MIB_FACTOR;
+
 
   private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
@@ -1006,6 +1016,28 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   @Override
+  public void clearSnapshot(String snapshotName) throws ReaperException {
+    if (snapshotName == null || ("").equals(snapshotName)) {
+      // Passing in null or empty string will clear all snapshots on the hos
+      throw new IllegalArgumentException("snapshotName cannot be null or empty string");
+    }
+    try {
+      ((StorageServiceMBean) ssProxy).clearSnapshot(snapshotName);
+    } catch (IOException e) {
+      throw new ReaperException(e);
+    }
+  }
+
+  @Override
+  public void clearAllSnapshots() throws ReaperException {
+    try {
+      ((StorageServiceMBean) ssProxy).clearSnapshot("");
+    } catch (IOException e) {
+      throw new ReaperException(e);
+    }
+  }
+
+  @Override
   public List<String> getLiveNodes() throws ReaperException {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     try {
@@ -1055,6 +1087,103 @@ final class JmxProxyImpl implements JmxProxy {
       }
     } catch (IllegalArgumentException e) {
       LOG.warn("Cannot create connection gauge for node {}", this.host, e);
+    }
+  }
+
+  @Override
+  public List<Snapshot> listSnapshots() {
+    List<Snapshot> snapshots = Lists.newArrayList();
+    final Map<String, TabularData> snapshotDetails =
+        ((StorageServiceMBean) ssProxy).getSnapshotDetails();
+    if (snapshotDetails.isEmpty()) {
+      LOG.debug("There are no snapshots on host {}", this.host);
+      return snapshots;
+    }
+
+    final String clusterName = ((StorageServiceMBean) ssProxy).getClusterName();
+    final long trueSnapshotsSize = ((StorageServiceMBean) ssProxy).trueSnapshotsSize();
+
+    // display column names only once
+    final List<String> indexNames =
+        snapshotDetails.entrySet().iterator().next().getValue().getTabularType().getIndexNames();
+
+    for (final Map.Entry<String, TabularData> snapshotDetail : snapshotDetails.entrySet()) {
+      Set<?> values = snapshotDetail.getValue().keySet();
+      for (Object eachValue : values) {
+        int index = 0;
+        Builder snapshotBuilder = Snapshot.builder().withHost(this.getHost());
+        final List<?> valueList = (List<?>) eachValue;
+        for (Object value : valueList) {
+          switch (indexNames.get(index)) {
+            case "Snapshot name":
+              snapshotBuilder.withName((String) value);
+              break;
+            case "Keyspace name":
+              snapshotBuilder.withKeyspace((String) value);
+              break;
+            case "Column family name":
+              snapshotBuilder.withTable((String) value);
+              break;
+            case "True size":
+              snapshotBuilder.withTrueSize(parseHumanReadableSize((String) value));
+              break;
+            case "Size on disk":
+              snapshotBuilder.withSizeOnDisk(parseHumanReadableSize((String) value));
+              break;
+            default:
+              break;
+          }
+          index++;
+        }
+        snapshots.add(snapshotBuilder.withClusterName(clusterName).build());
+      }
+    }
+
+    return snapshots;
+  }
+
+  public static double parseHumanReadableSize(String readableSize) {
+    int spaceNdx = readableSize.indexOf(" ");
+    double ret =
+        readableSize.contains(".")
+            ? Double.parseDouble(readableSize.substring(0, spaceNdx))
+            : Double.parseDouble(readableSize.substring(0, spaceNdx).replace(",", "."));
+    switch (readableSize.substring(spaceNdx + 1)) {
+      case "GB":
+        return ret * GB_FACTOR;
+      case "GiB":
+        return ret * GIB_FACTOR;
+      case "MB":
+        return ret * MB_FACTOR;
+      case "MiB":
+        return ret * MIB_FACTOR;
+      case "KB":
+        return ret * KB_FACTOR;
+      case "KiB":
+        return ret * KIB_FACTOR;
+      default:
+        return 0;
+    }
+  }
+
+  @Override
+  public String takeSnapshot(String snapshotName, String... keyspaceNames) throws ReaperException {
+    try {
+      ((StorageServiceMBean) ssProxy).takeSnapshot(snapshotName, keyspaceNames);
+      return snapshotName;
+    } catch (IOException e) {
+      throw new ReaperException(e);
+    }
+  }
+
+  @Override
+  public void takeColumnFamilySnapshot(
+      String keyspaceName, String columnFamilyName, String snapshotName) throws ReaperException {
+    try {
+      ((StorageServiceMBean) ssProxy)
+          .takeColumnFamilySnapshot(keyspaceName, columnFamilyName, snapshotName);
+    } catch (IOException e) {
+      throw new ReaperException(e);
     }
   }
 }

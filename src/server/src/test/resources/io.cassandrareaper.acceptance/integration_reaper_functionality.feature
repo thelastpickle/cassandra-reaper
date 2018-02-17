@@ -79,4 +79,30 @@ Feature: Using Reaper to launch repairs and schedule them
     When the last added repair is stopped
     And the last added repair run is deleted
     And the last added cluster is deleted
+    
+  Scenario: Create a cluster, create a cluster wide snapshot and delete it
+    Given that we are going to use "127.0.0.1" as cluster seed host
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    When a request is made to clear the existing snapshot cluster wide
+    And a cluster wide snapshot request is made to Reaper
+    Then there is 1 snapshot returned when listing snapshots
+    When a request is made to clear the existing snapshot cluster wide
+    Then there is 0 snapshot returned when listing snapshots
+    When the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
+    
+  Scenario: Create a cluster, create a snapshot on a single host and delete it
+    Given that we are going to use "127.0.0.1" as cluster seed host
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    When a request is made to clear the seed host existing snapshots
+    And a snapshot request for the seed host is made to Reaper
+    Then there is 1 snapshot returned when listing snapshots
+    When a request is made to clear the seed host existing snapshots
+    Then there is 0 snapshot returned when listing snapshots
+    When the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
  

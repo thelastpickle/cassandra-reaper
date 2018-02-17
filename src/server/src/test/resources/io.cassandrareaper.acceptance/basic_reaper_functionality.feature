@@ -78,3 +78,13 @@ Feature: Using Reaper to launch repairs
     When a new incremental repair is added for "other_cluster" and keyspace "system"
     And a new repair is added for "other_cluster" and keyspace "system"
     Then reaper has 2 repairs for cluster called "other_cluster"
+    
+  Scenario: Create a cluster, create a cluster wide snapshot and delete it
+    Given reaper has no cluster with name "other_cluster" in storage
+    And that we are going to use "127.0.0.2" as cluster seed host
+    When an add-cluster request is made to reaper
+    Then reaper has a cluster called "other_cluster" in storage
+    When a cluster wide snapshot request is made to Reaper
+    Then there is 1 snapshot returned when listing snapshots
+    When a request is made to clear the existing snapshot cluster wide
+    Then there is 0 snapshot returned when listing snapshots

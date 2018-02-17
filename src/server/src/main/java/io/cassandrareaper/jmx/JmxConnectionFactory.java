@@ -118,7 +118,7 @@ public class JmxConnectionFactory {
     }
   }
 
-  public final JmxProxy connect(Node node, int connectionTimeout)
+  public JmxProxy connect(Node node, int connectionTimeout)
       throws ReaperException, InterruptedException {
     return connect(Optional.<RepairStatusHandler>absent(), node, connectionTimeout);
   }
@@ -154,7 +154,7 @@ public class JmxConnectionFactory {
     throw new ReaperException("no host could be reached through JMX");
   }
 
-  public final JmxProxy connectAny(Cluster cluster, int connectionTimeout) throws ReaperException {
+  public JmxProxy connectAny(Cluster cluster, int connectionTimeout) throws ReaperException {
     Set<Node> nodes =
         cluster
             .getSeedHosts()

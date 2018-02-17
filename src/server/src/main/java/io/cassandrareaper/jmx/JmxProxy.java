@@ -15,6 +15,7 @@
 package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.service.RingRange;
 
 import java.math.BigInteger;
@@ -43,6 +44,10 @@ public interface JmxProxy extends NotificationListener {
   void cancelAllRepairs();
 
   void clearSnapshot(String repairId, String keyspaceName) throws ReaperException;
+
+  void clearSnapshot(String snapshotName) throws ReaperException;
+
+  void clearAllSnapshots() throws ReaperException;
 
   String getAllEndpointsState();
 
@@ -133,4 +138,10 @@ public interface JmxProxy extends NotificationListener {
 
   void removeRepairStatusHandler(int commandId);
 
+  List<Snapshot> listSnapshots();
+
+  String takeSnapshot(String snapshotName, String... keyspaceNames) throws ReaperException;
+
+  void takeColumnFamilySnapshot(String keyspaceName, String columnFamilyName, String snapshotName)
+      throws ReaperException;
 }

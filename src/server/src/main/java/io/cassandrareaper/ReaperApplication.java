@@ -22,9 +22,11 @@ import io.cassandrareaper.resources.PingResource;
 import io.cassandrareaper.resources.ReaperHealthCheck;
 import io.cassandrareaper.resources.RepairRunResource;
 import io.cassandrareaper.resources.RepairScheduleResource;
+import io.cassandrareaper.resources.SnapshotResource;
 import io.cassandrareaper.service.AutoSchedulingManager;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
+import io.cassandrareaper.service.SnapshotManager;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
@@ -126,6 +128,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         .addServlet("prometheusMetrics", new MetricsServlet(CollectorRegistry.defaultRegistry))
         .addMapping("/prometheusMetrics");
 
+    context.snapshotManager = SnapshotManager.create(context);
+
     LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
     context.repairManager = RepairManager.create(context);
     context.repairManager.initializeThreadPool(
@@ -197,6 +201,10 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     final RepairScheduleResource addRepairScheduleResource = new RepairScheduleResource(context);
     environment.jersey().register(addRepairScheduleResource);
+
+    final SnapshotResource snapshotResource = new SnapshotResource(context);
+    environment.jersey().register(snapshotResource);
+
     Thread.sleep(1000);
 
     SchedulingManager.start(context);
