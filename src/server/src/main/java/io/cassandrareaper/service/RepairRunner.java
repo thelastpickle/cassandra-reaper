@@ -57,6 +57,7 @@ final class RepairRunner implements Runnable {
   private final AtomicReferenceArray<UUID> currentlyRunningSegments;
   private final List<RingRange> parallelRanges;
   private final String metricNameForMillisSinceLastRepair;
+  private final String metricNameForMillisSinceLastRepair2;
   private float repairProgress;
   private float segmentsDone;
   private float segmentsTotal;
@@ -98,13 +99,50 @@ final class RepairRunner implements Runnable {
         Lists.newArrayList(Collections2.transform(repairSegments, segment -> segment.getTokenRange())));
 
     String repairUnitClusterName = repairUnitOpt.get().getClusterName();
-    String metricNameForRepairProgress = metricName("repairProgress",  repairUnitClusterName, repairRunId);
+    String repairUnitKeyspaceName = repairUnitOpt.get().getKeyspaceName();
+    String metricNameForRepairProgress = metricName("repairProgress",
+                                                     repairUnitClusterName,
+                                                     repairUnitKeyspaceName,
+                                                     repairRunId);
+
+    String metricNameForRepairProgress2 = metricName("repairProgress",
+                                                     repairUnitClusterName,
+                                                     repairRunId);
+
     context.metricRegistry.register(metricNameForRepairProgress, (Gauge<Float>) ()  -> repairProgress);
-    String metricNameForSegmentsDone = metricName("segmentsDone",  repairUnitClusterName, repairRunId);
+    context.metricRegistry.register(metricNameForRepairProgress2, (Gauge<Float>) ()  -> repairProgress);
+
+    metricNameForMillisSinceLastRepair = metricName("millisSinceLastRepair",
+                                                     repairUnitClusterName,
+                                                     repairUnitKeyspaceName,
+                                                     repairRunId);
+    metricNameForMillisSinceLastRepair2 = metricName("millisSinceLastRepair",
+                                                      repairUnitClusterName,
+                                                      repairRunId);
+
+    String metricNameForSegmentsDone = metricName("segmentsDone",
+                                                  repairUnitClusterName,
+                                                  repairUnitKeyspaceName,
+                                                  repairRunId);
+
+    String metricNameForSegmentsDone2 = metricName("segmentsDone",
+                                                   repairUnitClusterName,
+                                                   repairRunId);
+
     context.metricRegistry.register(metricNameForSegmentsDone, (Gauge<Float>) ()  -> segmentsDone);
-    String metricNameForSegmentsTotal = metricName("segmentsTotal",  repairUnitClusterName, repairRunId);
-    context.metricRegistry.register(metricNameForSegmentsTotal, (Gauge<Float>) ()  -> segmentsTotal);
-    metricNameForMillisSinceLastRepair = metricName("millisSinceLastRepair", repairUnitClusterName, repairRunId);
+    context.metricRegistry.register(metricNameForSegmentsDone2, (Gauge<Integer>) ()  -> (int)segmentsDone);
+
+    String metricNameForSegmentsTotal = metricName("segmentsTotal",
+                                                   repairUnitClusterName,
+                                                   repairUnitKeyspaceName,
+                                                   repairRunId);
+
+    String metricNameForSegmentsTotal2 = metricName("segmentsTotal",
+                                                     repairUnitClusterName,
+                                                     repairRunId);
+
+    context.metricRegistry.register(metricNameForSegmentsTotal, (Gauge<Integer>) ()  -> (int)segmentsTotal);
+    context.metricRegistry.register(metricNameForSegmentsTotal2, (Gauge<Float>) ()  -> segmentsTotal);
   }
 
   UUID getRepairRunId() {
@@ -218,8 +256,12 @@ final class RepairRunner implements Runnable {
       killAndCleanupRunner();
 
       context.metricRegistry.remove(metricNameForMillisSinceLastRepair);
+      context.metricRegistry.remove(metricNameForMillisSinceLastRepair2);
       context.metricRegistry.register(
           metricNameForMillisSinceLastRepair,
+          (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
+      context.metricRegistry.register(
+          metricNameForMillisSinceLastRepair2,
           (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
     }
   }
@@ -297,14 +339,15 @@ final class RepairRunner implements Runnable {
           if (!scheduleRetry) {
             break;
           }
+          segmentsTotal = context.storage.getSegmentAmountForRepairRun(repairRunId);
           repairStarted = true;
         }
       }
     }
 
     if (!repairStarted && !anythingRunningStill) {
-      int segmentsDone = context.storage.getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
-      int segmentsTotal = context.storage.getSegmentAmountForRepairRun(repairRunId);
+      segmentsDone = context.storage.getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
+      segmentsTotal = context.storage.getSegmentAmountForRepairRun(repairRunId);
 
       LOG.info("Repair amount done {}", segmentsDone);
       repairProgress = (float) segmentsDone / segmentsTotal;
@@ -313,6 +356,8 @@ final class RepairRunner implements Runnable {
         endRepairRun();
         scheduleRetry = false;
       }
+    } else {
+      segmentsDone = context.storage.getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
     }
 
     if (scheduleRetry) {
@@ -497,6 +542,12 @@ final class RepairRunner implements Runnable {
   void killAndCleanupRunner() {
     context.repairManager.removeRunner(this);
     Thread.currentThread().interrupt();
+  }
+
+  private String metricName(String metric, String clusterName, String keyspaceName, UUID repairRunId) {
+    String cleanClusterName = clusterName.replaceAll("[^A-Za-z0-9]", "");
+    String cleanRepairRunId = repairRunId.toString().replaceAll("-", "");
+    return MetricRegistry.name(RepairRunner.class, metric, cleanClusterName, keyspaceName, cleanRepairRunId);
   }
 
   private String metricName(String metric, String clusterName, UUID repairRunId) {
