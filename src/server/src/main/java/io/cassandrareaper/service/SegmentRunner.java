@@ -223,12 +223,22 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
       }
       SEGMENT_RUNNERS.put(segmentId, this);
+
       String keyspace = repairUnit.getKeyspaceName();
       boolean fullRepair = !repairUnit.getIncrementalRepair();
 
       LazyInitializer<Set<String>> busyHosts = new BusyHostsInitializer(coordinator);
       if (!canRepair(segment, keyspace, coordinator, busyHosts)) {
-        postponeCurrentSegment();
+        LOG.info(
+            "Cannot run segment {} for repair {} at the moment. Will try again later",
+            segmentId,
+            segment.getRunId());
+        SEGMENT_RUNNERS.remove(segment.getId());
+        try {
+          Thread.sleep(SLEEP_TIME_AFTER_POSTPONE_IN_MS);
+        } catch (InterruptedException e) {
+          LOG.debug("Interrupted while sleeping after a segment was postponed... weird stuff...");
+        }
         return false;
       }
 
