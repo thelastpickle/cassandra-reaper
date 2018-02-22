@@ -218,11 +218,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           Optional.<RepairStatusHandler>fromNullable(this),
           potentialCoordinators,
           context.config.getJmxConnectionTimeoutInSeconds());
-      if (SEGMENT_RUNNERS.containsKey(segmentId)) {
+      if (SEGMENT_RUNNERS.putIfAbsent(segmentId, this) != null) {
         LOG.error("SegmentRunner already exists for segment with ID: {}", segmentId);
         throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
       }
-      SEGMENT_RUNNERS.put(segmentId, this);
 
       String keyspace = repairUnit.getKeyspaceName();
       boolean fullRepair = !repairUnit.getIncrementalRepair();
@@ -314,7 +313,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
         }
       }
-    } catch (ReaperException e) {
+    } catch (RuntimeException | ReaperException e) {
       LOG.warn("Failed to connect to a coordinator node for segment {}", segmentId, e);
       String msg = "Postponed a segment because no coordinator was reachable";
       repairRunner.updateLastEvent(msg);
@@ -322,6 +321,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       LOG.warn("Open files amount for process: " + getOpenFilesAmount());
       return false;
     } finally {
+      SEGMENT_RUNNERS.remove(segment.getId());
       context.metricRegistry
           .histogram(MetricRegistry.name(SegmentRunner.class, "open-files"))
           .update(getOpenFilesAmount());
