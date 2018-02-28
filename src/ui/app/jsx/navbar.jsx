@@ -29,22 +29,22 @@ const NavBar = React.createClass({
                   <span className="icon-bar"></span>
                   <span className="icon-bar"></span>
               </button>
-              <Button onClick={this.open} bsStyle="link" bsSize="xsmall" className="navbar-brand">Cassandra Reaper <span style={smallFont}>1.1.0-SNAPSHOT</span></Button>
+              <Button onClick={this.open} bsStyle="link" bsSize="xsmall" className="navbar-brand">Cassandra Reaper <span style={smallFont}>1.1.0</span></Button>
               </div>
               </div>
               <div className="col-lg-4">
-                <span className="navbar-brand" style={floatRight}><Button href="https://github.com/thelastpickle/cassandra-reaper/issues/new?body=**Spotted on 1.1.0-SNAPSHOT (00a3fd0)**" bsStyle="warning" bsSize="xsmall">Report a bug</Button>
+                <span className="navbar-brand" style={floatRight}><Button href="https://github.com/thelastpickle/cassandra-reaper/issues/new?body=**Spotted on 1.1.0 (e5519a7)**" bsStyle="warning" bsSize="xsmall">Report a bug</Button>
               </span>
             </div>
             <Modal show={this.state.showModal} onHide={this.close}>
                 <Modal.Header closeButton>
-                  <Modal.Title>Version 1.1.0-SNAPSHOT</Modal.Title>
+                  <Modal.Title>Version 1.1.0</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                   <h4>Git commit :</h4>
-                  <p><a href="https://github.com/thelastpickle/cassandra-reaper/commit/00a3fd0" target="_blank">https://github.com/thelastpickle/cassandra-reaper/commit/00a3fd0</a></p>
+                  <p><a href="https://github.com/thelastpickle/cassandra-reaper/commit/e5519a7" target="_blank">https://github.com/thelastpickle/cassandra-reaper/commit/e5519a7</a></p>
                   <h4>Build date :</h4>
-                  <p>2018-02-17 23:17:08</p>
+                  <p>2018-02-28 19:19:02</p>
                 </Modal.Body>
                 <Modal.Footer>
                   <Button onClick={this.close}>Close</Button>
