@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# Copyright (c) 2014 Spotify AB
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,9 +34,18 @@ USER = getpass.getuser()
 DEFAULT_CAUSE = "manual spreaper run"
 
 log_level = logging.WARN
+quiet = False
 if "-v" in sys.argv or "--verbose" in sys.argv:
+    log_level = logging.INFO
+if "-vv" in sys.argv:
     log_level = logging.DEBUG
-logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s - %(message)s')
+if "-q" in sys.argv or "--quiet" in sys.argv:
+    if logging.WARN != log_level:
+        print "--verbose and --quiet options can't both be specified"
+        exit(1)
+    quiet = True
+
+logging.basicConfig(level=log_level, format='  %(levelname)s - %(message)s')
 
 log = logging.getLogger("spreaper")
 log.debug("logging initialized, the user running spreaper: {0}".format(USER))
@@ -118,6 +126,8 @@ def _global_arguments(parser, command):
                        help="use https to call Reaper [False]")
     group.add_argument("-v", "--verbose", help="increase output verbosity",
                        action="store_true")
+    group.add_argument("-vv", help="extra output verbosity", action="store_true")
+    group.add_argument("-q", "--quiet", help="unix mode", action="store_true")
     parser.add_argument(command)
 
 
@@ -338,7 +348,7 @@ class ReaperCLI(object):
             getattr(self, command)()
         except requests.exceptions.HTTPError, err:
             print ""
-            print "# HTTP request failed with err: {}".format(err)
+            print("# HTTP request failed with err: {}".format(err))
             exit(2)
 
     @staticmethod
@@ -352,25 +362,24 @@ class ReaperCLI(object):
             "ping",
             "Test connectivity to the Reaper service."
         )
-        print "# Sending PING to Reaper..."
+        printq("# Sending PING to Reaper...")
         answer = reaper.get("ping")
-        print "# [Reply]", answer
-        print "# Cassandra Reaper is answering in: {0}:{1}".format(args.reaper_host,
-                                                                   args.reaper_port)
+        printq("# [Reply]", answer)
+        printq("# Cassandra Reaper is answering in: {0}:{1}".format(args.reaper_host, args.reaper_port))
 
     def list_clusters(self):
         reaper, args = ReaperCLI.prepare_reaper(
             "list-clusters",
             "List all registered Cassandra clusters."
         )
-        print "# Listing all registered Cassandra clusters"
+        printq("# Listing all registered Cassandra clusters")
         cluster_names = json.loads(reaper.get("cluster"))
         if cluster_names:
-            print "# Found {0} clusters:".format(len(cluster_names))
+            printq("# Found {0} clusters:".format(len(cluster_names)))
             for cluster_name in cluster_names:
                 print cluster_name
         else:
-            print "# No registered clusters found"
+            printq("# No registered clusters found")
 
     def list_runs(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -378,12 +387,12 @@ class ReaperCLI(object):
             "List registered repair runs",
             extra_arguments=_arguments_for_list_runs
         )
-        print "# Listing repair runs"
+        printq("# Listing repair runs")
         endpoint = 'repair_run'
         if args.state is not None:
             endpoint = '{0}?{1}'.format(endpoint, urllib.urlencode({'state': args.state}))
         repair_runs = json.loads(reaper.get(endpoint))
-        print "# Found {0} repair runs".format(len(repair_runs))
+        printq("# Found {0} repair runs".format(len(repair_runs)))
         print json.dumps(repair_runs, indent=2, sort_keys=True)
 
     def list_segments(self):
@@ -392,9 +401,9 @@ class ReaperCLI(object):
             "List segments for a given repair run",
             extra_arguments=_arguments_for_list_segments
         )
-        print "# Listing segments for repair run '{0}'".format(args.run_id)
+        printq("# Listing segments for repair run '{0}'".format(args.run_id))
         segments = json.loads(reaper.get("repair_run/{0}/segments".format(args.run_id)))
-        print "# Found {0} segments".format(len(segments))
+        printq("# Found {0} segments".format(len(segments)))
         print json.dumps(segments, indent=2, sort_keys=True)
 
     def list_schedules(self):
@@ -404,12 +413,12 @@ class ReaperCLI(object):
             extra_arguments=_arguments_for_list_schedules
         )
         if args.cluster_name:
-            print "# Listing repair schedules for cluster '{0}'".format(args.cluster_name)
+            printq("# Listing repair schedules for cluster '{0}'".format(args.cluster_name))
             data = json.loads(reaper.get("repair_schedule/cluster/{0}".format(args.cluster_name)))
         else:
-            print "# Listing repair schedules for all clusters"
+            printq("# Listing repair schedules for all clusters")
             data = json.loads(reaper.get("repair_schedule"))
-        print "# Found {0} schedules:".format(len(data))
+        printq("# Found {0} schedules:".format(len(data)))
         print json.dumps(data, indent=2, sort_keys=True)
 
     def status_cluster(self):
@@ -418,7 +427,7 @@ class ReaperCLI(object):
             "Show status of a Cassandra cluster, and any existing repair runs for the cluster.",
             extra_arguments=_arguments_for_status_cluster
         )
-        print "# Cluster '{0}':".format(args.cluster_name)
+        printq("# Cluster '{0}':".format(args.cluster_name))
         cluster_data = reaper.get("cluster/{0}".format(args.cluster_name))
         print json.dumps(json.loads(cluster_data), indent=2, sort_keys=True)
 
@@ -428,7 +437,7 @@ class ReaperCLI(object):
             "Show status of a keyspace in a Cassandra cluster.",
             extra_arguments=_arguments_for_status_keyspace
         )
-        print "# Cluster '{0}', keyspace '{1}':".format(args.cluster_name, args.keyspace_name)
+        printq("# Cluster '{0}', keyspace '{1}':".format(args.cluster_name, args.keyspace_name))
         keyspace_data = reaper.get("cluster/{0}/{1}".format(args.cluster_name, args.keyspace_name))
         print json.dumps(json.loads(keyspace_data), indent=2, sort_keys=True)
 
@@ -438,7 +447,7 @@ class ReaperCLI(object):
             "Show status of a repair run.",
             extra_arguments=_arguments_for_status_repair
         )
-        print "# Repair run with id '{0}':".format(args.run_id)
+        printq("# Repair run with id '{0}':".format(args.run_id))
         repair_run_data = reaper.get("repair_run/{0}".format(args.run_id))
         print json.dumps(json.loads(repair_run_data), indent=2, sort_keys=True)
 
@@ -448,7 +457,7 @@ class ReaperCLI(object):
             "Show status of a repair schedule.",
             extra_arguments=_arguments_for_status_schedule
         )
-        print "# Repair schedule with id '{0}':".format(args.schedule_id)
+        printq("# Repair schedule with id '{0}':".format(args.schedule_id))
         repair_schedule_data = reaper.get("repair_schedule/{0}".format(args.schedule_id))
         print json.dumps(json.loads(repair_schedule_data), indent=2, sort_keys=True)
 
@@ -458,9 +467,9 @@ class ReaperCLI(object):
             "Register a cluster.",
             extra_arguments=_arguments_for_add_cluster
         )
-        print "# Registering Cassandra cluster with seed host: {0}".format(args.seed_host)
+        printq("# Registering Cassandra cluster with seed host: {0}".format(args.seed_host))
         cluster_data = reaper.post("cluster", seedHost=args.seed_host)
-        print "# Registration succeeded:"
+        printq("# Registration succeeded:")
         print json.dumps(json.loads(cluster_data), indent=2, sort_keys=True)
 
     def repair(self):
@@ -471,7 +480,7 @@ class ReaperCLI(object):
             extra_arguments=_arguments_for_repair
         )
         if not args.keyspace_name or not args.cluster_name:
-            print "# Please specify a cluster, and a keyspace"
+            print("# Please specify a cluster, and a keyspace")
             exit(1)
         if args.tables:
             print ("# Registering repair run for cluster '{0}', and keyspace '{1}', "
@@ -489,14 +498,13 @@ class ReaperCLI(object):
                                 blacklistedTables=args.blacklisted_tables)
         else:
             if args.blacklisted_tables :
-                print ("# Registering repair run for cluster '{0}', and keyspace '{1}', "
-                   "targeting all tables in the keyspace except : {2}").format(args.cluster_name,
+                printq ("# Registering repair run for cluster '{0}', and keyspace '{1}', "
+                   "targeting all tables in the keyspace except : {2}".format(args.cluster_name,
                                                                   args.keyspace_name,
-                                                                  ",".join(args.blacklisted_tables.split(',')))
+                                                                  ",".join(args.blacklisted_tables.split(','))))
             else:
-                print ("# Registering repair run for cluster '{0}', and keyspace '{1}', "
-                   "targeting all tables in the keyspace").format(args.cluster_name,
-                                                                  args.keyspace_name)
+                printq ("# Registering repair run for cluster '{0}', and keyspace '{1}', "
+                   "targeting all tables in the keyspace".format(args.cluster_name, args.keyspace_name))
             reply = reaper.post("repair_run", clusterName=args.cluster_name,
                                 keyspace=args.keyspace_name, owner=args.owner, cause=args.cause,
                                 segmentCount=args.segment_count,
@@ -507,9 +515,9 @@ class ReaperCLI(object):
                                 datacenters=args.datacenters,
                                 blacklistedTables=args.blacklisted_tables)
         repair_run = json.loads(reply)
-        print "# Repair run with id={0} created".format(repair_run.get('id'))
+        printq("# Repair run with id={0} created".format(repair_run.get('id')))
         if not args.dont_start_repair:
-            print "# Starting repair run with id={0}".format(repair_run.get('id'))
+            printq("# Starting repair run with id={0}".format(repair_run.get('id')))
             reply = reaper.put("repair_run/{0}".format(repair_run.get('id')), state="RUNNING")
             repair_run = json.loads(reply)
             print json.dumps(repair_run, indent=2, sort_keys=True)
@@ -523,18 +531,18 @@ class ReaperCLI(object):
             extra_arguments=_arguments_for_scheduling
         )
         if not args.keyspace_name or not args.cluster_name:
-            print "# Please specify a cluster, and a keyspace"
+            print("# Please specify a cluster, and a keyspace")
             exit(1)
         if args.schedule_days_between is None:
-            print "# Please specify repair schedule by giving at least value for " \
-                  "schedule-days-between parameter"
+            print("# Please specify repair schedule by giving at least value for " \
+                  "schedule-days-between parameter")
             exit(1)
         if args.tables:
-            print ("# Registering repair schedule for cluster '{0}', and keyspace '{1}', "
+            printq ("# Registering repair schedule for cluster '{0}', and keyspace '{1}', "
                    "targeting tables: '{2}', with scheduled days between triggerings '{3}', "
-                   "and triggering time: {4}").format(
+                   "and triggering time: {4}".format(
                 args.cluster_name, args.keyspace_name, ",".join(args.tables.split(',')),
-                args.schedule_days_between, args.schedule_trigger_time)
+                args.schedule_days_between, args.schedule_trigger_time))
             reply = reaper.post("repair_schedule", clusterName=args.cluster_name,
                                 keyspace=args.keyspace_name, tables=args.tables,
                                 owner=args.owner, segmentCount=args.segment_count,
@@ -547,11 +555,11 @@ class ReaperCLI(object):
                                 datacenters=args.datacenters,
                                 blacklistedTables=args.blacklisted_tables)
         else:
-            print ("# Registering repair schedule for cluster '{0}', and keyspace '{1}', "
+            printq ("# Registering repair schedule for cluster '{0}', and keyspace '{1}', "
                    "targeting all tables in the keyspace, with scheduled days between "
-                   "triggerings '{2}', and triggering time: {3}").format(
+                   "triggerings '{2}', and triggering time: {3}".format(
                 args.cluster_name, args.keyspace_name,
-                args.schedule_days_between, args.schedule_trigger_time)
+                args.schedule_days_between, args.schedule_trigger_time))
             reply = reaper.post("repair_schedule", clusterName=args.cluster_name,
                                 keyspace=args.keyspace_name, owner=args.owner,
                                 segmentCount=args.segment_count,
@@ -564,7 +572,7 @@ class ReaperCLI(object):
                                 datacenters=args.datacenters,
                                 blacklistedTables=args.blacklisted_tables)
         repair_schedule = json.loads(reply)
-        print "# Repair schedule with id={0} created:".format(repair_schedule.get('id'))
+        printq("# Repair schedule with id={0} created:".format(repair_schedule.get('id')))
         print json.dumps(repair_schedule, indent=2, sort_keys=True)
 
     def resume_repair(self):
@@ -573,9 +581,9 @@ class ReaperCLI(object):
             "Resume a paused, start a not started or reattempt a failed repair run.",
             extra_arguments=_arguments_for_resume_repair
         )
-        print "# Resuming a repair run with id: {0}".format(args.run_id)
+        printq("# Resuming a repair run with id: {0}".format(args.run_id))
         reaper.put("repair_run/{0}".format(args.run_id), state="RUNNING")
-        print "# Run '{0}' resumed".format(args.run_id)
+        printq("# Run '{0}' resumed".format(args.run_id))
 
     def pause_repair(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -583,9 +591,9 @@ class ReaperCLI(object):
             "Pause a running repair run.",
             extra_arguments=_arguments_for_pause_repair
         )
-        print "# Pausing a repair run with id: {0}".format(args.run_id)
+        printq("# Pausing a repair run with id: {0}".format(args.run_id))
         reaper.put("repair_run/{0}".format(args.run_id), state="PAUSED")
-        print "# Repair run '{0}' paused".format(args.run_id)
+        printq("# Repair run '{0}' paused".format(args.run_id))
 
     def abort_repair(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -593,9 +601,9 @@ class ReaperCLI(object):
             "Abort a repair run.",
             extra_arguments=_arguments_for_abort_repair
         )
-        print "# Aborting a repair run with id: {0}".format(args.run_id)
+        printq("# Aborting a repair run with id: {0}".format(args.run_id))
         reaper.put("repair_run/{0}".format(args.run_id), state="ABORTED")
-        print "# Repair run '{0}' aborted".format(args.run_id)
+        printq("# Repair run '{0}' aborted".format(args.run_id))
 
     def abort_segment(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -603,9 +611,9 @@ class ReaperCLI(object):
             "Abort a segment.",
             extra_arguments=_arguments_for_abort_segment
         )
-        print "# Aborting a segment with run id: {0} and segment id {1}".format(args.run_id, args.segment_id)
+        printq("# Aborting a segment with run id: {0} and segment id {1}".format(args.run_id, args.segment_id))
         reaper.get("repair_run/{0}/segments/abort/{1}".format(args.run_id, args.segment_id))
-        print "# Segment '{0}' aborted".format(args.segment_id)
+        printq("# Segment '{0}' aborted".format(args.segment_id))
 
     def start_schedule(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -613,9 +621,9 @@ class ReaperCLI(object):
             "Resume a paused repair schedule.",
             extra_arguments=_arguments_for_start_schedule
         )
-        print "# Resuming a repair schedule with id: {0}".format(args.schedule_id)
+        printq("# Resuming a repair schedule with id: {0}".format(args.schedule_id))
         reaper.put("repair_schedule/{0}".format(args.schedule_id), state="ACTIVE")
-        print "# Schedule '{0}' active".format(args.schedule_id)
+        printq("# Schedule '{0}' active".format(args.schedule_id))
 
     def pause_schedule(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -623,9 +631,9 @@ class ReaperCLI(object):
             "Pause a repair schedule.",
             extra_arguments=_arguments_for_pause_schedule
         )
-        print "# Pausing a repair schedule with id: {0}".format(args.schedule_id)
+        printq("# Pausing a repair schedule with id: {0}".format(args.schedule_id))
         reaper.put("repair_schedule/{0}".format(args.schedule_id), state="PAUSED")
-        print "# Repair schedule '{0}' paused".format(args.schedule_id)
+        printq("# Repair schedule '{0}' paused".format(args.schedule_id))
 
     def delete_schedule(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -633,12 +641,16 @@ class ReaperCLI(object):
             "Delete a repair schedule.",
             extra_arguments=_arguments_for_delete_schedule
         )
-        print "# Deleting a repair schedule with id: {0}".format(args.schedule_id)
+        printq("# Deleting a repair schedule with id: {0}".format(args.schedule_id))
         reaper.delete("repair_schedule/{0}".format(args.schedule_id), owner=args.owner)
-        print "# Repair schedule '{0}' deleted".format(args.schedule_id)
+        printq("# Repair schedule '{0}' deleted".format(args.schedule_id))
 
+def printq(message):
+  if not quiet:
+      print message
 
 if __name__ == '__main__':
-    print("# Report improvements/bugs at https://github.com/thelastpickle/cassandra-reaper/issues")
-    print("# ------------------------------------------------------------------------------------")
+    log.info("# ------------------------------------------------------------------------------------")
+    log.info("# Report improvements/bugs at https://github.com/thelastpickle/cassandra-reaper/issues")
+    log.info("# ------------------------------------------------------------------------------------")
     ReaperCLI()
