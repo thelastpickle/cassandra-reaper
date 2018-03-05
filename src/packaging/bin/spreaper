@@ -518,7 +518,7 @@ class ReaperCLI(object):
         printq("# Repair run with id={0} created".format(repair_run.get('id')))
         if not args.dont_start_repair:
             printq("# Starting repair run with id={0}".format(repair_run.get('id')))
-            reply = reaper.put("repair_run/{0}".format(repair_run.get('id')), state="RUNNING")
+            reply = reaper.put("repair_run/{0}/state/{1}".format(repair_run.get('id'), "RUNNING"))
             repair_run = json.loads(reply)
             print json.dumps(repair_run, indent=2, sort_keys=True)
 
@@ -582,7 +582,7 @@ class ReaperCLI(object):
             extra_arguments=_arguments_for_resume_repair
         )
         printq("# Resuming a repair run with id: {0}".format(args.run_id))
-        reaper.put("repair_run/{0}".format(args.run_id), state="RUNNING")
+        reaper.put("repair_run/{0}/state/{1}".format(args.run_id, "RUNNING"))
         printq("# Run '{0}' resumed".format(args.run_id))
 
     def pause_repair(self):
@@ -592,7 +592,7 @@ class ReaperCLI(object):
             extra_arguments=_arguments_for_pause_repair
         )
         printq("# Pausing a repair run with id: {0}".format(args.run_id))
-        reaper.put("repair_run/{0}".format(args.run_id), state="PAUSED")
+        reaper.put("repair_run/{0}/state/{1}".format(args.run_id, "PAUSED"))
         printq("# Repair run '{0}' paused".format(args.run_id))
 
     def abort_repair(self):
@@ -602,7 +602,7 @@ class ReaperCLI(object):
             extra_arguments=_arguments_for_abort_repair
         )
         printq("# Aborting a repair run with id: {0}".format(args.run_id))
-        reaper.put("repair_run/{0}".format(args.run_id), state="ABORTED")
+        reaper.put("repair_run/{0}/state/{1}".format(args.run_id, "ABORTED"))
         printq("# Repair run '{0}' aborted".format(args.run_id))
 
     def abort_segment(self):

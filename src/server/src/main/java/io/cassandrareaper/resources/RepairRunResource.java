@@ -322,8 +322,8 @@ public final class RepairRunResource {
    *
    * <p>Currently supports NOT_STARTED|PAUSED to RUNNING and RUNNING to PAUSED.
    *
-   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 501
-   *     (NOT_IMPLEMENTED) if transition is not supported.
+   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 409
+   *     (CONFLICT) if transition is not supported.
    */
   @PUT
   @Path("/{id}/state/{state}")
@@ -384,12 +384,10 @@ public final class RepairRunResource {
   }
 
   /**
-   * Modifies a state of the repair run.
+   * Modifies the intensity of the repair run.
    *
-   * <p>Currently supports NOT_STARTED|PAUSED to RUNNING and RUNNING to PAUSED.
-   *
-   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 501
-   *     (NOT_IMPLEMENTED) if transition is not supported.
+   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 409
+   *     (CONFLICT) if transition is not supported.
    */
   @PUT
   @Path("/{id}/intensity/{intensity}")
@@ -418,7 +416,7 @@ public final class RepairRunResource {
         return Response.status(Response.Status.NOT_FOUND).entity(errMsg).build();
       }
 
-      if (RunState.PAUSED != repairRun.get().getRunState()) {
+      if (RunState.PAUSED != repairRun.get().getRunState() && RunState.NOT_STARTED != repairRun.get().getRunState()) {
         return Response.status(Status.CONFLICT).entity("repair run must first be paused").build();
       }
 
@@ -668,7 +666,10 @@ public final class RepairRunResource {
     }
   }
 
-  private List<RepairRunStatus> getRunStatuses(Collection<RepairRun> runs, Set desiredStates) throws ReaperException {
+  private List<RepairRunStatus> getRunStatuses(
+      Collection<RepairRun> runs,
+      Set<String> desiredStates) throws ReaperException {
+
     final List<RepairRunStatus> runStatuses = Lists.newArrayList();
     for (final RepairRun run : runs) {
       if (!desiredStates.isEmpty() && !desiredStates.contains(run.getRunState().name())) {
