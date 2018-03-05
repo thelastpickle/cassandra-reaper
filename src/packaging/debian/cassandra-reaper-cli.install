@@ -1,1 +1,2 @@
 bin/spreaper usr/bin
+etc/bash_completion.d/spreaper etc/bash_completion.d

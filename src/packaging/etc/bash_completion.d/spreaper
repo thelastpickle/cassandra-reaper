@@ -1,0 +1,113 @@
+# spreaper(1) completion
+
+_list_clusters()
+{
+    clusters=$(spreaper -q list-clusters)
+    COMPREPLY=( $(compgen -W "${clusters}" -- ${cur}) )
+}
+
+_list_run_ids()
+{
+    clusters=$(spreaper -q list-runs | jq -r '.[0].id')
+    COMPREPLY=( $(compgen -W "${clusters}" -- ${cur}) )
+}
+
+_list_schedule_ids()
+{
+    clusters=$(spreaper -q list-schedules | jq -r '.[0].id')
+    COMPREPLY=( $(compgen -W "${clusters}" -- ${cur}) )
+}
+
+_spreaper()
+{
+    COMPREPLY=()
+    local cur prev
+    _get_comp_words_by_ref cur prev
+
+    case "$prev" in
+        -h|-v|-vv|-q|--verbose|--quiet|--reaper-port|--reaper-use-ssl)
+            ;;
+        --reaper-host)
+            _known_hosts_real "$cur"
+            ;;
+        list-clusters)
+            return 0
+            ;;
+        list-runs)
+            _list_clusters "$cur"
+            return 0
+            ;;
+        list-schedules)
+            _list_clusters "$cur"
+            return 0
+            ;;
+        list-segments)
+            _list_run_ids "$cur"
+            return 0
+            ;;
+        status-cluster)
+            _list_clusters "$cur"
+            return 0
+            ;;
+        status-keyspace)
+            _list_clusters "$cur"
+            return 0
+            ;;
+        status-repair)
+            _list_run_ids "$cur"
+            return 0
+            ;;
+        status-schedule)
+            _list_schedule_ids "$cur"
+            return 0
+            ;;
+        add-cluster)
+            _known_hosts_real "$cur"
+            return 0
+            ;;
+        repair)
+            COMPREPLY=( $(compgen -W "" -- ${cur}) )
+            return 0
+            ;;
+        schedule)
+            return 0
+            ;;
+        resume-repair)
+            _list_run_ids "$cur"
+            return 0
+            ;;
+        pause-repair)
+            _list_run_ids "$cur"
+            return 0
+            ;;
+        update-repair)
+            _list_run_ids "$cur"
+            return 0
+            ;;
+        abort-repair)
+            _list_run_ids "$cur"
+            return 0
+            ;;
+        abort-segment)
+            return 0
+            ;;
+        start-schedule)
+            _list_schedule_ids "$cur"
+            return 0
+            ;;
+        pause-schedule)
+            _list_schedule_ids "$cur"
+            return 0
+            ;;
+        delete-schedule)
+            _list_schedule_ids "$cur"
+            return 0
+            ;;
+        ping)
+            return 0
+            ;;
+    esac
+
+    COMPREPLY=( $( compgen -W ' -h -v --verbose -vv -q --quiet --reaper-host --reaper-port --reaper-use-ssl list-clusters list-runs list-schedules list-segments status-cluster status-keyspace status-repair status-schedule add-cluster repair schedule resume-repair pause-repair update-repair abort-repair abort-segment start-schedule pause-schedule delete-schedule ping' -- "$cur" ) )
+} &&
+complete -F _spreaper spreaper
