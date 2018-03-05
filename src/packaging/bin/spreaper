@@ -242,6 +242,10 @@ def _arguments_for_pause_repair(parser):
     """Arguments needed for pausing or resuming a repair"""
     parser.add_argument("run_id", help="ID of the repair run to pause")
 
+def _arguments_for_update_repair(parser):
+    """Arguments needed for updating intensity to a paused repair"""
+    parser.add_argument("run_id", help="ID of the repair run")
+    parser.add_argument("intensity", help="new intensity")
 
 def _arguments_for_abort_repair(parser):
     """Arguments needed for aborting a repair"""
@@ -319,6 +323,7 @@ Usage: spreaper [<global_args>] <command> [<command_args>]
                     Reaper (add-cluster) before calling this.
     resume-repair   Resume a paused, start a not started or reattempt a failed repair run.
     pause-repair    Pause a repair run.
+    update-repair   Update intensity to a repair run.
     abort-repair    Abort a repair run.
     abort-segment   Abort a segment.
     start-schedule  Resume a paused repair schedule.
@@ -597,6 +602,16 @@ class ReaperCLI(object):
         printq("# Pausing a repair run with id: {0}".format(args.run_id))
         reaper.put("repair_run/{0}/state/{1}".format(args.run_id, "PAUSED"))
         printq("# Repair run '{0}' paused".format(args.run_id))
+
+    def update_repair(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "update-repair",
+            "Update intensity to a paused repair run.",
+            extra_arguments=_arguments_for_update_repair
+        )
+        printq("# Updating intensity to a repair run with id: {0}; to {1}".format(args.run_id, args.intensity))
+        reaper.put("repair_run/{0}/intensity/{1}".format(args.run_id, args.intensity))
+        printq("# Repair run '{0}' updated with new intensity {1}".format(args.run_id, args.intensity))
 
     def abort_repair(self):
         reaper, args = ReaperCLI.prepare_reaper(
