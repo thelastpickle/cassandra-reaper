@@ -32,9 +32,11 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 import javax.validation.ValidationException;
@@ -637,13 +639,17 @@ public final class RepairRunResource {
   /**
    * @param state comma-separated list of states to return. These states must match names of {@link
    *     io.cassandrareaper.core.RepairRun.RunState}.
+   * @param cluster only return repair runs belonging to this cluster
+   * @param keyspace only return repair runs belonging to this keyspace
    * @return All repair runs in the system if the param is absent, repair runs with state included in the state
    *       parameter otherwise.
    *        If the state parameter contains non-existing run states, BAD_REQUEST response is returned.
    */
   @GET
   public Response listRepairRuns(
-      @QueryParam("state") Optional<String> state) {
+      @QueryParam("state") Optional<String> state,
+      @QueryParam("cluster_name") Optional<String> cluster,
+      @QueryParam("keyspace_name") Optional<String> keyspace) {
 
     try {
       final List<RepairRunStatus> runStatuses = Lists.newArrayList();
@@ -651,12 +657,20 @@ public final class RepairRunResource {
       if (desiredStates == null) {
         return Response.status(Response.Status.BAD_REQUEST).build();
       }
-      Collection<RepairRun> runs;
 
-      final Collection<Cluster> clusters = context.storage.getClusters();
-      for (final Cluster cluster : clusters) {
-        runs = context.storage.getRepairRunsForCluster(cluster.getName());
-        runStatuses.addAll(getRunStatuses(runs, desiredStates));
+      Collection<Cluster> clusters = cluster
+          .transform((clstr) -> context.storage.getCluster(clstr).get())
+          .transform((clstr) -> (Collection<Cluster>)Collections.singleton(clstr))
+          .or(context.storage.getClusters());
+
+      for (final Cluster clstr : clusters) {
+        Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(clstr.getName());
+        runStatuses.addAll(
+            (List<RepairRunStatus>) getRunStatuses(runs, desiredStates)
+                .stream()
+                .filter((run) -> !keyspace.isPresent()
+                    || ((RepairRunStatus)run).getKeyspaceName().equals(keyspace.get()))
+                .collect(Collectors.toList()));
       }
 
       return Response.status(Response.Status.OK).entity(runStatuses).build();

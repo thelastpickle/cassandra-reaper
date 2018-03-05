@@ -271,6 +271,8 @@ def _arguments_for_delete_schedule(parser):
 def _arguments_for_list_runs(parser):
     """Arguments needed to filter what repair runs are listed"""
     parser.add_argument("--state", help="Comma separated states used to filter returned runs")
+    parser.add_argument("cluster", nargs='?', default=None, help="the cluster name")
+    parser.add_argument("keyspace", nargs='?', default=None, help="the keyspace name")
 
 
 def _parse_arguments(command, description, usage=None, extra_arguments=None):
@@ -390,7 +392,7 @@ class ReaperCLI(object):
         printq("# Listing repair runs")
         endpoint = 'repair_run'
         if args.state is not None:
-            endpoint = '{0}?{1}'.format(endpoint, urllib.urlencode({'state': args.state}))
+            endpoint = '{0}?{1}'.format(endpoint, urllib.urlencode({'state': args.state, 'cluster': args.cluster, 'keyspace': args.keyspace}))
         repair_runs = json.loads(reaper.get(endpoint))
         printq("# Found {0} repair runs".format(len(repair_runs)))
         print json.dumps(repair_runs, indent=2, sort_keys=True)
@@ -505,6 +507,7 @@ class ReaperCLI(object):
             else:
                 printq ("# Registering repair run for cluster '{0}', and keyspace '{1}', "
                    "targeting all tables in the keyspace".format(args.cluster_name, args.keyspace_name))
+
             reply = reaper.post("repair_run", clusterName=args.cluster_name,
                                 keyspace=args.keyspace_name, owner=args.owner, cause=args.cause,
                                 segmentCount=args.segment_count,
