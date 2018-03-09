@@ -14,6 +14,7 @@
 
 package io.cassandrareaper.storage;
 
+import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
@@ -28,6 +29,7 @@ import io.cassandrareaper.storage.postgresql.BigIntegerArgumentFactory;
 import io.cassandrareaper.storage.postgresql.IStoragePostgreSql;
 import io.cassandrareaper.storage.postgresql.LongCollectionSqlTypeArgumentFactory;
 import io.cassandrareaper.storage.postgresql.PostgresArrayArgumentFactory;
+import io.cassandrareaper.storage.postgresql.PostgresRepairSegment;
 import io.cassandrareaper.storage.postgresql.RepairParallelismArgumentFactory;
 import io.cassandrareaper.storage.postgresql.RunStateArgumentFactory;
 import io.cassandrareaper.storage.postgresql.ScheduleStateArgumentFactory;
@@ -230,7 +232,9 @@ public final class PostgresStorage implements IStorage {
   }
 
   @Override
-  public RepairRun addRepairRun(RepairRun.Builder newRepairRun, Collection<RepairSegment.Builder> newSegments) {
+  public RepairRun addRepairRun(
+      RepairRun.Builder newRepairRun, Collection<RepairSegment.Builder> newSegments)
+      throws ReaperException {
     RepairRun result;
     try (Handle h = jdbi.open()) {
       long insertedId = getPostgresStorage(h).insertRepairRun(newRepairRun.build(null));
@@ -289,10 +293,12 @@ public final class PostgresStorage implements IStorage {
     return Optional.fromNullable(result);
   }
 
-  private void addRepairSegments(Collection<RepairSegment.Builder> newSegments, UUID runId) {
-    List<RepairSegment> insertableSegments = new ArrayList<>();
+  private void addRepairSegments(Collection<RepairSegment.Builder> newSegments, UUID runId)
+      throws ReaperException {
+    List<PostgresRepairSegment> insertableSegments = new ArrayList<>();
     for (RepairSegment.Builder segment : newSegments) {
-      insertableSegments.add(segment.withRunId(runId).withId(null).build());
+      insertableSegments.add(
+          new PostgresRepairSegment(segment.withRunId(runId).withId(null).build()));
     }
     try (Handle h = jdbi.open()) {
       getPostgresStorage(h).insertRepairSegments(insertableSegments.iterator());

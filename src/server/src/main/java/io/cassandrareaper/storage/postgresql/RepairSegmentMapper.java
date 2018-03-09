@@ -15,11 +15,14 @@
 package io.cassandrareaper.storage.postgresql;
 
 import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.service.RingRange;
+import io.cassandrareaper.storage.JsonParseUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import com.google.common.base.Optional;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -30,11 +33,19 @@ public final class RepairSegmentMapper implements ResultSetMapper<RepairSegment>
     RingRange range
         = new RingRange(rs.getBigDecimal("start_token").toBigInteger(), rs.getBigDecimal("end_token").toBigInteger());
 
-    RepairSegment.Builder builder = RepairSegment
-        .builder(range, UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")))
-        .withRunId(UuidUtil.fromSequenceId(rs.getLong("run_id")))
-        .withState(RepairSegment.State.values()[rs.getInt("state")])
-        .withFailCount(rs.getInt("fail_count"));
+    RepairSegment.Builder builder =
+        RepairSegment.builder(
+                Segment.builder().withTokenRange(range).build(),
+                UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")))
+            .withRunId(UuidUtil.fromSequenceId(rs.getLong("run_id")))
+            .withState(RepairSegment.State.values()[rs.getInt("state")])
+            .withFailCount(rs.getInt("fail_count"))
+            .withTokenRange(
+                Segment.builder()
+                    .withTokenRanges(
+                        JsonParseUtils.parseRingRangeList(
+                            Optional.fromNullable(rs.getString("token_ranges"))))
+                    .build());
 
     if (null != rs.getString("coordinator_host")) {
       builder = builder.withCoordinatorHost(rs.getString("coordinator_host"));

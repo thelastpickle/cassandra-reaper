@@ -14,10 +14,9 @@
 
 package io.cassandrareaper.core;
 
-import io.cassandrareaper.service.RingRange;
-
 import java.math.BigInteger;
 import java.util.UUID;
+
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -34,7 +33,7 @@ public final class RepairSegment {
   private final UUID id;
   private final UUID runId;
   private final UUID repairUnitId;
-  private final RingRange tokenRange;
+  private final Segment tokenRange;
   private final int failCount;
   private final State state;
   private final String coordinatorHost;
@@ -53,7 +52,7 @@ public final class RepairSegment {
     this.endTime = builder.endTime;
   }
 
-  public static Builder builder(RingRange tokenRange, UUID repairUnitId) {
+  public static Builder builder(Segment tokenRange, UUID repairUnitId) {
     return new Builder(tokenRange, repairUnitId);
   }
 
@@ -69,18 +68,18 @@ public final class RepairSegment {
     return repairUnitId;
   }
 
-  public RingRange getTokenRange() {
+  public Segment getTokenRange() {
     return tokenRange;
   }
 
   @JsonIgnore
   public BigInteger getStartToken() {
-    return tokenRange.getStart();
+    return tokenRange.getBaseRange().getStart();
   }
 
   @JsonIgnore
   public BigInteger getEndToken() {
-    return tokenRange.getEnd();
+    return tokenRange.getBaseRange().getEnd();
   }
 
   public int getFailCount() {
@@ -137,7 +136,7 @@ public final class RepairSegment {
   public static final class Builder {
 
     private UUID repairUnitId;
-    private RingRange tokenRange;
+    private Segment tokenRange;
     private UUID id;
     private UUID runId;
     private int failCount;
@@ -148,7 +147,7 @@ public final class RepairSegment {
 
     private Builder() {}
 
-    private Builder(RingRange tokenRange, UUID repairUnitId) {
+    private Builder(Segment tokenRange, UUID repairUnitId) {
       Preconditions.checkNotNull(tokenRange);
       Preconditions.checkNotNull(repairUnitId);
       this.repairUnitId = repairUnitId;
@@ -181,7 +180,7 @@ public final class RepairSegment {
       return this;
     }
 
-    public Builder withTokenRange(RingRange tokenRange) {
+    public Builder withTokenRange(Segment tokenRange) {
       this.tokenRange = tokenRange;
       return this;
     }

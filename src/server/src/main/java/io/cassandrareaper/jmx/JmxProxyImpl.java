@@ -16,6 +16,7 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Snapshot.Builder;
 import io.cassandrareaper.service.RingRange;
@@ -375,7 +376,7 @@ final class JmxProxyImpl implements JmxProxy {
 
   @NotNull
   @Override
-  public List<String> tokenRangeToEndpoint(String keyspace, RingRange tokenRange) {
+  public List<String> tokenRangeToEndpoint(String keyspace, Segment segment) {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
 
     Set<Map.Entry<List<String>, List<String>>> entries
@@ -384,12 +385,15 @@ final class JmxProxyImpl implements JmxProxy {
     for (Map.Entry<List<String>, List<String>> entry : entries) {
       BigInteger rangeStart = new BigInteger(entry.getKey().get(0));
       BigInteger rangeEnd = new BigInteger(entry.getKey().get(1));
-      if (new RingRange(rangeStart, rangeEnd).encloses(tokenRange)) {
-        LOG.debug("[tokenRangeToEndpoint] Found replicas for token range {} : {}", tokenRange, entry.getValue());
+      if (new RingRange(rangeStart, rangeEnd).encloses(segment.getTokenRanges().get(0))) {
+        LOG.debug(
+            "[tokenRangeToEndpoint] Found replicas for token range {} : {}",
+            segment.getTokenRanges().get(0),
+            entry.getValue());
         return entry.getValue();
       }
     }
-    LOG.error("[tokenRangeToEndpoint] no replicas found for token range {}", tokenRange);
+    LOG.error("[tokenRangeToEndpoint] no replicas found for token range {}", segment);
     LOG.debug("[tokenRangeToEndpoint] checked token ranges were {}", entries);
     return Lists.newArrayList();
   }
@@ -612,7 +616,8 @@ final class JmxProxyImpl implements JmxProxy {
       Collection<String> columnFamilies,
       boolean fullRepair,
       Collection<String> datacenters,
-      RepairStatusHandler repairStatusHandler)
+      RepairStatusHandler repairStatusHandler,
+      List<RingRange> associatedTokens)
       throws ReaperException {
 
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
@@ -672,7 +677,8 @@ final class JmxProxyImpl implements JmxProxy {
             endToken,
             cassandraVersion,
             datacenters,
-            repairStatusHandler);
+            repairStatusHandler,
+            associatedTokens);
       }
     } catch (RuntimeException e) {
       LOG.error("Segment repair failed", e);
@@ -689,20 +695,29 @@ final class JmxProxyImpl implements JmxProxy {
       BigInteger endToken,
       String cassandraVersion,
       Collection<String> datacenters,
-      RepairStatusHandler repairStatusHandler) {
+      RepairStatusHandler repairStatusHandler,
+      List<RingRange> associatedTokens) {
 
     Map<String, String> options = new HashMap<>();
 
     options.put(RepairOption.PARALLELISM_KEY, repairParallelism.getName());
-    // options.put(RepairOption.PRIMARY_RANGE_KEY, Boolean.toString(primaryRange));
     options.put(RepairOption.INCREMENTAL_KEY, Boolean.toString(!fullRepair));
     options.put(RepairOption.JOB_THREADS_KEY, Integer.toString(1));
     options.put(RepairOption.TRACE_KEY, Boolean.toString(Boolean.FALSE));
     options.put(RepairOption.COLUMNFAMILIES_KEY, StringUtils.join(columnFamilies, ","));
     // options.put(RepairOption.PULL_REPAIR_KEY, Boolean.FALSE);
     if (fullRepair) {
-      options.put(RepairOption.RANGES_KEY, beginToken.toString() + ":" + endToken.toString());
+      options.put(
+          RepairOption.RANGES_KEY,
+          StringUtils.join(
+              associatedTokens
+                  .stream()
+                  .map(token -> token.getStart() + ":" + token.getEnd())
+                  .collect(Collectors.toList()),
+              ","));
     }
+
+    LOG.info("Triggering repair for ranges {}", options.get(RepairOption.RANGES_KEY));
 
     options.put(RepairOption.DATACENTERS_KEY, StringUtils.join(datacenters, ","));
     // options.put(RepairOption.HOSTS_KEY, StringUtils.join(specificHosts, ","));

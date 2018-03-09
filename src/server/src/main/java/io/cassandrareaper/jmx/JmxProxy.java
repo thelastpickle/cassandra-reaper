@@ -15,6 +15,7 @@
 package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.service.RingRange;
 
@@ -114,12 +115,13 @@ public interface JmxProxy extends NotificationListener {
    * @return all hosts owning a range of tokens
    */
   @NotNull
-  List<String> tokenRangeToEndpoint(String keyspace, RingRange tokenRange);
+  List<String> tokenRangeToEndpoint(String keyspace, Segment segment);
 
   /**
    * Triggers a repair of range (beginToken, endToken] for given keyspace and column family. The
-   * repair is triggered by {@link org.apache.cassandra.service.StorageServiceMBean#forceRepairRangeAsync}
-   * For time being, we don't allow local nor snapshot repairs.
+   * repair is triggered by {@link
+   * org.apache.cassandra.service.StorageServiceMBean#forceRepairRangeAsync} For time being, we
+   * don't allow local nor snapshot repairs.
    *
    * @return Repair command number, or 0 if nothing to repair
    */
@@ -131,7 +133,8 @@ public interface JmxProxy extends NotificationListener {
       Collection<String> columnFamilies,
       boolean fullRepair,
       Collection<String> datacenters,
-      RepairStatusHandler repairStatusHandler)
+      RepairStatusHandler repairStatusHandler,
+      List<RingRange> associatedTokens)
       throws ReaperException;
 
   void close();

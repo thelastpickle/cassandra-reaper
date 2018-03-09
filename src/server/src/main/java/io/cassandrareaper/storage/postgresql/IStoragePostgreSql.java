@@ -41,8 +41,8 @@ import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 /**
  * JDBI based PostgreSQL interface.
  *
- * <p>
- * See following specification for more info: http://jdbi.org/sql_object_api_dml/
+ * <p>See following specification for more info: http://jdbi.org/sql_object_api_dml/
+ *
  */
 public interface IStoragePostgreSql {
 
@@ -108,30 +108,32 @@ public interface IStoragePostgreSql {
 
   // RepairSegmen
   //
-  String SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID
-      = "repair_unit_id, run_id, start_token, end_token, state, coordinator_host, start_time, "
-      + "end_time, fail_count";
+  String SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID =
+      "repair_unit_id, run_id, start_token, end_token, state, coordinator_host, start_time, "
+          + "end_time, fail_count, token_ranges";
   String SQL_REPAIR_SEGMENT_ALL_FIELDS = "repair_segment.id, " + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID;
-  String SQL_INSERT_REPAIR_SEGMENT = "INSERT INTO repair_segment ("
-      + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID
-      + ") VALUES "
-      + "(:repairUnitId, :runId, :startToken, :endToken, :state, :coordinatorHost, :startTime, "
-      + ":endTime, :failCount)";
-  String SQL_UPDATE_REPAIR_SEGMENT = "UPDATE repair_segment SET repair_unit_id = :repairUnitId, run_id = :runId, "
-      + "start_token = :startToken, end_token = :endToken, state = :state, "
-      + "coordinator_host = :coordinatorHost, start_time = :startTime, end_time = :endTime, "
-      + "fail_count = :failCount WHERE id = :id";
+  String SQL_INSERT_REPAIR_SEGMENT =
+      "INSERT INTO repair_segment ("
+          + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID
+          + ") VALUES "
+          + "(:repairUnitId, :runId, :startToken, :endToken, :state, :coordinatorHost, :startTime, "
+          + ":endTime, :failCount, :tokenRangesTxt)";
+  String SQL_UPDATE_REPAIR_SEGMENT =
+      "UPDATE repair_segment SET repair_unit_id = :repairUnitId, run_id = :runId, "
+          + "start_token = :startToken, end_token = :endToken, state = :state, "
+          + "coordinator_host = :coordinatorHost, start_time = :startTime, end_time = :endTime, "
+          + "fail_count = :failCount WHERE id = :id";
   String SQL_GET_REPAIR_SEGMENT = "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS + " FROM repair_segment WHERE id = :id";
   String SQL_GET_REPAIR_SEGMENTS_FOR_RUN = "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS
       + " FROM repair_segment WHERE run_id = :runId";
   String SQL_GET_REPAIR_SEGMENTS_FOR_RUN_WITH_STATE = "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS
       + " FROM repair_segment WHERE " + "run_id = :runId AND state = :state";
-  String SQL_GET_RUNNING_REPAIRS_FOR_CLUSTER
-      = "SELECT start_token, end_token, keyspace_name, column_families, repair_parallelism "
-      + "FROM repair_segment "
-      + "JOIN repair_run ON run_id = repair_run.id "
-      + "JOIN repair_unit ON repair_run.repair_unit_id = repair_unit.id "
-      + "WHERE repair_segment.state = 1 AND repair_unit.cluster_name = :clusterName";
+  String SQL_GET_RUNNING_REPAIRS_FOR_CLUSTER =
+      "SELECT start_token, end_token, token_ranges, keyspace_name, column_families, repair_parallelism "
+          + "FROM repair_segment "
+          + "JOIN repair_run ON run_id = repair_run.id "
+          + "JOIN repair_unit ON repair_run.repair_unit_id = repair_unit.id "
+          + "WHERE repair_segment.state = 1 AND repair_unit.cluster_name = :clusterName";
   String SQL_GET_NEXT_FREE_REPAIR_SEGMENT =
       "SELECT "
           + SQL_REPAIR_SEGMENT_ALL_FIELDS
@@ -321,8 +323,7 @@ public interface IStoragePostgreSql {
 
   @SqlBatch(SQL_INSERT_REPAIR_SEGMENT)
   @BatchChunkSize(500)
-  void insertRepairSegments(
-      @BindBean Iterator<RepairSegment> newRepairSegments);
+  void insertRepairSegments(@BindBean Iterator<PostgresRepairSegment> iterator);
 
   @SqlUpdate(SQL_UPDATE_REPAIR_SEGMENT)
   int updateRepairSegment(

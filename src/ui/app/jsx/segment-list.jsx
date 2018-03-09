@@ -341,16 +341,16 @@ const Segment = React.createClass({
         if (this.props.segment.state == 'NOT_STARTED') {
             return  <tr>
                 <td>{this.props.segment.id}</td>
-                <td>{this.props.segment.tokenRange.start}</td>
-                <td>{this.props.segment.tokenRange.end}</td>
+                <td>{this.props.segment.tokenRange.baseRange.start}</td>
+                <td>{this.props.segment.tokenRange.baseRange.end}</td>
                 <td>{this.props.segment.failCount}</td>
                 <td><Button bsStyle='primary'>{this.props.segment.state}</Button></td>
             </tr>
         } else if (this.props.segment.state == 'RUNNING') {
             return  <tr>
                 <td>{this.props.segment.id}</td>
-                <td>{this.props.segment.tokenRange.start}</td>
-                <td>{this.props.segment.tokenRange.end}</td>
+                <td>{this.props.segment.tokenRange.baseRange.start}</td>
+                <td>{this.props.segment.tokenRange.baseRange.end}</td>
                 <td>{this.props.segment.failCount}</td>
                 <td><Button bsStyle='warning'>{this.props.segment.state}</Button></td>
                 <td>{this.props.segment.coordinatorHost}</td>
@@ -360,8 +360,8 @@ const Segment = React.createClass({
         } else {
             return  <tr>
                 <td>{this.props.segment.id}</td>
-                <td>{this.props.segment.tokenRange.start}</td>
-                <td>{this.props.segment.tokenRange.end}</td>
+                <td>{this.props.segment.tokenRange.baseRange.start}</td>
+                <td>{this.props.segment.tokenRange.baseRange.end}</td>
                 <td>{this.props.segment.failCount}</td>
                 <td><Button bsStyle='success'>{this.props.segment.state}</Button></td>
                 <td>{this.props.segment.coordinatorHost}</td>

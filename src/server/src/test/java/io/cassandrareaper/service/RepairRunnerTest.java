@@ -22,6 +22,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
@@ -39,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -90,9 +92,16 @@ public final class RepairRunnerTest {
             new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR, NODES,
                 DATACENTERS, BLACKLISTED_TABLES));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
-    RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
-        Collections.singleton(RepairSegment.builder(new RingRange(BigInteger.ZERO, BigInteger.ONE), cf.getId())));
+    RepairRun run =
+        storage.addRepairRun(
+            new RepairRun.Builder(
+                CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
+            Collections.singleton(
+                RepairSegment.builder(
+                    Segment.builder()
+                        .withTokenRange(new RingRange(BigInteger.ZERO, BigInteger.ONE))
+                        .build(),
+                    cf.getId())));
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
@@ -117,7 +126,7 @@ public final class RepairRunnerTest {
             final JmxProxy jmx = mock(JmxProxy.class);
             when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
             when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
+            when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
                 .thenReturn(Lists.newArrayList(""));
             when(jmx.getRangeToEndpointMap(anyString()))
                 .thenReturn(RepairRunnerTest.sixNodeCluster());
@@ -125,7 +134,8 @@ public final class RepairRunnerTest {
             when(jmx.getDataCenter(anyString())).thenReturn("dc1");
 
             when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class),
-                any(), any(RepairParallelism.class), any(), anyBoolean(), any(), any()))
+                    any(), any(RepairParallelism.class), any(),
+                    anyBoolean(), any(), any(), any()))
                 .then(
                     (invocation) -> {
                       assertEquals(
@@ -139,7 +149,8 @@ public final class RepairRunnerTest {
                             public void run() {
                               handler
                                   .get()
-                                  .handle(repairNumber, Optional.of(ActiveRepairService.Status.STARTED),
+                                  .handle(repairNumber,
+                                      Optional.of(ActiveRepairService.Status.STARTED),
                                       Optional.absent(), null, jmx);
 
                               assertEquals(
@@ -155,7 +166,9 @@ public final class RepairRunnerTest {
 
                               handler
                                   .get()
-                                  .handle(repairNumber, Optional.of(ActiveRepairService.Status.STARTED),
+                                  .handle(
+                                      repairNumber,
+                                      Optional.of(ActiveRepairService.Status.STARTED),
                                       Optional.absent(), null, jmx);
 
                               assertEquals(
@@ -164,7 +177,9 @@ public final class RepairRunnerTest {
 
                               handler
                                   .get()
-                                  .handle(repairNumber, Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
+                                  .handle(
+                                      repairNumber,
+                                      Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
                                       Optional.absent(), null, jmx);
 
                               assertEquals(
@@ -173,7 +188,8 @@ public final class RepairRunnerTest {
 
                               handler
                                   .get()
-                                  .handle(repairNumber, Optional.of(ActiveRepairService.Status.FINISHED),
+                                  .handle(repairNumber,
+                                      Optional.of(ActiveRepairService.Status.FINISHED),
                                       Optional.absent(), null, jmx);
 
                               mutex.release();
@@ -234,9 +250,16 @@ public final class RepairRunnerTest {
                 DATACENTERS,
                 BLACKLISTED_TABLES));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
-    RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder(CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
-        Collections.singleton(RepairSegment.builder(new RingRange(BigInteger.ZERO, BigInteger.ONE), cf.getId())));
+    RepairRun run =
+        storage.addRepairRun(
+            new RepairRun.Builder(
+                CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
+            Collections.singleton(
+                RepairSegment.builder(
+                    Segment.builder()
+                        .withTokenRange(new RingRange(BigInteger.ZERO, BigInteger.ONE))
+                        .build(),
+                    cf.getId())));
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
@@ -261,7 +284,7 @@ public final class RepairRunnerTest {
             final JmxProxy jmx = mock(JmxProxy.class);
             when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
             when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
+            when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
                 .thenReturn(Lists.newArrayList(""));
             when(jmx.getRangeToEndpointMap(anyString()))
                 .thenReturn(RepairRunnerTest.sixNodeCluster());
@@ -269,8 +292,9 @@ public final class RepairRunnerTest {
             when(jmx.getDataCenter(anyString())).thenReturn("dc1");
             //doNothing().when(jmx).cancelAllRepairs();
 
-            when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class),
-                any(), any(RepairParallelism.class), any(), anyBoolean(), any(), any()))
+            when(jmx.triggerRepair(
+                    any(BigInteger.class), any(BigInteger.class), any(), any(RepairParallelism.class),
+                    any(), anyBoolean(), any(), any(), any()))
                 .then(
                     (invocation) -> {
                       assertEquals(
@@ -285,7 +309,8 @@ public final class RepairRunnerTest {
                             public void run() {
                               handler
                                   .get()
-                                  .handle(repairNumber, Optional.absent(),
+                                  .handle(
+                                      repairNumber, Optional.absent(),
                                       Optional.of(ProgressEventType.START), null, jmx);
                               assertEquals(
                                   RepairSegment.State.RUNNING,
@@ -299,21 +324,24 @@ public final class RepairRunnerTest {
                             public void run() {
                               handler
                                   .get()
-                                  .handle(repairNumber, Optional.absent(),
+                                  .handle(
+                                      repairNumber, Optional.absent(),
                                       Optional.of(ProgressEventType.START), null, jmx);
                               assertEquals(
                                   RepairSegment.State.RUNNING,
                                   storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                               handler
                                   .get()
-                                  .handle(repairNumber, Optional.absent(),
+                                  .handle(
+                                      repairNumber, Optional.absent(),
                                       Optional.of(ProgressEventType.SUCCESS), null, jmx);
                               assertEquals(
                                   RepairSegment.State.DONE,
                                   storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                               handler
                                   .get()
-                                  .handle(repairNumber, Optional.absent(),
+                                  .handle(
+                                      repairNumber, Optional.absent(),
                                       Optional.of(ProgressEventType.COMPLETE), null, jmx);
                               mutex.release();
                               LOG.info("MUTEX RELEASED");
@@ -379,14 +407,24 @@ public final class RepairRunnerTest {
             .getId();
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
 
-    RepairRun run = storage.addRepairRun(
-        new RepairRun.Builder(CLUSTER_NAME, cf, DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
-        Lists.newArrayList(
-            RepairSegment.builder(new RingRange(BigInteger.ZERO, BigInteger.ONE), cf)
-                .withState(RepairSegment.State.RUNNING)
-                .withStartTime(DateTime.now())
-                .withCoordinatorHost("reaper"),
-            RepairSegment.builder(new RingRange(BigInteger.ONE, BigInteger.ZERO), cf)));
+    RepairRun run =
+        storage.addRepairRun(
+            new RepairRun.Builder(
+                CLUSTER_NAME, cf, DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
+            Lists.newArrayList(
+                RepairSegment.builder(
+                        Segment.builder()
+                            .withTokenRange(new RingRange(BigInteger.ZERO, BigInteger.ONE))
+                            .build(),
+                        cf)
+                    .withState(RepairSegment.State.RUNNING)
+                    .withStartTime(DateTime.now())
+                    .withCoordinatorHost("reaper"),
+                RepairSegment.builder(
+                    Segment.builder()
+                        .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .build(),
+                    cf)));
 
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
@@ -404,7 +442,7 @@ public final class RepairRunnerTest {
             final JmxProxy jmx = mock(JmxProxy.class);
             when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
             when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.tokenRangeToEndpoint(anyString(), any(RingRange.class)))
+            when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
                 .thenReturn(Lists.newArrayList(""));
             when(jmx.getRangeToEndpointMap(anyString()))
                 .thenReturn(RepairRunnerTest.sixNodeCluster());
@@ -419,7 +457,7 @@ public final class RepairRunnerTest {
                     any(),
                     anyBoolean(),
                     any(),
-                    any()))
+                    any(), any()))
                 .then(
                     (invocation) -> {
                       assertEquals(
@@ -489,14 +527,21 @@ public final class RepairRunnerTest {
         .transform(Lists.newArrayList("0", "50", "100", "150", "200", "250"), (string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
-    List<RingRange> segments = generator.generateSegments(32, tokens, Boolean.FALSE);
+    List<Segment> segments =
+        generator.generateSegments(
+            32,
+            tokens,
+            Boolean.FALSE,
+            RepairRunService.buildReplicasToRangeMap(RepairRunnerTest.sixNodeCluster()),
+            "2.2.10");
 
     Map<List<String>, List<String>> map = RepairRunnerTest.sixNodeCluster();
     Map<String, String> endpointsSixNodes = RepairRunnerTest.sixNodeClusterEndpoint();
-    List<RingRange> ranges = RepairRunner.getParallelRanges(
-        RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes),
-        segments
-    );
+    List<RingRange> ranges =
+        RepairRunner.getParallelRanges(
+            RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes),
+            Lists.newArrayList(
+                Collections2.transform(segments, segment -> segment.getBaseRange())));
     assertEquals(2, ranges.size());
     assertEquals("0", ranges.get(0).getStart().toString());
     assertEquals("150", ranges.get(0).getEnd().toString());
@@ -511,19 +556,58 @@ public final class RepairRunnerTest {
         (string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
-    List<RingRange> segments = generator.generateSegments(32, tokens, Boolean.FALSE);
 
     Map<List<String>, List<String>> map = RepairRunnerTest.sixNodeCluster();
     Map<String, String> endpointsSixNodes = RepairRunnerTest.sixNodeClusterEndpoint();
-    List<RingRange> ranges = RepairRunner.getParallelRanges(
-        RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes),
-        segments
-    );
+    List<Segment> segments =
+        generator.generateSegments(
+            32, tokens, Boolean.FALSE, RepairRunService.buildReplicasToRangeMap(map), "2.2.10");
+    List<RingRange> ranges =
+        RepairRunner.getParallelRanges(
+            RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes),
+            Lists.newArrayList(
+                Collections2.transform(segments, segment -> segment.getBaseRange())));
     assertEquals(2, ranges.size());
     assertEquals("0", ranges.get(0).getStart().toString());
     assertEquals("150", ranges.get(0).getEnd().toString());
     assertEquals("150", ranges.get(1).getStart().toString());
     assertEquals("0", ranges.get(1).getEnd().toString());
+  }
+
+  @Test
+  public void getNoSegmentCoalescingTest() throws ReaperException {
+    List<BigInteger> tokens =
+        Lists.transform(
+            Lists.newArrayList(
+                "0", "25", "50", "75", "100", "125", "150", "175", "200", "225", "250"),
+            (string) -> new BigInteger(string));
+
+    SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
+
+    Map<List<String>, List<String>> map = RepairRunnerTest.sixNodeCluster();
+    List<Segment> segments =
+        generator.generateSegments(
+            6, tokens, Boolean.FALSE, RepairRunService.buildReplicasToRangeMap(map), "2.1.17");
+
+    assertEquals(11, segments.size());
+  }
+
+  @Test
+  public void getSegmentCoalescingTest() throws ReaperException {
+    List<BigInteger> tokens =
+        Lists.transform(
+            Lists.newArrayList(
+                "0", "25", "50", "75", "100", "125", "150", "175", "200", "225", "250"),
+            (string) -> new BigInteger(string));
+
+    SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
+
+    Map<List<String>, List<String>> map = RepairRunnerTest.sixNodeCluster();
+    List<Segment> segments =
+        generator.generateSegments(
+            6, tokens, Boolean.FALSE, RepairRunService.buildReplicasToRangeMap(map), "2.2.17");
+
+    assertEquals(6, segments.size());
   }
 
   public static Map<List<String>, List<String>> threeNodeCluster() {
