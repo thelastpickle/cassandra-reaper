@@ -20,6 +20,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.util.Arrays;
@@ -96,9 +97,12 @@ final class RepairRunner implements Runnable {
 
     Collection<RepairSegment> repairSegments = context.storage.getRepairSegmentsForRun(repairRunId);
 
-    parallelRanges = getParallelRanges(
-        parallelRepairs,
-        Lists.newArrayList(Collections2.transform(repairSegments, segment -> segment.getTokenRange())));
+    parallelRanges =
+        getParallelRanges(
+            parallelRepairs,
+            Lists.newArrayList(
+                Collections2.transform(
+                    repairSegments, segment -> segment.getTokenRange().getBaseRange())));
 
     String repairUnitClusterName = repairUnitOpt.get().getClusterName();
     String repairUnitKeyspaceName = repairUnitOpt.get().getKeyspaceName();
@@ -341,8 +345,9 @@ final class RepairRunner implements Runnable {
 
       // We have an empty slot, so let's start new segment runner if possible.
       LOG.info("Running segment for range {}", parallelRanges.get(rangeIndex));
-      Optional<RepairSegment> nextRepairSegment
-          = context.storage.getNextFreeSegmentInRange(repairRunId, Optional.of(parallelRanges.get(rangeIndex)));
+      Optional<RepairSegment> nextRepairSegment =
+          context.storage.getNextFreeSegmentInRange(
+              repairRunId, Optional.of(parallelRanges.get(rangeIndex)));
 
       if (!nextRepairSegment.isPresent()) {
         LOG.debug("No repair segment available for range {}", parallelRanges.get(rangeIndex));
@@ -355,8 +360,11 @@ final class RepairRunner implements Runnable {
           LOG.debug("Didn't set segment id `{}` to slot {} because it was busy", segmentId, rangeIndex);
         } else {
           LOG.debug("Did set segment id `{}` to slot {}", segmentId, rangeIndex);
-          scheduleRetry
-              = repairSegment(rangeIndex, nextRepairSegment.get().getId(), nextRepairSegment.get().getTokenRange());
+          scheduleRetry =
+              repairSegment(
+                  rangeIndex,
+                  nextRepairSegment.get().getId(),
+                  nextRepairSegment.get().getTokenRange());
           if (!scheduleRetry) {
             break;
           }
@@ -390,10 +398,10 @@ final class RepairRunner implements Runnable {
    * Start the repair of a segment.
    *
    * @param segmentId id of the segment to repair.
-   * @param tokenRange token range of the segment to repair.
+   * @param segment token range of the segment to repair.
    * @return Boolean indicating whether rescheduling next run is needed.
    */
-  private boolean repairSegment(final int rangeIndex, final UUID segmentId, RingRange tokenRange)
+  private boolean repairSegment(final int rangeIndex, final UUID segmentId, Segment segment)
       throws InterruptedException {
 
     final UUID unitId;
@@ -425,14 +433,20 @@ final class RepairRunner implements Runnable {
     if (!repairUnit.getIncrementalRepair()) {
       // full repair
       try {
-        potentialCoordinators = filterPotentialCoordinatorsByDatacenters(
-            repairUnit.getDatacenters(), jmxConnection.tokenRangeToEndpoint(keyspace, tokenRange), jmxConnection);
+        potentialCoordinators =
+            filterPotentialCoordinatorsByDatacenters(
+                repairUnit.getDatacenters(),
+                jmxConnection.tokenRangeToEndpoint(keyspace, segment),
+                jmxConnection);
       } catch (RuntimeException e) {
         LOG.warn("Couldn't get token ranges from coordinator: #{}", e);
         return true;
       }
       if (potentialCoordinators.isEmpty()) {
-        LOG.warn("Segment #{} is faulty, no potential coordinators for range: {}", segmentId, tokenRange.toString());
+        LOG.warn(
+            "Segment #{} is faulty, no potential coordinators for range: {}",
+            segmentId,
+            segment.toString());
         // This segment has a faulty token range. Abort the entire repair run.
         synchronized (this) {
           RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
@@ -440,7 +454,7 @@ final class RepairRunner implements Runnable {
               repairRun
                   .with()
                   .runState(RepairRun.RunState.ERROR)
-                  .lastEvent(String.format("No coordinators for range %s", tokenRange))
+                  .lastEvent(String.format("No coordinators for range %s", segment))
                   .endTime(DateTime.now())
                   .build(repairRunId));
           killAndCleanupRunner();

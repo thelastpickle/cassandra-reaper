@@ -21,9 +21,11 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +88,7 @@ public final class RepairRunService {
 
     // preparing a repair run involves several steps
     // the first step is to generate token segments
-    List<RingRange> tokenSegments =
+    List<Segment> tokenSegments =
         repairUnit.getIncrementalRepair()
             ? Lists.newArrayList()
             : generateSegments(cluster, segments, segmentsPerNode, repairUnit);
@@ -125,14 +127,11 @@ public final class RepairRunService {
    * @throws ReaperException when fails to discover seeds for the cluster or fails to connect to any
    *     of the nodes in the Cluster.
    */
-  private List<RingRange> generateSegments(
-      Cluster targetCluster,
-      int segmentCount,
-      int segmentCountPerNode,
-      RepairUnit repairUnit)
+  private List<Segment> generateSegments(
+      Cluster targetCluster, int segmentCount, int segmentCountPerNode, RepairUnit repairUnit)
       throws ReaperException {
 
-    List<RingRange> segments = Lists.newArrayList();
+    List<Segment> segments = Lists.newArrayList();
 
     Preconditions.checkNotNull(
         targetCluster.getPartitioner(),
@@ -164,16 +163,25 @@ public final class RepairRunService {
       List<BigInteger> tokens = jmxProxy.getTokens();
       Map<List<String>, List<String>> rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());
       Map<String, List<RingRange>> endpointToRange = buildEndpointToRangeMap(rangeToEndpoint);
+      Map<List<String>, List<RingRange>> replicasToRange = buildReplicasToRangeMap(rangeToEndpoint);
+      String cassandraVersion = jmxProxy.getCassandraVersion();
 
       int globalSegmentCount = segmentCount;
       if (globalSegmentCount == 0) {
         globalSegmentCount = computeGlobalSegmentCount(segmentCountPerNode, endpointToRange);
       }
 
-      segments = filterSegmentsByNodes(
-              sg.generateSegments(globalSegmentCount, tokens, repairUnit.getIncrementalRepair()),
+      segments =
+          filterSegmentsByNodes(
+              sg.generateSegments(
+                  globalSegmentCount,
+                  tokens,
+                  repairUnit.getIncrementalRepair(),
+                  replicasToRange,
+                  cassandraVersion),
               repairUnit,
               endpointToRange);
+
     } catch (ReaperException e) {
       LOG.warn("couldn't connect to any host: {}, life sucks...", seedHosts, e);
     }
@@ -191,12 +199,12 @@ public final class RepairRunService {
       Map<String, List<RingRange>> endpointToRange) {
     Preconditions.checkArgument(1 <= endpointToRange.keySet().size());
 
-    return Math.max(endpointToRange.keySet().size(), 1)
+    return endpointToRange.keySet().size()
         * (segmentCountPerNode != 0 ? segmentCountPerNode : DEFAULT_SEGMENT_COUNT_PER_NODE);
   }
 
-  static List<RingRange> filterSegmentsByNodes(
-      List<RingRange> segments,
+  static List<Segment> filterSegmentsByNodes(
+      List<Segment> segments,
       RepairUnit repairUnit,
       Map<String, List<RingRange>> endpointToRange)
       throws ReaperException {
@@ -208,10 +216,11 @@ public final class RepairRunService {
           .stream()
           .filter(
               segment -> {
+                RingRange firstRange = segment.getBaseRange();
                 for (Entry<String, List<RingRange>> entry : endpointToRange.entrySet()) {
                   if (repairUnit.getNodes().contains(entry.getKey())) {
                     for (RingRange range : entry.getValue()) {
-                      if (range.encloses(segment)) {
+                      if (range.encloses(firstRange)) {
                         return true;
                       }
                     }
@@ -239,6 +248,24 @@ public final class RepairRunService {
     return endpointToRange;
   }
 
+  @VisibleForTesting
+  static Map<List<String>, List<RingRange>> buildReplicasToRangeMap(
+      Map<List<String>, List<String>> rangeToEndpoint) {
+    Map<List<String>, List<RingRange>> replicasToRange = Maps.newHashMap();
+
+    for (Entry<List<String>, List<String>> entry : rangeToEndpoint.entrySet()) {
+      RingRange range = new RingRange(entry.getKey().toArray(new String[entry.getKey().size()]));
+      List<String> sortedReplicas = entry.getValue().stream().sorted().collect(Collectors.toList());
+
+      List<RingRange> ranges = replicasToRange.getOrDefault(sortedReplicas, Lists.newArrayList());
+      ranges.add(range);
+      replicasToRange.put(sortedReplicas, ranges);
+
+    }
+
+    return replicasToRange;
+  }
+
   /**
    * Instantiates a RepairRun and stores it in the storage backend.
    *
@@ -261,10 +288,11 @@ public final class RepairRunService {
   }
 
   /**
-   * Creates the repair runs linked to given RepairRun and stores them directly in the storage backend.
+   * Creates the repair runs linked to given RepairRun and stores them directly in the storage
+   * backend.
    */
   private static List<RepairSegment.Builder> createRepairSegments(
-      List<RingRange> tokenSegments,
+      List<Segment> tokenSegments,
       RepairUnit repairUnit) {
 
     List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
@@ -285,9 +313,14 @@ public final class RepairRunService {
     nodes
         .entrySet()
         .forEach(
-            range
-              -> repairSegmentBuilders.add(
-                  RepairSegment.builder(range.getValue(), repairUnit.getId()).withCoordinatorHost(range.getKey())));
+            range ->
+                repairSegmentBuilders.add(
+                    RepairSegment.builder(
+                            Segment.builder()
+                                .withTokenRanges(Arrays.asList(range.getValue()))
+                                .build(),
+                            repairUnit.getId())
+                        .withCoordinatorHost(range.getKey())));
 
     return repairSegmentBuilders;
   }

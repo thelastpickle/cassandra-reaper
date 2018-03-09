@@ -15,13 +15,15 @@
 package io.cassandrareaper.service;
 
 import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.service.RingRange;
-import io.cassandrareaper.service.SegmentGenerator;
+import io.cassandrareaper.core.Segment;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -43,20 +45,19 @@ public final class SegmentGeneratorTest {
         (String string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    List<RingRange> segments = generator.generateSegments(10, tokens, Boolean.FALSE);
+    List<Segment> segments =
+        generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
     assertEquals(15, segments.size());
 
-    assertEquals(
-        "(0,1]",
-        segments.get(0).toString());
+    assertEquals("(0,1]", segments.get(0).getBaseRange().toString());
 
     assertEquals(
         "(56713727820156410577229101238628035242,56713727820156410577229101238628035243]",
-        segments.get(5).toString());
+        segments.get(5).getBaseRange().toString());
 
     assertEquals(
         "(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
-        segments.get(10).toString());
+        segments.get(10).getBaseRange().toString());
 
     tokens = Lists.transform(Lists.newArrayList(
             "5",
@@ -67,20 +68,18 @@ public final class SegmentGeneratorTest {
             "113427455640312821154458202477256070485"),
         (String string) -> new BigInteger(string));
 
-    segments = generator.generateSegments(10, tokens, Boolean.FALSE);
+    segments = generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
     assertEquals(15, segments.size());
 
-    assertEquals(
-        "(5,6]",
-        segments.get(0).toString());
+    assertEquals("(5,6]", segments.get(0).getBaseRange().toString());
 
     assertEquals(
         "(56713727820156410577229101238628035242,56713727820156410577229101238628035243]",
-        segments.get(5).toString());
+        segments.get(5).getBaseRange().toString());
 
     assertEquals(
         "(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
-        segments.get(10).toString());
+        segments.get(10).getBaseRange().toString());
   }
 
   @Test(expected = ReaperException.class)
@@ -97,7 +96,7 @@ public final class SegmentGeneratorTest {
     List<BigInteger> tokens = Lists.transform(tokenStrings, (String string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    generator.generateSegments(10, tokens, Boolean.FALSE);
+    generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
   }
 
   @Test
@@ -113,21 +112,19 @@ public final class SegmentGeneratorTest {
     List<BigInteger> tokens = Lists.transform(tokenStrings, (String string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    List<RingRange> segments = generator.generateSegments(10, tokens, Boolean.FALSE);
+    List<Segment> segments =
+        generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
     assertEquals(15, segments.size());
 
     assertEquals(
         "(113427455640312821154458202477256070484,113427455640312821154458202477256070485]",
-        segments.get(4).toString());
+        segments.get(4).getBaseRange().toString());
 
-    assertEquals(
-
-        "(5,6]",
-        segments.get(9).toString());
+    assertEquals("(5,6]", segments.get(9).getBaseRange().toString());
 
     assertEquals(
         "(56713727820156410577229101238628035242,56713727820156410577229101238628035243]",
-        segments.get(14).toString());
+        segments.get(14).getBaseRange().toString());
   }
 
   @Test(expected = ReaperException.class)
@@ -144,7 +141,7 @@ public final class SegmentGeneratorTest {
     List<BigInteger> tokens = Lists.transform(tokenStrings, (String string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    generator.generateSegments(10, tokens, Boolean.FALSE);
+    generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
     // Will throw an exception when concluding that the repair segments don't add up.
     // This is because the tokens were supplied out of order.
   }
@@ -193,5 +190,72 @@ public final class SegmentGeneratorTest {
     BigInteger minusTen = BigInteger.TEN.negate();
     assertFalse(SegmentGenerator.greaterThan(minusTen, one));
     assertTrue(SegmentGenerator.greaterThan(one, minusTen));
+  }
+
+  @Test
+  public void coalesceTokenRangesTests() throws ReaperException {
+    SegmentGenerator sg = new SegmentGenerator(BigInteger.valueOf(1), BigInteger.valueOf(1600));
+    Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
+    rangeToEndpoint.put(Arrays.asList("1", "200"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("200", "400"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("400", "600"), Arrays.asList("node1"));
+    rangeToEndpoint.put(Arrays.asList("600", "800"), Arrays.asList("node1", "node2"));
+    rangeToEndpoint.put(Arrays.asList("800", "1000"), Arrays.asList("node1", "node2"));
+    rangeToEndpoint.put(Arrays.asList("1100", "1200"), Arrays.asList("node2", "node3", "node1"));
+
+    Map<List<String>, List<RingRange>> replicasToRangeMap =
+        RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
+
+    List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(1200), replicasToRangeMap);
+
+    // We have 3 different sets of replicas so we can't have less than 3 segments
+    assertEquals(3, segments.size());
+  }
+
+  @Test
+  public void coalesceTokenRangesTooFewTokensPerSegmentTests() throws ReaperException {
+    SegmentGenerator sg = new SegmentGenerator(BigInteger.valueOf(1), BigInteger.valueOf(1600));
+    Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
+    rangeToEndpoint.put(Arrays.asList("1", "200"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("200", "400"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("400", "600"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("600", "800"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("800", "1000"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("1100", "1200"), Arrays.asList("node2", "node3", "node1"));
+    rangeToEndpoint.put(Arrays.asList("1200", "1300"), Arrays.asList("node2", "node3", "node1"));
+    rangeToEndpoint.put(Arrays.asList("1300", "1400"), Arrays.asList("node2", "node3", "node1"));
+    rangeToEndpoint.put(Arrays.asList("1400", "1500"), Arrays.asList("node2", "node3", "node1"));
+
+    Map<List<String>, List<RingRange>> replicasToRangeMap =
+        RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
+
+    List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(1), replicasToRangeMap);
+
+    // number of tokens per segment is smaller than the number of tokens per range
+    // Generating a single segment per token range
+    assertEquals(9, segments.size());
+  }
+
+  @Test
+  public void coalesceTokenRangesBy200TokensPerSegmentTests() throws ReaperException {
+    SegmentGenerator sg = new SegmentGenerator(BigInteger.valueOf(1), BigInteger.valueOf(1500));
+    Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
+    rangeToEndpoint.put(Arrays.asList("1", "200"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("200", "400"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("400", "600"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("600", "800"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("800", "1000"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("1100", "1200"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("1200", "1300"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("1300", "1400"), Arrays.asList("node1", "node2", "node3"));
+    rangeToEndpoint.put(Arrays.asList("1400", "1500"), Arrays.asList("node1", "node2", "node3"));
+
+    Map<List<String>, List<RingRange>> replicasToRangeMap =
+        RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
+
+    List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(200), replicasToRangeMap);
+
+    // Ranges with 100 tokens will get coalesced two by two
+    assertEquals(7, segments.size());
   }
 }

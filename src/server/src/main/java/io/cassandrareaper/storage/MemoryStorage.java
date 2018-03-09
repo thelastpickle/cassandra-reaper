@@ -272,7 +272,8 @@ public final class MemoryStorage implements IStorage {
   public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range) {
     if (range.isPresent()) {
       for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
-        if (segment.getState() == RepairSegment.State.NOT_STARTED && range.get().encloses(segment.getTokenRange())) {
+        if (segment.getState() == RepairSegment.State.NOT_STARTED
+            && range.get().encloses(segment.getTokenRange().getBaseRange())) {
           return Optional.of(segment);
         }
       }

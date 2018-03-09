@@ -14,6 +14,7 @@
 
 package io.cassandrareaper.storage.postgresql;
 
+import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.service.RepairParameters;
 import io.cassandrareaper.service.RingRange;
 
@@ -50,7 +51,7 @@ public final class RepairParametersMapper implements ResultSetMapper<RepairParam
     RepairParallelism repairParallelism = RepairParallelism.fromName(repairParallelismStr);
 
     return new RepairParameters(
-        range,
+        Segment.builder().withTokenRange(range).build(),
         rs.getString("keyspace_name"),
         Sets.newHashSet(columnFamilies),
         repairParallelism);

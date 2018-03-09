@@ -14,6 +14,8 @@
 
 package io.cassandrareaper.service;
 
+import io.cassandrareaper.core.Segment;
+
 import java.util.Set;
 
 import org.apache.cassandra.repair.RepairParallelism;
@@ -23,13 +25,13 @@ import org.apache.cassandra.repair.RepairParallelism;
  */
 public final class RepairParameters {
 
-  public final RingRange tokenRange;
+  public final Segment tokenRange;
   public final String keyspaceName;
   public final Set<String> columnFamilies;
   public final RepairParallelism repairParallelism;
 
   public RepairParameters(
-      RingRange tokenRange,
+      Segment tokenRange,
       String keyspaceName,
       Set<String> columnFamilies,
       RepairParallelism repairParallelism) {

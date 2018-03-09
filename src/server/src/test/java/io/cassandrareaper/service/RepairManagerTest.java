@@ -21,6 +21,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
@@ -91,8 +92,9 @@ public final class RepairManagerTest {
                 clusterName, cf.getId(), DateTime.now(), intensity, 1, RepairParallelism.PARALLEL)
             .build(UUIDs.timeBased());
 
-    final RepairSegment segment
-        = RepairSegment.builder(new RingRange("-1", "1"), cf.getId())
+    final RepairSegment segment =
+        RepairSegment.builder(
+                Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())
             .build();
@@ -161,8 +163,9 @@ public final class RepairManagerTest {
                 clusterName, cf.getId(), DateTime.now(), intensity, 1, RepairParallelism.PARALLEL)
             .build(UUIDs.timeBased());
 
-    final RepairSegment segment
-        = RepairSegment.builder(new RingRange("-1", "1"), cf.getId())
+    final RepairSegment segment =
+        RepairSegment.builder(
+                Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())
             .build();
@@ -230,8 +233,9 @@ public final class RepairManagerTest {
         = new RepairRun.Builder(clusterName, cf.getId(), DateTime.now(), intensity, 1, RepairParallelism.PARALLEL)
             .build(UUIDs.timeBased());
 
-    final RepairSegment segment
-        = RepairSegment.builder(new RingRange("-1", "1"), cf.getId())
+    final RepairSegment segment =
+        RepairSegment.builder(
+                Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())
             .build();
@@ -296,8 +300,9 @@ public final class RepairManagerTest {
         = new RepairRun.Builder(clusterName, cf.getId(), DateTime.now(), intensity, 1, RepairParallelism.PARALLEL)
             .build(UUIDs.timeBased());
 
-    final RepairSegment segment
-        = RepairSegment.builder(new RingRange("-1", "1"), cf.getId())
+    final RepairSegment segment =
+        RepairSegment.builder(
+                Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())
             .build();
