@@ -6,6 +6,8 @@ import ClusterScreen from "jsx/cluster-screen";
 import {
   statusObservableTimer,
   addClusterSubject, addClusterResult, deleteClusterSubject, deleteClusterResult,
+  logoutSubject, logoutResult,
+  loginSubject, loginResult, loginRequiredSubject, loginRequiredResult,
   clusterNames
 } from "observable";
 
@@ -27,8 +29,12 @@ jQuery(document).ready(function($){
   } 
 
   ReactDOM.render(
-    React.createElement(ClusterScreen, {clusterNames, addClusterSubject, addClusterResult, currentCluster, deleteSubject: deleteClusterSubject,
-    deleteResult: deleteClusterResult, statusObservableTimer}),
+    React.createElement(ClusterScreen, {clusterNames, addClusterSubject, addClusterResult, currentCluster, 
+      logoutSubject: logoutSubject, logoutResult: logoutResult,
+      loginSubject: loginSubject, loginResult: loginResult,
+      loginRequiredSubject: loginRequiredSubject, loginRequiredResult: loginRequiredResult,
+      deleteSubject: deleteClusterSubject,
+      deleteResult: deleteClusterResult, statusObservableTimer}),
     document.getElementById('wrapper')
   );
 });

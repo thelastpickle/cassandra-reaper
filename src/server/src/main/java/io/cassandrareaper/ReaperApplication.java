@@ -23,6 +23,8 @@ import io.cassandrareaper.resources.ReaperHealthCheck;
 import io.cassandrareaper.resources.RepairRunResource;
 import io.cassandrareaper.resources.RepairScheduleResource;
 import io.cassandrareaper.resources.SnapshotResource;
+import io.cassandrareaper.resources.auth.LoginResource;
+import io.cassandrareaper.resources.auth.ShiroExceptionMapper;
 import io.cassandrareaper.service.AutoSchedulingManager;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
@@ -59,9 +61,12 @@ import io.dropwizard.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.MetricsServlet;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.flywaydb.core.Flyway;
 import org.joda.time.DateTimeZone;
+import org.secnod.dropwizard.shiro.ShiroBundle;
+import org.secnod.dropwizard.shiro.ShiroConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.misc.Signal;
@@ -108,6 +113,26 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     final SubstitutingSourceProvider envSourceProvider = new SubstitutingSourceProvider(
         bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor(false));
     bootstrap.setConfigurationSourceProvider(envSourceProvider);
+
+    bootstrap.addBundle(
+        new ShiroBundle<ReaperApplicationConfiguration>() {
+          @Override
+          public void run(ReaperApplicationConfiguration configuration, Environment environment) {
+            if (configuration.isAccessControlEnabled()) {
+              super.run(configuration, environment);
+            }
+          }
+
+          @Override
+          protected ShiroConfiguration narrow(ReaperApplicationConfiguration configuration) {
+            return configuration.getAccessControl().getShiroConfiguration();
+          }
+        });
+
+    bootstrap.setConfigurationSourceProvider(
+        new SubstitutingSourceProvider(
+            bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
+    bootstrap.getObjectMapper().registerModule(new JavaTimeModule());
   }
 
   @Override
@@ -204,6 +229,17 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     final SnapshotResource snapshotResource = new SnapshotResource(context);
     environment.jersey().register(snapshotResource);
+
+    if (config.isAccessControlEnabled()) {
+      SessionHandler sessionHandler = new SessionHandler();
+      sessionHandler
+          .getSessionManager()
+          .setMaxInactiveInterval((int) config.getAccessControl().getSessionTimeout().getSeconds());
+      environment.getApplicationContext().setSessionHandler(sessionHandler);
+      environment.servlets().setSessionHandler(sessionHandler);
+      environment.jersey().register(new ShiroExceptionMapper());
+      environment.jersey().register(new LoginResource(context));
+    }
 
     Thread.sleep(1000);
 

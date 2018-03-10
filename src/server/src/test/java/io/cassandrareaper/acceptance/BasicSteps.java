@@ -83,6 +83,8 @@ public final class BasicSteps {
   private static final List<SimpleReaperClient> CLIENTS = new CopyOnWriteArrayList<>();
   private static final Random RAND = new Random(System.nanoTime());
 
+  private Response lastResponse;
+
   public static synchronized void addReaperRunner(ReaperTestJettyRunner runner) {
 
     if (!CLIENTS.isEmpty()) {
@@ -222,6 +224,11 @@ public final class BasicSteps {
           Optional.<String>absent(),
           Response.Status.OK);
     }
+  }
+
+  @Given("^a reaper service with access control enabled is running$")
+  public void a_reaper_service_with_access_control_enabled_is_running() throws Throwable {
+    setupReaperIntegrationTestRunner();
   }
 
   @Given("^cluster seed host \"([^\"]*)\" points to cluster with name \"([^\"]*)\"$")
@@ -1357,6 +1364,33 @@ public final class BasicSteps {
     }
   }
 
+  @When("^a (GET|POST|PUT|DELETE) ([^\"]*) is made$")
+  public void aRequestIsMade(String method, String requestPath) throws Throwable {
+    RUNNERS
+        .parallelStream()
+        .forEach(
+            runner -> {
+              lastResponse = runner.callReaper(method, requestPath, EMPTY_PARAMS);
+            });
+  }
+
+  @Then("^a \"([^\"]*)\" response is returned$")
+  public void aResponseIsReturned(String statusDescription) throws Throwable {
+    assertEquals(lastResponse.getStatus(), httpStatus(statusDescription));
+  }
+
+  @Then("^the response was redirected to the login page$")
+  public void theResponseWasRedirectedToTheLoginPage() throws Throwable {
+    System.out.println("response = " + lastResponse.toString());
+    assertTrue(lastResponse.hasEntity());
+    assertTrue(
+        lastResponse.readEntity(String.class).contains("<title>Not a real login page</title>"));
+  }
+
+  private static int httpStatus(String statusCodeDescriptions) {
+    String enumName = statusCodeDescriptions.toUpperCase().replace(' ', '_');
+    return Response.Status.valueOf(enumName).getStatusCode();
+  }
 
   private static void createKeyspace(String keyspaceName) {
     try (Cluster cluster = buildCluster(); Session tmpSession = cluster.connect()) {

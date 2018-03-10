@@ -44,7 +44,8 @@ const repairScreen = React.createClass({
             <NavBar></NavBar>
             <!-- /.navbar-header -->
 
-            <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster}> </Sidebar>
+            <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster}
+              logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>
         </nav>
 
         <div id="page-wrapper">

@@ -75,6 +75,10 @@
   </url>
   
   <url>
+    <loc>http://cassandra-reaper.io/docs/usage/authentication/</loc>
+  </url>
+  
+  <url>
     <loc>http://cassandra-reaper.io/docs/usage/health/</loc>
   </url>
   

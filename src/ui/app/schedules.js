@@ -9,7 +9,8 @@ import {
   statusObservableTimer,
   addScheduleSubject, addScheduleResult, deleteScheduleSubject, deleteScheduleResult,
   updateScheduleStatusSubject, updateScheduleStatusResult,
-  schedules, clusterNames
+  schedules, clusterNames,
+  logoutSubject, logoutResult
 } from "observable";
 
 jQuery(document).ready(function($){
@@ -30,7 +31,9 @@ jQuery(document).ready(function($){
   } 
 
   ReactDOM.render(
-    React.createElement(ScheduleScreen, {clusterNames, addScheduleSubject, addScheduleResult, currentCluster, schedules, deleteSubject: deleteScheduleSubject,
+    React.createElement(ScheduleScreen, {clusterNames, addScheduleSubject, addScheduleResult, currentCluster, schedules,
+      logoutSubject: logoutSubject, logoutResult: logoutResult, 
+      deleteSubject: deleteScheduleSubject,
     deleteResult: deleteScheduleResult, updateStatusSubject: updateScheduleStatusSubject, statusObservableTimer}),
     document.getElementById('wrapper')
   );
