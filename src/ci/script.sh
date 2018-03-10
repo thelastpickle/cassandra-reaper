@@ -33,6 +33,7 @@ case "${TEST_TYPE}" in
         if [ "x${GRIM_MIN}" = "x" ]
         then
             mvn surefire:test -Dtest=ReaperIT
+            mvn surefire:test -Dtest=ReaperAuthIT
             mvn surefire:test -Dtest=ReaperH2IT
             mvn surefire:test -Dtest=ReaperPostgresIT
             mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT

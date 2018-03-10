@@ -250,6 +250,8 @@
         
         <li><a href="/docs/usage/multi_dc/"> Multi DC </a> </li>
         
+        <li><a href="/docs/usage/authentication/"> Activate authentication for the web UI </a> </li>
+        
     </ul>
     
     </li>
@@ -303,6 +305,34 @@
 
 
 
+
+<p>If JMX authentication is required and all clusters share the same credentials, they have to be filled in the Reaper yaml file, under <code>jmxAuth</code> (see the <a href="../../configuration/reaper_specific">configuration reference</a>)</p>
+
+<h2 id="specific-jmx-credentials-per-cluster">Specific JMX credentials per cluster</h2>
+
+<p><em><strong>Since 1.1.0</strong></em><br />
+If the clusters require authentication for JMX access, credentials have to be filled in the reaper yaml configuration file. See the <code>jmxCredentials</code> setting in the <a href="../../configuration/reaper_specific">configuration reference</a> for detailed informations.</p>
+
+<p><div class = "row">
+    <div class = "col-md-6">
+        <a data-fancybox="gallery" href="/img/reaper_jmx_cred_add_cluster.png">
+        <img src="/img/reaper_jmx_cred_add_cluster.png" class="img-responsive">
+        </a>
+    </div>
+    <div>
+        <h4>Add a cluster with specific JMX credentials.</h4>
+
+        When using <code>jmxCredentials</code> (if you have specific credentials for each cluster), please indicate the name of the cluster in the seed node address
+    </div>
+
+</div>
+
+
+
+
+
+
+</p>
 
                         </div>
 

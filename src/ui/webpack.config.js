@@ -31,6 +31,9 @@ module.exports = {
     segments: [
       path.join(__dirname, 'app', 'segments.js')
     ],
+    login: [
+      path.join(__dirname, 'app', 'login.js')
+    ],
     deps: _commonDeps
   },
   output: {
@@ -94,6 +97,14 @@ module.exports = {
       chunks: ['deps', 'snapshot'],
       hash: true,
       title: ' - Snapshots',
+      template: path.join(__dirname, 'app', 'html_template.ejs'),
+      inject: 'head'
+    }),
+    new HtmlWebpackPlugin({ 
+      filename: 'login.html',
+      chunks: ['deps', 'login'],
+      hash: true,
+      title: ' - Login',
       template: path.join(__dirname, 'app', 'html_template.ejs'),
       inject: 'head'
     }),

@@ -29,6 +29,7 @@ import io.dropwizard.Configuration;
 import io.dropwizard.db.DataSourceFactory;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.constraints.NotEmpty;
+import org.secnod.dropwizard.shiro.ShiroConfiguration;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
 
 public final class ReaperApplicationConfiguration extends Configuration {
@@ -105,6 +106,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   private DatacenterAvailability datacenterAvailability;
+
+  @JsonProperty private AccessControlConfiguration accessControl;
 
   private CassandraFactory cassandra = new CassandraFactory();
 
@@ -320,6 +323,19 @@ public final class ReaperApplicationConfiguration extends Configuration {
     this.datacenterAvailability = datacenterAvailability;
   }
 
+  public AccessControlConfiguration getAccessControl() {
+    return accessControl;
+  }
+
+  public void setAccessControl(AccessControlConfiguration accessControl) {
+    this.accessControl = accessControl;
+  }
+
+  public boolean isAccessControlEnabled() {
+    return getAccessControl() != null;
+  }
+
+
   public static final class JmxCredentials {
 
     @JsonProperty
@@ -433,5 +449,19 @@ public final class ReaperApplicationConfiguration extends Configuration {
     LOCAL,
     /* Each datacenter requires at minimum one reaper instance that has jmx access to all nodes in that datacenter */
     EACH
+  }
+
+  public static final class AccessControlConfiguration {
+
+    @JsonProperty private ShiroConfiguration shiro;
+    @JsonProperty private Duration sessionTimeout;
+
+    public ShiroConfiguration getShiroConfiguration() {
+      return shiro;
+    }
+
+    public Duration getSessionTimeout() {
+      return sessionTimeout;
+    }
   }
 }

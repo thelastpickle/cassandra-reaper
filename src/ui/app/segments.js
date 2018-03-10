@@ -6,7 +6,8 @@ import SegmentList from "jsx/segment-list";
 import {
   statusObservableTimer,
   addClusterSubject, addClusterResult, deleteClusterSubject, deleteClusterResult,
-  clusterNames
+  clusterNames,
+  logoutSubject, logoutResult
 } from "observable";
 
 jQuery(document).ready(function($){
@@ -28,7 +29,7 @@ jQuery(document).ready(function($){
   } 
 
   ReactDOM.render(
-    React.createElement(SegmentList, {repairRunId}),
+    React.createElement(SegmentList, {repairRunId, logoutSubject: logoutSubject, logoutResult: logoutResult, }),
     document.getElementById('wrapper')
   );
 });

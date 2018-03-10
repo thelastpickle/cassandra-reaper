@@ -17,6 +17,7 @@ prepare:
 	mkdir -p build/etc/cassandra-reaper
 	mkdir -p build/etc/cassandra-reaper/configs
 	cp resource/cassandra-reaper.yaml build/etc/cassandra-reaper/
+	cp resource/shiro.ini build/etc/cassandra-reaper/configs
 	cp resource/cassandra-reaper*.yaml build/etc/cassandra-reaper/configs
 	cp ../server/target/cassandra-reaper-$(VERSION).jar build/usr/share/cassandra-reaper/
 	cp bin/* build/usr/local/bin/

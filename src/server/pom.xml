@@ -147,7 +147,12 @@
             <artifactId>simpleclient_dropwizard</artifactId>
             <version>0.0.25</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.secnod.dropwizard</groupId>
+            <artifactId>dropwizard-shiro</artifactId>
+            <version>0.2.0</version>
+        </dependency>
+        
         <!--test scope -->
 
         <dependency>

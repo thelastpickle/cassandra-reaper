@@ -8,7 +8,8 @@ import RepairList from "jsx/repair-list";
 import snapshotScreen from "jsx/snapshot-screen";
 import {
   statusObservableTimer,
-  clusterNames
+  clusterNames,
+  logoutSubject, logoutResult
 } from "observable";
 
 jQuery(document).ready(function($){
@@ -29,7 +30,7 @@ jQuery(document).ready(function($){
   }
 
   ReactDOM.render(
-    React.createElement(snapshotScreen, {clusterNames, currentCluster, 
+    React.createElement(snapshotScreen, {clusterNames, currentCluster, logoutSubject: logoutSubject, logoutResult: logoutResult,
     statusObservableTimer}),
     document.getElementById('wrapper')
   );

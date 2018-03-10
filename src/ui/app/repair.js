@@ -13,7 +13,8 @@ import {
   deleteRepairSubject, deleteRepairResult, updateRepairStatusSubject,
   clusterNames, deleteSubject, deleteResult, updateStatusSubject,
   addClusterSubject, addClusterResult, deleteClusterSubject,
-  deleteClusterResult, updateRepairIntensitySubject
+  deleteClusterResult, updateRepairIntensitySubject,
+  logoutSubject, logoutResult
 } from "observable";
 
 jQuery(document).ready(function($){
@@ -34,7 +35,7 @@ jQuery(document).ready(function($){
   }
 
   ReactDOM.render(
-    React.createElement(repairScreen, {clusterNames, addRepairSubject, addRepairResult, currentCluster, repairs, deleteSubject: deleteRepairSubject,
+    React.createElement(repairScreen, {clusterNames, addRepairSubject, addRepairResult, currentCluster, repairs, logoutSubject: logoutSubject, logoutResult: logoutResult, deleteSubject: deleteRepairSubject,
     deleteResult: deleteRepairResult,
     updateStatusSubject: updateRepairStatusSubject,
     updateIntensitySubject: updateRepairIntensitySubject,

@@ -5,6 +5,7 @@ import Sidebar from "jsx/sidebar";
 import ClusterForm from "jsx/cluster-form";
 import ClusterList from "jsx/cluster-list";
 import NavBar from "jsx/navbar";
+import LoginForm from "jsx/login-form";
 import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
 
 const ClusterScreen = React.createClass({
@@ -16,11 +17,18 @@ const ClusterScreen = React.createClass({
     deleteResult: React.PropTypes.object.isRequired,
     currentCluster: React.PropTypes.string.isRequired,
     addClusterSubject: React.PropTypes.object.isRequired,
-    addClusterResult:  React.PropTypes.object.isRequired
+    addClusterResult:  React.PropTypes.object.isRequired,
+    loginSubject: React.PropTypes.object.isRequired,
+    loginResult: React.PropTypes.object.isRequired,
+    logoutSubject: React.PropTypes.object.isRequired,
+    logoutResult: React.PropTypes.object.isRequired
+
   },
 
   getInitialState: function() {
-    return {currentCluster:this.props.currentCluster=="undefined"?"all":this.props.currentCluster};
+    return {
+        currentCluster:this.props.currentCluster=="undefined"?"all":this.props.currentCluster
+    }
   },
 
   changeCurrentCluster : function(clusterName){
@@ -28,19 +36,32 @@ const ClusterScreen = React.createClass({
   },
 
   render: function() {
-
   const navStyle = {
     marginBottom: 0
   };
 
-    return (
+  let content = 
+    <div>
+        <div className="col-lg-12">
+            <ClusterForm clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} addClusterSubject={this.props.addClusterSubject} addClusterResult={this.props.addClusterResult} > </ClusterForm>
+        </div>
+        <div className="row">
+            <div className="col-lg-12">
+                <ClusterList clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} deleteSubject={this.props.deleteSubject} deleteResult={this.props.deleteResult} > </ClusterList>
+            </div>
+        </div>
+    </div> 
+
+  return (
         <div>
             <!-- Navigation -->
         <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
             <NavBar></NavBar>
             <!-- /.navbar-header -->
 
-            <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster}> </Sidebar>
+            <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} 
+                loginSubject={this.props.loginSubject} loginResult={this.props.loginResult}
+                logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>
         </nav>
 
         <div id="page-wrapper">
@@ -54,15 +75,7 @@ const ClusterScreen = React.createClass({
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
-
-            <div className="col-lg-12">
-                  <ClusterForm clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} addClusterSubject={this.props.addClusterSubject} addClusterResult={this.props.addClusterResult} > </ClusterForm>
-            </div>
-            <div className="row">
-                <div className="col-lg-12">
-                  <ClusterList clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} deleteSubject={this.props.deleteSubject} deleteResult={this.props.deleteResult} > </ClusterList>
-                </div>
-            </div>
+            {content}
         </div>
         <!-- /#page-wrapper -->
         </div>

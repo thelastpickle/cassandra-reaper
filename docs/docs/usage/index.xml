@@ -16,8 +16,19 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/usage/add_cluster/</guid>
-      <description> Add A Cluster    Add a cluster for Reaper to manage repairs on. Enter an address of one of the nodes in the cluster. Reaper will contact that node and find the rest of the nodes in the cluster automatically.
-Once you&amp;rsquo;ve done this, you&amp;rsquo;ll see the Cluster Health.   </description>
+      <description>Add A Cluster    Add a cluster for Reaper to manage repairs on. Enter an address of one of the nodes in the cluster. Reaper will contact that node and find the rest of the nodes in the cluster automatically.
+Once you&amp;rsquo;ve done this, you&amp;rsquo;ll see the Cluster Health.   If JMX authentication is required and all clusters share the same credentials, they have to be filled in the Reaper yaml file, under jmxAuth (see the configuration reference)</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/usage/authentication/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/usage/authentication/</guid>
+      <description>Activate authentication for the web UI Authentication can be activated in Reaper for the web UI only. It relies on Apache Shiro, which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box.
+To activate authentication, add the following block to your Reaper yaml file :
+accessControl: sessionTimeout: PT10M shiro: iniConfigs: [&amp;quot;file:/path/to/shiro.ini&amp;quot;]  Create a shiro.ini file and adapt it from the following sample :</description>
     </item>
     
     <item>
