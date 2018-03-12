@@ -1244,7 +1244,8 @@ public final class BasicSteps {
           "/snapshot/cluster/" + TestContext.TEST_CLUSTER,
           Optional.absent(),
           Optional.absent(),
-          Response.Status.OK);
+          Response.Status.OK,
+          Response.Status.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -1311,7 +1312,8 @@ public final class BasicSteps {
           "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST,
           Optional.absent(),
           Optional.absent(),
-          Response.Status.OK);
+          Response.Status.OK,
+          Response.Status.INTERNAL_SERVER_ERROR);
     }
   }
 
