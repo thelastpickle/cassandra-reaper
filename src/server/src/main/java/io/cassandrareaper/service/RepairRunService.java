@@ -189,7 +189,7 @@ public final class RepairRunService {
   static int computeGlobalSegmentCount(
       int segmentCountPerNode,
       Map<String, List<RingRange>> endpointToRange) {
-    //Preconditions.checkArgument(1 <= endpointToRange.keySet().size());
+    Preconditions.checkArgument(1 <= endpointToRange.keySet().size());
 
     return Math.max(endpointToRange.keySet().size(), 1)
         * (segmentCountPerNode != 0 ? segmentCountPerNode : DEFAULT_SEGMENT_COUNT_PER_NODE);

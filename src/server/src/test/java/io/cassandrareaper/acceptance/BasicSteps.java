@@ -1298,7 +1298,8 @@ public final class BasicSteps {
                               "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + snapshot,
                               Optional.absent(),
                               Optional.absent(),
-                              Response.Status.OK);
+                              Response.Status.OK,
+                              Response.Status.INTERNAL_SERVER_ERROR);
                         });
               });
     }
@@ -1349,7 +1350,8 @@ public final class BasicSteps {
                                   + snapshot,
                               Optional.absent(),
                               Optional.absent(),
-                              Response.Status.OK);
+                              Response.Status.OK,
+                              Response.Status.INTERNAL_SERVER_ERROR);
                         });
               });
     }

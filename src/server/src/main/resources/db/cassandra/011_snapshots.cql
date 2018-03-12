@@ -1,9 +1,6 @@
 --
 -- Upgrade to handle snapshots metadata
 
-
-DROP TABLE IF EXISTS snapshot;
-
 CREATE TABLE IF NOT EXISTS snapshot (
   cluster                 text,
   snapshot_name           text,

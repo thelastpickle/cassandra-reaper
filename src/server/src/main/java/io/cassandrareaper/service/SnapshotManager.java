@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Optional;
@@ -52,10 +51,7 @@ public final class SnapshotManager {
   private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
   private final ExecutorService executor = Executors.newFixedThreadPool(5);
   private final Cache<String, Snapshot> cache =
-      CacheBuilder.newBuilder()
-          .maximumSize(1000) // Taille Max
-          .expireAfterWrite(1, TimeUnit.HOURS) // TTL
-          .build();
+      CacheBuilder.newBuilder().weakValues().maximumSize(1000).build();
 
   private SnapshotManager(AppContext context) {
     this.context = context;
