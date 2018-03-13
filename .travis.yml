@@ -1,33 +1,29 @@
 sudo: required
 language: java
 jdk:
-  - oraclejdk8
-
+- oraclejdk8
 branches:
   except:
-    - /^untagged-.*$/
-    - /^master-snapshot.*$/
-
+  - "/^untagged-.*$/"
+  - "/^master-snapshot.*$/"
 env:
   global:
-    - LOCAL_JMX=no
-    - TEST=""
+  - LOCAL_JMX=no
+  - TEST=""
   matrix:
-      # 2.1.19 runs all tests together because it's also for sonar reporting, see below
-    - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.19
-    - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.19 GRIM_MIN=2 GRIM_MAX=2
-    - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.19 GRIM_MIN=2 GRIM_MAX=4
-    - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.11 GRIM_MIN=1 GRIM_MAX=1
-    - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.11 GRIM_MIN=2 GRIM_MAX=2
-    - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.11 GRIM_MIN=2 GRIM_MAX=4
-    - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.15 GRIM_MIN=1 GRIM_MAX=1
-    - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.15 GRIM_MIN=2 GRIM_MAX=2
-    - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.15 GRIM_MIN=2 GRIM_MAX=4
-    - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.1 GRIM_MIN=1 GRIM_MAX=1
-    - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.1 GRIM_MIN=2 GRIM_MAX=2
-    - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.1 GRIM_MIN=2 GRIM_MAX=4
-    - TEST_TYPE=docker
-
+  - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.19
+  - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.19 GRIM_MIN=2 GRIM_MAX=2
+  - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.19 GRIM_MIN=2 GRIM_MAX=4
+  - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.11 GRIM_MIN=1 GRIM_MAX=1
+  - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.11 GRIM_MIN=2 GRIM_MAX=2
+  - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.11 GRIM_MIN=2 GRIM_MAX=4
+  - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.15 GRIM_MIN=1 GRIM_MAX=1
+  - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.15 GRIM_MIN=2 GRIM_MAX=2
+  - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.15 GRIM_MIN=2 GRIM_MAX=4
+  - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.1 GRIM_MIN=1 GRIM_MAX=1
+  - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.1 GRIM_MIN=2 GRIM_MAX=2
+  - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.1 GRIM_MIN=2 GRIM_MAX=4
+  - TEST_TYPE=docker
 matrix:
   fast_finish: true
   allow_failures:
@@ -37,114 +33,111 @@ matrix:
   - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.15 GRIM_MIN=2 GRIM_MAX=4
   - env: TEST_TYPE=ccm CASSANDRA_VERSION=3.11.1 GRIM_MIN=2 GRIM_MAX=4
   - env: TEST_TYPE=docker
-
 services:
-  - postgresql
-  - docker
-
-before_install: ./src/ci/before_install.sh
-
-install: ./src/ci/install.sh
-
-before_script: ./src/ci/before_script.sh
-
-script: ./src/ci/script.sh
-
-after_success: ./src/ci/after_success.sh
-
-after_failure: ./src/ci/after_failure.sh
-
-before_deploy: ./src/ci/before_deploy.sh
-
+- postgresql
+- docker
+before_install: "./src/ci/before_install.sh"
+install: "./src/ci/install.sh"
+before_script: "./src/ci/before_script.sh"
+script: "./src/ci/script.sh"
+after_success: "./src/ci/after_success.sh"
+after_failure: "./src/ci/after_failure.sh"
+before_deploy: "./src/ci/before_deploy.sh"
 deploy:
-  - provider: releases
-    api_key: $GITHUB_TOKEN
-    file_glob: true
-    file:
-      - "src/packages/cassandra-reaper-${TRAVIS_TAG}-release.tar.gz"
-      - "src/packages/reaper-*-1.x86_64.rpm"
-      - "src/packages/reaper_*_amd64.deb"
-    skip_cleanup: true
-    on:
-      tags: true
-  - provider: bintray
-    file: "src/ci/descriptor-rpm-beta.json"
-    user: "adejanovski"
-    key: $BINTRAY_API_KEY
-    dry-run: false
-    skip_cleanup: true
-    on:
-      branch: "master"
-      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
-  - provider: bintray
-    file: "src/ci/descriptor-deb-beta.json"
-    user: "adejanovski"
-    key: $BINTRAY_API_KEY
-    dry-run: false
-    skip_cleanup: true
-    on:
-      branch: "master"
-      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
-  - provider: bintray
-    file: "src/ci/descriptor-tarball-beta.json"
-    user: "adejanovski"
-    key: $BINTRAY_API_KEY
-    dry-run: false
-    skip_cleanup: true
-    on:
-      branch: "master"
-      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
-  - provider: bintray
-    file: "src/ci/descriptor-maven-snapshot.json"
-    user: "adejanovski"
-    key: $BINTRAY_API_KEY
-    dry-run: false
-    skip_cleanup: true
-    on:
-      branch: "master"
-      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
-  - provider: bintray
-    file: "src/ci/descriptor-rpm.json"
-    user: "adejanovski"
-    key: $BINTRAY_API_KEY
-    dry-run: false
-    skip_cleanup: true
-    on:
-      tags: true
-      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
-  - provider: bintray
-    file: "src/ci/descriptor-deb.json"
-    user: "adejanovski"
-    key: $BINTRAY_API_KEY
-    dry-run: false
-    skip_cleanup: true
-    on:
-      tags: true
-      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
-  - provider: bintray
-    file: "src/ci/descriptor-tarball.json"
-    user: "adejanovski"
-    key: $BINTRAY_API_KEY
-    dry-run: false
-    skip_cleanup: true
-    on:
-      tags: true
-      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
-  - provider: bintray
-    file: "src/ci/descriptor-maven.json"
-    user: "adejanovski"
-    key: $BINTRAY_API_KEY
-    dry-run: false
-    skip_cleanup: true
-    on:
-      tags: true
-      condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
-
-
+- provider: releases
+  api_key: "$GITHUB_TOKEN"
+  file_glob: true
+  file:
+  - src/packages/cassandra-reaper-${TRAVIS_TAG}-release.tar.gz
+  - src/packages/reaper-*-1.x86_64.rpm
+  - src/packages/reaper_*_amd64.deb
+  skip_cleanup: true
+  on:
+    tags: true
+- provider: bintray
+  file: src/ci/descriptor-rpm-beta.json
+  user: adejanovski
+  key:
+    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  dry-run: false
+  skip_cleanup: true
+  on:
+    branch: master
+    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+- provider: bintray
+  file: src/ci/descriptor-deb-beta.json
+  user: adejanovski
+  key:
+    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  dry-run: false
+  skip_cleanup: true
+  on:
+    branch: master
+    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+- provider: bintray
+  file: src/ci/descriptor-tarball-beta.json
+  user: adejanovski
+  key:
+    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  dry-run: false
+  skip_cleanup: true
+  on:
+    branch: master
+    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+- provider: bintray
+  file: src/ci/descriptor-maven-snapshot.json
+  user: adejanovski
+  key:
+    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  dry-run: false
+  skip_cleanup: true
+  on:
+    branch: master
+    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+- provider: bintray
+  file: src/ci/descriptor-rpm.json
+  user: adejanovski
+  key:
+    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  dry-run: false
+  skip_cleanup: true
+  on:
+    tags: true
+    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+- provider: bintray
+  file: src/ci/descriptor-deb.json
+  user: adejanovski
+  key:
+    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  dry-run: false
+  skip_cleanup: true
+  on:
+    tags: true
+    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+- provider: bintray
+  file: src/ci/descriptor-tarball.json
+  user: adejanovski
+  key:
+    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  dry-run: false
+  skip_cleanup: true
+  on:
+    tags: true
+    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+- provider: bintray
+  file: src/ci/descriptor-maven.json
+  user: adejanovski
+  key:
+    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  dry-run: false
+  skip_cleanup: true
+  on:
+    tags: true
+    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
 notifications:
   webhooks:
     urls:
-      - https://webhooks.gitter.im/e/00ad453df6ac8ac0d0ba
-    on_success: change  # options: [always|never|change] default: always
-    on_failure: always  # options: [always|never|change] default: always
-    on_start: never     # options: [always|never|change] default: always
+    - https://webhooks.gitter.im/e/00ad453df6ac8ac0d0ba
+    on_success: change
+    on_failure: always
+    on_start: never
