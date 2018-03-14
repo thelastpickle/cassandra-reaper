@@ -16,7 +16,7 @@ prepare:
 	mkdir -p build/etc/init.d
 	mkdir -p build/etc/cassandra-reaper
 	mkdir -p build/etc/cassandra-reaper/configs
-  mkdir -p build/etc/bash_completion.d
+	mkdir -p build/etc/bash_completion.d
 	cp resource/cassandra-reaper.yaml build/etc/cassandra-reaper/
 	cp resource/shiro.ini build/etc/cassandra-reaper/configs
 	cp resource/cassandra-reaper*.yaml build/etc/cassandra-reaper/configs
