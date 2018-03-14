@@ -44,6 +44,8 @@ after_success: "./src/ci/after_success.sh"
 after_failure: "./src/ci/after_failure.sh"
 before_deploy: "./src/ci/before_deploy.sh"
 deploy:
+  edge:
+    branch: v1.8.47
 - provider: releases
   api_key: "$GITHUB_TOKEN"
   file_glob: true
