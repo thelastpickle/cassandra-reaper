@@ -44,9 +44,9 @@ after_success: "./src/ci/after_success.sh"
 after_failure: "./src/ci/after_failure.sh"
 before_deploy: "./src/ci/before_deploy.sh"
 deploy:
+- provider: releases
   edge:
     branch: v1.8.47
-- provider: releases
   api_key: "$GITHUB_TOKEN"
   file_glob: true
   file:
@@ -57,6 +57,8 @@ deploy:
   on:
     tags: true
 - provider: bintray
+  edge:
+    branch: v1.8.47
   file: src/ci/descriptor-rpm-beta.json
   user: adejanovski
   key:
@@ -67,6 +69,8 @@ deploy:
     branch: master
     condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
+  edge:
+    branch: v1.8.47
   file: src/ci/descriptor-deb-beta.json
   user: adejanovski
   key:
@@ -77,6 +81,8 @@ deploy:
     branch: master
     condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
+  edge:
+    branch: v1.8.47
   file: src/ci/descriptor-tarball-beta.json
   user: adejanovski
   key:
@@ -87,6 +93,8 @@ deploy:
     branch: master
     condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
+  edge:
+    branch: v1.8.47
   file: src/ci/descriptor-maven-snapshot.json
   user: adejanovski
   key:
@@ -97,6 +105,8 @@ deploy:
     branch: master
     condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
+  edge:
+    branch: v1.8.47
   file: src/ci/descriptor-rpm.json
   user: adejanovski
   key:
@@ -107,6 +117,8 @@ deploy:
     tags: true
     condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
+  edge:
+    branch: v1.8.47
   file: src/ci/descriptor-deb.json
   user: adejanovski
   key:
@@ -117,6 +129,8 @@ deploy:
     tags: true
     condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
+  edge:
+    branch: v1.8.47
   file: src/ci/descriptor-tarball.json
   user: adejanovski
   key:
@@ -127,6 +141,8 @@ deploy:
     tags: true
     condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
+  edge:
+    branch: v1.8.47
   file: src/ci/descriptor-maven.json
   user: adejanovski
   key:
