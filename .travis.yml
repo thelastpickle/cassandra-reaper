@@ -61,8 +61,7 @@ deploy:
     branch: v1.8.47
   file: src/ci/descriptor-rpm-beta.json
   user: adejanovski
-  key:
-    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  key: $BINTRAY_API_KEY
   dry-run: false
   skip_cleanup: true
   on:
@@ -73,8 +72,7 @@ deploy:
     branch: v1.8.47
   file: src/ci/descriptor-deb-beta.json
   user: adejanovski
-  key:
-    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  key: $BINTRAY_API_KEY
   dry-run: false
   skip_cleanup: true
   on:
@@ -85,8 +83,7 @@ deploy:
     branch: v1.8.47
   file: src/ci/descriptor-tarball-beta.json
   user: adejanovski
-  key:
-    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  key: $BINTRAY_API_KEY
   dry-run: false
   skip_cleanup: true
   on:
@@ -97,8 +94,7 @@ deploy:
     branch: v1.8.47
   file: src/ci/descriptor-maven-snapshot.json
   user: adejanovski
-  key:
-    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  key: $BINTRAY_API_KEY
   dry-run: false
   skip_cleanup: true
   on:
@@ -109,8 +105,7 @@ deploy:
     branch: v1.8.47
   file: src/ci/descriptor-rpm.json
   user: adejanovski
-  key:
-    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  key: $BINTRAY_API_KEY
   dry-run: false
   skip_cleanup: true
   on:
@@ -121,8 +116,7 @@ deploy:
     branch: v1.8.47
   file: src/ci/descriptor-deb.json
   user: adejanovski
-  key:
-    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  key: $BINTRAY_API_KEY
   dry-run: false
   skip_cleanup: true
   on:
@@ -133,8 +127,7 @@ deploy:
     branch: v1.8.47
   file: src/ci/descriptor-tarball.json
   user: adejanovski
-  key:
-    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  key: $BINTRAY_API_KEY
   dry-run: false
   skip_cleanup: true
   on:
@@ -145,8 +138,7 @@ deploy:
     branch: v1.8.47
   file: src/ci/descriptor-maven.json
   user: adejanovski
-  key:
-    secure: "H5CDV3WJ+7lItX3juTCUgfzynQSsVb+vTGOIpgcxcImib1T0Djx1UGqGTGQT3TZEKTrZfG0Ps3XwjMV1Dd/Vjbrfpy3gTT+a3rY2DZKosElc9myGjOglW8/2wBOQ5RGr8vg/ilJvlVq9OtU7LDwXZf/ZB8UOzmT1q+CXkA/twVoEDEKZWuHJg3CLhFpZeRJmO6+/OrsT2Cnw4aXBM0WlOxVgElVzfXaJQVuRAojclfMQPJ6NTqoZ44GKtFWHT9QXI9LJh0QDvktG2BhqlFjZ2Mr7+GH8L9QTB+NuZEdE0U7tn81Egg9EoyBwEW5/BzWWQjYE4XxWw5QKwBEyHtEzLMLsB4gMl1oTu3NVCeMMz4JvD7efpUqjoJVbL7m4Fkj2XM0e28NWdQT9aF3vQ/+d1A3pZlhXSCCh4Gv66c7Pu74BK8BVinOcX/NZoQNP0EUMPL3EuKj2zldOmwOLHeHhjIBGSY6LsgSJogF3xxBJGS1HzuatTZPVuUYNBXfKe+6+yHRm2rtsnlnD4q+nKPKoW5+Niyq6+OgXpE1/nCVj0OHyBi5/YCansBZ3AvEo0m3I5iLtFIxcZz23f96dsa/OGK4o1m4g5JuEMbOzFzsUPaGgEyAQ6D6FRiUcxfGAVsE1KC+uTEc7jY1teMZCfx9+XL6x8cf0T92+iXMclFfW/PA="
+  key: $BINTRAY_API_KEY
   dry-run: false
   skip_cleanup: true
   on:
