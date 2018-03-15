@@ -57,13 +57,14 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs/backends//" />
+  <meta property="og:url" content="/docs/metrics/graphite//" />
   <meta property="og:image" content="" />
 
 </head>
 
 
   <body>
+
     <div id="all">
 
         <header>
@@ -157,10 +158,12 @@
 
 
         <div id="content">
+
+            
+
             <div class="container">
                 <div class="row">
-                    
-                    <div class = "col-md-3">
+                    <div class="col-md-3">
                         <ul class="sidebar-menu">
     
     
@@ -297,46 +300,42 @@
     
 </ul>
                     </div>
-                    <div class="col-md-9" id="blog-listing-medium">
 
-                        
+                    <div class="col-md-9">
+                        <div>
+                          
 
-<h1 id="backends">Backends</h1>
+<h2 id="graphite-reporter">Graphite Reporter</h2>
 
-<p>Cassandra Reaper can be used with either an ephemeral memory storage or persistent database. For persistent scalable database storage, a Cassandra cluster can be set up to back Reaper. To use a Cassandra cluster as the backed storage for Reaper set <code>storageType</code> to a value of <strong>cassandra</strong> in the Reaper configuration file. Alternatively, a relational database storage; either H2 or Postgres can be set up to back Reaper. To use one of the relational database options as the backed storage for Reaper set <code>storageType</code> to a value of either <strong>h2</strong> or <strong>postrges</strong> in the Reaper configuration file.</p>
+<p>Reaper can be configured to periodically report metrics to a Graphite host. This can be done using the following properties in the Reaper configuration YAML file.</p>
 
-<p>Further information on the available storage options is provided in the following section.</p>
+<pre><code class="language-yaml">Metrics:
+  frequency: 1 minute
+  reporters:
+    - type: graphite
+      host: &lt;host_address&gt;
+      port: &lt;port_number&gt;
+      prefix: &lt;prefix&gt;
+</code></pre>
+
+<p>Where:</p>
 
 <ul>
-<li><a href="http://cassandra-reaper.io/docs/backends/memory/">In-Memory</a></li>
-<li><a href="http://cassandra-reaper.io/docs/backends/cassandra/">Cassanda</a></li>
-<li><a href="http://cassandra-reaper.io/docs/backends/postgres/">PostgresQL</a></li>
-<li><a href="http://cassandra-reaper.io/docs/backends/h2/">H2</a></li>
+<li><code>host_address</code> is hostname of the Graphite server to report to.</li>
+<li><code>port_number</code> is port of the Graphite server to report to.</li>
+<li><code>prefix</code> is prefix for Metric key names that are reported to the Graphite server. Typically this will be the hostname sending the metrics to the Graphite server.</li>
 </ul>
 
-<p>Sample YAML files are available in the <em><a href="https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource">src/packaging/resource</a></em> directory for each of the above storage options:</p>
-
-<ul>
-<li>cassandra-reaper-memory.yaml</li>
-<li>cassandra-reaper-cassandra.yaml</li>
-<li>cassandra-reaper-postgres.yaml</li>
-<li>cassandra-reaper-h2.yaml</li>
-</ul>
-
-<p>For configuring other aspects of the service, see the available configuration options in the <a href="../configuration">Configuration Reference</a>.</p>
-
+                        </div>
 
                     </div>
-                    
-
-                    
-
-
-                    
 
                 </div>
                 
+
             </div>
+            
+
             
         </div>
         

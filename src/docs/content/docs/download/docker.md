@@ -52,7 +52,7 @@ docker pull thelastpickle/cassandra-reaper:${TAG}
 
 ## Using Docker
 
-Reaper can be executed with a Docker container whilst backed with either an ephemeral memory storage or persistent database.
+Reaper can be executed within a Docker container with either an ephemeral memory storage or persistent database.
 
 ### In-Memory Backend
 
@@ -103,7 +103,12 @@ Then visit the the Reaper UI: [http://localhost:8080/webui/](http://localhost:80
 
 ## Using Docker Compose
 
-The `docker-compose` services available allow for orchestration of an environment that uses default settings. In addition, services are provided that allow orchestration of an environment in which the connections between the services are SSL encrypted. Services which use SSL encryption contain a `-ssl` suffix in their name.
+The Docker Compose services available allow for orchestration of an environment that uses Reaper's default settings. This provides a quick way to start Reaper and become familiar with its usage without the need of additional infrastructure. The environment created using Docker Compose comprises a single containerised Apache Cassandra node and a single containerised Reaper service.
+
+In addition to the environment using Reaper's default settings, Docker Compose services are provided that allow orchestration of an environment in which the connections between Reaper and Cassandra are SSL encrypted. The services which create this environment contain a `-ssl` suffix in their name.
+
+All available Docker Compose services can be found in the [docker-compose.yml](https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/docker-compose.yml) file.
+
 
 ### Default Settings Environment
 
@@ -186,21 +191,31 @@ Once started, the UI can be accessed through:
 
 http://127.0.0.1:8080/webui/
 
-When adding the Cassandra node to the Reaper UI, use the IP address found via:
+A `nodetool` Docker Compose service is included for both the default and SSL encrypted environments to allow `nodetool` commands to be performed on Cassandra.
+
+For the **default** environment use:
 
 ```bash
 docker-compose run nodetool status
 ```
 
-The helper `cqlsh` Docker Compose service has also been included for both the default and SSL encrypted environments:
+For the **SSL encrypted** environment use:
 
-## Default Environment
+```bash
+docker-compose run nodetool-ssl status
+```
+
+When adding the Cassandra node to the Reaper UI, the above commands can be used to find the node IP address.
+
+A `cqlsh` Docker Compose service is included as well for both the default and SSL encrypted environments to allow the creation of user tables in Cassandra.
+
+For the **default** environment use:
 
 ```bash
 docker-compose run cqlsh
 ```
 
-## SSL Encrypted Environment
+For the **SSL encrypted** environment use:
 
 ```bash
 docker-compose run cqlsh-ssl

@@ -188,6 +188,15 @@
     </li>
     
     
+    <li>
+        <a href="/docs/concepts/">
+            
+            <span>Core Concepts</span>
+        </a>
+        
+    </li>
+    
+    
 
     <li class="sub-menu">
     <a href="/docs/backends/" class="">
@@ -232,24 +241,40 @@
     
 
     <li class="sub-menu">
-    <a href="/docs/usage/" class="">
+    <a href="/docs/metrics/" class="">
         
-        <span>Usage</span>
+        <span>Metrics</span>
         <span class="menu-arrow arrow_carrot-right"></span>
     </a>
     <ul class="sub">
         
-        <li><a href="/docs/usage/add_cluster/"> Add a Cluster </a> </li>
+        <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
         
-        <li><a href="/docs/usage/health/"> Check Cluster Health </a> </li>
+    </ul>
+    
+    </li>
+    
+    
+
+    <li class="sub-menu">
+    <a href="/docs/usage/" class="">
         
-        <li><a href="/docs/usage/single/"> Running a Repair </a> </li>
+        <span>Using Reaper</span>
+        <span class="menu-arrow arrow_carrot-right"></span>
+    </a>
+    <ul class="sub">
         
-        <li><a href="/docs/usage/schedule/"> Scheduling Repairs </a> </li>
+        <li><a href="/docs/usage/add_cluster/"> Adding a Cluster </a> </li>
         
-        <li><a href="/docs/usage/multi_dc/"> Multi DC </a> </li>
+        <li><a href="/docs/usage/health/"> Checking a Cluster&#39;s Health </a> </li>
         
-        <li><a href="/docs/usage/authentication/"> Activate authentication for the web UI </a> </li>
+        <li><a href="/docs/usage/single/"> Running a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/schedule/"> Scheduling a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/multi_dc/"> Operating with a Multi DC Cluster </a> </li>
+        
+        <li><a href="/docs/usage/authentication/"> Activating Web UI Authentication </a> </li>
         
     </ul>
     
@@ -355,7 +380,7 @@
 
 <p>Default: <em>ALL</em></p>
 
-<p>Indicates to Reapers its deployment in relation to cluster data center network locality. The value must be either <strong>ALL</strong>, <strong>LOCAL</strong>, or <strong>EACH</strong>. Note that this setting controls the behavior for metrics collection.</p>
+<p>Indicates to Reaper its deployment in relation to cluster data center network locality. The value must be either <strong>ALL</strong>, <strong>LOCAL</strong>, or <strong>EACH</strong>. Note that this setting controls the behavior for metrics collection.</p>
 
 <p>For security reasons, it is possible that Reaper will have access limited to nodes in a single datacenter via JMX (multi region clusters for example). In this case, it is possible to deploy an operate an instance of Reaper in each datacenter where each instance only has access via JMX (with or without authentication) to the nodes in its local datacenter. Where multiple instances of Reaper are in operation in this configuration, only the Apache Cassandra storage option can be used with Reaper. All other storage options are unsuitable in this case. This is because Reaper instances will rely on lightweight transactions to get leadership on segments before processing them. In addition, Reaper will check the number of pending compactions and actively running repairs on all replicas prior to processing a segment.</p>
 
@@ -364,6 +389,8 @@
 <p><strong>LOCAL</strong> - requires Reaper to have access via JMX to all nodes only in the same datacenter local to Reaper. A single Reaper instance can operate in this mode and trigger repairs from within its local data center. In this case, can be backed by all available storage types and repairs to any remote datacenters are be handled internally by Cassandra. A Reaper instance can be deployed to each datacenter and be configured to operate in this mode. In this case, Reaper can only use Apache Cassandra as its storage. In addition, metrics can be collected asynchronously through the Apache Cassandra storage.</p>
 
 <p><strong>EACH</strong> - requires a minimum of one Reaper instance operating in each datacenter. Each Reaper instance is required to have access via JMX to all nodes only in its local datacenter. When operating in this mode, Reaper can only use Apache Cassandra as its storage. In addition, metrics from nodes in remote datacenters must be collected through the Cassandra storage backend. If any metric is unavailable, the segment will be postponed for later processing.</p>
+
+<p>Further information can be found in the <a href="../../usage/multi_dc">Operating with a Multi DC Cluster</a> section.</p>
 
 <p><br/></p>
 
@@ -526,13 +553,11 @@ To match the example above, it could be something like : <code>10.0.10.5@cluster
 
 <h3 id="metrics"><code>metrics</code></h3>
 
-<p>Metrics configuration parameters for sending metrics to a reporting system via the <a href="http://www.dropwizard.io/1.1.4/docs/manual/configuration.html#metrics">Dropwizard interface</a>. Cassandra Reaper ships the Graphite and DataDog reporters by default.</p>
+<p>Type: <em>Object</em></p>
 
-<pre><code>metrics:
-  frequency: &quot;1 minute&quot;
-  reporters:
-    - type: &lt;type&gt;
-</code></pre>
+<p>Configuration parameters for sending metrics to a reporting system via the <a href="http://www.dropwizard.io/1.1.4/docs/manual/configuration.html#metrics">Dropwizard interface</a>. Cassandra Reaper ships the Graphite and DataDog reporters by default.</p>
+
+<p>Further information on metrics configuration can be found in the <a href="../../metrics">Metrics</a> section.</p>
 
 <p><br/></p>
 

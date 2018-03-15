@@ -188,6 +188,15 @@
     </li>
     
     
+    <li>
+        <a href="/docs/concepts/">
+            
+            <span>Core Concepts</span>
+        </a>
+        
+    </li>
+    
+    
 
     <li class="sub-menu">
     <a href="/docs/backends/" class="">
@@ -232,24 +241,40 @@
     
 
     <li class="sub-menu">
-    <a href="/docs/usage/" class="">
+    <a href="/docs/metrics/" class="">
         
-        <span>Usage</span>
+        <span>Metrics</span>
         <span class="menu-arrow arrow_carrot-right"></span>
     </a>
     <ul class="sub">
         
-        <li><a href="/docs/usage/add_cluster/"> Add a Cluster </a> </li>
+        <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
         
-        <li><a href="/docs/usage/health/"> Check Cluster Health </a> </li>
+    </ul>
+    
+    </li>
+    
+    
+
+    <li class="sub-menu">
+    <a href="/docs/usage/" class="">
         
-        <li><a href="/docs/usage/single/"> Running a Repair </a> </li>
+        <span>Using Reaper</span>
+        <span class="menu-arrow arrow_carrot-right"></span>
+    </a>
+    <ul class="sub">
         
-        <li><a href="/docs/usage/schedule/"> Scheduling Repairs </a> </li>
+        <li><a href="/docs/usage/add_cluster/"> Adding a Cluster </a> </li>
         
-        <li><a href="/docs/usage/multi_dc/"> Multi DC </a> </li>
+        <li><a href="/docs/usage/health/"> Checking a Cluster&#39;s Health </a> </li>
         
-        <li><a href="/docs/usage/authentication/"> Activate authentication for the web UI </a> </li>
+        <li><a href="/docs/usage/single/"> Running a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/schedule/"> Scheduling a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/multi_dc/"> Operating with a Multi DC Cluster </a> </li>
+        
+        <li><a href="/docs/usage/authentication/"> Activating Web UI Authentication </a> </li>
         
     </ul>
     
@@ -326,7 +351,7 @@ docker-compose run build
 
 <h2 id="using-docker">Using Docker</h2>
 
-<p>Reaper can be executed with a Docker container whilst backed with either an ephemeral memory storage or persistent database.</p>
+<p>Reaper can be executed within a Docker container with either an ephemeral memory storage or persistent database.</p>
 
 <h3 id="in-memory-backend">In-Memory Backend</h3>
 
@@ -375,7 +400,11 @@ docker run \
 
 <h2 id="using-docker-compose">Using Docker Compose</h2>
 
-<p>The <code>docker-compose</code> services available allow for orchestration of an environment that uses default settings. In addition, services are provided that allow orchestration of an environment in which the connections between the services are SSL encrypted. Services which use SSL encryption contain a <code>-ssl</code> suffix in their name.</p>
+<p>The Docker Compose services available allow for orchestration of an environment that uses Reaper&rsquo;s default settings. This provides a quick way to start Reaper and become familiar with its usage without the need of additional infrastructure. The environment created using Docker Compose comprises a single containerised Apache Cassandra node and a single containerised Reaper service.</p>
+
+<p>In addition to the environment using Reaper&rsquo;s default settings, Docker Compose services are provided that allow orchestration of an environment in which the connections between Reaper and Cassandra are SSL encrypted. The services which create this environment contain a <code>-ssl</code> suffix in their name.</p>
+
+<p>All available Docker Compose services can be found in the <a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/docker-compose.yml">docker-compose.yml</a> file.</p>
 
 <h3 id="default-settings-environment">Default Settings Environment</h3>
 
@@ -446,19 +475,28 @@ docker run \
 
 <p><a href="http://127.0.0.1:8080/webui/">http://127.0.0.1:8080/webui/</a></p>
 
-<p>When adding the Cassandra node to the Reaper UI, use the IP address found via:</p>
+<p>A <code>nodetool</code> Docker Compose service is included for both the default and SSL encrypted environments to allow <code>nodetool</code> commands to be performed on Cassandra.</p>
+
+<p>For the <strong>default</strong> environment use:</p>
 
 <pre><code class="language-bash">docker-compose run nodetool status
 </code></pre>
 
-<p>The helper <code>cqlsh</code> Docker Compose service has also been included for both the default and SSL encrypted environments:</p>
+<p>For the <strong>SSL encrypted</strong> environment use:</p>
 
-<h2 id="default-environment">Default Environment</h2>
+<pre><code class="language-bash">docker-compose run nodetool-ssl status
+</code></pre>
+
+<p>When adding the Cassandra node to the Reaper UI, the above commands can be used to find the node IP address.</p>
+
+<p>A <code>cqlsh</code> Docker Compose service is included as well for both the default and SSL encrypted environments to allow the creation of user tables in Cassandra.</p>
+
+<p>For the <strong>default</strong> environment use:</p>
 
 <pre><code class="language-bash">docker-compose run cqlsh
 </code></pre>
 
-<h2 id="ssl-encrypted-environment">SSL Encrypted Environment</h2>
+<p>For the <strong>SSL encrypted</strong> environment use:</p>
 
 <pre><code class="language-bash">docker-compose run cqlsh-ssl
 </code></pre>

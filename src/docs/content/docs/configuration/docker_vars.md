@@ -13,7 +13,7 @@ The Reaper Docker container has been designed to be highly configurable. Many of
 
 The Docker environment variables listed in this section map directly to Reaper specific settings in the *cassandra-reaper.yaml* configuration file. The following table below lists the Docker environment variables, their associated Reaper specific setting in the *cassandra-reaper.yaml* configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.
 
-Environment Variable | Configuration Setting | Default Value
+<h4>Environment Variable</h4> | <h4>Configuration Setting</h4> | <h4>Default Value</h4>
 --- | --- | ---
 <code class="codeLarge">REAPER_AUTO_SCHEDULING_ENABLED</code> | [enabled]({{< relref "reaper_specific.md#enabled" >}}) | false
 <code class="codeLarge">REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES</code> | [excludedKeyspaces]({{< relref "reaper_specific.md#excludedkeyspaces" >}}) | []
@@ -54,7 +54,7 @@ Environment Variable | Configuration Setting | Default Value
 
 Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with the YAML parameter names:
 
-Pre Reaper 1.0 | Post Reaper 1.0
+<h4>Pre Reaper 1.0</h4> | <h4>Post Reaper 1.0</h4>
 ---|---
 `REAPER_ENABLE_CORS` | `REAPER_ENABLE_CROSS_ORIGIN`
 `REAPER_ENABLE_DYNAMIC_SEEDS` | `REAPER_ENABLE_DYNAMIC_SEED_LIST`
@@ -95,7 +95,7 @@ In order for the Cassandra backend to be used, `REAPER_STORAGE_TYPE` must be set
 
 <br/>
 
-Environment Variable | Configuration Setting | Default Value
+<h4>Environment Variable</h4> | <h4>Configuration Setting</h4> | <h4>Default Value</h4>
 ---|---|---
 <code class="codeLarge">REAPER_CASS_ACTIVATE_QUERY_LOGGER</code> | [activateQueryLogger]({{< relref "backend_specific.md#activatequerylogger" >}}) | false
 <code class="codeLarge">REAPER_CASS_CLUSTER_NAME</code> | [clusterName]({{< relref "backend_specific.md#clustername" >}}) | clustername
@@ -111,7 +111,7 @@ Environment Variable | Configuration Setting | Default Value
 
 Some variable names and defaults have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Cassandra Backend specific variable name changes have occurred in an effort to match closely with our YAML parameter names:
 
-Pre Reaper 1.0 | Post Reaper 1.0
+<h4>Pre Reaper 1.0</h4> | <h4>Post Reaper 1.0</h4>
 ---|---
 `REAPER_ACTIVATE_QUERY_LOGGER` | `REAPER_CASS_ACTIVATE_QUERY_LOGGER`
 
@@ -119,7 +119,7 @@ Pre Reaper 1.0 | Post Reaper 1.0
 
 The following default values have changed:
 
-Environment Variable | Previous Default | New Default
+<h4>Environment Variable</h4> | <h4>Previous Default</h4> | <h4>New Default</h4>
 ---|---|---
 `REAPER_CASS_KEYSPACE` | *cassandra-reaper* | *reaper_db*
 
@@ -153,7 +153,7 @@ The Docker environment variables listed in this section map directly to H2/Postg
 
 In order to use the following settings, `REAPER_STORAGE_TYPE` must be set to `h2` or `postgres`.
 
-Environment Variable | Configuration Setting | Default Value
+<h4>Environment Variable</h4> | <h4>Configuration Setting</h4> | <h4>Default Value</h4>
 ---|---|---
 <code class="codeLarge">REAPER_DB_URL</code> | [url]({{< relref "backend_specific.md#url" >}}) | jdbc:h2:/var/lib/cassandra-reaper/db;MODE=PostgreSQL
 <code class="codeLarge">REAPER_DB_USERNAME</code> | [user]({{< relref "backend_specific.md#user" >}}) |
@@ -165,6 +165,6 @@ Environment Variable | Configuration Setting | Default Value
 
 Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with the YAML parameter names:
 
-Pre Reaper 1.0 | Post Reaper 1.0
+<h4>Pre Reaper 1.0</h4> | <h4>Post Reaper 1.0</h4>
 ---|---
 `REAPER_DB_DRIVER_CLASS` | N/A - The associated parameter has been deprecated

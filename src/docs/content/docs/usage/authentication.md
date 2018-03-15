@@ -1,12 +1,12 @@
 +++
 [menu.docs]
-name = "Activate authentication for the web UI"
+name = "Activating Web UI Authentication"
 weight = 100
 identifier = "auth"
 parent = "usage"
 +++
 
-# Activate authentication for the web UI
+# Activating Web UI Authentication
 
 Authentication can be activated in Reaper for the web UI only. It relies on [Apache Shiro](https://shiro.apache.org/), which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box. 
 

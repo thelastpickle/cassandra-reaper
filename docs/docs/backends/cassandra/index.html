@@ -188,6 +188,15 @@
     </li>
     
     
+    <li>
+        <a href="/docs/concepts/">
+            
+            <span>Core Concepts</span>
+        </a>
+        
+    </li>
+    
+    
 
     <li class="sub-menu">
     <a href="/docs/backends/" class="">
@@ -232,24 +241,40 @@
     
 
     <li class="sub-menu">
-    <a href="/docs/usage/" class="">
+    <a href="/docs/metrics/" class="">
         
-        <span>Usage</span>
+        <span>Metrics</span>
         <span class="menu-arrow arrow_carrot-right"></span>
     </a>
     <ul class="sub">
         
-        <li><a href="/docs/usage/add_cluster/"> Add a Cluster </a> </li>
+        <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
         
-        <li><a href="/docs/usage/health/"> Check Cluster Health </a> </li>
+    </ul>
+    
+    </li>
+    
+    
+
+    <li class="sub-menu">
+    <a href="/docs/usage/" class="">
         
-        <li><a href="/docs/usage/single/"> Running a Repair </a> </li>
+        <span>Using Reaper</span>
+        <span class="menu-arrow arrow_carrot-right"></span>
+    </a>
+    <ul class="sub">
         
-        <li><a href="/docs/usage/schedule/"> Scheduling Repairs </a> </li>
+        <li><a href="/docs/usage/add_cluster/"> Adding a Cluster </a> </li>
         
-        <li><a href="/docs/usage/multi_dc/"> Multi DC </a> </li>
+        <li><a href="/docs/usage/health/"> Checking a Cluster&#39;s Health </a> </li>
         
-        <li><a href="/docs/usage/authentication/"> Activate authentication for the web UI </a> </li>
+        <li><a href="/docs/usage/single/"> Running a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/schedule/"> Scheduling a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/multi_dc/"> Operating with a Multi DC Cluster </a> </li>
+        
+        <li><a href="/docs/usage/authentication/"> Activating Web UI Authentication </a> </li>
         
     </ul>
     
@@ -282,7 +307,7 @@
 
 <h1 id="cassandra-backend">Cassandra Backend</h1>
 
-<p>To use Apache Cassandra as the persistent storage for Reaper, the <code>storageType</code> setting must be set to <strong>cassandra</strong> in the Reaper configuration YAML file. In addition, the connection details for the Apache Cassandra cluster being used to store Reaper data must be specified in the configuration YAML file. An example of how to configure H2 as persistent storage for Reaper can be found in the <em><a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/resource/cassandra-reaper-cassandra.yaml">cassandra-reaper-cassandra.yaml</a></em>.</p>
+<p>To use Apache Cassandra as the persistent storage for Reaper, the <code>storageType</code> setting must be set to <strong>cassandra</strong> in the Reaper configuration YAML file. In addition, the connection details for the Apache Cassandra cluster being used to store Reaper data must be specified in the configuration YAML file. An example of how to configure Cassandra as persistent storage for Reaper can be found in the <em><a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/resource/cassandra-reaper-cassandra.yaml">cassandra-reaper-cassandra.yaml</a></em>.</p>
 
 <pre><code class="language-yaml">storageType: cassandra
 cassandra:
@@ -309,12 +334,27 @@ cassandra:
     type: jdk
 </code></pre>
 
-<p>The Apache Cassandra backend is the only one that allows running several Reaper instances at once. This provides high availability and allows to repair multi DC clusters.</p>
+<p>The Apache Cassandra backend is the only deployment that allows multiple Reaper instances to operate concurrently. This provides high availability and allows to repair multi DC clusters.</p>
 
 <p>To run Reaper using the Cassandra backend, create a reaper_db keyspace with an appropriate placement strategy. This is installation specific, and names of the data centers in the cluster that will host the Reaper data must be specified. For example:</p>
 
-<pre><code class="language-none">CREATE KEYSPACE reaper_db WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3};
+<pre><code class="language-none">CREATE KEYSPACE reaper_db WITH replication = {'class': 'NetworkTopologyStrategy', '&lt;data_center&gt;': 3};
 </code></pre>
+
+<p>Where:</p>
+
+<ul>
+<li><code>&lt;data_center&gt;</code> is the name of the Cassandra data center that will contain the keyspace replicas.</li>
+</ul>
+
+<p>When operating Reaper in a production environment, it is recommended that:</p>
+
+<ul>
+<li>An RF (Replication Factor) of 3 be used in each data center for the <code>reaper_db</code> keyspace. This is to ensure that all Reaper state data is still available should a node in the cluster be unavailable.</li>
+<li>The <code>NetworkTopologyStrategy</code> should be used for the replication strategy of the keyspace. This is because <code>LOCAL_*</code> requests will fail if the <code>SimpleNetworkingStrategy</code> is used in an environment where there is more than one data center defined.</li>
+</ul>
+
+<p>Schema initialization and migration will be done automatically upon startup.</p>
 
                         </div>
 

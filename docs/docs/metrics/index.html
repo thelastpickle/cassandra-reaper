@@ -57,7 +57,7 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs/backends//" />
+  <meta property="og:url" content="/docs/metrics//" />
   <meta property="og:image" content="" />
 
 </head>
@@ -301,29 +301,15 @@
 
                         
 
-<h1 id="backends">Backends</h1>
+<h1 id="metrics-reporting">Metrics Reporting</h1>
 
-<p>Cassandra Reaper can be used with either an ephemeral memory storage or persistent database. For persistent scalable database storage, a Cassandra cluster can be set up to back Reaper. To use a Cassandra cluster as the backed storage for Reaper set <code>storageType</code> to a value of <strong>cassandra</strong> in the Reaper configuration file. Alternatively, a relational database storage; either H2 or Postgres can be set up to back Reaper. To use one of the relational database options as the backed storage for Reaper set <code>storageType</code> to a value of either <strong>h2</strong> or <strong>postrges</strong> in the Reaper configuration file.</p>
+<p>Reaper metrics are provided via the <a href="http://www.dropwizard.io/1.1.4/docs/manual/configuration.html#metrics">Dropwizard Metrics</a> interface. The interface gives Reaper the ability to configure various metrics reporting systems. Metrics reporting can be configured in Reaper with the <strong>metrics</strong> property in the Reaper configuration YAML file. The <strong>metrics</strong> property has two fields; <strong>frequency</strong> and <strong>reporters</strong>. Specific metric reporters are defined in the <strong>reporters</strong> field as follows.</p>
 
-<p>Further information on the available storage options is provided in the following section.</p>
-
-<ul>
-<li><a href="http://cassandra-reaper.io/docs/backends/memory/">In-Memory</a></li>
-<li><a href="http://cassandra-reaper.io/docs/backends/cassandra/">Cassanda</a></li>
-<li><a href="http://cassandra-reaper.io/docs/backends/postgres/">PostgresQL</a></li>
-<li><a href="http://cassandra-reaper.io/docs/backends/h2/">H2</a></li>
-</ul>
-
-<p>Sample YAML files are available in the <em><a href="https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource">src/packaging/resource</a></em> directory for each of the above storage options:</p>
-
-<ul>
-<li>cassandra-reaper-memory.yaml</li>
-<li>cassandra-reaper-cassandra.yaml</li>
-<li>cassandra-reaper-postgres.yaml</li>
-<li>cassandra-reaper-h2.yaml</li>
-</ul>
-
-<p>For configuring other aspects of the service, see the available configuration options in the <a href="../configuration">Configuration Reference</a>.</p>
+<pre><code class="language-yaml">metrics:
+  frequency: 1 minute
+  reporters:
+    - type: &lt;type&gt;
+</code></pre>
 
 
                     </div>
