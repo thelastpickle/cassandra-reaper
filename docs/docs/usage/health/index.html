@@ -188,6 +188,15 @@
     </li>
     
     
+    <li>
+        <a href="/docs/concepts/">
+            
+            <span>Core Concepts</span>
+        </a>
+        
+    </li>
+    
+    
 
     <li class="sub-menu">
     <a href="/docs/backends/" class="">
@@ -232,24 +241,40 @@
     
 
     <li class="sub-menu">
-    <a href="/docs/usage/" class="">
+    <a href="/docs/metrics/" class="">
         
-        <span>Usage</span>
+        <span>Metrics</span>
         <span class="menu-arrow arrow_carrot-right"></span>
     </a>
     <ul class="sub">
         
-        <li><a href="/docs/usage/add_cluster/"> Add a Cluster </a> </li>
+        <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
         
-        <li><a href="/docs/usage/health/"> Check Cluster Health </a> </li>
+    </ul>
+    
+    </li>
+    
+    
+
+    <li class="sub-menu">
+    <a href="/docs/usage/" class="">
         
-        <li><a href="/docs/usage/single/"> Running a Repair </a> </li>
+        <span>Using Reaper</span>
+        <span class="menu-arrow arrow_carrot-right"></span>
+    </a>
+    <ul class="sub">
         
-        <li><a href="/docs/usage/schedule/"> Scheduling Repairs </a> </li>
+        <li><a href="/docs/usage/add_cluster/"> Adding a Cluster </a> </li>
         
-        <li><a href="/docs/usage/multi_dc/"> Multi DC </a> </li>
+        <li><a href="/docs/usage/health/"> Checking a Cluster&#39;s Health </a> </li>
         
-        <li><a href="/docs/usage/authentication/"> Activate authentication for the web UI </a> </li>
+        <li><a href="/docs/usage/single/"> Running a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/schedule/"> Scheduling a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/multi_dc/"> Operating with a Multi DC Cluster </a> </li>
+        
+        <li><a href="/docs/usage/authentication/"> Activating Web UI Authentication </a> </li>
         
     </ul>
     
@@ -280,7 +305,11 @@
                         <div>
                           
 
-<h1 id="cluster-health">Cluster Health</h1>
+<h1 id="checking-a-cluster-s-health">Checking a Cluster&rsquo;s Health</h1>
+
+<h2 id="dashboard">Dashboard</h2>
+
+<p>When a cluster has been added to Reaper it will be displayed in the dashboard.</p>
 
 <div class = "row">
     <div class = "col-md-6">
@@ -289,9 +318,9 @@
         </a>
     </div>
     <div>
-        <h4>Dashboard</h4>
+        <h4></h4>
 
-        Once you&rsquo;ve added a cluster it will show up in your dashboard.
+        
     </div>
 
 </div>
@@ -303,6 +332,12 @@
 
 
 
+<p><br/></p>
+
+<h2 id="node-view">Node View</h2>
+
+<p>Clicking on one of the nodes will open a dialog box containing details of the node&rsquo;s state.</p>
+
 <p><div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/node.png">
@@ -310,9 +345,9 @@
         </a>
     </div>
     <div>
-        <h4>Node View</h4>
+        <h4></h4>
 
-        Click one of the nodes to get a popup with details on the machine&rsquo;s state.
+        
     </div>
 
 </div>

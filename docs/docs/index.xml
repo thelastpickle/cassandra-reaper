@@ -30,5 +30,14 @@ Ping Resource  GET /ping  Expected query parameters: None Simple ping resource t
       <description>We have a Mailing List and Gitter chat available.</description>
     </item>
     
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/concepts/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/concepts/</guid>
+      <description>Core Concepts Segments Reaper splits repair runs in segments. A segment is a subrange of tokens that fits entirely in one of the cluster token ranges. The minimum number of segments for a repair run is the number of token ranges in the cluster. With a 3 nodes cluster using 256 vnodes per node, a repair run will have at least 768 segments. If necessary, each repair can define a higher number of segments than the number of token ranges.</description>
+    </item>
+    
   </channel>
 </rss>

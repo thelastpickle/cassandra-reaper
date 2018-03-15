@@ -185,6 +185,15 @@
     </li>
     
     
+    <li>
+        <a href="/docs/concepts/">
+            
+            <span>Core Concepts</span>
+        </a>
+        
+    </li>
+    
+    
 
     <li class="sub-menu">
     <a href="/docs/backends/" class="">
@@ -229,24 +238,40 @@
     
 
     <li class="sub-menu">
-    <a href="/docs/usage/" class="">
+    <a href="/docs/metrics/" class="">
         
-        <span>Usage</span>
+        <span>Metrics</span>
         <span class="menu-arrow arrow_carrot-right"></span>
     </a>
     <ul class="sub">
         
-        <li><a href="/docs/usage/add_cluster/"> Add a Cluster </a> </li>
+        <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
         
-        <li><a href="/docs/usage/health/"> Check Cluster Health </a> </li>
+    </ul>
+    
+    </li>
+    
+    
+
+    <li class="sub-menu">
+    <a href="/docs/usage/" class="">
         
-        <li><a href="/docs/usage/single/"> Running a Repair </a> </li>
+        <span>Using Reaper</span>
+        <span class="menu-arrow arrow_carrot-right"></span>
+    </a>
+    <ul class="sub">
         
-        <li><a href="/docs/usage/schedule/"> Scheduling Repairs </a> </li>
+        <li><a href="/docs/usage/add_cluster/"> Adding a Cluster </a> </li>
         
-        <li><a href="/docs/usage/multi_dc/"> Multi DC </a> </li>
+        <li><a href="/docs/usage/health/"> Checking a Cluster&#39;s Health </a> </li>
         
-        <li><a href="/docs/usage/authentication/"> Activate authentication for the web UI </a> </li>
+        <li><a href="/docs/usage/single/"> Running a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/schedule/"> Scheduling a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/multi_dc/"> Operating with a Multi DC Cluster </a> </li>
+        
+        <li><a href="/docs/usage/authentication/"> Activating Web UI Authentication </a> </li>
         
     </ul>
     
@@ -277,6 +302,32 @@
                         
 
 <h2 id="welcome-to-the-cassandra-reaper-documentation">Welcome to the Cassandra Reaper documentation!</h2>
+
+<h3 id="overview">Overview</h3>
+
+<p>Reaper is an open source tool that aims to schedule and orchestrate repairs of Apache Cassandra clusters.</p>
+
+<p>It improves the existing nodetool repair process by</p>
+
+<ul>
+<li>Splitting repair jobs into smaller tunable segments.</li>
+<li>Handling back-pressure through monitoring running repairs and pending compactions.</li>
+<li>Adding ability to pause or cancel repairs and track progress precisely.</li>
+</ul>
+
+<p>Reaper ships with a REST API, a command line tool and a web UI.</p>
+
+<p>This documentation includes instructions on how build, install, and configure Reaper correctly.</p>
+
+<h3 id="compatibility">Compatibility</h3>
+
+<p>Reaper supports all versions of Apache Cassandra ranging from 1.2 to 3.10. Incremental repair is supported for versions from 2.1 and above.</p>
+
+<p>A single instance of Reaper can handle repairs for clusters running different Apache Cassandra versions.</p>
+
+<h3 id="download-and-installation">Download and Installation</h3>
+
+<p>Head over to the <a href="download">Downloads</a> section to download the version of Reaper that is compatible with your system.</p>
 
 
                     </div>

@@ -1,13 +1,15 @@
 +++
 [menu.docs]
-name = "Multi DC"
+name = "Operating with a Multi DC Cluster"
 weight = 50
 identifier = "multi_dc"
 parent = "usage"
 +++
 
 
-# Reaper with multi DC clusters
+# Operating with a Multi DC Cluster
+
+Reaper can operate a cluster which has a multi data centre deployment. The `datacenterAvailability` setting in the Reaper YAML file indicates to Reaper its deployment in relation to cluster data center network locality.
 
 ## Single Reaper instance with JMX accessible for all DCs
 

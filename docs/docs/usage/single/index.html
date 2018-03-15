@@ -188,6 +188,15 @@
     </li>
     
     
+    <li>
+        <a href="/docs/concepts/">
+            
+            <span>Core Concepts</span>
+        </a>
+        
+    </li>
+    
+    
 
     <li class="sub-menu">
     <a href="/docs/backends/" class="">
@@ -232,24 +241,40 @@
     
 
     <li class="sub-menu">
-    <a href="/docs/usage/" class="">
+    <a href="/docs/metrics/" class="">
         
-        <span>Usage</span>
+        <span>Metrics</span>
         <span class="menu-arrow arrow_carrot-right"></span>
     </a>
     <ul class="sub">
         
-        <li><a href="/docs/usage/add_cluster/"> Add a Cluster </a> </li>
+        <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
         
-        <li><a href="/docs/usage/health/"> Check Cluster Health </a> </li>
+    </ul>
+    
+    </li>
+    
+    
+
+    <li class="sub-menu">
+    <a href="/docs/usage/" class="">
         
-        <li><a href="/docs/usage/single/"> Running a Repair </a> </li>
+        <span>Using Reaper</span>
+        <span class="menu-arrow arrow_carrot-right"></span>
+    </a>
+    <ul class="sub">
         
-        <li><a href="/docs/usage/schedule/"> Scheduling Repairs </a> </li>
+        <li><a href="/docs/usage/add_cluster/"> Adding a Cluster </a> </li>
         
-        <li><a href="/docs/usage/multi_dc/"> Multi DC </a> </li>
+        <li><a href="/docs/usage/health/"> Checking a Cluster&#39;s Health </a> </li>
         
-        <li><a href="/docs/usage/authentication/"> Activate authentication for the web UI </a> </li>
+        <li><a href="/docs/usage/single/"> Running a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/schedule/"> Scheduling a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/multi_dc/"> Operating with a Multi DC Cluster </a> </li>
+        
+        <li><a href="/docs/usage/authentication/"> Activating Web UI Authentication </a> </li>
         
     </ul>
     
@@ -280,7 +305,13 @@
                         <div>
                           
 
-<h1 id="repairing-a-cluster">Repairing A Cluster</h1>
+<h1 id="running-a-cluster-repair">Running a Cluster Repair</h1>
+
+<p>Reaper has the ability to launch a once-off repair on a cluster. This can be done in the following way.</p>
+
+<h2 id="start-a-new-repair">Start a New Repair</h2>
+
+<p>Click the <em>repair</em> menu item on the left side to navigate to the Repair page. Click <em>Start a new repair</em> to open the repair details form.</p>
 
 <div class = "row">
     <div class = "col-md-6">
@@ -289,11 +320,9 @@
         </a>
     </div>
     <div>
-        <h4>Run a manual repair</h4>
+        <h4></h4>
 
-        Start by clicking the repair menu item on the left side, you should see a repair page.</p>
-
-<p>Click &ldquo;Start a new repair&rdquo;
+        
     </div>
 
 </div>
@@ -305,16 +334,22 @@
 
 
 
-<p><div class = "row">
+<p><br/></p>
+
+<h2 id="fill-in-the-details">Fill in the Details</h2>
+
+<p>Enter values for the keyspace, tables, owner and other fields and click the <em>Repair</em> button. See the table below for further information on the details for each field.</p>
+
+<div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/single_repair.png">
         <img src="/img/single_repair.png" class="img-responsive">
         </a>
     </div>
     <div>
-        <h4>Fill in the details</h4>
+        <h4></h4>
 
-        Enter the keyspace, tables, and other details to start a manual repair.
+        
     </div>
 
 </div>
@@ -324,7 +359,65 @@
 
 
 
-</p>
+
+
+<p><br/></p>
+
+<table>
+<thead>
+<tr>
+<th><h4>Option</h4></th>
+<th><h4>Description</h4></th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><strong>Cluster</strong></td>
+<td>This field maps to a cluster as defined in the Cluster managment page.</td>
+</tr>
+
+<tr>
+<td><strong>Keyspace</strong></td>
+<td>Restricts the keyspaces that will be repaired by this task.</td>
+</tr>
+
+<tr>
+<td><strong>Tables</strong></td>
+<td>A comma-delimited list of tables to repair.</td>
+</tr>
+
+<tr>
+<td><strong>Owner</strong></td>
+<td>Any string is accepted for this field which acts as a way to include notes in cases where many users have access to Reaper.</td>
+</tr>
+
+<tr>
+<td><strong>Segment count</strong></td>
+<td>The number of segments to create when considering all the token ranges.</td>
+</tr>
+
+<tr>
+<td><strong>Parallelism</strong></td>
+<td>Options are: <br/> - <code>Sequential</code>: Used in cases where data center aware repairs are not yet supported (pre-2.0.12). <br/> - <code>Parallel</code>: Executes repairs across all nodes in parallel. <br/> - <code>DC-Aware</code>: Executes repairs across all nodes in a data center, one data center at a time. This is the safest option as it restricts extreme load to a specific data center, rather than impacting the full cluster.</td>
+</tr>
+
+<tr>
+<td><strong>Repair intensity</strong></td>
+<td>A value between 0.0 and 1.0, where 1.0 ensures that no sleeping occurs between repair sessions and 0.5 ensures that equal amounts of time while the repair task is running, will be spent sleeping and repairing.</td>
+</tr>
+
+<tr>
+<td><strong>Cause</strong></td>
+<td>Any string is accepted for this field which acts as a way to include notes in cases where many users have access to Reaper.</td>
+</tr>
+
+<tr>
+<td><strong>Incremental</strong></td>
+<td>This boolean value is only supported when the Parallism is set to Parallel.</td>
+</tr>
+</tbody>
+</table>
 
                         </div>
 

@@ -188,6 +188,15 @@
     </li>
     
     
+    <li>
+        <a href="/docs/concepts/">
+            
+            <span>Core Concepts</span>
+        </a>
+        
+    </li>
+    
+    
 
     <li class="sub-menu">
     <a href="/docs/backends/" class="">
@@ -232,24 +241,40 @@
     
 
     <li class="sub-menu">
-    <a href="/docs/usage/" class="">
+    <a href="/docs/metrics/" class="">
         
-        <span>Usage</span>
+        <span>Metrics</span>
         <span class="menu-arrow arrow_carrot-right"></span>
     </a>
     <ul class="sub">
         
-        <li><a href="/docs/usage/add_cluster/"> Add a Cluster </a> </li>
+        <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
         
-        <li><a href="/docs/usage/health/"> Check Cluster Health </a> </li>
+    </ul>
+    
+    </li>
+    
+    
+
+    <li class="sub-menu">
+    <a href="/docs/usage/" class="">
         
-        <li><a href="/docs/usage/single/"> Running a Repair </a> </li>
+        <span>Using Reaper</span>
+        <span class="menu-arrow arrow_carrot-right"></span>
+    </a>
+    <ul class="sub">
         
-        <li><a href="/docs/usage/schedule/"> Scheduling Repairs </a> </li>
+        <li><a href="/docs/usage/add_cluster/"> Adding a Cluster </a> </li>
         
-        <li><a href="/docs/usage/multi_dc/"> Multi DC </a> </li>
+        <li><a href="/docs/usage/health/"> Checking a Cluster&#39;s Health </a> </li>
         
-        <li><a href="/docs/usage/authentication/"> Activate authentication for the web UI </a> </li>
+        <li><a href="/docs/usage/single/"> Running a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/schedule/"> Scheduling a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/multi_dc/"> Operating with a Multi DC Cluster </a> </li>
+        
+        <li><a href="/docs/usage/authentication/"> Activating Web UI Authentication </a> </li>
         
     </ul>
     
@@ -278,16 +303,26 @@
 
                     <div class="col-md-9">
                         <div>
-                          <div class = "row">
+                          
+
+<h1 id="scheduling-a-cluster-repair">Scheduling a Cluster Repair</h1>
+
+<p>Reaper has the ability to create and manage repair schedules for a cluster. This can be done in the following way.</p>
+
+<h2 id="setup-a-repair-schedule">Setup a Repair Schedule</h2>
+
+<p>Click the <em>schedule</em> menu item on the left side to navigate to the Schedules page. Click <em>Add schedule</em> to open the schedule details form.</p>
+
+<div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/schedule.png">
         <img src="/img/schedule.png" class="img-responsive">
         </a>
     </div>
     <div>
-        <h4>Schedule a repair</h4>
+        <h4></h4>
 
-        To set up a regular repair schedule, click <em>schedule</em> on the left menu to bring up the schedules page.  Click &ldquo;Add Schedule&rdquo;
+        
     </div>
 
 </div>
@@ -299,16 +334,22 @@
 
 
 
-<p><div class = "row">
+<p><br/></p>
+
+<h2 id="fill-in-the-details">Fill in the Details</h2>
+
+<p>Enter values for the keyspace, tables, owner and other fields and click <em>Add Schedule</em> button. The details for adding a schedule are similar to the details for <a href="../single">Repair</a> form except the &ldquo;Clause&rdquo; field is replaced with two fields; &ldquo;Start time&rdquo; and &ldquo;Interval in days&rdquo;. See the table below for further information the two fields.</p>
+
+<div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/add_schedule.png">
         <img src="/img/add_schedule.png" class="img-responsive">
         </a>
     </div>
     <div>
-        <h4>Schedule a repair</h4>
+        <h4></h4>
 
-        Fill out the schedule form and click Add Schedule.
+        
     </div>
 
 </div>
@@ -318,7 +359,40 @@
 
 
 
-</p>
+
+
+<p><br/></p>
+
+<table>
+<thead>
+<tr>
+<th><h4>Option</h4></th>
+<th><h4>Description</h4></th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><strong>Start time</strong></td>
+<td>The time to trigger repairs, based in GMT.</td>
+</tr>
+
+<tr>
+<td><strong>Interval in days</strong></td>
+<td>The frequency for the schedule to be run.</td>
+</tr>
+</tbody>
+</table>
+
+<p><br/></p>
+
+<p>After creating a scheduled repair, the page is updated with a list of active and paused repair schedules.</p>
+
+<p>Note that when choosing to add a new repair schedule, it is recommended to restrict the repair schedules to specific tables, instead of scheduling repairs for an entire keyspace. Creating different repair schedules will allow for simpler scheduling, fine-grain tuning for more valuable data, and easily grouping tables with smaller data load into different repair cycles.</p>
+
+<p>For example, if there are certain tables that contain valuable data or a business requirement for high consistency and high availability, they could be schedule to be repaired during low traffic periods.</p>
+
+<p>Note that scheduled repairs can be paused and deleted by users with access to the Reaper web interface. To add authentication security the web UI see the <a href="../authentication">authentication</a> section for further information.</p>
 
                         </div>
 

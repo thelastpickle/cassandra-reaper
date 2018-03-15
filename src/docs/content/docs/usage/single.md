@@ -1,25 +1,39 @@
 +++
 [menu.docs]
-name = "Running a Repair"
+name = "Running a Cluster Repair"
 weight = 30
 identifier = "single"
 parent = "usage"
 +++
 
-# Repairing A Cluster
+# Running a Cluster Repair
 
+Reaper has the ability to launch a once-off repair on a cluster. This can be done in the following way.
 
-{{< screenshot src="/img/repair_page.png" title="Run a manual repair" >}}
+## Start a New Repair
 
-Start by clicking the repair menu item on the left side, you should see a repair page. 
+Click the *repair* menu item on the left side to navigate to the Repair page. Click *Start a new repair* to open the repair details form.
 
-Click "Start a new repair"
+{{< screenshot src="/img/repair_page.png" />}}
 
-{{< /screenshot >}}
+<br/>
 
+## Fill in the Details
 
-{{< screenshot src="/img/single_repair.png" title="Fill in the details" >}}
+Enter values for the keyspace, tables, owner and other fields and click the *Repair* button. See the table below for further information on the details for each field.
 
-Enter the keyspace, tables, and other details to start a manual repair.
+{{< screenshot src="/img/single_repair.png" />}}
 
-{{< /screenshot >}}
+<br/>
+
+<h4>Option</h4> | <h4>Description</h4>
+---|---
+**Cluster** | This field maps to a cluster as defined in the Cluster managment page.
+**Keyspace** | Restricts the keyspaces that will be repaired by this task.
+**Tables** | A comma-delimited list of tables to repair.
+**Owner** | Any string is accepted for this field which acts as a way to include notes in cases where many users have access to Reaper.
+**Segment count** | The number of segments to create when considering all the token ranges.
+**Parallelism** | Options are: <br/> - `Sequential`: Used in cases where data center aware repairs are not yet supported (pre-2.0.12). <br/> - `Parallel`: Executes repairs across all nodes in parallel. <br/> - `DC-Aware`: Executes repairs across all nodes in a data center, one data center at a time. This is the safest option as it restricts extreme load to a specific data center, rather than impacting the full cluster.
+**Repair intensity** | A value between 0.0 and 1.0, where 1.0 ensures that no sleeping occurs between repair sessions and 0.5 ensures that equal amounts of time while the repair task is running, will be spent sleeping and repairing.
+**Cause** | Any string is accepted for this field which acts as a way to include notes in cases where many users have access to Reaper.
+**Incremental** | This boolean value is only supported when the Parallism is set to Parallel.

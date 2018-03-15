@@ -2,7 +2,7 @@
 [menu.docs]
 name = "Configuration Reference"
 identifier = "configuration"
-weight = 10
+weight = 15
 +++
 
 # Configuration

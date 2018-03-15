@@ -188,6 +188,15 @@
     </li>
     
     
+    <li>
+        <a href="/docs/concepts/">
+            
+            <span>Core Concepts</span>
+        </a>
+        
+    </li>
+    
+    
 
     <li class="sub-menu">
     <a href="/docs/backends/" class="">
@@ -232,24 +241,40 @@
     
 
     <li class="sub-menu">
-    <a href="/docs/usage/" class="">
+    <a href="/docs/metrics/" class="">
         
-        <span>Usage</span>
+        <span>Metrics</span>
         <span class="menu-arrow arrow_carrot-right"></span>
     </a>
     <ul class="sub">
         
-        <li><a href="/docs/usage/add_cluster/"> Add a Cluster </a> </li>
+        <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
         
-        <li><a href="/docs/usage/health/"> Check Cluster Health </a> </li>
+    </ul>
+    
+    </li>
+    
+    
+
+    <li class="sub-menu">
+    <a href="/docs/usage/" class="">
         
-        <li><a href="/docs/usage/single/"> Running a Repair </a> </li>
+        <span>Using Reaper</span>
+        <span class="menu-arrow arrow_carrot-right"></span>
+    </a>
+    <ul class="sub">
         
-        <li><a href="/docs/usage/schedule/"> Scheduling Repairs </a> </li>
+        <li><a href="/docs/usage/add_cluster/"> Adding a Cluster </a> </li>
         
-        <li><a href="/docs/usage/multi_dc/"> Multi DC </a> </li>
+        <li><a href="/docs/usage/health/"> Checking a Cluster&#39;s Health </a> </li>
         
-        <li><a href="/docs/usage/authentication/"> Activate authentication for the web UI </a> </li>
+        <li><a href="/docs/usage/single/"> Running a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/schedule/"> Scheduling a Cluster Repair </a> </li>
+        
+        <li><a href="/docs/usage/multi_dc/"> Operating with a Multi DC Cluster </a> </li>
+        
+        <li><a href="/docs/usage/authentication/"> Activating Web UI Authentication </a> </li>
         
     </ul>
     
@@ -280,7 +305,9 @@
                         <div>
                           
 
-<h1 id="add-a-cluster">Add A Cluster</h1>
+<h1 id="adding-a-cluster">Adding a Cluster</h1>
+
+<p>Enter an address of one of the nodes in the cluster, then click <em>Add Cluster</em> Reaper will contact that node and find the rest of the nodes in the cluster automatically.</p>
 
 <div class = "row">
     <div class = "col-md-6">
@@ -289,11 +316,9 @@
         </a>
     </div>
     <div>
-        <h4>Add a cluster for Reaper to manage repairs on.</h4>
+        <h4></h4>
 
-        Enter an address of one of the nodes in the cluster.  Reaper will contact that node and find the rest of the nodes in the cluster automatically.</p>
-
-<p>Once you&rsquo;ve done this, you&rsquo;ll see the <a href="../health">Cluster Health</a>.
+        
     </div>
 
 </div>
@@ -305,23 +330,30 @@
 
 
 
-<p>If JMX authentication is required and all clusters share the same credentials, they have to be filled in the Reaper yaml file, under <code>jmxAuth</code> (see the <a href="../../configuration/reaper_specific">configuration reference</a>)</p>
+<p><br/></p>
+
+<p>Once successfully completed, the Cluster&rsquo;s <a href="../health">health</a> will be displayed.</p>
+
+<p><br/></p>
+
+<p>If JMX authentication is required and all clusters share the same credentials, they have to be filled in the Reaper YAML file, under <code>jmxAuth</code> (see the <a href="../../configuration/reaper_specific">configuration reference</a>).</p>
 
 <h2 id="specific-jmx-credentials-per-cluster">Specific JMX credentials per cluster</h2>
 
-<p><em><strong>Since 1.1.0</strong></em><br />
-If the clusters require authentication for JMX access, credentials have to be filled in the reaper yaml configuration file. See the <code>jmxCredentials</code> setting in the <a href="../../configuration/reaper_specific">configuration reference</a> for detailed informations.</p>
+<p><em><strong>Since 1.1.0</strong></em></p>
 
-<p><div class = "row">
+<p>If the clusters require authentication for JMX access, credentials will need to be filled in the reaper yaml configuration file. See the <code>jmxCredentials</code> setting in the <a href="../../configuration/reaper_specific">configuration reference</a> for detailed informations.</p>
+
+<div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/reaper_jmx_cred_add_cluster.png">
         <img src="/img/reaper_jmx_cred_add_cluster.png" class="img-responsive">
         </a>
     </div>
     <div>
-        <h4>Add a cluster with specific JMX credentials.</h4>
+        <h4></h4>
 
-        When using <code>jmxCredentials</code> (if you have specific credentials for each cluster), please indicate the name of the cluster in the seed node address
+        
     </div>
 
 </div>
@@ -331,7 +363,9 @@ If the clusters require authentication for JMX access, credentials have to be fi
 
 
 
-</p>
+
+
+<p>When using <code>jmxCredentials</code> (if each cluster has specific credentials), the name of the cluster will need to be indicated in the seed node address.</p>
 
                         </div>
 

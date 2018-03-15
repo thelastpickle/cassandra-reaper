@@ -27,7 +27,7 @@ Ping Resource  GET /ping  Expected query parameters: None Simple ping resource t
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/backends/cassandra/</guid>
-      <description>Cassandra Backend To use Apache Cassandra as the persistent storage for Reaper, the storageType setting must be set to cassandra in the Reaper configuration YAML file. In addition, the connection details for the Apache Cassandra cluster being used to store Reaper data must be specified in the configuration YAML file. An example of how to configure H2 as persistent storage for Reaper can be found in the cassandra-reaper-cassandra.yaml.
+      <description>Cassandra Backend To use Apache Cassandra as the persistent storage for Reaper, the storageType setting must be set to cassandra in the Reaper configuration YAML file. In addition, the connection details for the Apache Cassandra cluster being used to store Reaper data must be specified in the configuration YAML file. An example of how to configure Cassandra as persistent storage for Reaper can be found in the cassandra-reaper-cassandra.yaml.
 storageType: cassandra cassandra: clusterName: &amp;quot;test&amp;quot; contactPoints: [&amp;quot;127.</description>
     </item>
     
@@ -67,6 +67,15 @@ storageType: memory  In-memory storage is volatile and as such all registered cl
       
       <guid>http://cassandra-reaper.io/docs/community/</guid>
       <description>We have a Mailing List and Gitter chat available.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/concepts/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/concepts/</guid>
+      <description>Core Concepts Segments Reaper splits repair runs in segments. A segment is a subrange of tokens that fits entirely in one of the cluster token ranges. The minimum number of segments for a repair run is the number of token ranges in the cluster. With a 3 nodes cluster using 256 vnodes per node, a repair run will have at least 768 segments. If necessary, each repair can define a higher number of segments than the number of token ranges.</description>
     </item>
     
     <item>
@@ -144,12 +153,26 @@ Installing and Running as a Service We provide prebuilt packages for reaper on t
     
     <item>
       <title></title>
+      <link>http://cassandra-reaper.io/docs/metrics/graphite/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/metrics/graphite/</guid>
+      <description>Graphite Reporter Reaper can be configured to periodically report metrics to a Graphite host. This can be done using the following properties in the Reaper configuration YAML file.
+Metrics: frequency: 1 minute reporters: - type: graphite host: &amp;lt;host_address&amp;gt; port: &amp;lt;port_number&amp;gt; prefix: &amp;lt;prefix&amp;gt;  Where:
+ host_address is hostname of the Graphite server to report to. port_number is port of the Graphite server to report to. prefix is prefix for Metric key names that are reported to the Graphite server.</description>
+    </item>
+    
+    <item>
+      <title></title>
       <link>http://cassandra-reaper.io/docs/usage/add_cluster/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/usage/add_cluster/</guid>
-      <description>Add A Cluster    Add a cluster for Reaper to manage repairs on. Enter an address of one of the nodes in the cluster. Reaper will contact that node and find the rest of the nodes in the cluster automatically.
-Once you&amp;rsquo;ve done this, you&amp;rsquo;ll see the Cluster Health.   If JMX authentication is required and all clusters share the same credentials, they have to be filled in the Reaper yaml file, under jmxAuth (see the configuration reference)</description>
+      <description>Adding a Cluster Enter an address of one of the nodes in the cluster, then click Add Cluster Reaper will contact that node and find the rest of the nodes in the cluster automatically.
+      
+Once successfully completed, the Cluster&amp;rsquo;s health will be displayed.
+
+If JMX authentication is required and all clusters share the same credentials, they have to be filled in the Reaper YAML file, under jmxAuth (see the configuration reference).</description>
     </item>
     
     <item>
@@ -158,7 +181,7 @@ Once you&amp;rsquo;ve done this, you&amp;rsquo;ll see the Cluster Health.   If J
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/usage/authentication/</guid>
-      <description>Activate authentication for the web UI Authentication can be activated in Reaper for the web UI only. It relies on Apache Shiro, which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box.
+      <description>Activating Web UI Authentication Authentication can be activated in Reaper for the web UI only. It relies on Apache Shiro, which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box.
 To activate authentication, add the following block to your Reaper yaml file :
 accessControl: sessionTimeout: PT10M shiro: iniConfigs: [&amp;quot;file:/path/to/shiro.ini&amp;quot;]  Create a shiro.ini file and adapt it from the following sample :</description>
     </item>
@@ -169,7 +192,10 @@ accessControl: sessionTimeout: PT10M shiro: iniConfigs: [&amp;quot;file:/path/to
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/usage/health/</guid>
-      <description> Cluster Health    Dashboard Once you&amp;rsquo;ve added a cluster it will show up in your dashboard.      Node View Click one of the nodes to get a popup with details on the machine&amp;rsquo;s state.   </description>
+      <description> Checking a Cluster&amp;rsquo;s Health Dashboard When a cluster has been added to Reaper it will be displayed in the dashboard.
+      
+Node View Clicking on one of the nodes will open a dialog box containing details of the node&amp;rsquo;s state.
+      </description>
     </item>
     
     <item>
@@ -178,8 +204,8 @@ accessControl: sessionTimeout: PT10M shiro: iniConfigs: [&amp;quot;file:/path/to
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/usage/multi_dc/</guid>
-      <description>Reaper with multi DC clusters Single Reaper instance with JMX accessible for all DCs In the case where the JMX port is accessible (with or without authentication) from the running Reaper instance for all nodes in all DCs, it is possible to have a single instance of Reaper handle the whole cluster by using the following setting in the configuration yaml file :
-datacenterAvailability: ALL  This setup works with all backends : Apache Cassandra, Memory, H2 and Postgres.</description>
+      <description>Operating with a Multi DC Cluster Reaper can operate a cluster which has a multi data centre deployment. The datacenterAvailability setting in the Reaper YAML file indicates to Reaper its deployment in relation to cluster data center network locality.
+Single Reaper instance with JMX accessible for all DCs In the case where the JMX port is accessible (with or without authentication) from the running Reaper instance for all nodes in all DCs, it is possible to have a single instance of Reaper handle the whole cluster by using the following setting in the configuration yaml file :</description>
     </item>
     
     <item>
@@ -188,7 +214,10 @@ datacenterAvailability: ALL  This setup works with all backends : Apache Cassand
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/usage/schedule/</guid>
-      <description>   Schedule a repair To set up a regular repair schedule, click schedule on the left menu to bring up the schedules page. Click &amp;ldquo;Add Schedule&amp;rdquo;      Schedule a repair Fill out the schedule form and click Add Schedule.   </description>
+      <description>Scheduling a Cluster Repair Reaper has the ability to create and manage repair schedules for a cluster. This can be done in the following way.
+Setup a Repair Schedule Click the schedule menu item on the left side to navigate to the Schedules page. Click Add schedule to open the schedule details form.
+      
+Fill in the Details Enter values for the keyspace, tables, owner and other fields and click Add Schedule button.</description>
     </item>
     
     <item>
@@ -197,8 +226,10 @@ datacenterAvailability: ALL  This setup works with all backends : Apache Cassand
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/usage/single/</guid>
-      <description> Repairing A Cluster    Run a manual repair Start by clicking the repair menu item on the left side, you should see a repair page.
-Click &amp;ldquo;Start a new repair&amp;rdquo;      Fill in the details Enter the keyspace, tables, and other details to start a manual repair.   </description>
+      <description>Running a Cluster Repair Reaper has the ability to launch a once-off repair on a cluster. This can be done in the following way.
+Start a New Repair Click the repair menu item on the left side to navigate to the Repair page. Click Start a new repair to open the repair details form.
+      
+Fill in the Details Enter values for the keyspace, tables, owner and other fields and click the Repair button.</description>
     </item>
     
     <item>

@@ -35,6 +35,10 @@
   </url>
   
   <url>
+    <loc>http://cassandra-reaper.io/docs/concepts/</loc>
+  </url>
+  
+  <url>
     <loc>http://cassandra-reaper.io/docs/configuration/</loc>
   </url>
   
@@ -64,6 +68,14 @@
   
   <url>
     <loc>http://cassandra-reaper.io/docs/download/install/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/metrics/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/metrics/graphite/</loc>
   </url>
   
   <url>
