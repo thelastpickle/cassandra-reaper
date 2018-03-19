@@ -7,6 +7,7 @@ if [ "$1" = 'cassandra-reaper' ]; then
     touch /etc/cassandra-reaper.yml
 
     su-exec reaper /usr/local/bin/configure-persistence.sh
+    su-exec reaper /usr/local/bin/configure-webui-authentication.sh
     su-exec reaper /usr/local/bin/configure-metrics.sh
     exec su-exec reaper java \
                     ${JAVA_OPTS} \

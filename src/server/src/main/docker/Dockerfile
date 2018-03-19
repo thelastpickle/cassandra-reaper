@@ -47,29 +47,40 @@ ENV REAPER_SEGMENT_COUNT=200 \
     REAPER_METRICS_ENABLED=false \
     REAPER_METRICS_FREQUENCY="1 minute" \
     REAPER_METRICS_REPORTERS="[]" \
+    REAPER_ENABLE_WEBUI_AUTH=false \
+    REAPER_WEBUI_USER="reaper" \
+    REAPER_WEBUI_PASSWORD="CassandraReaper" \
+    REAPER_SHIRO_INI="/etc/shiro.ini" \
     JAVA_OPTS=""
 
 ADD cassandra-reaper.yml /etc/cassandra-reaper.yml
+ADD shiro.ini /etc/shiro.ini
 ADD entrypoint.sh /usr/local/bin/entrypoint.sh
 ADD configure-persistence.sh /usr/local/bin/configure-persistence.sh
 ADD configure-metrics.sh /usr/local/bin/configure-metrics.sh
+ADD configure-webui-authentication.sh /usr/local/bin/configure-webui-authentication.sh
 
 RUN addgroup -S reaper && \
     adduser -S reaper reaper && \
     apk add --no-cache 'su-exec>=0.2' && \
     mkdir -p /var/lib/cassandra-reaper && \
+    mkdir -p /etc/cassandra-reaper/shiro && \
     chown reaper:reaper \
         /etc/cassandra-reaper.yml \
+        /etc/shiro.ini \
         /var/lib/cassandra-reaper \
         /usr/local/bin/entrypoint.sh \
         /usr/local/bin/configure-persistence.sh \
+        /usr/local/bin/configure-webui-authentication.sh \
         /usr/local/bin/configure-metrics.sh && \
     chmod u+x \
         /usr/local/bin/entrypoint.sh \
         /usr/local/bin/configure-persistence.sh \
+        /usr/local/bin/configure-webui-authentication.sh \
         /usr/local/bin/configure-metrics.sh
 
 VOLUME /var/lib/cassandra-reaper
+VOLUME /etc/cassandra-reaper/shiro
 
 ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
 
