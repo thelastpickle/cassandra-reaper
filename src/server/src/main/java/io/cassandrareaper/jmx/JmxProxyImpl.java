@@ -71,6 +71,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.net.HostAndPort;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
 import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.compaction.CompactionManagerMBean;
@@ -173,20 +174,16 @@ final class JmxProxyImpl implements JmxProxy {
       throw new ReaperException("Null host given to JmxProxy.connect()");
     }
 
-    String[] parts = host.split(":");
-    if (parts.length == 2) {
-      return connect(
-          parts[0],
-          Integer.valueOf(parts[1]),
+    final HostAndPort hostAndPort = HostAndPort.fromString(host);
+
+    return connect(
+          hostAndPort.getHostText(),
+          hostAndPort.getPortOrDefault(JMX_PORT),
           username,
           password,
           addressTranslator,
           connectionTimeout,
           metricRegistry);
-    } else {
-      return connect(
-          host, JMX_PORT, username, password, addressTranslator, connectionTimeout, metricRegistry);
-    }
   }
 
   /**
@@ -225,7 +222,7 @@ final class JmxProxyImpl implements JmxProxy {
 
     try {
       LOG.debug("Connecting to {}...", host);
-      jmxUrl = new JMXServiceURL(String.format(JMX_URL, host, port));
+      jmxUrl = getJmxServiceUrl(host, port);
       ssMbeanName = new ObjectName(SS_OBJECT_NAME);
       cmMbeanName = new ObjectName(CompactionManager.MBEAN_OBJECT_NAME);
       fdMbeanName = new ObjectName(FailureDetector.MBEAN_NAME);
@@ -295,6 +292,17 @@ final class JmxProxyImpl implements JmxProxy {
 
     Future<JMXConnector> future = EXECUTOR.submit(() -> JMXConnectorFactory.connect(url, env));
     return future.get(timeout, unit);
+  }
+
+  private static boolean isNumericIPv6Address(String address) {
+    // address contains colon if and only if it's a numeric IPv6 address
+    return (address.indexOf(':') >= 0);
+  }
+
+  private static JMXServiceURL getJmxServiceUrl(String host, int port)
+          throws MalformedURLException {
+    String effectiveHost = isNumericIPv6Address(host) ? "[" + host + "]" : host;
+    return new JMXServiceURL(String.format(JMX_URL, effectiveHost, port));
   }
 
   @Override
