@@ -9,18 +9,6 @@ parent = "download"
 
 [Docker](https://docs.docker.com/engine/installation/) and [Docker Compose](https://docs.docker.com/compose/install/) will need to be installed in order to use the commands in this section.
 
-## Building Reaper Packages with Docker
-
-Building Reaper packages requires quite a few dependencies, especially when making changes to the web interface code. In an effort to simplify the build process, Dockerfiles have been created that implement the build actions required to package Reaper.
-
-To build the JAR and other packages which are then placed in the _src/packages_ directory run the following commands:
-
-```bash
-cd src/packaging/docker-build
-docker-compose build
-docker-compose run build
-```
-
 ## Building Reaper Docker Image
 
 ### Prerequisite
