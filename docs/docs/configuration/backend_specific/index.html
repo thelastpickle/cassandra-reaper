@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.26" />
+  <meta name="generator" content="Hugo 0.32.4" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -333,6 +333,7 @@ Note that Cassandra backend configuration relies on the <a href="https://github.
 <pre><code class="language-yaml">cassandra:
   clusterName: &quot;test&quot;
   contactPoints: [&quot;127.0.0.1&quot;]
+  port: 9042
   keyspace: reaper_db
   loadBalancingPolicy:
     type: tokenAware
@@ -364,6 +365,14 @@ Note that Cassandra backend configuration relies on the <a href="https://github.
 
 <pre><code class="language-yaml">[&quot;127.0.0.1&quot;, &quot;127.0.0.2&quot;, &quot;127.0.0.3&quot;]
 </code></pre>
+
+<h4 id="port"><code>port</code></h4>
+
+<p>Type: <em>Integer</em></p>
+
+<p>Default: <em>9042</em></p>
+
+<p>Cassandra&rsquo;s native port to connect to.</p>
 
 <h4 id="keyspace"><code>keyspace</code></h4>
 

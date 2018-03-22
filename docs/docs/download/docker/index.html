@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.26" />
+  <meta name="generator" content="Hugo 0.32.4" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -308,17 +308,6 @@
 <h1 id="docker">Docker</h1>
 
 <p><a href="https://docs.docker.com/engine/installation/">Docker</a> and <a href="https://docs.docker.com/compose/install/">Docker Compose</a> will need to be installed in order to use the commands in this section.</p>
-
-<h2 id="building-reaper-packages-with-docker">Building Reaper Packages with Docker</h2>
-
-<p>Building Reaper packages requires quite a few dependencies, especially when making changes to the web interface code. In an effort to simplify the build process, Dockerfiles have been created that implement the build actions required to package Reaper.</p>
-
-<p>To build the JAR and other packages which are then placed in the <em>src/packages</em> directory run the following commands:</p>
-
-<pre><code class="language-bash">cd src/packaging/docker-build
-docker-compose build
-docker-compose run build
-</code></pre>
 
 <h2 id="building-reaper-docker-image">Building Reaper Docker Image</h2>
 
