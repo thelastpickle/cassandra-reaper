@@ -10,6 +10,7 @@ activateQueryLogger: ${REAPER_CASS_ACTIVATE_QUERY_LOGGER}
 cassandra:
   clusterName: ${REAPER_CASS_CLUSTER_NAME}
   contactPoints: ${REAPER_CASS_CONTACT_POINTS}
+  port: ${REAPER_CASS_PORT}
   keyspace: ${REAPER_CASS_KEYSPACE}
   loadBalancingPolicy:
     type: tokenAware

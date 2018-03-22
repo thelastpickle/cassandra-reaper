@@ -16,22 +16,38 @@ package io.cassandrareaper.resources;
 
 import io.cassandrareaper.AppContext;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Provides an endpoint to check the health of the running Reaper instance.
  */
 public final class ReaperHealthCheck extends com.codahale.metrics.health.HealthCheck {
 
+  private static final long HEALTH_CHECK_INTERVAL
+      = TimeUnit.SECONDS.toMillis(Long.getLong("ReaperHealthCheck.interval.seconds", 5));
+
   private final AppContext context;
+  private volatile long nextCheck = 0;
+  private volatile Result lastResult;
 
   public ReaperHealthCheck(AppContext context) {
     this.context = context;
   }
 
   @Override
-  protected Result check() throws Exception {
-    // Should check some other pre-conditions here for a healthy Reaper instance?
+  protected Result check() {
     if (context.storage.isStorageConnected()) {
-      return Result.healthy();
+      if (System.currentTimeMillis() > nextCheck) {
+        nextCheck = System.currentTimeMillis() + HEALTH_CHECK_INTERVAL;
+        try {
+          context.storage.getClusters();
+          context.storage.getAllRepairSchedules();
+          lastResult = Result.healthy();
+        } catch (RuntimeException ex) {
+          lastResult = Result.unhealthy(ex);
+        }
+      }
+      return lastResult;
     }
     return Result.unhealthy("storage not connected");
   }

@@ -34,6 +34,7 @@ Settings to configure Reaper to use Cassandra for storage of its control data. R
 cassandra:
   clusterName: "test"
   contactPoints: ["127.0.0.1"]
+  port: 9042
   keyspace: reaper_db
   loadBalancingPolicy:
     type: tokenAware
@@ -68,6 +69,14 @@ Seed nodes in the Cassandra cluster to contact.
 ```yaml
 ["127.0.0.1", "127.0.0.2", "127.0.0.3"]
 ```
+
+#### `port`
+
+Type: *Integer*
+
+Default: *9042*
+
+Cassandra's native port to connect to.
 
 #### `keyspace`
 

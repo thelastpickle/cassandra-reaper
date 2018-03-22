@@ -215,7 +215,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     environment.healthChecks().register("reaper", healthCheck);
 
     LOG.info("creating resources and registering endpoints");
-    final PingResource pingResource = new PingResource();
+    final PingResource pingResource = new PingResource(healthCheck);
     environment.jersey().register(pingResource);
 
     final ClusterResource addClusterResource = new ClusterResource(context);

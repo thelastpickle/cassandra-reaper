@@ -21,6 +21,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import com.codahale.metrics.health.HealthCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,17 +29,29 @@ import org.slf4j.LoggerFactory;
 @Produces(MediaType.TEXT_PLAIN)
 public final class PingResource {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ClusterResource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PingResource.class);
+
+  private final HealthCheck healthCheck;
+
+  public PingResource(HealthCheck healthCheck) {
+    this.healthCheck = healthCheck;
+  }
 
   @HEAD
   public Response headPing() {
     LOG.debug("ping called");
-    return Response.noContent().build();
+
+    return healthCheck.execute().isHealthy()
+        ? Response.noContent().build()
+        : Response.serverError().build();
   }
 
   @GET
   public Response getPing() {
     LOG.debug("ping called");
-    return Response.noContent().build();
+
+    return healthCheck.execute().isHealthy()
+        ? Response.noContent().build()
+        : Response.serverError().build();
   }
 }
