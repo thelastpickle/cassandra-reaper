@@ -64,6 +64,7 @@ import javax.validation.constraints.NotNull;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+import com.datastax.driver.core.VersionNumber;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.google.common.base.Optional;
 import com.google.common.collect.BiMap;
@@ -621,11 +622,8 @@ final class JmxProxyImpl implements JmxProxy {
     checkNotNull(ssProxy, "Looks like the proxy is not connected");
     String cassandraVersion = getCassandraVersion();
     boolean canUseDatacenterAware = false;
-    try {
-      canUseDatacenterAware = versionCompare(cassandraVersion, "2.0.12") >= 0;
-    } catch (ReaperException e) {
-      LOG.warn("failed on version comparison, not using dc aware repairs by default", e);
-    }
+    canUseDatacenterAware = versionCompare(cassandraVersion, "2.0.12") >= 0;
+
     String msg = String.format(
         "Triggering repair of range (%s,%s] for keyspace \"%s\" on "
         + "host %s, with repair parallelism %s, in cluster with Cassandra "
@@ -945,61 +943,20 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   /**
-   * NOTICE: This code is loosely based on StackOverflow answer:
-   * http://stackoverflow.com/questions/6701948/efficient-way-to-compare-version-strings-in-java
-   *
-   * <p>
-   * Compares two version strings.
-   *
-   * <p>
-   * Use this instead of String.compareTo() for a non-lexicographical comparison that works for version strings. e.g.
-   * "1.10".compareTo("1.6").
+   * Compares two Cassandra versions using classes provided by the Datastax Java Driver.
    *
    * @param str1 a string of ordinal numbers separated by decimal points.
    * @param str2 a string of ordinal numbers separated by decimal points.
-   * @return The result is a negative integer if str1 is _numerically_ less than str2. The result is a positive integer
-   *      if str1 is _numerically_ greater than str2. The result is zero if the strings are _numerically_ equal. It does
-   *      not work if "1.10" is supposed to be equal to "1.10.0".
+   * @return The result is a negative integer if str1 is _numerically_ less than str2. The result is
+   *     a positive integer if str1 is _numerically_ greater than str2. The result is zero if the
+   *     strings are _numerically_ equal. It does not work if "1.10" is supposed to be equal to
+   *     "1.10.0".
    */
-  static Integer versionCompare(String str1, String str2) throws ReaperException {
-    try {
-      String cleanedUpStr1 = str1.split(" ")[0].replaceAll("[-_~]", ".");
-      String cleanedUpStr2 = str2.split(" ")[0].replaceAll("[-_~]", ".");
-      String[] parts1 = cleanedUpStr1.split("\\.");
-      String[] parts2 = cleanedUpStr2.split("\\.");
-      int idx = 0;
-      // set index to first non-equal ordinal or length of shortest version string
-      while (idx < parts1.length && idx < parts2.length) {
-        try {
-          Integer.parseInt(parts1[idx]);
-          Integer.parseInt(parts2[idx]);
-        } catch (NumberFormatException ex) {
-          if (idx == 0) {
-            throw ex; // just comparing two non-version strings should fail
-          }
-          // first non integer part, so let's just stop comparison here and ignore the res
-          idx--;
-          break;
-        }
-        if (parts1[idx].equals(parts2[idx])) {
-          idx++;
-          continue;
-        }
-        break;
-      }
-      // compare first non-equal ordinal number
-      if (idx < parts1.length && idx < parts2.length) {
-        int diff = Integer.valueOf(parts1[idx]).compareTo(Integer.valueOf(parts2[idx]));
-        return Integer.signum(diff);
-      } else {
-        // the strings are equal or one string is a substring of the other
-        // e.g. "1.2.3" = "1.2.3" or "1.2.3" < "1.2.3.4"
-        return Integer.signum(parts1.length - parts2.length);
-      }
-    } catch (RuntimeException ex) {
-      LOG.error("failed comparing strings for versions: '{}' '{}'", str1, str2);
-      throw new ReaperException(ex);
-    }
+  static Integer versionCompare(String str1, String str2) {
+    VersionNumber version1 = VersionNumber.parse(str1);
+    VersionNumber version2 = VersionNumber.parse(str2);
+
+    return version1.compareTo(version2);
   }
 
   @Override
@@ -1098,8 +1055,16 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   @Override
-  public List<Snapshot> listSnapshots() {
+  public List<Snapshot> listSnapshots() throws UnsupportedOperationException {
     List<Snapshot> snapshots = Lists.newArrayList();
+
+    String cassandraVersion = getCassandraVersion();
+    if (versionCompare(cassandraVersion, "2.1.0") < 0) {
+      // 2.0 and prior do not allow to list snapshots
+      throw new UnsupportedOperationException(
+          "Snapshot listing is not supported in Cassandra 2.0 and prior.");
+    }
+
     final Map<String, TabularData> snapshotDetails =
         ((StorageServiceMBean) ssProxy).getSnapshotDetails();
     if (snapshotDetails.isEmpty()) {

@@ -169,8 +169,11 @@ public final class SnapshotManager {
           .stream()
           .map(snapshot -> enrichSnapshotWithMetadata(snapshot))
           .collect(Collectors.toList());
+    } catch (UnsupportedOperationException e1) {
+      LOG.debug("Listing snapshot is unsupported with Cassandra 2.0 and prior");
+      throw e1;
     } catch (RuntimeException | InterruptedException e) {
-      LOG.error("Failed taking snapshot for host {}", host, e);
+      LOG.error("Failed listing snapshots for host {}", host, e);
       throw new ReaperException(e);
     }
   }
@@ -217,8 +220,13 @@ public final class SnapshotManager {
       }
 
       return snapshotsByNameAndHost;
+    } catch (UnsupportedOperationException e1) {
+      throw e1;
     } catch (RuntimeException | InterruptedException | ExecutionException e) {
-      LOG.error("Failed taking snapshot for cluster {}", clusterName, e);
+      if (e.getCause() instanceof UnsupportedOperationException) {
+        throw new UnsupportedOperationException(e.getCause());
+      }
+      LOG.error("Failed Listing snapshot for cluster {}", clusterName, e);
       throw new ReaperException(e);
     }
   }

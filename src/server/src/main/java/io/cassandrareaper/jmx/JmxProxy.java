@@ -138,7 +138,7 @@ public interface JmxProxy extends NotificationListener {
 
   void removeRepairStatusHandler(int commandId);
 
-  List<Snapshot> listSnapshots();
+  List<Snapshot> listSnapshots() throws UnsupportedOperationException;
 
   String takeSnapshot(String snapshotName, String... keyspaceNames) throws ReaperException;
 
