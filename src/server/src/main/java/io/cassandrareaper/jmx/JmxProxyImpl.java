@@ -48,7 +48,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.InstanceNotFoundException;
@@ -62,6 +61,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.Notification;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
+import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
@@ -88,12 +88,15 @@ import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.repair.messages.RepairOption;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.service.StorageServiceMBean;
+import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toList;
 
 final class JmxProxyImpl implements JmxProxy {
 
@@ -101,6 +104,7 @@ final class JmxProxyImpl implements JmxProxy {
 
   private static final int JMX_PORT = 7199;
   private static final String SS_OBJECT_NAME = "org.apache.cassandra.db:type=StorageService";
+  private static final String SM_OBJECT_NAME = "org.apache.cassandra.net:type=StreamManager";
   private static final String AES_OBJECT_NAME = "org.apache.cassandra.internal:type=AntiEntropySessions";
   private static final String VALIDATION_ACTIVE_OBJECT_NAME
       = "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,name=ActiveTasks";
@@ -122,6 +126,7 @@ final class JmxProxyImpl implements JmxProxy {
 
   private final JMXConnector jmxConnector;
   private final ObjectName ssMbeanName;
+  private final ObjectName smMbeanName;
   private final MBeanServerConnection mbeanServer;
   private final EndpointSnitchInfoMBean endpointSnitchMbean;
   private final Object ssProxy;
@@ -133,6 +138,7 @@ final class JmxProxyImpl implements JmxProxy {
   private final ConcurrentMap<Integer, ExecutorService> repairStatusExecutors = Maps.newConcurrentMap();
   private final ConcurrentMap<Integer, RepairStatusHandler> repairStatusHandlers = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
+  private final Object smProxy;
 
   private JmxProxyImpl(
       String host,
@@ -144,7 +150,9 @@ final class JmxProxyImpl implements JmxProxy {
       MBeanServerConnection mbeanServer,
       EndpointSnitchInfoMBean endpointSnitchMbean,
       FailureDetectorMBean fdProxy,
-      MetricRegistry metricRegistry) {
+      MetricRegistry metricRegistry,
+      ObjectName smMbeanName,
+      Object smProxy) {
 
     this.host = host;
     this.hostBeforeTranslation = hostBeforeTranslation;
@@ -157,6 +165,8 @@ final class JmxProxyImpl implements JmxProxy {
     this.clusterName = Cluster.toSymbolicName(((StorageServiceMBean) ssProxy).getClusterName());
     this.fdProxy = fdProxy;
     this.metricRegistry = metricRegistry;
+    this.smMbeanName = smMbeanName;
+    this.smProxy = smProxy;
     registerConnectionsGauge();
   }
 
@@ -212,6 +222,7 @@ final class JmxProxyImpl implements JmxProxy {
 
     ObjectName ssMbeanName;
     ObjectName fdMbeanName;
+    ObjectName smMbeanName;
     ObjectName endpointSnitchMbeanName;
     JMXServiceURL jmxUrl;
     String host = originalHost;
@@ -226,6 +237,7 @@ final class JmxProxyImpl implements JmxProxy {
       jmxUrl = JmxAddresses.getJmxServiceUrl(host, port);
       ssMbeanName = new ObjectName(SS_OBJECT_NAME);
       fdMbeanName = new ObjectName(FailureDetector.MBEAN_NAME);
+      smMbeanName = new ObjectName(SM_OBJECT_NAME);
       endpointSnitchMbeanName = new ObjectName("org.apache.cassandra.db:type=EndpointSnitchInfo");
     } catch (MalformedURLException | MalformedObjectNameException e) {
       LOG.error(String.format("Failed to prepare the JMX connection to %s:%s", host, port));
@@ -245,6 +257,7 @@ final class JmxProxyImpl implements JmxProxy {
       if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")) {
         ssProxy = JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean20.class);
       }
+      Object smProxy = JMX.newMBeanProxy(mbeanServerConn, smMbeanName, StreamManagerMBean.class);
 
       FailureDetectorMBean fdProxy = JMX.newMBeanProxy(mbeanServerConn, fdMbeanName, FailureDetectorMBean.class);
 
@@ -262,11 +275,14 @@ final class JmxProxyImpl implements JmxProxy {
               mbeanServerConn,
               endpointSnitchProxy,
               fdProxy,
-              metricRegistry);
+              metricRegistry,
+              smMbeanName,
+              smProxy);
 
       // registering a listener throws bunch of exceptions, so we do it here rather than in the
       // constructor
       mbeanServerConn.addNotificationListener(ssMbeanName, proxy, null, null);
+      mbeanServerConn.addNotificationListener(smMbeanName, proxy, null, null);
       LOG.debug("JMX connection to {} properly connected: {}", host, jmxUrl.toString());
 
       return proxy;
@@ -588,7 +604,7 @@ final class JmxProxyImpl implements JmxProxy {
               .collect(
                   Collectors.groupingBy(
                       JmxColumnFamily::getKeyspace,
-                      Collectors.mapping(JmxColumnFamily::getColumnFamily, Collectors.toList())));
+                      Collectors.mapping(JmxColumnFamily::getColumnFamily, toList())));
 
     } catch (MalformedObjectNameException | IOException e) {
       LOG.warn("Couldn't get a list of tables through JMX", e);
@@ -813,10 +829,15 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   /**
-   * Invoked when the MBean this class listens to publishes an event. We're only interested in repair-related events.
-   * Their format is explained at {@link org.apache.cassandra.service.StorageServiceMBean#forceRepairAsync} The forma
-   * is: notification type: "repair" notification userData: int array of length 2 where [0] = command number [1] =
-   * ordinal of AntiEntropyService.Status
+   * Invoked when the MBean this class listens to publishes an event.
+   *
+   * <p>We're interested in repair-related events. Their format is explained at
+   * {@link org.apache.cassandra.service.StorageServiceMBean#forceRepairAsync}. The format is:
+   *    notification type: "repair"
+   *    notification userData: int array of length 2 where
+   *      [0] = command number
+   *      [1] = ordinal of AntiEntropyService.Status
+   *
    */
   @Override
   public void handleNotification(final Notification notification, Object handback) {
@@ -922,6 +943,7 @@ final class JmxProxyImpl implements JmxProxy {
   public void close() {
     try {
       mbeanServer.removeNotificationListener(ssMbeanName, this);
+      mbeanServer.removeNotificationListener(smMbeanName, this);
       LOG.debug("Successfully removed notification listener for '{}': {}", host, jmxUrl);
     } catch (InstanceNotFoundException | ListenerNotFoundException | IOException e) {
       LOG.debug("failed on removing notification listener", e);
@@ -1239,4 +1261,11 @@ final class JmxProxyImpl implements JmxProxy {
 
     return attributeList;
   }
+
+  @Override
+  public Set<CompositeData> listStreams() {
+    checkNotNull(smProxy, "Looks like the proxy is not connected");
+    return ((StreamManagerMBean) smProxy).getCurrentStreams();
+  }
+
 }

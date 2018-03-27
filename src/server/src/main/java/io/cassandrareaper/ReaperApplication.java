@@ -33,6 +33,7 @@ import io.cassandrareaper.service.PurgeManager;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
 import io.cassandrareaper.service.SnapshotManager;
+import io.cassandrareaper.service.StreamManager;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
@@ -161,6 +162,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         environment.lifecycle().executorService("SnapshotManager").minThreads(5).maxThreads(5).build());
 
     context.metricsGrabber = MetricsGrabber.create(context);
+    context.streamManager = StreamManager.create(context);
 
     int repairThreads = config.getRepairRunThreadCount();
     LOG.info("initializing runner thread pool with {} threads", repairThreads);
