@@ -144,4 +144,14 @@ public interface JmxProxy extends NotificationListener {
 
   void takeColumnFamilySnapshot(String keyspaceName, String columnFamilyName, String snapshotName)
       throws ReaperException;
+
+  /**
+   * Register a listener for streaming notifications.
+   *
+   * <p>This listener is meant to live throughout the lifetime of JmxProxy connection.
+   *
+   * @param streamStatusHandler implementation of the stream notification handler.
+   */
+  void addStreamStatusHandler(StreamStatusHandler streamStatusHandler);
+
 }

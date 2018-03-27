@@ -21,6 +21,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
+import io.cassandrareaper.service.StreamManager;
 import io.cassandrareaper.service.TestRepairConfiguration;
 import io.cassandrareaper.storage.MemoryStorage;
 
@@ -199,6 +200,7 @@ public final class ClusterResourceTest {
     AppContext context = new AppContext();
     context.storage = new MemoryStorage();
     context.config = TestRepairConfiguration.defaultConfig();
+    context.streamManager = StreamManager.create(context);
 
     UriInfo uriInfo = mock(UriInfo.class);
     when(uriInfo.getAbsolutePath()).thenReturn(SAMPLE_URI);

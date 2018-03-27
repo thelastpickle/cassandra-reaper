@@ -192,6 +192,8 @@ public final class ClusterResource {
       LOG.info("creating new cluster based on given seed host: {}", newCluster.getName());
       context.storage.addCluster(newCluster);
 
+      context.streamManager.addListeners(newCluster);
+
       if (context.config.hasAutoSchedulingEnabled()) {
         try {
           clusterRepairScheduler.scheduleRepairs(newCluster);

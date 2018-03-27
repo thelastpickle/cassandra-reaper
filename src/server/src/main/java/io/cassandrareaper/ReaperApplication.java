@@ -23,12 +23,14 @@ import io.cassandrareaper.resources.ReaperHealthCheck;
 import io.cassandrareaper.resources.RepairRunResource;
 import io.cassandrareaper.resources.RepairScheduleResource;
 import io.cassandrareaper.resources.SnapshotResource;
+import io.cassandrareaper.resources.StreamResource;
 import io.cassandrareaper.resources.auth.LoginResource;
 import io.cassandrareaper.resources.auth.ShiroExceptionMapper;
 import io.cassandrareaper.service.AutoSchedulingManager;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
 import io.cassandrareaper.service.SnapshotManager;
+import io.cassandrareaper.service.StreamManager;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
@@ -154,6 +156,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         .addMapping("/prometheusMetrics");
 
     context.snapshotManager = SnapshotManager.create(context);
+    context.streamManager = StreamManager.create(context);
 
     LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
     context.repairManager = RepairManager.create(context);
@@ -229,6 +232,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     final SnapshotResource snapshotResource = new SnapshotResource(context);
     environment.jersey().register(snapshotResource);
+
+    final StreamResource streamResource = new StreamResource(context);
+    environment.jersey().register(streamResource);
 
     if (config.isAccessControlEnabled()) {
       SessionHandler sessionHandler = new SessionHandler();
