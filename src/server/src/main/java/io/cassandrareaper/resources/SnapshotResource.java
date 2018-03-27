@@ -167,6 +167,8 @@ public final class SnapshotResource {
     try {
       snapshots = context.snapshotManager.listSnapshotsClusterWide(clusterName);
       return Response.ok().entity(snapshots).build();
+    } catch (UnsupportedOperationException e) {
+      return Response.status(Status.NOT_IMPLEMENTED).entity(e.getMessage()).build();
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
       return Response.status(500).entity(e.getMessage()).build();

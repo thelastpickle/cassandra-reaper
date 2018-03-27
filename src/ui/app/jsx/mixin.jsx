@@ -125,3 +125,12 @@ export const toast = function(notificationSystem, message, type, uid) {
     autoDismiss: 3
   });
 }
+
+export const toastPermanent = function(notificationSystem, message, type, uid) {
+  event.preventDefault();
+  notificationSystem.addNotification({
+    message: message,
+    level: type,
+    autoDismiss: 0
+  });
+}

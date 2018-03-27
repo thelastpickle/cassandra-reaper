@@ -5,10 +5,11 @@ import Sidebar from "jsx/sidebar";
 import SnapshotForm from "jsx/snapshot-form";
 import SnapshotList from "jsx/snapshot-list";
 import NavBar from "jsx/navbar";
-import {CFsListRender, getUrlPrefix, humanFileSize, toast} from "jsx/mixin";
+import {CFsListRender, getUrlPrefix, humanFileSize, toastPermanent} from "jsx/mixin";
+var NotificationSystem = require('react-notification-system');
 
 const SnapshotScreen = React.createClass({
-
+  _notificationSystem: null,
   propTypes: {
     clusterNames: React.PropTypes.object.isRequired,
     currentCluster: React.PropTypes.string.isRequired    
@@ -36,6 +37,7 @@ const SnapshotScreen = React.createClass({
     if(this.state.currentCluster!='all'){
         this._listSnapshots(this.state.currentCluster);
     }
+    this._notificationSystem = this.refs.notificationSystem;
   },
 
   changeCurrentCluster : function(clusterName){
@@ -92,6 +94,9 @@ const SnapshotScreen = React.createClass({
           },
           complete: function(data) {
             this.component.setState({communicating: false});
+          },
+          error: function(data) {
+            toastPermanent(this.component._notificationSystem, "Error : " + data.responseText, "error", this.component.state.currentCluster);
           }
       });
   },
@@ -143,7 +148,8 @@ const SnapshotScreen = React.createClass({
 
     return (
         <div>
-            <!-- Navigation -->
+        <!-- Navigation -->
+        <NotificationSystem ref="notificationSystem" />
         <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
             <NavBar></NavBar>
             <!-- /.navbar-header -->
