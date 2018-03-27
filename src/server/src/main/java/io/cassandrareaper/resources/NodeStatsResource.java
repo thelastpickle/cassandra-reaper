@@ -17,7 +17,9 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.core.StreamSession;
 
+import java.util.List;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -104,4 +106,25 @@ public final class NodeStatsResource {
       return Response.serverError().entity(e.getMessage()).build();
     }
   }
+
+  /**
+   * Endpoint used to collect streams currently happening on a node.
+   *
+   * @return a list of {@link StreamSession} if ok, or a status code 500 in case of errors.
+   */
+  @GET
+  @Path("/streams/{clusterName}/{host}")
+  public Response getStreams(@PathParam("clusterName") String clusterName,
+                             @PathParam("host") String host
+  ) {
+    try {
+      Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
+      List<StreamSession> streams = context.streamManager.listStreams(node);
+      return Response.ok().entity(streams).build();
+    } catch (ReaperException e) {
+      LOG.error(e.getMessage(), e);
+      return Response.status(500).entity(e.getMessage()).build();
+    }
+  }
+
 }
