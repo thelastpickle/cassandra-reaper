@@ -19,6 +19,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
@@ -42,6 +43,7 @@ import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,8 +54,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public final class SegmentRunnerTest {
@@ -541,6 +546,52 @@ public final class SegmentRunnerTest {
     when(unit.getKeyspaceName()).thenReturn("test");
 
     SegmentRunner.getTablesToRepair(coord, unit);
+  }
+
+  @Test
+  public void getNodeMetricsInLocalDCAvailabilityForRemoteDCNodeTest() throws Exception {
+    final AppContext context = new AppContext();
+    context.storage = new MemoryStorage();
+    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(jmxConnectionFactory.connect(any(), anyInt())).thenReturn(mock(JmxProxy.class));
+    context.jmxConnectionFactory = jmxConnectionFactory;
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
+    SegmentRunner segmentRunner = new SegmentRunner(context,UUID.randomUUID(), Collections.emptyList(),
+            1000, 1.1,RepairParallelism.DATACENTER_AWARE,
+            "test", mock(RepairUnit.class), mock(RepairRunner.class));
+
+    Pair<String, Optional<NodeMetrics>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc2").call();
+    assertFalse(result.getRight().isPresent());
+    verify(jmxConnectionFactory, times(0)).connect(any(), anyInt());
+  }
+
+  @Test
+  public void getNodeMetricsInLocalDCAvailabilityForLocalDCNodeTest() throws Exception {
+    final AppContext context = new AppContext();
+    context.storage = new MemoryStorage();
+
+    JmxProxy proxy = mock(JmxProxy.class);
+    when(proxy.getClusterName()).thenReturn("test");
+    when(proxy.getPendingCompactions()).thenReturn(3);
+    when(proxy.isRepairRunning()).thenReturn(true);
+
+    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(jmxConnectionFactory.connect(any(), anyInt())).thenReturn(proxy);
+    context.jmxConnectionFactory = jmxConnectionFactory;
+
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
+
+    SegmentRunner segmentRunner = new SegmentRunner(context,UUID.randomUUID(), Collections.emptyList(),
+          1000, 1.1,RepairParallelism.DATACENTER_AWARE,
+          "test", mock(RepairUnit.class), mock(RepairRunner.class));
+    Pair<String, Optional<NodeMetrics>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc1").call();
+    assertTrue(result.getRight().isPresent());
+    NodeMetrics metrics = result.getRight().get();
+    assertEquals("test", metrics.getCluster());
+    assertEquals(3, metrics.getPendingCompactions());
+    assertTrue(metrics.hasRepairRunning());
   }
 
 }
