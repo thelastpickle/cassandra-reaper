@@ -122,6 +122,8 @@ services:
     ports:
       - "8080:8080"
       - "8081:8081"
+    volumes:
+      - ./data/reaper:/var/log/cassandra-reaper
 
   reaper:
     extends:

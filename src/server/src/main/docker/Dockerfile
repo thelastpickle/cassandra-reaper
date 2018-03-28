@@ -27,7 +27,10 @@ ENV REAPER_SEGMENT_COUNT=200 \
     REAPER_JMX_AUTH_PASSWORD="" \
     REAPER_LOGGING_ROOT_LEVEL=INFO \
     REAPER_LOGGING_LOGGERS="{}" \
-    REAPER_LOGGING_APPENDERS_LOG_FORMAT='"%-6level [%d] [%t] %logger{5} - %msg %n"' \
+    REAPER_LOGGING_APPENDERS_CONSOLE_LOG_FORMAT='"%-6level [%d] [%t] %logger{5} - %msg %n"' \
+    REAPER_LOGGING_APPENDERS_CONSOLE_THRESHOLD=WARN \
+    REAPER_LOGGING_APPENDERS_FILE_LOG_FORMAT='"%-6level [%t] %logger{5} - %msg %n"' \
+    REAPER_LOGGING_APPENDERS_FILE_ARCHIVED_FILE_COUNT=99 \
     REAPER_SERVER_APP_PORT=8080 \
     REAPER_SERVER_APP_BIND_HOST="0.0.0.0" \
     REAPER_SERVER_ADMIN_PORT=8081 \
@@ -66,10 +69,12 @@ RUN addgroup -S reaper && \
     apk add --no-cache 'su-exec>=0.2' && \
     mkdir -p /var/lib/cassandra-reaper && \
     mkdir -p /etc/cassandra-reaper/shiro && \
+    mkdir -p /var/log/cassandra-reaper && \
     chown reaper:reaper \
         /etc/cassandra-reaper.yml \
         /etc/shiro.ini \
         /var/lib/cassandra-reaper \
+        /var/log/cassandra-reaper \
         /usr/local/bin/entrypoint.sh \
         /usr/local/bin/configure-persistence.sh \
         /usr/local/bin/configure-webui-authentication.sh \

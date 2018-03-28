@@ -225,6 +225,12 @@ Settings to configure Reaper logging.
       appenders:
         - type: console
           logFormat: "%-6level [%d] [%t] %logger{5} - %msg %n"
+          threshold: WARN
+        - type: file
+          logFormat: "%-6level [%t] %logger{5} - %msg %n"
+          currentLogFilename: /var/log/cassandra-reaper/reaper.log
+          archivedLogFilenamePattern: /var/log/cassandra-reaper/reaper-%d.log.gz
+          archivedFileCount: 99
 
 Definitions for some of the above sub-settings are as follows.
 
@@ -232,7 +238,7 @@ Definitions for some of the above sub-settings are as follows.
 
 Type: *String*
 
-The log level to filter to. Where the level order is **ALL** < **DEBUG** < **INFO** < **WARN** < **ERROR** < **FATAL** < **OFF**. See the [log4j](https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/Level.html) documentation for further information.
+Global log level to filter to. Where the level order is **ALL** < **DEBUG** < **INFO** < **WARN** < **ERROR** < **FATAL** < **OFF**. See the [log4j](https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/Level.html) documentation for further information.
 
 #### `loggers`
 
@@ -245,6 +251,18 @@ Key value pair containing the logger class name as the key and other sub-setting
 Type: *String*
 
 The output format of an entry in the log.
+
+#### `threshold`
+
+Type: *String*
+
+The log level to filter the console messages to. Where the level order is **ALL** < **DEBUG** < **INFO** < **WARN** < **ERROR** < **FATAL** < **OFF**. See the [log4j](https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/Level.html) documentation for further information.
+
+#### `archivedFileCount`
+
+Type: *Integer*
+
+The number of archive log files stored in the log rotation sliding window. That is the number of archived (compressed) log files kept at one point in time. If there are `archivedFileCount` number of archived log files and the current (uncompressed) log file is archived, the oldest archived log file is deleted.
 
 <br/>
 
