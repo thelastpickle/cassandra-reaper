@@ -582,36 +582,32 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   Callable<Pair<String, Optional<NodeMetrics>>> getNodeMetrics(String node, String localDc, String nodeDc) {
 
     return () -> {
-      try {
-        JmxProxy nodeProxy =
-            context.jmxConnectionFactory.connect(
-                Node.builder().withClusterName(clusterName).withHostname(node).build(),
-                context.config.getJmxConnectionTimeoutInSeconds());
+      LOG.debug("getMetricsForHost {} / {} / {}", node, localDc, nodeDc);
 
-        NodeMetrics metrics =
-            NodeMetrics.builder()
-                .withNode(node)
-                .withDatacenter(nodeDc)
-                .withCluster(nodeProxy.getClusterName())
-                .withPendingCompactions(nodeProxy.getPendingCompactions())
-                .withHasRepairRunning(nodeProxy.isRepairRunning())
-                .withActiveAnticompactions(0) // for future use
-                .build();
+      if (DatacenterAvailability.ALL != context.config.getDatacenterAvailability() && !nodeDc.equals(localDc)) {
+        // If DatacenterAvailability is not ALL, we should assume jmx on remote dc is not reachable.
+        return Pair.of(node, getRemoteNodeMetrics(node, nodeDc));
+      } else {
+        try {
+          JmxProxy nodeProxy =
+                    context.jmxConnectionFactory.connect(
+                            Node.builder().withClusterName(clusterName).withHostname(node).build(),
+                            context.config.getJmxConnectionTimeoutInSeconds());
 
-        return Pair.of(node, Optional.of(metrics));
-      } catch (RuntimeException | ReaperException e) {
-        LOG.debug(
-            "failed to query metrics for host {}, trying to get metrics from storage...", node, e);
+          NodeMetrics metrics = NodeMetrics.builder()
+                  .withNode(node)
+                  .withDatacenter(nodeDc)
+                  .withCluster(nodeProxy.getClusterName())
+                  .withPendingCompactions(nodeProxy.getPendingCompactions())
+                  .withHasRepairRunning(nodeProxy.isRepairRunning())
+                  .withActiveAnticompactions(0) // for future use
+                  .build();
 
-        if (DatacenterAvailability.ALL != context.config.getDatacenterAvailability()
-            && !nodeDc.equals(localDc)) {
-          // We can get metrics for remote datacenters from storage
-          Optional<NodeMetrics> metrics = getRemoteNodeMetrics(node, nodeDc);
-          if (metrics.isPresent()) {
-            return Pair.of(node, metrics);
-          }
+          return Pair.of(node, Optional.of(metrics));
+        } catch (RuntimeException | ReaperException e) {
+          LOG.debug("failed to query metrics for host {}, trying to get metrics from storage...", node, e);
+          return Pair.of(node, getRemoteNodeMetrics(node, nodeDc));
         }
-        return Pair.of(node, Optional.absent());
       }
     };
   }
