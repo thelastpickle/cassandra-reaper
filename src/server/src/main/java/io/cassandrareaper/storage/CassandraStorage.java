@@ -57,6 +57,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.VersionNumber;
 import com.datastax.driver.core.WriteType;
 import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.policies.DefaultRetryPolicy;
@@ -157,6 +158,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       com.datastax.driver.core.Cluster cassandra,
       Session session,
       String keyspace) {
+
+    cassandra.getMetadata().getAllHosts().forEach((host) -> {
+      Preconditions.checkState(
+              0 >= VersionNumber.parse("2.1").compareTo(host.getCassandraVersion()),
+              "All Cassandra nodes in Reaper's backend storage must be running version 2.1+");
+    });
 
     // initialize/upgrade db schema
     Database database = new Database(cassandra, keyspace);
