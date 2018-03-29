@@ -12,7 +12,7 @@ jobs:
     working_directory: ~/repo
 
     environment:
-      CASSANDRA_VERSION: 3.11.0
+      CASSANDRA_VERSION: 3.11.2
 
     steps:
       - checkout
@@ -41,12 +41,20 @@ jobs:
       - run:
           name: Start ccm and run tests
           command: |
+              export LOCAL_JMX=no
+              mkdir /home/circleci/.local
+              cp src/ci/jmxremote.password /home/circleci/.local/jmxremote.password
+              chmod 400 /home/circleci/.local/jmxremote.password
+              cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+              sudo chmod 777 /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+              echo "cassandra     readwrite" >> /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+              cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
               ccm create test -v $CASSANDRA_VERSION
               ccm populate --vnodes -n 2:2
-              sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/circleci/.ccm/test/node1/conf/cassandra-env.sh
-              sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
-              sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
-              sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
+              sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node1/conf/cassandra-env.sh
+              sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
+              sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
+              sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
               sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node1/conf/cassandra-env.sh
               sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
               sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
@@ -82,7 +90,6 @@ jobs:
               ccm start -v
               ccm status
               ccm checklogerror
-              ccm node1 nodetool status
               MAVEN_OPTS="-Xmx1g" mvn clean install
               # TODO: parallelise the following
               mvn surefire:test -Dtest=ReaperIT
