@@ -10,6 +10,7 @@ storageType: memory
 incrementalRepair: false
 enableDynamicSeedList: false
 jmxConnectionTimeoutInSeconds: 300
+datacenterAvailability: LOCAL
 
 logging:
   level: DEBUG

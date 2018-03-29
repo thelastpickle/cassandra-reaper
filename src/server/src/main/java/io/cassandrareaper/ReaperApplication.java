@@ -14,6 +14,7 @@
 
 package io.cassandrareaper;
 
+import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxConnectionsInitializer;
@@ -252,6 +253,11 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     initializeJmxSeedsForAllClusters();
     LOG.info("resuming pending repair runs");
+
+    Preconditions.checkState(
+        context.storage instanceof IDistributedStorage
+            || DatacenterAvailability.EACH != context.config.getDatacenterAvailability(),
+        "Cassandra backend storage is the only one allowing EACH datacenter availability modes.");
 
     if (context.storage instanceof IDistributedStorage) {
       // Allowing multiple Reaper instances to work concurrently requires

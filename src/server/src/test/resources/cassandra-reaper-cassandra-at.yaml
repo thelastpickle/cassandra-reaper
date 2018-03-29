@@ -10,7 +10,7 @@ storageType: cassandra
 incrementalRepair: false
 jmxConnectionTimeoutInSeconds: 300
 activateQueryLogger: true
-datacenterAvailability: EACH
+datacenterAvailability: LOCAL
 
 logging:
   level: WARN

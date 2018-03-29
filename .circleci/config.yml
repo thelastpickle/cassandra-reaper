@@ -53,8 +53,6 @@ jobs:
               ccm populate --vnodes -n 2:2
               sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node1/conf/cassandra-env.sh
               sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
-              sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
-              sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
               sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node1/conf/cassandra-env.sh
               sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
               sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
@@ -92,12 +90,19 @@ jobs:
               ccm checklogerror
               MAVEN_OPTS="-Xmx1g" mvn clean install
               # TODO: parallelise the following
-              mvn surefire:test -Dtest=ReaperIT
-              mvn surefire:test -Dtest=ReaperH2IT
+              mvn surefire:test -Dtest=ReaperNoIncrementalIT
+              mvn surefire:test -Dtest=ReaperH2NoIncrementalIT
               #mvn surefire:test -Dtest=ReaperPostgresIT # TODO set up postgres
-              mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT
-              mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
-              mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+              mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT
+              mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+              mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+              sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
+              sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
+              ccm node3 stop
+              ccm node3 start
+              ccm node4 stop
+              ccm node4 start
+              mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
 
       - store_test_results:
           path: src/server/target/surefire-reports

@@ -9,6 +9,7 @@ hangingRepairTimeoutMins: 1
 storageType: postgres
 incrementalRepair: false
 jmxConnectionTimeoutInSeconds: 300
+datacenterAvailability: LOCAL
 
 logging:
   level: DEBUG
