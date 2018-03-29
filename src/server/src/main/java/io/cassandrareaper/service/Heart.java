@@ -115,12 +115,16 @@ final class Heart implements AutoCloseable {
                       .forEach(req -> {
 
                         LOG.info("Got metric request for node {} in {}", req.getNode(), req.getCluster());
-                        try (Timer.Context t1 = timer(context, req.getCluster(), req.getNode())) {
+                        try (Timer.Context t1 = timer(
+                            context,
+                            req.getCluster().replace('.', '-'),
+                            req.getNode().replace('.', '-'))) {
+
                           try {
                             JmxProxy nodeProxy
                                 = context.jmxConnectionFactory.connect(
                                    Node.builder().withClusterName(req.getCluster()).withHostname(req.getNode()).build(),
-                                  jmxTimeoutSeconds);
+                                   jmxTimeoutSeconds);
 
                             storage.storeNodeMetrics(
                                 runId,

@@ -172,7 +172,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   static void abort(AppContext context, RepairSegment segment, JmxProxy jmxConnection) {
     postpone(context, segment, context.storage.getRepairUnit(segment.getRepairUnitId()));
     LOG.info("Aborting repair on segment with id {} on coordinator {}", segment.getId(), segment.getCoordinatorHost());
-    String metric = MetricRegistry.name(SegmentRunner.class, "abort", segment.getCoordinatorHost());
+
+    String metric = MetricRegistry.name(
+        SegmentRunner.class,
+        "abort",
+        Optional.fromNullable(segment.getCoordinatorHost()).or("null").replace('.', '-'));
+
     context.metricRegistry.counter(metric).inc();
     jmxConnection.cancelAllRepairs();
   }

@@ -1075,18 +1075,25 @@ final class JmxProxyImpl implements JmxProxy {
 
   private void registerConnectionsGauge() {
     try {
-      if (!this.metricRegistry
+      if (!metricRegistry
           .getGauges()
           .containsKey(
               MetricRegistry.name(
-                  JmxProxyImpl.class, this.clusterName, this.host, "repairStatusHandlers"))) {
-        this.metricRegistry.register(
+                  JmxProxyImpl.class,
+                  clusterName.replace('.', '-'),
+                  host.replace('.', '-'),
+                  "repairStatusHandlers"))) {
+
+        metricRegistry.register(
             MetricRegistry.name(
-                JmxProxyImpl.class, this.clusterName, this.host, "repairStatusHandlers"),
-            (Gauge<Integer>) () -> this.repairStatusHandlers.size());
+                JmxProxyImpl.class,
+                clusterName.replace('.', '-'),
+                host.replace('.', '-'),
+                "repairStatusHandlers"),
+            (Gauge<Integer>) () -> repairStatusHandlers.size());
       }
     } catch (IllegalArgumentException e) {
-      LOG.warn("Cannot create connection gauge for node {}", this.host, e);
+      LOG.warn("Cannot create connection gauge for node {}", host, e);
     }
   }
 
