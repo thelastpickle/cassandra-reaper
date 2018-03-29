@@ -27,15 +27,16 @@ import org.slf4j.LoggerFactory;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
-    features = "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature"
+    features = "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature",
+    plugin = {"pretty"}
     )
-public final class ReaperIT {
+public class ReaperIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperIT.class);
   private static ReaperJettyTestSupport runnerInstance;
   private static final String MEMORY_CONFIG_FILE = "cassandra-reaper-at.yaml";
 
-  private ReaperIT() {}
+  protected ReaperIT() {}
 
   @BeforeClass
   public static void setUp() throws Exception {

@@ -39,9 +39,10 @@ import static org.awaitility.Awaitility.await;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
-    features = "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature"
+    features = "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature",
+    plugin = {"pretty"}
     )
-public final class ReaperCassandraIT {
+public class ReaperCassandraIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperCassandraIT.class);
   private static final List<ReaperTestJettyRunner> RUNNER_INSTANCES = new CopyOnWriteArrayList<>();
@@ -49,7 +50,7 @@ public final class ReaperCassandraIT {
   private static final Random RAND = new Random(System.nanoTime());
   private static Thread GRIM_REAPER;
 
-  private ReaperCassandraIT() {}
+  protected ReaperCassandraIT() {}
 
   @BeforeClass
   public static void setUp() throws Exception {

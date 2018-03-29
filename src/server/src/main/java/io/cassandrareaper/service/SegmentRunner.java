@@ -584,17 +584,20 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return () -> {
       LOG.debug("getMetricsForHost {} / {} / {}", node, localDc, nodeDc);
 
-      if (DatacenterAvailability.ALL != context.config.getDatacenterAvailability() && !nodeDc.equals(localDc)) {
+      if (DatacenterAvailability.ALL != context.config.getDatacenterAvailability()
+          && !nodeDc.equals(localDc)
+          && context.storage instanceof IDistributedStorage) {
         // If DatacenterAvailability is not ALL, we should assume jmx on remote dc is not reachable.
         return Pair.of(node, getRemoteNodeMetrics(node, nodeDc));
       } else {
         try {
           JmxProxy nodeProxy =
-                    context.jmxConnectionFactory.connect(
-                            Node.builder().withClusterName(clusterName).withHostname(node).build(),
-                            context.config.getJmxConnectionTimeoutInSeconds());
+              context.jmxConnectionFactory.connect(
+                  Node.builder().withClusterName(clusterName).withHostname(node).build(),
+                  context.config.getJmxConnectionTimeoutInSeconds());
 
-          NodeMetrics metrics = NodeMetrics.builder()
+          NodeMetrics metrics =
+              NodeMetrics.builder()
                   .withNode(node)
                   .withDatacenter(nodeDc)
                   .withCluster(nodeProxy.getClusterName())
@@ -605,7 +608,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
           return Pair.of(node, Optional.of(metrics));
         } catch (RuntimeException | ReaperException e) {
-          LOG.debug("failed to query metrics for host {}, trying to get metrics from storage...", node, e);
+          LOG.debug(
+              "failed to query metrics for host {}, trying to get metrics from storage...",
+              node,
+              e);
           return Pair.of(node, getRemoteNodeMetrics(node, nodeDc));
         }
       }

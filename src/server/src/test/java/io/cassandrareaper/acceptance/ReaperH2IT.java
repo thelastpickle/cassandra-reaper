@@ -29,15 +29,17 @@ import org.slf4j.LoggerFactory;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
-    features = "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature"
+    features = "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature",
+    plugin = {"pretty"}
     )
-public final class ReaperH2IT {
+public class ReaperH2IT {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperH2IT.class);
   private static ReaperJettyTestSupport runnerInstance;
   private static final String H2_CONFIG_FILE = "cassandra-reaper-h2-at.yaml";
 
-  private ReaperH2IT() {}
+
+  protected ReaperH2IT() {}
 
   @BeforeClass
   public static void setUp() throws Exception {

@@ -26,6 +26,8 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
+import io.cassandrareaper.storage.CassandraStorage;
+import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorage;
 
@@ -551,7 +553,9 @@ public final class SegmentRunnerTest {
   @Test
   public void getNodeMetricsInLocalDCAvailabilityForRemoteDCNodeTest() throws Exception {
     final AppContext context = new AppContext();
-    context.storage = new MemoryStorage();
+    context.storage = Mockito.mock(CassandraStorage.class);
+    when(((IDistributedStorage) context.storage).getNodeMetrics(any(), any()))
+        .thenReturn(Optional.absent());
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(jmxConnectionFactory.connect(any(), anyInt())).thenReturn(mock(JmxProxy.class));
     context.jmxConnectionFactory = jmxConnectionFactory;
@@ -569,7 +573,7 @@ public final class SegmentRunnerTest {
   @Test
   public void getNodeMetricsInLocalDCAvailabilityForLocalDCNodeTest() throws Exception {
     final AppContext context = new AppContext();
-    context.storage = new MemoryStorage();
+    context.storage = Mockito.mock(CassandraStorage.class);
 
     JmxProxy proxy = mock(JmxProxy.class);
     when(proxy.getClusterName()).thenReturn("test");

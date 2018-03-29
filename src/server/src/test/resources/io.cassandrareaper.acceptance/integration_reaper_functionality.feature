@@ -1,11 +1,11 @@
 Feature: Using Reaper to launch repairs and schedule them
 
   ## TODO: clean-up and split the scenarios to be more like Given -> When -> Then [-> But]
-
   Background:
     Given cluster seed host "127.0.0.1@test" points to cluster with name "test"
     And ccm cluster "test" has keyspace "booya" with tables "booya1, booya2"
 
+  @full
   Scenario: Registering a cluster
     Given that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
@@ -14,7 +14,7 @@ Feature: Using Reaper to launch repairs and schedule them
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
     
-
+  @full
   Scenario: Create a cluster and a scheduled repair run and delete them
     Given that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
@@ -28,6 +28,7 @@ Feature: Using Reaper to launch repairs and schedule them
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
 
+  @full
   Scenario: Create a cluster and a scheduled repair run with repair run history and delete them
     Given that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
@@ -48,6 +49,7 @@ Feature: Using Reaper to launch repairs and schedule them
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
 
+  @full
   Scenario: Create a cluster and a repair run and delete them
     Given that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
@@ -65,6 +67,7 @@ Feature: Using Reaper to launch repairs and schedule them
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
     
+  @incremental
   Scenario: Create a cluster and an incremental repair run and delete them
     Given that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
@@ -79,7 +82,8 @@ Feature: Using Reaper to launch repairs and schedule them
     When the last added repair is stopped
     And the last added repair run is deleted
     And the last added cluster is deleted
-    
+  
+  @incremental  
   Scenario: Create a cluster, create a cluster wide snapshot and delete it
     Given that we are going to use "127.0.0.1" as cluster seed host
     And reaper has no cluster in storage
@@ -92,7 +96,8 @@ Feature: Using Reaper to launch repairs and schedule them
     Then there is 0 snapshot returned when listing snapshots
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-    
+  
+  @incremental  
   Scenario: Create a cluster, create a snapshot on a single host and delete it
     Given that we are going to use "127.0.0.1" as cluster seed host
     And reaper has no cluster in storage

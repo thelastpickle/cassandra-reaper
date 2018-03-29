@@ -9,6 +9,7 @@ hangingRepairTimeoutMins: 1
 storageType: database
 incrementalRepair: false
 jmxConnectionTimeoutInSeconds: 300
+datacenterAvailability: LOCAL
 
 logging:
   level: DEBUG
