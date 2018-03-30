@@ -67,7 +67,7 @@ public final class RepairRunResourceTest {
 
   private static final String CLUSTER_NAME = "testcluster";
   private static final String PARTITIONER = "org.apache.cassandra.dht.RandomPartitioner";
-  private static final String SEED_HOST = "TestHost";
+  private static final String SEED_HOST = "127.0.0.1";
   private static final String KEYSPACE = "testKeyspace";
   private static final Boolean INCREMENTAL = false;
   private static final Set<String> TABLES = Sets.newHashSet("testTable");

@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -193,6 +194,7 @@ final class RepairRunner implements Runnable {
         killAndCleanupRunner();
         return;
       }
+
       RepairRun.RunState state = repairRun.get().getRunState();
       LOG.debug("run() called for repair run #{} with run state {}", repairRunId, state);
       switch (state) {
@@ -201,6 +203,9 @@ final class RepairRunner implements Runnable {
           break;
         case RUNNING:
           startNextSegment();
+          // We're updating the node list of the cluster at the start of each new run.
+          // Helps keeping up with topology changes.
+          updateClusterNodeList();
           break;
         case PAUSED:
           context.repairManager.scheduleRetry(this);
@@ -226,7 +231,34 @@ final class RepairRunner implements Runnable {
       context.storage.updateRepairRun(
           repairRun.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(repairRun.getId()));
     }
+
     startNextSegment();
+  }
+
+  /**
+   * Updates the list of nodes in storage for the cluster that's being repaired.
+   *
+   * @throws ReaperException Thrown in case the cluster cannot be found in storage
+   */
+  private void updateClusterNodeList() throws ReaperException {
+    Set<String> liveNodes = jmxConnection.getLiveNodes().stream().collect(Collectors.toSet());
+    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
+    if (!cluster.isPresent()) {
+      throw new ReaperException(
+          "Cluster "
+              + clusterName
+              + " couldn't be found in storage. This shouldn't be happening (╯°□°)╯︵ ┻━┻");
+    }
+
+    if (!cluster.get().getSeedHosts().equals(liveNodes) && !liveNodes.isEmpty()) {
+      // Updating storage only if the seed lists has changed
+      LOG.info(
+          "Updating the seed list for cluster {} as topology changed since the last repair.",
+          clusterName);
+      Cluster newCluster =
+          new Cluster(cluster.get().getName(), cluster.get().getPartitioner(), liveNodes);
+      context.storage.updateCluster(newCluster);
+    }
   }
 
   private void endRepairRun() {
@@ -339,7 +371,7 @@ final class RepairRunner implements Runnable {
       segmentsTotal = context.storage.getSegmentAmountForRepairRun(repairRunId);
 
       LOG.info("Repair amount done {}", segmentsDone);
-      repairProgress = (float) segmentsDone / segmentsTotal;
+      repairProgress = segmentsDone / segmentsTotal;
 
       if (segmentsDone == segmentsTotal) {
         endRepairRun();

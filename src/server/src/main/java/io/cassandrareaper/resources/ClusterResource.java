@@ -184,10 +184,26 @@ public final class ClusterResource {
     }
     Optional<Cluster> existingCluster = context.storage.getCluster(newCluster.getName());
     if (existingCluster.isPresent()) {
-      LOG.info("cluster already stored with this name: {}", existingCluster);
-      return Response.status(403)
-          .entity(String.format("cluster \"%s\" already exists", existingCluster.get().getName()))
-          .build();
+      LOG.info(
+          "Cluster already stored with this name: {}. Trying to updating the node list.",
+          existingCluster.get().getName());
+      Cluster updatedCluster = updateClusterSeeds(existingCluster.get(), seedHost.get());
+      if (updatedCluster.getSeedHosts().equals(existingCluster.get().getSeedHosts())) {
+        LOG.info("Node list of cluster {} is already up to date.", existingCluster.get().getName());
+        return Response.notModified()
+            .entity(
+                String.format(
+                    "Topology hasn't changed in cluster %s. No update was performed.",
+                    existingCluster.get().getName()))
+            .build();
+      } else {
+        LOG.info(
+            "Node list of cluster {} has been updated with the current topology.",
+            existingCluster.get().getName());
+        return Response.ok()
+            .entity(String.format("Updated cluster %s node list", existingCluster.get().getName()))
+            .build();
+      }
     } else {
       LOG.info("creating new cluster based on given seed host: {}", newCluster.getName());
       context.storage.addCluster(newCluster);
@@ -264,6 +280,7 @@ public final class ClusterResource {
     return new Cluster(clusterName.get(), partitioner.get(), seedHostsFinal);
   }
 
+  @Deprecated
   @PUT
   @Path("/{cluster_name}")
   public Response modifyClusterSeed(
@@ -279,45 +296,68 @@ public final class ClusterResource {
     LOG.info("modify cluster called with: cluster_name = {}, seedHost = {}", clusterName, seedHost.get());
 
     Optional<Cluster> cluster = context.storage.getCluster(clusterName);
+
     if (!cluster.isPresent()) {
       return Response.status(Response.Status.NOT_FOUND)
           .entity("cluster with name " + clusterName + " not found")
           .build();
     }
 
-    Set<String> newSeeds = parseSeedHosts(seedHost.get());
+    Cluster newCluster = updateClusterSeeds(cluster.get(), seedHost.get());
 
-    if (context.config.getEnableDynamicSeedList()) {
-      try {
-        JmxProxy jmxProxy =
-            context.jmxConnectionFactory.connectAny(
-                Optional.absent(),
-                newSeeds
-                    .stream()
-                    .map(
-                        host ->
-                            Node.builder()
-                                .withClusterName(clusterName)
-                                .withHostname(parseSeedHost(host))
-                                .build())
-                    .collect(Collectors.toList()),
-                context.config.getJmxConnectionTimeoutInSeconds());
-
-        Optional<List<String>> liveNodes = Optional.of(jmxProxy.getLiveNodes());
-        newSeeds = liveNodes.get().stream().collect(Collectors.toSet());
-      } catch (ReaperException e) {
-        LOG.error("failed to create cluster with seed hosts: {}", newSeeds, e);
-      }
+    if (cluster.get().getSeedHosts().equals(newCluster.getSeedHosts())) {
+      // No change in the node list compared to storage
+      return Response.notModified()
+          .entity(
+              "Topology hasn't changed in cluster " + clusterName + ". No update was performed.")
+          .build();
     }
-
-    if (newSeeds.equals(cluster.get().getSeedHosts()) || newSeeds.isEmpty()) {
-      return Response.notModified().build();
-    }
-
-    Cluster newCluster = new Cluster(cluster.get().getName(), cluster.get().getPartitioner(), newSeeds);
-    context.storage.updateCluster(newCluster);
 
     return viewCluster(newCluster.getName(), Optional.<Integer>absent(), Optional.<URI>absent());
+  }
+
+  /**
+   * Updates the list of nodes of a cluster based on the current topology.
+   *
+   * @param cluster the Cluster object we intend to update
+   * @param seedHosts a list of hosts to connect to in the cluster
+   * @return the updated cluster object with a refreshed seed list
+   * @throws ReaperException Any runtime exception that could be triggered
+   */
+  private Cluster updateClusterSeeds(Cluster cluster, String seedHosts) throws ReaperException {
+    Set<String> newSeeds = parseSeedHosts(seedHosts);
+
+    try {
+      JmxProxy jmxProxy =
+          context.jmxConnectionFactory.connectAny(
+              Optional.absent(),
+              newSeeds
+                  .stream()
+                  .map(
+                      host ->
+                          Node.builder()
+                              .withClusterName(cluster.getName())
+                              .withHostname(parseSeedHost(host))
+                              .build())
+                  .collect(Collectors.toList()),
+              context.config.getJmxConnectionTimeoutInSeconds());
+
+      Optional<List<String>> liveNodes = Optional.of(jmxProxy.getLiveNodes());
+      newSeeds = liveNodes.get().stream().collect(Collectors.toSet());
+
+      if (cluster.getSeedHosts().equals(newSeeds)) {
+        // No change in the node list compared to storage
+        return cluster;
+      }
+
+      Cluster newCluster = new Cluster(cluster.getName(), cluster.getPartitioner(), newSeeds);
+      context.storage.updateCluster(newCluster);
+
+      return newCluster;
+
+    } catch (ReaperException e) {
+      throw new ReaperException("failed to create cluster with new seed hosts", e);
+    }
   }
 
   /**
