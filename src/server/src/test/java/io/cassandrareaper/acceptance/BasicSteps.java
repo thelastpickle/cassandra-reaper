@@ -292,22 +292,27 @@ public final class BasicSteps {
     synchronized (BasicSteps.class) {
       final StringBuffer responseData = new StringBuffer();
 
-      RUNNERS.parallelStream().forEach(runner -> {
-        Map<String, String> params = Maps.newHashMap();
-        params.put("seedHost", TestContext.SEED_HOST);
-        Response response = runner.callReaper("POST", "/cluster", Optional.of(params));
+      RUNNERS
+          .parallelStream()
+          .forEach(
+              runner -> {
+                Map<String, String> params = Maps.newHashMap();
+                params.put("seedHost", TestContext.SEED_HOST);
+                Response response = runner.callReaper("POST", "/cluster", Optional.of(params));
 
-        Assertions.assertThat(ImmutableList.of(
-              Response.Status.CREATED.getStatusCode(),
-              Response.Status.FORBIDDEN.getStatusCode()))
-            .contains(response.getStatus());
+                Assertions.assertThat(
+                        ImmutableList.of(
+                            Response.Status.CREATED.getStatusCode(),
+                            Response.Status.NOT_MODIFIED.getStatusCode()))
+                    .contains(response.getStatus());
 
-        if (Response.Status.CREATED.getStatusCode() == response.getStatus()) {
-          responseData.append(response.readEntity(String.class));
-          Map<String, Object> cluster = SimpleReaperClient.parseClusterStatusJSON(responseData.toString());
-          TestContext.TEST_CLUSTER = (String) cluster.get("name");
-        }
-      });
+                if (Response.Status.CREATED.getStatusCode() == response.getStatus()) {
+                  responseData.append(response.readEntity(String.class));
+                  Map<String, Object> cluster =
+                      SimpleReaperClient.parseClusterStatusJSON(responseData.toString());
+                  TestContext.TEST_CLUSTER = (String) cluster.get("name");
+                }
+              });
 
       Assertions.assertThat(responseData).isNotEmpty();
 
