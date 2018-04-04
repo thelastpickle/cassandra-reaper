@@ -421,7 +421,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             SegmentRunner.class,
             "postpone",
             Optional.fromNullable(segment.getCoordinatorHost()).or("null").replace('.', '-'),
-            unit.get().getClusterName(),
+            unit.get().getClusterName().replace('.', '-'),
             unit.get().getKeyspaceName())
         : MetricRegistry.name(
             SegmentRunner.class,
@@ -434,7 +434,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         SegmentRunner.class,
         "repairing",
         Optional.fromNullable(rs.getCoordinatorHost()).or("null").replace('.', '-'),
-        clusterName,
+        clusterName.replace('.', '-'),
         repairUnit.getKeyspaceName());
   }
 
@@ -443,7 +443,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         SegmentRunner.class,
         "runRepair",
         Optional.fromNullable(rs.getCoordinatorHost()).or("null").replace('.', '-'),
-        clusterName,
+        clusterName.replace('.', '-'),
         repairUnit.getKeyspaceName());
   }
 
