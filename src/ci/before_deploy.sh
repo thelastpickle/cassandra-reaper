@@ -35,6 +35,14 @@ then
         make all
         sudo mv reaper_*_amd64.deb ../packages/
         sudo mv reaper-*.x86_64.rpm ../packages/
+        export GIT_HASH=$(git log --pretty=format:'%h' -n 1)
+        docker login -u $DOCKER_USER -p $DOCKER_PASS
+        export REPO=thelastpickle/cassandra-reaper
+        mvn -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
+        docker tag cassandra-reaper:latest $REPO:master
+        docker push $REPO:master
+        docker tag cassandra-reaper:latest $REPO:$GIT_HASH
+        docker push $REPO:$GIT_HASH
     fi
     if [ "x${TRAVIS_TAG}" != "x" -a ! -d "cassandra-reaper-${TRAVIS_TAG}" ]
     then
@@ -62,5 +70,12 @@ then
         make all
         sudo mv reaper_*_amd64.deb ../packages/
         sudo mv reaper-*.x86_64.rpm ../packages/
+        docker login -u $DOCKER_USER -p $DOCKER_PASS
+        export REPO=thelastpickle/cassandra-reaper
+        mvn -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
+        docker tag cassandra-reaper:latest $REPO:latest
+        docker push $REPO:latest
+        docker tag cassandra-reaper:latest $REPO:$TRAVIS_TAG
+        docker push $REPO:$TRAVIS_TAG
     fi
 fi
