@@ -35,6 +35,7 @@ then
         make all
         sudo mv reaper_*_amd64.deb ../packages/
         sudo mv reaper-*.x86_64.rpm ../packages/
+        cd ../..
         export GIT_HASH=$(git log --pretty=format:'%h' -n 1)
         docker login -u $DOCKER_USER -p $DOCKER_PASS
         export REPO=thelastpickle/cassandra-reaper
@@ -70,6 +71,7 @@ then
         make all
         sudo mv reaper_*_amd64.deb ../packages/
         sudo mv reaper-*.x86_64.rpm ../packages/
+        cd ../..
         docker login -u $DOCKER_USER -p $DOCKER_PASS
         export REPO=thelastpickle/cassandra-reaper
         mvn -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
