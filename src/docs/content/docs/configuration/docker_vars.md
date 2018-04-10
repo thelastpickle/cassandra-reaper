@@ -30,10 +30,8 @@ The Docker environment variables listed in this section map directly to Reaper s
 <code class="codeLarge">REAPER_JMX_AUTH_USERNAME</code> | [username]({{< relref "reaper_specific.md#username" >}}) |
 <code class="codeLarge">REAPER_JMX_CONNECTION_TIMEOUT_IN_SECONDS</code> | [jmxConnectionTimeoutInSeconds]({{< relref "reaper_specific.md#jmxconnectiontimeoutinseconds" >}}) | 20
 <code class="codeLarge">REAPER_JMX_PORTS</code> | [jmxPorts]({{< relref "reaper_specific.md#jmxports" >}}) | {}
-<code class="codeLarge">REAPER_LOGGING_APPENDERS_LOG_FORMAT</code> | [logFormat]({{< relref "reaper_specific.md#logformat" >}}) | "%-6level [%d] [%t] %logger{5} - %msg %n"
+<code class="codeLarge">REAPER_LOGGING_APPENDERS_CONSOLE_LOG_FORMAT</code> | [logFormat]({{< relref "reaper_specific.md#logformat" >}}) | "%-6level [%d] [%t] %logger{5} - %msg %n"
 <code class="codeLarge">REAPER_LOGGING_APPENDERS_CONSOLE_THRESHOLD</code> | [threshold]({{< relref "reaper_specific.md#threshold" >}}) | WARN
-<code class="codeLarge">REAPER_LOGGING_APPENDERS_FILE_LOG_FORMAT</code> | [logFormat]({{< relref "reaper_specific.md#logformat" >}}) | "%-6level [%t] %logger{5} - %msg %n"
-<code class="codeLarge">REAPER_LOGGING_APPENDERS_FILE_ARCHIVED_FILE_COUNT</code> | [archivedFileCount]({{< relref "reaper_specific.md#archivedfilecount" >}}) | 99
 <code class="codeLarge">REAPER_LOGGING_LOGGERS</code> | [loggers]({{< relref "reaper_specific.md#loggers" >}}) | {}
 <code class="codeLarge">REAPER_LOGGING_ROOT_LEVEL</code> | [level]({{< relref "reaper_specific.md#level" >}}) | INFO
 <code class="codeLarge">REAPER_METRICS_FREQUENCY</code> | [fequency]({{< relref "reaper_specific.md#fequency" >}}) | 1 minute
