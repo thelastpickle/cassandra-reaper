@@ -45,11 +45,6 @@ logging:
     - type: console
       logFormat: ${REAPER_LOGGING_APPENDERS_CONSOLE_LOG_FORMAT}
       threshold: ${REAPER_LOGGING_APPENDERS_CONSOLE_THRESHOLD}
-    - type: file
-      logFormat: ${REAPER_LOGGING_APPENDERS_FILE_LOG_FORMAT}
-      currentLogFilename: /var/log/cassandra-reaper/reaper.log
-      archivedLogFilenamePattern: /var/log/cassandra-reaper/reaper-%d.log.gz
-      archivedFileCount: ${REAPER_LOGGING_APPENDERS_FILE_ARCHIVED_FILE_COUNT}
 
 server:
   type: default
