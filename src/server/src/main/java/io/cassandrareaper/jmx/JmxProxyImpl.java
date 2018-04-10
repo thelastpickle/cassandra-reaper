@@ -93,7 +93,6 @@ final class JmxProxyImpl implements JmxProxy {
   private static final Logger LOG = LoggerFactory.getLogger(JmxProxy.class);
 
   private static final int JMX_PORT = 7199;
-  private static final String JMX_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
   private static final String SS_OBJECT_NAME = "org.apache.cassandra.db:type=StorageService";
   private static final String AES_OBJECT_NAME = "org.apache.cassandra.internal:type=AntiEntropySessions";
   private static final String VALIDATION_ACTIVE_OBJECT_NAME
@@ -221,7 +220,7 @@ final class JmxProxyImpl implements JmxProxy {
 
     try {
       LOG.debug("Connecting to {}...", host);
-      jmxUrl = getJmxServiceUrl(host, port);
+      jmxUrl = JmxAddresses.getJmxServiceUrl(host, port);
       ssMbeanName = new ObjectName(SS_OBJECT_NAME);
       cmMbeanName = new ObjectName(CompactionManager.MBEAN_OBJECT_NAME);
       fdMbeanName = new ObjectName(FailureDetector.MBEAN_NAME);
@@ -291,17 +290,6 @@ final class JmxProxyImpl implements JmxProxy {
 
     Future<JMXConnector> future = EXECUTOR.submit(() -> JMXConnectorFactory.connect(url, env));
     return future.get(timeout, unit);
-  }
-
-  private static boolean isNumericIPv6Address(String address) {
-    // address contains colon if and only if it's a numeric IPv6 address
-    return (address.indexOf(':') >= 0);
-  }
-
-  private static JMXServiceURL getJmxServiceUrl(String host, int port)
-          throws MalformedURLException {
-    String effectiveHost = isNumericIPv6Address(host) ? "[" + host + "]" : host;
-    return new JMXServiceURL(String.format(JMX_URL, effectiveHost, port));
   }
 
   @Override
