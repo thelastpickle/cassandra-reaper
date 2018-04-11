@@ -19,6 +19,7 @@ import io.cassandrareaper.core.RepairUnit;
 
 import java.util.Collection;
 import java.util.UUID;
+
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -66,6 +67,8 @@ public final class RepairRunStatus {
 
   @JsonIgnore
   private DateTime pauseTime;
+
+  @JsonIgnore private DateTime currentTime;
 
   @JsonProperty
   private double intensity;
@@ -139,6 +142,7 @@ public final class RepairRunStatus {
     this.startTime = startTime;
     this.endTime = endTime;
     this.pauseTime = pauseTime;
+    this.currentTime = DateTime.now();
     this.intensity = roundDoubleNicely(intensity);
     this.incrementalRepair = incrementalRepair;
     this.totalSegments = totalSegments;
@@ -150,14 +154,31 @@ public final class RepairRunStatus {
     this.datacenters = datacenters;
     this.blacklistedTables = blacklistedTables;
 
-    if (startTime == null || endTime == null) {
+    if (startTime == null) {
       duration = null;
     } else {
-      duration = DurationFormatUtils.formatDurationWords(
-          new Duration(startTime.toInstant(), endTime.toInstant()).getMillis(), true, false);
+      if (state == RepairRun.RunState.RUNNING || state == RepairRun.RunState.PAUSED) {
+        duration =
+            DurationFormatUtils.formatDurationWords(
+                new Duration(startTime.toInstant(), currentTime.toInstant()).getMillis(),
+                true,
+                false);
+      } else if (state == RepairRun.RunState.ABORTED) {
+        duration =
+            DurationFormatUtils.formatDurationWords(
+                new Duration(startTime.toInstant(), pauseTime.toInstant()).getMillis(),
+                true,
+                false);
+      } else if (endTime != null) {
+        duration =
+            DurationFormatUtils.formatDurationWords(
+                new Duration(startTime.toInstant(), endTime.toInstant()).getMillis(), true, false);
+      } else {
+        duration = null;
+      }
     }
 
-    if (startTime == null || (endTime != null && endTime.isAfter(startTime))) {
+    if (startTime == null) {
       estimatedTimeOfArrival = null;
     } else {
       if (state == RepairRun.RunState.ERROR
@@ -247,6 +268,18 @@ public final class RepairRunStatus {
     }
   }
 
+  @JsonProperty("current_time")
+  public void setCurrentTimeIso8601(String dateStr) {
+    if (null != dateStr) {
+      currentTime = ISODateTimeFormat.dateTimeNoMillis().parseDateTime(dateStr);
+    }
+  }
+
+  @JsonProperty("current_time")
+  public String getCurrentTimeIso8601() {
+    return dateTimeToIso8601(currentTime);
+  }
+
   public String getCause() {
     return cause;
   }
@@ -333,6 +366,14 @@ public final class RepairRunStatus {
 
   public void setPauseTime(DateTime pauseTime) {
     this.pauseTime = pauseTime;
+  }
+
+  public DateTime getCurrentTime() {
+    return currentTime;
+  }
+
+  public void setCurrentTime(DateTime currentTime) {
+    this.currentTime = currentTime;
   }
 
   public double getIntensity() {
