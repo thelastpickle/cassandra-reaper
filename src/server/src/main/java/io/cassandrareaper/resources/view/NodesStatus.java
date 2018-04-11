@@ -41,8 +41,10 @@ public final class NodesStatus {
   private static final List<Pattern> ENDPOINT_HOSTID_PATTERNS = Lists.newArrayList();
   private static final List<Pattern> ENDPOINT_TOKENS_PATTERNS = Lists.newArrayList();
 
-  private static final Pattern ENDPOINT_NAME_PATTERN
+  private static final Pattern ENDPOINT_NAME_PATTERN_IP4
       = Pattern.compile("^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})", Pattern.MULTILINE | Pattern.DOTALL);
+  private static final Pattern ENDPOINT_NAME_PATTERN_IP6
+          = Pattern.compile("^([0-9:a-fA-F\\]\\[]{3,41})", Pattern.MULTILINE | Pattern.DOTALL);
   private static final Pattern ENDPOINT_STATUS_22_PATTERN = Pattern.compile("(STATUS):([0-9]*):(\\w+)");
   private static final Pattern ENDPOINT_DC_22_PATTERN = Pattern.compile("(DC):([0-9]*):([0-9a-zA-Z-\\.]+)");
   private static final Pattern ENDPOINT_RACK_22_PATTERN = Pattern.compile("(RACK):([0-9]*):([0-9a-zA-Z-\\.]+)");
@@ -181,7 +183,7 @@ public final class NodesStatus {
   }
 
   private static void initPatterns() {
-    ENDPOINT_NAME_PATTERNS.add(ENDPOINT_NAME_PATTERN);
+    ENDPOINT_NAME_PATTERNS.addAll(Arrays.asList(ENDPOINT_NAME_PATTERN_IP4, ENDPOINT_NAME_PATTERN_IP6));
     ENDPOINT_STATUS_PATTERNS.addAll(Arrays.asList(ENDPOINT_STATUS_22_PATTERN, ENDPOINT_STATUS_21_PATTERN));
     ENDPOINT_DC_PATTERNS.addAll(Arrays.asList(ENDPOINT_DC_22_PATTERN, ENDPOINT_DC_21_PATTERN));
     ENDPOINT_RACK_PATTERNS.addAll(Arrays.asList(ENDPOINT_RACK_22_PATTERN, ENDPOINT_RACK_21_PATTERN));
