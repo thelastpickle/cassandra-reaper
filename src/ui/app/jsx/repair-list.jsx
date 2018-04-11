@@ -33,7 +33,7 @@ const TableRow = React.createClass({
     const segsTotal = this.props.row.total_segments;
     const segsPerc = (100/segsTotal)*segsRepaired;
     const state = this.props.row.state;
-    let etaOrDuration = moment(this.props.row.estimated_time_of_arrival).fromNow();
+    let etaOrDuration = moment(this.props.row.estimated_time_of_arrival).from(moment(this.props.row.current_time));
     if (!(state == 'RUNNING' || state == 'PAUSED')) {
       etaOrDuration = this.props.row.duration;
     } else if (segsPerc < 5) {
@@ -105,13 +105,25 @@ const TableRowDetails = React.createClass({
       startTime = moment(this.props.row.start_time).format("LLL");
     }
     let endTime = null;
-    if(this.props.row.end_time) {
-      endTime = moment(this.props.row.end_time).format("LLL");
+    if(this.props.row.end_time 
+      && this.props.row.state != 'RUNNING' 
+      && this.props.row.state != 'PAUSED'
+      && this.props.row.state != 'NOT_STARTED') {
+      if (this.props.row.state == 'ABORTED') {
+        endTime = moment(this.props.row.pause_time).format("LLL");
+      } else {
+        endTime = moment(this.props.row.end_time).format("LLL");
+      }
     }
     let pauseTime = null;
-    if(this.props.row.pause_time) {
+    if(this.props.row.pause_time
+      && this.props.row.state != 'RUNNING' 
+      && this.props.row.state != 'NOT_STARTED') {
       pauseTime = moment(this.props.row.pause_time).format("LLL");
     }
+    
+    let duration = this.props.row.duration;
+
 
     const incremental = this.props.row.incremental_repair == true ? "true" : "false";
 
@@ -142,6 +154,10 @@ const TableRowDetails = React.createClass({
                     <td>{this.props.row.owner}</td>
                 </tr>
                 <tr>
+                    <td>Cause</td>
+                    <td>{this.props.row.cause}</td>
+                </tr>
+                <tr>
                     <td>Last event</td>
                     <td>{this.props.row.last_event}</td>
                 </tr>
@@ -159,7 +175,7 @@ const TableRowDetails = React.createClass({
                 </tr>
                 <tr>
                     <td>Duration</td>
-                    <td>{this.props.row.duration}</td>
+                    <td>{duration}</td>
                 </tr>
                 <tr>
                     <td>Segment count</td>
