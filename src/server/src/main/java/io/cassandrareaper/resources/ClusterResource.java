@@ -21,18 +21,12 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.ClusterStatus;
 import io.cassandrareaper.resources.view.NodesStatus;
-import io.cassandrareaper.resources.view.RepairRunStatus;
-import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.ClusterRepairScheduler;
 
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,33 +100,24 @@ public final class ClusterResource {
   @Path("/{cluster_name}")
   public Response getCluster(
       @PathParam("cluster_name") String clusterName,
-      @QueryParam("limit") Optional<Integer> limit)
-      throws ReaperException {
+      @QueryParam("limit") Optional<Integer> limit) {
 
     LOG.debug("get cluster called with cluster_name: {}", clusterName);
-    return viewCluster(clusterName, limit, Optional.<URI>absent());
-  }
-
-  private Response viewCluster(String clusterName, Optional<Integer> limit, Optional<URI> createdUri)
-      throws ReaperException {
-
     Optional<Cluster> cluster = context.storage.getCluster(clusterName);
 
     if (!cluster.isPresent()) {
       return Response.status(Response.Status.NOT_FOUND)
           .entity("cluster with name \"" + clusterName + "\" not found")
           .build();
+
     } else {
-      ClusterStatus view = new ClusterStatus(
-          cluster.get(),
-          context.storage.getClusterRunStatuses(clusterName, limit.or(Integer.MAX_VALUE)),
-          context.storage.getClusterScheduleStatuses(clusterName),
-          getNodesStatus(cluster).orNull());
-      if (createdUri.isPresent()) {
-        return Response.created(createdUri.get()).entity(view).build();
-      } else {
-        return Response.ok().entity(view).build();
-      }
+      ClusterStatus clusterStatus = new ClusterStatus(
+            cluster.get(),
+            context.storage.getClusterRunStatuses(cluster.get().getName(), limit.or(Integer.MAX_VALUE)),
+            context.storage.getClusterScheduleStatuses(cluster.get().getName()),
+            getNodesStatus(cluster).orNull());
+
+      return Response.ok().entity(clusterStatus).build();
     }
   }
 
@@ -159,106 +144,114 @@ public final class ClusterResource {
   }
 
   @POST
-  public Response addCluster(
+  public Response addOrUpdateCluster(
       @Context UriInfo uriInfo,
-      @QueryParam("seedHost") Optional<String> seedHost)
-      throws ReaperException {
+      @QueryParam("seedHost") Optional<String> seedHost) {
 
-    if (!seedHost.isPresent()) {
-      LOG.error("POST on cluster resource called without seedHost");
-      return Response.status(400).entity("query parameter \"seedHost\" required").build();
-    }
-    LOG.debug("add cluster called with seedHost: {}", seedHost.get());
-
-    Cluster newCluster;
-    try {
-      newCluster = createClusterWithSeedHost(seedHost.get());
-    } catch (java.lang.SecurityException e) {
-      LOG.error(e.getMessage(), e);
-      return Response.status(400)
-          .entity("seed host \"" + seedHost.get() + "\" JMX threw security exception: " + e.getMessage())
-          .build();
-    } catch (ReaperException e) {
-      LOG.error(e.getMessage(), e);
-      return Response.status(400).entity("failed to create cluster with seed host: " + seedHost.get()).build();
-    }
-    Optional<Cluster> existingCluster = context.storage.getCluster(newCluster.getName());
-    if (existingCluster.isPresent()) {
-      LOG.info(
-          "Cluster already stored with this name: {}. Trying to updating the node list.",
-          existingCluster.get().getName());
-      Cluster updatedCluster = updateClusterSeeds(existingCluster.get(), seedHost.get());
-      if (updatedCluster.getSeedHosts().equals(existingCluster.get().getSeedHosts())) {
-        LOG.info("Node list of cluster {} is already up to date.", existingCluster.get().getName());
-        return Response.notModified()
-            .entity(
-                String.format(
-                    "Topology hasn't changed in cluster %s. No update was performed.",
-                    existingCluster.get().getName()))
-            .build();
-      } else {
-        LOG.info(
-            "Node list of cluster {} has been updated with the current topology.",
-            existingCluster.get().getName());
-        return Response.ok()
-            .entity(String.format("Updated cluster %s node list", existingCluster.get().getName()))
-            .build();
-      }
-    } else {
-      LOG.info("creating new cluster based on given seed host: {}", newCluster.getName());
-      context.storage.addCluster(newCluster);
-
-      if (context.config.hasAutoSchedulingEnabled()) {
-        try {
-          clusterRepairScheduler.scheduleRepairs(newCluster);
-        } catch (ReaperException e) {
-          LOG.error("failed to automatically schedule repairs", e);
-          return Response.status(400)
-              .entity(
-                  "failed to automatically schedule repairs for cluster with seed host \""
-                  + seedHost.get()
-                  + "\". Exception was: "
-                  + e.getMessage())
-              .build();
-        }
-      }
-    }
-
-    URI createdUri;
-    try {
-      createdUri = new URL(uriInfo.getAbsolutePath().toURL(), newCluster.getName()).toURI();
-    } catch (MalformedURLException | URISyntaxException e) {
-      String errMsg = "failed creating target URI for cluster: " + newCluster.getName();
-      LOG.error(errMsg, e);
-      return Response.status(400).entity(errMsg).build();
-    }
-
-    return viewCluster(newCluster.getName(), Optional.<Integer>absent(), Optional.of(createdUri));
+    LOG.info("POST addOrUpdateCluster called with seedHost: {}", seedHost.orNull());
+    return addOrUpdateCluster(uriInfo, Optional.absent(), seedHost);
   }
 
-  private Cluster createClusterWithSeedHost(String seedHostInput) throws ReaperException {
+  @PUT
+  @Path("/{cluster_name}")
+  public Response addOrUpdateCluster(
+      @Context UriInfo uriInfo,
+      @PathParam("cluster_name") String clusterName,
+      @QueryParam("seedHost") Optional<String> seedHost) {
+
+    LOG.info("PUT addOrUpdateCluster called with: cluster_name = {}, seedHost = {}", clusterName, seedHost.orNull());
+    return addOrUpdateCluster(uriInfo, Optional.of(clusterName), seedHost);
+  }
+
+  private Response addOrUpdateCluster(
+      UriInfo uriInfo,
+      Optional<String> clusterName,
+      Optional<String> seedHost) {
+
+    if (!seedHost.isPresent()) {
+      LOG.error("POST/PUT on cluster resource {} called without seedHost", clusterName.orNull());
+      return Response.status(Response.Status.BAD_REQUEST).entity("query parameter \"seedHost\" required").build();
+    }
+
+    try {
+      Cluster cluster = findClusterWithSeedHost(seedHost.get());
+      if (clusterName.isPresent() && !cluster.getName().equals(clusterName.get())) {
+
+        LOG.error(
+            "POST/PUT on cluster resource {} called with seedHost {} belonging to different cluster {}",
+            clusterName.get(),
+            seedHost.get(),
+            cluster.getName());
+
+        return Response
+            .status(Response.Status.BAD_REQUEST)
+            .entity("query parameter \"seedHost\" belonging to wrong cluster")
+            .build();
+      }
+      Optional<Cluster> existingCluster = context.storage.getCluster(cluster.getName());
+      URI location = uriInfo.getBaseUriBuilder().path("cluster").path(cluster.getName()).build();
+      if (existingCluster.isPresent()) {
+        LOG.debug(
+            "Cluster already stored with this name: {}. Trying to updating the node list.",
+            existingCluster.get().getName());
+
+        // the cluster is already managed by reaper. if nothing is changed return 204. then if updated return 200.
+        cluster = updateClusterSeeds(existingCluster.get(), seedHost.get());
+        if (cluster.getSeedHosts().equals(existingCluster.get().getSeedHosts())) {
+          LOG.debug("Nodelist of cluster {} is already up to date.", existingCluster.get().getName());
+          return Response.noContent().location(location).build();
+        } else {
+          LOG.info("Nodelist of cluster {} updated", existingCluster.get().getName());
+          return Response.ok().location(location).build();
+        }
+
+      } else {
+        LOG.info("creating new cluster based on given seed host: {}", cluster.getName());
+        context.storage.addCluster(cluster);
+
+        if (context.config.hasAutoSchedulingEnabled()) {
+          try {
+            clusterRepairScheduler.scheduleRepairs(cluster);
+          } catch (ReaperException e) {
+            LOG.error("failed to automatically schedule repairs", e);
+            return Response.status(400)
+                .entity(
+                    "failed to automatically schedule repairs for cluster with seed host \""
+                    + seedHost.get()
+                    + "\". Exception was: "
+                    + e.getMessage())
+                .build();
+          }
+        }
+      }
+      return Response.created(location).build();
+
+    } catch (SecurityException e) {
+      LOG.error(e.getMessage(), e);
+
+      return Response.status(Response.Status.BAD_REQUEST)
+          .entity("seed host \"" + seedHost.get() + "\" JMX threw security exception: " + e.getMessage())
+          .build();
+
+    } catch (ReaperException e) {
+      LOG.error(e.getMessage(), e);
+
+      return Response.status(Response.Status.BAD_REQUEST)
+          .entity(String.format("failed to create cluster %s with seed host %s", clusterName.orNull(), seedHost.get()))
+          .build();
+    }
+  }
+
+  private Cluster findClusterWithSeedHost(String seedHost) throws ReaperException {
     Optional<String> clusterName = Optional.absent();
     Optional<String> partitioner = Optional.absent();
     Optional<List<String>> liveNodes = Optional.absent();
 
-    Set<String> seedHosts = parseSeedHosts(seedHostInput);
-    String cluster = parseClusterNameFromSeedHost(seedHostInput).or("");
+    Set<String> seedHosts = parseSeedHosts(seedHost);
+    String cluster = parseClusterNameFromSeedHost(seedHost).or("");
 
     try {
-      JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connectAny(
-              Optional.absent(),
-              seedHosts
-                  .stream()
-                  .map(
-                      host ->
-                          Node.builder()
-                              .withClusterName(cluster)
-                              .withHostname(parseSeedHost(host))
-                              .build())
-                  .collect(Collectors.toList()),
-              context.config.getJmxConnectionTimeoutInSeconds());
-
+      JmxProxy jmxProxy = connectAny(seedHosts, cluster);
       clusterName = Optional.of(jmxProxy.getClusterName());
       partitioner = Optional.of(jmxProxy.getPartitioner());
       liveNodes = Optional.of(jmxProxy.getLiveNodes());
@@ -280,42 +273,6 @@ public final class ClusterResource {
     return new Cluster(clusterName.get(), partitioner.get(), seedHostsFinal);
   }
 
-  @Deprecated
-  @PUT
-  @Path("/{cluster_name}")
-  public Response modifyClusterSeed(
-      @Context UriInfo uriInfo,
-      @PathParam("cluster_name") String clusterName,
-      @QueryParam("seedHost") Optional<String> seedHost)
-      throws ReaperException {
-
-    if (!seedHost.isPresent()) {
-      LOG.error("PUT on cluster resource called without seedHost");
-      return Response.status(400).entity("query parameter \"seedHost\" required").build();
-    }
-    LOG.info("modify cluster called with: cluster_name = {}, seedHost = {}", clusterName, seedHost.get());
-
-    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
-
-    if (!cluster.isPresent()) {
-      return Response.status(Response.Status.NOT_FOUND)
-          .entity("cluster with name " + clusterName + " not found")
-          .build();
-    }
-
-    Cluster newCluster = updateClusterSeeds(cluster.get(), seedHost.get());
-
-    if (cluster.get().getSeedHosts().equals(newCluster.getSeedHosts())) {
-      // No change in the node list compared to storage
-      return Response.notModified()
-          .entity(
-              "Topology hasn't changed in cluster " + clusterName + ". No update was performed.")
-          .build();
-    }
-
-    return viewCluster(newCluster.getName(), Optional.<Integer>absent(), Optional.<URI>absent());
-  }
-
   /**
    * Updates the list of nodes of a cluster based on the current topology.
    *
@@ -328,20 +285,7 @@ public final class ClusterResource {
     Set<String> newSeeds = parseSeedHosts(seedHosts);
 
     try {
-      JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connectAny(
-              Optional.absent(),
-              newSeeds
-                  .stream()
-                  .map(
-                      host ->
-                          Node.builder()
-                              .withClusterName(cluster.getName())
-                              .withHostname(parseSeedHost(host))
-                              .build())
-                  .collect(Collectors.toList()),
-              context.config.getJmxConnectionTimeoutInSeconds());
-
+      JmxProxy jmxProxy = connectAny(newSeeds,cluster.getName());
       Optional<List<String>> liveNodes = Optional.of(jmxProxy.getLiveNodes());
       newSeeds = liveNodes.get().stream().collect(Collectors.toSet());
 
@@ -364,46 +308,35 @@ public final class ClusterResource {
    * Delete a Cluster object with given name.
    *
    * <p>
-   * Cluster can be only deleted when it hasn't any RepairRun or RepairSchedule instances under it, i.e. you mus
+   * Cluster can be only deleted when it hasn't any RepairRun or RepairSchedule instances under it, i.e. you must
    * delete all repair runs and schedules first.
    *
    * @param clusterName The name of the Cluster instance you are about to delete.
-   * @return The deleted RepairRun instance, with state overwritten to string "DELETED".
    */
   @DELETE
   @Path("/{cluster_name}")
   public Response deleteCluster(
-      @PathParam("cluster_name") String clusterName)
-      throws ReaperException {
+      @PathParam("cluster_name") String clusterName) {
 
-    LOG.info("delete cluster called with clusterName: {}", clusterName);
+    LOG.info("delete cluster {}", clusterName);
     Optional<Cluster> clusterToDelete = context.storage.getCluster(clusterName);
     if (!clusterToDelete.isPresent()) {
       return Response.status(Response.Status.NOT_FOUND)
-          .entity("cluster with name \"" + clusterName + "\" not found")
+          .entity("cluster \"" + clusterName + "\" not found")
           .build();
     }
     if (!context.storage.getRepairSchedulesForCluster(clusterName).isEmpty()) {
-      return Response.status(Response.Status.FORBIDDEN)
-          .entity("cluster with name \"" + clusterName + "\" cannot be deleted, as it " + "has repair schedules")
+      return Response.status(Response.Status.CONFLICT)
+          .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair schedules")
           .build();
     }
     if (!context.storage.getRepairRunsForCluster(clusterName).isEmpty()) {
-      return Response.status(Response.Status.FORBIDDEN)
-          .entity("cluster with name \"" + clusterName + "\" cannot be deleted, as it " + "has repair runs")
+      return Response.status(Response.Status.CONFLICT)
+          .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair runs")
           .build();
     }
-    Optional<Cluster> deletedCluster = context.storage.deleteCluster(clusterName);
-    if (deletedCluster.isPresent()) {
-      return Response.ok(
-          new ClusterStatus(
-              deletedCluster.get(),
-              Collections.<RepairRunStatus>emptyList(),
-              Collections.<RepairScheduleStatus>emptyList(),
-              getNodesStatus(deletedCluster).orNull()))
-          .build();
-    }
-    return Response.serverError().entity("delete failed for schedule with name \"" + clusterName + "\"").build();
+    context.storage.deleteCluster(clusterName);
+    return Response.accepted().build();
   }
 
   /**
@@ -416,17 +349,7 @@ public final class ClusterResource {
   private Callable<Optional<NodesStatus>> getEndpointState(List<String> seeds, String clusterName) {
     return () -> {
       try {
-        JmxProxy jmxProxy =
-            context.jmxConnectionFactory.connectAny(
-                Optional.absent(),
-                seeds
-                    .stream()
-                    .map(
-                        host ->
-                            Node.builder().withClusterName(clusterName).withHostname(host).build())
-                    .collect(Collectors.toList()),
-                context.config.getJmxConnectionTimeoutInSeconds());
-
+        JmxProxy jmxProxy = connectAny(seeds, clusterName);
         Optional<String> allEndpointsState = Optional.fromNullable(jmxProxy.getAllEndpointsState());
         Optional<Map<String, String>> simpleStates =
             Optional.fromNullable(jmxProxy.getSimpleStates());
@@ -513,5 +436,20 @@ public final class ClusterResource {
     }
 
     return Optional.absent();
+  }
+
+  private JmxProxy connectAny(Collection<String> seedHosts, String cluster) throws ReaperException {
+    return context.jmxConnectionFactory.connectAny(
+        Optional.absent(),
+        seedHosts
+            .stream()
+            .map(
+                host ->
+                    Node.builder()
+                        .withClusterName(cluster)
+                        .withHostname(parseSeedHost(host))
+                        .build())
+            .collect(Collectors.toList()),
+        context.config.getJmxConnectionTimeoutInSeconds());
   }
 }

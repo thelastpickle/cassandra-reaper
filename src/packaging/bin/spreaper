@@ -83,6 +83,9 @@ class ReaperCaller(object):
         if not str(r.status_code).startswith("2"):
             print r.text
         r.raise_for_status()
+        if 'Location' in r.headers:
+          # any non 303/307 response with a 'Location' header, is a successful mutation pointing to the resource
+          return self._http_req("GET", r.headers['Location'])
         return r.text
 
     def get(self, endpoint):

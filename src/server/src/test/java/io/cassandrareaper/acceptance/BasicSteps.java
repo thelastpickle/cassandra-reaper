@@ -290,7 +290,6 @@ public final class BasicSteps {
   @When("^an add-cluster request is made to reaper$")
   public void an_add_cluster_request_is_made_to_reaper() throws Throwable {
     synchronized (BasicSteps.class) {
-      final StringBuffer responseData = new StringBuffer();
 
       RUNNERS
           .parallelStream()
@@ -299,24 +298,33 @@ public final class BasicSteps {
                 Map<String, String> params = Maps.newHashMap();
                 params.put("seedHost", TestContext.SEED_HOST);
                 Response response = runner.callReaper("POST", "/cluster", Optional.of(params));
+                int responseStatus = response.getStatus();
 
                 Assertions.assertThat(
                         ImmutableList.of(
                             Response.Status.CREATED.getStatusCode(),
-                            Response.Status.NOT_MODIFIED.getStatusCode()))
-                    .contains(response.getStatus());
+                            Response.Status.NO_CONTENT.getStatusCode(),
+                            Response.Status.OK.getStatusCode()))
+                    .contains(responseStatus);
 
-                if (Response.Status.CREATED.getStatusCode() == response.getStatus()) {
-                  responseData.append(response.readEntity(String.class));
-                  Map<String, Object> cluster =
-                      SimpleReaperClient.parseClusterStatusJSON(responseData.toString());
+                // rest command requests should not response with bodies, follow the location to GET that
+                Assertions.assertThat(response.readEntity(String.class)).isEmpty();
+
+                // follow to new location (to GET resource)
+                response = runner.callReaper("GET", response.getLocation().toString(), Optional.absent());
+
+                String responseData = response.readEntity(String.class);
+                Assertions.assertThat(responseData).isNotEmpty();
+                Map<String, Object> cluster = SimpleReaperClient.parseClusterStatusJSON(responseData);
+
+                if (Response.Status.CREATED.getStatusCode() == responseStatus) {
                   TestContext.TEST_CLUSTER = (String) cluster.get("name");
                 }
               });
 
-      Assertions.assertThat(responseData).isNotEmpty();
-
-      callAndExpect("GET", "/cluster/" + TestContext.TEST_CLUSTER,
+      callAndExpect(
+          "GET",
+          "/cluster/" + TestContext.TEST_CLUSTER,
           Optional.<Map<String, String>>absent(),
           Optional.<String>absent(),
           Response.Status.OK);
@@ -732,7 +740,7 @@ public final class BasicSteps {
           "/cluster/" + clusterName,
           EMPTY_PARAMS,
           Optional.of("\"" + clusterName + "\""),
-          Response.Status.FORBIDDEN);
+          Response.Status.CONFLICT);
     }
   }
 
@@ -744,7 +752,7 @@ public final class BasicSteps {
           "/cluster/" + TestContext.TEST_CLUSTER,
           EMPTY_PARAMS,
           Optional.of("\"" + TestContext.TEST_CLUSTER + "\""),
-          Response.Status.FORBIDDEN);
+          Response.Status.CONFLICT);
     }
   }
 
@@ -756,13 +764,13 @@ public final class BasicSteps {
           "/cluster/" + clusterName,
           EMPTY_PARAMS,
           Optional.<String>absent(),
-          Response.Status.OK,
+          Response.Status.ACCEPTED,
           Response.Status.NOT_FOUND);
 
       await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
         try {
           callAndExpect(
-              "DELETE",
+              "GET",
               "/cluster/" + clusterName,
               EMPTY_PARAMS,
               Optional.<String>absent(),
@@ -784,12 +792,13 @@ public final class BasicSteps {
           "/cluster/" + TestContext.TEST_CLUSTER,
           EMPTY_PARAMS,
           Optional.<String>absent(),
-          Response.Status.OK, Response.Status.NOT_FOUND);
+          Response.Status.ACCEPTED,
+          Response.Status.NOT_FOUND);
 
       await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
         try {
           callAndExpect(
-              "DELETE",
+              "GET",
               "/cluster/" + TestContext.TEST_CLUSTER,
               EMPTY_PARAMS,
               Optional.<String>absent(),
@@ -1058,7 +1067,7 @@ public final class BasicSteps {
 
         Response response = runner.callReaper(
             "PUT",
-            "/repair_run/" + TestContext.LAST_MODIFIED_ID + "?state=RUNNING",
+            "/repair_run/" + TestContext.LAST_MODIFIED_ID + "/state/RUNNING",
             Optional.of(Maps.newHashMap()));
 
         Assertions.assertThat(ImmutableList.of(
@@ -1077,7 +1086,7 @@ public final class BasicSteps {
 
       callAndExpect(
           "PUT",
-          "/repair_run/" + TestContext.LAST_MODIFIED_ID + "?state=RUNNING",
+          "/repair_run/" + TestContext.LAST_MODIFIED_ID + "/state/RUNNING",
           Optional.absent(),
           Optional.absent(),
           Response.Status.NOT_MODIFIED);
@@ -1094,7 +1103,7 @@ public final class BasicSteps {
 
         Response response = runner.callReaper(
             "PUT",
-            "/repair_run/" + TestContext.LAST_MODIFIED_ID + "?state=PAUSED",
+            "/repair_run/" + TestContext.LAST_MODIFIED_ID + "/state/PAUSED",
             Optional.of(params));
 
         Assertions.assertThat(ImmutableList.of(
@@ -1114,7 +1123,7 @@ public final class BasicSteps {
 
       callAndExpect(
           "PUT",
-          "/repair_run/" + TestContext.LAST_MODIFIED_ID + "?state=PAUSED",
+          "/repair_run/" + TestContext.LAST_MODIFIED_ID + "/state/PAUSED",
           Optional.absent(),
           Optional.absent(),
           Response.Status.NOT_MODIFIED,
