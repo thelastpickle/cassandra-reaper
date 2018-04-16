@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -175,25 +176,25 @@ public final class ClusterResource {
 
     try {
       Cluster cluster = findClusterWithSeedHost(seedHost.get());
+      if (null == cluster) {
+        String msg = String.format("failed to find cluster %s with seed host %s", clusterName.or(""), seedHost.get());
+        return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
+      }
       if (clusterName.isPresent() && !cluster.getName().equals(clusterName.get())) {
 
-        LOG.error(
-            "POST/PUT on cluster resource {} called with seedHost {} belonging to different cluster {}",
+        String msg = String.format(
+            "POST/PUT on cluster resource %s called with seedHost %s belonging to different cluster %s",
             clusterName.get(),
             seedHost.get(),
             cluster.getName());
 
-        return Response
-            .status(Response.Status.BAD_REQUEST)
-            .entity("query parameter \"seedHost\" belonging to wrong cluster")
-            .build();
+        LOG.info(msg);
+        return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
       }
       Optional<Cluster> existingCluster = context.storage.getCluster(cluster.getName());
       URI location = uriInfo.getBaseUriBuilder().path("cluster").path(cluster.getName()).build();
       if (existingCluster.isPresent()) {
-        LOG.debug(
-            "Cluster already stored with this name: {}. Trying to updating the node list.",
-            existingCluster.get().getName());
+        LOG.debug("Attempting updating nodelist for cluster {}", existingCluster.get().getName());
 
         // the cluster is already managed by reaper. if nothing is changed return 204. then if updated return 200.
         cluster = updateClusterSeeds(existingCluster.get(), seedHost.get());
@@ -213,36 +214,27 @@ public final class ClusterResource {
           try {
             clusterRepairScheduler.scheduleRepairs(cluster);
           } catch (ReaperException e) {
-            LOG.error("failed to automatically schedule repairs", e);
-            return Response.status(400)
-                .entity(
-                    "failed to automatically schedule repairs for cluster with seed host \""
-                    + seedHost.get()
-                    + "\". Exception was: "
-                    + e.getMessage())
-                .build();
+            String msg = String.format(
+                "failed to automatically schedule repairs for cluster %s with seed host %s",
+                clusterName.or(""),
+                seedHost.get());
+
+            LOG.error(msg, e);
+            return Response.serverError().entity(msg).build();
           }
         }
       }
       return Response.created(location).build();
 
-    } catch (SecurityException e) {
-      LOG.error(e.getMessage(), e);
-
-      return Response.status(Response.Status.BAD_REQUEST)
-          .entity("seed host \"" + seedHost.get() + "\" JMX threw security exception: " + e.getMessage())
-          .build();
-
     } catch (ReaperException e) {
-      LOG.error(e.getMessage(), e);
-
-      return Response.status(Response.Status.BAD_REQUEST)
-          .entity(String.format("failed to create cluster %s with seed host %s", clusterName.orNull(), seedHost.get()))
-          .build();
+      String msg = String.format("update cluster failed, %s with seed host %s", clusterName.or(""), seedHost.get());
+      LOG.error(msg, e);
+      return Response.serverError().entity(msg).build();
     }
   }
 
-  private Cluster findClusterWithSeedHost(String seedHost) throws ReaperException {
+  @Nullable // if cluster can't be found
+  private Cluster findClusterWithSeedHost(String seedHost) {
     Optional<String> clusterName = Optional.absent();
     Optional<String> partitioner = Optional.absent();
     Optional<List<String>> liveNodes = Optional.absent();
@@ -256,21 +248,16 @@ public final class ClusterResource {
       partitioner = Optional.of(jmxProxy.getPartitioner());
       liveNodes = Optional.of(jmxProxy.getLiveNodes());
     } catch (ReaperException e) {
-      LOG.error("failed to create cluster with seed hosts: {}", seedHosts, e);
+      LOG.error("failed to find cluster with seed hosts: {}", seedHosts, e);
     }
 
-    if (!clusterName.isPresent()) {
-      throw new ReaperException("Could not connect any seed host");
+    if (clusterName.isPresent()) {
+      if (context.config.getEnableDynamicSeedList() && liveNodes.isPresent()) {
+        seedHosts = !liveNodes.get().isEmpty() ? liveNodes.get().stream().collect(Collectors.toSet()) : seedHosts;
+      }
+      LOG.debug("Seeds {}", seedHosts);
     }
-
-    Set<String> seedHostsFinal = seedHosts;
-    if (context.config.getEnableDynamicSeedList() && liveNodes.isPresent()) {
-      seedHostsFinal = !liveNodes.get().isEmpty() ? liveNodes.get().stream().collect(Collectors.toSet()) : seedHosts;
-    }
-
-    LOG.debug("Seeds {}", seedHostsFinal);
-
-    return new Cluster(clusterName.get(), partitioner.get(), seedHostsFinal);
+    return clusterName.isPresent() ? new Cluster(clusterName.get(), partitioner.get(), seedHosts) : null;
   }
 
   /**
@@ -279,28 +266,23 @@ public final class ClusterResource {
    * @param cluster the Cluster object we intend to update
    * @param seedHosts a list of hosts to connect to in the cluster
    * @return the updated cluster object with a refreshed seed list
-   * @throws ReaperException Any runtime exception that could be triggered
+   * @throws ReaperException failure to jmx connect/call to cluster
    */
   private Cluster updateClusterSeeds(Cluster cluster, String seedHosts) throws ReaperException {
     Set<String> newSeeds = parseSeedHosts(seedHosts);
-
     try {
       JmxProxy jmxProxy = connectAny(newSeeds,cluster.getName());
       Optional<List<String>> liveNodes = Optional.of(jmxProxy.getLiveNodes());
       newSeeds = liveNodes.get().stream().collect(Collectors.toSet());
-
-      if (cluster.getSeedHosts().equals(newSeeds)) {
-        // No change in the node list compared to storage
-        return cluster;
+      if (!cluster.getSeedHosts().equals(newSeeds)) {
+        cluster = new Cluster(cluster.getName(), cluster.getPartitioner(), newSeeds);
+        context.storage.updateCluster(cluster);
       }
-
-      Cluster newCluster = new Cluster(cluster.getName(), cluster.getPartitioner(), newSeeds);
-      context.storage.updateCluster(newCluster);
-
-      return newCluster;
-
+      return cluster;
     } catch (ReaperException e) {
-      throw new ReaperException("failed to create cluster with new seed hosts", e);
+      throw new ReaperException(
+          String.format("failed to update cluster %s with new seed hosts %s", cluster.getName(), seedHosts),
+          e);
     }
   }
 
@@ -351,15 +333,13 @@ public final class ClusterResource {
       try {
         JmxProxy jmxProxy = connectAny(seeds, clusterName);
         Optional<String> allEndpointsState = Optional.fromNullable(jmxProxy.getAllEndpointsState());
-        Optional<Map<String, String>> simpleStates =
-            Optional.fromNullable(jmxProxy.getSimpleStates());
+        Optional<Map<String, String>> simpleStates = Optional.fromNullable(jmxProxy.getSimpleStates());
 
         return Optional.of(
-            new NodesStatus(
-                jmxProxy.getHost(), allEndpointsState.or(""), simpleStates.or(new HashMap<>())));
+            new NodesStatus(jmxProxy.getHost(), allEndpointsState.or(""), simpleStates.or(new HashMap<>())));
 
       } catch (RuntimeException e) {
-        LOG.debug("failed to create cluster with seed hosts: {}", seeds, e);
+        LOG.debug("failed to get endpoints for cluster {} with seeds {}", clusterName, seeds, e);
         Thread.sleep((int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds() * 1000);
         return Optional.absent();
       }
@@ -375,19 +355,13 @@ public final class ClusterResource {
    * @return An optional NodesStatus object with all nodes statuses
    */
   public Optional<NodesStatus> getNodesStatus(Optional<Cluster> cluster) {
-    Optional<NodesStatus> nodesStatus = Optional.absent();
     if (cluster.isPresent() && null != cluster.get().getSeedHosts()) {
-
       List<String> seedHosts = Lists.newArrayList(cluster.get().getSeedHosts());
-
-      List<Callable<Optional<NodesStatus>>> endpointStateTasks =
-          Lists.<Callable<Optional<NodesStatus>>>newArrayList(
-              getEndpointState(seedHosts, cluster.get().getName()),
-              getEndpointState(seedHosts, cluster.get().getName()),
-              getEndpointState(seedHosts, cluster.get().getName()));
+      Callable<Optional<NodesStatus>> callable = getEndpointState(seedHosts, cluster.get().getName());
+      List<Callable<Optional<NodesStatus>>> endpointStateTasks = Lists.newArrayList(callable, callable, callable);
 
       try {
-        nodesStatus = CLUSTER_STATUS_EXECUTOR.invokeAny(
+        return CLUSTER_STATUS_EXECUTOR.invokeAny(
             endpointStateTasks,
             (int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds(),
             TimeUnit.SECONDS);
@@ -395,11 +369,8 @@ public final class ClusterResource {
       } catch (InterruptedException | ExecutionException | TimeoutException e) {
         LOG.debug("failed grabbing nodes status", e);
       }
-      if (nodesStatus.isPresent()) {
-        return nodesStatus;
-      }
     }
-    return nodesStatus;
+    return Optional.absent();
   }
 
   /*
@@ -443,12 +414,7 @@ public final class ClusterResource {
         Optional.absent(),
         seedHosts
             .stream()
-            .map(
-                host ->
-                    Node.builder()
-                        .withClusterName(cluster)
-                        .withHostname(parseSeedHost(host))
-                        .build())
+            .map(host -> Node.builder().withClusterName(cluster).withHostname(parseSeedHost(host)).build())
             .collect(Collectors.toList()),
         context.config.getJmxConnectionTimeoutInSeconds());
   }
