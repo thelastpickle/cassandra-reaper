@@ -598,25 +598,21 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Optional<RepairUnit> getRepairUnit(
-      String cluster,
-      String keyspace,
-      Set<String> columnFamilyNames,
-      Set<String> nodes,
-      Set<String> datacenters,
-      Set<String> blacklistedTables) {
+  public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
     // brute force again
     RepairUnit repairUnit = null;
     Statement stmt = new SimpleStatement(SELECT_REPAIR_UNIT);
     stmt.setIdempotent(Boolean.TRUE);
     ResultSet results = session.execute(stmt);
     for (Row repairUnitRow : results) {
-      if (repairUnitRow.getString("cluster_name").equals(cluster)
-          && repairUnitRow.getString("keyspace_name").equals(keyspace)
-          && repairUnitRow.getSet("column_families", String.class).equals(columnFamilyNames)
-          && repairUnitRow.getSet("nodes", String.class).equals(nodes)
-          && repairUnitRow.getSet("datacenters", String.class).equals(datacenters)
-          && repairUnitRow.getSet("blacklisted_tables", String.class).equals(blacklistedTables)) {
+      if (repairUnitRow.getString("cluster_name").equals(params.clusterName)
+          && repairUnitRow.getString("keyspace_name").equals(params.keyspaceName)
+          && repairUnitRow.getSet("column_families", String.class).equals(params.columnFamilies)
+          && repairUnitRow.getBool("incremental_repair") == params.incrementalRepair
+          && repairUnitRow.getSet("nodes", String.class).equals(params.nodes)
+          && repairUnitRow.getSet("datacenters", String.class).equals(params.datacenters)
+          && repairUnitRow.getSet("blacklisted_tables", String.class).equals(params.blacklistedTables)) {
+
         repairUnit =
             new RepairUnit.Builder(
                     repairUnitRow.getString("cluster_name"),

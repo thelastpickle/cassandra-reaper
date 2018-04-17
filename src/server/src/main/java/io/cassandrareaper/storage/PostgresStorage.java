@@ -38,7 +38,6 @@ import io.cassandrareaper.storage.postgresql.UuidUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import com.google.common.base.Optional;
@@ -274,19 +273,18 @@ public final class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairUnit> getRepairUnit(
-      String clusterName,
-      String keyspaceName,
-      Set<String> columnFamilies,
-      Set<String> nodes,
-      Set<String> datacenters,
-      Set<String> blacklistedTables) {
+  public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
     RepairUnit result;
     try (Handle h = jdbi.open()) {
       IStoragePostgreSql storage = getPostgresStorage(h);
-      result =
-          storage.getRepairUnitByClusterAndTables(
-              clusterName, keyspaceName, columnFamilies, nodes, datacenters, blacklistedTables);
+
+      result = storage.getRepairUnitByClusterAndTables(
+          params.clusterName,
+          params.keyspaceName,
+          params.columnFamilies,
+          params.nodes,
+          params.datacenters,
+          params.blacklistedTables);
     }
     return Optional.fromNullable(result);
   }

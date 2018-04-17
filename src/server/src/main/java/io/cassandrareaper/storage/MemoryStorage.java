@@ -32,7 +32,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 
@@ -50,7 +49,7 @@ public final class MemoryStorage implements IStorage {
   private final ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairRun> repairRuns = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairUnit> repairUnits = Maps.newConcurrentMap();
-  private final ConcurrentMap<RepairUnitKey, RepairUnit> repairUnitsByKey = Maps.newConcurrentMap();
+  private final ConcurrentMap<RepairUnit.Builder, RepairUnit> repairUnitsByKey = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairSegment> repairSegments = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, LinkedHashMap<UUID, RepairSegment>> repairSegmentsByRunId = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
@@ -177,7 +176,7 @@ public final class MemoryStorage implements IStorage {
     }
     if (canDelete) {
       deletedUnit = repairUnits.remove(repairUnitId);
-      repairUnitsByKey.remove(new RepairUnitKey(deletedUnit));
+      repairUnitsByKey.remove(deletedUnit.with());
     }
     return Optional.fromNullable(deletedUnit);
   }
@@ -207,21 +206,13 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder repairUnit) {
-    Optional<RepairUnit> existing =
-        getRepairUnit(
-            repairUnit.clusterName,
-            repairUnit.keyspaceName,
-            repairUnit.columnFamilies,
-            repairUnit.nodes,
-            repairUnit.datacenters,
-            repairUnit.blacklistedTables);
+    Optional<RepairUnit> existing = getRepairUnit(repairUnit);
     if (existing.isPresent() && repairUnit.incrementalRepair == existing.get().getIncrementalRepair()) {
       return existing.get();
     } else {
       RepairUnit newRepairUnit = repairUnit.build(UUIDs.timeBased());
       repairUnits.put(newRepairUnit.getId(), newRepairUnit);
-      RepairUnitKey unitKey = new RepairUnitKey(newRepairUnit);
-      repairUnitsByKey.put(unitKey, newRepairUnit);
+      repairUnitsByKey.put(repairUnit, newRepairUnit);
       return newRepairUnit;
     }
   }
@@ -232,16 +223,8 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairUnit> getRepairUnit(
-      String cluster,
-      String keyspace,
-      Set<String> tables,
-      Set<String> nodes,
-      Set<String> datacenters,
-      Set<String> blacklistedTables) {
-    return Optional.fromNullable(
-        repairUnitsByKey.get(
-            new RepairUnitKey(cluster, keyspace, tables, nodes, datacenters, blacklistedTables)));
+  public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
+    return Optional.fromNullable(repairUnitsByKey.get(params));
   }
 
   private void addRepairSegments(Collection<RepairSegment.Builder> segments, UUID runId) {
@@ -480,57 +463,6 @@ public final class MemoryStorage implements IStorage {
         scheduleStatuses.add(new RepairScheduleStatus(schedule, unit));
       }
       return scheduleStatuses;
-    }
-  }
-
-  public static class RepairUnitKey {
-
-    public final String cluster;
-    public final String keyspace;
-    public final Set<String> tables;
-    public final Set<String> nodes;
-    public final Set<String> datacenters;
-    public final Set<String> blacklistedTables;
-
-    public RepairUnitKey(RepairUnit unit) {
-      this(
-          unit.getClusterName(),
-          unit.getKeyspaceName(),
-          unit.getColumnFamilies(),
-          unit.getNodes(),
-          unit.getDatacenters(),
-          unit.getBlacklistedTables());
-    }
-
-    public RepairUnitKey(
-        String cluster,
-        String keyspace,
-        Set<String> tables,
-        Set<String> nodes,
-        Set<String> datacenters,
-        Set<String> blacklistedTables) {
-      this.cluster = cluster;
-      this.keyspace = keyspace;
-      this.tables = tables;
-      this.nodes = nodes;
-      this.datacenters = datacenters;
-      this.blacklistedTables = blacklistedTables;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      return other instanceof RepairUnitKey
-          && cluster.equals(((RepairUnitKey) other).cluster)
-          && keyspace.equals(((RepairUnitKey) other).keyspace)
-          && tables.equals(((RepairUnitKey) other).tables)
-          && nodes.equals(((RepairUnitKey) other).nodes)
-          && datacenters.equals(((RepairUnitKey) other).datacenters)
-          && blacklistedTables.equals(((RepairUnitKey) other).blacklistedTables);
-    }
-
-    @Override
-    public int hashCode() {
-      return cluster.hashCode() ^ keyspace.hashCode() ^ tables.hashCode();
     }
   }
 

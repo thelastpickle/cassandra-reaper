@@ -106,31 +106,30 @@ public final class ClusterRepairScheduler {
   }
 
   private void createRepairSchedule(Cluster cluster, String keyspace, DateTime nextActivationTime) {
-    try {
-      boolean incrementalRepair = context.config.getIncrementalRepair();
+    boolean incrementalRepair = context.config.getIncrementalRepair();
 
-      RepairSchedule repairSchedule =
-          repairScheduleService.storeNewRepairSchedule(
-              cluster,
-              repairUnitService.getNewOrExistingRepairUnit(
-                  cluster,
+    RepairUnit.Builder builder
+        = new RepairUnit.Builder(
+                  cluster.getName(),
                   keyspace,
                   Collections.emptySet(),
                   incrementalRepair,
                   Collections.emptySet(),
                   Collections.emptySet(),
-                  Collections.emptySet()),
-              context.config.getScheduleDaysBetween(),
-              nextActivationTime,
-              REPAIR_OWNER,
-              context.config.getSegmentCountPerNode(),
-              context.config.getRepairParallelism(),
-              context.config.getRepairIntensity());
+                  Collections.emptySet());
 
-      LOG.info("Scheduled repair created: {}", repairSchedule);
-    } catch (ReaperException e) {
-      throw Throwables.propagate(e);
-    }
+    RepairSchedule repairSchedule
+        = repairScheduleService.storeNewRepairSchedule(
+            cluster,
+            repairUnitService.getNewOrExistingRepairUnit(cluster, builder),
+            context.config.getScheduleDaysBetween(),
+            nextActivationTime,
+            REPAIR_OWNER,
+            context.config.getSegmentCountPerNode(),
+            context.config.getRepairParallelism(),
+            context.config.getRepairIntensity());
+
+    LOG.info("Scheduled repair created: {}", repairSchedule);
   }
 
   private boolean keyspaceHasNoTable(AppContext context, Cluster cluster, String keyspace) {

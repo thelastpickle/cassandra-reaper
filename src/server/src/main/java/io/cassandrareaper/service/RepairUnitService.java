@@ -17,12 +17,8 @@ package io.cassandrareaper.service;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxProxy;
-
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.base.Optional;
 import org.slf4j.Logger;
@@ -43,84 +39,21 @@ public final class RepairUnitService {
     return new RepairUnitService(context);
   }
 
-  public RepairUnit getNewOrExistingRepairUnit(
-      Cluster cluster,
-      String keyspace,
-      Set<String> tableNames,
-      Boolean incrementalRepair,
-      Set<String> nodesToRepair,
-      Set<String> datacenters,
-      Set<String> blacklistedTables) throws ReaperException {
+  public RepairUnit getNewOrExistingRepairUnit(Cluster cluster, RepairUnit.Builder params) {
+    if (params.incrementalRepair) {
+      try {
+        JmxProxy jmxProxy
+            = context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds());
 
-    Optional<RepairUnit> storedRepairUnit = context.storage.getRepairUnit(
-        cluster.getName(),
-        keyspace,
-        tableNames,
-        nodesToRepair,
-        datacenters,
-        blacklistedTables);
-
-    Optional<String> cassandraVersion = Optional.absent();
-
-    try {
-      JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connectAny(
-              Optional.absent(),
-              cluster
-                  .getSeedHosts()
-                  .stream()
-                  .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
-                  .collect(Collectors.toList()),
-              context.config.getJmxConnectionTimeoutInSeconds());
-
-      cassandraVersion = Optional.fromNullable(jmxProxy.getCassandraVersion());
-    } catch (ReaperException e) {
-      LOG.warn("couldn't connect to hosts: {}, life sucks...", cluster.getSeedHosts(), e);
+        String version = jmxProxy.getCassandraVersion();
+        if (null != version && version.startsWith("2.0")) {
+          throw new IllegalArgumentException("Incremental repair does not work with Cassandra versions before 2.1");
+        }
+      } catch (ReaperException e) {
+        LOG.warn("unknown version to cluster {}, maybe enabling incremental on 2.0...", cluster.getName(), e);
+      }
     }
-
-    if (cassandraVersion.isPresent() && cassandraVersion.get().startsWith("2.0") && incrementalRepair) {
-      String errMsg = "Incremental repair does not work with Cassandra versions before 2.1";
-      LOG.error(errMsg);
-      throw new ReaperException(errMsg);
-    }
-
-    RepairUnit theRepairUnit;
-
-    if (storedRepairUnit.isPresent()
-        && storedRepairUnit.get().getIncrementalRepair().equals(incrementalRepair)
-        && storedRepairUnit.get().getNodes().equals(nodesToRepair)
-        && storedRepairUnit.get().getDatacenters().equals(datacenters)
-        && storedRepairUnit.get().getBlacklistedTables().equals(blacklistedTables)
-        && storedRepairUnit.get().getColumnFamilies().equals(tableNames)) {
-      LOG.info(
-          "use existing repair unit for cluster '{}', keyspace '{}', "
-              + "column families: {}, nodes: {} and datacenters: {}",
-          cluster.getName(),
-          keyspace,
-          tableNames,
-          nodesToRepair,
-          datacenters);
-
-      theRepairUnit = storedRepairUnit.get();
-    } else {
-      LOG.info(
-          "create new repair unit for cluster '{}', keyspace '{}', column families: {}, nodes: {} and datacenters: {}",
-          cluster.getName(),
-          keyspace,
-          tableNames,
-          nodesToRepair,
-          datacenters);
-
-      theRepairUnit = context.storage.addRepairUnit(
-              new RepairUnit.Builder(
-                  cluster.getName(),
-                  keyspace,
-                  tableNames,
-                  incrementalRepair,
-                  nodesToRepair,
-                  datacenters,
-                  blacklistedTables));
-    }
-    return theRepairUnit;
+    Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(params);
+    return repairUnit.isPresent() ? repairUnit.get() : context.storage.addRepairUnit(params);
   }
 }

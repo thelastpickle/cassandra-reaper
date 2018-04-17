@@ -26,7 +26,6 @@ import io.cassandrareaper.service.RepairParameters;
 import io.cassandrareaper.service.RingRange;
 
 import java.util.Collection;
-import java.util.Set;
 import java.util.UUID;
 
 import com.google.common.base.Optional;
@@ -79,21 +78,7 @@ public interface IStorage {
 
   Optional<RepairUnit> getRepairUnit(UUID id);
 
-  /**
-   * Get a stored RepairUnit targeting the given tables in the given keyspace.
-   *
-   * @param cluster Cluster name for the RepairUnit.
-   * @param keyspace Keyspace name for the RepairUnit.
-   * @param columnFamilyNames Set of column families targeted by the RepairUnit.
-   * @return Instance of a RepairUnit matching the parameters, or null if not found.
-   */
-  Optional<RepairUnit> getRepairUnit(
-      String cluster,
-      String keyspace,
-      Set<String> columnFamilyNames,
-      Set<String> nodes,
-      Set<String> datacenters,
-      Set<String> blacklistedTables);
+  Optional<RepairUnit> getRepairUnit(RepairUnit.Builder repairUnit);
 
   boolean updateRepairSegment(RepairSegment newRepairSegment);
 

@@ -19,11 +19,15 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.jmx.JmxProxy;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -46,11 +50,31 @@ public final class RepairScheduleService {
     return new RepairScheduleService(context);
   }
 
+  public Optional<RepairSchedule> conflictingRepairSchedule(Cluster cluster, RepairUnit repairUnit) {
+
+    Collection<RepairSchedule> repairSchedules = context.storage
+        .getRepairSchedulesForClusterAndKeyspace(repairUnit.getClusterName(), repairUnit.getKeyspaceName());
+
+    for (RepairSchedule sched : repairSchedules) {
+      Optional<RepairUnit> repairUnitForSched = context.storage.getRepairUnit(sched.getRepairUnitId());
+      Preconditions.checkState(repairUnitForSched.isPresent());
+      Preconditions.checkState(repairUnitForSched.get().getClusterName().equals(repairUnit.getClusterName()));
+      Preconditions.checkState(repairUnitForSched.get().getKeyspaceName().equals(repairUnit.getKeyspaceName()));
+
+      if (isConflictingSchedules(cluster, repairUnitForSched.get(), repairUnit)) {
+        return Optional.of(sched);
+      }
+    }
+    return Optional.absent();
+  }
+
   /**
    * Instantiates a RepairSchedule and stores it in the storage backend.
    *
+   *<p>
+   * Expected to have called first  conflictingRepairSchedule(Cluster, RepairUnit)
+   *
    * @return the new, just stored RepairSchedule instance
-   * @throws ReaperException when fails to store the RepairSchedule.
    */
   public RepairSchedule storeNewRepairSchedule(
       Cluster cluster,
@@ -60,8 +84,14 @@ public final class RepairScheduleService {
       String owner,
       int segmentCountPerNode,
       RepairParallelism repairParallelism,
-      Double intensity)
-      throws ReaperException {
+      Double intensity) {
+
+    Preconditions.checkArgument(
+        !conflictingRepairSchedule(cluster, repairUnit).isPresent(),
+        "A repair schedule already exists for cluster \"%s\", keyspace \"%s\", and column families: %s",
+        cluster.getName(),
+        repairUnit.getKeyspaceName(),
+        repairUnit.getColumnFamilies());
 
     RepairSchedule.Builder scheduleBuilder =
         new RepairSchedule.Builder(
@@ -77,52 +107,36 @@ public final class RepairScheduleService {
             segmentCountPerNode);
 
     scheduleBuilder.owner(owner);
-
-    Collection<RepairSchedule> repairSchedules = context.storage
-        .getRepairSchedulesForClusterAndKeyspace(repairUnit.getClusterName(), repairUnit.getKeyspaceName());
-
-    for (RepairSchedule sched : repairSchedules) {
-      Optional<RepairUnit> repairUnitForSched = context.storage.getRepairUnit(sched.getRepairUnitId());
-      if (repairUnitForSched.isPresent()
-          && repairUnitForSched.get().getClusterName().equals(repairUnit.getClusterName())
-          && repairUnitForSched.get().getKeyspaceName().equals(repairUnit.getKeyspaceName())
-          && repairUnitForSched.get().getIncrementalRepair().equals(repairUnit.getIncrementalRepair())) {
-
-        if (isConflictingSchedules(repairUnitForSched.get(), repairUnit)) {
-          String errMsg = String.format(
-              "A repair schedule already exists for cluster \"%s\", " + "keyspace \"%s\", and column families: %s",
-              cluster.getName(),
-              repairUnit.getKeyspaceName(),
-              Sets.intersection(repairUnit.getColumnFamilies(), repairUnitForSched.get().getColumnFamilies()));
-
-          LOG.error(errMsg);
-          throw new ReaperException(errMsg);
-        }
-      }
-    }
-
-    RepairSchedule newRepairSchedule = context.storage.addRepairSchedule(scheduleBuilder);
-    if (newRepairSchedule == null) {
-
-      String errMsg = String.format(
-          "failed storing repair schedule for cluster \"%s\", " + "keyspace \"%s\", and column families: %s",
-          cluster.getName(), repairUnit.getKeyspaceName(), repairUnit.getColumnFamilies());
-
-      LOG.error(errMsg);
-      throw new ReaperException(errMsg);
-    }
-    return newRepairSchedule;
+    return context.storage.addRepairSchedule(scheduleBuilder);
   }
 
-  private static boolean isConflictingSchedules(RepairUnit newRepairUnit, RepairUnit existingRepairUnit) {
+  private boolean isConflictingSchedules(Cluster cluster, RepairUnit unit0, RepairUnit unit1) {
+    Preconditions.checkState(unit0.getKeyspaceName().equals(unit1.getKeyspaceName()));
 
-    return (newRepairUnit.getColumnFamilies().isEmpty()
-            && existingRepairUnit.getColumnFamilies().isEmpty())
-        || (!Sets.intersection(
-                existingRepairUnit.getColumnFamilies(), newRepairUnit.getColumnFamilies())
-            .isEmpty())
-        || (!existingRepairUnit.getBlacklistedTables().isEmpty()
-            && !newRepairUnit.getBlacklistedTables().isEmpty());
+    Set<String> tables = unit0.getColumnFamilies().isEmpty() || unit1.getColumnFamilies().isEmpty()
+        ? getTableNamesForKeyspace(cluster, unit0.getKeyspaceName())
+        : Collections.emptySet();
+
+    // a conflict exists if any table is listed to be repaired by both repair units
+    return !Sets.intersection(listRepairTables(unit0, tables), listRepairTables(unit1, tables)).isEmpty();
   }
 
+  private Set<String> getTableNamesForKeyspace(Cluster cluster, String keyspace) {
+    try {
+      JmxProxy jmxProxy
+          = context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds());
+
+      return jmxProxy.getTableNamesForKeyspace(keyspace);
+    } catch (ReaperException e) {
+      LOG.warn("unknown table list to cluster {} keyspace", cluster.getName(), keyspace, e);
+      return Collections.emptySet();
+    }
+  }
+
+  private static Set<String> listRepairTables(RepairUnit unit, Set<String> allTables) {
+    // subtract blacklisted tables from all tables (or those explicitly listed)
+    Set<String> tables = Sets.newHashSet(unit.getColumnFamilies().isEmpty() ? allTables : unit.getColumnFamilies());
+    tables.removeAll(unit.getBlacklistedTables());
+    return tables;
+  }
 }

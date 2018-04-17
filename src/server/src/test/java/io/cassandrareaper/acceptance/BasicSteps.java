@@ -173,10 +173,12 @@ public final class BasicSteps {
 
     RUNNERS.parallelStream().forEach(runner -> {
       Response response = runner.callReaper(httpMethod, callPath, params);
+      String responseEntity = response.readEntity(String.class);
 
       Assertions
           .assertThat(Arrays.asList(expectedStatuses).stream().map(Response.Status::getStatusCode))
-          .contains(response.getStatus());
+          .contains(response.getStatus())
+          .withFailMessage(responseEntity);
 
       if (1 == RUNNERS.size() && expectedStatuses[0].getStatusCode() != response.getStatus()) {
         // we can't fail on this because the jersey client sometimes sends
@@ -188,7 +190,15 @@ public final class BasicSteps {
 
       if (expectedStatuses[0].getStatusCode() == response.getStatus()) {
         if (expectedDataInResponseData.isPresent()) {
-          String responseEntity = response.readEntity(String.class);
+          if (Sets.newHashSet("PUT", "POST").contains(httpMethod)) {
+            // rest command requests should not response with bodies, follow the location to GET that
+            Assertions.assertThat(responseEntity).isEmpty();
+            // follow to new location (to GET resource)
+            response = runner.callReaper("GET", response.getLocation().toString(), Optional.absent());
+            responseEntity = response.readEntity(String.class);
+          } else if ("DELETE".equals(httpMethod)) {
+            throw new IllegalArgumentException("tests can't expect response body from DELETE request");
+          }
           assertTrue(
               "expected data not found from the response: " + expectedDataInResponseData.get(),
               0 != responseEntity.length() && responseEntity.contains(expectedDataInResponseData.get()));
@@ -373,15 +383,23 @@ public final class BasicSteps {
       params.put("repairParallelism", repairType.equals("incremental") ? "parallel" : "sequential");
       params.put("incrementalRepair", repairType.equals("incremental") ? "True" : "False");
       Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
+      int responseStatus = response.getStatus();
 
-      Assertions.assertThat(ImmutableList.of(
-          Response.Status.CREATED.getStatusCode(),
-          Response.Status.CONFLICT.getStatusCode()))
-          .contains(response.getStatus());
+      Assertions.assertThat(
+          ImmutableList.of(
+            Response.Status.CREATED.getStatusCode(),
+            Response.Status.NO_CONTENT.getStatusCode()))
+          .contains(responseStatus);
 
-      if (Response.Status.CREATED.getStatusCode() == response.getStatus()) {
-        String responseData = response.readEntity(String.class);
-        RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
+      // rest command requests should not response with bodies, follow the location to GET that
+      Assertions.assertThat(response.readEntity(String.class)).isEmpty();
+
+      // follow to new location (to GET resource)
+      response = runner.callReaper("GET", response.getLocation().toString(), Optional.absent());
+      String responseData = response.readEntity(String.class);
+      RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
+
+      if (Response.Status.CREATED.getStatusCode() == responseStatus) {
         TestContext.LAST_MODIFIED_ID = schedule.getId();
       } else {
         // if the original request to create the schedule failed then we have to wait til we can find it
@@ -416,15 +434,23 @@ public final class BasicSteps {
       params.put("repairParallelism", repairType.equals("incremental") ? "parallel" : "sequential");
       params.put("incrementalRepair", repairType.equals("incremental") ? "True" : "False");
       Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
+      int responseStatus = response.getStatus();
 
-      Assertions.assertThat(ImmutableList.of(
-          Response.Status.CREATED.getStatusCode(),
-          Response.Status.CONFLICT.getStatusCode()))
-          .contains(response.getStatus());
+      Assertions.assertThat(
+          ImmutableList.of(
+            Response.Status.CREATED.getStatusCode(),
+            Response.Status.NO_CONTENT.getStatusCode()))
+          .contains(responseStatus);
 
-      if (Response.Status.CREATED.getStatusCode() == response.getStatus()) {
-        String responseData = response.readEntity(String.class);
-        RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
+      // rest command requests should not response with bodies, follow the location to GET that
+      Assertions.assertThat(response.readEntity(String.class)).isEmpty();
+
+      // follow to new location (to GET resource)
+      response = runner.callReaper("GET", response.getLocation().toString(), Optional.absent());
+      String responseData = response.readEntity(String.class);
+      RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
+
+      if (Response.Status.CREATED.getStatusCode() == responseStatus) {
         TestContext.LAST_MODIFIED_ID = schedule.getId();
       } else {
         // if the original request to create the schedule failed then we have to wait til we can find it
@@ -462,15 +488,23 @@ public final class BasicSteps {
       params.put("scheduleTriggerTime", DateTime.now().plusSeconds(1).toString());
       ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
       Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
+      int responseStatus = response.getStatus();
 
-      Assertions.assertThat(ImmutableList.of(
-          Response.Status.CREATED.getStatusCode(),
-          Response.Status.CONFLICT.getStatusCode()))
-          .contains(response.getStatus());
+      Assertions.assertThat(
+          ImmutableList.of(
+            Response.Status.CREATED.getStatusCode(),
+            Response.Status.CONFLICT.getStatusCode()))
+          .contains(responseStatus);
 
-      if (Response.Status.CREATED.getStatusCode() == response.getStatus()) {
-        String responseData = response.readEntity(String.class);
-        RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
+      // rest command requests should not response with bodies, follow the location to GET that
+      Assertions.assertThat(response.readEntity(String.class)).isEmpty();
+
+      // follow to new location (to GET resource)
+      response = runner.callReaper("GET", response.getLocation().toString(), Optional.absent());
+      String responseData = response.readEntity(String.class);
+      RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
+
+      if (Response.Status.CREATED.getStatusCode() == responseStatus) {
         TestContext.LAST_MODIFIED_ID = schedule.getId();
       } else {
         // if the original request to create the schedule failed then we have to wait til we can find it
@@ -539,7 +573,12 @@ public final class BasicSteps {
       params.put("scheduleDaysBetween", "1");
       ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
       Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
-      assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
+      int responseStatus = response.getStatus();
+      assertEquals(Response.Status.CREATED.getStatusCode(), responseStatus);
+      // rest command requests should not response with bodies, follow the location to GET that
+      Assertions.assertThat(response.readEntity(String.class)).isEmpty();
+      // follow to new location (to GET resource)
+      response = runner.callReaper("GET", response.getLocation().toString(), Optional.absent());
       String responseData = response.readEntity(String.class);
       RepairScheduleStatus schedule = SimpleReaperClient.parseRepairScheduleStatusJSON(responseData);
       TestContext.LAST_MODIFIED_ID = schedule.getId();
@@ -600,7 +639,7 @@ public final class BasicSteps {
           Optional.of(params),
           Optional.of("\"" + clusterName + "\""),
           Response.Status.OK,
-          Response.Status.NOT_MODIFIED);
+          Response.Status.NO_CONTENT);
 
       LOG.info("delete last added repair schedule with id: {}", TestContext.LAST_MODIFIED_ID);
       params.clear();
@@ -609,8 +648,8 @@ public final class BasicSteps {
       callAndExpect("DELETE",
           "/repair_schedule/" + TestContext.LAST_MODIFIED_ID,
           Optional.of(params),
-          Optional.of("\"" + clusterName + "\""),
-          Response.Status.OK,
+          Optional.absent(),
+          Response.Status.ACCEPTED,
           Response.Status.NOT_FOUND);
 
       await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
@@ -643,7 +682,7 @@ public final class BasicSteps {
           Optional.of(params),
           Optional.of("\"" + TestContext.TEST_CLUSTER + "\""),
           Response.Status.OK,
-          Response.Status.NOT_MODIFIED);
+          Response.Status.NO_CONTENT);
 
       LOG.info("delete last added repair schedule with id: {}", TestContext.LAST_MODIFIED_ID);
       params.clear();
@@ -653,8 +692,8 @@ public final class BasicSteps {
           "DELETE",
           "/repair_schedule/" + TestContext.LAST_MODIFIED_ID,
           Optional.of(params),
-          Optional.of("\"" + TestContext.TEST_CLUSTER + "\""),
-          Response.Status.OK,
+          Optional.absent(),
+          Response.Status.ACCEPTED,
           Response.Status.NOT_FOUND);
 
       await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
@@ -699,7 +738,7 @@ public final class BasicSteps {
             Optional.of(params),
             Optional.of("\"" + TestContext.TEST_CLUSTER + "\""),
             Response.Status.OK,
-            Response.Status.NOT_MODIFIED,
+            Response.Status.NO_CONTENT,
             Response.Status.NOT_FOUND);
 
         LOG.info("delete last added repair schedule with id: {}", schedule.getId());
@@ -710,8 +749,8 @@ public final class BasicSteps {
             "DELETE",
             "/repair_schedule/" + schedule.getId(),
             Optional.of(params),
-            Optional.of("\"" + TestContext.TEST_CLUSTER + "\""),
-            Response.Status.OK,
+            Optional.absent(),
+            Response.Status.ACCEPTED,
             Response.Status.NOT_FOUND);
 
         await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
@@ -751,7 +790,7 @@ public final class BasicSteps {
           "DELETE",
           "/cluster/" + TestContext.TEST_CLUSTER,
           EMPTY_PARAMS,
-          Optional.of("\"" + TestContext.TEST_CLUSTER + "\""),
+          Optional.absent(),
           Response.Status.CONFLICT);
     }
   }
@@ -899,8 +938,8 @@ public final class BasicSteps {
                 Response response =
                     runner.callReaper(
                         "GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
-                assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
                 String responseData = response.readEntity(String.class);
+                assertEquals(responseData, Response.Status.OK.getStatusCode(), response.getStatus());
                 List<RepairRunStatus> runs =
                     SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
                 assertTrue(runs.get(0).getBlacklistedTables().contains(blacklistedTable));
@@ -918,8 +957,8 @@ public final class BasicSteps {
       params.put("owner", TestContext.TEST_USER);
       params.put("incrementalRepair", Boolean.TRUE.toString());
       Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
-      assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
       String responseData = response.readEntity(String.class);
+      assertEquals(responseData, Response.Status.CREATED.getStatusCode(), response.getStatus());
       RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
       TestContext.LAST_MODIFIED_ID = run.getId();
     }
@@ -936,8 +975,8 @@ public final class BasicSteps {
       params.put("owner", TestContext.TEST_USER);
       params.put("incrementalRepair", Boolean.TRUE.toString());
       Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
-      assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
       String responseData = response.readEntity(String.class);
+      assertEquals(responseData, Response.Status.CREATED.getStatusCode(), response.getStatus());
       RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
       TestContext.LAST_MODIFIED_ID = run.getId();
     }
@@ -948,8 +987,8 @@ public final class BasicSteps {
     synchronized (BasicSteps.class) {
       RUNNERS.parallelStream().forEach(runner -> {
         Response response = runner.callReaper("GET", "/repair_run/cluster/" + clusterName, EMPTY_PARAMS);
-        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         String responseData = response.readEntity(String.class);
+        assertEquals(responseData, Response.Status.OK.getStatusCode(), response.getStatus());
         List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
         assertEquals(runAmount, runs.size());
       });
@@ -965,8 +1004,8 @@ public final class BasicSteps {
     synchronized (BasicSteps.class) {
       RUNNERS.parallelStream().forEach(runner -> {
         Response response = runner.callReaper("GET", "/repair_run/cluster/" + clusterName, EMPTY_PARAMS);
-        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         String responseData = response.readEntity(String.class);
+        assertEquals(responseData, Response.Status.OK.getStatusCode(), response.getStatus());
         List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
         assertEquals(runAmount, runs.stream().filter(rrs -> startedStates.contains(rrs.getState())).count());
       });
@@ -978,8 +1017,8 @@ public final class BasicSteps {
     synchronized (BasicSteps.class) {
       RUNNERS.parallelStream().forEach(runner -> {
         Response response = runner.callReaper("GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
-        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         String responseData = response.readEntity(String.class);
+        assertEquals(responseData, Response.Status.OK.getStatusCode(), response.getStatus());
         List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
         assertEquals(runAmount, runs.size());
       });
@@ -995,8 +1034,8 @@ public final class BasicSteps {
     synchronized (BasicSteps.class) {
       RUNNERS.parallelStream().forEach(runner -> {
         Response response = runner.callReaper("GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
-        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         String responseData = response.readEntity(String.class);
+        assertEquals(responseData, Response.Status.OK.getStatusCode(), response.getStatus());
         List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
         assertEquals(runAmount, runs.stream().filter(rrs -> startedStates.contains(rrs.getState())).count());
       });
@@ -1014,7 +1053,7 @@ public final class BasicSteps {
           "DELETE",
           "/repair_run/" + TestContext.LAST_MODIFIED_ID,
           Optional.of(params),
-          Optional.of("\"" + TestContext.TEST_CLUSTER + "\""),
+          Optional.absent(),
           Response.Status.OK,
           Response.Status.NOT_FOUND,
           Response.Status.FORBIDDEN);

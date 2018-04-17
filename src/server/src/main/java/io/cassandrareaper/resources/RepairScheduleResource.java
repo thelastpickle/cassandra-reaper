@@ -26,10 +26,7 @@ import io.cassandrareaper.service.RepairScheduleService;
 import io.cassandrareaper.service.RepairUnitService;
 import io.cassandrareaper.service.SchedulingManager;
 
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -57,7 +54,6 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 
 @Path("/repair_schedule")
 @Produces(MediaType.APPLICATION_JSON)
@@ -180,53 +176,64 @@ public final class RepairScheduleResource {
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
 
-      Boolean incrementalRepair = isIncrementalRepair(incrementalRepairStr);
+      boolean incrementalRepair = isIncrementalRepair(incrementalRepairStr);
 
-      RepairUnit theRepairUnit =
-          repairUnitService.getNewOrExistingRepairUnit(
-              cluster,
-              keyspace.get(),
-              tableNames,
-              incrementalRepair,
-              nodesToRepair,
-              datacentersToRepair,
-              blacklistedTableNames);
+      RepairUnit.Builder builder
+          = new RepairUnit.Builder(
+                    cluster.getName(),
+                    keyspace.get(),
+                    tableNames,
+                    incrementalRepair,
+                    nodesToRepair,
+                    datacentersToRepair,
+                    blacklistedTableNames);
 
-      if (theRepairUnit.getIncrementalRepair().booleanValue() != incrementalRepair) {
-        return Response.status(Response.Status.BAD_REQUEST)
-            .entity(
-                "A repair Schedule already exist for the same cluster/keyspace/table"
-                    + " but with a different incremental repair value. Requested value: "
-                + incrementalRepair
-                + " | Existing value: "
-                + theRepairUnit.getIncrementalRepair())
-            .build();
-      }
-
+      RepairUnit unit = repairUnitService.getNewOrExistingRepairUnit(cluster, builder);
+      Preconditions.checkState(unit.getIncrementalRepair() == incrementalRepair);
       RepairParallelism parallelism = context.config.getRepairParallelism();
       if (repairParallelism.isPresent()) {
-        LOG.debug(
-            "using given repair parallelism {} instead of configured value {}",
-            repairParallelism.get(),
-            context.config.getRepairParallelism());
+        LOG.debug("using given repair parallelism {} over configured value {}", repairParallelism.get(), parallelism);
         parallelism = RepairParallelism.valueOf(repairParallelism.get().toUpperCase());
       }
 
       if (!parallelism.equals(RepairParallelism.PARALLEL) && incrementalRepair) {
         return Response.status(Response.Status.BAD_REQUEST)
-            .entity(
-                "It is not possible to mix sequential repair and incremental repairs. parallelism "
-                + parallelism
-                + " : incrementalRepair "
-                + incrementalRepair)
+            .entity("Can't mix sequential repair and incremental repairs")
             .build();
       }
 
       Double intensity = getIntensity(intensityStr);
-      try {
+
+      Optional<RepairSchedule> conflictingRepairSchedule
+          = repairScheduleService.conflictingRepairSchedule(cluster, unit);
+
+      if (conflictingRepairSchedule.isPresent()) {
+        RepairSchedule existingSchedule = conflictingRepairSchedule.get();
+
+        if (existingSchedule.getRepairUnitId().equals(unit.getId())
+            && existingSchedule.getDaysBetween() == daysBetween
+            && existingSchedule.getOwner().equals(owner.get())
+            && existingSchedule.getRepairParallelism() == parallelism) {
+
+          return Response.noContent().location(buildRepairScheduleUri(uriInfo, existingSchedule)).build();
+        }
+
+        String msg = String.format(
+            "A repair schedule already exists for cluster \"%s\", keyspace \"%s\", and column families: %s",
+            cluster.getName(),
+            unit.getKeyspaceName(),
+            unit.getColumnFamilies());
+
+        return Response
+            .status(Response.Status.CONFLICT)
+            .location(buildRepairScheduleUri(uriInfo, existingSchedule))
+            .entity(msg)
+            .build();
+      } else {
+
         RepairSchedule newRepairSchedule = repairScheduleService.storeNewRepairSchedule(
             cluster,
-            theRepairUnit,
+            unit,
             daysBetween,
             nextActivation,
             owner.get(),
@@ -234,16 +241,11 @@ public final class RepairScheduleResource {
             parallelism,
             intensity);
 
-        return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule))
-            .entity(new RepairScheduleStatus(newRepairSchedule, theRepairUnit))
-            .build();
-      } catch (ReaperException ex) {
-        LOG.error(ex.getMessage(), ex);
-        return Response.status(Response.Status.CONFLICT).entity(ex.getMessage()).build();
+        return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule)).build();
       }
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
-      return Response.status(500).entity(e.getMessage()).build();
+      return Response.serverError().entity(e.getMessage()).build();
     }
   }
 
@@ -295,8 +297,8 @@ public final class RepairScheduleResource {
    *
    * <p>Currently supports PAUSED to ACTIVE and ACTIVE to PAUSED.
    *
-   * @return OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 400
-   *     (BAD_REQUEST) if transition is not supported.
+   * @return OK if all goes well, NO_CONTENT if new state is the same as the old one,
+   *     and 400 (BAD_REQUEST) if transition is not supported.
    */
   @PUT
   @Path("/{id}")
@@ -335,17 +337,14 @@ public final class RepairScheduleResource {
           .build();
     }
     RepairSchedule.State oldState = repairSchedule.get().getState();
-
     if (oldState == newState) {
-      return Response.status(Response.Status.NOT_MODIFIED)
-          .entity("given \"state\" is same as the current state")
-          .build();
+      return Response.noContent().location(buildRepairScheduleUri(uriInfo, repairSchedule.get())).build();
     }
 
     if (isPausing(oldState, newState)) {
-      return pauseSchedule(repairSchedule.get(), repairUnit.get());
+      return pauseSchedule(repairSchedule.get(), uriInfo);
     } else if (isResuming(oldState, newState)) {
-      return resumeSchedule(repairSchedule.get(), repairUnit.get());
+      return resumeSchedule(repairSchedule.get(), uriInfo);
     } else {
       String errMsg = String.format("Transition %s->%s not supported.", oldState.toString(), newState.toString());
       LOG.error(errMsg);
@@ -361,16 +360,16 @@ public final class RepairScheduleResource {
     return oldState == RepairSchedule.State.PAUSED && newState == RepairSchedule.State.ACTIVE;
   }
 
-  private Response pauseSchedule(RepairSchedule repairSchedule, RepairUnit repairUnit) {
+  private Response pauseSchedule(RepairSchedule repairSchedule, UriInfo uriInfo) {
     LOG.info("Pausing schedule {}", repairSchedule.getId());
-    RepairSchedule newSchedule = SchedulingManager.pauseRepairSchedule(context, repairSchedule);
-    return Response.ok().entity(new RepairScheduleStatus(newSchedule, repairUnit)).build();
+    SchedulingManager.pauseRepairSchedule(context, repairSchedule);
+    return Response.ok().location(buildRepairScheduleUri(uriInfo, repairSchedule)).build();
   }
 
-  private Response resumeSchedule(RepairSchedule repairSchedule, RepairUnit repairUnit) {
+  private Response resumeSchedule(RepairSchedule repairSchedule, UriInfo uriInfo) {
     LOG.info("Resuming schedule {}", repairSchedule.getId());
-    RepairSchedule newSchedule = SchedulingManager.resumeRepairSchedule(context, repairSchedule);
-    return Response.ok().entity(new RepairScheduleStatus(newSchedule, repairUnit)).build();
+    SchedulingManager.resumeRepairSchedule(context, repairSchedule);
+    return Response.ok().location(buildRepairScheduleUri(uriInfo, repairSchedule)).build();
   }
 
   /**
@@ -421,16 +420,8 @@ public final class RepairScheduleResource {
    *
    * @return The created resource URI.
    */
-  private URI buildRepairScheduleUri(UriInfo uriInfo, RepairSchedule repairSchedule) {
-    String newRepairSchedulePathPart = "repair_schedule/" + repairSchedule.getId();
-    URI scheduleUri = null;
-    try {
-      scheduleUri = new URL(uriInfo.getBaseUri().toURL(), newRepairSchedulePathPart).toURI();
-    } catch (MalformedURLException | URISyntaxException e) {
-      LOG.error(e.getMessage(), e);
-    }
-    checkNotNull(scheduleUri, "failed to build repair schedule uri");
-    return scheduleUri;
+  private static URI buildRepairScheduleUri(UriInfo uriInfo, RepairSchedule repairSchedule) {
+    return uriInfo.getBaseUriBuilder().path("repair_schedule").path(repairSchedule.getId().toString()).build();
   }
 
   /**
@@ -444,6 +435,7 @@ public final class RepairScheduleResource {
   public Response listSchedules(
       @QueryParam("clusterName") Optional<String> clusterName,
       @QueryParam("keyspace") Optional<String> keyspaceName) {
+
     List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
     Collection<RepairSchedule> schedules = getScheduleList(clusterName, keyspaceName);
     for (RepairSchedule schedule : schedules) {
@@ -456,7 +448,7 @@ public final class RepairScheduleResource {
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
       }
     }
-    return Response.status(Response.Status.OK).entity(scheduleStatuses).build();
+    return Response.ok().entity(scheduleStatuses).build();
   }
 
   private Collection<RepairSchedule> getScheduleList(Optional<String> clusterName, Optional<String> keyspaceName) {
@@ -481,7 +473,7 @@ public final class RepairScheduleResource {
    *
    * @param repairScheduleId The id for the RepairSchedule instance to delete.
    * @param owner The assigned owner of the deleted resource. Must match the stored one.
-   * @return The deleted RepairSchedule instance, with state overwritten to string "DELETED".
+   * @return 202 response code if the delete has been accepted, 409 if schedule can't be stopped.
    */
   @DELETE
   @Path("/{id}")
@@ -497,36 +489,16 @@ public final class RepairScheduleResource {
     }
     Optional<RepairSchedule> scheduleToDelete = context.storage.getRepairSchedule(repairScheduleId);
     if (scheduleToDelete.isPresent()) {
-      if (scheduleToDelete.get().getState() == RepairSchedule.State.ACTIVE) {
-        return Response.status(Response.Status.FORBIDDEN)
-            .entity(
-                "Repair schedule with id \""
-                + repairScheduleId
-                + "\" is currently running, and must be stopped before deleting")
-            .build();
+      if (RepairSchedule.State.ACTIVE == scheduleToDelete.get().getState()) {
+        String msg = String.format("Repair schedule %s currently running. Must be first stopped", repairScheduleId);
+        return Response.status(Response.Status.CONFLICT).entity(msg).build();
       }
       if (!scheduleToDelete.get().getOwner().equalsIgnoreCase(owner.get())) {
-        return Response.status(Response.Status.FORBIDDEN)
-            .entity(
-                "Repair schedule with id \""
-                + repairScheduleId
-                + "\" is not owned by the user you defined: "
-                + owner.get())
-            .build();
+        String msg = String.format("Repair schedule %s is not owned by %s", repairScheduleId, owner.get());
+        return Response.status(Response.Status.CONFLICT).entity(msg).build();
       }
-      // Need to get the RepairUnit before it's possibly deleted.
-      Optional<RepairUnit> possiblyDeletedUnit
-          = context.storage.getRepairUnit(scheduleToDelete.get().getRepairUnitId());
-
-      Optional<RepairSchedule> deletedSchedule
-          = context.storage.deleteRepairSchedule(repairScheduleId);
-
-      if (deletedSchedule.isPresent()) {
-        return Response
-            .ok()
-            .entity(new RepairScheduleStatus(deletedSchedule.get(), possiblyDeletedUnit.get()))
-            .build();
-      }
+      context.storage.deleteRepairSchedule(repairScheduleId);
+      return Response.accepted().build();
     }
     return Response.status(Response.Status.NOT_FOUND)
         .entity("Repair schedule with id \"" + repairScheduleId + "\" not found")

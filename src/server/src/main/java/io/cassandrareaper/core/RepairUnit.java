@@ -14,6 +14,7 @@
 
 package io.cassandrareaper.core;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -23,7 +24,7 @@ public final class RepairUnit {
   private final String clusterName;
   private final String keyspaceName;
   private final Set<String> columnFamilies;
-  private final Boolean incrementalRepair;
+  private final boolean incrementalRepair;
   private final Set<String> nodes;
   private final Set<String> datacenters;
   private final Set<String> blacklistedTables;
@@ -55,7 +56,7 @@ public final class RepairUnit {
     return columnFamilies;
   }
 
-  public Boolean getIncrementalRepair() {
+  public boolean getIncrementalRepair() {
     return incrementalRepair;
   }
 
@@ -89,7 +90,7 @@ public final class RepairUnit {
         String clusterName,
         String keyspaceName,
         Set<String> columnFamilies,
-        Boolean incrementalRepair,
+        boolean incrementalRepair,
         Set<String> nodes,
         Set<String> datacenters,
         Set<String> blacklistedTables) {
@@ -114,6 +115,44 @@ public final class RepairUnit {
 
     public RepairUnit build(UUID id) {
       return new RepairUnit(this, id);
+    }
+
+    @Override
+    public int hashCode() {
+      // primes 7 & 59 chosen as optimal by netbeans – https://stackoverflow.com/a/21914964
+      int hash = 7 * 59;
+      hash +=  Objects.hashCode(this.clusterName);
+      hash *= 59;
+      hash +=  Objects.hashCode(this.keyspaceName);
+      hash *= 59;
+      hash +=  Objects.hashCode(this.columnFamilies);
+      hash *= 59;
+      hash +=  (this.incrementalRepair ? 1 : 0);
+      hash *= 59;
+      hash +=  Objects.hashCode(this.nodes);
+      hash *= 59;
+      hash +=  Objects.hashCode(this.datacenters);
+      hash *= 59;
+      hash +=  Objects.hashCode(this.blacklistedTables);
+      return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (null == obj || getClass() != obj.getClass()) {
+        return false;
+      }
+
+      return this.incrementalRepair == ((Builder) obj).incrementalRepair
+          && Objects.equals(this.clusterName, ((Builder) obj).clusterName)
+          && Objects.equals(this.keyspaceName, ((Builder) obj).keyspaceName)
+          && Objects.equals(this.columnFamilies, ((Builder) obj).columnFamilies)
+          && Objects.equals(this.nodes, ((Builder) obj).nodes)
+          && Objects.equals(this.datacenters, ((Builder) obj).datacenters)
+          && Objects.equals(this.blacklistedTables, ((Builder) obj).blacklistedTables);
     }
   }
 }

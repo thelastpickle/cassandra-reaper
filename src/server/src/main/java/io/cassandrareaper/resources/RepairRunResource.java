@@ -17,10 +17,12 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.service.RepairUnitService;
@@ -132,7 +134,7 @@ public final class RepairRunResource {
         LOG.debug("no intensity given, so using default value: {}", intensity);
       }
 
-      Boolean incrementalRepair;
+      boolean incrementalRepair;
       if (incrementalRepairStr.isPresent()) {
         incrementalRepair = Boolean.parseBoolean(incrementalRepairStr.get());
       } else {
@@ -190,25 +192,27 @@ public final class RepairRunResource {
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
 
-      final RepairUnit theRepairUnit =
-          repairUnitService.getNewOrExistingRepairUnit(
-              cluster,
-              keyspace.get(),
-              tableNames,
-              incrementalRepair,
-              nodesToRepair,
-              datacentersToRepair,
-              blacklistedTableNames);
+      RepairUnit.Builder builder
+          = new RepairUnit.Builder(
+                    cluster.getName(),
+                    keyspace.get(),
+                    tableNames,
+                    incrementalRepair,
+                    nodesToRepair,
+                    datacentersToRepair,
+                    blacklistedTableNames);
 
-      if (theRepairUnit.getIncrementalRepair().booleanValue() != incrementalRepair) {
-        return Response.status(Response.Status.BAD_REQUEST)
-            .entity(
-                "A repair run already exist for the same cluster/keyspace/table"
-                + " but with a different incremental repair value. Requested value: "
-                + incrementalRepair
-                + " | Existing value: "
-                + theRepairUnit.getIncrementalRepair())
-            .build();
+      RepairUnit theRepairUnit = repairUnitService.getNewOrExistingRepairUnit(cluster, builder);
+
+      if (theRepairUnit.getIncrementalRepair() != incrementalRepair) {
+        String msg = String.format(
+            "A repair unit %s already exist for the same cluster/keyspace/tables"
+                + " but with a different incremental repair value. Requested value %s | Existing value: %s",
+            theRepairUnit.getId(),
+            incrementalRepair,
+            theRepairUnit.getIncrementalRepair());
+
+        return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
       }
 
       RepairParallelism parallelism = context.config.getRepairParallelism();
@@ -314,6 +318,29 @@ public final class RepairRunResource {
           .entity(
               "Parameters \"datacenters\" and \"nodes\" are mutually exclusive. Please fill just one between the two.")
           .build();
+    }
+
+    if (incrementalRepairStr.isPresent() && "true".equalsIgnoreCase(incrementalRepairStr.get())) {
+      try {
+        JmxProxy jmxProxy =
+            context.jmxConnectionFactory.connectAny(
+                Optional.absent(),
+                cluster.get().getSeedHosts()
+                    .stream()
+                    .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
+                    .collect(Collectors.toList()),
+                context.config.getJmxConnectionTimeoutInSeconds());
+
+        String version = jmxProxy.getCassandraVersion();
+        if (null != version && version.startsWith("2.0")) {
+          String msg = "Incremental repair does not work with Cassandra versions before 2.1";
+          return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
+        }
+      } catch (ReaperException e) {
+        String msg = String.format("find version of cluster %s failed", cluster.get().getName());
+        LOG.error(msg, e);
+        return Response.serverError().entity(msg).build();
+      }
     }
 
     return null;
