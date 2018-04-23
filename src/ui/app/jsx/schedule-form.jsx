@@ -102,7 +102,7 @@ const scheduleForm = React.createClass({
   _onAdd: function(e) {
     const schedule = {
       clusterName: this.state.clusterName, keyspace: this.state.keyspace,
-      owner: this.state.owner, scheduleTriggerTime: moment(this.state.startTime).format("YYYY-MM-DDTHH:mm:ss"),
+      owner: this.state.owner, scheduleTriggerTime: moment(this.state.startTime).utc().format("YYYY-MM-DDTHH:mm"),
       scheduleDaysBetween: this.state.intervalDays
     };
     if(this.state.tables) schedule.tables = this.state.tables;

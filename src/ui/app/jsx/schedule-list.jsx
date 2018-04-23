@@ -1,9 +1,29 @@
 import React from "react";
 import moment from "moment";
-import {RowDeleteMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
+import {RowDeleteMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender, toast, getUrlPrefix} from "jsx/mixin";
+var NotificationSystem = require('react-notification-system');
 
 const TableRow = React.createClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin],
+  propTypes: {
+    notificationSystem: React.PropTypes.object.isRequired
+  },
+
+  _runNow: function() {
+    toast(this.props.notificationSystem, "Starting repair run for schedule " + this.props.row.id , "warning", this.props.row.id);
+    $.ajax({
+      url: getUrlPrefix(window.top.location.pathname) + '/repair_schedule/start/' + encodeURIComponent(this.props.row.id),
+      method: 'POST',
+      component: this,
+      dataType: 'text',
+      success: function(data) {
+        toast(this.component.props.notificationSystem, "Repair run for schedule " + this.component.props.row.id + " will start shortly.", "success", this.component.props.row.id);
+      },
+      error: function(data) {
+        toast(this.component.props.notificationSystem, "Failed starting repair run for schedule : " + data.responseText , "error", this.component.props.row.id);
+      }
+    });
+  },
 
   render: function() {
 
@@ -24,6 +44,7 @@ const TableRow = React.createClass({
         <td>
           {this.statusUpdateButton()}
           {this.deleteButton()}
+          <button type="button" className="btn btn-xs btn-info" onClick={this._runNow}>Run now</button>
         </td>
     </tr>
     );
@@ -113,6 +134,7 @@ const TableRowDetails = React.createClass({
 
 const scheduleList = React.createClass({
   mixins: [DeleteStatusMessageMixin],
+  _notificationSystem: null,
 
   propTypes: {
     schedules: React.PropTypes.object.isRequired,
@@ -139,6 +161,10 @@ const scheduleList = React.createClass({
     this._clusterNamesSubscription = this.props.clusterNames.subscribeOnNext(obs =>
       obs.subscribeOnNext(names => this.setState({clusterNames: names}))
     );
+  },
+
+  componentDidMount: function() {
+    this._notificationSystem = this.refs.notificationSystem;
   },
 
   componentWillUnmount: function() {
@@ -192,7 +218,8 @@ const scheduleList = React.createClass({
       <tbody key={schedule.id+'-rows'}>
         <TableRow row={schedule} key={schedule.id+'-head'}
           deleteSubject={this.props.deleteSubject}
-          updateStatusSubject={this.props.updateStatusSubject}/>
+          updateStatusSubject={this.props.updateStatusSubject}
+          notificationSystem={this._notificationSystem} />
         <TableRowDetails row={schedule} key={schedule.id+'-details'}/>
       </tbody>
     );
@@ -228,6 +255,7 @@ const scheduleList = React.createClass({
 
     return (<div className="panel panel-default">
               <div className="panel-body">
+                <NotificationSystem ref="notificationSystem" />
                 {this.deleteMessage()}
                 {clusterFilter}
                 {table}

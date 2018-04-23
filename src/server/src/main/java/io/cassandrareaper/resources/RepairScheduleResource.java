@@ -123,10 +123,10 @@ public final class RepairScheduleResource {
       DateTime nextActivation;
       try {
         nextActivation = getNextActivationTime(scheduleTriggerTime);
-        if (nextActivation.isBeforeNow()) {
+        if (nextActivation.isBefore(DateTime.now().minusMinutes(15))) {
           return Response.status(Response.Status.BAD_REQUEST)
-              .entity("given schedule_trigger_time is in the past: "
-                  + RepairRunStatus.dateTimeToIso8601(nextActivation))
+              .entity("given schedule_trigger_time is too far in the past: "
+                      + RepairRunStatus.dateTimeToIso8601(nextActivation))
               .build();
         }
       } catch (IllegalArgumentException ex) {
@@ -384,6 +384,30 @@ public final class RepairScheduleResource {
   }
 
   /**
+   * Force start a repair from a schedule.
+   *
+   * @return detailed information about a repair schedule.
+   */
+  @POST
+  @Path("/start/{id}")
+  public Response startRepairSchedule(@PathParam("id") UUID repairScheduleId) {
+    LOG.debug("start repair_schedule called with: id = {}", repairScheduleId);
+    Optional<RepairSchedule> repairSchedule = context.storage.getRepairSchedule(repairScheduleId);
+    if (repairSchedule.isPresent()) {
+      RepairSchedule newSchedule =
+          new RepairSchedule.Builder(repairSchedule.get())
+              .nextActivation(DateTime.now())
+              .build(repairScheduleId);
+      context.storage.updateRepairSchedule(newSchedule);
+      return Response.ok().entity(getRepairScheduleStatus(newSchedule)).build();
+    } else {
+      return Response.status(404)
+          .entity("repair schedule with id " + repairScheduleId + " doesn't exist")
+          .build();
+    }
+  }
+
+  /**
    * @param clusterName The cluster_name for which the repair schedule belongs to.
    * @return all know repair schedules for a cluster.
    */
@@ -491,7 +515,8 @@ public final class RepairScheduleResource {
         .build();
   }
 
-  private DateTime getNextActivationTime(Optional<String> scheduleTriggerTime) throws IllegalArgumentException {
+  private DateTime getNextActivationTime(Optional<String> scheduleTriggerTime)
+      throws IllegalArgumentException {
     DateTime nextActivation;
     if (scheduleTriggerTime.isPresent()) {
       nextActivation = DateTime.parse(scheduleTriggerTime.get());
@@ -504,5 +529,4 @@ public final class RepairScheduleResource {
     }
     return nextActivation;
   }
-
 }
