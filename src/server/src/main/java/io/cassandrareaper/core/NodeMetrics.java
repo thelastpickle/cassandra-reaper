@@ -56,17 +56,14 @@ public final class NodeMetrics {
   }
 
   public int getPendingCompactions() {
-    Preconditions.checkState(!requested, "cant get metrics on requested NodeMetrics instance");
     return pendingCompactions;
   }
 
   public boolean hasRepairRunning() {
-    Preconditions.checkState(!requested, "cant get metrics on requested NodeMetrics instance");
     return hasRepairRunning;
   }
 
   public int getActiveAnticompactions() {
-    Preconditions.checkState(!requested, "cant get metrics on requested NodeMetrics instance" );
     return activeAnticompactions;
   }
 
