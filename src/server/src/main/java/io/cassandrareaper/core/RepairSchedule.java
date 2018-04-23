@@ -170,7 +170,7 @@ public final class RepairSchedule {
       this.segmentCountPerNode = segmentCountPerNode;
     }
 
-    private Builder(RepairSchedule original) {
+    public Builder(RepairSchedule original) {
       repairUnitId = original.repairUnitId;
       state = original.state;
       daysBetween = original.daysBetween;

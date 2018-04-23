@@ -128,8 +128,8 @@ public final class SchedulingManager extends TimerTask {
       case ACTIVE:
         if (schdle.getNextActivation().isBeforeNow()) {
 
-          RepairSchedule schedule
-              = schdle.with().nextActivation(schdle.getFollowingActivation()).build(schdle.getId());
+          RepairSchedule schedule =
+              schdle.with().nextActivation(schdle.getFollowingActivation()).build(schdle.getId());
 
           context.storage.updateRepairSchedule(schedule);
 
@@ -146,15 +146,20 @@ public final class SchedulingManager extends TimerTask {
           try {
             RepairRun newRepairRun = createNewRunForUnit(schedule, repairUnit);
 
-            ImmutableList<UUID> newRunHistory
-                = new ImmutableList.Builder<UUID>().addAll(schedule.getRunHistory()).add(newRepairRun.getId()).build();
+            ImmutableList<UUID> newRunHistory =
+                new ImmutableList.Builder<UUID>()
+                    .addAll(schedule.getRunHistory())
+                    .add(newRepairRun.getId())
+                    .build();
 
-            RepairSchedule latestSchedule = context.storage.getRepairSchedule(schedule.getId()).get();
+            RepairSchedule latestSchedule =
+                context.storage.getRepairSchedule(schedule.getId()).get();
 
             if (equal(schedule, latestSchedule)) {
 
-              boolean result = context.storage.updateRepairSchedule(
-                  schedule.with().runHistory(newRunHistory).build(schedule.getId()));
+              boolean result =
+                  context.storage.updateRepairSchedule(
+                      schedule.with().runHistory(newRunHistory).build(schedule.getId()));
               // FIXME – concurrency is broken unless we atomically add/remove run history items
               // boolean result = context.storage
               //        .addRepairRunToRepairSchedule(schedule.getId(), newRepairRun.getId());
@@ -164,14 +169,19 @@ public final class SchedulingManager extends TimerTask {
                 return true;
               }
             } else if (schedule.getRunHistory().size() < latestSchedule.getRunHistory().size()) {
-              UUID newRepairRunId = latestSchedule.getRunHistory().get(latestSchedule.getRunHistory().size() - 1);
-              LOG.info("schedule {} has already added a new repair run {}", schedule.getId(), newRepairRunId);
+              latestSchedule.getRunHistory().get(latestSchedule.getRunHistory().size() - 1);
+              LOG.info(
+                  "schedule {} has already added a new repair run {}",
+                  schedule.getId(),
+                  newRepairRun.getId());
               // this repair_run is identified as a duplicate (for this activation):
               // so take the last repair run, and try start it. it's ok if already running.
-              newRepairRun = context.storage.getRepairRun(newRepairRunId).get();
+              newRepairRun = context.storage.getRepairRun(newRepairRun.getId()).get();
               context.repairManager.startRepairRun(newRepairRun);
             } else {
-              LOG.warn("schedule {} has been altered by someone else. not running repair", schedule.getId());
+              LOG.warn(
+                  "schedule {} has been altered by someone else. not running repair",
+                  schedule.getId());
             }
             // this duplicated repair_run needs to be removed from the schedule's history
             // FIXME – concurrency is broken unless we atomically add/remove run history items
