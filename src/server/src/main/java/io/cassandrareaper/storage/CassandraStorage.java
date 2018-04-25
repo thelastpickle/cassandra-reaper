@@ -17,6 +17,7 @@ package io.cassandrareaper.storage;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.Builder;
@@ -1311,6 +1312,36 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     }
 
     return snapshotBuilder.build();
+  }
+
+  @Override
+  public Collection<DiagEventSubscription> getEventSubscriptions() {
+    // TODO
+    return null;
+  }
+
+  @Override
+  public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
+    // TODO
+    return null;
+  }
+
+  @Override
+  public Optional<DiagEventSubscription> getEventSubscription(UUID id) {
+    // TODO
+    return null;
+  }
+
+  @Override
+  public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
+    // TODO
+    return subscription;
+  }
+
+  @Override
+  public boolean deleteEventSubscription(UUID id) {
+    // TODO
+    return false;
   }
 
 }

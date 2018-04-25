@@ -15,6 +15,7 @@
 package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -54,6 +55,7 @@ public final class MemoryStorage implements IStorage {
   private final ConcurrentMap<UUID, LinkedHashMap<UUID, RepairSegment>> repairSegmentsByRunId = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
   private final ConcurrentMap<String, Snapshot> snapshots = Maps.newConcurrentMap();
+  private final ConcurrentMap<UUID, DiagEventSubscription> subscriptionsById = Maps.newConcurrentMap();
 
   @Override
   public boolean isStorageConnected() {
@@ -483,5 +485,43 @@ public final class MemoryStorage implements IStorage {
   public Snapshot getSnapshot(String clusterName, String snapshotName) {
     Snapshot snapshot = snapshots.get(clusterName + "-" + snapshotName);
     return snapshot;
+  }
+
+  @Override
+  public Collection<DiagEventSubscription> getEventSubscriptions() {
+    return getEventSubscriptions(null);
+  }
+
+  @Override
+  public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
+    Collection<DiagEventSubscription> ret = new ArrayList<>();
+    for (DiagEventSubscription sub : subscriptionsById.values()) {
+      if (clusterName == null || sub.getCluster().equals(clusterName)) {
+        ret.add(sub);
+      }
+    }
+    return ret;
+  }
+
+  @Override
+  public Optional<DiagEventSubscription> getEventSubscription(UUID id) {
+    return Optional.fromNullable(subscriptionsById.get(id));
+  }
+
+  @Override
+  public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
+    if (subscription.getId() == null) {
+      subscription = new DiagEventSubscription(UUID.randomUUID(), subscription.getCluster(),
+              subscription.getDescription(), subscription.getIncludeNodes(), subscription.getEvents(),
+              subscription.getExportSse(), subscription.getExportFileLogger(), subscription.getExportHttpEndpoint());
+    }
+
+    subscriptionsById.put(subscription.getId(), subscription);
+    return subscription;
+  }
+
+  @Override
+  public boolean deleteEventSubscription(UUID id) {
+    return subscriptionsById.remove(id) != null;
   }
 }

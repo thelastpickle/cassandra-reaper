@@ -16,6 +16,7 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -542,6 +543,45 @@ public final class PostgresStorage implements IStorage {
   public Snapshot getSnapshot(String clusterName, String snapshotName) {
     try (Handle h = jdbi.open()) {
       return getPostgresStorage(h).getSnapshot(clusterName, snapshotName);
+    }
+  }
+
+  @Override
+  public Collection<DiagEventSubscription> getEventSubscriptions() {
+    return getEventSubscriptions(null);
+  }
+
+  @Override
+  public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
+    try (Handle h = jdbi.open()) {
+      if (clusterName != null) {
+        return getPostgresStorage(h).getEventSubscriptions(clusterName);
+      } else {
+        return getPostgresStorage(h).getEventSubscriptions();
+      }
+    }
+  }
+
+  @Override
+  public Optional<DiagEventSubscription> getEventSubscription(UUID id) {
+    try (Handle h = jdbi.open()) {
+      return Optional.fromNullable(getPostgresStorage(h).getEventSubscription(UuidUtil.toSequenceId(id)));
+    }
+  }
+
+  @Override
+  public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
+    long insertedId;
+    try (Handle h = jdbi.open()) {
+      insertedId = getPostgresStorage(h).insertDiagEventSubscription(subscription);
+    }
+    return subscription.withId(UuidUtil.fromSequenceId(insertedId));
+  }
+
+  @Override
+  public boolean deleteEventSubscription(UUID id) {
+    try (Handle h = jdbi.open()) {
+      return getPostgresStorage(h).deleteEventSubscription(UuidUtil.toSequenceId(id)) > 0;
     }
   }
 }
