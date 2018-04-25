@@ -8,7 +8,8 @@ import _datatables_bs from "datatables.net-bs.js";
 const diagEventsList = React.createClass({
 
   propTypes: {
-    diagnosticEvents: React.PropTypes.object.isRequired
+    diagnosticEvents: React.PropTypes.object.isRequired,
+    listenSubscriptionSubject: React.PropTypes.object.isRequired
   },
 
   getInitialState: function() {
@@ -16,6 +17,13 @@ const diagEventsList = React.createClass({
   },
 
   componentWillMount: function() {
+
+    this._listenSubscription = this.props.listenSubscriptionSubject.subscribeOnNext(subscription => {
+      if(this.state.table) {
+        this.state.table.clear();
+      }
+    });
+
     this._eventsSubscription = this.props.diagnosticEvents.subscribeOnNext(event => {
       if(!this.state.table) {
         const table = $('#eventsDataTable').DataTable({
@@ -59,6 +67,7 @@ const diagEventsList = React.createClass({
 
   componentWillUnmount: function() {
     this._eventsSubscription.dispose();
+    this._listenSubscription.dispose();
   },
 
   render: function() {

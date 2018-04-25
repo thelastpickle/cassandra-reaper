@@ -2,84 +2,124 @@ import React from "react";
 import ServerStatus from "jsx/server-status";
 import Sidebar from "jsx/sidebar";
 import NavBar from "jsx/navbar";
-import NodeMultiSelect from "jsx/node-multiselect";
+import ClusterSelection from "jsx/cluster-selection";
+import DiagEventsSubscriptionForm from "jsx/event-subscription-form";
+import DiagEventsSubscriptionList from "jsx/event-subscription-list";
 import DiagEventsList from "jsx/event-list";
-import StatusUpdateMixin from "jsx/mixin";
 import URL_PREFIX from "jsx/uicommon";
 
 const eventScreen = React.createClass({
-  mixins: [StatusUpdateMixin],
 
   propTypes: {
     currentCluster: React.PropTypes.string.isRequired,
     clusterNames: React.PropTypes.object.isRequired,
-    diagnosticEvents: React.PropTypes.object.isRequired,
     getClusterStatusSubject: React.PropTypes.object.isRequired,
-    clusterStatusResult: React.PropTypes.object.isRequired
+    // side-bar
+    logoutSubject: React.PropTypes.object.isRequired,
+    logoutResult: React.PropTypes.object.isRequired,
+    // event-subscription-form
+    clusterStatusResult: React.PropTypes.object.isRequired,
+    addSubscriptionSubject: React.PropTypes.object.isRequired,
+    addSubscriptionResult: React.PropTypes.object.isRequired,
+    // event-subscription-list
+    eventSubscriptions: React.PropTypes.object.isRequired,
+    deleteSubscriptionSubject: React.PropTypes.object.isRequired,
+    deleteResult: React.PropTypes.object.isRequired,
+    // event-list
+    diagnosticEvents: React.PropTypes.object.isRequired,
+    listenSubscriptionSubject: React.PropTypes.object.isRequired,
   },
 
   getInitialState: function() {
-    return {
-      clusterName: this.props.currentCluster == "undefined" ? "all" : this.props.currentCluster,
-      clusterNames: [],
-      endpointsByClusterAndRack: {}
-    };
+    return {activeSubscription: null, activeEventSource: null};
   },
 
   componentWillMount: function() {
-    // trigger cluster status results (clusterStatusResult) for multi-select child component
-    // this needs to be done for each registered cluster
-    this._clusterNamesSubscription = this.props.clusterNames.subscribeOnNext(obs =>
-      obs.subscribeOnNext(names => {
-        let previousNames = this.state.clusterNames;
-        this.setState({clusterNames: names});
-        if(names.length == 1) this.setState({clusterName: names[0]});
-        if(names.length > 0 && previousNames.length == 0) {
-          names.map(name => this.props.getClusterStatusSubject.onNext(name));
+
+    this._listenSubscription = this.props.listenSubscriptionSubject.subscribeOnNext(subscription => {
+
+      if(this.state.activeEventSource) {
+        this.state.activeEventSource.close();
+      }
+
+      const isDev = window != window.top;
+      const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
+      const source = new EventSource(`${URL_PREFIX}/diag_event/sse_listen/${subscription.id}`);
+      const diagnosticEvents = this.props.diagnosticEvents;
+      source.onmessage = function(event) {
+        const obj = $.parseJSON(event.data);
+        console.debug(`Received diagnostic event (${event.lastEventId})`, obj);
+        diagnosticEvents.onNext({eventData: obj, eventId: event.lastEventId});
+      };
+      source.onerror = function(err) {
+        diagnosticEvents.onError(err);
+      };
+      source.onopen = function() {
+        console.debug("EventSource ready for receiving diagnostic events");
+      };
+
+      this.setState({activeSubscription: subscription, activeEventSource: source});
+    });
+
+    this._unlistenSubscription = this.props.unlistenSubscriptionSubject.subscribeOnNext(subscription => {
+      if(this.state.activeSubscription) {
+        if(this.state.activeEventSource) {
+          this.state.activeEventSource.close();
         }
-      })
-    );
+        this.setState({activeSubscription: null, activeEventSource: null});
+      }
+    });
+
+    this._deleteSubscription = this.props.deleteSubscriptionSubject.subscribeOnNext(subscription => {
+      if(this.state.activeSubscription && this.state.activeSubscription.id == subscription.id) {
+        if(this.state.activeEventSource) {
+          this.state.activeEventSource.close();
+        }
+        this.setState({activeSubscription: null, activeEventSource: null});
+      }
+    });
+
+
   },
 
   componentWillUnmount: function() {
-    this._clusterNamesSubscription.dispose();
+    this._listenSubscription.dispose();
+    this._unlistenSubscription.dispose();
+    this._deleteSubscription.dispose();
   },
 
-  componentDidMount: function() {
-    $('#events-selection').multiselect({
-//      enableFiltering: true
-        enableClickableOptGroups: true,
-        onChange: this._onNodeSelection
-    });
+//  componentDidMount: function() {
+////    $('#events-selection').multiselect({
+//////      enableFiltering: true
+////        enableClickableOptGroups: true,
+////        onChange: this._onNodeSelection
+////    });
+//
+////    this._subscribe();
+//
+//  },
 
-    this._subscribe();
+  _onCancelView: function() {
+    if(this.state.activeSubscription) {
+      this.props.unlistenSubscriptionSubject.onNext(this.state.activeSubscription);
+    }
   },
 
-  _subscribe: function() {
-    const comp = this;
-
-    const isDev = window != window.top;
-    const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
-
-    $.ajax({
-      method: "POST",
-      url: `${URL_PREFIX}/events/subscribe`,
-      data: { clusterName: comp.state.currentCluster }
-    }).done(function(msg) {
-      console.debug(msg);
-    });
-  },
-
-  _onEventSelection: function(option, checked, select) {
-    // TODO
-  },
-
-  _onNodeSelection: function(option, checked, select) {
-    // TODO
-  },
+//  _onEventSelection: function(option, checked, select) {
+//    // TODO
+//  },
+//
+//  _onNodeSelection: function(option, checked, select) {
+//    // TODO
+//  },
 
 
   render: function() {
+
+    var btnLiveView = <button type="button" className="btn btn-sm btn-block btn-default" disabled="disabled">No active subscriptions for live view</button>
+    if (this.state.activeSubscription) {
+      btnLiveView = <button type="button" className="btn btn-sm btn-block btn-success" onClick={this._onCancelView}>{this.state.activeSubscription.description}</button>
+    }
 
     return (
       <div id="wrapper">
@@ -88,7 +128,9 @@ const eventScreen = React.createClass({
             <NavBar></NavBar>
             <!-- /.navbar-header -->
 
-            <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.clusterName}></Sidebar>
+            <Sidebar
+              logoutSubject={this.props.logoutSubject}
+              logoutResult={this.props.logoutResult}></Sidebar>
           </nav>
 
           <div id="page-wrapper">
@@ -104,28 +146,44 @@ const eventScreen = React.createClass({
             <!-- /.row -->
 
             <div className="row">
-              <div className="col-lg-2">
-                <NodeMultiSelect clusterStatusResult={this.props.clusterStatusResult} onChange={this._onEventSelection}/>
-              </div>
-              <div className="col-lg-2">
-                <label style={{paddingRight: '1em'}} htmlFor="events-selection">Events:</label>
-                <select id="events-selection" multiple="multiple">
-                  <!-- optgroup label="Group 1" -->
-                  <option value="org.apache.cassandra.transport.messages.AuthEvent">AuthEvent</option>
-                  <option value="org.apache.cassandra.dht.BootstrapEvent">BootstrapEvent</option>
-                  <option value="org.apache.cassandra.transport.messages.CQLAuditEvent">CQLAuditEvent</option>
-                  <option value="org.apache.cassandra.gms.GossiperEvent">GossiperEvent</option>
-                  <option value="org.apache.cassandra.hints.HintEvent">HintEvent</option>
-                  <option value="org.apache.cassandra.hints.HintsServiceEvent">HintsServiceEvent</option>
-                  <option value="org.apache.cassandra.service.PendingRangeCalculatorServiceEvent">PendingRangeCalculatorServiceEvent</option>
-                  <option value="org.apache.cassandra.dht.tokenallocator.TokenAllocatorEvent">TokenAllocatorEvent</option>
-                  <option value="org.apache.cassandra.locator.TokenMetadataEvent">TokenMetadataEvent</option>
-                </select>
-              </div>
+              <ClusterSelection />
             </div>
+
             <div className="row">
               <div className="col-lg-12">
-                <DiagEventsList diagnosticEvents={this.props.diagnosticEvents}></DiagEventsList>
+                <DiagEventsSubscriptionForm
+                  clusterStatusResult={this.props.clusterStatusResult}
+                  addSubscriptionSubject={this.props.addSubscriptionSubject}
+                  addSubscriptionResult={this.props.addSubscriptionResult}
+                  listenSubscriptionSubject={this.props.listenSubscriptionSubject}
+                  currentCluster={this.props.currentCluster}>
+                </DiagEventsSubscriptionForm>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-lg-12">
+                <DiagEventsSubscriptionList
+                  eventSubscriptions={this.props.eventSubscriptions}
+                  deleteSubscriptionSubject={this.props.deleteSubscriptionSubject}
+                  deleteResult={this.props.deleteResult}
+                  listenSubscriptionSubject={this.props.listenSubscriptionSubject}>
+                </DiagEventsSubscriptionList>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-lg-12">
+                {btnLiveView}
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-lg-12">
+                <DiagEventsList
+                  diagnosticEvents={this.props.diagnosticEvents}
+                  listenSubscriptionSubject={this.props.listenSubscriptionSubject}>
+                </DiagEventsList>
               </div>
             </div>
           </div>
