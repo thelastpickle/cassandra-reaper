@@ -60,6 +60,7 @@ export const clusterFilterSelection = new Rx.Subject();
 export const addClusterSubject = new Rx.Subject();
 export const deleteClusterSubject = new Rx.Subject();
 export const getClusterStatusSubject = new Rx.Subject();
+export const selectClusterSubject = new Rx.Subject();
 
 
 export const addClusterResult = addClusterSubject.map(seed => {
@@ -90,13 +91,19 @@ export const clusterNames = Rx.Observable.merge(
     )
 );
 
-export const clusterStatusResult = getClusterStatusSubject.map(clusterName => {
-  console.info("Getting cluster status: " + clusterName);
-  return Rx.Observable.fromPromise($.ajax({
-    url: `${URL_PREFIX}/cluster/${encodeURIComponent(clusterName)}`,
-    method: 'GET'
-  }).promise());
-}).share();
+export const clusterSelected = selectClusterSubject.share();
+
+export const clusterStatusResult = Rx.Observable.merge(
+    clusterSelected,
+    getClusterStatusSubject
+  ).map(clusterName => {
+    console.info("Getting cluster status: " + clusterName);
+    return Rx.Observable.fromPromise($.ajax({
+      url: `${URL_PREFIX}/cluster/${encodeURIComponent(clusterName)}`,
+      method: 'GET'
+    }).promise());
+  }
+).share();
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
