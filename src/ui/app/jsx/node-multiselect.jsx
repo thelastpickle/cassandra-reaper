@@ -18,6 +18,10 @@ const eventScreen = React.createClass({
   componentWillMount: function() {
     this._clusterStatusSubscription = this.props.clusterStatusResult.subscribeOnNext(obs => {
       obs.subscribeOnNext(state => {
+        if(!state.nodes_status) {
+          console.error("Missing nodes_status result");
+          return;
+        }
         const dcs = state.nodes_status.endpointStates.map(epState => Object.keys(epState.endpoints));
 
         const epCurrent = {};
@@ -81,12 +85,9 @@ const eventScreen = React.createClass({
     const optGroups = Object.keys(this.state.endpointsByCluster).map(dc => <optgroup key={dc} label={dc}>{optByDc[dc]}</optgroup>);
 
     return (
-      <span>
-      <label style={{paddingRight: '1em'}} htmlFor="node-selection">Nodes:</label>
       <select id="node-selection" multiple="multiple">
         {optGroups}
       </select>
-      </span>
     );
   }
 
