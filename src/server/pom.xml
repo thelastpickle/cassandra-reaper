@@ -86,6 +86,10 @@
                     <groupId>com.google.guava</groupId>
                     <artifactId>guava</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.datastax.cassandra</groupId>
+                    <artifactId>cassandra-driver-core</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -109,8 +113,8 @@
         </dependency>
         <dependency>
             <groupId>com.datastax.cassandra</groupId>
-            <artifactId>cassandra-driver-core</artifactId>
-            <version>3.1.4</version>
+            <artifactId>cassandra-driver-core_diagevents</artifactId>
+            <version>3.3.2</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
