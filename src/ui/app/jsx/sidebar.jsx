@@ -59,6 +59,9 @@ const sidebar = React.createClass({
                       <a href={'snapshot.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-camera fa-fw"></i> Snapshot</a>
                   </li>
                   <li>
+                      <a href={'events.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-search fa-fw"></i> Live Diagnostic</a>
+                  </li>
+                  <li>
                       <a href="#" onClick={this._onLogout}><i className="fa fa-sign-out fa-fw"></i> Logout</a>
                   </li>
               </ul>

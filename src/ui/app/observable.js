@@ -46,12 +46,20 @@ export const logoutResult = logoutSubject.map(logout => {
 }).share();
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// common shared observables
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+export const clusterFilterSelection = new Rx.Subject();
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // cluster
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 export const addClusterSubject = new Rx.Subject();
 export const deleteClusterSubject = new Rx.Subject();
+export const getClusterStatusSubject = new Rx.Subject();
 
 
 export const addClusterResult = addClusterSubject.map(seed => {
@@ -81,6 +89,14 @@ export const clusterNames = Rx.Observable.merge(
       }).promise())
     )
 );
+
+export const clusterStatusResult = getClusterStatusSubject.map(clusterName => {
+  console.info("Getting cluster status: " + clusterName);
+  return Rx.Observable.fromPromise($.ajax({
+    url: `${URL_PREFIX}/cluster/${encodeURIComponent(clusterName)}`,
+    method: 'GET'
+  }).promise());
+}).share();
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

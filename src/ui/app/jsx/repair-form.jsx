@@ -43,7 +43,6 @@ const repairForm = React.createClass({
         }
       })
     );
-
   },
 
   componentWillUnmount: function() {
