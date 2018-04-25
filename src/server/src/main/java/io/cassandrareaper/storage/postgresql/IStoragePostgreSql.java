@@ -15,6 +15,7 @@
 package io.cassandrareaper.storage.postgresql;
 
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -237,6 +238,25 @@ public interface IStoragePostgreSql {
       "SELECT cluster, snapshot_name, owner, cause, creation_time "
           + " FROM snapshot WHERE cluster = :clusterName AND snapshot_name = :snapshotName";
 
+  // Diagnostic Events
+  //
+  String SQL_EVENT_SUBSCRIPTION_ALL_FIELDS = " id, cluster, description, include_nodes, events, "
+          + "export_sse, export_file_logger, export_http_endpoint ";
+
+  String SQL_GET_EVENT_SUBSCRIPTIONS_BY_CLUSTER =
+          "SELECT " + SQL_EVENT_SUBSCRIPTION_ALL_FIELDS + " FROM diag_event_subscription WHERE cluster = :clusterName";
+
+  String SQL_GET_EVENT_SUBSCRIPTION_BY_ID =
+          "SELECT " + SQL_EVENT_SUBSCRIPTION_ALL_FIELDS + " FROM diag_event_subscription WHERE id = :id";
+
+  String SQL_GET_EVENT_SUBSCRIPTIONS = "SELECT * FROM diag_event_subscription";
+
+  String SQL_INSERT_EVENT_SUBSCRIPTION = "INSERT INTO diag_event_subscription (" + SQL_EVENT_SUBSCRIPTION_ALL_FIELDS
+          + ") VALUES ("
+          + "null, :cluster, :description, :includeNodes, :events, :exportSse, :exportFileLogger, :exportHttpEndpoint)";
+
+  String SQL_DELETE_EVENT_SUBSCRIPTION_BY_ID =
+          "DELETE FROM diag_event_subscription WHERE id = :id";
 
   @SqlQuery("SELECT CURRENT_TIMESTAMP")
   String getCurrentDate();
@@ -446,4 +466,26 @@ public interface IStoragePostgreSql {
   @SqlUpdate(SQL_SAVE_SNAPSHOT)
   int saveSnapshot(@BindBean Snapshot snapshot);
 
+  @SqlQuery(SQL_GET_EVENT_SUBSCRIPTIONS_BY_CLUSTER)
+  @Mapper(DiagEventSubscriptionMapper.class)
+  Collection<DiagEventSubscription> getEventSubscriptions(
+          @Bind("clusterName") String clusterName);
+
+  @SqlQuery(SQL_GET_EVENT_SUBSCRIPTIONS)
+  @Mapper(DiagEventSubscriptionMapper.class)
+  Collection<DiagEventSubscription> getEventSubscriptions();
+
+  @SqlQuery(SQL_GET_EVENT_SUBSCRIPTION_BY_ID)
+  @Mapper(DiagEventSubscriptionMapper.class)
+  DiagEventSubscription getEventSubscription(
+          @Bind("id") long subscriptionId);
+
+  @SqlUpdate(SQL_INSERT_EVENT_SUBSCRIPTION)
+  @GetGeneratedKeys
+  long insertDiagEventSubscription(
+          @BindBean DiagEventSubscription subscription);
+
+  @SqlUpdate(SQL_DELETE_EVENT_SUBSCRIPTION_BY_ID)
+  int deleteEventSubscription(
+          @Bind("id") long subscriptionId);
 }

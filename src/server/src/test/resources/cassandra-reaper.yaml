@@ -69,6 +69,9 @@ server:
     - type: http
       port: 8081
       bindHost: 127.0.0.1
+  gzip:
+      # Enabling gzip buffering will prevent flushing of server-side-events
+      enabled: false
 
 # Config used to automatically add/remove sheduled repair for each keyspace
 autoScheduling:
