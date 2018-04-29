@@ -2,7 +2,7 @@
 # This configuration is used mainly for testing.
 # See the README.md file for explanations of configuration keys.
 #
-segmentCount: 200
+segmentCountPerNode: 16
 
 # repairParallelism can be one of: "SEQUENTIAL", "PARALLEL", or "DATACENTER_AWARE"
 repairParallelism: DATACENTER_AWARE

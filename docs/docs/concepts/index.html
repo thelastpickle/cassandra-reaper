@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.32.4" />
+  <meta name="generator" content="Hugo 0.26" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -311,9 +311,12 @@
 
 <p>Reaper splits repair runs in segments. A segment is a subrange of tokens that fits entirely in one of the cluster token ranges. The minimum number of segments for a repair run is the number of token ranges in the cluster. With a 3 nodes cluster using 256 vnodes per node, a repair run will have at least 768 segments. If necessary, each repair can define a higher number of segments than the number of token ranges.</p>
 
+<p><strong>Starting with Reaper 1.2.0 and Cassandra 2.2, token ranges that have the same replicas can be coalesced into a single segment.</strong> If the total number of requested segments is lower than the number of vnodes, Reaper will try to group token ranges so that each segment has the appropriate number of tokens.
+In Cassandra 2.2, one repair session will be started for each subrange of the segment, so the gain will be the reduction of overhead in Reaper. Starting with 3.0, Cassandra will generate a single repair session for all the subranges that share the same replicas, which then further reduces the overhead of vnodes in Cassandra.</p>
+
 <h2 id="back-pressure">Back-pressure</h2>
 
-<p>Reaper will associate each segment with its replicas, and run repairs sequentially on only one of the replicas. If a repair is already running on one of the replicas or if there are too many pending compactions (20 by default), Reaper will postpone the segment for future processing and try to repair the next segment.</p>
+<p>Reaper will associate each segment with its replicas, and run repairs sequentially on only one of the replicas. If a repair is already running on one of the replicas or if there are more than 20 pending compactions, Reaper will postpone the segment for future processing and try to repair the next segment.</p>
 
 <h2 id="concurrency-and-multithreading">Concurrency and Multithreading</h2>
 

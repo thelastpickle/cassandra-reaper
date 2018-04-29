@@ -327,13 +327,15 @@ Defines the amount of days to wait between scheduling new repairs. The value con
 
 <br/>
 
-### `segmentCount`
-
-**WARNING** this setting is **DEPRECATED** and its usage should be avoided.
+### `segmentCountPerNode`
 
 Type: *Integer*
 
-Defines the default amount of repair segments to create for newly registered Cassandra repair runs (token rings). When running a repair run by the Reaper, each segment is repaired separately by the Reaper process, until all the segments in a token ring are repaired. The count might be slightly off the defined value, as clusters residing in multiple data centers require additional small token ranges in addition to the expected. This value can be overwritten when executing a repair run via Reaper.
+Default: *16*
+
+Defines the default amount of repair segments to create for newly registered Cassandra repair runs, for each node in the cluster. When running a repair run by Reaper, each segment is repaired separately by the Reaper process, until all the segments in a token ring are repaired. The count might be slightly off the defined value, as clusters residing in multiple data centers require additional small token ranges in addition to the expected. This value can be overwritten when executing a repair run via Reaper.
+
+In a 10 nodes cluster, setting a value of 20 segments per node will generate a repair run that splits the work into 200 token subranges. This number can vary due to vnodes (before 1.2.0, Reaper cannot create a segment with multiple token ranges, so the number of segments will be at least the total number of vnodes in the cluster). As Reaper tries to size segments evenly, the presence of very small token ranges can lead to have more segments than expected.
 
 <br/>
 
