@@ -46,13 +46,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class SnapshotManager {
+
   public static final String SNAPSHOT_PREFIX = "reaper";
+
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotManager.class);
+
   private final AppContext context;
   private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
   private final ExecutorService executor = Executors.newFixedThreadPool(5);
-  private final Cache<String, Snapshot> cache =
-      CacheBuilder.newBuilder().weakValues().maximumSize(1000).build();
+  private final Cache<String, Snapshot> cache = CacheBuilder.newBuilder().weakValues().maximumSize(1000).build();
 
   private SnapshotManager(AppContext context) {
     this.context = context;
@@ -62,12 +64,10 @@ public final class SnapshotManager {
     return new SnapshotManager(context);
   }
 
-  public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspace)
-      throws ReaperException {
+  public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspace) throws ReaperException {
     try {
-      JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connect(
-              host, context.config.getJmxConnectionTimeoutInSeconds());
+      JmxProxy jmxProxy
+          = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
 
       LOG.info("Taking snapshot for node {} and keyspace {}", host, keyspace);
       return Pair.of(host, jmxProxy.takeSnapshot(snapshotName, keyspace));
@@ -77,16 +77,19 @@ public final class SnapshotManager {
     }
   }
 
-  Callable<Pair<Node, String>> takeSnapshotTask(
-      String snapshotName, Node host, String... keyspace) {
+  Callable<Pair<Node, String>> takeSnapshotTask(String snapshotName, Node host, String... keyspace) {
     return () -> {
       return takeSnapshot(snapshotName, host, keyspace);
     };
   }
 
   public List<Pair<Node, String>> takeSnapshotClusterWide(
-      String snapshotName, String clusterName, String owner, String cause, String... keyspace)
-      throws ReaperException {
+      String snapshotName,
+      String clusterName,
+      String owner,
+      String cause,
+      String... keyspace) throws ReaperException {
+
     try {
       List<Pair<Node, String>> snapshotResults = Lists.newArrayList();
       Optional<Cluster> cluster = context.storage.getCluster(clusterName);
@@ -131,11 +134,13 @@ public final class SnapshotManager {
   }
 
   public Pair<Node, String> takeSnapshotForKeyspaces(
-      String snapshotName, Node host, String... keyspaces) throws ReaperException {
+      String snapshotName,
+      Node host,
+      String... keyspaces) throws ReaperException {
+
     try {
-      JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connect(
-              host, context.config.getJmxConnectionTimeoutInSeconds());
+      JmxProxy jmxProxy
+          = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
 
       return Pair.of(host, jmxProxy.takeSnapshot(snapshotName, keyspaces));
     } catch (InterruptedException e) {
@@ -160,11 +165,7 @@ public final class SnapshotManager {
 
   public List<Snapshot> listSnapshots(Node host) throws ReaperException {
     try {
-      JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connect(
-              host, context.config.getJmxConnectionTimeoutInSeconds());
-
-      return jmxProxy
+      return context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds())
           .listSnapshots()
           .stream()
           .map(snapshot -> enrichSnapshotWithMetadata(snapshot))
@@ -178,8 +179,7 @@ public final class SnapshotManager {
     }
   }
 
-  public Map<String, Map<String, List<Snapshot>>> listSnapshotsClusterWide(String clusterName)
-      throws ReaperException {
+  public Map<String, Map<String, List<Snapshot>>> listSnapshotsClusterWide(String clusterName) throws ReaperException {
     try {
       // Map with the snapshot name as key and a map of <host,
       Optional<Cluster> cluster = context.storage.getCluster(clusterName);
@@ -258,27 +258,19 @@ public final class SnapshotManager {
     };
   }
 
-  public void clearSnapshotClusterWide(String snapshotName, String clusterName)
-      throws ReaperException {
+  public void clearSnapshotClusterWide(String snapshotName, String clusterName) throws ReaperException {
     try {
       Optional<Cluster> cluster = context.storage.getCluster(clusterName);
-
       Preconditions.checkArgument(cluster.isPresent());
 
-      JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connectAny(
-              cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
+      JmxProxy jmxProxy
+          = context.jmxConnectionFactory.connectAny(cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
 
       List<String> liveNodes = jmxProxy.getLiveNodes();
       List<Callable<Node>> clearSnapshotTasks =
           liveNodes
               .stream()
-              .map(
-                  host ->
-                      Node.builder()
-                          .withClusterName(cluster.get().getName())
-                          .withHostname(host)
-                          .build())
+              .map(host -> Node.builder().withClusterName(cluster.get().getName()).withHostname(host).build())
               .map(node -> clearSnapshotTask(snapshotName, node))
               .collect(Collectors.toList());
 
@@ -301,20 +293,19 @@ public final class SnapshotManager {
   }
 
   private Snapshot enrichSnapshotWithMetadata(Snapshot snapshot) {
-    Optional<Snapshot> snapshotMetadata =
-        Optional.fromNullable(
-            cache.getIfPresent(snapshot.getClusterName() + "-" + snapshot.getName()));
+    Optional<Snapshot> snapshotMetadata = Optional.fromNullable(
+        cache.getIfPresent(snapshot.getClusterName() + "-" + snapshot.getName()));
+
     if (!snapshotMetadata.isPresent()) {
-      snapshotMetadata =
-          Optional.fromNullable(
-              context.storage.getSnapshot(snapshot.getClusterName(), snapshot.getName()));
+      snapshotMetadata = Optional.fromNullable(
+          context.storage.getSnapshot(snapshot.getClusterName(), snapshot.getName()));
+
       if (snapshotMetadata.isPresent()) {
         cache.put(snapshot.getClusterName() + "-" + snapshot.getName(), snapshotMetadata.get());
       }
     }
 
-    Builder snapshotBuilder =
-        Snapshot.builder()
+    Builder snapshotBuilder = Snapshot.builder()
             .withClusterName(snapshot.getClusterName())
             .withName(snapshot.getName())
             .withHost(snapshot.getHost())
@@ -324,8 +315,7 @@ public final class SnapshotManager {
             .withTable(snapshot.getTable());
 
     if (snapshotMetadata.isPresent()) {
-      snapshotBuilder =
-          snapshotBuilder
+      snapshotBuilder = snapshotBuilder
               .withCause(snapshotMetadata.get().getCause().or(""))
               .withOwner(snapshotMetadata.get().getOwner().or(""))
               .withCreationDate(snapshotMetadata.get().getCreationDate().orNull());

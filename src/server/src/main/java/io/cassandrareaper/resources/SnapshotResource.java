@@ -138,12 +138,13 @@ public final class SnapshotResource {
   @GET
   @Path("/{clusterName}/{host}")
   public Response listSnapshots(
-      @PathParam("clusterName") String clusterName, @PathParam("host") String host) {
-    Map<String, List<Snapshot>> snapshots;
+      @PathParam("clusterName") String clusterName,
+      @PathParam("host") String host) {
+
     try {
-      snapshots =
-          context.snapshotManager.listSnapshotsGroupedByName(
-              Node.builder().withClusterName(clusterName).withHostname(host).build());
+      Map<String, List<Snapshot>> snapshots = context.snapshotManager
+          .listSnapshotsGroupedByName(Node.builder().withClusterName(clusterName).withHostname(host).build());
+
       return Response.ok().entity(snapshots).build();
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
