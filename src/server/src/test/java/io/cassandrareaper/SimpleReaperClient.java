@@ -14,6 +14,7 @@
 
 package io.cassandrareaper;
 
+import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
@@ -166,4 +167,11 @@ public final class SimpleReaperClient {
     return parseJSON(json, new TypeReference<Map<String, List<Snapshot>>>() {});
   }
 
+  public static List<DiagEventSubscription> parseEventSubscriptionsListJSON(String json) {
+    return parseJSON(json, new TypeReference<List<DiagEventSubscription>>() {});
+  }
+
+  public static DiagEventSubscription parseEventSubscriptionJSON(String json) {
+    return parseJSON(json, new TypeReference<DiagEventSubscription>() {});
+  }
 }

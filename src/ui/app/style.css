@@ -110,3 +110,7 @@ div.ReactTags__suggestions ul li.ReactTags__activeSuggestion {
 .large-modal {
   width: 90%;
 }
+
+.dataTables_wrapper {
+  margin-top: 1em;
+}

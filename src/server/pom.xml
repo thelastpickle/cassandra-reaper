@@ -86,6 +86,10 @@
                     <groupId>com.google.guava</groupId>
                     <artifactId>guava</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.datastax.cassandra</groupId>
+                    <artifactId>cassandra-driver-core</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -109,7 +113,7 @@
         </dependency>
         <dependency>
             <groupId>com.datastax.cassandra</groupId>
-            <artifactId>cassandra-driver-core</artifactId>
+            <artifactId>cassandra-driver-core_diagevents</artifactId>
             <version>3.1.4</version>
         </dependency>
         <dependency>
@@ -152,7 +156,11 @@
             <artifactId>dropwizard-shiro</artifactId>
             <version>0.2.0</version>
         </dependency>
-        
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-sse</artifactId>
+            <version>2.25.1</version>
+        </dependency>
         <!--test scope -->
 
         <dependency>
@@ -213,6 +221,11 @@
              -->
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
+            <version>2.25.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.bundles.repackaged</groupId>
+            <artifactId>jersey-guava</artifactId>
             <version>2.25.1</version>
         </dependency>
     </dependencies>

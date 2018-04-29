@@ -46,12 +46,21 @@ export const logoutResult = logoutSubject.map(logout => {
 }).share();
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// common shared observables
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+export const clusterFilterSelection = new Rx.Subject();
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // cluster
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 export const addClusterSubject = new Rx.Subject();
 export const deleteClusterSubject = new Rx.Subject();
+export const getClusterStatusSubject = new Rx.Subject();
+export const selectClusterSubject = new Rx.Subject();
 
 
 export const addClusterResult = addClusterSubject.map(seed => {
@@ -81,6 +90,20 @@ export const clusterNames = Rx.Observable.merge(
       }).promise())
     )
 );
+
+export const clusterSelected = selectClusterSubject.share();
+
+export const clusterStatusResult = Rx.Observable.merge(
+    clusterSelected,
+    getClusterStatusSubject
+  ).map(clusterName => {
+    console.info("Getting cluster status: " + clusterName);
+    return Rx.Observable.fromPromise($.ajax({
+      url: `${URL_PREFIX}/cluster/${encodeURIComponent(clusterName)}`,
+      method: 'GET'
+    }).promise());
+  }
+).share();
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -189,3 +212,49 @@ export const repairs = Rx.Observable.merge(
       }).promise())
     ).map(arr=>arr.reverse())
 );
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// diagnostic events
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+export const addSubscriptionSubject = new Rx.Subject();
+export const deleteSubscriptionSubject = new Rx.Subject();
+export const listenSubscriptionSubject = new Rx.Subject();
+export const diagnosticEvents = new Rx.Subject();
+
+export const addSubscriptionResult = addSubscriptionSubject.map(sub => {
+  console.info("Submitting events subscription: " + sub);
+  const params = $.param(sub);
+  return Rx.Observable.fromPromise($.ajax({
+    url: `${URL_PREFIX}/diag_event/subscription?${params}`,
+    method: 'POST'
+  }).promise());
+}).share();
+
+export const deleteSubscriptionResult = deleteSubscriptionSubject.map(sub => {
+  console.info("Deleting events subscription: " + sub.id);
+  return Rx.Observable.fromPromise($.ajax({
+    url: `${URL_PREFIX}/diag_event/subscription/${encodeURIComponent(sub.id)}`,
+    method: 'DELETE'
+  }).promise());
+}).share();
+
+export const eventSubscriptions = Rx.Observable.merge(
+    clusterSelected.map(clusterName => Rx.Observable.just(clusterName)),
+    addSubscriptionResult,
+    deleteSubscriptionResult
+  ).map(s =>
+    s.flatMap(r => {
+      var clusterName = r;
+      if(r.cluster) {
+        clusterName = r.cluster;
+      }
+      console.info("Getting event subscriptions: " + clusterName);
+      return Rx.Observable.fromPromise($.ajax({
+       url: `${URL_PREFIX}/diag_event/subscription?clusterName=${encodeURIComponent(clusterName)}`,
+       method: 'GET'
+      }).promise());
+    })
+  ).share();

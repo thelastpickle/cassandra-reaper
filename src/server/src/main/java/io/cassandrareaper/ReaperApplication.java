@@ -19,6 +19,8 @@ import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxConnectionsInitializer;
 import io.cassandrareaper.resources.ClusterResource;
+import io.cassandrareaper.resources.DiagEventSubscriptionResource;
+import io.cassandrareaper.resources.DiagnosticEventLiveViewer;
 import io.cassandrareaper.resources.PingResource;
 import io.cassandrareaper.resources.ReaperHealthCheck;
 import io.cassandrareaper.resources.RepairRunResource;
@@ -231,6 +233,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     final SnapshotResource snapshotResource = new SnapshotResource(context);
     environment.jersey().register(snapshotResource);
 
+    final DiagEventSubscriptionResource eventsResource = new DiagEventSubscriptionResource(context);
+    environment.jersey().register(eventsResource);
+
     if (config.isAccessControlEnabled()) {
       SessionHandler sessionHandler = new SessionHandler();
       sessionHandler
@@ -241,6 +246,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       environment.jersey().register(new ShiroExceptionMapper());
       environment.jersey().register(new LoginResource(context));
     }
+
+    final DiagnosticEventLiveViewer diagEvents = new DiagnosticEventLiveViewer(context);
+    environment.jersey().register(diagEvents);
 
     Thread.sleep(1000);
 

@@ -27,6 +27,9 @@ server:
     - type: http
       port: 8084
       bindHost: 127.0.0.1
+  gzip:
+      # Enabling gzip buffering will prevent flushing of server-side-events
+      enabled: false
 
 jmxPorts:
   127.0.0.1: 7100
