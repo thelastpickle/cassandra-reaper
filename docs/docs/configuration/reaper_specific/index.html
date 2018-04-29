@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.32.4" />
+  <meta name="generator" content="Hugo 0.26" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -527,6 +527,12 @@ To match the example above, it could be something like : <code>10.0.10.5@cluster
   appenders:
     - type: console
       logFormat: &quot;%-6level [%d] [%t] %logger{5} - %msg %n&quot;
+      threshold: WARN
+    - type: file
+      logFormat: &quot;%-6level [%t] %logger{5} - %msg %n&quot;
+      currentLogFilename: /var/log/cassandra-reaper/reaper.log
+      archivedLogFilenamePattern: /var/log/cassandra-reaper/reaper-%d.log.gz
+      archivedFileCount: 99
 </code></pre>
 
 <p>Definitions for some of the above sub-settings are as follows.</p>
@@ -535,7 +541,7 @@ To match the example above, it could be something like : <code>10.0.10.5@cluster
 
 <p>Type: <em>String</em></p>
 
-<p>The log level to filter to. Where the level order is <strong>ALL</strong> &lt; <strong>DEBUG</strong> &lt; <strong>INFO</strong> &lt; <strong>WARN</strong> &lt; <strong>ERROR</strong> &lt; <strong>FATAL</strong> &lt; <strong>OFF</strong>. See the <a href="https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/Level.html">log4j</a> documentation for further information.</p>
+<p>Global log level to filter to. Where the level order is <strong>ALL</strong> &lt; <strong>DEBUG</strong> &lt; <strong>INFO</strong> &lt; <strong>WARN</strong> &lt; <strong>ERROR</strong> &lt; <strong>FATAL</strong> &lt; <strong>OFF</strong>. See the <a href="https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/Level.html">log4j</a> documentation for further information.</p>
 
 <h4 id="loggers"><code>loggers</code></h4>
 
@@ -548,6 +554,18 @@ To match the example above, it could be something like : <code>10.0.10.5@cluster
 <p>Type: <em>String</em></p>
 
 <p>The output format of an entry in the log.</p>
+
+<h4 id="threshold"><code>threshold</code></h4>
+
+<p>Type: <em>String</em></p>
+
+<p>The log level to filter the console messages to. Where the level order is <strong>ALL</strong> &lt; <strong>DEBUG</strong> &lt; <strong>INFO</strong> &lt; <strong>WARN</strong> &lt; <strong>ERROR</strong> &lt; <strong>FATAL</strong> &lt; <strong>OFF</strong>. See the <a href="https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/Level.html">log4j</a> documentation for further information.</p>
+
+<h4 id="archivedfilecount"><code>archivedFileCount</code></h4>
+
+<p>Type: <em>Integer</em></p>
+
+<p>The number of archive log files stored in the log rotation sliding window. That is the number of archived (compressed) log files kept at one point in time. If there are <code>archivedFileCount</code> number of archived log files and the current (uncompressed) log file is archived, the oldest archived log file is deleted.</p>
 
 <p><br/></p>
 
@@ -612,13 +630,15 @@ blocking in cause some thread is waiting for I/O, like calling a Cassandra clust
 
 <p><br/></p>
 
-<h3 id="segmentcount"><code>segmentCount</code></h3>
-
-<p><strong>WARNING</strong> this setting is <strong>DEPRECATED</strong> and its usage should be avoided.</p>
+<h3 id="segmentcountpernode"><code>segmentCountPerNode</code></h3>
 
 <p>Type: <em>Integer</em></p>
 
-<p>Defines the default amount of repair segments to create for newly registered Cassandra repair runs (token rings). When running a repair run by the Reaper, each segment is repaired separately by the Reaper process, until all the segments in a token ring are repaired. The count might be slightly off the defined value, as clusters residing in multiple data centers require additional small token ranges in addition to the expected. This value can be overwritten when executing a repair run via Reaper.</p>
+<p>Default: <em>16</em></p>
+
+<p>Defines the default amount of repair segments to create for newly registered Cassandra repair runs, for each node in the cluster. When running a repair run by Reaper, each segment is repaired separately by the Reaper process, until all the segments in a token ring are repaired. The count might be slightly off the defined value, as clusters residing in multiple data centers require additional small token ranges in addition to the expected. This value can be overwritten when executing a repair run via Reaper.</p>
+
+<p>In a 10 nodes cluster, setting a value of 20 segments per node will generate a repair run that splits the work into 200 token subranges. This number can vary due to vnodes (before 1.2.0, Reaper cannot create a segment with multiple token ranges, so the number of segments will be at least the total number of vnodes in the cluster). As Reaper tries to size segments evenly, the presence of very small token ranges can lead to have more segments than expected.</p>
 
 <p><br/></p>
 

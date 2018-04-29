@@ -1,6 +1,6 @@
 # Cassandra Reaper Configuration for Acceptance Tests.
 #
-segmentCount: 200
+segmentCountPerNode: 16
 repairParallelism: SEQUENTIAL
 repairIntensity: 0.95
 scheduleDaysBetween: 7

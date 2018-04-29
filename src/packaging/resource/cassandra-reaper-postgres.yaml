@@ -1,7 +1,7 @@
 # Cassandra Reaper Configuration Example.
 # See a bit more complete example in:
 # src/server/src/test/resources/cassandra-reaper.yaml
-segmentCount: 200
+segmentCountPerNode: 16
 repairParallelism: DATACENTER_AWARE
 repairIntensity: 0.9
 scheduleDaysBetween: 7
