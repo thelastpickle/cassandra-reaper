@@ -979,37 +979,28 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   @Override
-  public void clearSnapshot(String repairId, String keyspaceName) throws ReaperException {
-    if (repairId == null || ("").equals(repairId)) {
+  public void clearSnapshot(String repairId, String keyspaceName) {
+    if (null == repairId || repairId.isEmpty()) {
       // Passing in null or empty string will clear all snapshots on the hos
       throw new IllegalArgumentException("repairId cannot be null or empty string");
     }
     try {
       ((StorageServiceMBean) ssProxy).clearSnapshot(repairId, keyspaceName);
-    } catch (IOException e) {
-      throw new ReaperException(e);
+    } catch (AssertionError | IOException e) {
+      LOG.error("failed to clear snapshot " + repairId + " in keyspace " + keyspaceName, e);
     }
   }
 
   @Override
-  public void clearSnapshot(String snapshotName) throws ReaperException {
-    if (snapshotName == null || ("").equals(snapshotName)) {
+  public void clearSnapshot(String snapshotName) {
+    if (null == snapshotName || snapshotName.isEmpty()) {
       // Passing in null or empty string will clear all snapshots on the hos
       throw new IllegalArgumentException("snapshotName cannot be null or empty string");
     }
     try {
       ((StorageServiceMBean) ssProxy).clearSnapshot(snapshotName);
-    } catch (IOException e) {
-      throw new ReaperException(e);
-    }
-  }
-
-  @Override
-  public void clearAllSnapshots() throws ReaperException {
-    try {
-      ((StorageServiceMBean) ssProxy).clearSnapshot("");
-    } catch (IOException e) {
-      throw new ReaperException(e);
+    } catch (AssertionError | IOException e) {
+      LOG.error("failed to clear snapshot " + snapshotName, e);
     }
   }
 

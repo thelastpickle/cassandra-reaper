@@ -41,6 +41,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import com.datastax.driver.core.utils.UUIDs;
@@ -48,12 +49,14 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.util.Maps;
 import org.joda.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -81,7 +84,7 @@ public final class RepairRunResourceTest {
   private static final int RETRY_DELAY_S = 10;
   private static final long TIME_CREATE = 42L;
   private static final long TIME_START = 43L;
-  private static final URI SAMPLE_URI = URI.create("http://test");
+  private static final URI SAMPLE_URI = URI.create("http://reaper_host/repair_run/");
   private static final int SEGMENT_CNT = 6;
   private static final double REPAIR_INTENSITY = 0.5f;
   private static final RepairParallelism REPAIR_PARALLELISM = RepairParallelism.SEQUENTIAL;
@@ -109,8 +112,7 @@ public final class RepairRunResourceTest {
     when(context.config.getRepairIntensity()).thenReturn(REPAIR_INTENSITY);
 
     uriInfo = mock(UriInfo.class);
-    when(uriInfo.getAbsolutePath()).thenReturn(SAMPLE_URI);
-    when(uriInfo.getBaseUri()).thenReturn(SAMPLE_URI);
+    when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(SAMPLE_URI));
 
     final JmxProxy proxy = mock(JmxProxy.class);
     when(proxy.getClusterName()).thenReturn(CLUSTER_NAME);
@@ -181,20 +183,16 @@ public final class RepairRunResourceTest {
         uriInfo,
         Optional.fromNullable(clusterName),
         Optional.fromNullable(keyspace),
-        columnFamilies == null
-            ? Optional.<String>absent()
-            : Optional.of(columnFamilies.iterator().next()),
+        Optional.of(StringUtils.join(columnFamilies, ',')),
         Optional.fromNullable(owner),
         Optional.fromNullable(cause),
         Optional.fromNullable(segments),
         Optional.of(REPAIR_PARALLELISM.name()),
         Optional.<String>absent(),
         Optional.<String>absent(),
-        nodes == null || nodes.isEmpty()
-            ? Optional.<String>absent()
-            : Optional.of(nodes.iterator().next()),
+        Optional.of(StringUtils.join(nodes, ',')),
         Optional.<String>absent(),
-        Optional.<String>absent());
+        Optional.of(StringUtils.join(blacklistedTables, ',')));
   }
 
   @Test
@@ -262,7 +260,7 @@ public final class RepairRunResourceTest {
     resource.modifyRunState(uriInfo, runId, newState);
     Thread.sleep(1000);
     response = resource.modifyRunState(uriInfo, runId, newState);
-    assertEquals(Response.Status.NOT_MODIFIED.getStatusCode(), response.getStatus());
+    assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());
   }
 
   @Test
@@ -281,7 +279,7 @@ public final class RepairRunResourceTest {
     resource.modifyRunState(uriInfo, runId, newState);
     Thread.sleep(1000);
     response = resource.modifyRunState(uriInfo, runId, newState);
-    assertEquals(Response.Status.NOT_MODIFIED.getStatusCode(), response.getStatus());
+    assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());
 
     // Adding a second run that we'll try to set to RUNNING status
     RepairRunResource newResource = new RepairRunResource(context);
@@ -361,7 +359,7 @@ public final class RepairRunResourceTest {
         Optional.of(RepairRun.RunState.PAUSED.toString()));
     Thread.sleep(200);
 
-    assertEquals(405, response.getStatus());
+    assertEquals(409, response.getStatus());
     RepairRun repairRun = context.storage.getRepairRun(runId).get();
     // the run should be paused
     assertEquals(RepairRun.RunState.NOT_STARTED, repairRun.getRunState());
@@ -398,9 +396,7 @@ public final class RepairRunResourceTest {
     response = resource.modifyRunState(uriInfo, runId, Optional.of(RepairRun.RunState.PAUSED.toString()));
     assertEquals(200, response.getStatus());
     response = resource.modifyRunIntensity(uriInfo, runId, Optional.of("0.1"));
-    assertTrue(response.getEntity() instanceof RepairRunStatus);
-    repairRunStatus = (RepairRunStatus) response.getEntity();
-    assertEquals(0.1, repairRunStatus.getIntensity(), 0.09);
+    assertFalse(response.hasEntity());
   }
 
   @Test

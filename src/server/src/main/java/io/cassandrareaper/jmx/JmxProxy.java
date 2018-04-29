@@ -44,11 +44,9 @@ public interface JmxProxy extends NotificationListener {
    */
   void cancelAllRepairs();
 
-  void clearSnapshot(String repairId, String keyspaceName) throws ReaperException;
+  void clearSnapshot(String repairId, String keyspaceName);
 
-  void clearSnapshot(String snapshotName) throws ReaperException;
-
-  void clearAllSnapshots() throws ReaperException;
+  void clearSnapshot(String snapshotName);
 
   String getAllEndpointsState();
 

@@ -1054,9 +1054,9 @@ public final class BasicSteps {
           "/repair_run/" + TestContext.LAST_MODIFIED_ID,
           Optional.of(params),
           Optional.absent(),
-          Response.Status.OK,
+          Response.Status.ACCEPTED,
           Response.Status.NOT_FOUND,
-          Response.Status.FORBIDDEN);
+          Response.Status.CONFLICT);
 
       await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
         try {
@@ -1109,12 +1109,19 @@ public final class BasicSteps {
             "/repair_run/" + TestContext.LAST_MODIFIED_ID + "/state/RUNNING",
             Optional.of(Maps.newHashMap()));
 
-        Assertions.assertThat(ImmutableList.of(
-            Response.Status.OK.getStatusCode(),
-            Response.Status.NOT_MODIFIED.getStatusCode()))
-            .contains(response.getStatus());
+        int status = response.getStatus();
 
-        if (Response.Status.OK.getStatusCode() == response.getStatus()) {
+        Assertions.assertThat(
+              ImmutableList.of(Response.Status.OK.getStatusCode(), Response.Status.NO_CONTENT.getStatusCode()))
+            .contains(status);
+
+        // rest command requests should not response with bodies, follow the location to GET that
+        Assertions.assertThat(response.readEntity(String.class)).isEmpty();
+
+        // follow to new location (to GET resource)
+        response = runner.callReaper("GET", response.getLocation().toString(), Optional.absent());
+
+        if (Response.Status.OK.getStatusCode() == status) {
           String responseData = response.readEntity(String.class);
           RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
           TestContext.LAST_MODIFIED_ID = run.getId();
@@ -1128,7 +1135,7 @@ public final class BasicSteps {
           "/repair_run/" + TestContext.LAST_MODIFIED_ID + "/state/RUNNING",
           Optional.absent(),
           Optional.absent(),
-          Response.Status.NOT_MODIFIED);
+          Response.Status.NO_CONTENT);
     }
   }
 
@@ -1145,13 +1152,19 @@ public final class BasicSteps {
             "/repair_run/" + TestContext.LAST_MODIFIED_ID + "/state/PAUSED",
             Optional.of(params));
 
-        Assertions.assertThat(ImmutableList.of(
-            Response.Status.OK.getStatusCode(),
-            Response.Status.METHOD_NOT_ALLOWED.getStatusCode(),
-            Response.Status.NOT_MODIFIED.getStatusCode()))
-            .contains(response.getStatus());
+        int status = response.getStatus();
 
-        if (Response.Status.OK.getStatusCode() == response.getStatus()) {
+        Assertions.assertThat(
+              ImmutableList.of(Response.Status.OK.getStatusCode(), Response.Status.NO_CONTENT.getStatusCode()))
+            .contains(status);
+
+        // rest command requests should not response with bodies, follow the location to GET that
+        Assertions.assertThat(response.readEntity(String.class)).isEmpty();
+
+        // follow to new location (to GET resource)
+        response = runner.callReaper("GET", response.getLocation().toString(), Optional.absent());
+
+        if (Response.Status.OK.getStatusCode() == status) {
           String responseData = response.readEntity(String.class);
           RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
           TestContext.LAST_MODIFIED_ID = run.getId();
@@ -1165,8 +1178,7 @@ public final class BasicSteps {
           "/repair_run/" + TestContext.LAST_MODIFIED_ID + "/state/PAUSED",
           Optional.absent(),
           Optional.absent(),
-          Response.Status.NOT_MODIFIED,
-          Response.Status.METHOD_NOT_ALLOWED);
+          Response.Status.NO_CONTENT);
     }
   }
 
@@ -1327,11 +1339,12 @@ public final class BasicSteps {
   public void a_request_is_made_to_clear_the_existing_snapshots_cluster_wide() throws Throwable {
     synchronized (BasicSteps.class) {
       ReaperTestJettyRunner runner = RUNNERS.get(0);
-      Response response =
-          runner.callReaper(
+
+      Response response = runner.callReaper(
               "GET",
               "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST,
               EMPTY_PARAMS);
+
       assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
       String responseData = response.readEntity(String.class);
       Map<String, List<Snapshot>> snapshots = SimpleReaperClient.parseSnapshotMapJSON(responseData);
@@ -1346,8 +1359,8 @@ public final class BasicSteps {
                     "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + snapshot,
                     Optional.absent(),
                     Optional.absent(),
-                    Response.Status.OK,
-                    Response.Status.INTERNAL_SERVER_ERROR);
+                    Response.Status.ACCEPTED,
+                    Response.Status.NOT_FOUND);
               });
     }
   }
@@ -1385,16 +1398,11 @@ public final class BasicSteps {
               snapshot -> {
                 callAndExpect(
                     "DELETE",
-                    "/snapshot/"
-                        + TestContext.TEST_CLUSTER
-                        + "/"
-                        + TestContext.SEED_HOST
-                        + "/"
-                        + snapshot,
+                    "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST + "/" + snapshot,
                     Optional.absent(),
                     Optional.absent(),
-                    Response.Status.OK,
-                    Response.Status.INTERNAL_SERVER_ERROR);
+                    Response.Status.ACCEPTED,
+                    Response.Status.NOT_FOUND);
               });
     }
   }

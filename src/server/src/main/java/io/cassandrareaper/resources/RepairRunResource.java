@@ -27,10 +27,7 @@ import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.service.RepairUnitService;
 
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -64,7 +61,6 @@ import org.apache.cassandra.repair.RepairParallelism;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 
 @Path("/repair_run")
 @Produces(MediaType.APPLICATION_JSON)
@@ -246,7 +242,7 @@ public final class RepairRunResource {
 
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
-      return Response.status(500).entity(e.getMessage()).build();
+      return Response.serverError().entity(e.getMessage()).build();
     }
   }
 
@@ -390,22 +386,21 @@ public final class RepairRunResource {
       final RunState oldState = repairRun.get().getRunState();
       if (oldState == newState) {
         String msg = "given \"state\" " + stateStr + " is same as the current run state";
-        return Response.status(Status.NOT_MODIFIED).entity(msg).build();
+        return Response.noContent().entity(msg).location(buildRepairRunUri(uriInfo, repairRun.get())).build();
       }
 
-      int segmentsRepaired = getSegmentAmountForRepairRun(repairRunId);
       if (isStarting(oldState, newState)) {
-        return startRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
+        return startRun(uriInfo, repairRun.get());
       } else if (isPausing(oldState, newState)) {
-        return pauseRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
+        return pauseRun(uriInfo, repairRun.get());
       } else if (isResuming(oldState, newState) || isRetrying(oldState, newState)) {
-        return resumeRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
+        return resumeRun(uriInfo, repairRun.get());
       } else if (isAborting(oldState, newState)) {
-        return abortRun(repairRun.get(), repairUnit.get(), segmentsRepaired);
+        return abortRun(uriInfo, repairRun.get());
       } else {
         String errMsg = String.format("Transition %s->%s not supported.", oldState.toString(), newState.toString());
         LOG.error(errMsg);
-        return Response.status(Status.METHOD_NOT_ALLOWED).entity(errMsg).build();
+        return Response.status(Status.CONFLICT).entity(errMsg).build();
       }
     } catch (ValidationException ex) {
       return Response.status(Status.BAD_REQUEST).entity(ex.getMessage()).build();
@@ -449,8 +444,7 @@ public final class RepairRunResource {
         return Response.status(Status.CONFLICT).entity("repair run must first be paused").build();
       }
 
-      int segmentsRepaired = getSegmentAmountForRepairRun(repairRunId);
-      return updateRunIntensity(repairRun.get(), repairUnit.get(), segmentsRepaired, intensity);
+      return updateRunIntensity(uriInfo, repairRun.get(), intensity);
     } catch (ValidationException ex) {
       return Response.status(Response.Status.BAD_REQUEST).entity(ex.getMessage()).build();
     }
@@ -520,38 +514,36 @@ public final class RepairRunResource {
     return context.storage.getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
   }
 
-  private Response startRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) throws ReaperException {
+  private Response startRun(UriInfo uriInfo, RepairRun repairRun) throws ReaperException {
     LOG.info("Starting run {}", repairRun.getId());
     final RepairRun newRun = context.repairManager.startRepairRun(repairRun);
-    return Response.status(Response.Status.OK)
-        .entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired))
-        .build();
+    return Response.ok().location(buildRepairRunUri(uriInfo, newRun)).build();
   }
 
-  private Response pauseRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) throws ReaperException {
+  private Response pauseRun(UriInfo uriInfo, RepairRun repairRun) throws ReaperException {
     LOG.info("Pausing run {}", repairRun.getId());
     final RepairRun newRun = context.repairManager.pauseRepairRun(repairRun);
-    return Response.ok().entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired)).build();
+    return Response.ok().location(buildRepairRunUri(uriInfo, newRun)).build();
   }
 
-  private Response resumeRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) throws ReaperException {
+  private Response resumeRun(UriInfo uriInfo, RepairRun repairRun) throws ReaperException {
     LOG.info("Resuming run {}", repairRun.getId());
     final RepairRun newRun = context.repairManager.startRepairRun(repairRun);
-    return Response.ok().entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired)).build();
+    return Response.ok().location(buildRepairRunUri(uriInfo, newRun)).build();
   }
 
-  private Response abortRun(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) throws ReaperException {
+  private Response abortRun(UriInfo uriInfo, RepairRun repairRun) throws ReaperException {
     LOG.info("Aborting run {}", repairRun.getId());
     final RepairRun newRun = context.repairManager.abortRepairRun(repairRun);
-    return Response.ok().entity(new RepairRunStatus(newRun, repairUnit, segmentsRepaired)).build();
+    return Response.ok().location(buildRepairRunUri(uriInfo, newRun)).build();
   }
 
-  private Response updateRunIntensity(RepairRun run, RepairUnit unit, int repaired, double intensity)
+  private Response updateRunIntensity(UriInfo uriInfo, RepairRun run, double intensity)
       throws ReaperException {
 
     LOG.info("Editing run {}", run.getId());
     RepairRun newRun = context.repairManager.updateRepairRunIntensity(run, intensity);
-    return Response.ok().entity(new RepairRunStatus(newRun, unit, repaired)).build();
+    return Response.ok().location(buildRepairRunUri(uriInfo, newRun)).build();
   }
 
   /**
@@ -568,7 +560,7 @@ public final class RepairRunResource {
       RepairRunStatus repairRunStatus = getRepairRunStatus(repairRun.get());
       return Response.ok().entity(repairRunStatus).build();
     } else {
-      return Response.status(404).entity("repair run with id " + repairRunId + " doesn't exist").build();
+      return Response.status(404).entity("repair run " + repairRunId + " doesn't exist").build();
     }
   }
 
@@ -585,9 +577,7 @@ public final class RepairRunResource {
       Collection<RepairSegment> segments = context.storage.getRepairSegmentsForRun(repairRunId);
       return Response.ok().entity(segments).build();
     } else {
-      return Response.status(404)
-          .entity("repair run with id " + repairRunId + " doesn't exist")
-          .build();
+      return Response.status(404).entity("repair run " + repairRunId + " doesn't exist").build();
     }
   }
 
@@ -608,14 +598,11 @@ public final class RepairRunResource {
         return Response.ok().entity(segment).build();
       } else {
         return Response.status(Response.Status.CONFLICT)
-            .entity(
-                "Cannot abort segment on repair run with status " + repairRun.get().getRunState())
+            .entity("Cannot abort segment on repair run with status " + repairRun.get().getRunState())
             .build();
       }
     } else {
-      return Response.status(404)
-          .entity("repair run with id " + repairRunId + " doesn't exist")
-          .build();
+      return Response.status(404).entity("repair run " + repairRunId + " doesn't exist").build();
     }
   }
 
@@ -651,16 +638,8 @@ public final class RepairRunResource {
    *
    * @return The created resource URI.
    */
-  private URI buildRepairRunUri(UriInfo uriInfo, RepairRun repairRun) {
-    final String newRepairRunPathPart = "repair_run/" + repairRun.getId();
-    URI runUri = null;
-    try {
-      runUri = new URL(uriInfo.getBaseUri().toURL(), newRepairRunPathPart).toURI();
-    } catch (MalformedURLException | URISyntaxException e) {
-      LOG.error(e.getMessage(), e);
-    }
-    checkNotNull(runUri, "failed to build repair run uri");
-    return runUri;
+  private static URI buildRepairRunUri(UriInfo uriInfo, RepairRun repairRun) {
+    return uriInfo.getBaseUriBuilder().path("repair_run").path(repairRun.getId().toString()).build();
   }
 
   /**
@@ -700,10 +679,10 @@ public final class RepairRunResource {
                 .collect(Collectors.toList()));
       }
 
-      return Response.status(Response.Status.OK).entity(runStatuses).build();
+      return Response.ok().entity(runStatuses).build();
     } catch (ReaperException e) {
       LOG.error("Failed listing cluster statuses", e);
-      return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+      return Response.serverError().entity("Failed listing cluster statuses").build();
     }
   }
 
@@ -776,42 +755,27 @@ public final class RepairRunResource {
     }
     final Optional<RepairRun> runToDelete = context.storage.getRepairRun(runId);
     if (runToDelete.isPresent()) {
-      if (runToDelete.get().getRunState() == RepairRun.RunState.RUNNING) {
-        return Response.status(Response.Status.FORBIDDEN)
+      if (RepairRun.RunState.RUNNING == runToDelete.get().getRunState()) {
+        return Response.status(Response.Status.CONFLICT)
             .entity("Repair run with id \"" + runId + "\" is currently running, and must be stopped before deleting")
             .build();
       }
       if (!runToDelete.get().getOwner().equalsIgnoreCase(owner.get())) {
-        return Response.status(Response.Status.FORBIDDEN)
-            .entity("Repair run with id \"" + runId + "\" is not owned by the user you defined: " + owner.get())
-            .build();
+        String msg = String.format("Repair run %s is not owned by the user you defined %s", runId, owner.get());
+        return Response.status(Response.Status.CONFLICT).entity(msg).build();
       }
       if (context.storage.getSegmentAmountForRepairRunWithState(runId, RepairSegment.State.RUNNING) > 0) {
-        return Response.status(Response.Status.FORBIDDEN)
-            .entity(
-                "Repair run with id \""
-                + runId
-                + "\" has a running segment, which must be waited to finish before deleting")
-            .build();
+        String msg = String.format("Repair run %s has running segments, which must finish before deleting", runId);
+        return Response.status(Response.Status.CONFLICT).entity(msg).build();
       }
-      // Need to get the RepairUnit before it's possibly deleted.
-      final Optional<RepairUnit> unitPossiblyDeleted
-          = context.storage.getRepairUnit(runToDelete.get().getRepairUnitId());
-
-      final int segmentsRepaired = getSegmentAmountForRepairRun(runId);
-      final Optional<RepairRun> deletedRun = context.storage.deleteRepairRun(runId);
-      if (deletedRun.isPresent()) {
-        final RepairRunStatus repairRunStatus
-            = new RepairRunStatus(deletedRun.get(), unitPossiblyDeleted.get(), segmentsRepaired);
-
-        return Response.ok().entity(repairRunStatus).build();
-      }
+      context.storage.deleteRepairRun(runId);
+      return Response.accepted().build();
     }
     try {
       // safety clean, in case of zombie segments
       context.storage.deleteRepairRun(runId);
     } catch (RuntimeException ignore) { }
-    return Response.status(Response.Status.NOT_FOUND).entity("Repair run with id \"" + runId + "\" not found").build();
+    return Response.status(Response.Status.NOT_FOUND).entity("Repair run %s" + runId + " not found").build();
   }
 
   private static void checkRepairParallelismString(String repairParallelism) throws ReaperException {

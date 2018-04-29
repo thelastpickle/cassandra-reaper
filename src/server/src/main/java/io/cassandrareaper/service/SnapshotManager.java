@@ -22,6 +22,7 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Snapshot.Builder;
 import io.cassandrareaper.jmx.JmxProxy;
 
+import java.io.IOError;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -70,8 +71,8 @@ public final class SnapshotManager {
 
       LOG.info("Taking snapshot for node {} and keyspace {}", host, keyspace);
       return Pair.of(host, jmxProxy.takeSnapshot(snapshotName, keyspace));
-    } catch (RuntimeException | InterruptedException e) {
-      LOG.error("Failed taking snapshot for host {}", host, e);
+    } catch (InterruptedException e) {
+      LOG.error("Interrupted taking snapshot for host {}", host, e);
       throw new ReaperException(e);
     }
   }
@@ -123,7 +124,7 @@ public final class SnapshotManager {
       }
 
       return snapshotResults;
-    } catch (RuntimeException | InterruptedException | ExecutionException e) {
+    } catch (InterruptedException | ExecutionException e) {
       LOG.error("Failed taking snapshot for cluster {}", clusterName, e);
       throw new ReaperException(e);
     }
@@ -137,9 +138,8 @@ public final class SnapshotManager {
               host, context.config.getJmxConnectionTimeoutInSeconds());
 
       return Pair.of(host, jmxProxy.takeSnapshot(snapshotName, keyspaces));
-
-    } catch (RuntimeException | InterruptedException e) {
-      LOG.error("Failed taking snapshot for host {} and keyspaces {}", host, keyspaces, e);
+    } catch (InterruptedException e) {
+      LOG.error("Interrupted taking snapshot for host {} and keyspaces {}", host, keyspaces, e);
       throw new ReaperException(e);
     }
   }
@@ -169,11 +169,11 @@ public final class SnapshotManager {
           .stream()
           .map(snapshot -> enrichSnapshotWithMetadata(snapshot))
           .collect(Collectors.toList());
-    } catch (UnsupportedOperationException e1) {
+    } catch (UnsupportedOperationException unsupported) {
       LOG.debug("Listing snapshot is unsupported with Cassandra 2.0 and prior");
-      throw e1;
-    } catch (RuntimeException | InterruptedException e) {
-      LOG.error("Failed listing snapshots for host {}", host, e);
+      throw unsupported;
+    } catch (InterruptedException e) {
+      LOG.error("Interrupted listing snapshots for host {}", host, e);
       throw new ReaperException(e);
     }
   }
@@ -220,9 +220,9 @@ public final class SnapshotManager {
       }
 
       return snapshotsByNameAndHost;
-    } catch (UnsupportedOperationException e1) {
-      throw e1;
-    } catch (RuntimeException | InterruptedException | ExecutionException e) {
+    } catch (UnsupportedOperationException unsupported) {
+      throw unsupported;
+    } catch (InterruptedException | ExecutionException e) {
       if (e.getCause() instanceof UnsupportedOperationException) {
         throw new UnsupportedOperationException(e.getCause());
       }
@@ -239,13 +239,14 @@ public final class SnapshotManager {
 
   public void clearSnapshot(String snapshotName, Node host) throws ReaperException {
     try {
-      JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connect(
-              host, context.config.getJmxConnectionTimeoutInSeconds());
-
-      jmxProxy.clearSnapshot(snapshotName);
-    } catch (RuntimeException | InterruptedException e) {
-      LOG.error("Failed taking snapshot for host {}", host, e);
+      context.jmxConnectionFactory
+          .connect(host, context.config.getJmxConnectionTimeoutInSeconds())
+          .clearSnapshot(snapshotName);
+    } catch (IOError e) {
+      // StorageService.clearSnapshot(..) throws a FSWriteError when snapshot already deleted
+      LOG.info("already cleared snapshot " + snapshotName, e);
+    } catch (InterruptedException e) {
+      LOG.error("Interrupted clearing snapshot {} for host {}", snapshotName, host, e);
       throw new ReaperException(e);
     }
   }
@@ -286,10 +287,11 @@ public final class SnapshotManager {
         future.get();
       }
 
-      context.storage.deleteSnapshot(
-          Snapshot.builder().withClusterName(clusterName).withName(snapshotName).build());
-    } catch (RuntimeException | InterruptedException | ExecutionException e) {
-      LOG.error("Failed taking snapshot for cluster {}", clusterName, e);
+      context.storage.deleteSnapshot(Snapshot.builder().withClusterName(clusterName).withName(snapshotName).build());
+    } catch (ExecutionException e) {
+      LOG.error("Failed clearing {} snapshot for cluster {}", snapshotName, clusterName, e);
+    } catch (InterruptedException e) {
+      LOG.error("Interrupted clearing {} snapshot for cluster {}", snapshotName, clusterName, e);
       throw new ReaperException(e);
     }
   }

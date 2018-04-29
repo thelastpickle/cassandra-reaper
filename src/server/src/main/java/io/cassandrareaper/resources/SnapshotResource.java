@@ -18,6 +18,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
+import io.cassandrareaper.service.SnapshotManager;
 
 import java.util.List;
 import java.util.Map;
@@ -36,8 +37,6 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,29 +69,26 @@ public final class SnapshotResource {
 
     try {
       Node node = Node.builder().withClusterName(clusterName).withHostname(host.get()).build();
-      Pair<Node, String> snapshot = Pair.of(node, "none");
       if (host.isPresent()) {
         if (keyspace.isPresent()) {
-          snapshot =
-              context.snapshotManager.takeSnapshotForKeyspaces(
-                  context.snapshotManager.formatSnapshotName(
-                      snapshotName.or(context.snapshotManager.SNAPSHOT_PREFIX)),
+          context.snapshotManager.takeSnapshotForKeyspaces(
+                  context.snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
                   node,
                   keyspace.get());
         } else {
-          snapshot =
-              context.snapshotManager.takeSnapshot(
-                  context.snapshotManager.formatSnapshotName(
-                      snapshotName.or(context.snapshotManager.SNAPSHOT_PREFIX)),
+          context.snapshotManager.takeSnapshot(
+                  context.snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
                   node);
         }
-        return Response.ok().entity(snapshot).build();
+        return Response.ok()
+            .location(uriInfo.getBaseUriBuilder().path("snapshot").path(clusterName).path(host.get()).build())
+            .build();
       } else {
         return Response.status(Status.BAD_REQUEST).entity("No host was specified for taking the snapshot.").build();
       }
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
-      return Response.status(500).entity(e.getMessage()).build();
+      return Response.serverError().entity(e.getMessage()).build();
     }
   }
 
@@ -112,35 +108,30 @@ public final class SnapshotResource {
       @QueryParam("cause") Optional<String> cause) {
 
     try {
-      List<Pair<Node, String>> snapshot = Lists.newArrayList();
       if (clusterName.isPresent()) {
         if (keyspace.isPresent() && !keyspace.get().isEmpty()) {
-          snapshot =
-              context.snapshotManager.takeSnapshotClusterWide(
-                  context.snapshotManager.formatSnapshotName(
-                      snapshotName.or(context.snapshotManager.SNAPSHOT_PREFIX)),
+          context.snapshotManager.takeSnapshotClusterWide(
+                  context.snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
                   clusterName.get(),
                   owner.or("reaper"),
                   cause.or("Snapshot taken with Reaper"),
                   keyspace.get());
         } else {
-          snapshot =
-              context.snapshotManager.takeSnapshotClusterWide(
-                  context.snapshotManager.formatSnapshotName(
-                      snapshotName.or(context.snapshotManager.SNAPSHOT_PREFIX)),
+          context.snapshotManager.takeSnapshotClusterWide(
+                  context.snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
                   clusterName.get(),
                   owner.or("reaper"),
                   cause.or("Snapshot taken with Reaper"));
         }
-        return Response.ok().entity(snapshot).build();
-      } else {
-        return Response.status(Status.BAD_REQUEST)
-            .entity("No cluster was specified for taking the snapshot.")
+        return Response.ok()
+            .location(uriInfo.getBaseUriBuilder().path("snapshot").path(clusterName.get()).build())
             .build();
+      } else {
+        return Response.status(Status.BAD_REQUEST).entity("No cluster was specified for taking the snapshot.").build();
       }
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
-      return Response.status(500).entity(e.getMessage()).build();
+      return Response.serverError().entity(e.getMessage()).build();
     }
   }
 
@@ -156,7 +147,7 @@ public final class SnapshotResource {
       return Response.ok().entity(snapshots).build();
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
-      return Response.status(500).entity(e.getMessage()).build();
+      return Response.serverError().entity(e.getMessage()).build();
     }
   }
 
@@ -171,7 +162,7 @@ public final class SnapshotResource {
       return Response.status(Status.NOT_IMPLEMENTED).entity(e.getMessage()).build();
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
-      return Response.status(500).entity(e.getMessage()).build();
+      return Response.serverError().entity(e.getMessage()).build();
     }
   }
 
@@ -190,10 +181,17 @@ public final class SnapshotResource {
 
     try {
       if (host.isPresent() && snapshotName.isPresent()) {
-        context.snapshotManager.clearSnapshot(
-            snapshotName.get(),
-            Node.builder().withClusterName(clusterName).withHostname(host.get()).build());
-        return Response.ok().entity("Snapshot successfully cleared").build();
+        Node node = Node.builder().withClusterName(clusterName).withHostname(host.get()).build();
+        // check that the snapshot still exists
+        // even though this rest endpoint is not synchronised, a 404 response is helpful where possible
+        List<Snapshot> snapshots
+            = context.snapshotManager.listSnapshotsGroupedByName(node).get(snapshotName.get());
+
+        if (null == snapshots || snapshots.isEmpty()) {
+          return Response.status(Status.NOT_FOUND).build();
+        }
+        context.snapshotManager.clearSnapshot(snapshotName.get(), node);
+        return Response.accepted().build();
       } else {
         return Response.status(Status.BAD_REQUEST)
             .entity("Host and snapshot name are mandatory for clearing a snapshot.")
@@ -201,7 +199,7 @@ public final class SnapshotResource {
       }
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
-      return Response.status(500).entity(e.getMessage()).build();
+      return Response.serverError().entity(e.getMessage()).build();
     }
   }
 
@@ -219,8 +217,16 @@ public final class SnapshotResource {
 
     try {
       if (clusterName.isPresent() && snapshotName.isPresent()) {
+        // check that the snapshot still exists
+        // even though this rest endpoint is not synchronised, a 404 response is helpful where possible
+        Map<String, List<Snapshot>> snapshots
+             = context.snapshotManager.listSnapshotsClusterWide(clusterName.get()).get(snapshotName.get());
+
+        if (null == snapshots || snapshots.isEmpty()) {
+          return Response.status(Status.NOT_FOUND).build();
+        }
         context.snapshotManager.clearSnapshotClusterWide(snapshotName.get(), clusterName.get());
-        return Response.ok().entity("Snapshots successfully cleared").build();
+        return Response.accepted().build();
       } else {
         return Response.status(Status.BAD_REQUEST)
             .entity("Cluster and snapshot names are mandatory for clearing a snapshot.")
@@ -228,8 +234,7 @@ public final class SnapshotResource {
       }
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
-      return Response.status(500).entity(e.getMessage()).build();
+      return Response.serverError().entity(e.getMessage()).build();
     }
   }
-
 }
