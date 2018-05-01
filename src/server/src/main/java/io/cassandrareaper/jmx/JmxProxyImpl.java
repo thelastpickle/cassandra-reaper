@@ -849,18 +849,26 @@ final class JmxProxyImpl implements JmxProxy {
    * ordinal of AntiEntropyService.Status
    */
   @Override
-  public void handleNotification(Notification notification, Object handback) {
-    Thread.currentThread().setName(clusterName);
-    // we're interested in "repair"
-    String type = notification.getType();
-    LOG.debug("Received notification: {} with type {}", notification, type);
-    if (("repair").equals(type)) {
-      processOldApiNotification(notification);
-    }
+  public void handleNotification(final Notification notification, Object handback) {
+    // pass off the work immediately to a separate thread
+    EXECUTOR.submit(() -> {
+      String threadName = Thread.currentThread().getName();
+      try {
+        Thread.currentThread().setName(clusterName);
+        // we're interested in "repair"
+        String type = notification.getType();
+        LOG.debug("Received notification: {} with type {}", notification, type);
+        if (("repair").equals(type)) {
+          processOldApiNotification(notification);
+        }
 
-    if (("progress").equals(type)) {
-      processNewApiNotification(notification);
-    }
+        if (("progress").equals(type)) {
+          processNewApiNotification(notification);
+        }
+      } finally {
+        Thread.currentThread().setName(threadName);
+      }
+    });
   }
 
   /**
