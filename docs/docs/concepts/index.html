@@ -311,7 +311,7 @@
 
 <p>Reaper splits repair runs in segments. A segment is a subrange of tokens that fits entirely in one of the cluster token ranges. The minimum number of segments for a repair run is the number of token ranges in the cluster. With a 3 nodes cluster using 256 vnodes per node, a repair run will have at least 768 segments. If necessary, each repair can define a higher number of segments than the number of token ranges.</p>
 
-<p><strong>Starting with Reaper 1.2.0 and Cassandra 2.2, token ranges that have the same replicas can be coalesced into a single segment.</strong> If the total number of requested segments is lower than the number of vnodes, Reaper will try to group token ranges so that each segment has the appropriate number of tokens.
+<p><strong>As of Reaper 1.2.0 and Apache Cassandra 2.2, token ranges that have the same replicas can be consolidated into a single segment.</strong> If the total number of requested segments is lower than the number of vnodes, Reaper will try to group token ranges so that each segment has the appropriate number of tokens.
 In Cassandra 2.2, one repair session will be started for each subrange of the segment, so the gain will be the reduction of overhead in Reaper. Starting with 3.0, Cassandra will generate a single repair session for all the subranges that share the same replicas, which then further reduces the overhead of vnodes in Cassandra.</p>
 
 <h2 id="back-pressure">Back-pressure</h2>
