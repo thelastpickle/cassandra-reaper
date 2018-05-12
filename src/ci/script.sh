@@ -25,7 +25,7 @@ case "${TEST_TYPE}" in
         if [ "x${GRIM_MIN}" = "x" ]
         then
             # Rebuild the UI to get the right version number there
-            MAVEN_OPTS="-Xmx1g" mvn clean generate-sources -Pbuild-ui 1> /dev/null
+            MAVEN_OPTS="-Xmx1g" mvn clean generate-sources  1> /dev/null
         fi
 
         MAVEN_OPTS="-Xmx1g" mvn clean install

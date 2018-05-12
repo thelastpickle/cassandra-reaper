@@ -26,6 +26,8 @@ src/packaging/build/
 src/ui/bower_components
 src/ui/node_modules
 src/ui/package-lock.json
+src/ui/app/jsx/navbar.jsx
+src/ui/build
 
 # Docker Compose persistent storage directory
 src/packaging/data

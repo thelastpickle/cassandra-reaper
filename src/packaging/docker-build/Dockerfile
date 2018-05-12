@@ -31,7 +31,7 @@ COPY src/server /tmp/src/server
 COPY src/ui /tmp/src/ui
 WORKDIR /tmp
 RUN mvn clean package -DskipTests \
-    && mvn clean package -Pbuild-ui -DskipTests
+    && mvn clean package  -DskipTests
 WORKDIR ${WORKDIR}
 
 # Add entrypoint script

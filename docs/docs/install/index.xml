@@ -21,7 +21,7 @@ make deb make rpm  Building JARs from source The easiest way to build is to use 
 make package  To build Reaper without rebuilding the UI, run the following command :
 mvn clean package
 To only regenerate the UI (requires npm and bower) :
-mvn generate-sources -Pbuild-ui</description>
+mvn generate-sources </description>
     </item>
     
     <item>

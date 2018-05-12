@@ -7,7 +7,7 @@ jobs:
   build:
     docker:
       # specify the version you desire here
-      - image: circleci/openjdk:8-jdk
+      - image: circleci/openjdk:8-jdk-node-browsers
 
     working_directory: ~/repo
 
@@ -20,8 +20,9 @@ jobs:
           name: Install System Dependencies
           command: |
               sudo apt-get update -qq
-              sudo apt-get install -y libjna-java python-dev python-pip libyaml-dev
+              sudo apt-get install -y libjna-java python-dev python-pip libyaml-dev nodejs
               sudo pip install pyYaml ccm
+              sudo npm install -g bower > /dev/null
 
       # Download and cache dependencies
       - restore_cache:
@@ -42,7 +43,7 @@ jobs:
           name: Start ccm and run tests
           command: |
               export LOCAL_JMX=no
-              mkdir /home/circleci/.local
+              mkdir -p /home/circleci/.local
               cp src/ci/jmxremote.password /home/circleci/.local/jmxremote.password
               chmod 400 /home/circleci/.local/jmxremote.password
               cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
