@@ -29,6 +29,7 @@ import io.cassandrareaper.resources.SnapshotResource;
 import io.cassandrareaper.resources.auth.LoginResource;
 import io.cassandrareaper.resources.auth.ShiroExceptionMapper;
 import io.cassandrareaper.service.AutoSchedulingManager;
+import io.cassandrareaper.service.DiagEventSubscriptionService;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
 import io.cassandrareaper.service.SnapshotManager;
@@ -201,6 +202,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       LOG.debug("using specified JMX credentials per cluster for authentication");
       context.jmxConnectionFactory.setJmxCredentials(jmxCredentials);
     }
+
+    context.diagEventService = DiagEventSubscriptionService.create(context);
 
     // Enable cross-origin requests for using external GUI applications.
     if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {
