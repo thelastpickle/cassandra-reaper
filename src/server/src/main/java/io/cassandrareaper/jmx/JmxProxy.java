@@ -19,6 +19,7 @@ import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.service.RingRange;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.util.Collection;
@@ -26,8 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
 import javax.management.AttributeNotFoundException;
+import javax.management.JMException;
+import javax.management.ListenerNotFoundException;
 import javax.management.MBeanException;
+import javax.management.NotificationFilter;
 import javax.management.NotificationListener;
 import javax.management.ReflectionException;
 import javax.validation.constraints.NotNull;
@@ -147,4 +152,17 @@ public interface JmxProxy extends NotificationListener {
 
   void takeColumnFamilySnapshot(String keyspaceName, String columnFamilyName, String snapshotName)
       throws ReaperException;
+
+  void addConnectionNotificationListener(NotificationListener listener);
+
+  void removeConnectionNotificationListener(NotificationListener listener) throws ListenerNotFoundException;
+
+  void addNotificationListener(NotificationListener listener, @Nullable NotificationFilter filter)
+          throws IOException, JMException;
+
+  void removeNotificationListener(NotificationListener listener) throws IOException, JMException;
+
+  void enableEvents(String eventClazz);
+
+  void enableEvents(String eventClazz, String eventType);
 }

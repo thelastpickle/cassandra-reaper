@@ -48,12 +48,15 @@ import java.util.stream.Collectors;
 
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
+import javax.management.JMException;
 import javax.management.JMX;
 import javax.management.ListenerNotFoundException;
 import javax.management.MBeanException;
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.Notification;
+import javax.management.NotificationFilter;
+import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.openmbean.TabularData;
@@ -97,6 +100,7 @@ final class JmxProxyImpl implements JmxProxy {
   private static final int JMX_PORT = 7199;
   private static final String SS_OBJECT_NAME = "org.apache.cassandra.db:type=StorageService";
   private static final String AES_OBJECT_NAME = "org.apache.cassandra.internal:type=AntiEntropySessions";
+  private static final String EVENTS_OBJECT_NAME = "org.apache.cassandra.diag:type=DiagnosticEvents";
   private static final String VALIDATION_ACTIVE_OBJECT_NAME
       = "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,name=ActiveTasks";
   private static final String VALIDATION_PENDING_OBJECT_NAME
@@ -129,19 +133,21 @@ final class JmxProxyImpl implements JmxProxy {
   private final ConcurrentMap<Integer, RepairStatusHandler> repairStatusHandlers =
       Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
+  private final DiagnosticEventServiceMBean diagEventProxy;
 
   private JmxProxyImpl(
-      String host,
-      String hostBeforeTranslation,
-      JMXServiceURL jmxUrl,
-      JMXConnector jmxConnector,
-      Object ssProxy,
-      ObjectName ssMbeanName,
-      MBeanServerConnection mbeanServer,
-      CompactionManagerMBean cmProxy,
-      EndpointSnitchInfoMBean endpointSnitchMbean,
-      FailureDetectorMBean fdProxy,
-      MetricRegistry metricRegistry) {
+          String host,
+          String hostBeforeTranslation,
+          JMXServiceURL jmxUrl,
+          JMXConnector jmxConnector,
+          Object ssProxy,
+          ObjectName ssMbeanName,
+          MBeanServerConnection mbeanServer,
+          CompactionManagerMBean cmProxy,
+          EndpointSnitchInfoMBean endpointSnitchMbean,
+          FailureDetectorMBean fdProxy,
+          DiagnosticEventServiceMBean diagEventProxy,
+          MetricRegistry metricRegistry) {
 
     this.host = host;
     this.hostBeforeTranslation = hostBeforeTranslation;
@@ -154,6 +160,7 @@ final class JmxProxyImpl implements JmxProxy {
     this.endpointSnitchMbean = endpointSnitchMbean;
     this.clusterName = Cluster.toSymbolicName(((StorageServiceMBean) ssProxy).getClusterName());
     this.fdProxy = fdProxy;
+    this.diagEventProxy = diagEventProxy;
     this.metricRegistry = metricRegistry;
     registerConnectionsGauge();
   }
@@ -212,6 +219,7 @@ final class JmxProxyImpl implements JmxProxy {
     ObjectName cmMbeanName;
     ObjectName fdMbeanName;
     ObjectName endpointSnitchMbeanName;
+    ObjectName diagEventsMbeanName;
     JMXServiceURL jmxUrl;
     String host = originalHost;
 
@@ -227,6 +235,7 @@ final class JmxProxyImpl implements JmxProxy {
       cmMbeanName = new ObjectName(CompactionManager.MBEAN_OBJECT_NAME);
       fdMbeanName = new ObjectName(FailureDetector.MBEAN_NAME);
       endpointSnitchMbeanName = new ObjectName("org.apache.cassandra.db:type=EndpointSnitchInfo");
+      diagEventsMbeanName = new ObjectName(EVENTS_OBJECT_NAME);
     } catch (MalformedURLException | MalformedObjectNameException e) {
       LOG.error(String.format("Failed to prepare the JMX connection to %s:%s", host, port));
       throw new ReaperException("Failure during preparations for JMX connection", e);
@@ -252,6 +261,9 @@ final class JmxProxyImpl implements JmxProxy {
       EndpointSnitchInfoMBean endpointSnitchProxy
           = JMX.newMBeanProxy(mbeanServerConn, endpointSnitchMbeanName, EndpointSnitchInfoMBean.class);
 
+      DiagnosticEventServiceMBean diagEventProxy
+              = JMX.newMBeanProxy(mbeanServerConn, diagEventsMbeanName, DiagnosticEventServiceMBean.class);
+
       JmxProxy proxy =
           new JmxProxyImpl(
               host,
@@ -264,6 +276,7 @@ final class JmxProxyImpl implements JmxProxy {
               cmProxy,
               endpointSnitchProxy,
               fdProxy,
+              diagEventProxy,
               metricRegistry);
 
       // registering a listener throws bunch of exceptions, so we do it here rather than in the
@@ -1176,5 +1189,38 @@ final class JmxProxyImpl implements JmxProxy {
     } catch (IOException e) {
       throw new ReaperException(e);
     }
+  }
+
+  @Override
+  public void addConnectionNotificationListener(NotificationListener listener) {
+    jmxConnector.addConnectionNotificationListener(listener, null, null);
+  }
+
+  @Override
+  public void removeConnectionNotificationListener(NotificationListener listener) throws ListenerNotFoundException {
+    jmxConnector.removeConnectionNotificationListener(listener);
+  }
+
+  @Override
+  public void addNotificationListener(NotificationListener listener, NotificationFilter filter)
+          throws IOException, JMException {
+    ObjectName eventsMbeanName = new ObjectName(EVENTS_OBJECT_NAME);
+    jmxConnector.getMBeanServerConnection().addNotificationListener(eventsMbeanName, listener, filter, null);
+  }
+
+  @Override
+  public void removeNotificationListener(NotificationListener listener) throws IOException, JMException {
+    ObjectName eventsMbeanName = new ObjectName(EVENTS_OBJECT_NAME);
+    jmxConnector.getMBeanServerConnection().removeNotificationListener(eventsMbeanName, listener);
+  }
+
+  @Override
+  public void enableEvents(String eventClazz) {
+    this.diagEventProxy.enableEvents(eventClazz);
+  }
+
+  @Override
+  public void enableEvents(String eventClazz, String eventType) {
+    this.diagEventProxy.enableEvents(eventClazz, eventType);
   }
 }
