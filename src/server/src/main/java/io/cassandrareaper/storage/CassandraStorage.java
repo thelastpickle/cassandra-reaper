@@ -44,6 +44,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.CodecRegistry;
@@ -61,6 +62,7 @@ import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.VersionNumber;
 import com.datastax.driver.core.WriteType;
 import com.datastax.driver.core.exceptions.DriverException;
+import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.policies.DefaultRetryPolicy;
 import com.datastax.driver.core.policies.DowngradingConsistencyRetryPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
@@ -99,7 +101,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private final com.datastax.driver.core.Cluster cassandra;
   private final Session session;
   private final ObjectMapper objectMapper = new ObjectMapper();
-
+  private final VersionNumber version;
 
   /* prepared stmts */
   private PreparedStatement insertClusterPrepStmt;
@@ -122,6 +124,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement insertRepairSegmentEndTimePrepStmt;
   private PreparedStatement getRepairSegmentPrepStmt;
   private PreparedStatement getRepairSegmentsByRunIdPrepStmt;
+  private PreparedStatement getRepairSegmentCountByRunIdPrepStmt;
+  @Nullable // null on Cassandra-2 as it's not supported syntax
+  private PreparedStatement getRepairSegmentsByRunIdAndStatePrepStmt = null;
+  @Nullable // null on Cassandra-2 as it's not supported syntax
+  private PreparedStatement getRepairSegmentCountByRunIdAndStatePrepStmt = null;
   private PreparedStatement insertRepairSchedulePrepStmt;
   private PreparedStatement getRepairSchedulePrepStmt;
   private PreparedStatement getRepairScheduleByClusterAndKsPrepStmt;
@@ -155,6 +162,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());
 
     initializeAndUpgradeSchema(cassandra, session, config.getCassandraFactory().getKeyspace());
+
+    version = cassandra.getMetadata().getAllHosts()
+        .stream()
+        .map(h -> h.getCassandraVersion())
+        .min(VersionNumber::compareTo)
+        .get();
+
     prepareStatements();
   }
 
@@ -249,6 +263,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     getRepairSegmentsByRunIdPrepStmt = session.prepare(
         "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
             + "segment_end_time,fail_count, token_ranges FROM repair_run WHERE id = ?");
+    getRepairSegmentCountByRunIdPrepStmt = session.prepare("SELECT count(*) FROM repair_run WHERE id = ?");
     insertRepairSchedulePrepStmt =
         session
             .prepare(
@@ -305,6 +320,21 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         session.prepare(
             "INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
                 + " VALUES(?,?,?,?,?)");
+
+    if (0 >= VersionNumber.parse("3.0").compareTo(version)) {
+      try {
+        getRepairSegmentsByRunIdAndStatePrepStmt = session.prepare(
+            "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
+                + "segment_start_time,segment_end_time,fail_count, token_ranges FROM repair_run "
+                + "WHERE id = ? AND segment_state = ? ALLOW FILTERING");
+        getRepairSegmentCountByRunIdAndStatePrepStmt = session.prepare(
+            "SELECT count(segment_id) FROM repair_run WHERE id = ? AND segment_state = ? ALLOW FILTERING");
+      } catch (InvalidQueryException ex) {
+        throw new AssertionError(
+            "Failure preparing `SELECT… FROM repair_run WHERE… ALLOW FILTERING` should only happen on Cassandra-2",
+            ex);
+      }
+    }
   }
 
   @Override
@@ -766,18 +796,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Collection<RepairSegment> getSegmentsWithState(UUID runId, State segmentState) {
-    Collection<RepairSegment> foundSegments = Lists.<RepairSegment>newArrayList();
-    List<RepairSegment> segments = Lists.<RepairSegment>newArrayList();
+    Collection<RepairSegment> segments = Lists.newArrayList();
 
-    segments.addAll(getRepairSegmentsForRun(runId));
+    ResultSet segmentsIdResultSet = null != getRepairSegmentsByRunIdAndStatePrepStmt
+        ? session.execute(getRepairSegmentsByRunIdAndStatePrepStmt.bind(runId, segmentState.ordinal()))
+        // legacy mode for Cassandra-2 backends
+        : session.execute(getRepairSegmentsByRunIdPrepStmt.bind(runId));
 
-    for (RepairSegment seg : segments) {
-      if (seg.getState().equals(segmentState)) {
-        foundSegments.add(seg);
+    for (Row segmentRow : segmentsIdResultSet) {
+      if (segmentRow.getInt("segment_state") == segmentState.ordinal()) {
+        segments.add(createRepairSegmentFromRow(segmentRow));
       }
     }
-
-    return foundSegments;
+    return segments;
   }
 
   @Override
@@ -818,12 +849,23 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public int getSegmentAmountForRepairRun(UUID runId) {
-    return getRepairSegmentsForRun(runId).size();
+    return (int) session
+        .execute(getRepairSegmentCountByRunIdPrepStmt.bind(runId))
+        .one()
+        .getLong(0);
   }
 
   @Override
   public int getSegmentAmountForRepairRunWithState(UUID runId, State state) {
-    return getSegmentsWithState(runId, state).size();
+    if (null != getRepairSegmentCountByRunIdAndStatePrepStmt) {
+      return (int) session
+          .execute(getRepairSegmentCountByRunIdAndStatePrepStmt.bind(runId, state.ordinal()))
+          .one()
+          .getLong(0);
+    } else {
+      // legacy mode for Cassandra-2 backends
+      return getSegmentsWithState(runId, state).size();
+    }
   }
 
   @Override
