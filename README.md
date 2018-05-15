@@ -3,7 +3,7 @@ Reaper for Apache Cassandra
 
 [![Join the chat at https://gitter.im/thelastpickle/cassandra-reaper](https://badges.gitter.im/thelastpickle/cassandra-reaper.svg)](https://gitter.im/thelastpickle/cassandra-reaper?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-[![Build Status](https://travis-ci.org/thelastpickle/cassandra-reaper.svg?branch=master)](https://travis-ci.org/thelastpickle/cassandra-reaper)
+[![Build Status](https://travis-ci.org/thelastpickle/cassandra-reaper.svg?branch=master)](https://travis-ci.org/thelastpickle/cassandra-reaper/branches)
 
 *Note: This repo is a fork from the original Reaper project, created by the awesome folks at Spotify.  The WebUI has been merged in with support for incremental repairs added.* 
 
