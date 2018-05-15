@@ -312,7 +312,7 @@
 <h2 id="ping-resource">Ping Resource</h2>
 
 <ul>
-<li>GET     /ping
+<li><strong>GET     /ping</strong>
 
 <ul>
 <li>Expected query parameters: <em>None</em></li>
@@ -323,7 +323,7 @@
 <h2 id="cluster-resource">Cluster Resource</h2>
 
 <ul>
-<li><p>GET     /cluster</p>
+<li><p><strong>GET     /cluster</strong></p>
 
 <ul>
 <li>Expected query parameters:
@@ -331,18 +331,31 @@
 <ul>
 <li><em>seedHost</em>: Limit the returned cluster list based on the given seed host. (Optional)</li>
 </ul></li>
-<li>Returns a list of registered cluster names in the service.</li>
+<li>Returns a list of registered cluster names in the service.
+<br />
+<br /></li>
 </ul></li>
 
-<li><p>GET     /cluster/{cluster_name}</p>
+<li><p><strong>GET     /cluster/{cluster_name}</strong></p>
 
 <ul>
 <li>Expected query parameters:</li>
 <li><em>limit</em>: Limit the number of repair runs returned. Recent runs are prioritized. (Optional)</li>
-<li>Returns a cluster object identified by the given &ldquo;cluster_name&rdquo; path parameter.</li>
+<li>Returns a cluster object identified by the given &ldquo;cluster_name&rdquo; path parameter.
+<br />
+<br /></li>
 </ul></li>
 
-<li><p>POST    /cluster</p>
+<li><p><strong>GET     /cluster/{cluster_name}/tables</strong></p>
+
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Returns a map of <code>&lt;KeyspaceName, List&lt;TableName&gt;&gt;</code>
+<br />
+<br /></li>
+</ul></li>
+
+<li><p><strong>POST    /cluster</strong></p>
 
 <ul>
 <li>Expected query parameters:
@@ -351,11 +364,12 @@
 <li><em>seedHost</em>: Host name or IP address of the added Cassandra
 clusters seed host.</li>
 </ul></li>
-<li>Adds a new cluster to the service, and returns the newly added cluster object,
-if the operation was successful.</li>
+<li>Adds a new cluster to the service, and returns the newly added cluster object, if the operation was successful. If the cluster is already registered, the list of host will be updated to match the current topology.
+<br />
+<br /></li>
 </ul></li>
 
-<li><p>PUT     /cluster/{cluster_name}</p>
+<li><p><strong>PUT     /cluster/{cluster_name}</strong></p>
 
 <ul>
 <li>Expected query parameters:
@@ -363,10 +377,12 @@ if the operation was successful.</li>
 <ul>
 <li><em>seedHost</em>: New host name or IP address used as Cassandra cluster seed.</li>
 </ul></li>
-<li>Modifies a cluster&rsquo;s seed host. Comes in handy when the previous seed has left the cluster.</li>
+<li>Modifies a cluster&rsquo;s seed host. Comes in handy when the previous seed has left the cluster.
+<br />
+<br /></li>
 </ul></li>
 
-<li><p>DELETE  /cluster/{cluster_name}</p>
+<li><p><strong>DELETE  /cluster/{cluster_name}</strong></p>
 
 <ul>
 <li>Expected query parameters: <em>None</em></li>
@@ -379,56 +395,109 @@ or the request will fail. Delete repair runs and schedules first before calling 
 <h2 id="repair-run-resource">Repair Run Resource</h2>
 
 <ul>
-<li><p>GET     /repair_run</p>
+<li><p><strong>GET     /repair_run</strong></p>
 
 <ul>
-<li>Optional query parameters:</li>
-<li><em>state</em>: Comma separated list of repair run state names. Only names found in
-io.cassandrareaper.core.RunState are accepted.</li>
-<li>Returns a list of repair runs, optionally fetching only the ones with <em>state</em> state.</li>
+<li>Optional query parameters:
+
+<ul>
+<li><em>state</em>: Comma separated list of repair run state names. Only names found in <code>io.cassandrareaper.core.RunState</code> are accepted.</li>
+</ul></li>
+<li>Returns a list of repair runs, optionally fetching only the ones with <em>state</em> state.
+<br />
+<br /></li>
 </ul></li>
 
-<li><p>GET     /repair_run/{id}</p>
+<li><p><strong>GET     /repair_run/{id}</strong></p>
 
 <ul>
 <li>Expected query parameters: <em>None</em></li>
-<li>Returns a repair run object identified by the given &ldquo;id&rdquo; path parameter.</li>
+<li>Returns a repair run object identified by the given &ldquo;id&rdquo; path parameter.
+<br />
+<br /></li>
 </ul></li>
 
-<li><p>GET     /repair_run/cluster/{cluster_name} (io.cassandrareaper.resources.RepairRunResource)</p>
+<li><p><strong>GET     /repair_run/cluster/{cluster_name}</strong></p>
 
 <ul>
 <li>Expected query parameters: <em>None</em></li>
-<li>Returns a list of all repair run statuses found for the given &ldquo;cluster_name&rdquo; path parameter.</li>
+<li>Returns a list of all repair run statuses found for the given &ldquo;cluster_name&rdquo; path parameter.
+<br />
+<br /></li>
 </ul></li>
 
-<li><p>POST    /repair_run</p>
+<li><p><strong>GET     /repair_run/{id}/segments</strong></p>
 
 <ul>
-<li>Expected query parameters:</li>
+<li>Expected query parameters: <em>None</em></li>
+<li>Returns the list of segments of the repair run.
+<br />
+<br /></li>
+</ul></li>
+
+<li><p><strong>GET     /repair_run/{id}/segments/abort/{segment_id}</strong></p>
+
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Aborts a running segment and puts it back in NOT_STARTED state. The segment will be processed again later during the lifetime of the repair run.
+<br />
+<br /></li>
+</ul></li>
+
+<li><p><strong>POST    /repair_run</strong></p>
+
+<ul>
+<li>Expected query parameters:
+
+<ul>
 <li><em>clusterName</em>: Name of the Cassandra cluster.</li>
 <li><em>keyspace</em>: The name of the table keyspace.</li>
 <li><em>tables</em>: The name of the targeted tables (column families) as comma separated list.
         If no tables given, then the whole keyspace is targeted. (Optional)</li>
 <li><em>owner</em>: Owner name for the run. This could be any string identifying the owner.</li>
 <li><em>cause</em>: Identifies the process, or cause the repair was started. (Optional)</li>
-<li><em>segmentCount</em>: Defines the amount of segments to create for repair run. (Optional)</li>
+<li><em>segmentCount</em>: Defines the amount of segments per node to create for the repair run. (Optional)</li>
 <li><em>repairParallelism</em>: Defines the used repair parallelism for repair run. (Optional)</li>
 <li><em>intensity</em>: Defines the repair intensity for repair run. (Optional)</li>
 <li><em>incrementalRepair</em>: Defines if incremental repair should be done. <a href="Optional">true/false</a></li>
+<li><em>nodes</em> : a specific list of nodes whose tokens should be repaired. (Optional)</li>
+<li><em>datacenters</em> : a specific list of datacenters to repair. (Optional)</li>
+<li><em>blacklistedTables</em> : The name of the tables that should not be repaired. Cannot be used in conjunction with the tables parameter. (Optional)</li>
+</ul></li>
+<li>Endpoint used to create a repair run. Does not allow triggering the run.
+Creating a repair run includes generating the repair segments.
+Notice that query parameter &ldquo;tables&rdquo; can be a single String, or a comma-separated list of table names. If the &ldquo;tables&rdquo; parameter is omitted, and only the keyspace is defined, then created repair run will target all the tables in the keyspace.</li>
+<li>Returns the ID of the newly created repair run if successful.
+<br />
+<br /></li>
 </ul></li>
 
-<li><p>PUT    /repair_run/{id}</p>
+<li><p><strong>PUT    /repair_run/{id}/state/{state}</strong></p>
 
 <ul>
-<li>Expected query parameters:</li>
-<li><em>state</em>: New value for the state of the repair run.
-Possible values for given state are: &ldquo;PAUSED&rdquo; or &ldquo;RUNNING&rdquo;.</li>
-<li>Starts, pauses, or resumes a repair run identified by the &ldquo;id&rdquo; path parameter.</li>
-<li>Can also be used to reattempt a repair run in state &ldquo;ERROR&rdquo;, picking up where it left off.</li>
+<li>Expected query parameters: <em>None</em></li>
+<li>Starts, pauses, or resumes a repair run identified by the &ldquo;id&rdquo; path parameter.<br />
+Can also be used to reattempt a repair run in state &ldquo;ERROR&rdquo;, picking up where it left off.<br />
+Possible values for given state are: &ldquo;PAUSED&rdquo; or &ldquo;RUNNING&rdquo;.
+<br />
+<br /></li>
 </ul></li>
 
-<li><p>DELETE  /repair_run/{id}</p>
+<li><p><strong>PUT    /repair_run/{id}/intensity/{intensity}</strong></p>
+
+<ul>
+<li>Expected query parameters:
+
+<ul>
+<li><strong>intensityStr</strong> : New value for the intensity of the repair run. Expected is a float between 0.0 and 1.0.</li>
+</ul></li>
+<li>Modifies the intensity of a PAUSED repair run.
+Returns OK if all goes well NOT_MODIFIED if new state is the same as the old one, and 409 (CONFLICT) if transition is not supported.
+<br />
+<br /></li>
+</ul></li>
+
+<li><p><strong>DELETE  /repair_run/{id}</strong></p>
 
 <ul>
 <li>Expected query parameters:</li>
@@ -442,7 +511,7 @@ Repair run and all the related repair segments will be deleted from the database
 <h2 id="repair-schedule-resource">Repair Schedule Resource</h2>
 
 <ul>
-<li><p>GET     /repair_schedule</p>
+<li><p><strong>GET     /repair_schedule</strong></p>
 
 <ul>
 <li>Expected query parameters:
@@ -453,20 +522,35 @@ cluster name. (Optional)</li>
 <li><em>keyspaceName</em>: Filter the returned schedule list based on the given
 keyspace name. (Optional)</li>
 </ul></li>
-<li>Returns all repair schedules present in the Reaper</li>
+<li>Returns all repair schedules present in the Reaper
+<br />
+<br /></li>
 </ul></li>
 
-<li><p>GET     /repair_schedule/{id}</p>
+<li><p><strong>GET     /repair_schedule/{id}</strong></p>
 
 <ul>
 <li>Expected query parameters: <em>None</em></li>
-<li>Returns a repair schedule object identified by the given &ldquo;id&rdquo; path parameter.</li>
+<li>Returns a repair schedule object identified by the given &ldquo;id&rdquo; path parameter.
+<br />
+<br /></li>
 </ul></li>
 
-<li><p>POST    /repair_schedule</p>
+<li><p><strong>GET     /repair_schedule/cluster/{cluster_name}</strong></p>
 
 <ul>
-<li>Expected query parameters:</li>
+<li>Expected query parameters: <em>None</em></li>
+<li>Returns the repair schedule objects for the given cluster.
+<br />
+<br /></li>
+</ul></li>
+
+<li><p><strong>POST    /repair_schedule</strong></p>
+
+<ul>
+<li>Expected query parameters:
+
+<ul>
 <li><em>clusterName</em>: Name of the Cassandra cluster.</li>
 <li><em>keyspace</em>: The name of the table keyspace.</li>
 <li><em>tables</em>: The name of the targeted tables (column families) as comma separated list.
@@ -481,9 +565,16 @@ keyspace name. (Optional)</li>
 <li><em>scheduleTriggerTime</em>: Defines the time for first scheduled trigger for the run.
                      If you don&rsquo;t give this value, it will be next mid-night (UTC).
                      Give date values in ISO format, e.g. &ldquo;2015-02-11T01:00:00&rdquo;. (Optional)</li>
+<li><em>nodes</em> : a specific list of nodes whose tokens should be repaired. (Optional)</li>
+<li><em>datacenters</em> : a specific list of datacenters to repair. (Optional)</li>
+<li><em>blacklistedTables</em> : The name of the tables that should not be repaired. Cannot be used in conjunction with the tables parameter. (Optional)</li>
+</ul></li>
+<li>Create and activate a scheduled repair.
+<br />
+<br /></li>
 </ul></li>
 
-<li><p>DELETE  /repair_schedule/{id}</p>
+<li><p><strong>DELETE  /repair_schedule/{id}</strong></p>
 
 <ul>
 <li>Expected query parameters:</li>
@@ -491,7 +582,90 @@ keyspace name. (Optional)</li>
        the delete request will fail.</li>
 <li>Delete a repair schedule object identified by the given &ldquo;id&rdquo; path parameter.
 Repair schedule will get deleted only if there are no associated repair runs for the schedule.
-Delete all the related repair runs before calling this endpoint.</li>
+Delete all the related repair runs before calling this endpoint.
+<br />
+<br /></li>
+</ul></li>
+
+<li><p><strong>PUT /repair_schedule/{id}</strong></p>
+
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Returns the repair schedule objects for the given cluster.
+
+<br /></li>
+</ul></li>
+</ul>
+
+<h2 id="snapshot-resource">Snapshot Resource</h2>
+
+<ul>
+<li><p><strong>GET /snapshot/{clusterName}/{host}</strong></p>
+
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Lists snapshots for the given host in the given cluster.
+<br />
+<br /></li>
+</ul></li>
+
+<li><p><strong>GET /snapshot/{clusterName}</strong></p>
+
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Lists all snapshots for the the given cluster.
+<br />
+<br /></li>
+</ul></li>
+
+<li><p><strong>DELETE /snapshot/{clusterName}/{host}/{snapshotName}</strong></p>
+
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Deletes a specific snapshot on a given node.
+<br />
+<br /></li>
+</ul></li>
+
+<li><p><strong>DELETE /snapshot/{clusterName}/{snapshotName}</strong></p>
+
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Deletes a specific snapshot on all nodes in a given cluster.
+<br />
+<br /></li>
+</ul></li>
+
+<li><p><strong>POST /snapshot/{clusterName}</strong></p>
+
+<ul>
+<li>Expected query parameters:
+
+<ul>
+<li><em>keyspace</em>: Name of the Cassandra cluster.</li>
+<li><em>tables</em>: The name of the targeted tables (column families) as comma separated list.
+        If no tables given, then the whole keyspace is targeted. (Optional)</li>
+<li><em>snapshot_name</em>: name to use for the snapshot. (Optional)</li>
+<li><em>owner</em>: Owner name for the run. This could be any string identifying the owner.</li>
+<li><em>cause</em>: Identifies the process, or cause the repair was started. (Optional)</li>
+</ul></li>
+<li>Create a snapshot on all hosts in a cluster, using the same name.
+<br />
+<br /></li>
+</ul></li>
+
+<li><p><strong>POST /snapshot/{clusterName}/{host}</strong></p>
+
+<ul>
+<li>Expected query parameters:
+
+<ul>
+<li><em>keyspace</em>: Name of the Cassandra cluster.</li>
+<li><em>tables</em>: The name of the targeted tables (column families) as comma separated list.
+        If no tables given, then the whole keyspace is targeted. (Optional)</li>
+<li><em>snapshot_name</em>: name to use for the snapshot. (Optional)</li>
+</ul></li>
+<li>Create a snapshot on a specific host.</li>
 </ul></li>
 </ul>
 

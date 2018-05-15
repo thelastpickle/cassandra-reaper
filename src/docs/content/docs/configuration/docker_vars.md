@@ -88,6 +88,28 @@ Default: *false*
 
 Allows the sending of Reaper metrics to a metrics reporting system such as Graphite. If enabled, the other associated environment variables `REAPER_METRICS_FREQUENCY` and `REAPER_METRICS_REPORTERS` must be set to appropriate values in order for metrics reporting to function correctly.
 
+## Metrics reporter definition syntax
+  
+#### `REAPER_METRICS_REPORTERS`
+
+Type: *List*
+
+Default: *[]*
+
+Defines the metrics reporters, using a JSON syntax instead of a YAML one.
+To activate graphite metrics reporting, run the container with the following sample arguments :  
+
+```
+docker run \
+    -p 8080:8080 \
+    -p 8081:8081 \
+    -e "REAPER_METRICS_ENABLED=true" \
+    -e "REAPER_METRICS_FREQUENCY=10 second" \
+    -e "REAPER_METRICS_REPORTERS=[{type: graphite, host: my.graphite.host.com, port: 2003, prefix: my.prefix}]" \
+    thelastpickle/cassandra-reaper:master
+```
+
+
 ## Direct Mapping to Cassandra Backend Specific Configuration Settings
 
 The Docker environment variables listed in this section map directly to Cassandra backend specific settings in the *cassandra-reaper.yaml* configuration file. The following table below lists the Docker environment variables, their associated Cassandra backend specific setting in the *cassandra-reaper.yaml* configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.
