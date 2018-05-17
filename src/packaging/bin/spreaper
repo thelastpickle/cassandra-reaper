@@ -670,7 +670,7 @@ class ReaperCLI(object):
                 args.schedule_days_between, args.schedule_trigger_time))
             reply = reaper.post("repair_schedule", clusterName=args.cluster_name,
                                 keyspace=args.keyspace_name, tables=args.tables,
-                                owner=args.owner, segmentCount=args.segment_count,
+                                owner=args.owner, segmentCountPerNode=args.segment_count,
                                 repairParallelism=args.repair_parallelism,
                                 intensity=args.intensity,
                                 scheduleDaysBetween=args.schedule_days_between,
@@ -687,7 +687,7 @@ class ReaperCLI(object):
                 args.schedule_days_between, args.schedule_trigger_time))
             reply = reaper.post("repair_schedule", clusterName=args.cluster_name,
                                 keyspace=args.keyspace_name, owner=args.owner,
-                                segmentCount=args.segment_count,
+                                segmentCountPerNode=args.segment_count,
                                 repairParallelism=args.repair_parallelism,
                                 intensity=args.intensity,
                                 scheduleDaysBetween=args.schedule_days_between,
