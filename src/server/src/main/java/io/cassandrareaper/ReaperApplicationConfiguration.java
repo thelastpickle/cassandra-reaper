@@ -72,6 +72,10 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @NotNull
   private Integer hangingRepairTimeoutMins;
 
+  @JsonProperty
+  @NotNull
+  private Map<String, String> preconfiguredClusters = Collections.emptyMap();
+
   @NotEmpty
   private String storageType;
 
@@ -333,6 +337,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public boolean isAccessControlEnabled() {
     return getAccessControl() != null;
+  }
+
+  public Map<String, String> getPreconfiguredClusters() {
+    return preconfiguredClusters;
+  }
+
+  public void setPreconfiguredClusters(Map<String, String> preconfiguredClusters) {
+    this.preconfiguredClusters = preconfiguredClusters;
   }
 
 

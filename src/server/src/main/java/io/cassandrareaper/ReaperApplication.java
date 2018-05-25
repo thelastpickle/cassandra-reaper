@@ -279,6 +279,17 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       context.repairManager.resumeRunningRepairRuns();
     }
     LOG.info("Initialization complete!");
+
+    // Automatically add any preconfigured clusters in the yaml file for repairs after reaper has started,
+    // if there are none configured this is an empty map
+    for (Map.Entry<String, String> entry: config.getPreconfiguredClusters().entrySet()) {
+      try {
+        LOG.info("Automatically configuring {} via {}", entry.getKey(), entry.getValue());
+        addClusterResource.manualAddOrUpdateCluster(entry.getKey(), entry.getValue());
+      } catch (ReaperException e) {
+        LOG.warn("Could not add cluster {} with contact point {}", entry.getKey(), entry.getValue(), e);
+      }
+    }
     LOG.warn("Reaper is ready to get things done!");
   }
 

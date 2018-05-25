@@ -164,6 +164,31 @@ public final class ClusterResource {
     return addOrUpdateCluster(uriInfo, Optional.of(clusterName), seedHost);
   }
 
+  public void manualAddOrUpdateCluster(
+          String clusterName,
+          String seedHost) throws ReaperException {
+
+    Cluster cluster = findClusterWithSeedHost(seedHost);
+    if (null == cluster) {
+      throw new ReaperException("Could not connect to seed Host");
+    }
+    if (!cluster.getName().equals(clusterName)) {
+      throw new ReaperException("seed belongs to a cluster configured with a different name "
+              + cluster.getName() + " vs " + clusterName);
+    }
+    Optional<Cluster> existingCluster = context.storage.getCluster(cluster.getName());
+    if (existingCluster.isPresent()) {
+      LOG.debug("Attempting updating nodelist for cluster {}", existingCluster.get().getName());
+      updateClusterSeeds(existingCluster.get(), seedHost);
+    } else {
+      LOG.info("creating new cluster based on given seed host: {}", cluster.getName());
+      context.storage.addCluster(cluster);
+      if (context.config.hasAutoSchedulingEnabled()) {
+        clusterRepairScheduler.scheduleRepairs(cluster);
+      }
+    }
+  }
+
   private Response addOrUpdateCluster(
       UriInfo uriInfo,
       Optional<String> clusterName,

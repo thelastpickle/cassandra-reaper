@@ -392,4 +392,15 @@ accessControl:
     iniConfigs: ["file:/path/to/shiro.ini"]
 ```
 
+### `preconfiguredClusters`
 
+Type: *Object*
+
+Optional mapping of Cluster names to contact point that reaper will automatically add as clusters being repaired. Useful with autoScheduling.
+
+```
+preconfiguredClusters:
+  my-cluster: 192.168.0.123
+  your-cluster: 10.0.0.123
+```
+<br/>
