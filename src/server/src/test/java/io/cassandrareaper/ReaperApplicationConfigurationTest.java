@@ -24,8 +24,6 @@ import org.junit.Before;
 import org.junit.Test;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
 
-import java.util.Collections;
-
 import static org.fest.assertions.api.Assertions.assertThat;
 
 public final class ReaperApplicationConfigurationTest {
@@ -56,7 +54,6 @@ public final class ReaperApplicationConfigurationTest {
     config.setScheduleDaysBetween(7);
     config.setStorageType("foo");
     config.setIncrementalRepair(false);
-    config.setPreconfiguredClusters(Collections.emptyMap());
   }
 
   @Test
