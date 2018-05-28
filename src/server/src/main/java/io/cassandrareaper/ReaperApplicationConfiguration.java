@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
@@ -111,6 +112,15 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   private Integer repairThreadCount;
+  /** If set to more than 0, defines how many days of run history should be kept. */
+  @Nullable
+  @JsonProperty
+  private Integer purgeRecordsAfterInDays;
+
+  /** If set to more than 0, defines how many runs to keep per repair unit. */
+  @Nullable
+  @JsonProperty
+  private Integer numberOfRunsToKeepPerUnit;
 
   private CassandraFactory cassandra = new CassandraFactory();
 
@@ -340,6 +350,24 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public int getRepairThreadCount() {
     return repairThreadCount != null ? repairThreadCount : 1;
+  }
+
+  public Integer getPurgeRecordsAfterInDays() {
+    return purgeRecordsAfterInDays == null ? 0 : purgeRecordsAfterInDays;
+  }
+
+  @JsonProperty("purgeRecordsAfterInDays")
+  public void setPurgeRecordsAfterInDays(Integer purgeRecordsAfterInDays) {
+    this.purgeRecordsAfterInDays = purgeRecordsAfterInDays;
+  }
+
+  public Integer getNumberOfRunsToKeepPerUnit() {
+    return numberOfRunsToKeepPerUnit == null ? 50 : numberOfRunsToKeepPerUnit;
+  }
+
+  @JsonProperty("numberOfRunsToKeepPerUnit")
+  public void setNumberOfRunsToKeepPerUnit(Integer numberOfRunsToKeepPerUnit) {
+    this.numberOfRunsToKeepPerUnit = numberOfRunsToKeepPerUnit;
   }
 
   public static final class JmxCredentials {
