@@ -86,7 +86,7 @@ const TableRowDetails = React.createClass({
                     <td>{this.props.row.intensity}</td>
                 </tr>
                 <tr>
-                    <td>Repair parallism</td>
+                    <td>Repair parallelism</td>
                     <td>{this.props.row.repair_parallelism}</td>
                 </tr>
                 <tr>

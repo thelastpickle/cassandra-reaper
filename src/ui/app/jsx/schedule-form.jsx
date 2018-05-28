@@ -19,7 +19,7 @@ const scheduleForm = React.createClass({
     return {
       addScheduleResultMsg: null, clusterNames: [], submitEnabled: false,
       clusterName: this.props.currentCluster!="all"?this.props.currentCluster:this.props.clusterNames[0], keyspace: "", tables: "", owner: null, segments: null,
-      parallism: null, intensity: null, startTime: null, intervalDays: null, incrementalRepair: null, formCollapsed: true, nodes: null, datacenters: null, 
+      parallelism: null, intensity: null, startTime: null, intervalDays: null, incrementalRepair: null, formCollapsed: true, nodes: null, datacenters: null,
       nodes: "", datacenters: "", blacklistedTables: "", nodeList: [], datacenterList: [], clusterStatus: {}, urlPrefix: URL_PREFIX, nodeSuggestions: [], datacenterSuggestions: [],
       clusterTables: {}, tableSuggestions: [], blacklistSuggestions: [], tableList: [], blacklistList: [], keyspaceList: [], keyspaceSuggestions: [], 
       blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true
@@ -99,7 +99,7 @@ const scheduleForm = React.createClass({
     };
     if(this.state.tables) schedule.tables = this.state.tables;
     if(this.state.segments) schedule.segmentCountPerNode = this.state.segments;
-    if(this.state.parallism) schedule.repairParallelism = this.state.parallism;
+    if(this.state.parallelism) schedule.repairParallelism = this.state.parallelism;
     if(this.state.intensity) schedule.intensity = this.state.intensity;
     if(this.state.incrementalRepair){
       schedule.incrementalRepair = this.state.incrementalRepair;
@@ -487,10 +487,10 @@ const scheduleForm = React.createClass({
                       </div>
                     </div>
                     <div className="form-group">
-                      <label htmlFor="in_parallism" className="col-sm-3 control-label">Parallelism</label>
+                      <label htmlFor="in_parallelism" className="col-sm-3 control-label">Parallelism</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
-                        <select className="form-control" id="in_parallism"
-                          onChange={this._handleChange} value={this.state.parallism}>
+                        <select className="form-control" id="in_parallelism"
+                          onChange={this._handleChange} value={this.state.parallelism}>
                           <option value=""></option>
                           <option value="SEQUENTIAL">Sequential</option>
                           <option value="PARALLEL">Parallel</option>
