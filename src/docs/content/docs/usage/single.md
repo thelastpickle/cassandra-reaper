@@ -36,4 +36,4 @@ Enter values for the keyspace, tables, owner and other fields and click the *Rep
 **Parallelism** | Options are: <br/> - `Sequential`: Used in cases where data center aware repairs are not yet supported (pre-2.0.12). <br/> - `Parallel`: Executes repairs across all nodes in parallel. <br/> - `DC-Aware`: Executes repairs across all nodes in a data center, one data center at a time. This is the safest option as it restricts extreme load to a specific data center, rather than impacting the full cluster.
 **Repair intensity** | A value between 0.0 and 1.0, where 1.0 ensures that no sleeping occurs between repair sessions and 0.5 ensures that equal amounts of time while the repair task is running, will be spent sleeping and repairing.
 **Cause** | Any string is accepted for this field which acts as a way to include notes in cases where many users have access to Reaper.
-**Incremental** | This boolean value is only supported when the Parallism is set to Parallel.
+**Incremental** | This boolean value is only supported when the Parallelism is set to Parallel.
