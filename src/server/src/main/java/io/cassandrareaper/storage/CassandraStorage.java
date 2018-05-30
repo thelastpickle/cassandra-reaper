@@ -34,6 +34,7 @@ import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.cassandra.DateTimeCodec;
 import io.cassandrareaper.storage.cassandra.Migration003;
 import io.cassandrareaper.storage.cassandra.Migration009;
+import io.cassandrareaper.storage.cassandra.Migration014;
 
 import java.math.BigInteger;
 import java.util.Collection;
@@ -206,9 +207,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     MigrationTask migration = new MigrationTask(database, new MigrationRepository("db/cassandra"));
     migration.migrate();
     Migration003.migrate(session);
+    // always run 013 step, incase new tables are added
+    Migration014.migrate(session, keyspace);
   }
 
   private void prepareStatements() {
+    final String timeUdf = 0 < VersionNumber.parse("2.2").compareTo(version) ? "dateOf" : "toTimestamp";
     insertClusterPrepStmt = session
         .prepare("INSERT INTO cluster(name, partitioner, seed_hosts) values(?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
@@ -243,7 +247,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     insertRepairUnitPrepStmt = session
         .prepare(
             "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
-                + "incremental_repair, nodes, datacenters, blacklisted_tables, repair_thread_count) "
+                + "incremental_repair, nodes, \"datacenters\", blacklisted_tables, repair_thread_count) "
                 + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     getRepairUnitPrepStmt = session
@@ -304,20 +308,18 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     takeLeadPrepStmt = session
         .prepare(
             "INSERT INTO leader(leader_id, reaper_instance_id, reaper_instance_host, last_heartbeat) "
-                + "VALUES(?, ?, ?, dateof(now())) IF NOT EXISTS")
-        .setIdempotent(false);
+                + "VALUES(?, ?, ?, " + timeUdf + "(now())) IF NOT EXISTS");
     renewLeadPrepStmt = session
         .prepare(
-            "UPDATE leader SET reaper_instance_id = ?, reaper_instance_host = ?, last_heartbeat = dateof(now()) "
-                + "WHERE leader_id = ? IF reaper_instance_id = ?")
-        .setIdempotent(false);
+            "UPDATE leader SET reaper_instance_id = ?, reaper_instance_host = ?,"
+                + " last_heartbeat = " + timeUdf + "(now()) WHERE leader_id = ? IF reaper_instance_id = ?");
     releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?");
     forceReleaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ?");
-    getRunningReapersCountPrepStmt = session.prepare("SELECT count(*) as nb_reapers FROM running_reapers");
+    getRunningReapersCountPrepStmt = session.prepare("SELECT reaper_instance_id FROM running_reapers");
     saveHeartbeatPrepStmt = session
         .prepare(
             "INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat)"
-                + " VALUES(?,?,dateof(now()))")
+                + " VALUES(?,?," + timeUdf + "(now()))")
         .setIdempotent(false);
     storeNodeMetricsPrepStmt = session
         .prepare(
@@ -1149,6 +1151,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public void releaseLead(UUID leaderId) {
+    Preconditions.checkNotNull(leaderId);
     ResultSet lwtResult = session.execute(releaseLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID));
 
     if (lwtResult.wasApplied()) {
@@ -1230,7 +1233,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public int countRunningReapers() {
     ResultSet result = session.execute(getRunningReapersCountPrepStmt.bind());
-    int runningReapers = (int) result.one().getLong("nb_reapers");
+    int runningReapers = (int) result.all().size();
     LOG.debug("Running reapers = {}", runningReapers);
     return runningReapers > 0 ? runningReapers : 1;
   }
@@ -1311,7 +1314,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
           Thread.sleep(100);
         } catch (InterruptedException expected) { }
       }
-      return null != stmt && stmt.isIdempotent()
+      return null != stmt && Boolean.FALSE != stmt.isIdempotent()
           ? retry < 10 ? RetryDecision.retry(cl) : RetryDecision.rethrow()
           : DefaultRetryPolicy.INSTANCE.onReadTimeout(stmt, cl, required, received, retrieved, retry);
     }
@@ -1325,8 +1328,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         int received,
         int retry) {
 
-      return null != stmt && stmt.isIdempotent()
-          ? RetryDecision.retry(cl)
+      Preconditions.checkState(WriteType.CAS != type ||  ConsistencyLevel.SERIAL == cl);
+
+      return null != stmt && Boolean.FALSE != stmt.isIdempotent()
+          ? WriteType.CAS == type ? RetryDecision.retry(ConsistencyLevel.ONE) : RetryDecision.retry(cl)
           : DefaultRetryPolicy.INSTANCE.onWriteTimeout(stmt, cl, type, required, received, retry);
     }
 

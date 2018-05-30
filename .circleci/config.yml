@@ -58,12 +58,21 @@ aliases:
                 ccm populate --vnodes -n 2:2
                 sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node1/conf/cassandra-env.sh
                 sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
-                sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.blank.password/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
-                sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.blank.password/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
+                if [ echo $JOB_COMMAND | grep -q "NoIncrementalIT" ] ; then
+                  sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.blank.password/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
+                  sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.blank.password/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
+                else
+                  sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
+                  sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
+                fi
                 sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node1/conf/cassandra-env.sh
                 sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
                 sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
                 sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
+                sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="100M"/' /home/circleci/.ccm/test/node1/conf/cassandra-env.sh
+                sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="100M"/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
+                sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="100M"/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
+                sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="100M"/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
                 sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
                 sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
                 sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
@@ -76,18 +85,18 @@ aliases:
                 sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
                 sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
                 sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' /home/circleci/.ccm/test/node4/conf/cassandra.yaml
-                sed -i 's/concurrent_reads: 32/concurrent_reads: 2/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
-                sed -i 's/concurrent_reads: 32/concurrent_reads: 2/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
-                sed -i 's/concurrent_reads: 32/concurrent_reads: 2/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
-                sed -i 's/concurrent_reads: 32/concurrent_reads: 2/' /home/circleci/.ccm/test/node4/conf/cassandra.yaml
-                sed -i 's/concurrent_writes: 32/concurrent_writes: 2/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
-                sed -i 's/concurrent_writes: 32/concurrent_writes: 2/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
-                sed -i 's/concurrent_writes: 32/concurrent_writes: 2/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
-                sed -i 's/concurrent_writes: 32/concurrent_writes: 2/' /home/circleci/.ccm/test/node4/conf/cassandra.yaml
-                sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 2/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
-                sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 2/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
-                sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 2/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
-                sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 2/' /home/circleci/.ccm/test/node4/conf/cassandra.yaml
+                sed -i 's/concurrent_reads: 32/concurrent_reads: 4/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
+                sed -i 's/concurrent_reads: 32/concurrent_reads: 4/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
+                sed -i 's/concurrent_reads: 32/concurrent_reads: 4/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
+                sed -i 's/concurrent_reads: 32/concurrent_reads: 4/' /home/circleci/.ccm/test/node4/conf/cassandra.yaml
+                sed -i 's/concurrent_writes: 32/concurrent_writes: 4/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
+                sed -i 's/concurrent_writes: 32/concurrent_writes: 4/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
+                sed -i 's/concurrent_writes: 32/concurrent_writes: 4/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
+                sed -i 's/concurrent_writes: 32/concurrent_writes: 4/' /home/circleci/.ccm/test/node4/conf/cassandra.yaml
+                sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 4/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
+                sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 4/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
+                sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 4/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
+                sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 4/' /home/circleci/.ccm/test/node4/conf/cassandra.yaml
                 sed -i 's/num_tokens: 256/num_tokens: 32/' /home/circleci/.ccm/test/node1/conf/cassandra.yaml
                 sed -i 's/num_tokens: 256/num_tokens: 32/' /home/circleci/.ccm/test/node2/conf/cassandra.yaml
                 sed -i 's/num_tokens: 256/num_tokens: 32/' /home/circleci/.ccm/test/node3/conf/cassandra.yaml
@@ -96,20 +105,10 @@ aliases:
                 ccm status
                 ccm checklogerror
                 MAVEN_OPTS="-Xmx1g" mvn install -DskipTests
-                # TODO: parallelise the following
-                mvn surefire:test -Dtest=ReaperNoIncrementalIT
-                mvn surefire:test -Dtest=ReaperH2NoIncrementalIT
-                #mvn surefire:test -Dtest=ReaperPostgresIT # TODO set up postgres
-                mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT
-                mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
-                mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
-                sed -i 's/jmxremote.blank.password/jmxremote.password/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
-                sed -i 's/jmxremote.blank.password/jmxremote.password/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
-                ccm node3 stop
-                ccm node3 start
-                ccm node4 stop
-                ccm node4 start
-                mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+                sh -c '$JOB_COMMAND'
+
+                #TODO
+                #mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
 
         - store_test_results:
             path: src/server/target/surefire-reports
@@ -141,47 +140,396 @@ jobs:
             key: v1-dependencies-{{ checksum "pom.xml" }}
         - run:
             command: MAVEN_OPTS="-Xmx1g" mvn clean install
-    test_2-1:
+    c_2-1_memory:
       environment:
         CASSANDRA_VERSION: 2.1.19
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperNoIncrementalIT
       <<: *default_job
-    test_2-2:
+    c_2-1_h2:
+      environment:
+        CASSANDRA_VERSION: 2.1.19
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2NoIncrementalIT
+      <<: *default_job
+    c_2-1_one-reaper:
+      environment:
+        CASSANDRA_VERSION: 2.1.19
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT
+      <<: *default_job
+    c_2-1_two-reapers:
+      environment:
+        CASSANDRA_VERSION: 2.1.19
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+      <<: *default_job
+    c_2-1_flapping-reapers:
+      environment:
+        CASSANDRA_VERSION: 2.1.19
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_2-1_one-reaper_incremental:
+      environment:
+        CASSANDRA_VERSION: 2.1.19
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT
+      <<: *default_job
+    c_2-1_two-reapers_incremental:
+      environment:
+        CASSANDRA_VERSION: 2.1.19
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+      <<: *default_job
+    c_2-1_flapping-reapers_incremental:
+      environment:
+        CASSANDRA_VERSION: 2.1.19
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_2-2_memory:
       environment:
         CASSANDRA_VERSION: 2.2.11
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperNoIncrementalIT
       <<: *default_job
-    test_3-0:
+    c_2-2_h2:
+      environment:
+        CASSANDRA_VERSION: 2.2.11
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2NoIncrementalIT
+      <<: *default_job
+    c_2-2_one-reaper:
+      environment:
+        CASSANDRA_VERSION: 2.2.11
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT
+      <<: *default_job
+    c_2-2_two-reapers:
+      environment:
+        CASSANDRA_VERSION: 2.2.11
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+      <<: *default_job
+    c_2-2_flapping-reapers:
+      environment:
+        CASSANDRA_VERSION: 2.2.11
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_2-2_one-reaper_incremental:
+      environment:
+        CASSANDRA_VERSION: 2.2.11
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT
+      <<: *default_job
+    c_2-2_two-reapers_incremental:
+      environment:
+        CASSANDRA_VERSION: 2.2.11
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+      <<: *default_job
+    c_2-2_flapping-reapers_incremental:
+      environment:
+        CASSANDRA_VERSION: 2.2.11
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_3-0_memory:
       environment:
         CASSANDRA_VERSION: 3.0.15
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperNoIncrementalIT
       <<: *default_job
-    test_3-11:
+    c_3-0_h2:
+      environment:
+        CASSANDRA_VERSION: 3.0.15
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2NoIncrementalIT
+      <<: *default_job
+    c_3-0_one-reaper:
+      environment:
+        CASSANDRA_VERSION: 3.0.15
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT
+      <<: *default_job
+    c_3-0_two-reapers:
+      environment:
+        CASSANDRA_VERSION: 3.0.15
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+      <<: *default_job
+    c_3-0_flapping-reapers:
+      environment:
+        CASSANDRA_VERSION: 3.0.15
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_3-0_one-reaper_incremental:
+      environment:
+        CASSANDRA_VERSION: 3.0.15
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT
+      <<: *default_job
+    c_3-0_two-reapers_incremental:
+      environment:
+        CASSANDRA_VERSION: 3.0.15
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+      <<: *default_job
+    c_3-0_flapping-reapers_incremental:
+      environment:
+        CASSANDRA_VERSION: 3.0.15
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_3-11_memory:
       environment:
         CASSANDRA_VERSION: 3.11.2
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperNoIncrementalIT
       <<: *default_job
-    test_4-0:
+    c_3-11_h2:
+      environment:
+        CASSANDRA_VERSION: 3.11.2
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2NoIncrementalIT
+      <<: *default_job
+    c_3-11_one-reaper:
+      environment:
+        CASSANDRA_VERSION: 3.11.2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT
+      <<: *default_job
+    c_3-11_two-reapers:
+      environment:
+        CASSANDRA_VERSION: 3.11.2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+      <<: *default_job
+    c_3-11_flapping-reapers:
+      environment:
+        CASSANDRA_VERSION: 3.11.2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_3-11_one-reaper_incremental:
+      environment:
+        CASSANDRA_VERSION: 3.11.2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT
+      <<: *default_job
+    c_3-11_two-reapers_incremental:
+      environment:
+        CASSANDRA_VERSION: 3.11.2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+      <<: *default_job
+    c_3-11_flapping-reapers_incremental:
+      environment:
+        CASSANDRA_VERSION: 3.11.2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_4-0_memory:
       environment:
         CASSANDRA_VERSION: git:trunk
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperNoIncrementalIT
+      <<: *default_job
+    c_4-0_h2:
+      environment:
+        CASSANDRA_VERSION: git:trunk
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2NoIncrementalIT
+      <<: *default_job
+    c_4-0_one-reaper:
+      environment:
+        CASSANDRA_VERSION: git:trunk
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT
+      <<: *default_job
+    c_4-0_two-reapers:
+      environment:
+        CASSANDRA_VERSION: git:trunk
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+      <<: *default_job
+    c_4-0_flapping-reapers:
+      environment:
+        CASSANDRA_VERSION: git:trunk
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_4-0_one-reaper_incremental:
+      environment:
+        CASSANDRA_VERSION: git:trunk
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT
+      <<: *default_job
+    c_4-0_two-reapers_incremental:
+      environment:
+        CASSANDRA_VERSION: git:trunk
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+      <<: *default_job
+    c_4-0_flapping-reapers_incremental:
+      environment:
+        CASSANDRA_VERSION: git:trunk
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
 workflows:
   version: 2
   build_and_test:
     jobs:
       - build
-      - test_2-1:
+      - c_2-1_memory:
           requires:
             - build
-      - test_2-2:
+      - c_2-1_h2:
           requires:
             - build
-      - test_3-0:
+            - c_2-1_memory
+      - c_2-1_one-reaper:
           requires:
             - build
-      - test_3-11:
+            - c_2-1_memory
+      - c_2-1_two-reapers:
           requires:
             - build
-    # waiting on Cassandra-4.0 backend support
-    #  - test_4-0:
-    #      requires:
-    #        - build
+            - c_2-1_memory
+            - c_2-1_one-reaper
+      - c_2-1_flapping-reapers:
+          requires:
+            - build
+            - c_2-1_memory
+            - c_2-1_one-reaper
+            - c_2-1_two-reapers
+      - c_2-1_one-reaper_incremental:
+          requires:
+            - build
+            - c_2-1_memory
+      - c_2-1_two-reapers_incremental:
+          requires:
+            - build
+            - c_2-1_memory
+            - c_2-1_one-reaper_incremental
+      - c_2-1_flapping-reapers_incremental:
+          requires:
+            - build
+            - c_2-1_memory
+            - c_2-1_one-reaper_incremental
+            - c_2-1_two-reapers_incremental
+      - c_2-2_memory:
+          requires:
+            - build
+      - c_2-2_h2:
+          requires:
+            - build
+            - c_2-2_memory
+      - c_2-2_one-reaper:
+          requires:
+            - build
+            - c_2-2_memory
+      - c_2-2_two-reapers:
+          requires:
+            - build
+            - c_2-2_memory
+            - c_2-2_one-reaper
+      - c_2-2_flapping-reapers:
+          requires:
+            - build
+            - c_2-2_memory
+            - c_2-2_one-reaper
+            - c_2-2_two-reapers
+      - c_2-2_one-reaper_incremental:
+          requires:
+            - build
+            - c_2-2_memory
+      - c_2-2_two-reapers_incremental:
+          requires:
+            - build
+            - c_2-2_memory
+            - c_2-2_one-reaper_incremental
+      - c_2-2_flapping-reapers_incremental:
+          requires:
+            - build
+            - c_2-2_memory
+            - c_2-2_one-reaper_incremental
+            - c_2-2_two-reapers_incremental
+      - c_3-0_memory:
+          requires:
+            - build
+      - c_3-0_h2:
+          requires:
+            - build
+            - c_3-0_memory
+      - c_3-0_one-reaper:
+          requires:
+            - build
+            - c_3-0_memory
+      - c_3-0_two-reapers:
+          requires:
+            - build
+            - c_3-0_memory
+            - c_3-0_one-reaper
+      - c_3-0_flapping-reapers:
+          requires:
+            - build
+            - c_3-0_memory
+            - c_3-0_one-reaper
+            - c_3-0_two-reapers
+      - c_3-0_one-reaper_incremental:
+          requires:
+            - build
+            - c_3-0_memory
+      - c_3-0_two-reapers_incremental:
+          requires:
+            - build
+            - c_3-0_memory
+            - c_3-0_one-reaper_incremental
+      - c_3-0_flapping-reapers_incremental:
+          requires:
+            - build
+            - c_3-0_memory
+            - c_3-0_one-reaper_incremental
+            - c_3-0_two-reapers_incremental
+      - c_3-11_memory:
+          requires:
+            - build
+      - c_3-11_h2:
+          requires:
+            - build
+            - c_3-11_memory
+      - c_3-11_one-reaper:
+          requires:
+            - build
+            - c_3-11_memory
+      - c_3-11_two-reapers:
+          requires:
+            - build
+            - c_3-11_memory
+            - c_3-11_one-reaper
+      - c_3-11_flapping-reapers:
+          requires:
+            - build
+            - c_3-11_memory
+            - c_3-11_one-reaper
+            - c_3-11_two-reapers
+      - c_3-11_one-reaper_incremental:
+          requires:
+            - build
+            - c_3-11_memory
+      - c_3-11_two-reapers_incremental:
+          requires:
+            - build
+            - c_3-11_memory
+            - c_3-11_one-reaper_incremental
+      - c_3-11_flapping-reapers_incremental:
+          requires:
+            - build
+            - c_3-11_memory
+            - c_3-11_one-reaper_incremental
+            - c_3-11_two-reapers_incremental
+      - c_4-0_memory:
+          requires:
+            - build
+      - c_4-0_h2:
+          requires:
+            - build
+            - c_4-0_memory
+      - c_4-0_one-reaper:
+          requires:
+            - build
+            - c_4-0_memory
+      - c_4-0_two-reapers:
+          requires:
+            - build
+            - c_4-0_memory
+            - c_4-0_one-reaper
+      - c_4-0_flapping-reapers:
+          requires:
+            - build
+            - c_4-0_memory
+            - c_4-0_one-reaper
+            - c_4-0_two-reapers
+      - c_4-0_one-reaper_incremental:
+          requires:
+            - build
+            - c_4-0_memory
+      - c_4-0_two-reapers_incremental:
+          requires:
+            - build
+            - c_4-0_memory
+            - c_4-0_one-reaper_incremental
+      - c_4-0_flapping-reapers_incremental:
+          requires:
+            - build
+            - c_4-0_memory
+            - c_4-0_one-reaper_incremental
+            - c_4-0_two-reapers_incremental
 
 notify:
   webhooks:

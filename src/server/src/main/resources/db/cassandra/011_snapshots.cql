@@ -12,6 +12,4 @@ CREATE TABLE IF NOT EXISTS snapshot (
 WITH compaction = {'class':'LeveledCompactionStrategy'}
    AND caching = {'keys':'ALL', 'rows_per_partition':'ALL'}
    AND  gc_grace_seconds = 864000
-   AND  default_time_to_live = 0
-   AND dclocal_read_repair_chance = 0.0
-   AND read_repair_chance = 0.0;
+   AND  default_time_to_live = 0;

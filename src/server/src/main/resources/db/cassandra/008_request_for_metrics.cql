@@ -19,5 +19,4 @@ CREATE TABLE IF NOT EXISTS node_metrics_v1 (
   WITH compaction = {'class':'SizeTieredCompactionStrategy', 'unchecked_tombstone_compaction':'true'}
    AND caching = {'keys':'ALL', 'rows_per_partition':'ALL'}
    AND  gc_grace_seconds = 120
-   AND  default_time_to_live = 180
-   AND dclocal_read_repair_chance = 0.0;
+   AND  default_time_to_live = 180;
