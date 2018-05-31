@@ -104,6 +104,7 @@ public final class ReaperTestJettyRunner {
 
     @Override
     public void after() {
+      context.repairManager.close();
       context.isRunning.set(false);
       try {
         Thread.sleep(100);

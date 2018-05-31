@@ -46,7 +46,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class RepairManager {
+public final class RepairManager implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairManager.class);
 
@@ -371,5 +371,11 @@ public final class RepairManager {
         ((IDistributedStorage) context.storage).releaseLead(leaderElectionId);
       }
     }
+  }
+
+  @Override
+  public void close() {
+    heart.close();
+    executor.shutdownNow();
   }
 }
