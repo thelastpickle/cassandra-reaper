@@ -695,6 +695,14 @@ Deleting or commenting that block from the yaml file will turn off authenticatio
     iniConfigs: [&quot;file:/path/to/shiro.ini&quot;]
 </code></pre>
 
+<h3 id="repairthreadcount"><code>repairThreadCount</code></h3>
+
+<p>Type: <em>Integer</em></p>
+
+<p>Since Cassandra 2.2, repairs are multithreaded in order to process several token ranges concurrently and speed up the process.
+This setting allows to set a default for automatic repair schedules.
+No more than four threads are allowed by Cassandra.</p>
+
                         </div>
 
                     </div>

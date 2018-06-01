@@ -23,6 +23,9 @@ Being a multi threaded service, Reaper will compute how many concurrent repair s
 
 The maximum number of concurrent repairs is 15 by default and can be modified in the YAML configuration (_cassandra-reaper.yaml_) file.
 
+Since Cassandra 2.2, repairs are multithreaded in order to process several token ranges concurrently and speed up the process. No more than four threads are authorized by Cassandra. The number of repair threads can be set differently for each repair run/schedule.
+This setting will be ignored for clusters running an older version of Apache Cassandra.
+
 ## Timeout
 By default, each segment must complete within 30 minutes. Reaper subscribes to the repair service notifications of Cassandra to monitor completion, and if a segment takes more than 30 minutes it gets cancelled and postponed. This means that if a repair job is subject to frequent segment cancellation, it is necessary to either split it up into more segments or raise the timeout over its default value.
 

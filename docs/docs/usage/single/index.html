@@ -393,8 +393,8 @@
 </tr>
 
 <tr>
-<td><strong>Segment count</strong></td>
-<td>The number of segments to create when considering all the token ranges.</td>
+<td><strong>Segments per node</strong></td>
+<td>The number of segments to create per nodes in the cluster.</td>
 </tr>
 
 <tr>
@@ -415,6 +415,21 @@
 <tr>
 <td><strong>Incremental</strong></td>
 <td>This boolean value is only supported when the Parallelism is set to Parallel.</td>
+</tr>
+
+<tr>
+<td><strong>Nodes</strong></td>
+<td>Allows to restrict the repair to token ranges of specific nodes.</td>
+</tr>
+
+<tr>
+<td><strong>Datacenters</strong></td>
+<td>Allows to restrict the repair to specific datacenters.</td>
+</tr>
+
+<tr>
+<td><strong>Repair threads</strong></td>
+<td>(Since Cassandra 2.2) Allows to set a number of threads to process several token ranges concurrently.</td>
 </tr>
 </tbody>
 </table>

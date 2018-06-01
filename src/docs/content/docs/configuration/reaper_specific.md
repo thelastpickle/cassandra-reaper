@@ -392,4 +392,11 @@ accessControl:
     iniConfigs: ["file:/path/to/shiro.ini"]
 ```
 
+### `repairThreadCount`
+
+Type: *Integer*
+
+Since Cassandra 2.2, repairs are multithreaded in order to process several token ranges concurrently and speed up the process.
+This setting allows to set a default for automatic repair schedules.
+No more than four threads are allowed by Cassandra.  
 
