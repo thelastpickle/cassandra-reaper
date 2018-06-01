@@ -96,6 +96,7 @@ Source code for all the REST resources can be found from package io.cassandrarea
 	    * *nodes* : a specific list of nodes whose tokens should be repaired. (Optional)
 	    * *datacenters* : a specific list of datacenters to repair. (Optional) 
 	    * *blacklistedTables* : The name of the tables that should not be repaired. Cannot be used in conjunction with the tables parameter. (Optional)
+	    * *repairThreadCount* : Since Cassandra 2.2, repairs can be performed with up to 4 threads in order to parallelize the work on different token ranges. (Optional)
     * Endpoint used to create a repair run. Does not allow triggering the run. 
 Creating a repair run includes generating the repair segments. 
 Notice that query parameter "tables" can be a single String, or a comma-separated list of table names. If the "tables" parameter is omitted, and only the keyspace is defined, then created repair run will target all the tables in the keyspace.
@@ -163,6 +164,7 @@ Returns OK if all goes well NOT_MODIFIED if new state is the same as the old one
  	    * *nodes* : a specific list of nodes whose tokens should be repaired. (Optional)
 	    * *datacenters* : a specific list of datacenters to repair. (Optional) 
 	    * *blacklistedTables* : The name of the tables that should not be repaired. Cannot be used in conjunction with the tables parameter. (Optional)
+	    * *repairThreadCount* : Since Cassandra 2.2, repairs can be performed with up to 4 threads in order to parallelize the work on different token ranges. (Optional)
     * Create and activate a scheduled repair.
   
   

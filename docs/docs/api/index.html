@@ -463,6 +463,7 @@ or the request will fail. Delete repair runs and schedules first before calling 
 <li><em>nodes</em> : a specific list of nodes whose tokens should be repaired. (Optional)</li>
 <li><em>datacenters</em> : a specific list of datacenters to repair. (Optional)</li>
 <li><em>blacklistedTables</em> : The name of the tables that should not be repaired. Cannot be used in conjunction with the tables parameter. (Optional)</li>
+<li><em>repairThreadCount</em> : Since Cassandra 2.2, repairs can be performed with up to 4 threads in order to parallelize the work on different token ranges. (Optional)</li>
 </ul></li>
 <li>Endpoint used to create a repair run. Does not allow triggering the run.
 Creating a repair run includes generating the repair segments.
@@ -568,6 +569,7 @@ keyspace name. (Optional)</li>
 <li><em>nodes</em> : a specific list of nodes whose tokens should be repaired. (Optional)</li>
 <li><em>datacenters</em> : a specific list of datacenters to repair. (Optional)</li>
 <li><em>blacklistedTables</em> : The name of the tables that should not be repaired. Cannot be used in conjunction with the tables parameter. (Optional)</li>
+<li><em>repairThreadCount</em> : Since Cassandra 2.2, repairs can be performed with up to 4 threads in order to parallelize the work on different token ranges. (Optional)</li>
 </ul></li>
 <li>Create and activate a scheduled repair.
 <br />
