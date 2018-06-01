@@ -51,7 +51,8 @@ public final class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
             rs.getBoolean("incremental_repair"),
             Sets.newHashSet(nodes),
             Sets.newHashSet(datacenters),
-            Sets.newHashSet(blacklistedTables));
+            Sets.newHashSet(blacklistedTables),
+            rs.getInt("repair_thread_count"));
 
     return builder.build(UuidUtil.fromSequenceId(rs.getLong("id")));
   }

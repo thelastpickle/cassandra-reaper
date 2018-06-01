@@ -305,7 +305,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                     fullRepair,
                     repairUnit.getDatacenters(),
                     this,
-                    segment.getTokenRange().getTokenRanges());
+                    segment.getTokenRange().getTokenRanges(),
+                    repairUnit.getRepairThreadCount());
 
             if (0 != commandId) {
               processTriggeredSegment(segment, coordinator, commandId);

@@ -28,6 +28,7 @@ public final class RepairUnit {
   private final Set<String> nodes;
   private final Set<String> datacenters;
   private final Set<String> blacklistedTables;
+  private final int repairThreadCount;
 
   private RepairUnit(Builder builder, UUID id) {
     this.id = id;
@@ -38,6 +39,7 @@ public final class RepairUnit {
     this.nodes = builder.nodes;
     this.datacenters = builder.datacenters;
     this.blacklistedTables = builder.blacklistedTables;
+    this.repairThreadCount = builder.repairThreadCount;
   }
 
   public UUID getId() {
@@ -72,6 +74,10 @@ public final class RepairUnit {
     return blacklistedTables;
   }
 
+  public int getRepairThreadCount() {
+    return repairThreadCount;
+  }
+
   public Builder with() {
     return new Builder(this);
   }
@@ -85,6 +91,7 @@ public final class RepairUnit {
     public final Set<String> nodes;
     public final Set<String> datacenters;
     public final Set<String> blacklistedTables;
+    public final int repairThreadCount;
 
     public Builder(
         String clusterName,
@@ -93,7 +100,8 @@ public final class RepairUnit {
         boolean incrementalRepair,
         Set<String> nodes,
         Set<String> datacenters,
-        Set<String> blacklistedTables) {
+        Set<String> blacklistedTables,
+        int repairThreadCount) {
       this.clusterName = clusterName;
       this.keyspaceName = keyspaceName;
       this.columnFamilies = columnFamilies;
@@ -101,6 +109,7 @@ public final class RepairUnit {
       this.nodes = nodes;
       this.datacenters = datacenters;
       this.blacklistedTables = blacklistedTables;
+      this.repairThreadCount = repairThreadCount;
     }
 
     private Builder(RepairUnit original) {
@@ -111,6 +120,7 @@ public final class RepairUnit {
       nodes = original.nodes;
       datacenters = original.datacenters;
       blacklistedTables = original.blacklistedTables;
+      repairThreadCount = original.repairThreadCount;
     }
 
     public RepairUnit build(UUID id) {
@@ -152,7 +162,8 @@ public final class RepairUnit {
           && Objects.equals(this.columnFamilies, ((Builder) obj).columnFamilies)
           && Objects.equals(this.nodes, ((Builder) obj).nodes)
           && Objects.equals(this.datacenters, ((Builder) obj).datacenters)
-          && Objects.equals(this.blacklistedTables, ((Builder) obj).blacklistedTables);
+          && Objects.equals(this.blacklistedTables, ((Builder) obj).blacklistedTables)
+          && Objects.equals(this.repairThreadCount, ((Builder) obj).repairThreadCount);
     }
   }
 }

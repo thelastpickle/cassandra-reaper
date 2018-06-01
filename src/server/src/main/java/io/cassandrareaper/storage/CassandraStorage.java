@@ -44,6 +44,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
 import javax.annotation.Nullable;
 
 import com.datastax.driver.core.BatchStatement;
@@ -230,7 +231,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     insertRepairUnitPrepStmt =
         session.prepare(
             "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
-                + "incremental_repair, nodes, datacenters, blacklisted_tables) VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
+                + "incremental_repair, nodes, datacenters, blacklisted_tables, repair_thread_count) "
+                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
     getRepairUnitPrepStmt = session.prepare("SELECT * FROM repair_unit_v1 WHERE id = ?");
     insertRepairSegmentPrepStmt = session
         .prepare(
@@ -618,7 +620,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             repairUnit.getIncrementalRepair(),
             repairUnit.getNodes(),
             repairUnit.getDatacenters(),
-            repairUnit.getBlacklistedTables()));
+            repairUnit.getBlacklistedTables(),
+            repairUnit.getRepairThreadCount()));
     return repairUnit;
   }
 
@@ -635,7 +638,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                   repairUnitRow.getBool("incremental_repair"),
                   repairUnitRow.getSet("nodes", String.class),
                   repairUnitRow.getSet("datacenters", String.class),
-                  repairUnitRow.getSet("blacklisted_tables", String.class))
+                  repairUnitRow.getSet("blacklisted_tables", String.class),
+                  repairUnitRow.getInt("repair_thread_count"))
               .build(id);
     }
     return Optional.fromNullable(repairUnit);
@@ -655,7 +659,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
           && repairUnitRow.getBool("incremental_repair") == params.incrementalRepair
           && repairUnitRow.getSet("nodes", String.class).equals(params.nodes)
           && repairUnitRow.getSet("datacenters", String.class).equals(params.datacenters)
-          && repairUnitRow.getSet("blacklisted_tables", String.class).equals(params.blacklistedTables)) {
+          && repairUnitRow
+              .getSet("blacklisted_tables", String.class)
+              .equals(params.blacklistedTables)
+          && repairUnitRow.getInt("repair_thread_count") == params.repairThreadCount) {
 
         repairUnit =
             new RepairUnit.Builder(
@@ -665,7 +672,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                     repairUnitRow.getBool("incremental_repair"),
                     repairUnitRow.getSet("nodes", String.class),
                     repairUnitRow.getSet("datacenters", String.class),
-                    repairUnitRow.getSet("blacklisted_tables", String.class))
+                    repairUnitRow.getSet("blacklisted_tables", String.class),
+                    repairUnitRow.getInt("repair_thread_count"))
                 .build(repairUnitRow.getUUID("id"));
         // exit the loop once we find a match
         break;

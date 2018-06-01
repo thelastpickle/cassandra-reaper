@@ -62,6 +62,7 @@ public final class RepairManagerTest {
     final Set<String> nodes = Sets.newHashSet("127.0.0.1");
     final Set<String> datacenters = Collections.emptySet();
     final double intensity = 0.5f;
+    final int repairThreadCount = 1;
 
     // use CassandraStorage so we get both IStorage and IDistributedStorage
     final IStorage storage = mock(CassandraStorage.class);
@@ -76,15 +77,16 @@ public final class RepairManagerTest {
     context.repairManager = repairManager;
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    final RepairUnit cf
-        = new RepairUnit.Builder(
+    final RepairUnit cf =
+        new RepairUnit.Builder(
                 clusterName,
                 ksName,
                 cfNames,
                 incrementalRepair,
                 nodes,
                 datacenters,
-                Collections.emptySet())
+                Collections.emptySet(),
+                repairThreadCount)
             .build(UUIDs.timeBased());
 
     final RepairRun run
@@ -133,6 +135,7 @@ public final class RepairManagerTest {
     final Set<String> nodes = Sets.newHashSet("127.0.0.1");
     final Set<String> datacenters = Collections.emptySet();
     final double intensity = 0.5f;
+    final int repairThreadCount = 1;
 
     // use CassandraStorage so we get both IStorage and IDistributedStorage
     final IStorage storage = mock(CassandraStorage.class);
@@ -147,15 +150,16 @@ public final class RepairManagerTest {
     context.repairManager = repairManager;
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    final RepairUnit cf
-        = new RepairUnit.Builder(
+    final RepairUnit cf =
+        new RepairUnit.Builder(
                 clusterName,
                 ksName,
                 cfNames,
                 incrementalRepair,
                 nodes,
                 datacenters,
-                Collections.emptySet())
+                Collections.emptySet(),
+                repairThreadCount)
             .build(UUIDs.timeBased());
 
     final RepairRun run
@@ -205,6 +209,7 @@ public final class RepairManagerTest {
     final Set<String> nodes = Sets.newHashSet("127.0.0.1");
     final Set<String> datacenters = Collections.emptySet();
     final double intensity = 0.5f;
+    final int repairThreadCount = 1;
 
     final IStorage storage = mock(IStorage.class);
 
@@ -218,15 +223,16 @@ public final class RepairManagerTest {
     context.repairManager = repairManager;
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    final RepairUnit cf
-        = new RepairUnit.Builder(
+    final RepairUnit cf =
+        new RepairUnit.Builder(
                 clusterName,
                 ksName,
                 cfNames,
                 incrementalRepair,
                 nodes,
                 datacenters,
-                Collections.emptySet())
+                Collections.emptySet(),
+                repairThreadCount)
             .build(UUIDs.timeBased());
 
     final RepairRun run
@@ -272,6 +278,7 @@ public final class RepairManagerTest {
     final Set<String> nodes = Sets.newHashSet("127.0.0.1");
     final Set<String> datacenters = Collections.emptySet();
     final double intensity = 0.5f;
+    final int repairThreadCount = 1;
 
     final IStorage storage = mock(IStorage.class);
 
@@ -285,15 +292,16 @@ public final class RepairManagerTest {
     context.repairManager = repairManager;
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    final RepairUnit cf
-        = new RepairUnit.Builder(
+    final RepairUnit cf =
+        new RepairUnit.Builder(
                 clusterName,
                 ksName,
                 cfNames,
                 incrementalRepair,
                 nodes,
                 datacenters,
-                Collections.emptySet())
+                Collections.emptySet(),
+                repairThreadCount)
             .build(UUIDs.timeBased());
 
     final RepairRun run
@@ -339,16 +347,18 @@ public final class RepairManagerTest {
     final boolean incrementalRepair = false;
     final Set<String> nodes = Sets.newHashSet("127.0.0.1");
     final Set<String> datacenters = Collections.emptySet();
+    final int repairThreadCount = 1;
 
-    final RepairUnit cf
-        = new RepairUnit.Builder(
+    final RepairUnit cf =
+        new RepairUnit.Builder(
                 clusterName,
                 ksName,
                 cfNames,
                 incrementalRepair,
                 nodes,
                 datacenters,
-                Collections.emptySet())
+                Collections.emptySet(),
+                repairThreadCount)
             .build(UUIDs.timeBased());
 
     double intensity = 0.5f;

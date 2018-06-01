@@ -88,7 +88,8 @@ public final class SegmentRunnerTest {
                 false,
                 Sets.newHashSet("127.0.0.1"),
                 Collections.emptySet(),
-                Collections.emptySet()));
+                Collections.emptySet(),
+                1));
     RepairRun run =
         context.storage.addRepairRun(
             new RepairRun.Builder(
@@ -129,7 +130,7 @@ public final class SegmentRunnerTest {
                     any(),
                     anyBoolean(),
                     any(),
-                    any(), any()))
+                    any(), any(), any(Integer.class)))
                 .then(
                     (invocation) -> {
                       assertEquals(
@@ -200,7 +201,8 @@ public final class SegmentRunnerTest {
                 false,
                 Sets.newHashSet("127.0.0.1"),
                 Collections.emptySet(),
-                Collections.emptySet()));
+                Collections.emptySet(),
+                1));
     RepairRun run =
         storage.addRepairRun(
             new RepairRun.Builder(
@@ -246,7 +248,7 @@ public final class SegmentRunnerTest {
                     any(),
                     anyBoolean(),
                     any(),
-                    any(), any()))
+                    any(), any(), any(Integer.class)))
                 .then(
                     invocation -> {
                       assertEquals(
@@ -346,7 +348,8 @@ public final class SegmentRunnerTest {
                 false,
                 Sets.newHashSet("127.0.0.1"),
                 Collections.emptySet(),
-                Collections.emptySet()));
+                Collections.emptySet(),
+                1));
     RepairRun run =
         storage.addRepairRun(
             new RepairRun.Builder(
@@ -392,7 +395,7 @@ public final class SegmentRunnerTest {
                     any(),
                     anyBoolean(),
                     any(),
-                    any(), any()))
+                    any(), any(), any(Integer.class)))
                 .then(
                     (invocation) -> {
                       assertEquals(

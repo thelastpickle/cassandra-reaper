@@ -98,7 +98,8 @@ public final class RepairScheduleResource {
       @QueryParam("scheduleTriggerTime") Optional<String> scheduleTriggerTime,
       @QueryParam("nodes") Optional<String> nodesToRepairParam,
       @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
-      @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam) {
+      @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam,
+      @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam) {
 
     try {
       Response possibleFailResponse =
@@ -112,7 +113,8 @@ public final class RepairScheduleResource {
               intensityStr,
               incrementalRepairStr,
               nodesToRepairParam,
-              datacentersToRepairParam);
+              datacentersToRepairParam,
+              repairThreadCountParam);
 
       if (null != possibleFailResponse) {
         return possibleFailResponse;
@@ -140,7 +142,6 @@ public final class RepairScheduleResource {
 
       int segments = getSegmentCount(segmentCountPerNode);
       int daysBetween = getDaysBetween(scheduleDaysBetween);
-
       Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get())).get();
       Set<String> tableNames;
       try {
@@ -178,15 +179,16 @@ public final class RepairScheduleResource {
 
       boolean incrementalRepair = isIncrementalRepair(incrementalRepairStr);
 
-      RepairUnit.Builder builder
-          = new RepairUnit.Builder(
-                    cluster.getName(),
-                    keyspace.get(),
-                    tableNames,
-                    incrementalRepair,
-                    nodesToRepair,
-                    datacentersToRepair,
-                    blacklistedTableNames);
+      RepairUnit.Builder builder =
+          new RepairUnit.Builder(
+              cluster.getName(),
+              keyspace.get(),
+              tableNames,
+              incrementalRepair,
+              nodesToRepair,
+              datacentersToRepair,
+              blacklistedTableNames,
+              repairThreadCountParam.or(context.config.getRepairThreadCount()));
 
       RepairUnit unit = repairUnitService.getNewOrExistingRepairUnit(cluster, builder);
       Preconditions.checkState(unit.getIncrementalRepair() == incrementalRepair);
@@ -203,7 +205,6 @@ public final class RepairScheduleResource {
       }
 
       Double intensity = getIntensity(intensityStr);
-
       Optional<RepairSchedule> conflictingRepairSchedule
           = repairScheduleService.conflictingRepairSchedule(cluster, unit);
 

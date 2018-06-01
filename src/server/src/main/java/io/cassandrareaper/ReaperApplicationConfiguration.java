@@ -109,6 +109,9 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty private AccessControlConfiguration accessControl;
 
+  @JsonProperty
+  private Integer repairThreadCount;
+
   private CassandraFactory cassandra = new CassandraFactory();
 
   @Deprecated
@@ -335,6 +338,9 @@ public final class ReaperApplicationConfiguration extends Configuration {
     return getAccessControl() != null;
   }
 
+  public int getRepairThreadCount() {
+    return repairThreadCount != null ? repairThreadCount : 1;
+  }
 
   public static final class JmxCredentials {
 
