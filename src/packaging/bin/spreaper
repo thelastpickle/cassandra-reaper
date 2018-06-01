@@ -222,6 +222,8 @@ def _arguments_for_repair_and_schedule(parser):
     parser.add_argument("--blacklisted-tables", default=None,
                         help=("a comma separated list of tables that must not be repaired "
                               "within the keyspace (do not use spaces after commas)"))
+    parser.add_argument("--repair-threads", default=1,
+                        help=("The number of threads to use in Cassandra to parallelize repair sessions (from 1 to 4)"))
 
 
 def _arguments_for_scheduling(parser):
@@ -619,7 +621,8 @@ class ReaperCLI(object):
                                 incrementalRepair=args.incremental, 
                                 nodes=args.nodes,
                                 datacenters=args.datacenters,
-                                blacklistedTables=args.blacklisted_tables)
+                                blacklistedTables=args.blacklisted_tables,
+                                repairThreadCount=args.repair_threads)
         else:
             if args.blacklisted_tables :
                 printq ("# Registering repair run for cluster '{0}', and keyspace '{1}', "
@@ -638,7 +641,8 @@ class ReaperCLI(object):
                                 incrementalRepair=args.incremental, 
                                 nodes=args.nodes,
                                 datacenters=args.datacenters,
-                                blacklistedTables=args.blacklisted_tables)
+                                blacklistedTables=args.blacklisted_tables,
+                                repairThreadCount=args.repair_threads)
         repair_run = json.loads(reply)
         printq("# Repair run with id={0} created".format(repair_run.get('id')))
         if not args.dont_start_repair:
@@ -678,7 +682,8 @@ class ReaperCLI(object):
                                 incrementalRepair=args.incremental, 
                                 nodes=args.nodes,
                                 datacenters=args.datacenters,
-                                blacklistedTables=args.blacklisted_tables)
+                                blacklistedTables=args.blacklisted_tables,
+                                repairThreadCount=args.repair_threads)
         else:
             printq ("# Registering repair schedule for cluster '{0}', and keyspace '{1}', "
                    "targeting all tables in the keyspace, with scheduled days between "
@@ -695,7 +700,8 @@ class ReaperCLI(object):
                                 incrementalRepair=args.incremental, 
                                 nodes=args.nodes,
                                 datacenters=args.datacenters,
-                                blacklistedTables=args.blacklisted_tables)
+                                blacklistedTables=args.blacklisted_tables,
+                                repairThreadCount=args.repair_threads)
         repair_schedule = json.loads(reply)
         printq("# Repair schedule with id={0} created:".format(repair_schedule.get('id')))
         print json.dumps(repair_schedule, indent=2, sort_keys=True)
