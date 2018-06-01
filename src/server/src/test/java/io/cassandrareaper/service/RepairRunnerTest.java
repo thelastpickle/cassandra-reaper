@@ -83,14 +83,14 @@ public final class RepairRunnerTest {
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
     final long TIME_RUN = 41L;
     final double INTENSITY = 0.5f;
+    final int REPAIR_THREAD_COUNT = 1;
 
     final IStorage storage = new MemoryStorage();
-
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
     RepairUnit cf =
         storage.addRepairUnit(
             new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR, NODES,
-                DATACENTERS, BLACKLISTED_TABLES));
+                DATACENTERS, BLACKLISTED_TABLES, REPAIR_THREAD_COUNT));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run =
         storage.addRepairRun(
@@ -135,7 +135,7 @@ public final class RepairRunnerTest {
 
             when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class),
                     any(), any(RepairParallelism.class), any(),
-                    anyBoolean(), any(), any(), any()))
+                    anyBoolean(), any(), any(), any(), any(Integer.class)))
                 .then(
                     (invocation) -> {
                       assertEquals(
@@ -235,6 +235,7 @@ public final class RepairRunnerTest {
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
     final long TIME_RUN = 41L;
     final double INTENSITY = 0.5f;
+    final int REPAIR_THREAD_COUNT = 1;
 
     final IStorage storage = new MemoryStorage();
 
@@ -248,7 +249,8 @@ public final class RepairRunnerTest {
                 INCREMENTAL_REPAIR,
                 NODES,
                 DATACENTERS,
-                BLACKLISTED_TABLES));
+                BLACKLISTED_TABLES,
+                REPAIR_THREAD_COUNT));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run =
         storage.addRepairRun(
@@ -294,7 +296,7 @@ public final class RepairRunnerTest {
 
             when(jmx.triggerRepair(
                     any(BigInteger.class), any(BigInteger.class), any(), any(RepairParallelism.class),
-                    any(), anyBoolean(), any(), any(), any()))
+                    any(), anyBoolean(), any(), any(), any(), any(Integer.class)))
                 .then(
                     (invocation) -> {
                       assertEquals(
@@ -385,6 +387,7 @@ public final class RepairRunnerTest {
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
     final long TIME_RUN = 41L;
     final double INTENSITY = 0.5f;
+    final int REPAIR_THREAD_COUNT = 1;
 
     final IStorage storage = new MemoryStorage();
     AppContext context = new AppContext();
@@ -403,7 +406,8 @@ public final class RepairRunnerTest {
                     INCREMENTAL_REPAIR,
                     NODES,
                     DATACENTERS,
-                    BLACKLISTED_TABLES))
+                    BLACKLISTED_TABLES,
+                    REPAIR_THREAD_COUNT))
             .getId();
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
 
@@ -457,7 +461,7 @@ public final class RepairRunnerTest {
                     any(),
                     anyBoolean(),
                     any(),
-                    any(), any()))
+                    any(), any(), any(Integer.class)))
                 .then(
                     (invocation) -> {
                       assertEquals(

@@ -132,7 +132,8 @@ public interface JmxProxy extends NotificationListener {
       boolean fullRepair,
       Collection<String> datacenters,
       RepairStatusHandler repairStatusHandler,
-      List<RingRange> associatedTokens)
+      List<RingRange> associatedTokens,
+      int repairThreadCount)
       throws ReaperException;
 
   void close();

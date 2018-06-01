@@ -74,7 +74,8 @@ public final class RepairRunStatusTest {
             RepairParallelism.PARALLEL, // repairParellelism
             Collections.EMPTY_LIST, // nodes
             Collections.EMPTY_LIST, // datacenters
-            Collections.EMPTY_LIST); // blacklist
+            Collections.EMPTY_LIST, // blacklist
+            1); // repair thread count
 
     assertEquals("1 minute 0 seconds", repairStatus.getDuration());
   }
@@ -102,7 +103,8 @@ public final class RepairRunStatusTest {
             RepairParallelism.PARALLEL, // repairParellelism
             Collections.EMPTY_LIST, // nodes
             Collections.EMPTY_LIST, // datacenters
-            Collections.EMPTY_LIST); // blacklist
+            Collections.EMPTY_LIST, // blacklist
+            1); // repair thread count
 
     assertEquals("1 minute 30 seconds", repairStatus.getDuration());
   }
@@ -130,7 +132,8 @@ public final class RepairRunStatusTest {
             RepairParallelism.PARALLEL, // repairParellelism
             Collections.EMPTY_LIST, // nodes
             Collections.EMPTY_LIST, // datacenters
-            Collections.EMPTY_LIST); // blacklist
+            Collections.EMPTY_LIST, // blacklist
+            1); // repair thread count
 
     assertEquals("1 minute 50 seconds", repairStatus.getDuration());
   }
@@ -158,7 +161,8 @@ public final class RepairRunStatusTest {
             RepairParallelism.PARALLEL, // repairParellelism
             Collections.EMPTY_LIST, // nodes
             Collections.EMPTY_LIST, // datacenters
-            Collections.EMPTY_LIST); // blacklist
+            Collections.EMPTY_LIST, // blacklist
+            1); // repair thread count
 
     assertEquals("30 seconds", repairStatus.getDuration());
   }

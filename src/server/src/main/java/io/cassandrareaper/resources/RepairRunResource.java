@@ -104,20 +104,23 @@ public final class RepairRunResource {
       @QueryParam("incrementalRepair") Optional<String> incrementalRepairStr,
       @QueryParam("nodes") Optional<String> nodesToRepairParam,
       @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
-      @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam) {
+      @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam,
+      @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam) {
 
     try {
-      final Response possibleFailedResponse = RepairRunResource.checkRequestForAddRepair(
-          context,
-          clusterName,
-          keyspace,
-          owner,
-          segmentCountPerNode,
-          repairParallelism,
-          intensityStr,
-          incrementalRepairStr,
-          nodesToRepairParam,
-          datacentersToRepairParam);
+      final Response possibleFailedResponse
+          = RepairRunResource.checkRequestForAddRepair(
+              context,
+              clusterName,
+              keyspace,
+              owner,
+              segmentCountPerNode,
+              repairParallelism,
+              intensityStr,
+              incrementalRepairStr,
+              nodesToRepairParam,
+              datacentersToRepairParam,
+              repairThreadCountParam);
       if (null != possibleFailedResponse) {
         return possibleFailedResponse;
       }
@@ -188,15 +191,17 @@ public final class RepairRunResource {
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
 
-      RepairUnit.Builder builder
-          = new RepairUnit.Builder(
-                    cluster.getName(),
-                    keyspace.get(),
-                    tableNames,
-                    incrementalRepair,
-                    nodesToRepair,
-                    datacentersToRepair,
-                    blacklistedTableNames);
+
+      RepairUnit.Builder builder =
+          new RepairUnit.Builder(
+              cluster.getName(),
+              keyspace.get(),
+              tableNames,
+              incrementalRepair,
+              nodesToRepair,
+              datacentersToRepair,
+              blacklistedTableNames,
+              repairThreadCountParam.or(context.config.getRepairThreadCount()));
 
       RepairUnit theRepairUnit = repairUnitService.getNewOrExistingRepairUnit(cluster, builder);
 
@@ -248,7 +253,7 @@ public final class RepairRunResource {
 
   /**
    * @return Response instance in case there is a problem, or null if everything is ok.
-   */
+   **/
   @Nullable
   static Response checkRequestForAddRepair(
       AppContext context,
@@ -260,7 +265,8 @@ public final class RepairRunResource {
       Optional<String> intensityStr,
       Optional<String> incrementalRepairStr,
       Optional<String> nodesStr,
-      Optional<String> datacentersStr) {
+      Optional<String> datacentersStr,
+      Optional<Integer> repairThreadCountStr) {
 
     if (!clusterName.isPresent()) {
       return createMissingArgumentResponse("clusterName");

@@ -86,14 +86,14 @@ public interface IStoragePostgreSql {
   //
   String SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID =
       "cluster_name, keyspace_name, column_families, "
-          + "incremental_repair, nodes, datacenters, blacklisted_tables";
+          + "incremental_repair, nodes, datacenters, blacklisted_tables, repair_thread_count";
   String SQL_REPAIR_UNIT_ALL_FIELDS = "repair_unit.id, " + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID;
   String SQL_INSERT_REPAIR_UNIT =
       "INSERT INTO repair_unit ("
           + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID
           + ") VALUES "
           + "(:clusterName, :keyspaceName, :columnFamilies, "
-          + ":incrementalRepair, :nodes, :datacenters, :blacklistedTables)";
+          + ":incrementalRepair, :nodes, :datacenters, :blacklistedTables, :repairThreadCount)";
   String SQL_GET_REPAIR_UNIT = "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM repair_unit WHERE id = :id";
 
   String SQL_GET_REPAIR_UNIT_BY_CLUSTER_AND_TABLES =
@@ -102,7 +102,7 @@ public interface IStoragePostgreSql {
           + " FROM repair_unit "
           + "WHERE cluster_name = :clusterName AND keyspace_name = :keyspaceName "
           + "AND column_families = :columnFamilies AND nodes = :nodes AND datacenters = :datacenters "
-          + "AND blackListed_tables = :blacklisted_tables";
+          + "AND blackListed_tables = :blacklisted_tables AND repair_thread_count = :repairThreadCount";
 
   String SQL_DELETE_REPAIR_UNIT = "DELETE FROM repair_unit WHERE id = :id";
 
@@ -310,7 +310,8 @@ public interface IStoragePostgreSql {
       @Bind("columnFamilies") Collection<String> columnFamilies,
       @Bind("nodes") Collection<String> nodes,
       @Bind("datacenters") Collection<String> datacenters,
-      @Bind("blacklisted_tables") Collection<String> blacklistedTables);
+      @Bind("blacklisted_tables") Collection<String> blacklistedTables,
+      @Bind("repairThreadCount") int repairThreadCount);
 
   @SqlUpdate(SQL_INSERT_REPAIR_UNIT)
   @GetGeneratedKeys

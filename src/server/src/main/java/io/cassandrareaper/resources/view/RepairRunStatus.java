@@ -103,6 +103,9 @@ public final class RepairRunStatus {
   @JsonProperty("blacklisted_tables")
   private Collection<String> blacklistedTables;
 
+  @JsonProperty("repair_thread_count")
+  private int repairThreadCount;
+
   /**
    * Default public constructor Required for Jackson JSON parsing.
    */
@@ -129,7 +132,8 @@ public final class RepairRunStatus {
       RepairParallelism repairParallelism,
       Collection<String> nodes,
       Collection<String> datacenters,
-      Collection<String> blacklistedTables) {
+      Collection<String> blacklistedTables,
+      int repairThreadCount) {
 
     this.id = runId;
     this.cause = cause;
@@ -153,6 +157,7 @@ public final class RepairRunStatus {
     this.nodes = nodes;
     this.datacenters = datacenters;
     this.blacklistedTables = blacklistedTables;
+    this.repairThreadCount = repairThreadCount;
 
     if (startTime == null) {
       duration = null;
@@ -217,7 +222,8 @@ public final class RepairRunStatus {
         repairRun.getRepairParallelism(),
         repairUnit.getNodes(),
         repairUnit.getDatacenters(),
-        repairUnit.getBlacklistedTables());
+        repairUnit.getBlacklistedTables(),
+        repairUnit.getRepairThreadCount());
   }
 
   @JsonProperty("creation_time")
@@ -467,6 +473,15 @@ public final class RepairRunStatus {
 
   public void setBlacklistedTables(Collection<String> blacklistedTables) {
     this.blacklistedTables = blacklistedTables;
+  }
+
+
+  public int getRepairThreadCount() {
+    return repairThreadCount;
+  }
+
+  public void setRepairThreadCount(int repairThreadCount) {
+    this.repairThreadCount = repairThreadCount;
   }
 
   static double roundDoubleNicely(double intensity) {

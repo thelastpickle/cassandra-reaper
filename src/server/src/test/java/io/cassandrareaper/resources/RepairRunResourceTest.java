@@ -78,6 +78,7 @@ public final class RepairRunResourceTest {
   private static final Set<String> DATACENTERS = Collections.emptySet();
   private static final Map<String, String> NODES_MAP = Maps.newHashMap("node1", "127.0.0.1");
   private static final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
+  private static final int REPAIR_THREAD_COUNT = 2;
   private static final String OWNER = "test";
   private static final int THREAD_CNT = 1;
   private static final int REPAIR_TIMEOUT_S = 60;
@@ -133,7 +134,8 @@ public final class RepairRunResourceTest {
             anyBoolean(),
             anyCollectionOf(String.class),
             any(),
-            any()))
+            any(),
+            any(Integer.class)))
         .thenReturn(1);
 
     context.jmxConnectionFactory =
@@ -148,7 +150,14 @@ public final class RepairRunResourceTest {
 
     RepairUnit.Builder repairUnitBuilder =
         new RepairUnit.Builder(
-            CLUSTER_NAME, KEYSPACE, TABLES, INCREMENTAL, NODES, DATACENTERS, BLACKLISTED_TABLES);
+            CLUSTER_NAME,
+            KEYSPACE,
+            TABLES,
+            INCREMENTAL,
+            NODES,
+            DATACENTERS,
+            BLACKLISTED_TABLES,
+            REPAIR_THREAD_COUNT);
 
     context.storage.addRepairUnit(repairUnitBuilder);
   }
@@ -164,7 +173,8 @@ public final class RepairRunResourceTest {
         "",
         SEGMENT_CNT,
         NODES,
-        BLACKLISTED_TABLES);
+        BLACKLISTED_TABLES,
+        REPAIR_THREAD_COUNT);
   }
 
   private Response addRepairRun(
@@ -177,7 +187,8 @@ public final class RepairRunResourceTest {
       String cause,
       Integer segments,
       Set<String> nodes,
-      Set<String> blacklistedTables) {
+      Set<String> blacklistedTables,
+      Integer repairThreadCount) {
 
     return resource.addRepairRun(
         uriInfo,
@@ -192,7 +203,8 @@ public final class RepairRunResourceTest {
         Optional.<String>absent(),
         Optional.of(StringUtils.join(nodes, ',')),
         Optional.<String>absent(),
-        Optional.of(StringUtils.join(blacklistedTables, ',')));
+        Optional.of(StringUtils.join(blacklistedTables, ',')),
+        Optional.of(repairThreadCount));
   }
 
   @Test
@@ -210,11 +222,13 @@ public final class RepairRunResourceTest {
     assertEquals(1, context.storage.getRepairRunIdsForCluster(CLUSTER_NAME).size());
     UUID runId = context.storage.getRepairRunIdsForCluster(CLUSTER_NAME).iterator().next();
     RepairRun run = context.storage.getRepairRun(runId).get();
+    final Optional<RepairUnit> unit = context.storage.getRepairUnit(run.getRepairUnitId());
     assertEquals(RepairRun.RunState.NOT_STARTED, run.getRunState());
     assertEquals(TIME_CREATE, run.getCreationTime().getMillis());
     assertEquals(REPAIR_INTENSITY, run.getIntensity(), 0.0f);
     assertNull(run.getStartTime());
     assertNull(run.getEndTime());
+    assertEquals(2, unit.get().getRepairThreadCount());
 
     // tokens [0, 100, 200], 6 requested segments per node and 6 nodes causes generating 38 RepairSegments
     assertEquals(
@@ -318,7 +332,8 @@ public final class RepairRunResourceTest {
             null,
             SEGMENT_CNT,
             NODES,
-            BLACKLISTED_TABLES);
+            BLACKLISTED_TABLES,
+            REPAIR_THREAD_COUNT);
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
   }
@@ -339,7 +354,8 @@ public final class RepairRunResourceTest {
             null,
             SEGMENT_CNT,
             NODES,
-            BLACKLISTED_TABLES);
+            BLACKLISTED_TABLES,
+            REPAIR_THREAD_COUNT);
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
   }

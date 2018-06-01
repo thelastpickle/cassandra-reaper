@@ -211,7 +211,8 @@ public final class ClusterRepairSchedulerTest {
         Boolean.FALSE,
         Collections.emptySet(),
         Collections.emptySet(),
-        Collections.emptySet());
+        Collections.emptySet(),
+        1);
   }
 
   private ClusterRepairScheduleAssertion assertThatClusterRepairSchedules(Collection<RepairSchedule> repairSchedules) {

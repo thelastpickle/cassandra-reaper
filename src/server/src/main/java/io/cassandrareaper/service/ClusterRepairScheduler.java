@@ -108,18 +108,19 @@ public final class ClusterRepairScheduler {
   private void createRepairSchedule(Cluster cluster, String keyspace, DateTime nextActivationTime) {
     boolean incrementalRepair = context.config.getIncrementalRepair();
 
-    RepairUnit.Builder builder
-        = new RepairUnit.Builder(
-                  cluster.getName(),
-                  keyspace,
-                  Collections.emptySet(),
-                  incrementalRepair,
-                  Collections.emptySet(),
-                  Collections.emptySet(),
-                  Collections.emptySet());
+    RepairUnit.Builder builder =
+        new RepairUnit.Builder(
+            cluster.getName(),
+            keyspace,
+            Collections.emptySet(),
+            incrementalRepair,
+            Collections.emptySet(),
+            Collections.emptySet(),
+            Collections.emptySet(),
+            context.config.getRepairThreadCount());
 
-    RepairSchedule repairSchedule
-        = repairScheduleService.storeNewRepairSchedule(
+    RepairSchedule repairSchedule =
+        repairScheduleService.storeNewRepairSchedule(
             cluster,
             repairUnitService.getNewOrExistingRepairUnit(cluster, builder),
             context.config.getScheduleDaysBetween(),

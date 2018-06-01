@@ -282,13 +282,15 @@ public final class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       IStoragePostgreSql storage = getPostgresStorage(h);
 
-      result = storage.getRepairUnitByClusterAndTables(
-          params.clusterName,
-          params.keyspaceName,
-          params.columnFamilies,
-          params.nodes,
-          params.datacenters,
-          params.blacklistedTables);
+      result =
+          storage.getRepairUnitByClusterAndTables(
+              params.clusterName,
+              params.keyspaceName,
+              params.columnFamilies,
+              params.nodes,
+              params.datacenters,
+              params.blacklistedTables,
+              params.repairThreadCount);
     }
     return Optional.fromNullable(result);
   }
