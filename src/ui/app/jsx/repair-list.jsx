@@ -198,6 +198,10 @@ const TableRowDetails = React.createClass({
                     <td>{incremental}</td>
                 </tr>
                 <tr>
+                    <td>Repair threads</td>
+                    <td>{this.props.row.repair_thread_count}</td>
+                </tr>
+                <tr>
                     <td>Nodes</td>
                     <td><CFsListRender list={this.props.row.nodes} /></td>
                 </tr>

@@ -21,7 +21,7 @@ const repairForm = React.createClass({
       parallelism: null, intensity: null, cause: null, incrementalRepair: null, formCollapsed: true, nodes: "", datacenters: "", blacklistedTables: "",
       nodeList: [], datacenterList: [], clusterStatus: {}, urlPrefix: URL_PREFIX, nodeSuggestions: [], datacenterSuggestions: [], tableSuggestions: [], 
       clusterTables: {}, blacklistSuggestions: [], tableList: [], blacklistList: [], keyspaceList: [], keyspaceSuggestions: [],
-      blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true
+      blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true, repairThreadCount: 1
     };
   },
 
@@ -106,6 +106,7 @@ const repairForm = React.createClass({
     if(this.state.nodes) repair.nodes = this.state.nodes;
     if(this.state.datacenters) repair.datacenters = this.state.datacenters;
     if(this.state.blacklistedTables) repair.blacklistedTables = this.state.blacklistedTables;
+    if(this.state.repairThreadCount && this.state.repairThreadCount > 0) repair.repairThreadCount = this.state.repairThreadCount;
 
     // Force incremental repair to FALSE if empty
     if(!this.state.incrementalRepair) repair.incrementalRepair = "false";
@@ -507,6 +508,14 @@ const repairForm = React.createClass({
                           <option value="false">false</option>
                           <option value="true">true</option>
                         </select>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_repairThreadCount" className="col-sm-3 control-label">Repair threads</label>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                        <input type="number" className="form-control" value={this.state.repairThreadCount}
+                          min="1" max="4"
+                          onChange={this._handleChange} id="in_repairThreadCount" placeholder="repair threads"/>
                       </div>
                     </div>
                   </div>

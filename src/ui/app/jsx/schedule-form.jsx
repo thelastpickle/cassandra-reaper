@@ -22,7 +22,7 @@ const scheduleForm = React.createClass({
       parallelism: null, intensity: null, startTime: null, intervalDays: null, incrementalRepair: null, formCollapsed: true, nodes: null, datacenters: null,
       nodes: "", datacenters: "", blacklistedTables: "", nodeList: [], datacenterList: [], clusterStatus: {}, urlPrefix: URL_PREFIX, nodeSuggestions: [], datacenterSuggestions: [],
       clusterTables: {}, tableSuggestions: [], blacklistSuggestions: [], tableList: [], blacklistList: [], keyspaceList: [], keyspaceSuggestions: [], 
-      blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true
+      blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true, repairThreadCount: 1
     };
   },
 
@@ -110,6 +110,7 @@ const scheduleForm = React.createClass({
     if(this.state.nodes) schedule.nodes = this.state.nodes;
     if(this.state.datacenters) schedule.datacenters = this.state.datacenters;
     if(this.state.blacklistedTables) schedule.blacklistedTables = this.state.blacklistedTables;
+    if(this.state.repairThreadCount) schedule.repairThreadCount = this.state.repairThreadCount;
 
     this.props.addScheduleSubject.onNext(schedule);
   },
@@ -513,6 +514,14 @@ const scheduleForm = React.createClass({
                           <option value="false">false</option>
                           <option value="true">true</option>                  
                         </select>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_repairThreadCount" className="col-sm-3 control-label">Repair threads</label>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                        <input type="number" className="form-control" value={this.state.repairThreadCount}
+                          min="1" max="4"
+                          onChange={this._handleChange} id="in_repairThreadCount" placeholder="repair threads"/>
                       </div>
                     </div>
                   </div>
