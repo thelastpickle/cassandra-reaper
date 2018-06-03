@@ -203,13 +203,43 @@ public final class SchedulingManager extends TimerTask {
   }
 
   private static boolean equal(RepairSchedule s1, RepairSchedule s2) {
-    Preconditions.checkArgument(s1.getId().equals(s2.getId()));
-    Preconditions.checkArgument(s1.getOwner().equals(s2.getOwner()));
-    Preconditions.checkArgument(s1.getDaysBetween() == s2.getDaysBetween());
-    Preconditions.checkArgument(s1.getIntensity() == s2.getIntensity());
-    Preconditions.checkArgument(s1.getCreationTime().equals(s2.getCreationTime()));
-    Preconditions.checkArgument(s1.getNextActivation().equals(s2.getNextActivation()));
-    Preconditions.checkArgument(s1.getFollowingActivation().equals(s2.getFollowingActivation()));
+    Preconditions.checkArgument(s1.getId().equals(s2.getId()), "%s does not equal %s", s1.getId(), s2.getId());
+
+    Preconditions.checkArgument(
+        s1.getOwner().equals(s2.getOwner()),
+        "%s does not equal %s",
+        s1.getOwner(),
+        s2.getOwner());
+
+    Preconditions.checkArgument(
+        s1.getDaysBetween() == s2.getDaysBetween(),
+        "%s does not equal %s",
+        s1.getDaysBetween(),
+        s2.getDaysBetween());
+
+    Preconditions.checkArgument(
+        0.01d > Math.abs(s1.getIntensity() - s2.getIntensity()),
+        "%s does not equal %s",
+        s1.getIntensity(),
+        s2.getIntensity());
+
+    Preconditions.checkArgument(
+        s1.getCreationTime().equals(s2.getCreationTime()),
+        "%s does not equal %s",
+        s1.getCreationTime(),
+        s2.getCreationTime());
+
+    Preconditions.checkArgument(
+        s1.getNextActivation().equals(s2.getNextActivation()),
+        "%s does not equal %s",
+        s1.getNextActivation(),
+        s2.getNextActivation());
+
+    Preconditions.checkArgument(
+        s1.getFollowingActivation().equals(s2.getFollowingActivation()),
+        "%s does not equal %s",
+        s1.getFollowingActivation(),
+        s2.getFollowingActivation());
 
     boolean result = s1.getState().equals(s2.getState());
     result &= s1.getRunHistory().size() == s2.getRunHistory().size();

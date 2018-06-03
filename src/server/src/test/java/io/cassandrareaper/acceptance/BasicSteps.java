@@ -178,7 +178,8 @@ public final class BasicSteps {
       Assertions
           .assertThat(Arrays.asList(expectedStatuses).stream().map(Response.Status::getStatusCode))
           .contains(response.getStatus())
-          .withFailMessage(responseEntity);
+          .withFailMessage(responseEntity)
+          .isNotEmpty();
 
       if (1 == RUNNERS.size() && expectedStatuses[0].getStatusCode() != response.getStatus()) {
         // we can't fail on this because the jersey client sometimes sends
@@ -214,12 +215,12 @@ public final class BasicSteps {
     synchronized (BasicSteps.class) {
       setupReaperTestRunner();
 
-//      callAndExpect(
-//          "HEAD",
-//          "/ping",
-//          Optional.<Map<String, String>>absent(),
-//          Optional.<String>absent(),
-//          Response.Status.NO_CONTENT);
+      //      callAndExpect(
+      //          "HEAD",
+      //          "/ping",
+      //          Optional.<Map<String, String>>absent(),
+      //          Optional.<String>absent(),
+      //          Response.Status.NO_CONTENT);
     }
   }
 
@@ -1128,7 +1129,7 @@ public final class BasicSteps {
           set.compareAndSet(false, true);
         }
       });
-      Assertions.assertThat(set.get());
+      Assertions.assertThat(set.get()).isTrue();
 
       callAndExpect(
           "PUT",
@@ -1171,7 +1172,7 @@ public final class BasicSteps {
           set.compareAndSet(false, true);
         }
       });
-      Assertions.assertThat(set.get());
+      Assertions.assertThat(set.get()).isTrue();
 
       callAndExpect(
           "PUT",

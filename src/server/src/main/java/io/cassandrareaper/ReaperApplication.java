@@ -233,9 +233,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     if (config.isAccessControlEnabled()) {
       SessionHandler sessionHandler = new SessionHandler();
-      sessionHandler
-          .getSessionManager()
-          .setMaxInactiveInterval((int) config.getAccessControl().getSessionTimeout().getSeconds());
+      sessionHandler.setMaxInactiveInterval((int) config.getAccessControl().getSessionTimeout().getSeconds());
       environment.getApplicationContext().setSessionHandler(sessionHandler);
       environment.servlets().setSessionHandler(sessionHandler);
       environment.jersey().register(new ShiroExceptionMapper());
