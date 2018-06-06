@@ -606,7 +606,7 @@ public final class RepairRunResource {
       @PathParam("cluster_name") String clusterName) {
 
     LOG.debug("get repair run for cluster called with: cluster_name = {}", clusterName);
-    final Collection<RepairRun> repairRuns = context.storage.getRepairRunsForCluster(clusterName);
+    final Collection<RepairRun> repairRuns = context.storage.getRepairRunsForCluster(clusterName, Optional.absent());
     final Collection<RepairRunStatus> repairRunViews = new ArrayList<>();
     for (final RepairRun repairRun : repairRuns) {
       repairRunViews.add(getRepairRunStatus(repairRun));
@@ -660,7 +660,7 @@ public final class RepairRunResource {
           .or(context.storage.getClusters());
 
       for (final Cluster clstr : clusters) {
-        Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(clstr.getName());
+        Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(clstr.getName(), Optional.absent());
         runStatuses.addAll(
             (List<RepairRunStatus>) getRunStatuses(runs, desiredStates)
                 .stream()

@@ -27,6 +27,7 @@ import io.cassandrareaper.service.RepairParameters;
 import io.cassandrareaper.service.RingRange;
 
 import java.util.Collection;
+import java.util.SortedSet;
 import java.util.UUID;
 
 import com.google.common.base.Optional;
@@ -62,7 +63,8 @@ public interface IStorage {
 
   Optional<RepairRun> getRepairRun(UUID id);
 
-  Collection<RepairRun> getRepairRunsForCluster(String clusterName);
+  /** return all the repair runs in a cluster, in reverse chronological order, with default limit is 1000 */
+  Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit);
 
   Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId);
 
@@ -100,7 +102,7 @@ public interface IStorage {
 
   Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName);
 
-  Collection<UUID> getRepairRunIdsForCluster(String clusterName);
+  SortedSet<UUID> getRepairRunIdsForCluster(String clusterName);
 
   int getSegmentAmountForRepairRun(UUID runId);
 

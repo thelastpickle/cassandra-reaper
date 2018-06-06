@@ -72,7 +72,7 @@ public final class ClusterResourceTest {
 
     Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME).get();
     assertNotNull("Did not find expected cluster", cluster);
-    assertEquals(0, mocks.context.storage.getRepairRunsForCluster(cluster.getName()).size());
+    assertEquals(0, mocks.context.storage.getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
     assertEquals(CLUSTER_NAME, cluster.getName());
     assertEquals(1, cluster.getSeedHosts().size());
     assertEquals(SEED_HOST, cluster.getSeedHosts().iterator().next());
@@ -95,7 +95,7 @@ public final class ClusterResourceTest {
 
     cluster = mocks.context.storage.getCluster(CLUSTER_NAME).get();
     assertNotNull("Did not find expected cluster", cluster);
-    assertEquals(0, mocks.context.storage.getRepairRunsForCluster(cluster.getName()).size());
+    assertEquals(0, mocks.context.storage.getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
     assertEquals(CLUSTER_NAME, cluster.getName());
     assertEquals(1, cluster.getSeedHosts().size());
     assertEquals(SEED_HOST, cluster.getSeedHosts().iterator().next());
@@ -118,7 +118,7 @@ public final class ClusterResourceTest {
 
     cluster = mocks.context.storage.getCluster(CLUSTER_NAME).get();
     assertNotNull("Did not find expected cluster", cluster);
-    assertEquals(0, mocks.context.storage.getRepairRunsForCluster(cluster.getName()).size());
+    assertEquals(0, mocks.context.storage.getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
     assertEquals(CLUSTER_NAME, cluster.getName());
     assertEquals(1, cluster.getSeedHosts().size());
     assertEquals(SEED_HOST, cluster.getSeedHosts().iterator().next());

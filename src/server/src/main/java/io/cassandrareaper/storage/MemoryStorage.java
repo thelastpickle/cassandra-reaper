@@ -28,19 +28,20 @@ import io.cassandrareaper.service.RingRange;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 /**
  * Implements the StorageAPI using transient Java classes.
@@ -90,7 +91,9 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Optional<Cluster> deleteCluster(String clusterName) {
-    if (getRepairSchedulesForCluster(clusterName).isEmpty() && getRepairRunsForCluster(clusterName).isEmpty()) {
+    if (getRepairSchedulesForCluster(clusterName).isEmpty()
+        && getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)).isEmpty()) {
+
       return Optional.fromNullable(clusters.remove(clusterName));
     }
     return Optional.absent();
@@ -120,11 +123,16 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
-  public List<RepairRun> getRepairRunsForCluster(String clusterName) {
+  public List<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
     List<RepairRun> foundRepairRuns = new ArrayList<>();
-    for (RepairRun repairRun : repairRuns.values()) {
+    TreeMap<UUID,RepairRun> reverseOrder = new TreeMap<>(Collections.reverseOrder());
+    reverseOrder.putAll(repairRuns);
+    for (RepairRun repairRun : reverseOrder.values()) {
       if (repairRun.getClusterName().equalsIgnoreCase(clusterName)) {
         foundRepairRuns.add(repairRun);
+        if (foundRepairRuns.size() == limit.or(1000)) {
+          break;
+        }
       }
     }
     return foundRepairRuns;
@@ -312,8 +320,8 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Collection<UUID> getRepairRunIdsForCluster(String clusterName) {
-    Collection<UUID> repairRunIds = new HashSet<>();
+  public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName) {
+    SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int)(u0.timestamp() - u1.timestamp()));
     for (RepairRun repairRun : repairRuns.values()) {
       if (repairRun.getClusterName().equalsIgnoreCase(clusterName)) {
         repairRunIds.add(repairRun.getId());
@@ -421,9 +429,7 @@ public final class MemoryStorage implements IStorage {
       return Collections.emptyList();
     } else {
       List<RepairRunStatus> runStatuses = Lists.newArrayList();
-      List<RepairRun> runs = getRepairRunsForCluster(clusterName);
-      Collections.sort(runs);
-      for (RepairRun run : Iterables.limit(runs, limit)) {
+      for (RepairRun run : getRepairRunsForCluster(clusterName, Optional.of(limit))) {
         RepairUnit unit = getRepairUnit(run.getRepairUnitId());
         int segmentsRepaired = getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
         int totalSegments = getSegmentAmountForRepairRun(run.getId());

@@ -218,7 +218,7 @@ public final class RepairRunResourceTest {
     assertTrue(response.getEntity() instanceof RepairRunStatus);
 
     assertEquals(1, context.storage.getClusters().size());
-    assertEquals(1, context.storage.getRepairRunsForCluster(CLUSTER_NAME).size());
+    assertEquals(1, context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(2)).size());
     assertEquals(1, context.storage.getRepairRunIdsForCluster(CLUSTER_NAME).size());
     UUID runId = context.storage.getRepairRunIdsForCluster(CLUSTER_NAME).iterator().next();
     RepairRun run = context.storage.getRepairRun(runId).get();
@@ -243,7 +243,18 @@ public final class RepairRunResourceTest {
     assertTrue(response.getEntity() instanceof RepairRunStatus);
 
     assertEquals(1, context.storage.getClusters().size());
-    assertEquals(2, context.storage.getRepairRunsForCluster(CLUSTER_NAME).size());
+    assertEquals(1, context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(1)).size());
+    assertEquals(2, context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(2)).size());
+    assertEquals(2, context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(3)).size());
+
+    assertEquals(
+        context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(3)).iterator().next().getId(),
+        context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(1)).iterator().next().getId());
+
+    assertEquals(
+        context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(2)).iterator().next().getId(),
+        context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(1)).iterator().next().getId());
+
   }
 
   @Test

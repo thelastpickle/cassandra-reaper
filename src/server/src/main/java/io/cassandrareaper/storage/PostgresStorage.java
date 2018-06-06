@@ -39,12 +39,15 @@ import io.cassandrareaper.storage.postgresql.UuidUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.SortedSet;
 import java.util.UUID;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.DBIException;
@@ -159,10 +162,10 @@ public final class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Collection<RepairRun> getRepairRunsForCluster(String clusterName) {
+  public Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
     Collection<RepairRun> result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getRepairRunsForCluster(clusterName);
+      result = getPostgresStorage(h).getRepairRunsForCluster(clusterName, limit.or(1000));
     }
     return result == null ? Lists.<RepairRun>newArrayList() : result;
   }
@@ -384,8 +387,8 @@ public final class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Collection<UUID> getRepairRunIdsForCluster(String clusterName) {
-    Collection<UUID> result = Lists.newArrayList();
+  public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName) {
+    SortedSet<UUID> result = Sets.newTreeSet(Collections.reverseOrder());
     try (Handle h = jdbi.open()) {
       for (Long l : getPostgresStorage(h).getRepairRunIdsForCluster(clusterName)) {
         result.add(UuidUtil.fromSequenceId(l));

@@ -75,7 +75,7 @@ public interface IStoragePostgreSql {
       + "repair_parallelism = :repairParallelism WHERE id = :id";
   String SQL_GET_REPAIR_RUN = "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS + " FROM repair_run WHERE id = :id";
   String SQL_GET_REPAIR_RUNS_FOR_CLUSTER = "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS
-      + " FROM repair_run WHERE cluster_name = :clusterName";
+      + " FROM repair_run WHERE cluster_name = :clusterName ORDER BY id desc LIMIT :limit";
   String SQL_GET_REPAIR_RUNS_WITH_STATE = "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS
       + " FROM repair_run WHERE state = :state";
   String SQL_GET_REPAIR_RUNS_FOR_UNIT = "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS
@@ -272,7 +272,8 @@ public interface IStoragePostgreSql {
   @SqlQuery(SQL_GET_REPAIR_RUNS_FOR_CLUSTER)
   @Mapper(RepairRunMapper.class)
   Collection<RepairRun> getRepairRunsForCluster(
-      @Bind("clusterName") String clusterName);
+      @Bind("clusterName") String clusterName,
+      @Bind("limit") int limit);
 
   @SqlQuery(SQL_GET_REPAIR_RUNS_WITH_STATE)
   @Mapper(RepairRunMapper.class)

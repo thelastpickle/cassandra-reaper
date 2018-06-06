@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -527,7 +528,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Collection<RepairRun> getRepairRunsForCluster(String clusterName) {
+  public Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
     List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();
 
     // Grab all ids for the given cluster name
@@ -535,6 +536,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     // Grab repair runs asynchronously for all the ids returned by the index table
     for (UUID repairRunId : repairRunIds) {
       repairRunFutures.add(session.executeAsync(getRepairRunPrepStmt.bind(repairRunId)));
+      if (repairRunFutures.size() == limit.or(1000)) {
+        break;
+      }
     }
 
     return getRepairRunsAsync(repairRunFutures);
@@ -840,8 +844,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName) {
     Collection<RepairParameters> repairs = Lists.<RepairParameters>newArrayList();
-
-    Collection<RepairRun> repairRuns = getRepairRunsForCluster(clusterName);
+    Collection<RepairRun> repairRuns = getRepairRunsForCluster(clusterName, Optional.absent());
 
     for (RepairRun repairRun : repairRuns) {
       Collection<RepairSegment> runningSegments = getSegmentsWithState(repairRun.getId(), State.RUNNING);
@@ -862,8 +865,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Collection<UUID> getRepairRunIdsForCluster(String clusterName) {
-    Collection<UUID> repairRunIds = Lists.<UUID>newArrayList();
+  public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName) {
+    SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int)(u0.timestamp() - u1.timestamp()));
     ResultSet results = session.execute(getRepairRunForClusterPrepStmt.bind(clusterName));
     for (Row result : results) {
       repairRunIds.add(result.getUUID("id"));
@@ -1056,7 +1059,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
     Collection<RepairRunStatus> repairRunStatuses = Lists.<RepairRunStatus>newArrayList();
-    Collection<RepairRun> repairRuns = getRepairRunsForCluster(clusterName);
+    Collection<RepairRun> repairRuns = getRepairRunsForCluster(clusterName, Optional.of(limit));
     for (RepairRun repairRun : repairRuns) {
       Collection<RepairSegment> segments = getRepairSegmentsForRun(repairRun.getId());
       RepairUnit repairUnit = getRepairUnit(repairRun.getRepairUnitId());
