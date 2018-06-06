@@ -66,7 +66,7 @@ deploy:
   skip_cleanup: true
   on:
     branch: master
-    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
   file: src/ci/descriptor-deb-beta.json
   user: adejanovski
@@ -75,7 +75,7 @@ deploy:
   skip_cleanup: true
   on:
     branch: master
-    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
   file: src/ci/descriptor-tarball-beta.json
   user: adejanovski
@@ -84,7 +84,7 @@ deploy:
   skip_cleanup: true
   on:
     branch: master
-    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
   file: src/ci/descriptor-maven-snapshot.json
   user: adejanovski
@@ -93,7 +93,7 @@ deploy:
   skip_cleanup: true
   on:
     branch: master
-    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
   file: src/ci/descriptor-rpm.json
   user: adejanovski
@@ -102,7 +102,7 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
-    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
   file: src/ci/descriptor-deb.json
   user: adejanovski
@@ -111,7 +111,7 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
-    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
   file: src/ci/descriptor-tarball.json
   user: adejanovski
@@ -120,7 +120,7 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
-    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
 - provider: bintray
   file: src/ci/descriptor-maven.json
   user: adejanovski
@@ -129,7 +129,7 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
-    condition: $CASSANDRA_VERSION = "2.1.19" &&  "x${GRIM_MIN}" = "x"
+    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
 notifications:
   webhooks:
     urls:

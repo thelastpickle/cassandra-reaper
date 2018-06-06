@@ -5,7 +5,7 @@ echo "Starting Before Deploy step..."
 set -xe
 mkdir -p src/packages
 
-if [ "${CASSANDRA_VERSION}" = "2.1.19" -a "x${GRIM_MIN}" = "x" ]
+if [[ $CASSANDRA_VERSION =~ ^2\.1\..* && "x${GRIM_MIN}" = "x" ]]
 then
     if [ "${TRAVIS_BRANCH}" = "master" -a ! -d "cassandra-reaper-master" ]
     then
