@@ -705,7 +705,9 @@ final class JmxProxyImpl implements JmxProxy {
 
     options.put(RepairOption.PARALLELISM_KEY, repairParallelism.getName());
     options.put(RepairOption.INCREMENTAL_KEY, Boolean.toString(!fullRepair));
-    options.put(RepairOption.JOB_THREADS_KEY, Integer.toString(repairThreadCount));
+    options.put(
+        RepairOption.JOB_THREADS_KEY,
+        Integer.toString(repairThreadCount == 0 ? 1 : repairThreadCount));
     options.put(RepairOption.TRACE_KEY, Boolean.toString(Boolean.FALSE));
     options.put(RepairOption.COLUMNFAMILIES_KEY, StringUtils.join(columnFamilies, ","));
     // options.put(RepairOption.PULL_REPAIR_KEY, Boolean.FALSE);
