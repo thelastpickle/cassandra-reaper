@@ -146,14 +146,20 @@ public final class RepairManager implements AutoCloseable {
           "No leader on the following segments : {}",
           runningSegments
               .stream()
-              .filter(segment -> !activeLeaders.contains(segment.getId()))
+              .filter(
+                  segment ->
+                      !activeLeaders.contains(segment.getId())
+                          && !activeLeaders.contains(segment.getRunId()))
               .map(seg -> seg.getId())
               .collect(Collectors.toSet()));
 
       abortSegments(
           runningSegments
               .stream()
-              .filter(segment -> !activeLeaders.contains(segment.getId()))
+              .filter(
+                  segment ->
+                      !activeLeaders.contains(segment.getId())
+                          && !activeLeaders.contains(segment.getRunId()))
               .collect(Collectors.toSet()),
           repairRun,
           false,
