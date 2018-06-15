@@ -93,40 +93,58 @@ public final class RepairManager implements AutoCloseable {
   public void resumeRunningRepairRuns() throws ReaperException {
     try {
       heart.beat();
-      Collection<RepairRun> running =
-          context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
-      for (RepairRun repairRun : running) {
-
-        Collection<RepairSegment> runningSegments =
-            context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
-
-        abortSegmentsWithNoLeader(repairRun, runningSegments);
-
-        if (!repairRunners.containsKey(repairRun.getId())) {
-          LOG.info("Restarting run id {} that has no runner", repairRun.getId());
-          startRepairRun(repairRun);
-        }
-      }
-
-      Collection<RepairRun> paused =
-          context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED);
-      for (RepairRun pausedRepairRun : paused) {
-        if (repairRunners.containsKey(pausedRepairRun.getId())) {
-          // Abort all running segments for paused repair runs
-          Collection<RepairSegment> runningSegments =
-              context.storage.getSegmentsWithState(
-                  pausedRepairRun.getId(), RepairSegment.State.RUNNING);
-
-          abortSegments(runningSegments, pausedRepairRun, false, false);
-        }
-
-        if (!repairRunners.containsKey(pausedRepairRun.getId())) {
-          startRunner(pausedRepairRun.getId());
-        }
-      }
+      Collection<RepairRun> runningRepairRuns = context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
+      Collection<RepairRun> pausedRepairRuns = context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED);
+      abortAllRunningSegmentsWithNoLeader(runningRepairRuns);
+      abortAllRunningSegmentsInKnownPausedRepairRuns(pausedRepairRuns);
+      resumeUnkownRunningRepairRuns(runningRepairRuns);
+      resumeUnknownPausedRepairRuns(pausedRepairRuns);
     } catch (RuntimeException e) {
       throw new ReaperException(e);
     }
+  }
+
+  private void abortAllRunningSegmentsWithNoLeader(Collection<RepairRun> runningRepairRuns) throws ReaperException {
+    runningRepairRuns
+        .forEach((repairRun) -> {
+          Collection<RepairSegment> runningSegments
+              = context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
+
+          abortSegmentsWithNoLeader(repairRun, runningSegments);
+        });
+  }
+
+  private void resumeUnkownRunningRepairRuns(Collection<RepairRun> runningRepairRuns) throws ReaperException {
+    for (RepairRun repairRun : runningRepairRuns) {
+      if (!repairRunners.containsKey(repairRun.getId())) {
+        LOG.info("Restarting run id {} that has no runner", repairRun.getId());
+        // it may be that this repair is already "running" actively on other reaper instances
+        //  nonetheless we need to make it actively running on this reaper instance as well
+        //   so to help in running the queued segments
+        startRepairRun(repairRun);
+      }
+    }
+  }
+
+  private void abortAllRunningSegmentsInKnownPausedRepairRuns(Collection<RepairRun> pausedRepairRuns) {
+    pausedRepairRuns
+        .stream()
+        .filter((pausedRepairRun) -> repairRunners.containsKey(pausedRepairRun.getId()))
+        .forEach((pausedRepairRun) -> {
+          // Abort all running segments for paused repair runs
+          Collection<RepairSegment> runningSegments
+              = context.storage.getSegmentsWithState(pausedRepairRun.getId(), RepairSegment.State.RUNNING);
+
+          abortSegments(runningSegments, pausedRepairRun, false, false);
+        });
+  }
+
+  private void resumeUnknownPausedRepairRuns(Collection<RepairRun> pausedRepairRuns) {
+    pausedRepairRuns
+        .stream()
+        .filter((pausedRepairRun) -> (!repairRunners.containsKey(pausedRepairRun.getId())))
+        // add "paused" repair run to this reaper instance, so it can be visualised in UI
+        .forEachOrdered((pausedRepairRun) -> startRunner(pausedRepairRun.getId()));
   }
 
   private void abortSegmentsWithNoLeader(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
