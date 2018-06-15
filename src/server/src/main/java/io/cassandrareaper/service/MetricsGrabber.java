@@ -32,11 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import javax.management.AttributeNotFoundException;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanException;
-import javax.management.MalformedObjectNameException;
-import javax.management.ReflectionException;
+import javax.management.JMException;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -64,14 +60,7 @@ public final class MetricsGrabber {
           = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
 
       return convertToThreadPoolStats(jmxProxy.collectTpStats());
-    } catch (RuntimeException
-        | InterruptedException
-        | MalformedObjectNameException
-        | AttributeNotFoundException
-        | InstanceNotFoundException
-        | MBeanException
-        | ReflectionException
-        | IOException e) {
+    } catch (JMException | RuntimeException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", host, e);
       throw new ReaperException(e);
     }
@@ -110,14 +99,7 @@ public final class MetricsGrabber {
               host, context.config.getJmxConnectionTimeoutInSeconds());
 
       return convertToDroppedMessages(jmxProxy.collectDroppedMessages());
-    } catch (RuntimeException
-        | InterruptedException
-        | MalformedObjectNameException
-        | AttributeNotFoundException
-        | InstanceNotFoundException
-        | MBeanException
-        | ReflectionException
-        | IOException e) {
+    } catch (JMException | RuntimeException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", host, e);
       throw new ReaperException(e);
     }
@@ -154,14 +136,7 @@ public final class MetricsGrabber {
               host, context.config.getJmxConnectionTimeoutInSeconds());
 
       return convertToMetricsHistogram(jmxProxy.collectLatencyMetrics());
-    } catch (RuntimeException
-        | InterruptedException
-        | MalformedObjectNameException
-        | AttributeNotFoundException
-        | InstanceNotFoundException
-        | MBeanException
-        | ReflectionException
-        | IOException e) {
+    } catch (JMException | RuntimeException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", host, e);
       throw new ReaperException(e);
     }

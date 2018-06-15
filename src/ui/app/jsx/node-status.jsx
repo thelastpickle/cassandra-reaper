@@ -1,5 +1,8 @@
 import React from "react";
 import Snapshot from "jsx/snapshot";
+import TpStats from "jsx/tpstats";
+import DroppedMessages from "jsx/dropped-messages";
+import ClientRequestLatency from "jsx/client-request-latency";
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
 import Modal from 'react-bootstrap/lib/Modal';
 import Button from 'react-bootstrap/lib/Button';
@@ -7,6 +10,8 @@ import Tooltip from 'react-bootstrap/lib/Tooltip';
 import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger';
 import ProgressBar from 'react-bootstrap/lib/ProgressBar';
 import Popover from 'react-bootstrap/lib/Popover';
+import Tabs from 'react-bootstrap/lib/Tabs';
+import Tab from 'react-bootstrap/lib/Tab';
 import $ from "jquery";
 var NotificationSystem = require('react-notification-system');
 
@@ -170,7 +175,8 @@ const NodeStatus = React.createClass({
         </Popover>
       );
   
-      return (<span>
+      return (
+            <span>
               <OverlayTrigger placement="top" overlay={tooltip}><button type="button" style={btStyle} className={buttonStyle} onClick={this.open}>{this.props.endpointStatus.endpoint} ({humanFileSize(this.props.endpointStatus.load, 1024)})</button></OverlayTrigger>
               <Modal show={this.state.showModal} onHide={this.close} bsSize="large" aria-labelledby="contained-modal-title-lg" dialogClassName="large-modal">
                 <Modal.Header closeButton>
@@ -209,28 +215,43 @@ const NodeStatus = React.createClass({
                   </div>
                   <div className="row">
                   <div className="col-lg-12">
-                  <div className="panel panel-success">
-                    <div className="panel-heading">
-                      <div className="panel-title">
+                  <Tabs defaultActiveKey={1} id="node-tab">
+                    <Tab eventKey={1} title="Thread pool stats">
+                      <TpStats endpoint={this.props.endpointStatus.endpoint}
+                        clusterName={this.props.clusterName}/>
+                    </Tab>
+                    <Tab eventKey={2} title="Dropped messages">
+                      <DroppedMessages endpoint={this.props.endpointStatus.endpoint}
+                        clusterName={this.props.clusterName}/>
+                    </Tab>
+                    <Tab eventKey={3} title="Client Latency">
+                      <ClientRequestLatency endpoint={this.props.endpointStatus.endpoint}
+                        clusterName={this.props.clusterName}/>
+                    </Tab>
+                    <Tab eventKey={4} title="Snapshots">
+                      <div className="panel panel-success">
+                        <div className="panel-heading">
+                          <div className="panel-title">
+                            <div className="row">
+                              <div className="col-lg-8"><h4>Snapshots </h4></div><div className="col-lg-4"><h4><span className="label label-primary">Size on disk: {humanFileSize(this.state.totalSnapshotSizeOnDisk, 1024)}</span> <span className="label label-warning">True size: {humanFileSize(this.state.totalSnapshotTrueSize, 1024)}</span></h4></div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="panel-body" id="snapshots">
                         <div className="row">
-                          <div className="col-lg-8"><h4>Snapshots </h4></div><div className="col-lg-4"><h4><span className="label label-primary">Size on disk: {humanFileSize(this.state.totalSnapshotSizeOnDisk, 1024)}</span> <span className="label label-warning">True size: {humanFileSize(this.state.totalSnapshotTrueSize, 1024)}</span></h4></div>
+                          <div className="col-lg-12">
+                            <OverlayTrigger trigger="focus" placement="bottom" overlay={takeSnapshotClick}><button type="button" className="btn btn-md btn-success" style={takeSnapshotStyle}>Take a snapshot</button></OverlayTrigger>                  
+                            <button type="button" className="btn btn-md btn-success" style={progressStyle} disabled>Taking a snapshot...</button>
+                          </div>
+                          <div className="col-lg-12">&nbsp;</div> 
+                            {snapshots}
+                          </div>
                         </div>
                       </div>
+                      </Tab>
+                    </Tabs>               
                     </div>
-                    <div className="panel-body" id="snapshots">
-                    <div className="row">
-                    <div className="col-lg-12">
-                    <OverlayTrigger trigger="focus" placement="bottom" overlay={takeSnapshotClick}><button type="button" className="btn btn-md btn-success" style={takeSnapshotStyle}>Take a snapshot</button></OverlayTrigger>                  
-                    <button type="button" className="btn btn-md btn-success" style={progressStyle} disabled>Taking a snapshot...</button>
-                  </div>
-                  <div className="col-lg-12">&nbsp;</div>                
-                    {snapshots}
-                  </div>
-                  </div>
                     </div>
-                  </div>
-                    
-                  </div>
                   
                 </Modal.Body>
                 <Modal.Footer>

@@ -160,7 +160,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         context,
         environment.lifecycle().executorService("SnapshotManager").minThreads(5).maxThreads(5).build());
 
-    context.snapshotManager = SnapshotManager.create(context);
     context.metricsGrabber = MetricsGrabber.create(context);
 
     int repairThreads = config.getRepairRunThreadCount();
