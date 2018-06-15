@@ -16,6 +16,7 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Snapshot.Builder;
@@ -29,11 +30,13 @@ import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMISocketFactory;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,11 +49,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+import javax.management.Attribute;
+import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
+import javax.management.JMException;
 import javax.management.JMX;
 import javax.management.ListenerNotFoundException;
+import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
+import javax.management.MBeanInfo;
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.Notification;
@@ -72,6 +80,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.net.HostAndPort;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
 import org.apache.cassandra.gms.FailureDetector;
@@ -1134,5 +1143,114 @@ final class JmxProxyImpl implements JmxProxy {
     } catch (IOException e) {
       throw new ReaperException(e);
     }
+  }
+
+  /**
+   * Collects all attributes for a given set of JMX beans.
+   *
+   * @param beans the list of beans to collect through JMX
+   * @return a map with a key for each bean and a list of jmx stat in generic format.
+   */
+  private Map<String, List<JmxStat>> collectMetrics(List<String> beans)
+      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
+          InstanceNotFoundException, MBeanException, ReflectionException {
+    List<List<JmxStat>> allStats = Lists.newArrayList();
+    Set beanSet = Sets.newLinkedHashSet();
+    for (String bean : beans) {
+      beanSet.addAll(mbeanServer.queryNames(new ObjectName(bean), null));
+    }
+
+    for (Object bean : beanSet) {
+      ObjectName objName = (ObjectName) bean;
+      List<JmxStat> attributes = scrapeBean(objName);
+      allStats.add(attributes);
+    }
+
+    List<JmxStat> flatStatList =
+        allStats.stream().flatMap(attr -> attr.stream()).collect(Collectors.toList());
+
+    // Group the stats by scope to ease displaying/manipulating the data
+    Map<String, List<JmxStat>> groupedStatList =
+        flatStatList.stream().collect(Collectors.groupingBy(JmxStat::getScope));
+
+    return groupedStatList;
+  }
+
+  @Override
+  public Map<String, List<JmxStat>> collectTpStats()
+      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
+          InstanceNotFoundException, MBeanException, ReflectionException {
+
+    return collectMetrics(
+        Arrays.asList(
+            "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
+            "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*"));
+  }
+
+  @Override
+  public Map<String, List<JmxStat>> collectDroppedMessages()
+      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
+          InstanceNotFoundException, MBeanException, ReflectionException {
+
+    return collectMetrics(Arrays.asList("org.apache.cassandra.metrics:type=DroppedMessage,*"));
+  }
+
+  @Override
+  public Map<String, List<JmxStat>> collectLatencyMetrics()
+      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
+          InstanceNotFoundException, MBeanException, ReflectionException {
+
+    Map<String, List<JmxStat>> metrics =
+        collectMetrics(Arrays.asList("org.apache.cassandra.metrics:type=ClientRequest,*"));
+    LOG.info("latencies : {}", metrics);
+
+    return metrics;
+  }
+
+  private List<JmxStat> scrapeBean(ObjectName mbeanName) {
+    MBeanInfo info;
+    List<JmxStat> attributeList = Lists.newArrayList();
+    try {
+      info = mbeanServer.getMBeanInfo(mbeanName);
+    } catch (IOException e) {
+      return attributeList;
+    } catch (JMException e) {
+      LOG.error(mbeanName.toString(), "getMBeanInfo Fail: " + e);
+      return attributeList;
+    }
+    MBeanAttributeInfo[] attrInfos = info.getAttributes();
+
+    Map<String, MBeanAttributeInfo> name2AttrInfo = new LinkedHashMap<String, MBeanAttributeInfo>();
+    for (MBeanAttributeInfo attrInfo : attrInfos) {
+      MBeanAttributeInfo attr = attrInfo;
+      if (!attr.isReadable()) {
+        LOG.warn("{}.{} not readable", mbeanName, attr);
+        continue;
+      }
+      name2AttrInfo.put(attr.getName(), attr);
+    }
+    final AttributeList attributes;
+    try {
+      attributes =
+          mbeanServer.getAttributes(mbeanName, name2AttrInfo.keySet().toArray(new String[0]));
+    } catch (RuntimeException | InstanceNotFoundException | ReflectionException | IOException e) {
+      LOG.error("Fail grabbing attributes for mbean {} ", mbeanName, e);
+      return attributeList;
+    }
+    for (Attribute attribute : attributes.asList()) {
+      Object value = attribute.getValue();
+      JmxStat.Builder jmxStatBuilder =
+          JmxStat.builder()
+              .withAttribute(attribute.getName())
+              .withName(mbeanName.getKeyProperty("name"))
+              .withScope(mbeanName.getKeyProperty("scope"));
+      if (value == null) {
+        attributeList.add(jmxStatBuilder.withValue(0.0).build());
+      } else if (value instanceof Number) {
+        attributeList.add(jmxStatBuilder.withValue(((Number) value).doubleValue()).build());
+      }
+    }
+
+    return attributeList;
   }
 }
