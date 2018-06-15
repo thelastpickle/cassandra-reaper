@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
@@ -268,12 +269,13 @@ public final class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairUnit> getRepairUnit(UUID id) {
+  public RepairUnit getRepairUnit(UUID id) {
     RepairUnit result;
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairUnit(UuidUtil.toSequenceId(id));
     }
-    return Optional.fromNullable(result);
+    Preconditions.checkArgument(null != result);
+    return result;
   }
 
   @Override

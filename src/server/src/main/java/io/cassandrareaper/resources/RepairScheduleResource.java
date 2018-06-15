@@ -321,13 +321,7 @@ public final class RepairScheduleResource {
           .build();
     }
 
-    Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(repairSchedule.get().getRepairUnitId());
-    if (!repairUnit.isPresent()) {
-      String errMsg = "repair unit with id " + repairSchedule.get().getRepairUnitId() + " not found";
-      LOG.error(errMsg);
-      return Response.status(Response.Status.NOT_FOUND).entity(errMsg).build();
-    }
-
+    RepairUnit repairUnit = context.storage.getRepairUnit(repairSchedule.get().getRepairUnitId());
     RepairSchedule.State newState;
     try {
       newState = RepairSchedule.State.valueOf(state.get().toUpperCase());
@@ -410,10 +404,8 @@ public final class RepairScheduleResource {
    * @return RepairSchedule status for viewing
    */
   private RepairScheduleStatus getRepairScheduleStatus(RepairSchedule repairSchedule) {
-    Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(repairSchedule.getRepairUnitId());
-    Preconditions.checkState(
-        repairUnit.isPresent(), "no repair unit found with id: " + repairSchedule.getRepairUnitId());
-    return new RepairScheduleStatus(repairSchedule, repairUnit.get());
+    RepairUnit repairUnit = context.storage.getRepairUnit(repairSchedule.getRepairUnitId());
+    return new RepairScheduleStatus(repairSchedule, repairUnit);
   }
 
   /**
@@ -438,17 +430,10 @@ public final class RepairScheduleResource {
       @QueryParam("keyspace") Optional<String> keyspaceName) {
 
     List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
-    Collection<RepairSchedule> schedules = getScheduleList(clusterName, keyspaceName);
-    for (RepairSchedule schedule : schedules) {
-      Optional<RepairUnit> unit = context.storage.getRepairUnit(schedule.getRepairUnitId());
-      if (unit.isPresent()) {
-        scheduleStatuses.add(new RepairScheduleStatus(schedule, unit.get()));
-      } else {
-        String errMsg = String.format("Found repair schedule %s with no associated repair unit", schedule.getId());
-        LOG.error(errMsg);
-        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-      }
-    }
+    getScheduleList(clusterName, keyspaceName).forEach((schedule) -> {
+      RepairUnit unit = context.storage.getRepairUnit(schedule.getRepairUnitId());
+      scheduleStatuses.add(new RepairScheduleStatus(schedule, unit));
+    });
     return Response.ok().entity(scheduleStatuses).build();
   }
 

@@ -197,32 +197,31 @@ public final class RepairManager implements AutoCloseable {
       RepairRun repairRun,
       boolean forced,
       boolean postponeWithoutAborting) {
-    RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId()).get();
+
+    RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
+
     for (RepairSegment segment : runningSegments) {
-      LOG.debug(
-          "Trying to abort stuck segment {} in repair run {}", segment.getId(), repairRun.getId());
+      LOG.debug("Trying to abort stuck segment {} in repair run {}", segment.getId(), repairRun.getId());
       UUID leaderElectionId = repairUnit.getIncrementalRepair() ? repairRun.getId() : segment.getId();
       if (forced || takeLead(context, leaderElectionId) || renewLead(context, leaderElectionId)) {
         // refresh segment once we're inside leader-election
         segment = context.storage.getRepairSegment(repairRun.getId(), segment.getId()).get();
         if (RepairSegment.State.RUNNING == segment.getState()) {
           try {
-            JmxProxy jmxProxy =
-                context.jmxConnectionFactory.connect(
-                    Node.builder()
-                        .withClusterName(repairRun.getClusterName())
-                        .withHostname(segment.getCoordinatorHost())
-                        .build(),
-                    context.config.getJmxConnectionTimeoutInSeconds());
+            Node node = Node.builder()
+                .withClusterName(repairRun.getClusterName())
+                .withHostname(segment.getCoordinatorHost())
+                .build();
+
+            JmxProxy jmxProxy
+                = context.jmxConnectionFactory.connect(node, context.config.getJmxConnectionTimeoutInSeconds());
 
             SegmentRunner.abort(context, segment, jmxProxy);
           } catch (ReaperException | NumberFormatException | InterruptedException e) {
-            LOG.debug(
-                "Tried to abort repair on segment {} marked as RUNNING, "
-                    + "but the host was down  (so abortion won't be needed). "
-                    + "Postponing the segment.",
-                segment.getId(),
-                e);
+            String msg = "Tried to abort repair on segment {} marked as RUNNING, but the "
+                + "host was down (so abortion won't be needed). Postponing the segment.";
+
+            LOG.debug(msg, segment.getId(), e);
             SegmentRunner.postponeSegment(context, segment);
           } finally {
             // if someone else does hold the lease, ie renewLead(..) was true,

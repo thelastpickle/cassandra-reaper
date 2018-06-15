@@ -222,13 +222,13 @@ public final class RepairRunResourceTest {
     assertEquals(1, context.storage.getRepairRunIdsForCluster(CLUSTER_NAME).size());
     UUID runId = context.storage.getRepairRunIdsForCluster(CLUSTER_NAME).iterator().next();
     RepairRun run = context.storage.getRepairRun(runId).get();
-    final Optional<RepairUnit> unit = context.storage.getRepairUnit(run.getRepairUnitId());
+    final RepairUnit unit = context.storage.getRepairUnit(run.getRepairUnitId());
     assertEquals(RepairRun.RunState.NOT_STARTED, run.getRunState());
     assertEquals(TIME_CREATE, run.getCreationTime().getMillis());
     assertEquals(REPAIR_INTENSITY, run.getIntensity(), 0.0f);
     assertNull(run.getStartTime());
     assertNull(run.getEndTime());
-    assertEquals(2, unit.get().getRepairThreadCount());
+    assertEquals(2, unit.getRepairThreadCount());
 
     // tokens [0, 100, 200], 6 requested segments per node and 6 nodes causes generating 38 RepairSegments
     assertEquals(

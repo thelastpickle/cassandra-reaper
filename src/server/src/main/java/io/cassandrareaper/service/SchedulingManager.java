@@ -138,12 +138,7 @@ public final class SchedulingManager extends TimerTask {
               schedule.getRepairUnitId(),
               schedule.getId());
 
-          Optional<RepairUnit> fetchedUnit = context.storage.getRepairUnit(schedule.getRepairUnitId());
-          if (!fetchedUnit.isPresent()) {
-            LOG.warn("RepairUnit with id {} not found", schedule.getRepairUnitId());
-            return false;
-          }
-          RepairUnit repairUnit = fetchedUnit.get();
+          RepairUnit repairUnit = context.storage.getRepairUnit(schedule.getRepairUnitId());
           if (repairRunAlreadyScheduled(schedule, repairUnit)) {
             return false;
           }

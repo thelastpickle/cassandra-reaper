@@ -78,7 +78,7 @@ public interface IStorage {
 
   RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit);
 
-  Optional<RepairUnit> getRepairUnit(UUID id);
+  RepairUnit getRepairUnit(UUID id);
 
   Optional<RepairUnit> getRepairUnit(RepairUnit.Builder repairUnit);
 

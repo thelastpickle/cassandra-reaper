@@ -56,12 +56,11 @@ public final class RepairScheduleService {
         .getRepairSchedulesForClusterAndKeyspace(repairUnit.getClusterName(), repairUnit.getKeyspaceName());
 
     for (RepairSchedule sched : repairSchedules) {
-      Optional<RepairUnit> repairUnitForSched = context.storage.getRepairUnit(sched.getRepairUnitId());
-      Preconditions.checkState(repairUnitForSched.isPresent());
-      Preconditions.checkState(repairUnitForSched.get().getClusterName().equals(repairUnit.getClusterName()));
-      Preconditions.checkState(repairUnitForSched.get().getKeyspaceName().equals(repairUnit.getKeyspaceName()));
+      RepairUnit repairUnitForSched = context.storage.getRepairUnit(sched.getRepairUnitId());
+      Preconditions.checkState(repairUnitForSched.getClusterName().equals(repairUnit.getClusterName()));
+      Preconditions.checkState(repairUnitForSched.getKeyspaceName().equals(repairUnit.getKeyspaceName()));
 
-      if (isConflictingSchedules(cluster, repairUnitForSched.get(), repairUnit)) {
+      if (isConflictingSchedules(cluster, repairUnitForSched, repairUnit)) {
         return Optional.of(sched);
       }
     }

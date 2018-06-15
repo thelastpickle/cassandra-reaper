@@ -149,17 +149,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     postpone(context, segment, context.storage.getRepairUnit(segment.getRepairUnitId()));
   }
 
-  private static void postpone(
-      AppContext context, RepairSegment segment, Optional<RepairUnit> repairUnit) {
+  private static void postpone(AppContext context, RepairSegment segment, RepairUnit repairUnit) {
     LOG.info("Postponing segment {}", segment.getId());
     try {
       context.storage.updateRepairSegment(
           segment
               .reset()
-              .withCoordinatorHost(
-                  repairUnit.isPresent() && repairUnit.get().getIncrementalRepair()
-                      ? segment.getCoordinatorHost()
-                      : null) // set coordinator host to null only for full repairs
+              // set coordinator host to null only for full repairs
+              .withCoordinatorHost(repairUnit.getIncrementalRepair() ? segment.getCoordinatorHost() : null)
               .withFailCount(segment.getFailCount() + 1)
               .withId(segment.getId())
               .build());
@@ -417,18 +414,13 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-  private static String metricNameForPostpone(Optional<RepairUnit> unit, RepairSegment segment) {
-    return unit.isPresent()
-        ? MetricRegistry.name(
+  private static String metricNameForPostpone(RepairUnit unit, RepairSegment segment) {
+    return MetricRegistry.name(
             SegmentRunner.class,
             "postpone",
             Optional.fromNullable(segment.getCoordinatorHost()).or("null").replace('.', '-'),
-            unit.get().getClusterName().replace('.', '-'),
-            unit.get().getKeyspaceName())
-        : MetricRegistry.name(
-            SegmentRunner.class,
-            "postpone",
-            Optional.fromNullable(segment.getCoordinatorHost()).or("null").replace('.', '-'));
+            unit.getClusterName().replace('.', '-'),
+            unit.getKeyspaceName());
   }
 
   private String metricNameForRepairing(RepairSegment rs) {

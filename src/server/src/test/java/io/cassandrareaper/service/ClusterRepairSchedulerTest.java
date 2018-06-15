@@ -235,8 +235,7 @@ public final class ClusterRepairSchedulerTest {
     ClusterRepairScheduleAssertion.RepairScheduleAssertion repairScheduleForKeyspace(String keyspace) {
       RepairSchedule keyspaceRepairSchedule = repairSchedules.stream()
           .filter(repairSchedule
-              -> context.storage
-                  .getRepairUnit(repairSchedule.getRepairUnitId()).get().getKeyspaceName().equals(keyspace))
+              -> context.storage.getRepairUnit(repairSchedule.getRepairUnitId()).getKeyspaceName().equals(keyspace))
           .findFirst()
           .orElseThrow(() -> new AssertionError(format("No repair schedule found for keyspace %s", keyspace)));
       return new ClusterRepairScheduleAssertion.RepairScheduleAssertion(keyspaceRepairSchedule);

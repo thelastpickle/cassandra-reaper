@@ -72,20 +72,17 @@ final class RepairRunner implements Runnable {
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
     Optional<Cluster> cluster = context.storage.getCluster(repairRun.get().getClusterName());
     assert cluster.isPresent() : "No Cluster with name " + repairRun.get().getClusterName() + " found from storage";
-    Optional<RepairUnit> repairUnitOpt = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
-    assert repairUnitOpt.isPresent() : "No RepairUnit with id " + repairRun.get().getRepairUnitId()
-        + " found in storage";
+    RepairUnit repairUnitOpt = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
     this.clusterName = cluster.get().getName();
 
-    JmxProxy jmx =
-        this.context.jmxConnectionFactory.connectAny(
-            cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
+    JmxProxy jmx = this.context.jmxConnectionFactory
+        .connectAny(cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
 
-    String keyspace = repairUnitOpt.get().getKeyspaceName();
+    String keyspace = repairUnitOpt.getKeyspaceName();
     int parallelRepairs
         = getPossibleParallelRepairsCount(jmx.getRangeToEndpointMap(keyspace), jmx.getEndpointToHostId());
 
-    if ((repairUnitOpt.isPresent() && repairUnitOpt.get().getIncrementalRepair())) {
+    if (repairUnitOpt.getIncrementalRepair()) {
       // with incremental repair, can't have more parallel repairs than nodes
       // Same goes for local mode
       parallelRepairs = 1;
@@ -104,8 +101,8 @@ final class RepairRunner implements Runnable {
                 Collections2.transform(
                     repairSegments, segment -> segment.getTokenRange().getBaseRange())));
 
-    String repairUnitClusterName = repairUnitOpt.get().getClusterName();
-    String repairUnitKeyspaceName = repairUnitOpt.get().getKeyspaceName();
+    String repairUnitClusterName = repairUnitOpt.getClusterName();
+    String repairUnitKeyspaceName = repairUnitOpt.getKeyspaceName();
 
     // below four metric names are duplicated, so monitoring systems can follow per cluster or per cluster and keyspace
     String metricNameForRepairProgressPerKeyspace
@@ -417,7 +414,7 @@ final class RepairRunner implements Runnable {
       repairProgress = (float) amountDone / repairRun.getSegmentCount();
     }
 
-    RepairUnit repairUnit = context.storage.getRepairUnit(unitId).get();
+    RepairUnit repairUnit = context.storage.getRepairUnit(unitId);
     String keyspace = repairUnit.getKeyspaceName();
     LOG.debug("preparing to repair segment {} on run with id {}", segmentId, repairRunId);
 

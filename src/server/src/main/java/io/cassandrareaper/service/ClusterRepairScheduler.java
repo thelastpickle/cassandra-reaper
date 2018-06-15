@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -179,11 +178,7 @@ public final class ClusterRepairScheduler {
       Collection<RepairSchedule> currentSchedules = context.storage.getRepairSchedulesForCluster(cluster.getName());
       return currentSchedules
           .stream()
-          .map(
-              repairSchedule -> {
-                Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(repairSchedule.getRepairUnitId());
-                return repairUnit.get().getKeyspaceName();
-              })
+          .map(repairSchedule -> context.storage.getRepairUnit(repairSchedule.getRepairUnitId()).getKeyspaceName())
           .collect(Collectors.toSet());
     }
 

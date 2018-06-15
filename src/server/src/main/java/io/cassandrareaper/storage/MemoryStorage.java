@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -218,8 +219,10 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Optional<RepairUnit> getRepairUnit(UUID id) {
-    return Optional.fromNullable(repairUnits.get(id));
+  public RepairUnit getRepairUnit(UUID id) {
+    RepairUnit unit = repairUnits.get(id);
+    Preconditions.checkArgument(null != unit);
+    return unit;
   }
 
   @Override
@@ -299,7 +302,7 @@ public final class MemoryStorage implements IStorage {
     List<RepairParameters> ongoingRepairs = Lists.newArrayList();
     for (RepairRun run : getRepairRunsWithState(RepairRun.RunState.RUNNING)) {
       for (RepairSegment segment : getSegmentsWithState(run.getId(), RepairSegment.State.RUNNING)) {
-        RepairUnit unit = getRepairUnit(segment.getRepairUnitId()).get();
+        RepairUnit unit = getRepairUnit(segment.getRepairUnitId());
         ongoingRepairs.add(
             new RepairParameters(
                 segment.getTokenRange(), unit.getKeyspaceName(), unit.getColumnFamilies(), run.getRepairParallelism()));
@@ -355,7 +358,7 @@ public final class MemoryStorage implements IStorage {
   public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<>();
     for (RepairSchedule repairSchedule : repairSchedules.values()) {
-      RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId()).get();
+      RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId());
       if (repairUnit.getClusterName().equals(clusterName)) {
         foundRepairSchedules.add(repairSchedule);
       }
@@ -367,7 +370,7 @@ public final class MemoryStorage implements IStorage {
   public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<>();
     for (RepairSchedule repairSchedule : repairSchedules.values()) {
-      RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId()).get();
+      RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId());
       if (repairUnit.getKeyspaceName().equals(keyspaceName)) {
         foundRepairSchedules.add(repairSchedule);
       }
@@ -379,7 +382,7 @@ public final class MemoryStorage implements IStorage {
   public Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<>();
     for (RepairSchedule repairSchedule : repairSchedules.values()) {
-      RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId()).get();
+      RepairUnit repairUnit = getRepairUnit(repairSchedule.getRepairUnitId());
       if (repairUnit.getClusterName().equals(clusterName) && repairUnit.getKeyspaceName().equals(keyspaceName)) {
         foundRepairSchedules.add(repairSchedule);
       }
@@ -421,7 +424,7 @@ public final class MemoryStorage implements IStorage {
       List<RepairRun> runs = getRepairRunsForCluster(clusterName);
       Collections.sort(runs);
       for (RepairRun run : Iterables.limit(runs, limit)) {
-        RepairUnit unit = getRepairUnit(run.getRepairUnitId()).get();
+        RepairUnit unit = getRepairUnit(run.getRepairUnitId());
         int segmentsRepaired = getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
         int totalSegments = getSegmentAmountForRepairRun(run.getId());
         runStatuses.add(
@@ -461,7 +464,7 @@ public final class MemoryStorage implements IStorage {
       List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
       Collection<RepairSchedule> schedules = getRepairSchedulesForCluster(clusterName);
       for (RepairSchedule schedule : schedules) {
-        RepairUnit unit = getRepairUnit(schedule.getRepairUnitId()).get();
+        RepairUnit unit = getRepairUnit(schedule.getRepairUnitId());
         scheduleStatuses.add(new RepairScheduleStatus(schedule, unit));
       }
       return scheduleStatuses;

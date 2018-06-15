@@ -54,7 +54,6 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -374,15 +373,8 @@ public final class RepairRunResource {
       if (!repairRun.isPresent()) {
         return Response.status(Status.NOT_FOUND).entity("repair run " + repairRunId + " doesn't exist").build();
       }
+
       final RepairRun.RunState newState = parseRunState(stateStr.get());
-
-      Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
-      if (!repairUnit.isPresent()) {
-        String errMsg = "repair unit with id " + repairRun.get().getRepairUnitId() + " not found";
-        LOG.error(errMsg);
-        return Response.status(Status.CONFLICT).entity(errMsg).build();
-      }
-
       if (isUnitAlreadyRepairing(repairRun.get())) {
         String errMsg = "repair unit already has run " + repairRun.get().getRepairUnitId() + " in RUNNING state";
         LOG.error(errMsg);
@@ -437,13 +429,6 @@ public final class RepairRunResource {
       Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
       if (!repairRun.isPresent()) {
         return Response.status(Status.NOT_FOUND).entity("repair run " + repairRunId + " doesn't exist").build();
-      }
-
-      Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
-      if (!repairUnit.isPresent()) {
-        String errMsg = "repair unit with id " + repairRun.get().getRepairUnitId() + " not found";
-        LOG.error(errMsg);
-        return Response.status(Response.Status.NOT_FOUND).entity(errMsg).build();
       }
 
       if (RunState.PAUSED != repairRun.get().getRunState() && RunState.NOT_STARTED != repairRun.get().getRunState()) {
@@ -633,10 +618,9 @@ public final class RepairRunResource {
    * @return only a status of a repair run, not the entire repair run info.
    */
   private RepairRunStatus getRepairRunStatus(RepairRun repairRun) {
-    final Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
-    Preconditions.checkState(repairUnit.isPresent(), "no repair unit found with id: %s", repairRun.getRepairUnitId());
-    final int segmentsRepaired = getSegmentAmountForRepairRun(repairRun.getId());
-    return new RepairRunStatus(repairRun, repairUnit.get(), segmentsRepaired);
+    RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
+    int segmentsRepaired = getSegmentAmountForRepairRun(repairRun.getId());
+    return new RepairRunStatus(repairRun, repairUnit, segmentsRepaired);
   }
 
   /**
@@ -701,19 +685,12 @@ public final class RepairRunResource {
       if (!desiredStates.isEmpty() && !desiredStates.contains(run.getRunState().name())) {
         continue;
       }
-      final Optional<RepairUnit> runsUnit = context.storage.getRepairUnit(run.getRepairUnitId());
-      if (runsUnit.isPresent()) {
-        int segmentsRepaired = run.getSegmentCount();
-        if (!run.getRunState().equals(RepairRun.RunState.DONE)) {
-          segmentsRepaired = getSegmentAmountForRepairRun(run.getId());
-        }
-
-        runStatuses.add(new RepairRunStatus(run, runsUnit.get(), segmentsRepaired));
-      } else {
-        final String errMsg = String.format("Found repair run %s with no associated repair unit", run.getId());
-        LOG.error(errMsg);
-        throw new ReaperException("Internal server error : " + errMsg);
+      RepairUnit runsUnit = context.storage.getRepairUnit(run.getRepairUnitId());
+      int segmentsRepaired = run.getSegmentCount();
+      if (!run.getRunState().equals(RepairRun.RunState.DONE)) {
+        segmentsRepaired = getSegmentAmountForRepairRun(run.getId());
       }
+      runStatuses.add(new RepairRunStatus(run, runsUnit, segmentsRepaired));
     }
 
     return runStatuses;

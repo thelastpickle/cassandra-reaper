@@ -228,12 +228,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         = session.prepare("DELETE FROM repair_run_by_cluster WHERE id = ? and cluster_name = ?");
     deleteRepairRunByUnitPrepStmt = session.prepare("DELETE FROM repair_run_by_unit "
         + "WHERE id = ? and repair_unit_id= ?");
-    insertRepairUnitPrepStmt =
-        session.prepare(
+    insertRepairUnitPrepStmt = session
+        .prepare(
             "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
                 + "incremental_repair, nodes, datacenters, blacklisted_tables, repair_thread_count) "
-                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    getRepairUnitPrepStmt = session.prepare("SELECT * FROM repair_unit_v1 WHERE id = ?");
+                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    getRepairUnitPrepStmt = session
+        .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
     insertRepairSegmentPrepStmt = session
         .prepare(
             "INSERT INTO repair_run"
@@ -459,7 +462,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         nbRanges = 0;
       }
     }
-    assert getRepairUnit(newRepairRun.getRepairUnitId()).get().getIncrementalRepair() == isIncremental.booleanValue();
+    assert getRepairUnit(newRepairRun.getRepairUnitId()).getIncrementalRepair() == isIncremental.booleanValue();
 
     futures.add(session.executeAsync(repairRunBatch));
     futures.add(
@@ -626,12 +629,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Optional<RepairUnit> getRepairUnit(UUID id) {
-    RepairUnit repairUnit = null;
+  public RepairUnit getRepairUnit(UUID id) {
     Row repairUnitRow = session.execute(getRepairUnitPrepStmt.bind(id)).one();
     if (repairUnitRow != null) {
-      repairUnit =
-          new RepairUnit.Builder(
+      return new RepairUnit.Builder(
                   repairUnitRow.getString("cluster_name"),
                   repairUnitRow.getString("keyspace_name"),
                   repairUnitRow.getSet("column_families", String.class),
@@ -642,7 +643,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                   repairUnitRow.getInt("repair_thread_count"))
               .build(id);
     }
-    return Optional.fromNullable(repairUnit);
+    throw new IllegalArgumentException("No repair unit exists for " + id);
   }
 
   @Override
@@ -688,7 +689,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     assert hasLeadOnSegment(segment.getId())
         || (hasLeadOnSegment(segment.getRunId())
-          && getRepairUnit(segment.getRepairUnitId()).get().getIncrementalRepair())
+          && getRepairUnit(segment.getRepairUnitId()).getIncrementalRepair())
         : "non-leader trying to update repair segment " + segment.getId() + " of run " + segment.getRunId();
 
     BatchStatement updateRepairSegmentBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
@@ -828,12 +829,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     for (RepairRun repairRun : repairRuns) {
       Collection<RepairSegment> runningSegments = getSegmentsWithState(repairRun.getId(), State.RUNNING);
       for (RepairSegment segment : runningSegments) {
-        Optional<RepairUnit> repairUnit = getRepairUnit(repairRun.getRepairUnitId());
+        RepairUnit repairUnit = getRepairUnit(repairRun.getRepairUnitId());
         repairs.add(
             new RepairParameters(
                 Segment.builder().withTokenRanges(segment.getTokenRange().getTokenRanges()).build(),
-                repairUnit.get().getKeyspaceName(),
-                repairUnit.get().getColumnFamilies(),
+                repairUnit.getKeyspaceName(),
+                repairUnit.getColumnFamilies(),
                 repairRun.getRepairParallelism()));
       }
     }
@@ -967,7 +968,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public boolean updateRepairSchedule(RepairSchedule newRepairSchedule) {
     final Set<UUID> repairHistory = Sets.newHashSet();
     repairHistory.addAll(newRepairSchedule.getRunHistory());
-    RepairUnit repairUnit = getRepairUnit(newRepairSchedule.getRepairUnitId()).get();
+    RepairUnit repairUnit = getRepairUnit(newRepairSchedule.getRepairUnitId());
     List<ResultSetFuture> futures = Lists.newArrayList();
 
     futures.add(
@@ -1015,7 +1016,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public Optional<RepairSchedule> deleteRepairSchedule(UUID id) {
     Optional<RepairSchedule> repairSchedule = getRepairSchedule(id);
     if (repairSchedule.isPresent()) {
-      RepairUnit repairUnit = getRepairUnit(repairSchedule.get().getRepairUnitId()).get();
+      RepairUnit repairUnit = getRepairUnit(repairSchedule.get().getRepairUnitId());
 
       session.executeAsync(
           deleteRepairScheduleByClusterAndKsPrepStmt.bind(
@@ -1041,12 +1042,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     Collection<RepairRun> repairRuns = getRepairRunsForCluster(clusterName);
     for (RepairRun repairRun : repairRuns) {
       Collection<RepairSegment> segments = getRepairSegmentsForRun(repairRun.getId());
-      Optional<RepairUnit> repairUnit = getRepairUnit(repairRun.getRepairUnitId());
+      RepairUnit repairUnit = getRepairUnit(repairRun.getRepairUnitId());
 
       int segmentsRepaired
           = (int) segments.stream().filter(seg -> seg.getState().equals(RepairSegment.State.DONE)).count();
 
-      repairRunStatuses.add(new RepairRunStatus(repairRun, repairUnit.get(), segmentsRepaired));
+      repairRunStatuses.add(new RepairRunStatus(repairRun, repairUnit, segmentsRepaired));
     }
 
     return repairRunStatuses;
@@ -1058,7 +1059,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     Collection<RepairScheduleStatus> repairScheduleStatuses = repairSchedules
         .stream()
-        .map(sched -> new RepairScheduleStatus(sched, getRepairUnit(sched.getRepairUnitId()).get()))
+        .map(sched -> new RepairScheduleStatus(sched, getRepairUnit(sched.getRepairUnitId())))
         .collect(Collectors.toList());
 
     return repairScheduleStatuses;
