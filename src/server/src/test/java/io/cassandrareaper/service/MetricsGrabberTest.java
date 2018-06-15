@@ -31,8 +31,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
-import javax.management.JMException;
 
+import javax.management.JMException;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
