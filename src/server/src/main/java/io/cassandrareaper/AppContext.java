@@ -15,6 +15,7 @@
 package io.cassandrareaper;
 
 import io.cassandrareaper.jmx.JmxConnectionFactory;
+import io.cassandrareaper.service.MetricsGrabber;
 import io.cassandrareaper.service.PurgeManager;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SnapshotManager;
@@ -48,6 +49,7 @@ public final class AppContext {
   public MetricRegistry metricRegistry = new MetricRegistry();
   public SnapshotManager snapshotManager;
   public PurgeManager purgeManager;
+  public MetricsGrabber metricsGrabber;
 
   private static String initialiseInstanceAddress() {
     String reaperInstanceAddress;

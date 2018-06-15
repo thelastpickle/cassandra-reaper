@@ -15,10 +15,12 @@
 package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.service.RingRange;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.util.Collection;
@@ -27,7 +29,9 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.management.AttributeNotFoundException;
+import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
+import javax.management.MalformedObjectNameException;
 import javax.management.NotificationListener;
 import javax.management.ReflectionException;
 import javax.validation.constraints.NotNull;
@@ -146,4 +150,16 @@ public interface JmxProxy extends NotificationListener {
 
   void takeColumnFamilySnapshot(String keyspaceName, String columnFamilyName, String snapshotName)
       throws ReaperException;
+
+  Map<String, List<JmxStat>> collectTpStats()
+      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
+          InstanceNotFoundException, MBeanException, ReflectionException;
+
+  Map<String, List<JmxStat>> collectDroppedMessages()
+      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
+          InstanceNotFoundException, MBeanException, ReflectionException;
+
+  Map<String, List<JmxStat>> collectLatencyMetrics()
+      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
+          InstanceNotFoundException, MBeanException, ReflectionException;
 }

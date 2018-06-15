@@ -17,10 +17,13 @@ package io.cassandrareaper.acceptance;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.SimpleReaperClient;
+import io.cassandrareaper.core.DroppedMessages;
+import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.Snapshot;
+import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.RepairRunStatus;
@@ -1424,6 +1427,104 @@ public final class BasicSteps {
     assertTrue(lastResponse.hasEntity());
     assertTrue(
         lastResponse.readEntity(String.class).contains("<title>Not a real login page</title>"));
+  }
+
+  @And("^we can collect the tpstats from the seed node$")
+  public void we_can_collect_the_tpstats_from_the_seed_node() throws Throwable {
+    synchronized (BasicSteps.class) {
+      RUNNERS
+          .parallelStream()
+          .forEach(
+              runner -> {
+                Response response =
+                    runner.callReaper(
+                        "GET",
+                        "/node/tpstats/"
+                            + TestContext.TEST_CLUSTER
+                            + "/"
+                            + TestContext.SEED_HOST.split("@")[0],
+                        EMPTY_PARAMS);
+                assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+                String responseData = response.readEntity(String.class);
+                List<ThreadPoolStat> tpstats = SimpleReaperClient.parseTpStatJSON(responseData);
+
+                assertTrue(
+                    tpstats.stream().filter(tpstat -> tpstat.getName().equals("ReadStage")).count()
+                        == 1);
+                assertTrue(
+                    tpstats
+                            .stream()
+                            .filter(tpstat -> tpstat.getName().equals("ReadStage"))
+                            .filter(tpstat -> tpstat.getCurrentlyBlockedTasks() == 0)
+                            .filter(tpstat -> tpstat.getCompletedTasks() > 0)
+                            .count()
+                        == 1);
+              });
+    }
+  }
+
+  @And("^we can collect the dropped messages stats from the seed node$")
+  public void we_can_collect_the_dropped_messages_stats_from_the_seed_node() throws Throwable {
+    synchronized (BasicSteps.class) {
+      RUNNERS
+          .parallelStream()
+          .forEach(
+              runner -> {
+                Response response =
+                    runner.callReaper(
+                        "GET",
+                        "/node/dropped/"
+                            + TestContext.TEST_CLUSTER
+                            + "/"
+                            + TestContext.SEED_HOST.split("@")[0],
+                        EMPTY_PARAMS);
+                assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+                String responseData = response.readEntity(String.class);
+                List<DroppedMessages> tpstats =
+                    SimpleReaperClient.parseDroppedMessagesJSON(responseData);
+
+                assertTrue(
+                    tpstats.stream().filter(tpstat -> tpstat.getName().equals("READ")).count()
+                        == 1);
+                assertTrue(
+                    tpstats
+                            .stream()
+                            .filter(tpstat -> tpstat.getName().equals("READ"))
+                            .filter(tpstat -> tpstat.getCount() >= 0)
+                            .count()
+                        == 1);
+              });
+    }
+  }
+
+  @And("^we can collect the client request metrics from the seed node$")
+  public void we_can_collect_the_client_request_metrics_from_the_seed_node() throws Throwable {
+    synchronized (BasicSteps.class) {
+      RUNNERS
+          .parallelStream()
+          .forEach(
+              runner -> {
+                Response response =
+                    runner.callReaper(
+                        "GET",
+                        "/node/clientRequestLatencies/"
+                            + TestContext.TEST_CLUSTER
+                            + "/"
+                            + TestContext.SEED_HOST.split("@")[0],
+                        EMPTY_PARAMS);
+                assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+                String responseData = response.readEntity(String.class);
+                List<MetricsHistogram> clientRequestMetrics =
+                    SimpleReaperClient.parseClientRequestMetricsJSON(responseData);
+
+                assertTrue(
+                    clientRequestMetrics
+                            .stream()
+                            .filter(metric -> metric.getName().startsWith("Write"))
+                            .count()
+                        >= 1);
+              });
+    }
   }
 
   private static int httpStatus(String statusCodeDescriptions) {
