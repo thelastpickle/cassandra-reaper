@@ -149,39 +149,26 @@ public final class RepairManager implements AutoCloseable {
 
   private void abortSegmentsWithNoLeader(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
 
-    LOG.debug(
-        "Checking leadership on the following segments : {}",
-        runningSegments.stream().map(seg -> seg.getId()).collect(Collectors.toList()));
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(
+          "Checking leadership on the following segments : {}",
+          runningSegments.stream().map(seg -> seg.getId()).collect(Collectors.toList()));
+    }
+
     if (context.storage instanceof IDistributedStorage || !repairRunners.containsKey(repairRun.getId())) {
       // When multiple Reapers are in use, we can get stuck segments when one instance is rebooted
       // Any segment in RUNNING state but with no leader should be killed
-      List<UUID> activeLeaders =
-          context.storage instanceof IDistributedStorage
+      List<UUID> leaders = context.storage instanceof IDistributedStorage
               ? ((IDistributedStorage) context.storage).getLeaders()
               : Collections.emptyList();
 
-      LOG.debug(
-          "No leader on the following segments : {}",
-          runningSegments
-              .stream()
-              .filter(
-                  segment ->
-                      !activeLeaders.contains(segment.getId())
-                          && !activeLeaders.contains(segment.getRunId()))
-              .map(seg -> seg.getId())
-              .collect(Collectors.toSet()));
+      Collection<RepairSegment> orphanedSegments = runningSegments
+          .stream()
+          .filter(segment -> !leaders.contains(segment.getId()) && !leaders.contains(segment.getRunId()))
+          .collect(Collectors.toSet());
 
-      abortSegments(
-          runningSegments
-              .stream()
-              .filter(
-                  segment ->
-                      !activeLeaders.contains(segment.getId())
-                          && !activeLeaders.contains(segment.getRunId()))
-              .collect(Collectors.toSet()),
-          repairRun,
-          false,
-          true);
+      LOG.debug("No leader on the following segments : {}", orphanedSegments);
+      abortSegments(orphanedSegments, repairRun, false, true);
     }
   }
 
