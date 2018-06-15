@@ -72,6 +72,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -103,6 +106,14 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private final Session session;
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final VersionNumber version;
+
+  private final LoadingCache<UUID, RepairUnit> repairUnits = CacheBuilder.newBuilder()
+      .build(new CacheLoader<UUID, RepairUnit>() {
+        @Override
+        public RepairUnit load(UUID repairUnitId) throws Exception {
+          return getRepairUnitImpl(repairUnitId);
+        }
+      });
 
   /* prepared stmts */
   private PreparedStatement insertClusterPrepStmt;
@@ -625,11 +636,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             repairUnit.getDatacenters(),
             repairUnit.getBlacklistedTables(),
             repairUnit.getRepairThreadCount()));
+
+    repairUnits.put(repairUnit.getId(), repairUnit);
     return repairUnit;
   }
 
-  @Override
-  public RepairUnit getRepairUnit(UUID id) {
+  private RepairUnit getRepairUnitImpl(UUID id) {
     Row repairUnitRow = session.execute(getRepairUnitPrepStmt.bind(id)).one();
     if (repairUnitRow != null) {
       return new RepairUnit.Builder(
@@ -644,6 +656,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               .build(id);
     }
     throw new IllegalArgumentException("No repair unit exists for " + id);
+  }
+
+  @Override
+  public RepairUnit getRepairUnit(UUID id) {
+    return repairUnits.getUnchecked(id);
   }
 
   @Override
