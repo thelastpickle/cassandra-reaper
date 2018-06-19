@@ -149,6 +149,11 @@ final class RepairRunner implements Runnable {
       throw new ReaperException(msg);
     }
 
+    LOG.debug(
+        "Possible parallel repairs : {}",
+        Math.min(
+            ranges.size() / ranges.values().iterator().next().size(),
+            Math.max(1, hostsInRing.keySet().size() / ranges.values().iterator().next().size())));
     return Math.min(
         ranges.size() / ranges.values().iterator().next().size(),
         Math.max(1, hostsInRing.keySet().size() / ranges.values().iterator().next().size()));
@@ -176,6 +181,8 @@ final class RepairRunner implements Runnable {
         new RingRange(
             segments.get((parallelRepairs - 1) * segments.size() / parallelRepairs).getStart(),
             segments.get(0).getStart()));
+
+    LOG.debug("Parallel ranges : {}", parallelRanges);
 
     return parallelRanges;
   }
