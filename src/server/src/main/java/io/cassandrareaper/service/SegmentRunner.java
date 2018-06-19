@@ -96,6 +96,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private int commandId;
   private final AtomicBoolean segmentFailed;
   private final UUID leaderElectionId;
+  private final AtomicBoolean successOrFailedNotified = new AtomicBoolean(false);
+  private final AtomicBoolean completeNotified = new AtomicBoolean(false);
 
 
   SegmentRunner(
@@ -808,6 +810,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                     .withEndTime(DateTime.now())
                     .withId(segmentId)
                     .build());
+
+            successOrFailedNotified.set(true);
+            // Since we can get out of order notifications,
+            // we need to exit if we already got the COMPLETE notification.
+            if (completeNotified.get()) {
+              condition.signalAll();
+              jmxProxy.removeRepairStatusHandler(repairNumber);
+            }
             break;
           }
         } catch (AssertionError er) {
@@ -823,17 +833,29 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             segmentId,
             repairNumber);
         failOutsideSynchronizedBlock = true;
+        successOrFailedNotified.set(true);
+        // Since we can get out of order notifications,
+        // we need to exit if we already got the COMPLETE notification.
+        if (completeNotified.get()) {
+          condition.signalAll();
+          jmxProxy.removeRepairStatusHandler(repairNumber);
+        }
         break;
 
       case COMPLETE:
         // This gets called through the JMX proxy at the end
         // regardless of succeeded or failed sessions.
+        // Since we can get out of order notifications,
+        // we won't exit unless we already got a SUCCESS or ERROR notification.
         LOG.debug(
             "repair session finished for segment with id '{}' and repair number '{}'",
             segmentId,
             repairNumber);
-        condition.signalAll();
-        jmxProxy.removeRepairStatusHandler(repairNumber);
+        completeNotified.set(true);
+        if (successOrFailedNotified.get()) {
+          condition.signalAll();
+          jmxProxy.removeRepairStatusHandler(repairNumber);
+        }
         break;
       default:
         LOG.debug(
@@ -894,6 +916,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                     .withId(segmentId)
                     .build());
 
+            // Since we can get out of order notifications,
+            // we need to exit if we already got the COMPLETE notification.
+            successOrFailedNotified.set(true);
+            if (completeNotified.get()) {
+              condition.signalAll();
+              jmxProxy.removeRepairStatusHandler(repairNumber);
+            }
+
             break;
           }
         } catch (AssertionError er) {
@@ -903,19 +933,33 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         break;
 
       case SESSION_FAILED:
-        LOG.warn("repair session failed for segment with id '{}' and repair number '{}'", segmentId, repairNumber);
+        LOG.warn(
+            "repair session failed for segment with id '{}' and repair number '{}'",
+            segmentId,
+            repairNumber);
         failOutsideSynchronizedBlock = true;
+        // Since we can get out of order notifications,
+        // we need to exit if we already got the COMPLETE notification.
+        successOrFailedNotified.set(true);
+        if (completeNotified.get()) {
+          condition.signalAll();
+          jmxProxy.removeRepairStatusHandler(repairNumber);
+        }
         break;
 
       case FINISHED:
         // This gets called through the JMX proxy at the end
         // regardless of succeeded or failed sessions.
+        // Since we can get out of order notifications,
+        // we won't exit unless we already got a SUCCESS or ERROR notification.
         LOG.debug(
             "repair session finished for segment with id '{}' and repair number '{}'",
             segmentId,
             repairNumber);
-        condition.signalAll();
-        jmxProxy.removeRepairStatusHandler(repairNumber);
+        if (successOrFailedNotified.get()) {
+          condition.signalAll();
+          jmxProxy.removeRepairStatusHandler(repairNumber);
+        }
         break;
       default:
         LOG.debug(
