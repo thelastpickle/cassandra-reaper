@@ -3,7 +3,7 @@ var webpack = require('webpack');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 
 var _commonDeps = [
-  "bootstrap.css", "sb-admin-2.css", "timeline.css", "font-awesome.css", "metisMenu.css", "style.css",
+  "bootstrap.css", "sb-admin-2.css", "timeline.css", "font-awesome.css", "metisMenu.css", "style.scss",
   "jquery", "react", "bootstrap", "metisMenu", "sb-admin-2", "rxjs"
 ];
 
@@ -125,9 +125,10 @@ module.exports = {
         include: path.join(__dirname, 'app')
       },
       { test: /\.css$/, loader: "style-loader!css-loader" },
+      { test: /\.scss$/, loaders: ["style","css","resolve-url","sass?sourceMap"]},
       // loaders for font-awesome
       { test: /\.woff(2)?(\?v=[0-9]\.[0-9]\.[0-9])?$/, loader: "url-loader?limit=10000&minetype=application/font-woff" },
-      { test: /\.(ttf|eot|svg)(\?v=[0-9]\.[0-9]\.[0-9])?$/, loader: "file-loader" }
+      { test: /\.(gif|ttf|eot|svg?)(\?v=[0-9]\.[0-9]\.[0-9])?$/, loader: 'url-loader?name=[name].[ext]'  }
     ]
   }
 };

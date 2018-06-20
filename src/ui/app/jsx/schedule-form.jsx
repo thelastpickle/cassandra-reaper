@@ -1,7 +1,13 @@
 import React from "react";
 import { WithContext as ReactTags } from 'react-tag-input';
 import $ from "jquery";
+import { DateTimePicker } from 'react-widgets';
+import momentLocalizer from 'react-widgets-moment';
+import Moment from 'moment';
+import moment from "moment";
 
+Moment.locale(navigator.language);
+momentLocalizer();
 
 const scheduleForm = React.createClass({
 
@@ -19,7 +25,7 @@ const scheduleForm = React.createClass({
     return {
       addScheduleResultMsg: null, clusterNames: [], submitEnabled: false,
       clusterName: this.props.currentCluster!="all"?this.props.currentCluster:this.props.clusterNames[0], keyspace: "", tables: "", owner: null, segments: null,
-      parallelism: null, intensity: null, startTime: null, intervalDays: null, incrementalRepair: null, formCollapsed: true, nodes: null, datacenters: null,
+      parallelism: null, intensity: null, startTime: moment().toDate(), intervalDays: null, incrementalRepair: null, formCollapsed: true, nodes: null, datacenters: null,
       nodes: "", datacenters: "", blacklistedTables: "", nodeList: [], datacenterList: [], clusterStatus: {}, urlPrefix: URL_PREFIX, nodeSuggestions: [], datacenterSuggestions: [],
       clusterTables: {}, tableSuggestions: [], blacklistSuggestions: [], tableList: [], blacklistList: [], keyspaceList: [], keyspaceSuggestions: [], 
       blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true, repairThreadCount: 1
@@ -94,7 +100,7 @@ const scheduleForm = React.createClass({
   _onAdd: function(e) {
     const schedule = {
       clusterName: this.state.clusterName, keyspace: this.state.keyspace,
-      owner: this.state.owner, scheduleTriggerTime: this.state.startTime,
+      owner: this.state.owner, scheduleTriggerTime: moment(this.state.startTime).format("YYYY-MM-DDTHH:mm:ss"),
       scheduleDaysBetween: this.state.intervalDays
     };
     if(this.state.tables) schedule.tables = this.state.tables;
@@ -404,8 +410,11 @@ const scheduleForm = React.createClass({
             <div className="form-group">
               <label htmlFor="in_startTime" className="col-sm-3 control-label">Start time*</label>
               <div className="col-sm-9 col-md-7 col-lg-5">
-                <input type="datetime-local" required className="form-control"
-                  onChange={this._handleChange} value={this.state.startTime} id="in_startTime"/>
+                  <DateTimePicker
+                    value={this.state.startTime}
+                    onChange={value => this.setState({ startTime: value })}
+                    step={15}
+                  />
               </div>
             </div>
             <div className="form-group">
