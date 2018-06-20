@@ -17,7 +17,7 @@ Instruction to rebuild and embed the UI in Reaper can be found in the root [READ
 
 Getting started to work with the source code is easy.
 
-Requirments:
+Requirements:
 * [node](https://nodejs.org/) (v0.12+ recommended)
 * [bower](http://bower.io/)
 
