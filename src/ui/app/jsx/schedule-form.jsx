@@ -565,10 +565,10 @@ const scheduleForm = React.createClass({
       }
     }
 
-    const formHeader = <div className="panel-title" >
-                          <a href="#schedule-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>Add schedule</a>
+    const formHeader = <div className="panel-title">
+                          <a href="#schedule-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>Add schedule
                           &nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDownStyle}></span>
-                                 <span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span></div>
+                                 <span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span></a></div>
 
 
 

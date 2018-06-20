@@ -249,7 +249,7 @@ const snapshotList = React.createClass({
       }
     }
 
-    const snapshotHeader = <div className="panel-title"><a href="#snapshots" data-toggle="collapse" onClick={this._toggleRunningDisplay}>Snapshots</a>&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuRunningDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuRunningUpStyle}></span></div>
+    const snapshotHeader = <div className="panel-title"><a href="#snapshots" data-toggle="collapse" onClick={this._toggleRunningDisplay}>Snapshots&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuRunningDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuRunningUpStyle}></span></a></div>
 
 
     return (

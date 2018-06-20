@@ -552,7 +552,7 @@ const repairForm = React.createClass({
       }
     }
 
-    const formHeader = <div className="panel-title" ><a href="#repair-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>Start a new repair</a>&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span></div>
+    const formHeader = <div className="panel-title" ><a href="#repair-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>Start a new repair&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span></a></div>
 
 
 
