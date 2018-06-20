@@ -371,7 +371,7 @@ const repairList = React.createClass({
 
     const clusterFilter = <form className="form-horizontal form-condensed">
             <div className="form-group">
-              <label htmlFor="in_currentCluster" className="col-sm-3 control-label">Filter cluster :</label>
+              <label htmlFor="in_currentCluster" className="col-sm-3 control-label">Filter cluster:</label>
               <div className="col-sm-7 col-md-5 col-lg-3">
                 <select className="form-control" id="in_currentCluster"
                   onChange={this._handleChange} value={this.state.currentCluster}>
@@ -379,7 +379,7 @@ const repairList = React.createClass({
                   {clusterItems}
                 </select>
               </div>
-              <label htmlFor="in_numberOfElementsToDisplay" className="col-sm-1 control-label">Display :</label>
+              <label htmlFor="in_numberOfElementsToDisplay" className="col-sm-1 control-label">Display:</label>
               <div className="col-sm-5 col-md-3 col-lg-1">
                 <select className="form-control" id="in_numberOfElementsToDisplay"
                   onChange={this._handleChange} value={this.state.numberOfElementsToDisplay}>

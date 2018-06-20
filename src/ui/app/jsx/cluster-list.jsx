@@ -124,7 +124,7 @@ const Cluster = React.createClass({
       <div className="panel panel-default" style={clusterDisplayStyle}>
         <div className="panel-body">
           <div className="row">
-              <div className="col-lg-2"><a href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name} <span className="badge">{humanFileSize(totalLoad,1024)}</span></h4></a><div>Running repairs : {runningRepairsBadge}<br/>{repairProgress}</div>
+              <div className="col-lg-2"><a href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name} <span className="badge">{humanFileSize(totalLoad,1024)}</span></h4></a><div>Running repairs: {runningRepairsBadge}<br/>{repairProgress}</div>
               <button type="button" className="btn btn-xs btn-danger" onClick={this._onDelete}>Forget cluster</button>
               </div>
               <div className="col-lg-10">
