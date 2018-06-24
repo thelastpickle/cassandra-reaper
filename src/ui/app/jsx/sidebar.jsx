@@ -15,17 +15,16 @@
 //  limitations under the License.
 
 import React from "react";
+import { clusterSelected } from '../observable.js';
 
 const sidebar = React.createClass({
   propTypes: {
-    currentCluster: React.PropTypes.string.isRequired,
-    clusterNames: React.PropTypes.object,
     logoutSubject: React.PropTypes.object.isRequired,
     logoutResult: React.PropTypes.object.isRequired
   },
 
   getInitialState: function () {
-    return {logoutResultMsg: null};
+    return {logoutResultMsg: null, currentCluster: null};
   },
 
   componentWillMount: function () {
@@ -40,10 +39,12 @@ const sidebar = React.createClass({
         }
         )
     );
+    this.selectClusterSubjectSubscription = clusterSelected.map(cluster => this.setState({currentCluster: cluster}));
   },
 
   componentWillUnmount: function () {
     this._logoutResultSubscription.dispose();
+    this.selectClusterSubjectSubscription.dispose();
   },
 
   _onLogout: function(e) {
@@ -63,16 +64,19 @@ const sidebar = React.createClass({
           <div className="sidebar-nav navbar-collapse">
               <ul className="nav" id="side-menu">
                   <li>
-                      <a href={'index.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-sitemap fa-fw"></i> Clusters</a>
+                      <a href={'index.html?currentCluster=' + this.state.currentCluster}><i className="fa fa-sitemap fa-fw"></i> Clusters</a>
                   </li>
                   <li className="active">
-                      <a href={'schedules.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-calendar fa-fw"></i> Schedules</a>
+                      <a href={'schedules.html?currentCluster=' + this.state.currentCluster}><i className="fa fa-calendar fa-fw"></i> Schedules</a>
                   </li>
                   <li>
-                      <a href={'repair.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-wrench fa-fw"></i> Repairs</a>
+                      <a href={'repair.html?currentCluster=' + this.state.currentCluster}><i className="fa fa-wrench fa-fw"></i> Repairs</a>
                   </li>
                   <li>
-                      <a href={'snapshot.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-camera fa-fw"></i> Snapshots</a>
+                      <a href={'snapshot.html?currentCluster=' + this.state.currentCluster}><i className="fa fa-camera fa-fw"></i> Snapshots</a>
+                  </li>
+                  <li>
+                      <a href={'events.html?currentCluster=' + this.state.currentCluster}><i className="fa fa-search fa-fw"></i> Live Diagnostic <span className="text-danger" style={{verticalAlign: "super"}}>beta</span></a>
                   </li>
                   <li>
                       <a href="#" onClick={this._onLogout}><i className="fa fa-sign-out fa-fw"></i> Logout</a>

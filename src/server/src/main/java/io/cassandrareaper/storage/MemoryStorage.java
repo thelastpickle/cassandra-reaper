@@ -18,6 +18,7 @@
 package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -62,6 +63,7 @@ public final class MemoryStorage implements IStorage {
   private final ConcurrentMap<UUID, LinkedHashMap<UUID, RepairSegment>> repairSegmentsByRunId = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
   private final ConcurrentMap<String, Snapshot> snapshots = Maps.newConcurrentMap();
+  private final ConcurrentMap<UUID, DiagEventSubscription> subscriptionsById = Maps.newConcurrentMap();
 
   @Override
   public boolean isStorageConnected() {
@@ -527,5 +529,53 @@ public final class MemoryStorage implements IStorage {
   public Snapshot getSnapshot(String clusterName, String snapshotName) {
     Snapshot snapshot = snapshots.get(clusterName + "-" + snapshotName);
     return snapshot;
+  }
+
+  @Override
+  public Collection<DiagEventSubscription> getEventSubscriptions() {
+    return getEventSubscriptions(null);
+  }
+
+  @Override
+  public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
+    Collection<DiagEventSubscription> ret = new ArrayList<>();
+    for (DiagEventSubscription sub : subscriptionsById.values()) {
+      if (clusterName == null || sub.getCluster().equals(clusterName)) {
+        ret.add(sub);
+      }
+    }
+    return ret;
+  }
+
+  @Override
+  public DiagEventSubscription getEventSubscription(UUID id) {
+    if (subscriptionsById.containsKey(id)) {
+      return subscriptionsById.get(id);
+    }
+    throw new IllegalArgumentException("No event subscription with id " + id);
+  }
+
+  @Override
+  public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
+    if (!subscription.getId().isPresent()) {
+
+      subscription = new DiagEventSubscription(
+          Optional.of(UUID.randomUUID()),
+          subscription.getCluster(),
+          Optional.ofNullable(subscription.getDescription()),
+          subscription.getIncludeNodes(),
+          subscription.getEvents(),
+          subscription.getExportSse(),
+          subscription.getExportFileLogger(),
+          subscription.getExportHttpEndpoint());
+    }
+
+    subscriptionsById.put(subscription.getId().get(), subscription);
+    return subscription;
+  }
+
+  @Override
+  public boolean deleteEventSubscription(UUID id) {
+    return subscriptionsById.remove(id) != null;
   }
 }

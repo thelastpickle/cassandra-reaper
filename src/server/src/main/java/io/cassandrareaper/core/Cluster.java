@@ -18,6 +18,7 @@
 package io.cassandrareaper.core;
 
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -112,6 +113,23 @@ public final class Cluster implements Comparable<Cluster> {
     return this.getState() == other.getState()
         ? this.getName().compareTo(other.getName())
         : this.getState().compareTo(other.getState());
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
+    Cluster cluster = (Cluster) obj;
+    return Objects.equals(name, cluster.name);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name);
   }
 
   public static final class Builder {

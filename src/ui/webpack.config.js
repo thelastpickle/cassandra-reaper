@@ -20,7 +20,7 @@ var HtmlWebpackPlugin = require('html-webpack-plugin');
 
 var _commonDeps = [
   "bootstrap.css", "sb-admin-2.css", "timeline.css", "font-awesome.css", "metisMenu.css", "style.scss",
-  "jquery", "react", "bootstrap", "metisMenu", "sb-admin-2", "rxjs"
+  "jquery", "react", "bootstrap", "metisMenu", "sb-admin-2", "rxjs", "bootstrap-multiselect.css", "datatables.net-bs.css"
 ];
 
 // include hot reload deps in dev mode
@@ -50,6 +50,9 @@ module.exports = {
     login: [
       path.join(__dirname, 'app', 'login.js')
     ],
+    events: [
+      path.join(__dirname, 'app', 'events.js')
+    ],
     deps: _commonDeps
   },
   output: {
@@ -71,7 +74,11 @@ module.exports = {
       "metisMenu.css": "metisMenu/dist/metisMenu.min.css",
       "sb-admin-2": "startbootstrap-sb-admin-2/dist/js/sb-admin-2.js",
       "rxjs": 'rxjs/dist/rx.all',
-      "moment": 'moment/moment.js'
+      "moment": 'moment/moment',
+      "datatables.net": "datatables.net/js/jquery.dataTables.js",
+      "datatables.net-bs.js": "datatables.net-bs/js/dataTables.bootstrap.js",
+      "datatables.net-bs.css": "datatables.net-bs/css/dataTables.bootstrap.css",
+      "bootstrap-multiselect.css": "react-boostrap-multiselect/css/bootstrap-multiselect.css"
     },
     extensions: ['.js', '.jsx']
   },
@@ -134,10 +141,18 @@ module.exports = {
       inject: 'head',
       baseUrl: isDev ? '/' : '/webui/'
     }),
+    new HtmlWebpackPlugin({
+      filename: 'events.html',
+      chunks: ['deps', 'events'],
+      hash: true,
+      title: ' - User Auditing',
+      template: path.join(__dirname, 'app', 'html_template.ejs'),
+      inject: 'head'
+    }),
     new webpack.ProvidePlugin({
       $: "jquery",
       jQuery: "jquery",
-      "windows.jQuery": "jquery"
+      "window.jQuery": "jquery"
     }),
     new webpack.HotModuleReplacementPlugin(),
     new webpack.NoEmitOnErrorsPlugin(),

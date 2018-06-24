@@ -53,6 +53,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.util.Maps;
@@ -74,10 +75,8 @@ import static org.mockito.Mockito.when;
 
 public final class RepairRunResourceTest {
 
-  private static final String CLUSTER_NAME = "testcluster";
   private static final String PARTITIONER = "org.apache.cassandra.dht.RandomPartitioner";
   private static final String SEED_HOST = "127.0.0.1";
-  private static final String KEYSPACE = "testKeyspace";
   private static final Boolean INCREMENTAL = false;
   private static final Set<String> TABLES = Sets.newHashSet("testTable");
   private static final Set<String> NODES = Collections.emptySet();
@@ -102,6 +101,9 @@ public final class RepairRunResourceTest {
       BigInteger.valueOf(100L),
       BigInteger.valueOf(200L));
 
+
+  private final String clustername = "testcluster_" + RandomStringUtils.randomAlphabetic(6);
+  private final String keyspace = "testkeyspace_" + RandomStringUtils.randomAlphabetic(6);
   private AppContext context;
   private UriInfo uriInfo;
   private JmxProxy proxy;
@@ -121,7 +123,7 @@ public final class RepairRunResourceTest {
     context.storage = new MemoryStorage();
 
     Cluster cluster = Cluster.builder()
-        .withName(CLUSTER_NAME)
+        .withName(clustername)
         .withPartitioner(PARTITIONER)
         .withSeedHosts(ImmutableSet.of(SEED_HOST))
         .withState(Cluster.State.ACTIVE)
@@ -137,10 +139,10 @@ public final class RepairRunResourceTest {
     when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(SAMPLE_URI));
 
     proxy = mock(JmxProxy.class);
-    when(proxy.getClusterName()).thenReturn(CLUSTER_NAME);
+    when(proxy.getClusterName()).thenReturn(clustername);
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(proxy.getPartitioner()).thenReturn(PARTITIONER);
-    when(proxy.getTablesForKeyspace(KEYSPACE))
+    when(proxy.getTablesForKeyspace(keyspace))
         .thenReturn(TABLES.stream()
             .map(t -> Table.builder().withName(t).withCompactionStrategy(STCS).build())
             .collect(Collectors.toSet()));
@@ -164,9 +166,12 @@ public final class RepairRunResourceTest {
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(proxy);
 
+    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection()))
+        .thenReturn(proxy);
+
     RepairUnit.Builder repairUnitBuilder = RepairUnit.builder()
-            .clusterName(CLUSTER_NAME)
-            .keyspaceName(KEYSPACE)
+            .clusterName(clustername)
+            .keyspaceName(keyspace)
             .columnFamilies(TABLES)
             .incrementalRepair(INCREMENTAL)
             .nodes(NODES)
@@ -178,11 +183,10 @@ public final class RepairRunResourceTest {
   }
 
   private Response addDefaultRepairRun(RepairRunResource resource) {
-    return addRepairRun(
-        resource,
+    return addRepairRun(resource,
         uriInfo,
-        CLUSTER_NAME,
-        KEYSPACE,
+        clustername,
+        keyspace,
         TABLES,
         OWNER,
         "",
@@ -233,9 +237,9 @@ public final class RepairRunResourceTest {
     assertTrue(response.getEntity() instanceof RepairRunStatus);
 
     assertEquals(1, context.storage.getClusters().size());
-    assertEquals(1, context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(2)).size());
-    assertEquals(1, context.storage.getRepairRunIdsForCluster(CLUSTER_NAME).size());
-    UUID runId = context.storage.getRepairRunIdsForCluster(CLUSTER_NAME).iterator().next();
+    assertEquals(1, context.storage.getRepairRunsForCluster(clustername, Optional.of(2)).size());
+    assertEquals(1, context.storage.getRepairRunIdsForCluster(clustername).size());
+    UUID runId = context.storage.getRepairRunIdsForCluster(clustername).iterator().next();
     RepairRun run = context.storage.getRepairRun(runId).get();
     final RepairUnit unit = context.storage.getRepairUnit(run.getRepairUnitId());
     assertEquals(RepairRun.RunState.NOT_STARTED, run.getRunState());
@@ -258,26 +262,26 @@ public final class RepairRunResourceTest {
     assertTrue(response.getEntity() instanceof RepairRunStatus);
 
     assertEquals(1, context.storage.getClusters().size());
-    assertEquals(1, context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(1)).size());
-    assertEquals(2, context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(2)).size());
-    assertEquals(2, context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(3)).size());
+    assertEquals(1, context.storage.getRepairRunsForCluster(clustername, Optional.of(1)).size());
+    assertEquals(2, context.storage.getRepairRunsForCluster(clustername, Optional.of(2)).size());
+    assertEquals(2, context.storage.getRepairRunsForCluster(clustername, Optional.of(3)).size());
 
     assertEquals(
-        context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(3)).iterator().next().getId(),
-        context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(1)).iterator().next().getId());
+        context.storage.getRepairRunsForCluster(clustername, Optional.of(3)).iterator().next().getId(),
+        context.storage.getRepairRunsForCluster(clustername, Optional.of(1)).iterator().next().getId());
 
     assertEquals(
-        context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(2)).iterator().next().getId(),
-        context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(1)).iterator().next().getId());
+        context.storage.getRepairRunsForCluster(clustername, Optional.of(2)).iterator().next().getId(),
+        context.storage.getRepairRunsForCluster(clustername, Optional.of(1)).iterator().next().getId());
 
   }
 
   @Test
   public void doesNotDisplayBlacklistedCompactionStrategies() throws Exception {
     context.config.setBlacklistTwcsTables(true);
-    when(proxy.getKeyspaces()).thenReturn(Lists.newArrayList(KEYSPACE));
+    when(proxy.getKeyspaces()).thenReturn(Lists.newArrayList(keyspace));
 
-    when(proxy.getTablesForKeyspace(KEYSPACE)).thenReturn(
+    when(proxy.getTablesForKeyspace(keyspace)).thenReturn(
             Sets.newHashSet(
                     Table.builder().withName("table1")
                             .withCompactionStrategy("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")
@@ -291,11 +295,10 @@ public final class RepairRunResourceTest {
 
     RepairRunResource resource = new RepairRunResource(context);
 
-    Response response = addRepairRun(
-        resource,
+    Response response = addRepairRun(resource,
         uriInfo,
-        CLUSTER_NAME,
-        KEYSPACE,
+        clustername,
+        keyspace,
         Collections.EMPTY_SET,
         OWNER,
         "",
@@ -316,9 +319,9 @@ public final class RepairRunResourceTest {
   @Test
   public void displaysExplicitBlacklistedCompactionStrategies() throws Exception {
     context.config.setBlacklistTwcsTables(true);
-    when(proxy.getKeyspaces()).thenReturn(Lists.newArrayList(KEYSPACE));
+    when(proxy.getKeyspaces()).thenReturn(Lists.newArrayList(keyspace));
 
-    when(proxy.getTablesForKeyspace(KEYSPACE)).thenReturn(
+    when(proxy.getTablesForKeyspace(keyspace)).thenReturn(
             Sets.newHashSet(
                     Table.builder().withName("table1")
                             .withCompactionStrategy("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")
@@ -332,11 +335,10 @@ public final class RepairRunResourceTest {
 
     RepairRunResource resource = new RepairRunResource(context);
 
-    Response response = addRepairRun(
-        resource,
+    Response response = addRepairRun(resource,
         uriInfo,
-        CLUSTER_NAME,
-        KEYSPACE,
+        clustername,
+        keyspace,
         Sets.newHashSet("table1"),
         OWNER,
         "",
@@ -430,7 +432,7 @@ public final class RepairRunResourceTest {
     Response response = addRepairRun(
             resource,
             uriInfo,
-            CLUSTER_NAME,
+            clustername,
             null,
             TABLES,
             OWNER,
@@ -451,7 +453,7 @@ public final class RepairRunResourceTest {
     Response response = addRepairRun(
             resource,
             uriInfo,
-            CLUSTER_NAME,
+            clustername,
             null,
             TABLES,
             OWNER,

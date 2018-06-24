@@ -17,6 +17,9 @@
 
 package io.cassandrareaper.acceptance;
 
+
+import io.cassandrareaper.core.DiagEventSubscription;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +46,9 @@ public final class TestContext {
 
   /* Testing cluster name mapped to keyspace name mapped to tables list. */
   public static Map<String, Map<String, Set<String>>> TEST_CLUSTER_INFO = new HashMap<>();
+
+  public static List<DiagEventSubscription> LAST_RETRIEVED_EVENT_SUBSCRIPTIONS = Collections.emptyList();
+  public static List<DiagEventSubscription> LAST_CREATED_EVENT_SUBSCRIPTIONS = Collections.emptyList();
 
   /* Used for targeting an object accessed in last test step. */
   private final List<UUID> currentSchedules = Lists.newCopyOnWriteArrayList();

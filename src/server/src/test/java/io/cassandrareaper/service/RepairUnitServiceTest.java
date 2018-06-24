@@ -32,6 +32,7 @@ import java.util.Collection;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -50,7 +51,7 @@ public final class RepairUnitServiceTest {
   private RepairUnitService service;
 
   private final Cluster cluster = Cluster.builder()
-      .withName("reaper")
+      .withName("testcluster_" + RandomStringUtils.randomAlphabetic(6))
       .withPartitioner("murmur3")
       .withSeedHosts(Sets.newHashSet("127.0.0.1"))
       .withJmxPort(7199)

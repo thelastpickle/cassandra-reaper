@@ -17,6 +17,8 @@
 
 package io.cassandrareaper.core;
 
+
+import java.util.Objects;
 import java.util.Optional;
 
 import com.google.common.base.Preconditions;
@@ -57,6 +59,23 @@ public final class Node {
 
   public String toString() {
     return hostname + (cluster.isPresent() ? "@" + cluster.get().getName() : "");
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
+    Node node = (Node) obj;
+    return Objects.equals(cluster, node.cluster) && Objects.equals(hostname, node.hostname);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(cluster, hostname);
   }
 
   public static final class Builder {

@@ -324,6 +324,11 @@ public final class ClusterResource {
             .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair runs")
             .build();
       }
+      if (!context.storage.getEventSubscriptions(clusterName).isEmpty()) {
+        return Response.status(Response.Status.CONFLICT)
+                .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has diagnostic events subscriptions")
+                .build();
+      }
       context.storage.deleteCluster(clusterName);
       return Response.accepted().build();
     } catch (IllegalArgumentException ex) {

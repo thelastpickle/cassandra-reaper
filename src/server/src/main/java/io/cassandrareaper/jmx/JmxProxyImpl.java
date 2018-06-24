@@ -54,6 +54,8 @@ import javax.management.ListenerNotFoundException;
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.Notification;
+import javax.management.NotificationFilter;
+import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
@@ -112,6 +114,8 @@ final class JmxProxyImpl implements JmxProxy {
   private final ConcurrentMap<Integer, RepairStatusHandler> repairStatusHandlers = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
   private final Optional<StreamManagerMBean> smProxy;
+  private final DiagnosticEventPersistenceMBean diagEventProxy;
+  private final LastEventIdBroadcasterMBean lastEventIdProxy;
 
   private JmxProxyImpl(
       String host,
@@ -123,7 +127,9 @@ final class JmxProxyImpl implements JmxProxy {
       EndpointSnitchInfoMBean endpointSnitchMbean,
       FailureDetectorMBean fdProxy,
       MetricRegistry metricRegistry,
-      Optional<StreamManagerMBean> smProxy) {
+      Optional<StreamManagerMBean> smProxy,
+      DiagnosticEventPersistenceMBean diagEventProxy,
+      LastEventIdBroadcasterMBean lastEventIdProxy) {
 
     this.host = host;
     this.hostBeforeTranslation = hostBeforeTranslation;
@@ -134,6 +140,8 @@ final class JmxProxyImpl implements JmxProxy {
     this.endpointSnitchMbean = endpointSnitchMbean;
     this.clusterName = Cluster.toSymbolicName(ssProxy.getClusterName());
     this.fdProxy = fdProxy;
+    this.diagEventProxy = diagEventProxy;
+    this.lastEventIdProxy = lastEventIdProxy;
     this.metricRegistry = metricRegistry;
     this.smProxy = smProxy;
     registerConnectionsGauge();
@@ -240,7 +248,9 @@ final class JmxProxyImpl implements JmxProxy {
               JMX.newMBeanProxy(mbeanServerConn, ObjectNames.ENDPOINT_SNITCH_INFO, EndpointSnitchInfoMBean.class),
               JMX.newMBeanProxy(mbeanServerConn, ObjectNames.FAILURE_DETECTOR, FailureDetectorMBean.class),
               metricRegistry,
-              smProxy);
+              smProxy,
+              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.DIAGNOSTICS_EVENTS, DiagnosticEventPersistenceMBean.class),
+              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.LAST_EVENT_ID, LastEventIdBroadcasterMBean.class));
 
       // registering listeners throws bunch of exceptions, so do it here rather than in the constructor
       mbeanServerConn.addNotificationListener(ObjectNames.STORAGE_SERVICE, proxy, null, null);
@@ -947,8 +957,35 @@ final class JmxProxyImpl implements JmxProxy {
     return endpointSnitchMbean;
   }
 
+  DiagnosticEventPersistenceMBean getDiagnosticEventPersistenceMBean() {
+    return diagEventProxy;
+  }
+
+  LastEventIdBroadcasterMBean getLastEventIdBroadcasterMBean() {
+    return lastEventIdProxy;
+  }
+
   String getUntranslatedHost() {
     return hostBeforeTranslation;
+  }
+
+  void addConnectionNotificationListener(NotificationListener listener) {
+    jmxConnector.addConnectionNotificationListener(listener, null, null);
+  }
+
+  void removeConnectionNotificationListener(NotificationListener listener) throws ListenerNotFoundException {
+    jmxConnector.removeConnectionNotificationListener(listener);
+  }
+
+  void addNotificationListener(NotificationListener listener, NotificationFilter filter)
+      throws IOException, JMException {
+
+    jmxConnector.getMBeanServerConnection()
+        .addNotificationListener(ObjectNames.LAST_EVENT_ID, listener, filter, null);
+  }
+
+  void removeNotificationListener(NotificationListener listener) throws IOException, JMException {
+    jmxConnector.getMBeanServerConnection().removeNotificationListener(ObjectNames.LAST_EVENT_ID, listener);
   }
 
   // Initialization-on-demand holder for jmx ObjectNames
@@ -965,6 +1002,8 @@ final class JmxProxyImpl implements JmxProxy {
     static final ObjectName TP_VALIDATIONS_ACTIVE;
     static final ObjectName TP_VALIDATIONS_PENDING;
     static final ObjectName INTERNALS;
+    static final ObjectName DIAGNOSTICS_EVENTS;
+    static final ObjectName LAST_EVENT_ID;
 
     static {
       try {
@@ -977,6 +1016,8 @@ final class JmxProxyImpl implements JmxProxy {
         COMPACTIONS_PENDING = new ObjectName("org.apache.cassandra.metrics:type=Compaction,name=PendingTasks");
         COLUMN_FAMILIES = new ObjectName("org.apache.cassandra.db:type=ColumnFamilies,keyspace=*,columnfamily=*");
         INTERNALS = new ObjectName("org.apache.cassandra.internal:*");
+        DIAGNOSTICS_EVENTS = new ObjectName("org.apache.cassandra.diag:type=DiagnosticEventService");
+        LAST_EVENT_ID = new ObjectName("org.apache.cassandra.diag:type=LastEventIdBroadcaster");
 
         TP_VALIDATIONS_ACTIVE = new ObjectName(
             "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,name=ActiveTasks");
