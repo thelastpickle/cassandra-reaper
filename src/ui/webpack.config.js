@@ -8,7 +8,7 @@ var _commonDeps = [
 ];
 
 // include hot reload deps in dev mode
-var isDev = process.env.BUILD_DEV == '1'; // set by server.js
+const isDev = process.argv.indexOf('-d') !== -1;
 if(isDev) {
   _commonDeps.push("webpack-dev-server/client?http://0.0.0.0:8000"); // WebpackDevServer host and port
   _commonDeps.push("webpack/hot/only-dev-server");
@@ -66,7 +66,8 @@ module.exports = {
       hash: true,
       title: ' - Clusters',
       template: path.join(__dirname, 'app', 'html_template.ejs'),
-      inject: 'head'
+      inject: 'head',
+      baseUrl: isDev ? '/' : '/webui/'
     }),
     new HtmlWebpackPlugin({ 
       filename: 'repair.html',
@@ -74,7 +75,8 @@ module.exports = {
       hash: true,
       title: ' - Repair',
       template: path.join(__dirname, 'app', 'html_template.ejs'),
-      inject: 'head'
+      inject: 'head',
+      baseUrl: isDev ? '/' : '/webui/'
     }),
     new HtmlWebpackPlugin({  
       filename: 'schedules.html',
@@ -82,7 +84,8 @@ module.exports = {
       hash: true,
       title: ' - Schedules',
       template: path.join(__dirname, 'app', 'html_template.ejs'),
-      inject: 'head'
+      inject: 'head',
+      baseUrl: isDev ? '/' : '/webui/'
     }),
     new HtmlWebpackPlugin({
       filename: 'segments.html',
@@ -90,7 +93,8 @@ module.exports = {
       hash: true,
       title: ' - Segments',
       template: path.join(__dirname, 'app', 'html_template.ejs'),
-      inject: 'head'
+      inject: 'head',
+      baseUrl: isDev ? '/' : '/webui/'
     }),
     new HtmlWebpackPlugin({
       filename: 'snapshot.html',
@@ -98,7 +102,8 @@ module.exports = {
       hash: true,
       title: ' - Snapshots',
       template: path.join(__dirname, 'app', 'html_template.ejs'),
-      inject: 'head'
+      inject: 'head',
+      baseUrl: isDev ? '/' : '/webui/'
     }),
     new HtmlWebpackPlugin({ 
       filename: 'login.html',
@@ -106,7 +111,8 @@ module.exports = {
       hash: true,
       title: ' - Login',
       template: path.join(__dirname, 'app', 'html_template.ejs'),
-      inject: 'head'
+      inject: 'head',
+      bbaseUrl: isDev ? '/' : '/webui/'
     }),
     new webpack.ProvidePlugin({
       $: "jquery",
