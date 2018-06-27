@@ -47,16 +47,16 @@ const sidebar = React.createClass({
           <div className="sidebar-nav navbar-collapse">
               <ul className="nav" id="side-menu">
                   <li>
-                      <a href={'index.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-sitemap fa-fw"></i> Cluster</a>
+                      <a href={'index.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-sitemap fa-fw"></i> Clusters</a>
                   </li>
                   <li className="active">
                       <a href={'schedules.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-calendar fa-fw"></i> Schedules</a>
                   </li>
                   <li>
-                      <a href={'repair.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-wrench fa-fw"></i> Repair</a>
+                      <a href={'repair.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-wrench fa-fw"></i> Repairs</a>
                   </li>
                   <li>
-                      <a href={'snapshot.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-camera fa-fw"></i> Snapshot</a>
+                      <a href={'snapshot.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-camera fa-fw"></i> Snapshots</a>
                   </li>
                   <li>
                       <a href="#" onClick={this._onLogout}><i className="fa fa-sign-out fa-fw"></i> Logout</a>

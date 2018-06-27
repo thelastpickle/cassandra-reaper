@@ -39,7 +39,7 @@ const Cluster = React.createClass({
           method: 'GET',
           component: this,
           complete: function(data) {
-            console.log(this.component.props.name + " complete.")
+            console.log(this.component.props.name + " complete.");
             this.component.setState({clusterStatuses: setTimeout(this.component._refreshClusterStatus, 30000),
                                      clusterStatus: $.parseJSON(data.responseText)});
             
@@ -49,7 +49,7 @@ const Cluster = React.createClass({
             console.log(this.component.props.name + " : Next attempt in 30s.")
           },
           error: function(data) {
-            console.log(this.component.props.name + " failed.")
+            console.log(this.component.props.name + " failed.");
             this.component.setState({clusterStatuses: setTimeout(this.component._refreshClusterStatus, 30000)});
 
           }
@@ -70,7 +70,7 @@ const Cluster = React.createClass({
     let progressStyle = {
       marginTop: "0.25em",
       marginBottom: "0.25em"
-    }
+    };
 
     let datacenters = "";
     let runningRepairs = 0;
@@ -80,10 +80,10 @@ const Cluster = React.createClass({
 
     if (this.state.clusterStatus.repair_runs) {
       runningRepairs = this.state.clusterStatus.repair_runs.reduce(function(previousValue, repairRun){
-                              return previousValue + (repairRun.state=='RUNNING' ? 1: 0); 
-                            }, 0);;
+                              return previousValue + (repairRun.state === 'RUNNING' ? 1: 0);
+                            }, 0);
 
-      repairProgress = this.state.clusterStatus.repair_runs.filter(repairRun => repairRun.state=='RUNNING').map(repairRun => 
+      repairProgress = this.state.clusterStatus.repair_runs.filter(repairRun => repairRun.state === 'RUNNING').map(repairRun =>
                       <ProgressBar now={(repairRun.segments_repaired*100)/repairRun.total_segments} active bsStyle="success" 
                                    style={progressStyle} 
                                    label={repairRun.keyspace_name}
@@ -98,11 +98,11 @@ const Cluster = React.createClass({
                                     nbDatacenters={Object.keys(this.state.nodes_status.endpointStates[0].endpoints).length} 
                                     clusterName={this.props.name} key={this.props.name + '-' + dc} 
                                     totalLoad={this.state.nodes_status.endpointStates[0].totalLoad}/>
-       ) 
+       );
        totalLoad = this.state.nodes_status.endpointStates[0].totalLoad;
       } 
       else {
-        datacenters = <div className="clusterLoader"></div>
+        datacenters = <div className="clusterLoader"></div>;
       }
 
     let runningRepairsBadge = <span className="label label-default">{runningRepairs}</span>;
@@ -112,7 +112,7 @@ const Cluster = React.createClass({
 
     let clusterDisplayStyle = {
       display: "none" 
-    }
+    };
 
     if(this.props.name.includes(this.props.clusterFilter)) {
       clusterDisplayStyle = {
@@ -124,26 +124,23 @@ const Cluster = React.createClass({
       <div className="panel panel-default" style={clusterDisplayStyle}>
         <div className="panel-body">
           <div className="row">
-              <div className="col-lg-2"><a href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name} <span className="badge">{humanFileSize(totalLoad,1024)}</span></h4></a><div>Running repairs : {runningRepairsBadge}<br/>{repairProgress}</div>
-              <button type="button" className="btn btn-xs btn-danger" onClick={this._onDelete}>Delete cluster</button>
-              </div>
-              <div className="col-lg-10">
+            <div className="col-lg-2"><a href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name} <span className="badge">{humanFileSize(totalLoad,1024)}</span></h4></a><div>Running repairs: {runningRepairsBadge}<br/>{repairProgress}</div>
+              <button type="button" className="btn btn-xs btn-danger" onClick={this._onDelete}>Forget cluster</button>
+            </div>
+            <div className="col-lg-10">
               <div className="row" style={rowDivStyle}>
-                <div className="row" style={rowDivStyle}>
-                      {datacenters}
-                </div>
+                {datacenters}
               </div>
-              </div>
-          </div>
+            </div>
           </div>
         </div>
+      </div>
     );
   },
 
   _onDelete: function(e) {
     this.props.deleteSubject.onNext(this.props.name);
   }
-
 });
 
 
@@ -158,7 +155,6 @@ const Datacenter = React.createClass({
   },
   
   render: function() {
-
     const dcSize = Object.keys(this.props.datacenter).map(rack => this.props.datacenter[rack].reduce(function(previousValue, endpoint){
                               return previousValue + endpoint.load; 
                             }, 0)).reduce(function(previousValue, currentValue){
@@ -173,7 +169,7 @@ const Datacenter = React.createClass({
 
     let badgeStyle = {
       float: "right"
-    }
+    };
 
     let panelHeadingStyle = {
       padding: "2px 10px"
@@ -185,7 +181,7 @@ const Datacenter = React.createClass({
 
     let panelStyle = {
       marginBottom: "1px"
-    }
+    };
 
     const nbRacks = Object.keys(this.props.datacenter).length;
     const racks = Object.keys(this.props.datacenter).sort().map(rack => 
@@ -199,8 +195,6 @@ const Datacenter = React.createClass({
             </div>
     );
   },
-
-
 });
 
 const Rack = React.createClass({
@@ -218,61 +212,53 @@ const Rack = React.createClass({
   },
 
   render: function() {
+    const rackSize = this.props.rack.reduce((previousValue, endpoint) => previousValue + endpoint.load, 0);
+    let rowDivStyle = {
+        marginLeft: "0",
+        paddingLeft: "0",
+        paddingRight: "1px",
+        width: ((rackSize/this.props.dcLoad)*100) + "%"
+    };
 
-  const rackSize = this.props.rack.reduce(function(previousValue, endpoint){
-                              return previousValue + endpoint.load; 
-                            }, 0);;
-  let rowDivStyle = {
-      marginLeft: "0",
-      paddingLeft: "0",
-      paddingRight: "1px",
-      width: ((rackSize/this.props.dcLoad)*100) + "%"
-  };
+    let badgeStyle = {
+      float: "right"
+    };
 
-  let badgeStyle = {
-    float: "right"
-  }
+    let panelHeadingStyle = {
+      padding: "2px 10px"
+    };
 
-  let panelHeadingStyle = {
-    padding: "2px 10px"
-  };
+    let panelBodyStyle = {
+      padding: "1px"
+    };
 
-  let panelBodyStyle = {
-    padding: "1px"
-  };
+    let panelStyle = {
+      marginBottom: "1px"
+    };
 
-  let panelStyle = {
-    marginBottom: "1px"
-  }
-  
-  let nodes= "" ;
-  let rackName = "";
-  
+    let nodes = "" ;
+    let rackName = "";
 
-  if(this.props.rack) {
-    rackName = this.props.rack[0].rack;
-    nodes = this.props.rack.map(endpoint =>
-        <NodeStatus key={endpoint.endpoint} endpointStatus={endpoint} 
-          clusterName={this.props.clusterName} nbNodes={this.props.rack.length} rackLoad={rackSize}
-          notificationSystem={this._notificationSystem}/>
+    if(this.props.rack) {
+      rackName = this.props.rack[0].rack;
+      nodes = this.props.rack.map(endpoint =>
+          <NodeStatus key={endpoint.endpoint} endpointStatus={endpoint}
+            clusterName={this.props.clusterName} nbNodes={this.props.rack.length} rackLoad={rackSize}
+            notificationSystem={this._notificationSystem}/>
+      );
+    }
+
+    return (
+      <div className="col-lg-12" style={rowDivStyle}>
+        <NotificationSystem ref="notificationSystem" />
+        <div className="panel panel-default panel-success" style={panelStyle}>
+          <div className="panel-heading" style={panelHeadingStyle}><b>{rackName} <span className="badge" style={badgeStyle}>{humanFileSize(rackSize, 1024)}</span></b></div>
+          <div className="panel-body" style={panelBodyStyle}>{nodes}</div>
+        </div>
+      </div>
     );
-  }
-
-  return (
-            <div className="col-lg-12" style={rowDivStyle}>
-            <NotificationSystem ref="notificationSystem" />
-              <div className="panel panel-default panel-success" style={panelStyle}>
-                <div className="panel-heading" style={panelHeadingStyle}><b>{rackName} <span className="badge" style={badgeStyle}>{humanFileSize(rackSize, 1024)}</span></b></div>
-                <div className="panel-body" style={panelBodyStyle}>{nodes}</div>
-              </div>
-            </div>
-  );
   },
-
-
 });
-
-
 
 const clusterList = React.createClass({
   mixins: [DeleteStatusMessageMixin],
@@ -298,8 +284,8 @@ const clusterList = React.createClass({
   },
 
   _handleChange: function(e) {
-    var v = e.target.value;
-    var n = e.target.id.substring(3); // strip in_ prefix
+    const v = e.target.value;
+    const n = e.target.id.substring(3); // strip in_ prefix
     
     // update state
     const state = this.state;
@@ -308,39 +294,35 @@ const clusterList = React.createClass({
   }, 
 
   render: function() {
-
     const rows = this.state.clusterNames.sort().map(name =>
       <Cluster name={name} key={name} deleteSubject={this.props.deleteSubject} getClusterStatus={this.props.getClusterStatus} getClusterSubject={this.props.getClusterSubject} clusterFilter={this.state.clusterFilter}/>);
 
     let table = null;
-    if(rows.length == 0) {
-      table = <div className="alert alert-info" role="alert">No clusters found</div>
+    if(rows.length === 0) {
+      table = <div className="alert alert-info" role="alert">No clusters found</div>;
     } else {
-
-      table = <div>
-              {rows}
-              </div>
+        table = <div>{rows}</div>;
     }
 
     let filterInput = <div className="row">
-    <div className="col-lg-12">
-      <form className="form-horizontal form-condensed">
-        <div className="form-group">
-          <label htmlFor="in_clusterName" className="col-sm-3 control-label">Filter: </label>
-          <div className="col-sm-9 col-md-7 col-lg-5">
-            <input type="text" required className="form-control" value={this.state.clusterFilter}
-                  onChange={this._handleChange} id="in_clusterFilter" placeholder="Start typing to filter clusters..."/>
+      <div className="col-lg-12">
+        <form className="form-horizontal form-condensed">
+          <div className="form-group">
+            <label htmlFor="in_clusterName" className="col-sm-3 control-label">Filter: </label>
+            <div className="col-sm-9 col-md-7 col-lg-5">
+              <input type="text" required className="form-control" value={this.state.clusterFilter}
+                    onChange={this._handleChange} id="in_clusterFilter" placeholder="Start typing to filter clusters..."/>
+            </div>
           </div>
-        </div>
-      </form>
-    </div>
-    </div>
+        </form>
+      </div>
+    </div>;
 
     return (<div className="row">
               <div className="col-lg-12">
                 {this.deleteMessage()}
                 {filterInput}
-                {rows}
+                {table}
               </div>
             </div>);
   }

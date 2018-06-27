@@ -242,7 +242,7 @@ const repairList = React.createClass({
   },
 
   getInitialState: function() {
-    return {repairs: [], deleteResultMsg: null, clusterNames:[], 
+    return {repairs: null, deleteResultMsg: null, clusterNames:[],
       currentCluster:this.props.currentCluster, 
       runningCollapsed: false, doneCollapsed: false,
       modalShow: false, repairRunId: '',
@@ -318,8 +318,8 @@ const repairList = React.createClass({
 
   render: function() {
 
-    let rowsRunning = <div className="clusterLoader"></div>
-    let rowsDone = <div className="clusterLoader"></div>
+    let rowsRunning = null;
+    let rowsDone = null;
 
     function compareEndTimeReverse(a,b) {
       if (a.end_time < b.end_time)
@@ -340,30 +340,33 @@ const repairList = React.createClass({
     let modalClose = () => this.setState({ modalShow:false, repairRunId: ''});
 
     const segmentModal = <SegmentModal show={this.state.modalShow} onHide={modalClose} repairRunId={this.state.repairRunId} height={this.state.height} width={this.state.width}/>;
-    rowsRunning = this.state.repairs.sort(compareStartTimeReverse)
-      .filter(repair => this.state.currentCluster == "all" || this.state.currentCluster == repair.cluster_name)
-      .filter(repair => (repair.state == "RUNNING" || repair.state == "PAUSED" || repair.state == "NOT_STARTED"))
-      .map(repair =>
-      <tbody key={repair.id+'-rows'}>
-      <TableRow row={repair} key={repair.id+'-head'}
-        deleteSubject={this.props.deleteSubject}
-        updateStatusSubject={this.props.updateStatusSubject} showSegments={this._displaySegments}/>
-      <TableRowDetails row={repair} key={repair.id+'-details'} updateIntensitySubject={this.props.updateIntensitySubject} />
-      </tbody>
-    );
+    if (this.state.repairs !== null) {
+        rowsRunning = this.state.repairs.sort(compareStartTimeReverse)
+            .filter(repair => this.state.currentCluster === "all" || this.state.currentCluster === repair.cluster_name)
+            .filter(repair => (repair.state === "RUNNING" || repair.state === "PAUSED" || repair.state === "NOT_STARTED"))
+            .map(repair =>
+                <tbody key={repair.id + '-rows'}>
+                    <TableRow row={repair} key={repair.id + '-head'}
+                              deleteSubject={this.props.deleteSubject}
+                              updateStatusSubject={this.props.updateStatusSubject} showSegments={this._displaySegments}/>
+                    <TableRowDetails row={repair} key={repair.id + '-details'}
+                                     updateIntensitySubject={this.props.updateIntensitySubject}/>
+                </tbody>
+            );
 
-    rowsDone = this.state.repairs.sort(compareEndTimeReverse)
-                                 .filter(repair => this.state.currentCluster == "all" || this.state.currentCluster == repair.cluster_name)
-                                 .filter(repair => (repair.state != "RUNNING" && repair.state != "PAUSED" && repair.state != "NOT_STARTED"))
-                                 .slice(0, this.state.numberOfElementsToDisplay)
-                                 .map(repair =>
-      <tbody key={repair.id+'-rows'}>
-      <TableRow row={repair} key={repair.id+'-head'}
-        deleteSubject={this.props.deleteSubject}
-        updateStatusSubject={this.props.updateStatusSubject} showSegments={this._displaySegments}/>
-      <TableRowDetails row={repair} key={repair.id+'-details'}/>
-      </tbody>
-    );
+        rowsDone = this.state.repairs.sort(compareEndTimeReverse)
+            .filter(repair => this.state.currentCluster === "all" || this.state.currentCluster === repair.cluster_name)
+            .filter(repair => (repair.state !== "RUNNING" && repair.state !== "PAUSED" && repair.state !== "NOT_STARTED"))
+            .slice(0, this.state.numberOfElementsToDisplay)
+            .map(repair =>
+                <tbody key={repair.id + '-rows'}>
+                    <TableRow row={repair} key={repair.id + '-head'}
+                              deleteSubject={this.props.deleteSubject}
+                              updateStatusSubject={this.props.updateStatusSubject} showSegments={this._displaySegments}/>
+                    <TableRowDetails row={repair} key={repair.id + '-details'}/>
+                </tbody>
+            );
+    }
 
     const clusterItems = this.state.clusterNames.sort().map(name =>
       <option key={name} value={name}>{name}</option>
@@ -371,7 +374,7 @@ const repairList = React.createClass({
 
     const clusterFilter = <form className="form-horizontal form-condensed">
             <div className="form-group">
-              <label htmlFor="in_currentCluster" className="col-sm-3 control-label">Filter cluster :</label>
+              <label htmlFor="in_currentCluster" className="col-sm-3 control-label">Filter cluster:</label>
               <div className="col-sm-7 col-md-5 col-lg-3">
                 <select className="form-control" id="in_currentCluster"
                   onChange={this._handleChange} value={this.state.currentCluster}>
@@ -379,7 +382,7 @@ const repairList = React.createClass({
                   {clusterItems}
                 </select>
               </div>
-              <label htmlFor="in_numberOfElementsToDisplay" className="col-sm-1 control-label">Display :</label>
+              <label htmlFor="in_numberOfElementsToDisplay" className="col-sm-1 control-label">Display:</label>
               <div className="col-sm-5 col-md-3 col-lg-1">
                 <select className="form-control" id="in_numberOfElementsToDisplay"
                   onChange={this._handleChange} value={this.state.numberOfElementsToDisplay}>
@@ -393,10 +396,11 @@ const repairList = React.createClass({
     </form>
 
     let tableRunning = null;
-    if(rowsRunning.length == 0) {
+    if(rowsRunning === null) {
+        tableRunning = <div className="clusterLoader"></div>;
+    } else if(rowsRunning.length === 0) {
       tableRunning = <div className="alert alert-info" role="alert">No running repair runs found</div>
     } else {
-
       tableRunning = <div className="row">
           <div className="col-sm-12">
               <div className="table-responsive">
@@ -421,10 +425,11 @@ const repairList = React.createClass({
     }
 
     let tableDone = null;
-    if(rowsDone.length == 0) {
+    if(rowsDone === null) {
+      tableDone = <div className="clusterLoader"></div>;
+    } else if(rowsDone.length === 0) {
       tableDone = <div className="alert alert-info" role="alert">No past repair runs found</div>
     } else {
-
       tableDone = <div className="row">
           <div className="col-sm-12">
               <div className="table-responsive">
@@ -483,8 +488,8 @@ const repairList = React.createClass({
       }
     }
 
-    const runningHeader = <div className="panel-title"><a href="#repairs-running" data-toggle="collapse" onClick={this._toggleRunningDisplay}>Running</a>&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuRunningDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuRunningUpStyle}></span></div>
-    const doneHeader = <div className="panel-title"><a href="#repairs-done" data-toggle="collapse" onClick={this._toggleDoneDisplay}>Done</a>&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDoneDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuDoneUpStyle}></span></div>
+    const runningHeader = <div className="panel-title"><a href="#repairs-running" data-toggle="collapse" onClick={this._toggleRunningDisplay}>Running&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuRunningDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuRunningUpStyle}></span></a></div>
+    const doneHeader = <div className="panel-title"><a href="#repairs-done" data-toggle="collapse" onClick={this._toggleDoneDisplay}>Done&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDoneDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuDoneUpStyle}></span></a></div>
 
 
 

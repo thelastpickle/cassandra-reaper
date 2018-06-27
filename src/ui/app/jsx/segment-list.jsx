@@ -4,7 +4,7 @@ import {CFsListRender} from "jsx/mixin";
 import Button from 'react-bootstrap/lib/Button';
 import Modal from 'react-bootstrap/lib/Modal';
 import $ from "jquery";
-var NotificationSystem = require('react-notification-system');
+const NotificationSystem = require('react-notification-system');
 
 const SegmentList = React.createClass({
     _notificationSystem: null,
@@ -16,7 +16,7 @@ const SegmentList = React.createClass({
     getInitialState: function() {
       const isDev = window.top.location.pathname.includes('webpack-dev-server');
       const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
-      return {segments: [], repairRunId:this.props.repairRunId, scheduler:{}, urlPrefix: URL_PREFIX,
+      return {segments: null, repairRunId:this.props.repairRunId, scheduler:{}, urlPrefix: URL_PREFIX,
       runningCollapsed: false, doneCollapsed: false, notStartedCollapsed: false};
     },
   
@@ -45,7 +45,7 @@ const SegmentList = React.createClass({
     },
 
     _toggleRunningDisplay: function() {
-        if(this.state.runningCollapsed == true) {
+        if(this.state.runningCollapsed === true) {
           this.setState({runningCollapsed: false});
         }
         else {
@@ -54,7 +54,7 @@ const SegmentList = React.createClass({
     },
     
     _toggleDoneDisplay: function() {
-        if(this.state.doneCollapsed == true) {
+        if(this.state.doneCollapsed === true) {
           this.setState({doneCollapsed: false});
         }
         else {
@@ -63,7 +63,7 @@ const SegmentList = React.createClass({
     },
   
     _toggleNotStartedDisplay: function() {
-        if(this.state.notStartedCollapsed == true) {
+        if(this.state.notStartedCollapsed === true) {
           this.setState({notStartedCollapsed: false});
         }
         else {
@@ -81,7 +81,13 @@ const SegmentList = React.createClass({
     },
 
     render: function() {
-  
+        let rowsRunning = null;
+        let rowsNotStarted = null;
+        let rowsDone = null;
+        let runningSegments = [];
+        let notStartedSegments = [];
+        let doneSegments = [];
+
         function compareByStartDate(a, b) {
             let comparison = 0;
             if (a.startTime > b.startTime) {
@@ -112,34 +118,35 @@ const SegmentList = React.createClass({
             return comparison;
         }
 
-      let runningSegments = this.state.segments.filter(segment => segment.state == 'RUNNING');
-      runningSegments.sort(compareByStartDate)
-      const rowsRunning = runningSegments.map(segment =>
-        <tbody key={segment.id+'-rows'}>
-            <Segment segment={segment} key={segment.id+'-head'} urlPrefix={this.state.urlPrefix} refreshSegments={this._refreshSegments} notify={this._toast}/>
-        </tbody>
-      );
-  
-      const rowsNotStarted = this.state.segments.filter(segment => segment.state == 'NOT_STARTED').sort(compareByStartToken).map(segment =>
-        <tbody key={segment.id+'-rows'}>
-        <Segment segment={segment} key={segment.id+'-head'}/>
-        </tbody>
-      );
+      if(this.state.segments !== null) {
+          runningSegments = this.state.segments.filter(segment => segment.state === 'RUNNING');
+          rowsRunning = runningSegments.sort(compareByStartDate).map(segment =>
+              <tbody key={segment.id+'-rows'}>
+              <Segment segment={segment} key={segment.id+'-head'} urlPrefix={this.state.urlPrefix} refreshSegments={this._refreshSegments} notify={this._toast}/>
+              </tbody>
+          );
 
-      let doneSegments = this.state.segments.filter(segment => segment.state == 'DONE');
-      const rowsDone = doneSegments.sort(compareByEndDate).map(segment =>
-        <tbody key={segment.id+'-rows'}>
-        <Segment segment={segment} key={segment.id+'-head'} urlPrefix={this.state.urlPrefix} refreshSegments={this._refreshSegments} notify={this._toast}/>
-        </tbody>
-      );
-    
-  
-  
+          notStartedSegments = this.state.segments.filter(segment => segment.state === 'NOT_STARTED');
+          rowsNotStarted = notStartedSegments.sort(compareByStartToken).map(segment =>
+              <tbody key={segment.id+'-rows'}>
+              <Segment segment={segment} key={segment.id+'-head'}/>
+              </tbody>
+          );
+
+          doneSegments = this.state.segments.filter(segment => segment.state === 'DONE');
+          rowsDone = doneSegments.sort(compareByEndDate).map(segment =>
+              <tbody key={segment.id+'-rows'}>
+              <Segment segment={segment} key={segment.id+'-head'} urlPrefix={this.state.urlPrefix} refreshSegments={this._refreshSegments} notify={this._toast}/>
+              </tbody>
+          );
+      }
+
       let tableRunning = null;
-      if(rowsRunning.length == 0) {
+      if(rowsRunning === null) {
+        tableRunning = <div className="clusterLoader"></div>;
+      } else if(rowsRunning.length === 0) {
         tableRunning = <div className="alert alert-info" role="alert">No running segments found</div>
       } else {
-  
         tableRunning = <div className="row">
             <div className="col-sm-12">
                 <div className="table-responsive">
@@ -156,7 +163,7 @@ const SegmentList = React.createClass({
                                 <th></th>
                             </tr>
                         </thead>
-                          {rowsRunning}
+                        {rowsRunning}
                     </table>
                 </div>
             </div>
@@ -164,10 +171,11 @@ const SegmentList = React.createClass({
       }
   
       let tableDone = null;
-      if(rowsDone.length == 0) {
+      if(rowsDone === null) {
+        tableDone = <div className="clusterLoader"></div>;
+      } else if(rowsDone.length === 0) {
         tableDone = <div className="alert alert-info" role="alert">No segment done yet</div>
       } else {
-  
         tableDone = <div className="row">
             <div className="col-sm-12">
                 <div className="table-responsive">
@@ -186,7 +194,7 @@ const SegmentList = React.createClass({
                                 <th></th>
                             </tr>
                         </thead>
-                          {rowsDone}
+                        {rowsDone}
                     </table>
                 </div>
             </div>
@@ -194,10 +202,11 @@ const SegmentList = React.createClass({
       }
 
       let tableNotStarted = null;
-      if(rowsNotStarted.length == 0) {
+      if(rowsNotStarted === null) {
+          tableNotStarted = <div className="clusterLoader"></div>;
+      } else if(rowsNotStarted.length === 0) {
         tableNotStarted = <div className="alert alert-info" role="alert">No more segment to process</div>
       } else {
-  
         tableNotStarted = <div className="row">
             <div className="col-sm-12">
                 <div className="table-responsive">
@@ -211,7 +220,7 @@ const SegmentList = React.createClass({
                                 <th>State</th>
                             </tr>
                         </thead>
-                          {rowsNotStarted}
+                        {rowsNotStarted}
                     </table>
                 </div>
             </div>
@@ -220,16 +229,16 @@ const SegmentList = React.createClass({
   
       let menuRunningDownStyle = {
         display: "none" 
-      }
+      };
   
       let menuRunningUpStyle = {
         display: "inline-block" 
-      }
+      };
   
-      if(this.state.runningCollapsed == true) {
+      if(this.state.runningCollapsed === true) {
         menuRunningDownStyle = {
           display: "inline-block"
-        }
+        };
         menuRunningUpStyle = {
           display: "none"
         }
@@ -238,16 +247,16 @@ const SegmentList = React.createClass({
   
       let menuDoneDownStyle = {
         display: "inline-block" 
-      }
+      };
   
       let menuDoneUpStyle = {
         display: "none" 
-      }
+      };
   
-      if(this.state.doneCollapsed == true) {
+      if(this.state.doneCollapsed === true) {
         menuDoneDownStyle = {
           display: "none"
-        }
+        };
         menuDoneUpStyle = {
           display: "inline-block"
         }
@@ -255,55 +264,54 @@ const SegmentList = React.createClass({
   
       let menuNotStartedDownStyle = {
         display: "none" 
-      }
+      };
   
       let menuNotStartedUpStyle = {
         display: "inline-block" 
-      }
+      };
   
-      if(this.state.notStartedCollapsed == true) {
+      if(this.state.notStartedCollapsed === true) {
         menuNotStartedDownStyle = {
           display: "inline-block"
-        }
+        };
         menuNotStartedUpStyle = {
           display: "none"
         }
       }
 
-      const runningHeader = <div className="panel-title"><a href="#segments-running" data-toggle="collapse" onClick={this._toggleRunningDisplay}>Running ({this.state.segments.filter(segment => segment.state == 'RUNNING').length})</a>&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuRunningDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuRunningUpStyle}></span></div>
-      const doneHeader = <div className="panel-title"><a href="#segments-done" data-toggle="collapse" onClick={this._toggleDoneDisplay}>Done ({this.state.segments.filter(segment => segment.state == 'DONE').length})</a>&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDoneDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuDoneUpStyle}></span></div>
-      const notStartedHeader = <div className="panel-title"><a href="#segments-notstarted" data-toggle="collapse" onClick={this._toggleNotStartedDisplay}>Not started ({this.state.segments.filter(segment => segment.state == 'NOT_STARTED').length})</a>&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuNotStartedDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuNotStartedUpStyle}></span></div>
-  
-  
-  
-      return (<div>
-                    <NotificationSystem ref="notificationSystem" />
-                    <div className="panel panel-primary">
-                    <div className="panel-heading">
-                        {runningHeader}
-                    </div>
-                    <div className="panel-body collapse in" id="segments-running">
-                        {tableRunning}
-                    </div>
-                    </div>
-                    <div className="panel panel-success">
-                    <div className="panel-heading">
-                        {doneHeader}
-                    </div>
-                    <div className="panel-body collapse in" id="segments-done">
-                        {tableDone}
-                    </div>
-                    </div>
-                    <div className="panel panel-info">
-                    <div className="panel-heading">
-                        {notStartedHeader}
-                    </div>
-                    <div className="panel-body collapse in" id="segments-notstarted">
-                        {tableNotStarted}
-                    </div>
-                    </div>
-                </div>
-                );
+      const runningHeader = <div className="panel-title"><a href="#segments-running" data-toggle="collapse" onClick={this._toggleRunningDisplay}>Running ({runningSegments.length ? runningSegments.length : '-'})&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuRunningDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuRunningUpStyle}></span></a></div>;
+      const doneHeader = <div className="panel-title"><a href="#segments-done" data-toggle="collapse" onClick={this._toggleDoneDisplay}>Done ({doneSegments.length ? doneSegments.length : '-'})&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDoneDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuDoneUpStyle}></span></a></div>;
+      const notStartedHeader = <div className="panel-title"><a href="#segments-notstarted" data-toggle="collapse" onClick={this._toggleNotStartedDisplay}>Not started ({notStartedSegments.length ? notStartedSegments.length : '-'})&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuNotStartedDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuNotStartedUpStyle}></span></a></div>;
+
+      return (
+          <div>
+            <NotificationSystem ref="notificationSystem" />
+            <div className="panel panel-primary">
+            <div className="panel-heading">
+                {runningHeader}
+            </div>
+            <div className="panel-body collapse in" id="segments-running">
+                {tableRunning}
+            </div>
+            </div>
+            <div className="panel panel-success">
+            <div className="panel-heading">
+                {doneHeader}
+            </div>
+            <div className="panel-body collapse in" id="segments-done">
+                {tableDone}
+            </div>
+            </div>
+            <div className="panel panel-info">
+            <div className="panel-heading">
+                {notStartedHeader}
+            </div>
+            <div className="panel-body collapse in" id="segments-notstarted">
+                {tableNotStarted}
+            </div>
+            </div>
+          </div>
+      );
     }
   });
 
@@ -338,7 +346,7 @@ const Segment = React.createClass({
     },
 
     render: function() {
-        if (this.props.segment.state == 'NOT_STARTED') {
+        if (this.props.segment.state === 'NOT_STARTED') {
             return  <tr>
                 <td>{this.props.segment.id}</td>
                 <td>{this.props.segment.tokenRange.baseRange.start}</td>
@@ -346,7 +354,7 @@ const Segment = React.createClass({
                 <td>{this.props.segment.failCount}</td>
                 <td><Button bsStyle='primary'>{this.props.segment.state}</Button></td>
             </tr>
-        } else if (this.props.segment.state == 'RUNNING') {
+        } else if (this.props.segment.state === 'RUNNING') {
             return  <tr>
                 <td>{this.props.segment.id}</td>
                 <td>{this.props.segment.tokenRange.baseRange.start}</td>
@@ -371,7 +379,6 @@ const Segment = React.createClass({
                 <td><Button bsStyle='danger' onClick={() => this._abortSegment()}>Replay</Button></td>
             </tr>
         }
-        
     }
 });
 

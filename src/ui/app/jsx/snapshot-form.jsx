@@ -284,7 +284,7 @@ const snapshotForm = React.createClass({
       }
     }
 
-    const formHeader = <div className="panel-title" ><a href="#snapshot-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>Take a snapshot</a>&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span></div>
+    const formHeader = <div className="panel-title" ><a href="#snapshot-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>Take a snapshot&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span></a></div>
 
 
 

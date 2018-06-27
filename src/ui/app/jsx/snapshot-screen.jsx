@@ -129,7 +129,7 @@ const SnapshotScreen = React.createClass({
 
   const clusterFilter = <form className="form-horizontal form-condensed">
   <div className="form-group">
-    <label htmlFor="in_currentCluster" className="col-sm-3 control-label">Filter cluster :</label>
+    <label htmlFor="in_currentCluster" className="col-sm-3 control-label">Filter cluster:</label>
     <div className="col-sm-7 col-md-5 col-lg-3">
       <select className="form-control" id="in_currentCluster"
         onChange={this._handleChange} value={this.state.currentCluster}>

@@ -177,7 +177,7 @@ const scheduleList = React.createClass({
 
     const clusterFilter = <form className="form-horizontal form-condensed">
             <div className="form-group">
-              <label htmlFor="in_clusterName" className="col-sm-3 control-label">Filter cluster :</label>
+              <label htmlFor="in_clusterName" className="col-sm-3 control-label">Filter cluster:</label>
               <div className="col-sm-9 col-md-7 col-lg-5">
                 <select className="form-control" id="in_currentCluster"
                   onChange={this._handleChange} value={this.state.currentCluster}>
