@@ -43,10 +43,12 @@ const scheduleForm = React.createClass({
     this._clusterNamesSubscription = this.props.clusterNames.subscribeOnNext(obs =>
       obs.subscribeOnNext(names => {
         let previousNames = this.state.clusterNames;
-        this.setState({clusterNames: names});
-        if(names.length == 1) this.setState({clusterName: names[0]});
-        if(previousNames.length == 0) {
-          this._getClusterStatus();
+        if(previousNames.length != names.length) {
+          this.setState({clusterNames: names});
+          if(names.length == 1) this.setState({clusterName: names[0]});
+          if(previousNames.length == 0) {
+            this._getClusterStatus();
+          }
         }
       })
     );
