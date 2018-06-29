@@ -790,6 +790,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         break;
 
       case SUCCESS:
+
+        Preconditions.checkState(
+            !successOrFailedNotified.get(),
+            "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s", repairRunner.getRepairRunId(), segmentId);
+
         try {
           if (segmentFailed.get()) {
             LOG.debug(
@@ -827,6 +832,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
       case ERROR:
       case ABORT:
+
+        Preconditions.checkState(
+            !successOrFailedNotified.get(),
+            "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s", repairRunner.getRepairRunId(), segmentId);
+
         LOG.warn(
             "repair session failed for segment with id '{}' and repair number '{}'",
             segmentId,
@@ -846,6 +856,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         // regardless of succeeded or failed sessions.
         // Since we can get out of order notifications,
         // we won't exit unless we already got a SUCCESS or ERROR notification.
+
+        Preconditions.checkState(
+            !completeNotified.get(),
+            "illegal multiple 'COMPLETE', %s:%s", repairRunner.getRepairRunId(), segmentId);
+
         LOG.debug(
             "repair session finished for segment with id '{}' and repair number '{}'",
             segmentId,
@@ -895,6 +910,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         break;
 
       case SESSION_SUCCESS:
+
+        Preconditions.checkState(
+            !successOrFailedNotified.get(),
+            "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s", repairRunner.getRepairRunId(), segmentId);
+
         try {
           if (segmentFailed.get()) {
             LOG.debug(
@@ -932,6 +952,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         break;
 
       case SESSION_FAILED:
+
+        Preconditions.checkState(
+            !successOrFailedNotified.get(),
+            "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s", repairRunner.getRepairRunId(), segmentId);
+
         LOG.warn(
             "repair session failed for segment with id '{}' and repair number '{}'",
             segmentId,
@@ -947,6 +972,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         break;
 
       case FINISHED:
+
+        Preconditions.checkState(
+            !completeNotified.get(),
+            "illegal multiple 'COMPLETE', %s:%s", repairRunner.getRepairRunId(), segmentId);
+
         // This gets called through the JMX proxy at the end
         // regardless of succeeded or failed sessions.
         // Since we can get out of order notifications,
