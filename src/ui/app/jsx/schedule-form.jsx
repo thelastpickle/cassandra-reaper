@@ -20,7 +20,8 @@ const scheduleForm = React.createClass({
 
   getInitialState: function() {
     const isDev = window.top.location.pathname.includes('webpack-dev-server');
-    const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
+    const contexPath = (window.top.location.pathname).includes('/webui') ? (window.top.location.pathname).substring(0, (window.top.location.pathname).indexOf("/webui")) : '';
+    const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : contexPath;
 
     return {
       addScheduleResultMsg: null, clusterNames: [], submitEnabled: false,
