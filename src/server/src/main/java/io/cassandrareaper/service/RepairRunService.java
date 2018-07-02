@@ -146,9 +146,7 @@ public final class RepairRunService {
     }
 
     try {
-      JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connectAny(
-              Optional.absent(),
+      JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
               seedHosts
                   .stream()
                   .map(
@@ -338,9 +336,7 @@ public final class RepairRunService {
     Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
 
     try {
-      JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connectAny(
-              Optional.absent(),
+      JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
               seedHosts
                   .stream()
                   .map(host -> Node.builder().withCluster(targetCluster).withHostname(host).build())

@@ -77,9 +77,7 @@ public class JmxConnectionFactory {
     }
   }
 
-  protected JmxProxy connect(
-      Optional<RepairStatusHandler> handler, Node node, int connectionTimeout)
-      throws ReaperException, InterruptedException {
+  protected JmxProxy connectImpl(Node node, int connectionTimeout) throws ReaperException, InterruptedException {
     // use configured jmx port for host if provided
     String host = node.getHostname();
     if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
@@ -118,14 +116,11 @@ public class JmxConnectionFactory {
     }
   }
 
-  public JmxProxy connect(Node node, int connectionTimeout)
-      throws ReaperException, InterruptedException {
-    return connect(Optional.<RepairStatusHandler>absent(), node, connectionTimeout);
+  public JmxProxy connect(Node node, int connectionTimeout) throws ReaperException, InterruptedException {
+    return connectImpl(node, connectionTimeout);
   }
 
-  public final JmxProxy connectAny(
-      Optional<RepairStatusHandler> handler, Collection<Node> nodes, int connectionTimeout)
-      throws ReaperException {
+  public final JmxProxy connectAny(Collection<Node> nodes, int connectionTimeout) throws ReaperException {
 
     Preconditions.checkArgument(
         null != nodes && !nodes.isEmpty(), "no hosts provided to connectAny");
@@ -135,13 +130,10 @@ public class JmxConnectionFactory {
 
     for (int i = 0; i < 2; i++) {
       for (Node node : nodeList) {
-        assert null != node; // @todo remove the null check in the following if condition
         // First loop, we try the most accessible nodes, then second loop we try all nodes
-        if (null != node
-            && (hostConnectionCounters.getSuccessfulConnections(node.getHostname()) >= 0
-                || 1 == i)) {
+        if (hostConnectionCounters.getSuccessfulConnections(node.getHostname()) >= 0 || 1 == i) {
           try {
-            return connect(handler, node, connectionTimeout);
+            return connectImpl(node, connectionTimeout);
           } catch (ReaperException | RuntimeException e) {
             LOG.info("Unreachable host: {}: {}", e.getMessage(), e.getCause().getMessage());
             LOG.debug("Unreachable host: ", e);
@@ -165,7 +157,7 @@ public class JmxConnectionFactory {
     if (nodes == null || nodes.isEmpty()) {
       throw new ReaperException("no seeds in cluster with name: " + cluster.getName());
     }
-    return connectAny(Optional.<RepairStatusHandler>absent(), nodes, connectionTimeout);
+    return connectAny(nodes, connectionTimeout);
   }
 
   public final void setJmxAuth(JmxCredentials jmxAuth) {

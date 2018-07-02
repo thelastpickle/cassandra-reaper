@@ -17,10 +17,8 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.Node;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.jmx.RepairStatusHandler;
 import io.cassandrareaper.service.TestRepairConfiguration;
 import io.cassandrareaper.storage.MemoryStorage;
 
@@ -39,6 +37,7 @@ import com.google.common.collect.Sets;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -258,15 +257,13 @@ public final class ClusterResourceTest {
     when(jmxProxy.getClusterName()).thenReturn(CLUSTER_NAME);
     when(jmxProxy.getPartitioner()).thenReturn(PARTITIONER);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-          @Override
-          protected JmxProxy connect(
-              Optional<RepairStatusHandler> handler, Node host, int connectionTimeout)
-              throws ReaperException {
-            return jmxProxy;
-          }
-        };
+    context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class), Mockito.anyInt()))
+        .thenReturn(jmxProxy);
+
+    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection(), Mockito.anyInt()))
+        .thenReturn(jmxProxy);
 
     return new MockObjects(context, uriInfo, jmxProxy);
   }

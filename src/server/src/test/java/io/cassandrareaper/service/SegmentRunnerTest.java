@@ -107,12 +107,9 @@ public final class SegmentRunnerTest {
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
-          public JmxProxy connect(
-              final Optional<RepairStatusHandler> handler, Node host, int connectionTimeout)
-              throws ReaperException {
+          public JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
 
             JmxProxy jmx = mock(JmxProxy.class);
             when(jmx.getClusterName()).thenReturn("reaper");
@@ -130,7 +127,9 @@ public final class SegmentRunnerTest {
                     any(),
                     anyBoolean(),
                     any(),
-                    any(), any(), any(Integer.class)))
+                    any(),
+                    any(),
+                    any(Integer.class)))
                 .then(
                     (invocation) -> {
                       assertEquals(
@@ -142,8 +141,7 @@ public final class SegmentRunnerTest {
                               new Thread() {
                                 @Override
                                 public void run() {
-                                  handler
-                                      .get()
+                                  ((RepairStatusHandler)invocation.getArgument(7))
                                       .handle(
                                           1,
                                           Optional.of(ActiveRepairService.Status.STARTED),
@@ -225,13 +223,9 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
-          protected JmxProxy connect(
-              final Optional<RepairStatusHandler> handler, Node host, int connectionTimeout)
-              throws ReaperException {
-
+          protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
             JmxProxy jmx = mock(JmxProxy.class);
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
@@ -248,9 +242,11 @@ public final class SegmentRunnerTest {
                     any(),
                     anyBoolean(),
                     any(),
-                    any(), any(), any(Integer.class)))
+                    any(),
+                    any(),
+                    any(Integer.class)))
                 .then(
-                    invocation -> {
+                    (invocation) -> {
                       assertEquals(
                           RepairSegment.State.NOT_STARTED,
                           storage.getRepairSegment(runId, segmentId).get().getState());
@@ -258,8 +254,7 @@ public final class SegmentRunnerTest {
                       future.setValue(
                           executor.submit(
                               () -> {
-                                handler
-                                    .get()
+                                ((RepairStatusHandler)invocation.getArgument(7))
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.STARTED),
@@ -271,8 +266,7 @@ public final class SegmentRunnerTest {
                                     RepairSegment.State.RUNNING,
                                     storage.getRepairSegment(runId, segmentId).get().getState());
                                 // report about an unrelated repair. Shouldn't affect anything.
-                                handler
-                                    .get()
+                                ((RepairStatusHandler)invocation.getArgument(7))
                                     .handle(
                                         2,
                                         Optional.of(ActiveRepairService.Status.SESSION_FAILED),
@@ -280,8 +274,7 @@ public final class SegmentRunnerTest {
                                         "Repair command 2 has failed",
                                         jmx);
 
-                                handler
-                                    .get()
+                                ((RepairStatusHandler)invocation.getArgument(7))
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
@@ -293,8 +286,7 @@ public final class SegmentRunnerTest {
                                     RepairSegment.State.DONE,
                                     storage.getRepairSegment(runId, segmentId).get().getState());
 
-                                handler
-                                    .get()
+                                ((RepairStatusHandler)invocation.getArgument(7))
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.FINISHED),
@@ -372,13 +364,9 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
-          protected JmxProxy connect(
-              final Optional<RepairStatusHandler> handler, Node host, int connectionTimeout)
-              throws ReaperException {
-
+          protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
             JmxProxy jmx = mock(JmxProxy.class);
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
@@ -395,7 +383,9 @@ public final class SegmentRunnerTest {
                     any(),
                     anyBoolean(),
                     any(),
-                    any(), any(), any(Integer.class)))
+                    any(),
+                    any(),
+                    any(Integer.class)))
                 .then(
                     (invocation) -> {
                       assertEquals(
@@ -405,8 +395,7 @@ public final class SegmentRunnerTest {
                       future.setValue(
                           executor.submit(
                               () -> {
-                                handler
-                                    .get()
+                                ((RepairStatusHandler)invocation.getArgument(7))
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.STARTED),
@@ -418,8 +407,7 @@ public final class SegmentRunnerTest {
                                     RepairSegment.State.RUNNING,
                                     storage.getRepairSegment(runId, segmentId).get().getState());
 
-                                handler
-                                    .get()
+                                ((RepairStatusHandler)invocation.getArgument(7))
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.SESSION_FAILED),
@@ -431,8 +419,7 @@ public final class SegmentRunnerTest {
                                     RepairSegment.State.NOT_STARTED,
                                     storage.getRepairSegment(runId, segmentId).get().getState());
 
-                                handler
-                                    .get()
+                                ((RepairStatusHandler)invocation.getArgument(7))
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.FINISHED),

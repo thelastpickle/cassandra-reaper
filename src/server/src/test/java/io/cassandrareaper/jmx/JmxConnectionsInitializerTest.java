@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.base.Optional;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -48,14 +47,9 @@ public class JmxConnectionsInitializerTest {
     final JmxProxy jmxProxyMock = mock(JmxProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
-          protected JmxProxy connect(
-              Optional<RepairStatusHandler> handler, Node node, int connectionTimeout)
-              throws ReaperException, InterruptedException {
-
+          protected JmxProxy connectImpl(Node node, int timeout) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
             return jmx;
@@ -92,14 +86,9 @@ public class JmxConnectionsInitializerTest {
     final JmxProxy jmxProxyMock = mock(JmxProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
-          protected JmxProxy connect(
-              Optional<RepairStatusHandler> handler, Node node, int connectionTimeout)
-              throws ReaperException, InterruptedException {
-
+          protected JmxProxy connectImpl(Node node, int timeout) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
             return jmx;
@@ -134,14 +123,9 @@ public class JmxConnectionsInitializerTest {
     final JmxProxy jmxProxyMock = mock(JmxProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
-          protected JmxProxy connect(
-              Optional<RepairStatusHandler> handler, Node node, int connectionTimeout)
-              throws ReaperException, InterruptedException {
-
+          protected JmxProxy connectImpl(Node node, int timeout) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
             return jmx;
@@ -176,14 +160,9 @@ public class JmxConnectionsInitializerTest {
     final JmxProxy jmxProxyMock = mock(JmxProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
-          protected JmxProxy connect(
-              Optional<RepairStatusHandler> handler, Node node, int connectionTimeout)
-              throws ReaperException, InterruptedException {
-
+          protected JmxProxy connectImpl(Node node, int timeout) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
             return jmx;

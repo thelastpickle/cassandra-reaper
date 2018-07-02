@@ -23,7 +23,6 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.jmx.RepairStatusHandler;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairRunService;
@@ -136,13 +135,9 @@ public final class BasicSteps {
         proxies.put(seedHost, jmx);
       }
 
-      context.jmxConnectionFactory =
-          new JmxConnectionFactory() {
+      context.jmxConnectionFactory = new JmxConnectionFactory() {
             @Override
-            protected JmxProxy connect(
-                Optional<RepairStatusHandler> handler, Node host, int connectionTimeout)
-                throws ReaperException {
-
+            protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
               return proxies.get(host.getHostname());
             }
           };

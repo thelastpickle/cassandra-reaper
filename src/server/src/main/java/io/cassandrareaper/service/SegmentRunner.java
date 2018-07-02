@@ -217,9 +217,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
 
     try (Timer.Context cxt = context.metricRegistry.timer(metricNameForRunRepair(segment)).time()) {
-      JmxProxy coordinator =
-          context.jmxConnectionFactory.connectAny(
-              Optional.<RepairStatusHandler>fromNullable(this),
+      JmxProxy coordinator
+          = context.jmxConnectionFactory.connectAny(
               potentialCoordinators
                   .stream()
                   .map(

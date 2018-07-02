@@ -411,7 +411,6 @@ public final class ClusterResource {
 
   private JmxProxy connectAny(Collection<String> seedHosts, String cluster) throws ReaperException {
     return context.jmxConnectionFactory.connectAny(
-        Optional.absent(),
         seedHosts
             .stream()
             .map(host -> Node.builder().withClusterName(cluster).withHostname(parseSeedHost(host)).build())

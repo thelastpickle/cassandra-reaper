@@ -72,9 +72,7 @@ public final class JmxConnectionsInitializer implements AutoCloseable {
   private Callable<Optional<String>> connectToJmx(Cluster cluster, List<String> endpoints) {
     return () -> {
       try {
-        JmxProxy jmxProxy =
-            context.jmxConnectionFactory.connectAny(
-                Optional.absent(),
+        JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
                 endpoints
                     .stream()
                     .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())

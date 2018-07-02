@@ -18,14 +18,12 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.jmx.RepairStatusHandler;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.RepairRunnerTest;
@@ -54,6 +52,7 @@ import org.assertj.core.util.Maps;
 import org.joda.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -138,15 +137,13 @@ public final class RepairRunResourceTest {
             any(Integer.class)))
         .thenReturn(1);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-          @Override
-          protected JmxProxy connect(
-              Optional<RepairStatusHandler> handler, Node host, int connectionTimeout)
-              throws ReaperException {
-            return proxy;
-          }
-        };
+    context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+
+    when(context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds()))
+        .thenReturn(proxy);
+
+    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection(), Mockito.anyInt()))
+        .thenReturn(proxy);
 
     RepairUnit.Builder repairUnitBuilder =
         new RepairUnit.Builder(

@@ -323,9 +323,7 @@ public final class RepairRunResource {
 
     if (incrementalRepairStr.isPresent() && "true".equalsIgnoreCase(incrementalRepairStr.get())) {
       try {
-        JmxProxy jmxProxy =
-            context.jmxConnectionFactory.connectAny(
-                Optional.absent(),
+        JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
                 cluster.get().getSeedHosts()
                     .stream()
                     .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
