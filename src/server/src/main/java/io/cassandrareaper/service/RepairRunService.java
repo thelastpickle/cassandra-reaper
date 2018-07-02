@@ -81,9 +81,9 @@ public final class RepairRunService {
       String owner,
       int segments,
       int segmentsPerNode,
-      RepairParallelism repairParallelism,
-      Double intensity)
-      throws ReaperException {
+      RepairParallelism parallelism,
+      Double intensity,
+      boolean compact) throws ReaperException {
 
     // preparing a repair run involves several steps
     // the first step is to generate token segments
@@ -101,9 +101,10 @@ public final class RepairRunService {
     RepairRun.Builder runBuilder = RepairRun.builder(cluster.getName(), repairUnit.getId())
         .intensity(intensity)
         .segmentCount(segments)
-        .repairParallelism(repairParallelism)
+        .repairParallelism(parallelism)
         .cause(cause.or("no cause specified"))
-        .owner(owner);
+        .owner(owner)
+        .majorCompaction(compact);
 
     // the last preparation step is to generate actual repair segments
     List<RepairSegment.Builder> segmentBuilders = repairUnit.getIncrementalRepair()

@@ -54,6 +54,7 @@ public final class RepairRunMapper implements ResultSetMapper<RepairRun> {
         .endTime(getDateTimeOrNull(rs, "end_time"))
         .pauseTime(getDateTimeOrNull(rs, "pause_time"))
         .lastEvent(rs.getString("last_event"))
+        .majorCompaction(rs.getBoolean("major_compaction"))
         .build(UuidUtil.fromSequenceId(rs.getLong("id")));
   }
 }

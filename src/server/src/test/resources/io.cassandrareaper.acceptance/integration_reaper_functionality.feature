@@ -169,3 +169,19 @@ Feature: Using Reaper to launch repairs and schedule them
     Then there is 0 snapshot returned when listing snapshots
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
+
+  Scenario: Create a cluster and one repair run with compaction
+    Given that we are going to use "127.0.0.1@test" as cluster seed host
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    And reaper has 0 repairs for the last added cluster
+    When a new repair with compaction is added for "test" and keyspace "test_keyspace"
+    And deleting the last added cluster fails
+    And the last added repair is activated
+    And we wait for at least 1 segments to be repaired
+    Then reaper has 1 started or done repairs for the last added cluster
+    When the last added repair is stopped
+    And the last added repair run is deleted
+    And the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage

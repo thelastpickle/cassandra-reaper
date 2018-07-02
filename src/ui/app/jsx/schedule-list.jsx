@@ -30,6 +30,7 @@ const TableRow = React.createClass({
     const next = moment(this.props.row.next_activation).fromNow();
     const rowID = `#details_${this.props.row.id}`;
     const incremental = this.props.row.incremental_repair == true ? "true" : "false";
+    const major_compaction = this.props.row.major_compaction == true ? "true" : "false";
 
     return (
     <tr>
@@ -41,6 +42,7 @@ const TableRow = React.createClass({
         <td data-toggle="collapse" data-target={rowID}>{incremental}</td>
         <td data-toggle="collapse" data-target={rowID}>{next}</td>
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.scheduled_days_between} days</td>
+        <td data-toggle="collapse" data-target={rowID}>{major_compaction}</td>
         <td>
           {this.statusUpdateButton()}
           {this.deleteButton()}
@@ -59,6 +61,7 @@ const TableRowDetails = React.createClass({
     const nextAt = moment(this.props.row.next_activation).format("LLL");
     const rowID = `details_${this.props.row.id}`;
     const incremental = this.props.row.incremental_repair == true ? "true" : "false";
+    const major_compaction = this.props.row.major_compaction == true ? "true" : "false";
 
     let segmentCount = <tr>
                         <td>Segment count per node</td>
@@ -74,7 +77,7 @@ const TableRowDetails = React.createClass({
 
     return (
       <tr id={rowID} className="collapse out">
-        <td colSpan="7">
+        <td colSpan="10">
           <table className="table table-condensed">
             <tbody>
                 <tr>
@@ -121,6 +124,10 @@ const TableRowDetails = React.createClass({
                 <tr>
                     <td>Creation time</td>
                     <td>{createdAt}</td>
+                </tr>
+                <tr>
+                    <td>Major Compaction Afterwards</td>
+                    <td>{major_compaction}</td>
                 </tr>
             </tbody>
           </table>
@@ -243,6 +250,7 @@ const scheduleList = React.createClass({
                               <th>Incremental</th>
                               <th>Next run</th>
                               <th>Interval</th>
+                              <th>Compact</th>
                               <th></th>
                           </tr>
                       </thead>

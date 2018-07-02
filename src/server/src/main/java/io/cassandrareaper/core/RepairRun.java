@@ -42,6 +42,7 @@ public final class RepairRun implements Comparable<RepairRun> {
   private final String lastEvent;
   private final int segmentCount;
   private final RepairParallelism repairParallelism;
+  private final boolean majorCompaction;
 
   private RepairRun(Builder builder, UUID id) {
     this.id = id;
@@ -58,6 +59,7 @@ public final class RepairRun implements Comparable<RepairRun> {
     this.lastEvent = builder.lastEvent;
     this.segmentCount = builder.segmentCount;
     this.repairParallelism = builder.repairParallelism;
+    this.majorCompaction = builder.majorCompaction;
   }
 
   public static Builder builder(String clusterName, UUID repairUnitId) {
@@ -118,6 +120,10 @@ public final class RepairRun implements Comparable<RepairRun> {
 
   public RepairParallelism getRepairParallelism() {
     return repairParallelism;
+  }
+
+  public boolean getMajorCompaction() {
+    return majorCompaction;
   }
 
   public Builder with() {
@@ -196,6 +202,7 @@ public final class RepairRun implements Comparable<RepairRun> {
     private String lastEvent = "no events";
     private Integer segmentCount;
     private RepairParallelism repairParallelism;
+    private boolean majorCompaction = false;
 
     private Builder(String clusterName, UUID repairUnitId) {
       this.clusterName = clusterName;
@@ -216,6 +223,7 @@ public final class RepairRun implements Comparable<RepairRun> {
       lastEvent = original.lastEvent;
       segmentCount = original.segmentCount;
       repairParallelism = original.repairParallelism;
+      majorCompaction = original.majorCompaction;
     }
 
     public Builder runState(RunState runState) {
@@ -270,6 +278,11 @@ public final class RepairRun implements Comparable<RepairRun> {
 
     public Builder repairParallelism(RepairParallelism repairParallelism) {
       this.repairParallelism = repairParallelism;
+      return this;
+    }
+
+    public Builder majorCompaction(boolean majorCompaction) {
+      this.majorCompaction = majorCompaction;
       return this;
     }
 

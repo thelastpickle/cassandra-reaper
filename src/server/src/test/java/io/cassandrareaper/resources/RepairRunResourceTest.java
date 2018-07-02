@@ -209,7 +209,8 @@ public final class RepairRunResourceTest {
         Optional.of(StringUtils.join(nodes, ',')),
         Optional.<String>absent(),
         Optional.of(StringUtils.join(blacklistedTables, ',')),
-        Optional.of(repairThreadCount));
+        Optional.of(repairThreadCount),
+        Optional.absent());
   }
 
   @Test

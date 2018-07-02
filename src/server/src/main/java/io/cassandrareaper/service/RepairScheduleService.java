@@ -74,7 +74,8 @@ public final class RepairScheduleService {
       String owner,
       int segmentCountPerNode,
       RepairParallelism repairParallelism,
-      Double intensity) {
+      Double intensity,
+      boolean compact) {
 
     Preconditions.checkArgument(
         !conflictingRepairSchedule(cluster, repairUnit.with()).isPresent(),
@@ -89,7 +90,8 @@ public final class RepairScheduleService {
         .repairParallelism(repairParallelism)
         .intensity(intensity)
         .segmentCountPerNode(segmentCountPerNode)
-        .owner(owner);
+        .owner(owner)
+        .majorCompaction(compact);
 
     return context.storage.addRepairSchedule(scheduleBuilder);
   }

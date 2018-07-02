@@ -126,6 +126,7 @@ const TableRowDetails = React.createClass({
 
 
     const incremental = this.props.row.incremental_repair == true ? "true" : "false";
+    const major_compaction = this.props.row.major_compaction == true ? "true" : "false";
 
     let intensity = this.props.row.intensity;
     if (this.props.row.state === 'PAUSED' && !!this.props.updateIntensitySubject) {
@@ -142,7 +143,7 @@ const TableRowDetails = React.createClass({
 
     return (
       <tr id={rowID} className="collapse out">
-        <td colSpan="7">
+        <td colSpan="9">
           <table className="table table-condensed">
             <tbody>
                 <tr>
@@ -216,6 +217,10 @@ const TableRowDetails = React.createClass({
                 <tr>
                     <td>Creation time</td>
                     <td>{createdAt}</td>
+                </tr>
+                <tr>
+                    <td>Major Compaction Afterwards</td>
+                    <td>{major_compaction}</td>
                 </tr>
             </tbody>
           </table>

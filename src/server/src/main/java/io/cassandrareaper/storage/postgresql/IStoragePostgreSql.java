@@ -61,14 +61,14 @@ public interface IStoragePostgreSql {
   //
   String SQL_REPAIR_RUN_ALL_FIELDS_NO_ID = "cluster_name, repair_unit_id, cause, owner, state, creation_time, "
       + "start_time, end_time, pause_time, intensity, last_event, "
-      + "segment_count, repair_parallelism";
+      + "segment_count, repair_parallelism, major_compaction";
   String SQL_REPAIR_RUN_ALL_FIELDS = "repair_run.id, " + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID;
   String SQL_INSERT_REPAIR_RUN = "INSERT INTO repair_run ("
       + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID
       + ") VALUES "
       + "(:clusterName, :repairUnitId, :cause, :owner, :runState, :creationTime, "
       + ":startTime, :endTime, :pauseTime, :intensity, :lastEvent, :segmentCount, "
-      + ":repairParallelism)";
+      + ":repairParallelism, :majorCompaction)";
   String SQL_UPDATE_REPAIR_RUN = "UPDATE repair_run SET cause = :cause, owner = :owner, state = :runState, "
       + "start_time = :startTime, end_time = :endTime, pause_time = :pauseTime, "
       + "intensity = :intensity, last_event = :lastEvent, segment_count = :segmentCount, "
@@ -82,7 +82,7 @@ public interface IStoragePostgreSql {
       + " FROM repair_run WHERE repair_unit_id = :unitId";
   String SQL_DELETE_REPAIR_RUN = "DELETE FROM repair_run WHERE id = :id";
 
-  // RepairUni
+  // RepairUnit
   //
   String SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID =
       "cluster_name, keyspace_name, column_families, "
@@ -108,7 +108,7 @@ public interface IStoragePostgreSql {
   String SQL_DELETE_REPAIR_UNIT = "DELETE FROM repair_unit WHERE id = :id";
   String SQL_DELETE_REPAIR_UNITS = "DELETE FROM repair_unit WHERE cluster_name = :clusterName";
 
-  // RepairSegmen
+  // RepairSegment
   //
   String SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID =
       "repair_unit_id, run_id, start_token, end_token, state, coordinator_host, start_time, "
@@ -161,20 +161,20 @@ public interface IStoragePostgreSql {
   // RepairSchedule
   //
   String SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID =
-      "repair_unit_id, state, days_between, next_activation, run_history, segment_count, "
-          + "repair_parallelism, intensity, creation_time, owner, pause_time, segment_count_per_node ";
+      "repair_unit_id, state, days_between, next_activation, run_history, segment_count, repair_parallelism, "
+          + "intensity, creation_time, owner, pause_time, segment_count_per_node, major_compaction ";
   String SQL_REPAIR_SCHEDULE_ALL_FIELDS = "repair_schedule.id, " + SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID;
   String SQL_INSERT_REPAIR_SCHEDULE =
       "INSERT INTO repair_schedule ("
           + SQL_REPAIR_SCHEDULE_ALL_FIELDS_NO_ID
           + ") VALUES "
-          + "(:repairUnitId, :state, :daysBetween, :nextActivation, :runHistorySql, :segmentCount, "
-          + ":repairParallelism, :intensity, :creationTime, :owner, :pauseTime, :segmentCountPerNode)";
+          + "(:repairUnitId, :state, :daysBetween, :nextActivation, :runHistorySql, :segmentCount, :repairParallelism,"
+          + " :intensity, :creationTime, :owner, :pauseTime, :segmentCountPerNode, :majorCompaction)";
   String SQL_UPDATE_REPAIR_SCHEDULE =
       "UPDATE repair_schedule SET repair_unit_id = :repairUnitId, state = :state, "
           + "days_between = :daysBetween, next_activation = :nextActivation, "
           + "run_history = :runHistorySql, segment_count = :segmentCount, "
-          + "segment_count_per_node = :segmentCountPerNode, "
+          + "segment_count_per_node = :segmentCountPerNode, major_compaction = :majorCompaction, "
           + "repair_parallelism = :repairParallelism, creation_time = :creationTime, owner = :owner, "
           + "pause_time = :pauseTime WHERE id = :id";
   String SQL_GET_REPAIR_SCHEDULE = "SELECT " + SQL_REPAIR_SCHEDULE_ALL_FIELDS + " FROM repair_schedule WHERE id = :id";
@@ -213,7 +213,7 @@ public interface IStoragePostgreSql {
           + "(SELECT COUNT(*) FROM repair_segment WHERE run_id = repair_run.id) AS segments_total, "
           + "repair_run.state, repair_run.start_time, "
           + "repair_run.end_time, cause, owner, last_event, creation_time, "
-          + "pause_time, intensity, repair_parallelism, incremental_repair, repair_thread_count "
+          + "pause_time, intensity, repair_parallelism, incremental_repair, repair_thread_count, major_compaction "
           + "FROM repair_run "
           + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
           + "WHERE repair_unit.cluster_name = :clusterName "
@@ -224,7 +224,7 @@ public interface IStoragePostgreSql {
       "SELECT repair_schedule.id, owner, cluster_name, keyspace_name, column_families, state, "
           + "creation_time, next_activation, pause_time, intensity, segment_count, "
           + "repair_parallelism, days_between, incremental_repair, nodes, "
-          + "datacenters, blacklisted_tables, segment_count_per_node, repair_thread_count "
+          + "datacenters, blacklisted_tables, segment_count_per_node, repair_thread_count, major_compaction "
           + "FROM repair_schedule "
           + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
           + "WHERE cluster_name = :clusterName";

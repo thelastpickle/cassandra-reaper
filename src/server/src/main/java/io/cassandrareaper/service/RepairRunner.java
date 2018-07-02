@@ -53,6 +53,7 @@ final class RepairRunner implements Runnable {
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunner.class);
 
   private final AppContext context;
+  private final CompactionService compactionService;
   private final UUID repairRunId;
   private final String clusterName;
   private JmxProxy jmxConnection;
@@ -67,6 +68,7 @@ final class RepairRunner implements Runnable {
   RepairRunner(AppContext context, UUID repairRunId) throws ReaperException {
     LOG.debug("Creating RepairRunner for run with ID {}", repairRunId);
     this.context = context;
+    this.compactionService = CompactionService.create(context);
     this.repairRunId = repairRunId;
     Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
@@ -269,25 +271,35 @@ final class RepairRunner implements Runnable {
     }
   }
 
-  private void endRepairRun() {
+  private void endRepairRun() throws ReaperException {
     LOG.info("Repairs for repair run #{} done", repairRunId);
     synchronized (this) {
       RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
+      boolean firstTimeComplete = RepairRun.RunState.DONE != repairRun.getRunState();
       DateTime repairRunCompleted = DateTime.now();
-      context.storage.updateRepairRun(
-          repairRun
-              .with()
-              .runState(RepairRun.RunState.DONE)
-              .endTime(repairRunCompleted)
-              .lastEvent("All done")
-              .build(repairRun.getId()));
+
+      if (firstTimeComplete) {
+        context.storage.updateRepairRun(
+            repairRun
+                .with()
+                .runState(RepairRun.RunState.DONE)
+                .endTime(repairRunCompleted)
+                .lastEvent("All done")
+                .build(repairRun.getId()));
+
+        if (repairRun.getMajorCompaction()) {
+          compactionService.compact(repairRun.getRepairUnitId());
+        }
+      }
       killAndCleanupRunner();
 
       context.metricRegistry.remove(metricNameForMillisSinceLastRepairPerKeyspace);
       context.metricRegistry.remove(metricNameForMillisSinceLastRepair);
+
       context.metricRegistry.register(
           metricNameForMillisSinceLastRepairPerKeyspace,
           (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
+
       context.metricRegistry.register(
           metricNameForMillisSinceLastRepair,
           (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
@@ -594,5 +606,4 @@ final class RepairRunner implements Runnable {
     String cleanRepairRunId = repairRunId.toString().replaceAll("-", "");
     return MetricRegistry.name(RepairRunner.class, metric, cleanClusterName, cleanRepairRunId);
   }
-
 }

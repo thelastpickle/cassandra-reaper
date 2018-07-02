@@ -106,6 +106,9 @@ public final class RepairRunStatus {
   @JsonProperty("repair_thread_count")
   private int repairThreadCount;
 
+  @JsonProperty("major_compaction")
+  private boolean majorCompaction;
+
   /**
    * Default public constructor Required for Jackson JSON parsing.
    */
@@ -133,7 +136,8 @@ public final class RepairRunStatus {
       Collection<String> nodes,
       Collection<String> datacenters,
       Collection<String> blacklistedTables,
-      int repairThreadCount) {
+      int repairThreadCount,
+      boolean majorCompaction) {
 
     this.id = runId;
     this.cause = cause;
@@ -158,6 +162,7 @@ public final class RepairRunStatus {
     this.datacenters = datacenters;
     this.blacklistedTables = blacklistedTables;
     this.repairThreadCount = repairThreadCount;
+    this.majorCompaction = majorCompaction;
 
     if (startTime == null) {
       duration = null;
@@ -223,7 +228,8 @@ public final class RepairRunStatus {
         repairUnit.getNodes(),
         repairUnit.getDatacenters(),
         repairUnit.getBlacklistedTables(),
-        repairUnit.getRepairThreadCount());
+        repairUnit.getRepairThreadCount(),
+        repairRun.getMajorCompaction());
   }
 
   @JsonProperty("creation_time")
@@ -491,5 +497,13 @@ public final class RepairRunStatus {
   @Nullable
   public static String dateTimeToIso8601(@Nullable DateTime dateTime) {
     return null != dateTime ? ISODateTimeFormat.dateTimeNoMillis().print(dateTime) : null;
+  }
+
+  public boolean getMajorCompaction() {
+    return majorCompaction;
+  }
+
+  public void setMajorCompaction(boolean majorCompaction) {
+    this.majorCompaction = majorCompaction;
   }
 }

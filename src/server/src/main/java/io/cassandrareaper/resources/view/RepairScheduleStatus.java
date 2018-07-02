@@ -85,6 +85,9 @@ public final class RepairScheduleStatus {
   @JsonProperty("repair_thread_count")
   private int repairThreadCount;
 
+  @JsonProperty("major_compaction")
+  private boolean majorCompaction;
+
   /**
    * Default public constructor Required for Jackson JSON parsing.
    */
@@ -110,7 +113,8 @@ public final class RepairScheduleStatus {
       Collection<String> datacenters,
       Collection<String> blacklistedTables,
       int segmentCountPerNode,
-      int repairThreadCount) {
+      int repairThreadCount,
+      boolean majorCompaction) {
 
     this.id = id;
     this.owner = owner;
@@ -131,6 +135,7 @@ public final class RepairScheduleStatus {
     this.blacklistedTables = blacklistedTables;
     this.segmentCountPerNode = segmentCountPerNode;
     this.repairThreadCount = repairThreadCount;
+    this.majorCompaction = majorCompaction;
   }
 
   public RepairScheduleStatus(RepairSchedule repairSchedule, RepairUnit repairUnit) {
@@ -153,7 +158,8 @@ public final class RepairScheduleStatus {
         repairUnit.getDatacenters(),
         repairUnit.getBlacklistedTables(),
         repairSchedule.getSegmentCountPerNode(),
-        repairUnit.getRepairThreadCount());
+        repairUnit.getRepairThreadCount(),
+        repairSchedule.getMajorCompaction());
   }
 
   public UUID getId() {
@@ -351,5 +357,11 @@ public final class RepairScheduleStatus {
     this.repairThreadCount = repairThreadCount;
   }
 
+  public boolean getMajorCompaction() {
+    return majorCompaction;
+  }
 
+  public void setMajorCompaction(boolean majorCompaction) {
+    this.majorCompaction = majorCompaction;
+  }
 }

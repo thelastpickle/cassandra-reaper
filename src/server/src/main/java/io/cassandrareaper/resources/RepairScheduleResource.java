@@ -99,7 +99,8 @@ public final class RepairScheduleResource {
       @QueryParam("nodes") Optional<String> nodesToRepairParam,
       @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
       @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam,
-      @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam) {
+      @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam,
+      @QueryParam("majorCompaction") Optional<String> majorCompactionParam) {
 
     try {
       Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
@@ -207,7 +208,8 @@ public final class RepairScheduleResource {
           incremental,
           nextActivation,
           getSegmentCount(segmentCountPerNode),
-          getIntensity(intensityStr));
+          getIntensity(intensityStr),
+          majorCompactionParam.isPresent() ? Boolean.parseBoolean(majorCompactionParam.get()) : false);
 
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -225,7 +227,8 @@ public final class RepairScheduleResource {
       boolean incremental,
       DateTime next,
       int segments,
-      Double intensity) {
+      Double intensity,
+      boolean compact) {
 
     Optional<RepairSchedule> conflictingRepairSchedule
         = repairScheduleService.conflictingRepairSchedule(cluster, unitBuilder);
@@ -259,7 +262,7 @@ public final class RepairScheduleResource {
           .checkState(unit.getIncrementalRepair() == incremental, "%s!=%s", unit.getIncrementalRepair(), incremental);
 
       RepairSchedule newRepairSchedule = repairScheduleService
-          .storeNewRepairSchedule(cluster, unit, days, next, owner, segments, parallel, intensity);
+          .storeNewRepairSchedule(cluster, unit, days, next, owner, segments, parallel, intensity, compact);
 
       return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule)).build();
     }

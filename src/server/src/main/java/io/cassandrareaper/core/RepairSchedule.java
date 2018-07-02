@@ -41,6 +41,7 @@ public final class RepairSchedule {
   private final String owner;
   private final DateTime pauseTime;
   private final int segmentCountPerNode;
+  private final boolean majorCompaction;
 
   private RepairSchedule(Builder builder, UUID id) {
     this.id = id;
@@ -56,6 +57,7 @@ public final class RepairSchedule {
     this.owner = builder.owner;
     this.pauseTime = builder.pauseTime;
     this.segmentCountPerNode = builder.segmentCountPerNode;
+    this.majorCompaction = builder.majorCompaction;
   }
 
   public static Builder builder(UUID repairUnitId) {
@@ -126,6 +128,10 @@ public final class RepairSchedule {
     return pauseTime;
   }
 
+  public boolean getMajorCompaction() {
+    return majorCompaction;
+  }
+
   public Builder with() {
     return new Builder(this);
   }
@@ -175,6 +181,7 @@ public final class RepairSchedule {
       pauseTime = original.pauseTime;
       intensity = original.intensity;
       segmentCountPerNode = original.segmentCountPerNode;
+      majorCompaction = original.majorCompaction;
     }
 
     public Builder state(State state) {
@@ -229,6 +236,11 @@ public final class RepairSchedule {
 
     public Builder segmentCountPerNode(int segmentCountPerNode) {
       this.segmentCountPerNode = segmentCountPerNode;
+      return this;
+    }
+
+    public Builder majorCompaction(boolean majorCompaction) {
+      this.majorCompaction = majorCompaction;
       return this;
     }
 

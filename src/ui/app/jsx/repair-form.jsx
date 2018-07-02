@@ -21,7 +21,7 @@ const repairForm = React.createClass({
       parallelism: null, intensity: null, cause: null, incrementalRepair: null, formCollapsed: true, nodes: "", datacenters: "", blacklistedTables: "",
       nodeList: [], datacenterList: [], clusterStatus: {}, urlPrefix: URL_PREFIX, nodeSuggestions: [], datacenterSuggestions: [], tableSuggestions: [], 
       clusterTables: {}, blacklistSuggestions: [], tableList: [], blacklistList: [], keyspaceList: [], keyspaceSuggestions: [],
-      blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true, repairThreadCount: 1
+      blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true, repairThreadCount: 1, majorCompaction: null
     };
   },
 
@@ -107,6 +107,7 @@ const repairForm = React.createClass({
     if(this.state.datacenters) repair.datacenters = this.state.datacenters;
     if(this.state.blacklistedTables) repair.blacklistedTables = this.state.blacklistedTables;
     if(this.state.repairThreadCount && this.state.repairThreadCount > 0) repair.repairThreadCount = this.state.repairThreadCount;
+    if(this.state.majorCompaction) repair.majorCompaction = this.state.majorCompaction;
 
     // Force incremental repair to FALSE if empty
     if(!this.state.incrementalRepair) repair.incrementalRepair = "false";
@@ -516,6 +517,16 @@ const repairForm = React.createClass({
                         <input type="number" className="form-control" value={this.state.repairThreadCount}
                           min="1" max="4"
                           onChange={this._handleChange} id="in_repairThreadCount" placeholder="repair threads"/>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_majorCompaction" className="col-sm-3 control-label">Major Compaction Afterwards</label>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                        <select className="form-control" id="in_majorCompaction"
+                          onChange={this._handleChange} value={this.state.majorCompaction}>
+                          <option value="false">false</option>
+                          <option value="true">true</option>
+                        </select>
                       </div>
                     </div>
                   </div>

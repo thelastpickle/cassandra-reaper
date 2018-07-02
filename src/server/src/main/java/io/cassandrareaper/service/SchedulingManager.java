@@ -287,7 +287,8 @@ public final class SchedulingManager extends TimerTask {
         schedule.getSegmentCount(),
         schedule.getSegmentCountPerNode(),
         schedule.getRepairParallelism(),
-        schedule.getIntensity());
+        schedule.getIntensity(),
+        schedule.getMajorCompaction());
   }
 
   private static String getCauseName(RepairSchedule schedule) {

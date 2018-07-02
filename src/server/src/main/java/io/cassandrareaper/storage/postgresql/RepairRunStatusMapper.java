@@ -73,6 +73,7 @@ public final class RepairRunStatusMapper implements ResultSetMapper<RepairRunSta
                     : rs.getArray("blacklisted_tables").getArray()));
 
     int repairThreadCount = rs.getInt("repair_thread_count");
+    boolean majorCompaction = rs.getBoolean("major_compaction");
 
     return new RepairRunStatus(
         UuidUtil.fromSequenceId(runId),
@@ -95,7 +96,8 @@ public final class RepairRunStatusMapper implements ResultSetMapper<RepairRunSta
         nodes,
         datacenters,
         blacklistedTables,
-        repairThreadCount);
+        repairThreadCount,
+        majorCompaction);
   }
 
   private String[] getStringArray(Object array) {
