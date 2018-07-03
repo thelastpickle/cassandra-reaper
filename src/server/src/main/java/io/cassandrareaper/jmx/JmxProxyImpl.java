@@ -74,8 +74,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
-import org.apache.cassandra.db.compaction.CompactionManager;
-import org.apache.cassandra.db.compaction.CompactionManagerMBean;
 import org.apache.cassandra.gms.FailureDetector;
 import org.apache.cassandra.gms.FailureDetectorMBean;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
@@ -118,7 +116,6 @@ final class JmxProxyImpl implements JmxProxy {
   private final JMXConnector jmxConnector;
   private final ObjectName ssMbeanName;
   private final MBeanServerConnection mbeanServer;
-  private final CompactionManagerMBean cmProxy;
   private final EndpointSnitchInfoMBean endpointSnitchMbean;
   private final Object ssProxy;
   private final Object fdProxy;
@@ -138,7 +135,6 @@ final class JmxProxyImpl implements JmxProxy {
       Object ssProxy,
       ObjectName ssMbeanName,
       MBeanServerConnection mbeanServer,
-      CompactionManagerMBean cmProxy,
       EndpointSnitchInfoMBean endpointSnitchMbean,
       FailureDetectorMBean fdProxy,
       MetricRegistry metricRegistry) {
@@ -150,7 +146,6 @@ final class JmxProxyImpl implements JmxProxy {
     this.ssMbeanName = ssMbeanName;
     this.mbeanServer = mbeanServer;
     this.ssProxy = ssProxy;
-    this.cmProxy = cmProxy;
     this.endpointSnitchMbean = endpointSnitchMbean;
     this.clusterName = Cluster.toSymbolicName(((StorageServiceMBean) ssProxy).getClusterName());
     this.fdProxy = fdProxy;
@@ -209,7 +204,6 @@ final class JmxProxyImpl implements JmxProxy {
       throws ReaperException, InterruptedException {
 
     ObjectName ssMbeanName;
-    ObjectName cmMbeanName;
     ObjectName fdMbeanName;
     ObjectName endpointSnitchMbeanName;
     JMXServiceURL jmxUrl;
@@ -224,7 +218,6 @@ final class JmxProxyImpl implements JmxProxy {
       LOG.debug("Connecting to {}...", host);
       jmxUrl = JmxAddresses.getJmxServiceUrl(host, port);
       ssMbeanName = new ObjectName(SS_OBJECT_NAME);
-      cmMbeanName = new ObjectName(CompactionManager.MBEAN_OBJECT_NAME);
       fdMbeanName = new ObjectName(FailureDetector.MBEAN_NAME);
       endpointSnitchMbeanName = new ObjectName("org.apache.cassandra.db:type=EndpointSnitchInfo");
     } catch (MalformedURLException | MalformedObjectNameException e) {
@@ -246,7 +239,6 @@ final class JmxProxyImpl implements JmxProxy {
         ssProxy = JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean20.class);
       }
 
-      CompactionManagerMBean cmProxy = JMX.newMBeanProxy(mbeanServerConn, cmMbeanName, CompactionManagerMBean.class);
       FailureDetectorMBean fdProxy = JMX.newMBeanProxy(mbeanServerConn, fdMbeanName, FailureDetectorMBean.class);
 
       EndpointSnitchInfoMBean endpointSnitchProxy
@@ -261,7 +253,6 @@ final class JmxProxyImpl implements JmxProxy {
               ssProxy,
               ssMbeanName,
               mbeanServerConn,
-              cmProxy,
               endpointSnitchProxy,
               fdProxy,
               metricRegistry);
@@ -451,7 +442,6 @@ final class JmxProxyImpl implements JmxProxy {
 
   @Override
   public int getPendingCompactions() throws MBeanException, AttributeNotFoundException, ReflectionException {
-    checkNotNull(cmProxy, "Looks like the proxy is not connected");
     try {
       ObjectName name = new ObjectName(COMP_OBJECT_NAME);
       int pendingCount = (int) mbeanServer.getAttribute(name, VALUE_ATTRIBUTE);
