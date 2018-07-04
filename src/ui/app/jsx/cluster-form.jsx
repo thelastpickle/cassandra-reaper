@@ -9,7 +9,7 @@ const clusterForm = React.createClass({
   },
 
   getInitialState: function() {
-    return {addClusterResultMsg: null};
+    return {addClusterResultMsg: null, seed_node:""};
   },
 
   componentWillMount: function() {
@@ -25,9 +25,18 @@ const clusterForm = React.createClass({
     this._clusterResultSubscription.dispose();
   },
 
+  _handleChange: function(e) {
+    var v = e.target.value;
+    var n = e.target.id.substring(3); // strip in_ prefix
+    
+    // update state
+    const state = this.state;
+    state[n] = v;
+    this.replaceState(state);
+  }, 
+
   _onAdd: function(e) {
-    const seed = React.findDOMNode(this.refs.in_seed_node).value;
-    this.props.addClusterSubject.onNext(seed);
+    this.props.addClusterSubject.onNext(this.state.seed_node);
   },
 
   render: function() {
@@ -43,7 +52,9 @@ const clusterForm = React.createClass({
           <div className="form-inline">
             <div className="form-group">
               <label htmlFor="in_seed_node">Seed node:</label>
-              <input type="text" className="form-control" ref="in_seed_node" id="in_seed_node" placeholder="hostname or ip"></input>
+              <input type="text" className="form-control" ref="in_seed_node" id="in_seed_node" 
+              onChange={this._handleChange}
+              placeholder="hostname or ip"></input>
             </div>
             <button type="button" className="btn btn-success" onClick={this._onAdd}>Add Cluster</button>
           </div>
