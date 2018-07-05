@@ -1,0 +1,28 @@
+[Unit]
+Description=Cassandra Reaper
+Documentation=http://cassandra-reaper.io/
+Wants=remote-fs.target syslog.socket
+After=remote-fs.target syslog.socket
+
+[Service]
+User=reaper
+Group=reaper
+ExecStart=/usr/local/bin/cassandra-reaper
+
+StandardOutput=journal
+StandardError=inherit
+
+# SIGTERM signal is used to stop the Java process
+KillSignal=SIGTERM
+
+# Send the signal only to the JVM rather than its control group
+KillMode=process
+
+# Java process is never killed
+SendSIGKILL=no
+
+# When a JVM receives a SIGTERM signal it exits with code 143
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target
