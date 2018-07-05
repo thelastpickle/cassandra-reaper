@@ -1,6 +1,7 @@
 import React from "react";
 import Snapshot from "jsx/snapshot";
 import TpStats from "jsx/tpstats";
+import Streams from "jsx/streams";
 import DroppedMessages from "jsx/dropped-messages";
 import ClientRequestLatency from "jsx/client-request-latency";
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
@@ -248,6 +249,9 @@ const NodeStatus = React.createClass({
                           </div>
                         </div>
                       </div>
+                      </Tab>
+                      <Tab eventKey={5} title="Streams">
+                          <Streams endpoint={this.props.endpointStatus.endpoint} clusterName={this.props.clusterName}/>
                       </Tab>
                     </Tabs>               
                     </div>
