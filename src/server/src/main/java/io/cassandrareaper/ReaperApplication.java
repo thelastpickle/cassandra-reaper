@@ -27,6 +27,7 @@ import io.cassandrareaper.resources.SnapshotResource;
 import io.cassandrareaper.resources.auth.LoginResource;
 import io.cassandrareaper.resources.auth.ShiroExceptionMapper;
 import io.cassandrareaper.service.AutoSchedulingManager;
+import io.cassandrareaper.service.PurgeManager;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
 import io.cassandrareaper.service.SnapshotManager;
@@ -218,16 +219,12 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.info("creating resources and registering endpoints");
     final PingResource pingResource = new PingResource(healthCheck);
     environment.jersey().register(pingResource);
-
     final ClusterResource addClusterResource = new ClusterResource(context);
     environment.jersey().register(addClusterResource);
-
     final RepairRunResource addRepairRunResource = new RepairRunResource(context);
     environment.jersey().register(addRepairRunResource);
-
     final RepairScheduleResource addRepairScheduleResource = new RepairScheduleResource(context);
     environment.jersey().register(addRepairScheduleResource);
-
     final SnapshotResource snapshotResource = new SnapshotResource(context);
     environment.jersey().register(snapshotResource);
 
@@ -241,7 +238,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     }
 
     Thread.sleep(1000);
-
     SchedulingManager.start(context);
 
     if (config.hasAutoSchedulingEnabled()) {
@@ -249,6 +245,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       AutoSchedulingManager.start(context);
     }
 
+    PurgeManager purgeManager = PurgeManager.create(context);
+    context.purgeManager = purgeManager;
     initializeJmxSeedsForAllClusters();
     LOG.info("resuming pending repair runs");
 
@@ -261,23 +259,45 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       // Allowing multiple Reaper instances to work concurrently requires
       // us to poll the database for running repairs regularly
       // only with Cassandra storage
-      scheduler.scheduleWithFixedDelay(
-          () -> {
-            try {
-              context.repairManager.resumeRunningRepairRuns();
-            } catch (ReaperException e) {
-              LOG.error("Couldn't resume running repair runs", e);
-            }
-          },
-          0,
-          10,
-          TimeUnit.SECONDS);
+      scheduleRepairManager();
     } else {
       // Storage is different than Cassandra, assuming we have a single instance
       context.repairManager.resumeRunningRepairRuns();
     }
+
+    schedulePurge();
+
     LOG.info("Initialization complete!");
     LOG.warn("Reaper is ready to get things done!");
+  }
+
+  private void scheduleRepairManager() {
+    scheduler.scheduleWithFixedDelay(
+        () -> {
+          try {
+            context.repairManager.resumeRunningRepairRuns();
+          } catch (ReaperException e) {
+            LOG.error("Couldn't resume running repair runs", e);
+          }
+        },
+        0,
+        10,
+        TimeUnit.SECONDS);
+  }
+
+  private void schedulePurge() {
+    scheduler.scheduleWithFixedDelay(
+        () -> {
+          try {
+            int purgedRuns = context.purgeManager.purgeDatabase();
+            LOG.info("Purged {} repair runs from history", purgedRuns);
+          } catch (RuntimeException e) {
+            LOG.error("Failed purging repair runs from history", e);
+          }
+        },
+        0,
+        1,
+        TimeUnit.HOURS);
   }
 
   private IStorage initializeStorage(ReaperApplicationConfiguration config, Environment environment)

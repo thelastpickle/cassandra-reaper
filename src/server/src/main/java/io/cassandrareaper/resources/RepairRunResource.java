@@ -759,6 +759,14 @@ public final class RepairRunResource {
     return Response.status(Response.Status.NOT_FOUND).entity("Repair run %s" + runId + " not found").build();
   }
 
+  @GET
+  @Path("/purge")
+  public Response purgeRepairRuns() {
+    int purgedRepairs = context.purgeManager.purgeDatabase();
+    return Response.ok().entity(purgedRepairs).build();
+  }
+
+
   private static void checkRepairParallelismString(String repairParallelism) throws ReaperException {
     try {
       RepairParallelism.valueOf(repairParallelism.toUpperCase());
