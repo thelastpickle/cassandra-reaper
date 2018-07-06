@@ -23,8 +23,8 @@ cassandra:
 If you're using authentication or SSL:
 
 ```yaml
+storageType: cassandra
 cassandra:
-  storageType: cassandra
   clusterName: "test"
   contactPoints: ["127.0.0.1"]
   keyspace: reaper_db
