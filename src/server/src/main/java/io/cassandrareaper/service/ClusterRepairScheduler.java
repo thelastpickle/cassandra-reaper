@@ -22,7 +22,6 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -107,19 +106,13 @@ public final class ClusterRepairScheduler {
   private void createRepairSchedule(Cluster cluster, String keyspace, DateTime nextActivationTime) {
     boolean incrementalRepair = context.config.getIncrementalRepair();
 
-    RepairUnit.Builder builder =
-        new RepairUnit.Builder(
-            cluster.getName(),
-            keyspace,
-            Collections.emptySet(),
-            incrementalRepair,
-            Collections.emptySet(),
-            Collections.emptySet(),
-            Collections.emptySet(),
-            context.config.getRepairThreadCount());
+    RepairUnit.Builder builder = RepairUnit.builder()
+        .clusterName(cluster.getName())
+        .keyspaceName(keyspace)
+        .incrementalRepair(incrementalRepair)
+        .repairThreadCount(context.config.getRepairThreadCount());
 
-    RepairSchedule repairSchedule =
-        repairScheduleService.storeNewRepairSchedule(
+    RepairSchedule repairSchedule = repairScheduleService.storeNewRepairSchedule(
             cluster,
             repairUnitService.getNewOrExistingRepairUnit(cluster, builder),
             context.config.getScheduleDaysBetween(),

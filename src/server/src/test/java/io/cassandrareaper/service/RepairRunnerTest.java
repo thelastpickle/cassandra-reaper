@@ -87,21 +87,30 @@ public final class RepairRunnerTest {
 
     final IStorage storage = new MemoryStorage();
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
-    RepairUnit cf =
-        storage.addRepairUnit(
-            new RepairUnit.Builder(CLUSTER_NAME, KS_NAME, CF_NAMES, INCREMENTAL_REPAIR, NODES,
-                DATACENTERS, BLACKLISTED_TABLES, REPAIR_THREAD_COUNT));
+
+    RepairUnit cf = storage.addRepairUnit(
+            RepairUnit.builder()
+            .clusterName(CLUSTER_NAME)
+            .keyspaceName(KS_NAME)
+            .columnFamilies(CF_NAMES)
+            .incrementalRepair(INCREMENTAL_REPAIR)
+            .nodes(NODES)
+            .datacenters(DATACENTERS)
+            .blacklistedTables(BLACKLISTED_TABLES)
+            .repairThreadCount(REPAIR_THREAD_COUNT));
+
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
-    RepairRun run =
-        storage.addRepairRun(
-            new RepairRun.Builder(
-                CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
+
+    RepairRun run = storage.addRepairRun(
+            RepairRun.builder(CLUSTER_NAME, cf.getId())
+                .intensity(INTENSITY)
+                .segmentCount(1)
+                .repairParallelism(RepairParallelism.PARALLEL),
             Collections.singleton(
                 RepairSegment.builder(
-                    Segment.builder()
-                        .withTokenRange(new RingRange(BigInteger.ZERO, BigInteger.ONE))
-                        .build(),
+                    Segment.builder().withTokenRange(new RingRange(BigInteger.ZERO, BigInteger.ONE)).build(),
                     cf.getId())));
+
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
@@ -205,8 +214,7 @@ public final class RepairRunnerTest {
       try {
         mutex.acquire();
         LOG.info("MUTEX ACQUIRED");
-        // TODO: refactor so that we can properly wait for the repair runner to finish rather than
-        // TODO: using this sleep().
+        // TODO: refactor so that we can properly wait for the repair runner to finish rather than using this sleep()
         Thread.sleep(1000);
         return true;
       } catch (InterruptedException ex) {
@@ -232,28 +240,32 @@ public final class RepairRunnerTest {
     final IStorage storage = new MemoryStorage();
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
-    RepairUnit cf =
-        storage.addRepairUnit(
-            new RepairUnit.Builder(
-                CLUSTER_NAME,
-                KS_NAME,
-                CF_NAMES,
-                INCREMENTAL_REPAIR,
-                NODES,
-                DATACENTERS,
-                BLACKLISTED_TABLES,
-                REPAIR_THREAD_COUNT));
+
+    RepairUnit cf = storage.addRepairUnit(
+            RepairUnit.builder()
+            .clusterName(CLUSTER_NAME)
+            .keyspaceName(KS_NAME)
+            .columnFamilies(CF_NAMES)
+            .incrementalRepair(INCREMENTAL_REPAIR)
+            .nodes(NODES)
+            .datacenters(DATACENTERS)
+            .blacklistedTables(BLACKLISTED_TABLES)
+            .repairThreadCount(REPAIR_THREAD_COUNT));
+
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
-    RepairRun run =
-        storage.addRepairRun(
-            new RepairRun.Builder(
-                CLUSTER_NAME, cf.getId(), DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
+
+    RepairRun run = storage.addRepairRun(
+            RepairRun.builder(CLUSTER_NAME, cf.getId())
+                .intensity(INTENSITY)
+                .segmentCount(1)
+                .repairParallelism(RepairParallelism.PARALLEL),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ZERO, BigInteger.ONE))
                         .build(),
                     cf.getId())));
+
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
@@ -383,25 +395,26 @@ public final class RepairRunnerTest {
     context.repairManager = RepairManager.create(context);
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
-    UUID cf =
-        storage
-            .addRepairUnit(
-                new RepairUnit.Builder(
-                    CLUSTER_NAME,
-                    KS_NAME,
-                    CF_NAMES,
-                    INCREMENTAL_REPAIR,
-                    NODES,
-                    DATACENTERS,
-                    BLACKLISTED_TABLES,
-                    REPAIR_THREAD_COUNT))
-            .getId();
+
+    UUID cf = storage.addRepairUnit(
+        RepairUnit.builder()
+            .clusterName(CLUSTER_NAME)
+            .keyspaceName(KS_NAME)
+            .columnFamilies(CF_NAMES)
+            .incrementalRepair(INCREMENTAL_REPAIR)
+            .nodes(NODES)
+            .datacenters(DATACENTERS)
+            .blacklistedTables(BLACKLISTED_TABLES)
+            .repairThreadCount(REPAIR_THREAD_COUNT))
+        .getId();
+
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
 
-    RepairRun run =
-        storage.addRepairRun(
-            new RepairRun.Builder(
-                CLUSTER_NAME, cf, DateTime.now(), INTENSITY, 1, RepairParallelism.PARALLEL),
+    RepairRun run = storage.addRepairRun(
+            RepairRun.builder(CLUSTER_NAME, cf)
+                .intensity(INTENSITY)
+                .segmentCount(1)
+                .repairParallelism(RepairParallelism.PARALLEL),
             Lists.newArrayList(
                 RepairSegment.builder(
                         Segment.builder()

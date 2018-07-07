@@ -145,16 +145,15 @@ public final class RepairRunResourceTest {
     when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection(), Mockito.anyInt()))
         .thenReturn(proxy);
 
-    RepairUnit.Builder repairUnitBuilder =
-        new RepairUnit.Builder(
-            CLUSTER_NAME,
-            KEYSPACE,
-            TABLES,
-            INCREMENTAL,
-            NODES,
-            DATACENTERS,
-            BLACKLISTED_TABLES,
-            REPAIR_THREAD_COUNT);
+    RepairUnit.Builder repairUnitBuilder = RepairUnit.builder()
+            .clusterName(CLUSTER_NAME)
+            .keyspaceName(KEYSPACE)
+            .columnFamilies(TABLES)
+            .incrementalRepair(INCREMENTAL)
+            .nodes(NODES)
+            .datacenters(DATACENTERS)
+            .blacklistedTables(BLACKLISTED_TABLES)
+            .repairThreadCount(REPAIR_THREAD_COUNT);
 
     context.storage.addRepairUnit(repairUnitBuilder);
   }

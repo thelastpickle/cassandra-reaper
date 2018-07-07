@@ -653,15 +653,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private RepairUnit getRepairUnitImpl(UUID id) {
     Row repairUnitRow = session.execute(getRepairUnitPrepStmt.bind(id)).one();
     if (repairUnitRow != null) {
-      return new RepairUnit.Builder(
-                  repairUnitRow.getString("cluster_name"),
-                  repairUnitRow.getString("keyspace_name"),
-                  repairUnitRow.getSet("column_families", String.class),
-                  repairUnitRow.getBool("incremental_repair"),
-                  repairUnitRow.getSet("nodes", String.class),
-                  repairUnitRow.getSet("datacenters", String.class),
-                  repairUnitRow.getSet("blacklisted_tables", String.class),
-                  repairUnitRow.getInt("repair_thread_count"))
+      return RepairUnit.builder()
+              .clusterName(repairUnitRow.getString("cluster_name"))
+              .keyspaceName(repairUnitRow.getString("keyspace_name"))
+              .columnFamilies(repairUnitRow.getSet("column_families", String.class))
+              .incrementalRepair(repairUnitRow.getBool("incremental_repair"))
+              .nodes(repairUnitRow.getSet("nodes", String.class))
+              .datacenters(repairUnitRow.getSet("datacenters", String.class))
+              .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
+              .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
               .build(id);
     }
     throw new IllegalArgumentException("No repair unit exists for " + id);
@@ -691,17 +691,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               .equals(params.blacklistedTables)
           && repairUnitRow.getInt("repair_thread_count") == params.repairThreadCount) {
 
-        repairUnit =
-            new RepairUnit.Builder(
-                    repairUnitRow.getString("cluster_name"),
-                    repairUnitRow.getString("keyspace_name"),
-                    repairUnitRow.getSet("column_families", String.class),
-                    repairUnitRow.getBool("incremental_repair"),
-                    repairUnitRow.getSet("nodes", String.class),
-                    repairUnitRow.getSet("datacenters", String.class),
-                    repairUnitRow.getSet("blacklisted_tables", String.class),
-                    repairUnitRow.getInt("repair_thread_count"))
-                .build(repairUnitRow.getUUID("id"));
+        repairUnit = RepairUnit.builder()
+            .clusterName(repairUnitRow.getString("cluster_name"))
+            .keyspaceName(repairUnitRow.getString("keyspace_name"))
+            .columnFamilies(repairUnitRow.getSet("column_families", String.class))
+            .incrementalRepair(repairUnitRow.getBool("incremental_repair"))
+            .nodes(repairUnitRow.getSet("nodes", String.class))
+            .datacenters(repairUnitRow.getSet("datacenters", String.class))
+            .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
+            .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
+            .build(repairUnitRow.getUUID("id"));
         // exit the loop once we find a match
         break;
       }
@@ -918,17 +917,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   private RepairSchedule createRepairScheduleFromRow(Row repairScheduleRow) {
-    return new RepairSchedule.Builder(
-            repairScheduleRow.getUUID("repair_unit_id"),
-            RepairSchedule.State.valueOf(repairScheduleRow.getString("state")),
-            repairScheduleRow.getInt("days_between"),
-            new DateTime(repairScheduleRow.getTimestamp("next_activation")),
-            ImmutableList.copyOf(repairScheduleRow.getSet("run_history", UUID.class)),
-            repairScheduleRow.getInt("segment_count"),
-            RepairParallelism.fromName(repairScheduleRow.getString("repair_parallelism")),
-            repairScheduleRow.getDouble("intensity"),
-            new DateTime(repairScheduleRow.getTimestamp("creation_time")),
-            repairScheduleRow.getInt("segment_count_per_node"))
+    return RepairSchedule.builder(repairScheduleRow.getUUID("repair_unit_id"))
+        .state(RepairSchedule.State.valueOf(repairScheduleRow.getString("state")))
+        .daysBetween(repairScheduleRow.getInt("days_between"))
+        .nextActivation(new DateTime(repairScheduleRow.getTimestamp("next_activation")))
+        .runHistory(ImmutableList.copyOf(repairScheduleRow.getSet("run_history", UUID.class)))
+        .segmentCount(repairScheduleRow.getInt("segment_count"))
+        .repairParallelism(RepairParallelism.fromName(repairScheduleRow.getString("repair_parallelism")))
+        .intensity(repairScheduleRow.getDouble("intensity"))
+        .creationTime(new DateTime(repairScheduleRow.getTimestamp("creation_time")))
+        .segmentCountPerNode(repairScheduleRow.getInt("segment_count_per_node"))
         .owner(repairScheduleRow.getString("owner"))
         .pauseTime(new DateTime(repairScheduleRow.getTimestamp("pause_time")))
         .build(repairScheduleRow.getUUID("id"));
@@ -1092,13 +1090,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private RepairRun buildRepairRunFromRow(Row repairRunResult, UUID id) {
     LOG.trace("buildRepairRunFromRow {} / {}", id, repairRunResult);
-    return new RepairRun.Builder(
-        repairRunResult.getString("cluster_name"),
-        repairRunResult.getUUID("repair_unit_id"),
-        new DateTime(repairRunResult.getTimestamp("creation_time")),
-        repairRunResult.getDouble("intensity"),
-        repairRunResult.getInt("segment_count"),
-        RepairParallelism.fromName(repairRunResult.getString("repair_parallelism")))
+    return RepairRun.builder(repairRunResult.getString("cluster_name"), repairRunResult.getUUID("repair_unit_id"))
+        .creationTime(new DateTime(repairRunResult.getTimestamp("creation_time")))
+        .intensity(repairRunResult.getDouble("intensity"))
+        .segmentCount(repairRunResult.getInt("segment_count"))
+        .repairParallelism(RepairParallelism.fromName(repairRunResult.getString("repair_parallelism")))
         .cause(repairRunResult.getString("cause"))
         .owner(repairRunResult.getString("owner"))
         .endTime(new DateTime(repairRunResult.getTimestamp("end_time")))

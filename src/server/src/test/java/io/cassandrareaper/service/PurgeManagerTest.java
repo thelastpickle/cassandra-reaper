@@ -65,14 +65,13 @@ public final class PurgeManagerTest {
     for (int i = 0; i < 10; i++) {
       UUID repairUnitId = UUIDs.timeBased();
       DateTime startTime = currentDate.minusDays(i).minusHours(1);
+
       repairRuns.add(
-          new RepairRun.Builder(
-                  CLUSTER_NAME,
-                  repairUnitId,
-                  startTime,
-                  0.9,
-                  10,
-                  RepairParallelism.DATACENTER_AWARE)
+          RepairRun.builder(CLUSTER_NAME, repairUnitId)
+              .startTime(startTime)
+              .intensity(0.9)
+              .segmentCount(10)
+              .repairParallelism(RepairParallelism.DATACENTER_AWARE)
               .endTime(startTime.plusSeconds(1))
               .runState(RunState.DONE)
               .build(UUIDs.timeBased()));
@@ -106,14 +105,13 @@ public final class PurgeManagerTest {
     UUID repairUnitId = UUIDs.timeBased();
     for (int i = 0; i < 20; i++) {
       DateTime startTime = currentDate.minusDays(i).minusHours(1);
+
       repairRuns.add(
-          new RepairRun.Builder(
-                  CLUSTER_NAME,
-                  repairUnitId,
-                  startTime,
-                  0.9,
-                  10,
-                  RepairParallelism.DATACENTER_AWARE)
+          RepairRun.builder(CLUSTER_NAME, repairUnitId)
+              .startTime(startTime)
+              .intensity(0.9)
+              .segmentCount(10)
+              .repairParallelism(RepairParallelism.DATACENTER_AWARE)
               .endTime(startTime.plusSeconds(1))
               .runState(RunState.DONE)
               .build(UUIDs.timeBased()));
@@ -147,14 +145,13 @@ public final class PurgeManagerTest {
     for (int i = 0; i < 10; i++) {
       UUID repairUnitId = UUIDs.timeBased();
       DateTime startTime = currentDate.minusDays(i).minusHours(1);
+
       repairRuns.add(
-          new RepairRun.Builder(
-                  CLUSTER_NAME,
-                  repairUnitId,
-                  startTime,
-                  0.9,
-                  10,
-                  RepairParallelism.DATACENTER_AWARE)
+          RepairRun.builder(CLUSTER_NAME, repairUnitId)
+              .startTime(startTime)
+              .intensity(0.9)
+              .segmentCount(10)
+              .repairParallelism(RepairParallelism.DATACENTER_AWARE)
               .endTime(startTime.plusSeconds(1))
               .runState(RunState.PAUSED)
               .build(UUIDs.timeBased()));

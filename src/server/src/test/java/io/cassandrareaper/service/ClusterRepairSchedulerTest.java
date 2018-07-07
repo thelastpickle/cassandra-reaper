@@ -28,7 +28,6 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -188,29 +187,24 @@ public final class ClusterRepairSchedulerTest {
 
   private RepairSchedule.Builder aRepairSchedule(Cluster cluster, String keyspace, DateTime creationTime) {
     RepairUnit repairUnit = context.storage.addRepairUnit(aRepair(cluster, keyspace));
-    return new RepairSchedule.Builder(
-        repairUnit.getId(),
-        RepairSchedule.State.ACTIVE,
-        1,
-        DateTime.now(),
-        ImmutableList.of(),
-        10,
-        RepairParallelism.DATACENTER_AWARE,
-        0.9,
-        creationTime,
-        0);
+
+    return RepairSchedule.builder(repairUnit.getId())
+        .creationTime(creationTime)
+        .daysBetween(1)
+        .nextActivation(DateTime.now())
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .intensity(0.9)
+        .segmentCount(10)
+        .segmentCountPerNode(0);
+
   }
 
   private RepairUnit.Builder aRepair(Cluster cluster, String keyspace) {
-    return new RepairUnit.Builder(
-        cluster.getName(),
-        keyspace,
-        Collections.emptySet(),
-        Boolean.FALSE,
-        Collections.emptySet(),
-        Collections.emptySet(),
-        Collections.emptySet(),
-        1);
+    return RepairUnit.builder()
+        .clusterName(cluster.getName())
+        .keyspaceName(keyspace)
+        .incrementalRepair(Boolean.FALSE)
+        .repairThreadCount(1);
   }
 
   private ClusterRepairScheduleAssertion assertThatClusterRepairSchedules(Collection<RepairSchedule> repairSchedules) {

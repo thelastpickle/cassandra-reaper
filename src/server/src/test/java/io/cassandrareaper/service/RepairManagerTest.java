@@ -36,7 +36,6 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.fest.assertions.api.Assertions;
-import org.joda.time.DateTime;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
@@ -77,21 +76,20 @@ public final class RepairManagerTest {
     context.repairManager = repairManager;
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    final RepairUnit cf =
-        new RepairUnit.Builder(
-                clusterName,
-                ksName,
-                cfNames,
-                incrementalRepair,
-                nodes,
-                datacenters,
-                Collections.emptySet(),
-                repairThreadCount)
-            .build(UUIDs.timeBased());
+    final RepairUnit cf = RepairUnit.builder()
+        .clusterName(clusterName)
+        .keyspaceName(ksName)
+        .columnFamilies(cfNames)
+        .incrementalRepair(incrementalRepair)
+        .nodes(nodes)
+        .datacenters(datacenters)
+        .repairThreadCount(repairThreadCount)
+        .build(UUIDs.timeBased());
 
-    final RepairRun run
-        = new RepairRun.Builder(
-                clusterName, cf.getId(), DateTime.now(), intensity, 1, RepairParallelism.PARALLEL)
+    final RepairRun run = RepairRun.builder(clusterName, cf.getId())
+            .intensity(intensity)
+            .segmentCount(1)
+            .repairParallelism(RepairParallelism.PARALLEL)
             .build(UUIDs.timeBased());
 
     final RepairSegment segment =
@@ -150,21 +148,20 @@ public final class RepairManagerTest {
     context.repairManager = repairManager;
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    final RepairUnit cf =
-        new RepairUnit.Builder(
-                clusterName,
-                ksName,
-                cfNames,
-                incrementalRepair,
-                nodes,
-                datacenters,
-                Collections.emptySet(),
-                repairThreadCount)
-            .build(UUIDs.timeBased());
+    final RepairUnit cf = RepairUnit.builder()
+        .clusterName(clusterName)
+        .keyspaceName(ksName)
+        .columnFamilies(cfNames)
+        .incrementalRepair(incrementalRepair)
+        .nodes(nodes)
+        .datacenters(datacenters)
+        .repairThreadCount(repairThreadCount)
+        .build(UUIDs.timeBased());
 
-    final RepairRun run
-        = new RepairRun.Builder(
-                clusterName, cf.getId(), DateTime.now(), intensity, 1, RepairParallelism.PARALLEL)
+    final RepairRun run = RepairRun.builder(clusterName, cf.getId())
+            .intensity(intensity)
+            .segmentCount(1)
+            .repairParallelism(RepairParallelism.PARALLEL)
             .build(UUIDs.timeBased());
 
     final RepairSegment segment =
@@ -223,20 +220,20 @@ public final class RepairManagerTest {
     context.repairManager = repairManager;
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    final RepairUnit cf =
-        new RepairUnit.Builder(
-                clusterName,
-                ksName,
-                cfNames,
-                incrementalRepair,
-                nodes,
-                datacenters,
-                Collections.emptySet(),
-                repairThreadCount)
-            .build(UUIDs.timeBased());
+    final RepairUnit cf = RepairUnit.builder()
+        .clusterName(clusterName)
+        .keyspaceName(ksName)
+        .columnFamilies(cfNames)
+        .incrementalRepair(incrementalRepair)
+        .nodes(nodes)
+        .datacenters(datacenters)
+        .repairThreadCount(repairThreadCount)
+        .build(UUIDs.timeBased());
 
-    final RepairRun run
-        = new RepairRun.Builder(clusterName, cf.getId(), DateTime.now(), intensity, 1, RepairParallelism.PARALLEL)
+    final RepairRun run = RepairRun.builder(clusterName, cf.getId())
+            .intensity(intensity)
+            .segmentCount(1)
+            .repairParallelism(RepairParallelism.PARALLEL)
             .build(UUIDs.timeBased());
 
     final RepairSegment segment =
@@ -292,20 +289,20 @@ public final class RepairManagerTest {
     context.repairManager = repairManager;
     context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    final RepairUnit cf =
-        new RepairUnit.Builder(
-                clusterName,
-                ksName,
-                cfNames,
-                incrementalRepair,
-                nodes,
-                datacenters,
-                Collections.emptySet(),
-                repairThreadCount)
-            .build(UUIDs.timeBased());
+    final RepairUnit cf = RepairUnit.builder()
+        .clusterName(clusterName)
+        .keyspaceName(ksName)
+        .columnFamilies(cfNames)
+        .incrementalRepair(incrementalRepair)
+        .nodes(nodes)
+        .datacenters(datacenters)
+        .repairThreadCount(repairThreadCount)
+        .build(UUIDs.timeBased());
 
-    final RepairRun run
-        = new RepairRun.Builder(clusterName, cf.getId(), DateTime.now(), intensity, 1, RepairParallelism.PARALLEL)
+    final RepairRun run = RepairRun.builder(clusterName, cf.getId())
+            .intensity(intensity)
+            .segmentCount(1)
+            .repairParallelism(RepairParallelism.PARALLEL)
             .build(UUIDs.timeBased());
 
     final RepairSegment segment =
@@ -349,22 +346,22 @@ public final class RepairManagerTest {
     final Set<String> datacenters = Collections.emptySet();
     final int repairThreadCount = 1;
 
-    final RepairUnit cf =
-        new RepairUnit.Builder(
-                clusterName,
-                ksName,
-                cfNames,
-                incrementalRepair,
-                nodes,
-                datacenters,
-                Collections.emptySet(),
-                repairThreadCount)
-            .build(UUIDs.timeBased());
+    final RepairUnit cf = RepairUnit.builder()
+        .clusterName(clusterName)
+        .keyspaceName(ksName)
+        .columnFamilies(cfNames)
+        .incrementalRepair(incrementalRepair)
+        .nodes(nodes)
+        .datacenters(datacenters)
+        .repairThreadCount(repairThreadCount)
+        .build(UUIDs.timeBased());
 
     double intensity = 0.5f;
 
-    final RepairRun run
-        = new RepairRun.Builder(clusterName, cf.getId(), DateTime.now(), intensity, 1, RepairParallelism.PARALLEL)
+    final RepairRun run = RepairRun.builder(clusterName, cf.getId())
+            .intensity(intensity)
+            .segmentCount(1)
+            .repairParallelism(RepairParallelism.PARALLEL)
             .build(UUIDs.timeBased());
 
     when(context.storage.updateRepairRun(any())).thenReturn(true);
