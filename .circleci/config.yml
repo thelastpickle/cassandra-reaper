@@ -107,9 +107,6 @@ aliases:
                 MAVEN_OPTS="-Xmx1g" mvn install -DskipTests
                 sh -c '$JOB_COMMAND'
 
-                #TODO
-                #mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
-
         - store_test_results:
             path: src/server/target/surefire-reports
 
