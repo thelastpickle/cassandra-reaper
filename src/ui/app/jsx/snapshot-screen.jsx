@@ -151,9 +151,6 @@ const SnapshotScreen = React.createClass({
         <!-- Navigation -->
         <NotificationSystem ref="notificationSystem" />
         <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
-            <NavBar></NavBar>
-            <!-- /.navbar-header -->
-
             <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster}
               logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>
         </nav>
