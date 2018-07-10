@@ -4,7 +4,6 @@ import ServerStatus from "jsx/server-status";
 import Sidebar from "jsx/sidebar";
 import ScheduleForm from "jsx/schedule-form";
 import ScheduleList from "jsx/schedule-list";
-import NavBar from "jsx/navbar";
 import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
 
 const ScheduleScreen = React.createClass({
@@ -40,9 +39,6 @@ const ScheduleScreen = React.createClass({
     <div id="wrapper">
         <!-- Navigation -->
         <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
-            <NavBar></NavBar>
-            <!-- /.navbar-header -->
-
             <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster}
               logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>
         </nav>
