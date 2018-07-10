@@ -519,7 +519,36 @@
             </plugin>
         </plugins>
     </build>
-
+    <profiles>
+      <profile>
+        <id>skip-tests-needing-all-nodes-reachable</id>
+        <build>
+          <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <inherited>true</inherited>
+                <configuration>
+                  <argLine>${surefireArgLine} -Dcucumber.options="-t ~@all_nodes_reachable"</argLine>
+                </configuration>
+            </plugin>
+          </plugins>
+        </build>
+      </profile>
+      <profile>
+        <id>only-tests-needing-all-nodes-reachable</id>
+        <build>
+          <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <inherited>true</inherited>
+                <configuration>
+                  <argLine>${surefireArgLine} -Dcucumber.options="-t @all_nodes_reachable"</argLine>
+                </configuration>
+            </plugin>
+          </plugins>
+        </build>
+      </profile>
+    </profiles>
     <reporting>
         <plugins>
             <plugin>
