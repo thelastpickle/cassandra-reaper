@@ -58,10 +58,12 @@ aliases:
                 ccm populate --vnodes -n 2:2
                 sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node1/conf/cassandra-env.sh
                 sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node2/conf/cassandra-env.sh
-                if [ echo $JOB_COMMAND | grep -q "NoIncrementalIT" ] ; then
+                if [ echo $JOB_COMMAND | grep -q " ~@all_nodes_reachable" ] ; then
+                  # run scenarios without @all_nodes_reachable against an unreachable DC2
                   sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.blank.password/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
                   sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.blank.password/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
                 else
+                  # @all_nodes_reachable scenarios need all datacenters+nodes reachable
                   sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node3/conf/cassandra-env.sh
                   sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' /home/circleci/.ccm/test/node4/conf/cassandra-env.sh
                 fi
@@ -140,202 +142,202 @@ jobs:
     c_2-1_memory:
       environment:
         CASSANDRA_VERSION: 2.1.19
-        JOB_COMMAND: mvn surefire:test -Dtest=ReaperNoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperIT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_2-1_h2:
       environment:
         CASSANDRA_VERSION: 2.1.19
-        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2NoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2IT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_2-1_one-reaper:
       environment:
         CASSANDRA_VERSION: 2.1.19
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_2-1_two-reapers:
       environment:
         CASSANDRA_VERSION: 2.1.19
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable" -Dcucumber.options="-t ~@all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
     c_2-1_flapping-reapers:
       environment:
         CASSANDRA_VERSION: 2.1.19
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_2-1_one-reaper_incremental:
       environment:
         CASSANDRA_VERSION: 2.1.19
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable"
       <<: *default_job
     c_2-1_two-reapers_incremental:
       environment:
         CASSANDRA_VERSION: 2.1.19
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
     c_2-1_flapping-reapers_incremental:
       environment:
         CASSANDRA_VERSION: 2.1.19
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_2-2_memory:
       environment:
         CASSANDRA_VERSION: 2.2.11
-        JOB_COMMAND: mvn surefire:test -Dtest=ReaperNoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperIT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_2-2_h2:
       environment:
         CASSANDRA_VERSION: 2.2.11
-        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2NoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2IT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_2-2_one-reaper:
       environment:
         CASSANDRA_VERSION: 2.2.11
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_2-2_two-reapers:
       environment:
         CASSANDRA_VERSION: 2.2.11
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
     c_2-2_flapping-reapers:
       environment:
         CASSANDRA_VERSION: 2.2.11
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_2-2_one-reaper_incremental:
       environment:
         CASSANDRA_VERSION: 2.2.11
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable"
       <<: *default_job
     c_2-2_two-reapers_incremental:
       environment:
         CASSANDRA_VERSION: 2.2.11
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
     c_2-2_flapping-reapers_incremental:
       environment:
         CASSANDRA_VERSION: 2.2.11
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_3-0_memory:
       environment:
         CASSANDRA_VERSION: 3.0.15
-        JOB_COMMAND: mvn surefire:test -Dtest=ReaperNoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperIT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_3-0_h2:
       environment:
         CASSANDRA_VERSION: 3.0.15
-        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2NoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2IT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_3-0_one-reaper:
       environment:
         CASSANDRA_VERSION: 3.0.15
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_3-0_two-reapers:
       environment:
         CASSANDRA_VERSION: 3.0.15
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
     c_3-0_flapping-reapers:
       environment:
         CASSANDRA_VERSION: 3.0.15
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_3-0_one-reaper_incremental:
       environment:
         CASSANDRA_VERSION: 3.0.15
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable"
       <<: *default_job
     c_3-0_two-reapers_incremental:
       environment:
         CASSANDRA_VERSION: 3.0.15
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
     c_3-0_flapping-reapers_incremental:
       environment:
         CASSANDRA_VERSION: 3.0.15
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_3-11_memory:
       environment:
         CASSANDRA_VERSION: 3.11.2
-        JOB_COMMAND: mvn surefire:test -Dtest=ReaperNoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperIT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_3-11_h2:
       environment:
         CASSANDRA_VERSION: 3.11.2
-        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2NoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2IT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_3-11_one-reaper:
       environment:
         CASSANDRA_VERSION: 3.11.2
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_3-11_two-reapers:
       environment:
         CASSANDRA_VERSION: 3.11.2
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
     c_3-11_flapping-reapers:
       environment:
         CASSANDRA_VERSION: 3.11.2
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_3-11_one-reaper_incremental:
       environment:
         CASSANDRA_VERSION: 3.11.2
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable"
       <<: *default_job
     c_3-11_two-reapers_incremental:
       environment:
         CASSANDRA_VERSION: 3.11.2
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
     c_3-11_flapping-reapers_incremental:
       environment:
         CASSANDRA_VERSION: 3.11.2
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_4-0_memory:
       environment:
         CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn surefire:test -Dtest=ReaperNoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperIT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_4-0_h2:
       environment:
         CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2NoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -Dtest=ReaperH2IT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_4-0_one-reaper:
       environment:
         CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable"
       <<: *default_job
     c_4-0_two-reapers:
       environment:
         CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
     c_4-0_flapping-reapers:
       environment:
         CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraNoIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t ~@all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_4-0_one-reaper_incremental:
       environment:
         CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable"
       <<: *default_job
     c_4-0_two-reapers_incremental:
       environment:
         CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
     c_4-0_flapping-reapers_incremental:
       environment:
         CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIncrementalIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dcucumber.options="-t @all_nodes_reachable" -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
 workflows:
   version: 2
