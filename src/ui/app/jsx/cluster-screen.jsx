@@ -4,7 +4,6 @@ import ServerStatus from "jsx/server-status";
 import Sidebar from "jsx/sidebar";
 import ClusterForm from "jsx/cluster-form";
 import ClusterList from "jsx/cluster-list";
-import NavBar from "jsx/navbar";
 import LoginForm from "jsx/login-form";
 import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
 
@@ -56,9 +55,6 @@ const ClusterScreen = React.createClass({
         <div>
             <!-- Navigation -->
         <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
-            <NavBar></NavBar>
-            <!-- /.navbar-header -->
-
             <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} 
                 loginSubject={this.props.loginSubject} loginResult={this.props.loginResult}
                 logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>
