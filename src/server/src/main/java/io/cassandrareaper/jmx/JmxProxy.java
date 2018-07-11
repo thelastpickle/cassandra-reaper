@@ -138,7 +138,7 @@ public interface JmxProxy extends NotificationListener {
 
   void close();
 
-  void removeRepairStatusHandler(int commandId);
+  void removeRepairStatusHandler(int repairNo);
 
   List<Snapshot> listSnapshots() throws UnsupportedOperationException;
 
