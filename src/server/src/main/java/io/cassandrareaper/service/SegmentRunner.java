@@ -911,64 +911,74 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         break;
 
       case SESSION_SUCCESS:
+        // Cassandra 2.1 sends several SUCCESS/FAILED notifications during incremental repair
+        if (!(repairUnit.getIncrementalRepair() && successOrFailedNotified.get())) {
+          Preconditions.checkState(
+              !successOrFailedNotified.get(),
+              "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s",
+              repairRunner.getRepairRunId(),
+              segmentId);
 
-        Preconditions.checkState(
-            !successOrFailedNotified.get(),
-            "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s", repairRunner.getRepairRunId(), segmentId);
+          try {
+            if (segmentFailed.get()) {
+              LOG.debug(
+                  "Got SESSION_SUCCESS for segment with id '{}' and repair number '{}', but it had already timed out",
+                  segmentId,
+                  repairNumber);
+            } else if (renewLead()) {
+              LOG.debug(
+                  "repair session succeeded for segment with id '{}' and repair number '{}'",
+                  segmentId,
+                  repairNumber);
 
-        try {
-          if (segmentFailed.get()) {
-            LOG.debug(
-                "Got SESSION_SUCCESS for segment with id '{}' and repair number '{}', but it had already timed out",
-                segmentId,
-                repairNumber);
-          } else if (renewLead()) {
-            LOG.debug(
-                "repair session succeeded for segment with id '{}' and repair number '{}'",
-                segmentId,
-                repairNumber);
+              context.storage.updateRepairSegment(
+                  currentSegment
+                      .with()
+                      .withState(RepairSegment.State.DONE)
+                      .withEndTime(DateTime.now())
+                      .withId(segmentId)
+                      .build());
 
-            context.storage.updateRepairSegment(
-                currentSegment
-                    .with()
-                    .withState(RepairSegment.State.DONE)
-                    .withEndTime(DateTime.now())
-                    .withId(segmentId)
-                    .build());
+              // Since we can get out of order notifications,
+              // we need to exit if we already got the COMPLETE notification.
+              successOrFailedNotified.set(true);
+              if (completeNotified.get()) {
+                condition.signalAll();
+                jmxProxy.removeRepairStatusHandler(repairNumber);
+              }
 
-            // Since we can get out of order notifications,
-            // we need to exit if we already got the COMPLETE notification.
-            successOrFailedNotified.set(true);
-            if (completeNotified.get()) {
-              condition.signalAll();
-              jmxProxy.removeRepairStatusHandler(repairNumber);
+              break;
             }
-
-            break;
+          } catch (AssertionError er) {
+            // ignore. segment repair has since timed out.
           }
-        } catch (AssertionError er) {
-          // ignore. segment repair has since timed out.
+          segmentFailed.set(true);
+          break;
         }
-        segmentFailed.set(true);
         break;
 
       case SESSION_FAILED:
+        // Cassandra 2.1 sends several SUCCESS/FAILED notifications during incremental repair
+        if (!(repairUnit.getIncrementalRepair() && successOrFailedNotified.get())) {
+          Preconditions.checkState(
+              !successOrFailedNotified.get(),
+              "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s",
+              repairRunner.getRepairRunId(),
+              segmentId);
 
-        Preconditions.checkState(
-            !successOrFailedNotified.get(),
-            "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s", repairRunner.getRepairRunId(), segmentId);
-
-        LOG.warn(
-            "repair session failed for segment with id '{}' and repair number '{}'",
-            segmentId,
-            repairNumber);
-        failOutsideSynchronizedBlock = true;
-        // Since we can get out of order notifications,
-        // we need to exit if we already got the COMPLETE notification.
-        successOrFailedNotified.set(true);
-        if (completeNotified.get()) {
-          condition.signalAll();
-          jmxProxy.removeRepairStatusHandler(repairNumber);
+          LOG.warn(
+              "repair session failed for segment with id '{}' and repair number '{}'",
+              segmentId,
+              repairNumber);
+          failOutsideSynchronizedBlock = true;
+          // Since we can get out of order notifications,
+          // we need to exit if we already got the COMPLETE notification.
+          successOrFailedNotified.set(true);
+          if (completeNotified.get()) {
+            condition.signalAll();
+            jmxProxy.removeRepairStatusHandler(repairNumber);
+          }
+          break;
         }
         break;
 
