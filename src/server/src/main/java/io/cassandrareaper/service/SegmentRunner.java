@@ -93,7 +93,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final String clusterName;
   private final RepairRunner repairRunner;
   private final RepairUnit repairUnit;
-  private int commandId;
+  private volatile int repairNo;
   private final AtomicBoolean segmentFailed;
   private final UUID leaderElectionId;
   private final AtomicBoolean successOrFailedNotified = new AtomicBoolean(false);
@@ -293,8 +293,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                     .build();
             context.storage.updateRepairSegment(segment);
 
-            commandId =
-                coordinator.triggerRepair(
+            repairNo = coordinator.triggerRepair(
                     segment.getStartToken(),
                     segment.getEndToken(),
                     keyspace,
@@ -306,8 +305,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                     segment.getTokenRange().getTokenRanges(),
                     repairUnit.getRepairThreadCount());
 
-            if (0 != commandId) {
-              processTriggeredSegment(segment, coordinator, commandId);
+            if (0 != repairNo) {
+              processTriggeredSegment(segment, coordinator, repairNo);
             } else {
               LOG.info("Nothing to repair for segment {} in keyspace {}", segmentId, keyspace);
 
@@ -342,8 +341,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return true;
   }
 
-  private void processTriggeredSegment(
-      final RepairSegment segment, final JmxProxy coordinator, int repairNo) {
+  private void processTriggeredSegment(final RepairSegment segment, final JmxProxy coordinator, int repairNo) {
 
     repairRunner.updateLastEvent(
         String.format("Triggered repair of segment %s via host %s", segment.getId(), coordinator.getHost()));
@@ -374,7 +372,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         lastLoopTime = System.currentTimeMillis();
       }
     } catch (InterruptedException e) {
-      LOG.warn("Repair command {} on segment {} interrupted", commandId, segmentId, e);
+      LOG.warn("Repair command {} on segment {} interrupted", this.repairNo, segmentId, e);
     } finally {
       coordinator.removeRepairStatusHandler(repairNo);
       RepairSegment resultingSegment
@@ -382,12 +380,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
       LOG.info(
           "Repair command {} on segment {} returned with state {}",
-          commandId,
+          this.repairNo,
           segmentId,
           resultingSegment.getState());
 
       if (RepairSegment.State.RUNNING == resultingSegment.getState()) {
-        LOG.info("Repair command {} on segment {} has been cancelled while running", commandId, segmentId);
+        LOG.info("Repair command {} on segment {} has been cancelled while running", this.repairNo, segmentId);
         segmentFailed.set(true);
         abort(resultingSegment, coordinator);
 
@@ -405,7 +403,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         // Let's just abort and reschedule the segment.
         LOG.info(
             "Repair command {} on segment {} never managed to start within timeout.",
-            commandId,
+            this.repairNo,
             segmentId);
         segmentFailed.set(true);
         abort(resultingSegment, coordinator);
@@ -698,13 +696,13 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   /**
    * Called when there is an event coming either from JMX or this runner regarding on-going repairs.
    *
-   * @param repairNumber repair sequence number, obtained when triggering a repair
+   * @param repairNo repair sequence number, obtained when triggering a repair
    * @param status new status of the repair
    * @param message additional information about the repair
    */
   @Override
   public void handle(
-      int repairNumber,
+      int repairNo,
       Optional<ActiveRepairService.Status> status,
       Optional<ProgressEventType> progress,
       String message,
@@ -714,14 +712,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
     LOG.debug(
         "handle called for repairCommandId {}, outcome {} / {} and message: {}",
-        repairNumber,
+        repairNo,
         status,
         progress,
         message);
-    if (repairNumber != commandId) {
-      LOG.debug("Handler for command id {} not handling message with number {}", commandId, repairNumber);
-      return;
-    }
+
+    Preconditions.checkArgument(
+        repairNo == this.repairNo,
+        "Handler for command id %s not handling message with number %s", this.repairNo, repairNo);
 
     boolean failOutsideSynchronizedBlock = false;
     // DO NOT ADD EXTERNAL CALLS INSIDE THIS SYNCHRONIZED BLOCK (JMX PROXY ETC)
@@ -733,16 +731,19 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         failOutsideSynchronizedBlock = handleJmxNotificationForCassandra21(
             status,
             currentSegment,
-            repairNumber,
+            repairNo,
             failOutsideSynchronizedBlock,
             progress,
             jmxProxy);
       }
       // New repair API – Cassandra-2.2 onwards
       if (progress.isPresent()) {
-        failOutsideSynchronizedBlock =
-            handleJmxNotificationForCassandra22(
-                progress, currentSegment, repairNumber, failOutsideSynchronizedBlock, jmxProxy);
+        failOutsideSynchronizedBlock = handleJmxNotificationForCassandra22(
+            progress,
+            currentSegment,
+            repairNo,
+            failOutsideSynchronizedBlock,
+            jmxProxy);
       }
     }
 

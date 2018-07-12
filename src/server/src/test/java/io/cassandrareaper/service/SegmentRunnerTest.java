@@ -266,14 +266,19 @@ public final class SegmentRunnerTest {
                                 assertEquals(
                                     RepairSegment.State.RUNNING,
                                     storage.getRepairSegment(runId, segmentId).get().getState());
-                                // report about an unrelated repair. Shouldn't affect anything.
-                                ((RepairStatusHandler)invocation.getArgument(7))
-                                    .handle(
-                                        2,
-                                        Optional.of(ActiveRepairService.Status.SESSION_FAILED),
-                                        Optional.absent(),
-                                        "Repair command 2 has failed",
-                                        jmx);
+
+                                // test an unrelated repair. Should throw exception
+                                try {
+                                  ((RepairStatusHandler)invocation.getArgument(7))
+                                      .handle(
+                                          2,
+                                          Optional.of(ActiveRepairService.Status.SESSION_FAILED),
+                                          Optional.absent(),
+                                          "Repair command 2 has failed",
+                                          jmx);
+
+                                  throw new AssertionError("illegal handle of wrong repairNo");
+                                } catch (IllegalArgumentException ignore) { }
 
                                 ((RepairStatusHandler)invocation.getArgument(7))
                                     .handle(
