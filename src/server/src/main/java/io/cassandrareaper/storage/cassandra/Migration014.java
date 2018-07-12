@@ -41,9 +41,11 @@ public final class Migration014 {
 
     if (0 < VersionNumber.parse("4.0").compareTo(highestNodeVersion)) {
       LOG.warn("altering every table to set `dclocal_read_repair_chance` to zero…");
-
       session.getCluster().getMetadata().getKeyspace(keyspace).getTables()
-        .forEach(tbl -> session.executeAsync("ALTER TABLE " + tbl.getName() + " WITH dclocal_read_repair_chance = 0"));
+          .stream()
+          .filter(table -> !table.getName().equals("repair_schedule") && !table.getName().equals("repair_unit"))
+          .forEach(tbl -> session.executeAsync(
+              "ALTER TABLE " + tbl.getName() + " WITH dclocal_read_repair_chance = 0"));
 
       LOG.warn("alter every table to set `dclocal_read_repair_chance` to zero completed.");
     }

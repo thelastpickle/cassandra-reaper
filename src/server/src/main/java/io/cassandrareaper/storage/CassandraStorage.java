@@ -199,7 +199,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     // initialize/upgrade db schema
     Database database = new Database(cassandra, keyspace);
-    if (database.getVersion() > 3 && database.getVersion() < 9) {
+    int initialVersion = database.getVersion();
+    if (initialVersion > 3 && initialVersion < 9) {
       // only applicable after `003_switch_to_uuids.cql`
       // Migration009 needs to happen before `migration.migrate()` in case it fails and needs re-trying
       Migration009.migrate(session);
@@ -207,8 +208,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     MigrationTask migration = new MigrationTask(database, new MigrationRepository("db/cassandra"));
     migration.migrate();
     Migration003.migrate(session);
-    // always run 013 step, incase new tables are added
-    Migration014.migrate(session, keyspace);
+
+    if (initialVersion <= 13) {
+      Migration014.migrate(session, keyspace);
+    }
   }
 
   private void prepareStatements() {
@@ -1233,7 +1236,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public int countRunningReapers() {
     ResultSet result = session.execute(getRunningReapersCountPrepStmt.bind());
-    int runningReapers = (int) result.all().size();
+    int runningReapers = result.all().size();
     LOG.debug("Running reapers = {}", runningReapers);
     return runningReapers > 0 ? runningReapers : 1;
   }
