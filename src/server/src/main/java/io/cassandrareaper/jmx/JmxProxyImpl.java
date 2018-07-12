@@ -123,6 +123,7 @@ final class JmxProxyImpl implements JmxProxy {
   private final String hostBeforeTranslation;
   private final JMXServiceURL jmxUrl;
   private final String clusterName;
+  private final ConcurrentMap<Integer, ExecutorService> repairStatusExecutors = Maps.newConcurrentMap();
   private final ConcurrentMap<Integer, RepairStatusHandler> repairStatusHandlers = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
 
@@ -666,6 +667,7 @@ final class JmxProxyImpl implements JmxProxy {
             associatedTokens,
             repairThreadCount);
       }
+      repairStatusExecutors.putIfAbsent(repairNo, Executors.newSingleThreadExecutor());
       repairStatusHandlers.putIfAbsent(repairNo, repairStatusHandler);
       return repairNo;
     } catch (RuntimeException e) {
@@ -817,7 +819,7 @@ final class JmxProxyImpl implements JmxProxy {
         ? ((int[]) notification.getUserData())[0]
         : Integer.parseInt(((String) notification.getSource()).split(":")[1]);
 
-    EXECUTOR.submit(() -> {
+    repairStatusExecutors.get(repairNo).submit(() -> {
       String threadName = Thread.currentThread().getName();
       try {
         String type = notification.getType();
@@ -903,6 +905,10 @@ final class JmxProxyImpl implements JmxProxy {
   @Override
   public void removeRepairStatusHandler(int repairNo) {
     repairStatusHandlers.remove(repairNo);
+    ExecutorService repairStatusExecutor = repairStatusExecutors.remove(repairNo);
+    if (null != repairStatusExecutor) {
+      repairStatusExecutor.shutdown();
+    }
   }
 
   /** Cleanly shut down by un-registering the listener and closing the JMX connection. */
