@@ -1,5 +1,13 @@
 ## Change Log
 
+### 1.2.1 (2018/07/12 16:55 +00:00)
+- [9b128fc](https://github.com/thelastpickle/cassandra-reaper/commit/9b128fccc67864e0170934585e95403bec863731) Fix incremental repair sending several SUCCESS notifications in 2.1 (@adejanovski)
+- [9c26058](https://github.com/thelastpickle/cassandra-reaper/commit/9c260588d2c9cb193e5e42b63580fc2359fa38e1) Fix for the schema disagreement issue created by Migration014 (@adejanovski)
+- [c42a808](https://github.com/thelastpickle/cassandra-reaper/commit/c42a808c3e3534eae0b9c5e5df63e9bd903a6fb5) Fix cluster screen display with Postgres and H2 (@adejanovski)
+- [16c4d49](https://github.com/thelastpickle/cassandra-reaper/commit/16c4d495adcebe255be4061e94cb35191db7ca51) Ensure notifications for a given repairNo are processed in order. (@michaelsembwever)
+- [f35648e](https://github.com/thelastpickle/cassandra-reaper/commit/f35648e9902fe94d3565afffcbedb5d5d7bf0a4d) In JmxProxyImpl refactor commandId to repairNo, for consistent terminology. (@michaelsembwever)
+- [36fe520](https://github.com/thelastpickle/cassandra-reaper/commit/36fe5203f4c33531bafef1552a4047412f2fa785) fix login (@nsteinmetz)
+
 ### 1.2.0 (2018/07/06 15:07 +00:00)
 - [6a44f3c](https://github.com/thelastpickle/cassandra-reaper/commit/6a44f3cd2069cdf00788a07a862d6c46133e68cf) Add automated purge functions (@adejanovski)
 - [c29acc7](https://github.com/thelastpickle/cassandra-reaper/commit/c29acc74c9edcc9e8383948019a85e1b78779dcf) Handle out of order repair notifications (@adejanovski)
