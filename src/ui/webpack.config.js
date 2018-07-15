@@ -8,7 +8,7 @@ var _commonDeps = [
 ];
 
 // include hot reload deps in dev mode
-const isDev = process.argv.indexOf('-d') !== -1;
+const isDev = process.argv.indexOf('-d') !== -1 || process.env.BUILD_DEV;
 if(isDev) {
   _commonDeps.push("webpack-dev-server/client?http://0.0.0.0:8000"); // WebpackDevServer host and port
   _commonDeps.push("webpack/hot/only-dev-server");
