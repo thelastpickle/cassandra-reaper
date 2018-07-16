@@ -84,6 +84,7 @@ import com.google.common.util.concurrent.Futures;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.commons.lang3.StringUtils;
 import org.cognitor.cassandra.migration.Database;
 import org.cognitor.cassandra.migration.MigrationRepository;
 import org.cognitor.cassandra.migration.MigrationTask;
@@ -132,6 +133,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement deleteRepairRunByUnitPrepStmt;
   private PreparedStatement insertRepairUnitPrepStmt;
   private PreparedStatement getRepairUnitPrepStmt;
+  private PreparedStatement deleteRepairUnitPrepStmt;
   private PreparedStatement insertRepairSegmentPrepStmt;
   private PreparedStatement insertRepairSegmentIncrementalPrepStmt;
   private PreparedStatement updateRepairSegmentPrepStmt;
@@ -256,6 +258,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     getRepairUnitPrepStmt = session
         .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
     insertRepairSegmentPrepStmt = session
         .prepare(
             "INSERT INTO repair_run"
@@ -402,6 +405,22 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Optional<Cluster> deleteCluster(String clusterName) {
+    assert getRepairSchedulesForCluster(clusterName).isEmpty()
+        : StringUtils.join(getRepairSchedulesForCluster(clusterName));
+
+    assert getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)).isEmpty()
+        : StringUtils.join(getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)));
+
+    Statement stmt = new SimpleStatement(SELECT_REPAIR_UNIT);
+    stmt.setIdempotent(Boolean.TRUE);
+    ResultSet results = session.execute(stmt);
+    for (Row row : results) {
+      if (row.getString("cluster_name").equals(clusterName)) {
+        UUID id = row.getUUID("id");
+        assert getRepairRunsForUnit(id).isEmpty() : StringUtils.join(getRepairRunsForUnit(id));
+        session.executeAsync(deleteRepairUnitPrepStmt.bind(id));
+      }
+    }
     session.executeAsync(deleteClusterPrepStmt.bind(clusterName));
     return Optional.fromNullable(new Cluster(clusterName, null, null));
   }

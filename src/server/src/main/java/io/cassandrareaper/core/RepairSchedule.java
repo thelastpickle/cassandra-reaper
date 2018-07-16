@@ -130,6 +130,11 @@ public final class RepairSchedule {
     return new Builder(this);
   }
 
+  @Override
+  public String toString() {
+    return String.format("%s[%s]", getClass().getSimpleName(), id.toString());
+  }
+
   public enum State {
     ACTIVE,
     PAUSED,

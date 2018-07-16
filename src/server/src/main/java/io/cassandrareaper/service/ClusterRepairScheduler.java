@@ -114,7 +114,7 @@ public final class ClusterRepairScheduler {
 
     RepairSchedule repairSchedule = repairScheduleService.storeNewRepairSchedule(
             cluster,
-            repairUnitService.getNewOrExistingRepairUnit(cluster, builder),
+            repairUnitService.getOrCreateRepairUnit(cluster, builder),
             context.config.getScheduleDaysBetween(),
             nextActivationTime,
             REPAIR_OWNER,

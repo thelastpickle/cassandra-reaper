@@ -101,10 +101,12 @@ public interface IStoragePostgreSql {
           + SQL_REPAIR_UNIT_ALL_FIELDS
           + " FROM repair_unit "
           + "WHERE cluster_name = :clusterName AND keyspace_name = :keyspaceName "
-          + "AND column_families = :columnFamilies AND nodes = :nodes AND datacenters = :datacenters "
+          + "AND column_families = :columnFamilies AND incremental_repair = :incrementalRepair "
+          + "AND nodes = :nodes AND datacenters = :datacenters "
           + "AND blackListed_tables = :blacklisted_tables AND repair_thread_count = :repairThreadCount";
 
   String SQL_DELETE_REPAIR_UNIT = "DELETE FROM repair_unit WHERE id = :id";
+  String SQL_DELETE_REPAIR_UNITS = "DELETE FROM repair_unit WHERE cluster_name = :clusterName";
 
   // RepairSegmen
   //
@@ -309,6 +311,7 @@ public interface IStoragePostgreSql {
       @Bind("clusterName") String clusterName,
       @Bind("keyspaceName") String keyspaceName,
       @Bind("columnFamilies") Collection<String> columnFamilies,
+      @Bind("incrementalRepair") boolean incrementalRepair,
       @Bind("nodes") Collection<String> nodes,
       @Bind("datacenters") Collection<String> datacenters,
       @Bind("blacklisted_tables") Collection<String> blacklistedTables,
@@ -322,6 +325,10 @@ public interface IStoragePostgreSql {
   @SqlUpdate(SQL_DELETE_REPAIR_UNIT)
   int deleteRepairUnit(
       @Bind("id") long repairUnitId);
+
+  @SqlUpdate(SQL_DELETE_REPAIR_UNITS)
+  int deleteRepairUnits(
+      @Bind("clusterName") String clusterName);
 
   @SqlBatch(SQL_INSERT_REPAIR_SEGMENT)
   @BatchChunkSize(500)
