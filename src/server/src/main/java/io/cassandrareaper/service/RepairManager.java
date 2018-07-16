@@ -289,7 +289,7 @@ public final class RepairManager implements AutoCloseable {
     return updatedRun;
   }
 
-  private void startRunner(UUID runId) {
+  private synchronized void startRunner(UUID runId) {
     if (!repairRunners.containsKey(runId)) {
       LOG.info("scheduling repair for repair run #{}", runId);
       try {
@@ -297,12 +297,11 @@ public final class RepairManager implements AutoCloseable {
         repairRunners.put(runId, newRunner);
         executor.submit(newRunner);
       } catch (ReaperException e) {
-        LOG.warn("Failed to schedule repair for repair run #{}", runId, e);
+        LOG.warn("Failed to schedule repair for repair run #" + runId, e);
       }
     } else {
       LOG.error(
-          "there is already a repair runner for run with id {}, so not starting new runner. This "
-          + "should not happen.",
+          "there is already a repair runner for run with id {}, so not starting new runner. This should not happen.",
           runId);
     }
   }
