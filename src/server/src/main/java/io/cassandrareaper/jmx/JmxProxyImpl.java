@@ -965,7 +965,7 @@ final class JmxProxyImpl implements JmxProxy {
     }
     try {
       ((StorageServiceMBean) ssProxy).clearSnapshot(snapshotName);
-    } catch (AssertionError | IOException e) {
+    } catch (AssertionError | IOException | RuntimeException e) {
       LOG.error("failed to clear snapshot " + snapshotName, e);
     }
   }
@@ -1041,8 +1041,13 @@ final class JmxProxyImpl implements JmxProxy {
           "Snapshot listing is not supported in Cassandra 2.0 and prior.");
     }
 
-    final Map<String, TabularData> snapshotDetails =
-        ((StorageServiceMBean) ssProxy).getSnapshotDetails();
+    Map<String, TabularData> snapshotDetails = Collections.emptyMap();
+    try {
+      snapshotDetails = ((StorageServiceMBean) ssProxy).getSnapshotDetails();
+    } catch (RuntimeException ex) {
+      LOG.warn("failed getting snapshots details from " + clusterName, ex);
+    }
+
     if (snapshotDetails.isEmpty()) {
       LOG.debug("There are no snapshots on host {}", this.host);
       return snapshots;
