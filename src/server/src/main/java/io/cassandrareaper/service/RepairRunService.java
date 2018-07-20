@@ -43,7 +43,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,8 +98,12 @@ public final class RepairRunService {
     // the next step is to prepare a repair run objec
     segments = repairUnit.getIncrementalRepair() ? nodes.keySet().size() : tokenSegments.size();
 
-    RepairRun.Builder runBuilder
-        = createNewRepairRun(cluster, repairUnit, cause, owner, segments, repairParallelism, intensity);
+    RepairRun.Builder runBuilder = RepairRun.builder(cluster.getName(), repairUnit.getId())
+        .intensity(intensity)
+        .segmentCount(segments)
+        .repairParallelism(repairParallelism)
+        .cause(cause.or("no cause specified"))
+        .owner(owner);
 
     // the last preparation step is to generate actual repair segments
     List<RepairSegment.Builder> segmentBuilders = repairUnit.getIncrementalRepair()
@@ -262,27 +265,6 @@ public final class RepairRunService {
     }
 
     return replicasToRange;
-  }
-
-  /**
-   * Instantiates a RepairRun and stores it in the storage backend.
-   *
-   * @return the new, just stored RepairRun instance
-   * @throws ReaperException when fails to store the RepairRun.
-   */
-  private static RepairRun.Builder createNewRepairRun(
-      Cluster cluster,
-      RepairUnit repairUnit,
-      Optional<String> cause,
-      String owner,
-      int segments,
-      RepairParallelism repairParallelism,
-      Double intensity) throws ReaperException {
-
-    return new RepairRun.Builder(
-        cluster.getName(), repairUnit.getId(), DateTime.now(), intensity, segments, repairParallelism)
-        .cause(cause.or("no cause specified"))
-        .owner(owner);
   }
 
   /**

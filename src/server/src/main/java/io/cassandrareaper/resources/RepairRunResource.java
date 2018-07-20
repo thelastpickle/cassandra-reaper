@@ -191,16 +191,15 @@ public final class RepairRunResource {
       }
 
 
-      RepairUnit.Builder builder =
-          new RepairUnit.Builder(
-              cluster.getName(),
-              keyspace.get(),
-              tableNames,
-              incrementalRepair,
-              nodesToRepair,
-              datacentersToRepair,
-              blacklistedTableNames,
-              repairThreadCountParam.or(context.config.getRepairThreadCount()));
+      RepairUnit.Builder builder = RepairUnit.builder()
+              .clusterName(cluster.getName())
+              .keyspaceName(keyspace.get())
+              .columnFamilies(tableNames)
+              .incrementalRepair(incrementalRepair)
+              .nodes(nodesToRepair)
+              .datacenters(datacentersToRepair)
+              .blacklistedTables(blacklistedTableNames)
+              .repairThreadCount(repairThreadCountParam.or(context.config.getRepairThreadCount()));
 
       RepairUnit theRepairUnit = repairUnitService.getNewOrExistingRepairUnit(cluster, builder);
 
@@ -229,8 +228,7 @@ public final class RepairRunResource {
         parallelism = RepairParallelism.PARALLEL;
       }
 
-      final RepairRun newRepairRun =
-          repairRunService.registerRepairRun(
+      final RepairRun newRepairRun = repairRunService.registerRepairRun(
               cluster,
               theRepairUnit,
               cause,

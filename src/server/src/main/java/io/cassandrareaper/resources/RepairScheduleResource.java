@@ -102,8 +102,7 @@ public final class RepairScheduleResource {
       @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam) {
 
     try {
-      Response possibleFailResponse =
-          RepairRunResource.checkRequestForAddRepair(
+      Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
               context,
               clusterName,
               keyspace,
@@ -179,16 +178,15 @@ public final class RepairScheduleResource {
 
       boolean incrementalRepair = isIncrementalRepair(incrementalRepairStr);
 
-      RepairUnit.Builder builder =
-          new RepairUnit.Builder(
-              cluster.getName(),
-              keyspace.get(),
-              tableNames,
-              incrementalRepair,
-              nodesToRepair,
-              datacentersToRepair,
-              blacklistedTableNames,
-              repairThreadCountParam.or(context.config.getRepairThreadCount()));
+      RepairUnit.Builder builder = RepairUnit.builder()
+              .clusterName(cluster.getName())
+              .keyspaceName(keyspace.get())
+              .columnFamilies(tableNames)
+              .incrementalRepair(incrementalRepair)
+              .nodes(nodesToRepair)
+              .datacenters(datacentersToRepair)
+              .blacklistedTables(blacklistedTableNames)
+              .repairThreadCount(repairThreadCountParam.or(context.config.getRepairThreadCount()));
 
       RepairUnit unit = repairUnitService.getNewOrExistingRepairUnit(cluster, builder);
       Preconditions.checkState(unit.getIncrementalRepair() == incrementalRepair);
@@ -394,10 +392,11 @@ public final class RepairScheduleResource {
     LOG.debug("start repair_schedule called with: id = {}", repairScheduleId);
     Optional<RepairSchedule> repairSchedule = context.storage.getRepairSchedule(repairScheduleId);
     if (repairSchedule.isPresent()) {
-      RepairSchedule newSchedule =
-          new RepairSchedule.Builder(repairSchedule.get())
-              .nextActivation(DateTime.now())
-              .build(repairScheduleId);
+      RepairSchedule newSchedule = repairSchedule.get()
+          .with()
+          .nextActivation(DateTime.now())
+          .build(repairScheduleId);
+
       context.storage.updateRepairSchedule(newSchedule);
       return Response.ok().entity(getRepairScheduleStatus(newSchedule)).build();
     } else {

@@ -24,11 +24,9 @@ import io.cassandrareaper.jmx.JmxProxy;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
-import java.util.UUID;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
@@ -92,20 +90,14 @@ public final class RepairScheduleService {
         repairUnit.getKeyspaceName(),
         repairUnit.getColumnFamilies());
 
-    RepairSchedule.Builder scheduleBuilder =
-        new RepairSchedule.Builder(
-            repairUnit.getId(),
-            RepairSchedule.State.ACTIVE,
-            daysBetween,
-            nextActivation,
-            ImmutableList.<UUID>of(),
-            0,
-            repairParallelism,
-            intensity,
-            DateTime.now(),
-            segmentCountPerNode);
+    RepairSchedule.Builder scheduleBuilder = RepairSchedule.builder(repairUnit.getId())
+        .daysBetween(daysBetween)
+        .nextActivation(nextActivation)
+        .repairParallelism(repairParallelism)
+        .intensity(intensity)
+        .segmentCountPerNode(segmentCountPerNode)
+        .owner(owner);
 
-    scheduleBuilder.owner(owner);
     return context.storage.addRepairSchedule(scheduleBuilder);
   }
 

@@ -14,9 +14,12 @@
 
 package io.cassandrareaper.core;
 
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+
+import com.google.common.base.Preconditions;
 
 public final class RepairUnit {
 
@@ -40,6 +43,10 @@ public final class RepairUnit {
     this.datacenters = builder.datacenters;
     this.blacklistedTables = builder.blacklistedTables;
     this.repairThreadCount = builder.repairThreadCount;
+  }
+
+  public static Builder builder() {
+    return new Builder();
   }
 
   public UUID getId() {
@@ -82,35 +89,18 @@ public final class RepairUnit {
     return new Builder(this);
   }
 
-  public static class Builder {
+  public static final class Builder {
 
-    public final String clusterName;
-    public final String keyspaceName;
-    public final Set<String> columnFamilies;
-    public final boolean incrementalRepair;
-    public final Set<String> nodes;
-    public final Set<String> datacenters;
-    public final Set<String> blacklistedTables;
-    public final int repairThreadCount;
+    public String clusterName;
+    public String keyspaceName;
+    public Set<String> columnFamilies = Collections.emptySet();
+    public Boolean incrementalRepair;
+    public Set<String> nodes = Collections.emptySet();
+    public Set<String> datacenters = Collections.emptySet();
+    public Set<String> blacklistedTables = Collections.emptySet();
+    public Integer repairThreadCount;
 
-    public Builder(
-        String clusterName,
-        String keyspaceName,
-        Set<String> columnFamilies,
-        boolean incrementalRepair,
-        Set<String> nodes,
-        Set<String> datacenters,
-        Set<String> blacklistedTables,
-        int repairThreadCount) {
-      this.clusterName = clusterName;
-      this.keyspaceName = keyspaceName;
-      this.columnFamilies = columnFamilies;
-      this.incrementalRepair = incrementalRepair;
-      this.nodes = nodes;
-      this.datacenters = datacenters;
-      this.blacklistedTables = blacklistedTables;
-      this.repairThreadCount = repairThreadCount;
-    }
+    private Builder() {}
 
     private Builder(RepairUnit original) {
       clusterName = original.clusterName;
@@ -123,7 +113,51 @@ public final class RepairUnit {
       repairThreadCount = original.repairThreadCount;
     }
 
+    public Builder clusterName(String clusterName) {
+      this.clusterName = clusterName;
+      return this;
+    }
+
+    public Builder keyspaceName(String keyspaceName) {
+      this.keyspaceName = keyspaceName;
+      return this;
+    }
+
+    public Builder columnFamilies(Set<String> columnFamilies) {
+      this.columnFamilies = Collections.unmodifiableSet(columnFamilies);
+      return this;
+    }
+
+    public Builder incrementalRepair(boolean incrementalRepair) {
+      this.incrementalRepair = incrementalRepair;
+      return this;
+    }
+
+    public Builder nodes(Set<String> nodes) {
+      this.nodes = Collections.unmodifiableSet(nodes);
+      return this;
+    }
+
+    public Builder datacenters(Set<String> datacenters) {
+      this.datacenters = Collections.unmodifiableSet(datacenters);
+      return this;
+    }
+
+    public Builder blacklistedTables(Set<String> blacklistedTables) {
+      this.blacklistedTables = Collections.unmodifiableSet(blacklistedTables);
+      return this;
+    }
+
+    public Builder repairThreadCount(int repairThreadCount) {
+      this.repairThreadCount = repairThreadCount;
+      return this;
+    }
+
     public RepairUnit build(UUID id) {
+      Preconditions.checkState(null != clusterName, "clusterName(..) must be called before build(..)");
+      Preconditions.checkState(null != keyspaceName, "keyspaceName(..) must be called before build(..)");
+      Preconditions.checkState(null != incrementalRepair, "incrementalRepair(..) must be called before build(..)");
+      Preconditions.checkState(null != repairThreadCount, "repairThreadCount(..) must be called before build(..)");
       return new RepairUnit(this, id);
     }
 
