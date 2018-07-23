@@ -29,19 +29,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.codahale.metrics.InstrumentedScheduledExecutorService;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.apache.cassandra.concurrent.NamedThreadFactory;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,36 +54,40 @@ public final class RepairManager implements AutoCloseable {
 
   private final AppContext context;
   private final Heart heart;
-  private ListeningScheduledExecutorService executor;
-  private long repairTimeoutMillis;
-  private long retryDelayMillis;
+  private final ListeningScheduledExecutorService executor;
+  private final long repairTimeoutMillis;
+  private final long retryDelayMillis;
 
-  private RepairManager(AppContext context)  {
+  private RepairManager(
+      AppContext context,
+      ScheduledExecutorService executor,
+      long repairTimeout,
+      TimeUnit repairTimeoutTimeUnit,
+      long retryDelay,
+      TimeUnit retryDelayTimeUnit)  {
+
     this.context = context;
     this.heart = Heart.create(context);
+    this.repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
+    this.retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
+
+    this.executor = MoreExecutors.listeningDecorator(
+        new InstrumentedScheduledExecutorService(executor, context.metricRegistry));
   }
 
-  public static RepairManager create(AppContext context)  {
-    return new RepairManager(context);
-  }
-
-  long getRepairTimeoutMillis() {
-    return repairTimeoutMillis;
-  }
-
-  @VisibleForTesting
-  public void initializeThreadPool(
-      int threadAmount,
+  public static RepairManager create(
+      AppContext context,
+      ScheduledExecutorService executor,
       long repairTimeout,
       TimeUnit repairTimeoutTimeUnit,
       long retryDelay,
       TimeUnit retryDelayTimeUnit) {
 
-    executor = MoreExecutors.listeningDecorator(
-        Executors.newScheduledThreadPool(threadAmount, new NamedThreadFactory("RepairRunner")));
+    return new RepairManager(context, executor, repairTimeout, repairTimeoutTimeUnit, retryDelay, retryDelayTimeUnit);
+  }
 
-    repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
-    retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
+  long getRepairTimeoutMillis() {
+    return repairTimeoutMillis;
   }
 
   /**

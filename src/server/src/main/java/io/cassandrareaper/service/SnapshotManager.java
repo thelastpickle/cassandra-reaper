@@ -30,10 +30,10 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import com.codahale.metrics.InstrumentedExecutorService;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
@@ -53,15 +53,16 @@ public final class SnapshotManager {
 
   private final AppContext context;
   private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
-  private final ExecutorService executor = Executors.newFixedThreadPool(5);
+  private final ExecutorService executor;
   private final Cache<String, Snapshot> cache = CacheBuilder.newBuilder().weakValues().maximumSize(1000).build();
 
-  private SnapshotManager(AppContext context) {
+  private SnapshotManager(AppContext context, ExecutorService executor) {
     this.context = context;
+    this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
   }
 
-  public static SnapshotManager create(AppContext context) {
-    return new SnapshotManager(context);
+  public static SnapshotManager create(AppContext context, ExecutorService executor) {
+    return new SnapshotManager(context, executor);
   }
 
   public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspace) throws ReaperException {

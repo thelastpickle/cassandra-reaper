@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -53,6 +52,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import com.codahale.metrics.InstrumentedExecutorService;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -63,18 +63,15 @@ import org.slf4j.LoggerFactory;
 @Produces(MediaType.APPLICATION_JSON)
 public final class ClusterResource {
 
-  private static final int JMX_NODE_STATUS_CONCURRENCY = 3;
-
-  private static final ExecutorService CLUSTER_STATUS_EXECUTOR
-      = Executors.newFixedThreadPool(JMX_NODE_STATUS_CONCURRENCY * 2);
-
   private static final Logger LOG = LoggerFactory.getLogger(ClusterResource.class);
 
   private final AppContext context;
+  private final ExecutorService executor;
   private final ClusterRepairScheduler clusterRepairScheduler;
 
-  public ClusterResource(AppContext context) {
+  public ClusterResource(AppContext context, ExecutorService executor) {
     this.context = context;
+    this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
     this.clusterRepairScheduler = new ClusterRepairScheduler(context);
   }
 
@@ -361,7 +358,7 @@ public final class ClusterResource {
       List<Callable<Optional<NodesStatus>>> endpointStateTasks = Lists.newArrayList(callable, callable, callable);
 
       try {
-        return CLUSTER_STATUS_EXECUTOR.invokeAny(
+        return executor.invokeAny(
             endpointStateTasks,
             (int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds(),
             TimeUnit.SECONDS);

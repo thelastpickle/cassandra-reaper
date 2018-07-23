@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -118,8 +119,9 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    context.repairManager = RepairManager.create(context);
-    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
+
+    context.repairManager = RepairManager
+        .create(context, Executors.newScheduledThreadPool(1), 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     final Semaphore mutex = new Semaphore(0);
 
@@ -209,8 +211,7 @@ public final class RepairRunnerTest {
         };
     context.repairManager.startRepairRun(run);
 
-    await().with().atMost(20, TimeUnit.SECONDS).until(()
-        -> {
+    await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
       try {
         mutex.acquire();
         LOG.info("MUTEX ACQUIRED");
@@ -273,8 +274,9 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    context.repairManager = RepairManager.create(context);
-    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
+
+    context.repairManager = RepairManager
+        .create(context, Executors.newScheduledThreadPool(1), 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     final Semaphore mutex = new Semaphore(0);
 
@@ -392,7 +394,14 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    context.repairManager = RepairManager.create(context);
+
+    context.repairManager = RepairManager.create(
+        context,
+        Executors.newScheduledThreadPool(1),
+        500,
+        TimeUnit.MILLISECONDS,
+        1,
+        TimeUnit.MILLISECONDS);
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
 
@@ -432,8 +441,6 @@ public final class RepairRunnerTest {
 
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
-
-    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
