@@ -773,7 +773,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     switch (progress.get()) {
       case START:
         try {
-          if (renewLead()) {
+          // avoid changing state to RUNNING if later notifications have already arrived
+          if (!successOrFailedNotified.get()
+              && RepairSegment.State.NOT_STARTED == currentSegment.getState()
+              && renewLead()) {
+
             context.storage.updateRepairSegment(
                 currentSegment
                     .with()
@@ -893,7 +897,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     switch (status.get()) {
       case STARTED:
         try {
-          if (renewLead()) {
+          // avoid changing state to RUNNING if later notifications have already arrived
+          if (!successOrFailedNotified.get()
+              && RepairSegment.State.NOT_STARTED == currentSegment.getState()
+              && renewLead()) {
+
             context.storage.updateRepairSegment(
                 currentSegment
                     .with()
