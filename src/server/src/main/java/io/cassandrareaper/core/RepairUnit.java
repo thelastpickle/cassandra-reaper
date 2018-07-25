@@ -171,7 +171,7 @@ public final class RepairUnit {
       hash *= 59;
       hash +=  Objects.hashCode(this.columnFamilies);
       hash *= 59;
-      hash +=  (this.incrementalRepair ? 1 : 0);
+      hash +=  (this.incrementalRepair ? 2 : 1);
       hash *= 59;
       hash +=  Objects.hashCode(this.nodes);
       hash *= 59;
@@ -190,7 +190,7 @@ public final class RepairUnit {
         return false;
       }
 
-      return this.incrementalRepair == ((Builder) obj).incrementalRepair
+      return Objects.equals(this.incrementalRepair, ((Builder) obj).incrementalRepair)
           && Objects.equals(this.clusterName, ((Builder) obj).clusterName)
           && Objects.equals(this.keyspaceName, ((Builder) obj).keyspaceName)
           && Objects.equals(this.columnFamilies, ((Builder) obj).columnFamilies)

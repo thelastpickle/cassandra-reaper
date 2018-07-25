@@ -48,6 +48,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.DBIException;
@@ -90,9 +91,16 @@ public final class PostgresStorage implements IStorage {
 
   @Override
   public Optional<Cluster> deleteCluster(String clusterName) {
+    assert getRepairSchedulesForCluster(clusterName).isEmpty()
+        : StringUtils.join(getRepairSchedulesForCluster(clusterName));
+
+    assert getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)).isEmpty()
+        : StringUtils.join(getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)));
+
     Cluster result = null;
     try (Handle h = jdbi.open()) {
       IStoragePostgreSql pg = getPostgresStorage(h);
+      pg.deleteRepairUnits(clusterName);
       Cluster clusterToDel = pg.getCluster(clusterName);
       if (clusterToDel != null) {
         int rowsDeleted = pg.deleteCluster(clusterName);
@@ -211,7 +219,6 @@ public final class PostgresStorage implements IStorage {
       handle.commit();
     } catch (DBIException ex) {
       LOG.warn("DELETE failed", ex);
-      ex.printStackTrace();
       if (handle != null) {
         handle.rollback();
       }
@@ -220,19 +227,7 @@ public final class PostgresStorage implements IStorage {
         handle.close();
       }
     }
-    if (result != null) {
-      tryDeletingRepairUnit(result.getRepairUnitId());
-    }
     return Optional.fromNullable(result);
-  }
-
-  private void tryDeletingRepairUnit(UUID id) {
-    try (Handle h = jdbi.open()) {
-      IStoragePostgreSql pg = getPostgresStorage(h);
-      pg.deleteRepairUnit(UuidUtil.toSequenceId(id));
-    } catch (DBIException ex) {
-      LOG.info("cannot delete RepairUnit with id " + id);
-    }
   }
 
   @Override
@@ -285,13 +280,12 @@ public final class PostgresStorage implements IStorage {
   public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
     RepairUnit result;
     try (Handle h = jdbi.open()) {
-      IStoragePostgreSql storage = getPostgresStorage(h);
 
-      result =
-          storage.getRepairUnitByClusterAndTables(
+      result = getPostgresStorage(h).getRepairUnitByClusterAndTables(
               params.clusterName,
               params.keyspaceName,
               params.columnFamilies,
+              params.incrementalRepair,
               params.nodes,
               params.datacenters,
               params.blacklistedTables,
@@ -493,9 +487,6 @@ public final class PostgresStorage implements IStorage {
           result = scheduleToDel.with().state(RepairSchedule.State.DELETED).build(id);
         }
       }
-    }
-    if (result != null) {
-      tryDeletingRepairUnit(result.getRepairUnitId());
     }
     return Optional.fromNullable(result);
   }

@@ -158,6 +158,11 @@ public final class RepairRun implements Comparable<RepairRun> {
     return Objects.hash(this.id, this.repairUnitId);
   }
 
+  @Override
+  public String toString() {
+    return String.format("%s[%s] for %s", getClass().getSimpleName(), id.toString(), clusterName);
+  }
+
   public enum RunState {
     NOT_STARTED,
     RUNNING,

@@ -42,6 +42,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Implements the StorageAPI using transient Java classes.
@@ -91,8 +92,22 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Optional<Cluster> deleteCluster(String clusterName) {
+    assert getRepairSchedulesForCluster(clusterName).isEmpty()
+        : StringUtils.join(getRepairSchedulesForCluster(clusterName));
+
+    assert getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)).isEmpty()
+        : StringUtils.join(getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)));
+
     if (getRepairSchedulesForCluster(clusterName).isEmpty()
         && getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)).isEmpty()) {
+
+      repairUnits.values().stream()
+          .filter((unit) -> unit.getClusterName().equals(clusterName))
+          .forEach((unit) -> {
+            assert getRepairRunsForUnit(unit.getId()).isEmpty() : StringUtils.join(getRepairRunsForUnit(unit.getId()));
+            repairUnits.remove(unit.getId());
+            repairUnitsByKey.remove(unit.with());
+          });
 
       return Optional.fromNullable(clusters.remove(clusterName));
     }

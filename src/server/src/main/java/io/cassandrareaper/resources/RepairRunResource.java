@@ -201,7 +201,7 @@ public final class RepairRunResource {
               .blacklistedTables(blacklistedTableNames)
               .repairThreadCount(repairThreadCountParam.or(context.config.getRepairThreadCount()));
 
-      RepairUnit theRepairUnit = repairUnitService.getNewOrExistingRepairUnit(cluster, builder);
+      RepairUnit theRepairUnit = repairUnitService.getOrCreateRepairUnit(cluster, builder);
 
       if (theRepairUnit.getIncrementalRepair() != incrementalRepair) {
         String msg = String.format(
