@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.datastax.driver.core.utils.UUIDs;
@@ -71,10 +72,17 @@ public final class RepairManagerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    RepairManager repairManager = RepairManager.create(context);
+
+    RepairManager repairManager = RepairManager.create(
+        context,
+        Executors.newScheduledThreadPool(1),
+        500,
+        TimeUnit.MILLISECONDS,
+        1,
+        TimeUnit.MILLISECONDS);
+
     repairManager = Mockito.spy(repairManager);
     context.repairManager = repairManager;
-    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     final RepairUnit cf = RepairUnit.builder()
         .clusterName(clusterName)
@@ -143,10 +151,17 @@ public final class RepairManagerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    RepairManager repairManager = RepairManager.create(context);
+
+    RepairManager repairManager = RepairManager.create(
+        context,
+        Executors.newScheduledThreadPool(1),
+        500,
+        TimeUnit.MILLISECONDS,
+        1,
+        TimeUnit.MILLISECONDS);
+
     repairManager = Mockito.spy(repairManager);
     context.repairManager = repairManager;
-    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     final RepairUnit cf = RepairUnit.builder()
         .clusterName(clusterName)
@@ -215,10 +230,17 @@ public final class RepairManagerTest {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.storage = storage;
-    RepairManager repairManager = RepairManager.create(context);
+
+    RepairManager repairManager = RepairManager.create(
+        context,
+        Executors.newScheduledThreadPool(1),
+        500,
+        TimeUnit.MILLISECONDS,
+        1,
+        TimeUnit.MILLISECONDS);
+
     repairManager = Mockito.spy(repairManager);
     context.repairManager = repairManager;
-    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     final RepairUnit cf = RepairUnit.builder()
         .clusterName(clusterName)
@@ -284,10 +306,17 @@ public final class RepairManagerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    RepairManager repairManager = RepairManager.create(context);
+
+    RepairManager repairManager = RepairManager.create(
+        context,
+        Executors.newScheduledThreadPool(1),
+        500,
+        TimeUnit.MILLISECONDS,
+        1,
+        TimeUnit.MILLISECONDS);
+
     repairManager = Mockito.spy(repairManager);
     context.repairManager = repairManager;
-    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
     final RepairUnit cf = RepairUnit.builder()
         .clusterName(clusterName)
@@ -336,8 +365,14 @@ public final class RepairManagerTest {
     context.config = new ReaperApplicationConfiguration();
     context.storage = mock(IStorage.class);
     context.storage.addCluster(new Cluster(clusterName, null, Collections.<String>singleton("127.0.0.1")));
-    context.repairManager = RepairManager.create(context);
-    context.repairManager.initializeThreadPool(1, 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
+
+    context.repairManager = RepairManager.create(
+        context,
+        Executors.newScheduledThreadPool(1),
+        500,
+        TimeUnit.MILLISECONDS,
+        1,
+        TimeUnit.MILLISECONDS);
 
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");

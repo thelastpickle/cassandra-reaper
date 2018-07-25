@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.core.Response;
@@ -102,7 +103,15 @@ public final class RepairRunResourceTest {
     //SegmentRunner.SEGMENT_RUNNERS.clear();
 
     context = new AppContext();
-    context.repairManager = RepairManager.create(context);
+
+    context.repairManager = RepairManager.create(
+        context,
+        Executors.newScheduledThreadPool(THREAD_CNT),
+        REPAIR_TIMEOUT_S,
+        TimeUnit.SECONDS,
+        RETRY_DELAY_S,
+        TimeUnit.SECONDS);
+
     context.storage = new MemoryStorage();
     Cluster cluster = new Cluster(CLUSTER_NAME, PARTITIONER, Sets.newHashSet(SEED_HOST));
     context.storage.addCluster(cluster);
@@ -267,9 +276,6 @@ public final class RepairRunResourceTest {
   public void testTriggerAlreadyRunningRun() throws InterruptedException, ReaperException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
 
-    context.repairManager
-        .initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S, TimeUnit.SECONDS);
-
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);
     assertTrue(response.getEntity().toString(), response.getEntity() instanceof RepairRunStatus);
@@ -287,8 +293,6 @@ public final class RepairRunResourceTest {
   @Test
   public void testTriggerNewRunAlreadyRunningRun() throws InterruptedException, ReaperException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
-    context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
-        RETRY_DELAY_S, TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);
     assertTrue(response.getEntity().toString(), response.getEntity() instanceof RepairRunStatus);
@@ -347,8 +351,6 @@ public final class RepairRunResourceTest {
 
   @Test
   public void testTriggerRunMissingArgument() {
-    context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
-        RETRY_DELAY_S, TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(context);
     Response response =
         addRepairRun(
@@ -370,8 +372,6 @@ public final class RepairRunResourceTest {
   @Test
   public void testPauseNotRunningRun() throws InterruptedException, ReaperException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
-    context.repairManager.initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS,
-        RETRY_DELAY_S, TimeUnit.SECONDS);
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);
     assertTrue(response.getEntity().toString(), response.getEntity() instanceof RepairRunStatus);
@@ -404,10 +404,6 @@ public final class RepairRunResourceTest {
   @Test
   public void testModifyIntensity() throws ReaperException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
-
-    context.repairManager
-        .initializeThreadPool(THREAD_CNT, REPAIR_TIMEOUT_S, TimeUnit.SECONDS, RETRY_DELAY_S, TimeUnit.SECONDS);
-
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);
     assertTrue(response.getEntity().toString(), response.getEntity() instanceof RepairRunStatus);
