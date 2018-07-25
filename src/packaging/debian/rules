@@ -7,7 +7,7 @@ MVN = mvn -B -U -e -Dmaven.repo.local=$$PWD/.m2-repository
 SUREFIRE = -Dsurefire.useFile=false
 
 %:
-	dh $@
+	dh $@ --with=systemd
 
 build:
 	dh build --until dh_auto_build
