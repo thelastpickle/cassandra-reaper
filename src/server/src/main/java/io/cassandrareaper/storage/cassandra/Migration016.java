@@ -20,11 +20,11 @@ import com.datastax.driver.core.VersionNumber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class Migration014 {
+public final class Migration016 {
 
-  private static final Logger LOG = LoggerFactory.getLogger(Migration014.class);
+  private static final Logger LOG = LoggerFactory.getLogger(Migration016.class);
 
-  private Migration014() {
+  private Migration016() {
   }
 
   /**

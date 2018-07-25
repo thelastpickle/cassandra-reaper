@@ -34,7 +34,7 @@ import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.cassandra.DateTimeCodec;
 import io.cassandrareaper.storage.cassandra.Migration003;
 import io.cassandrareaper.storage.cassandra.Migration009;
-import io.cassandrareaper.storage.cassandra.Migration014;
+import io.cassandrareaper.storage.cassandra.Migration016;
 
 import java.math.BigInteger;
 import java.util.Collection;
@@ -209,8 +209,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     migration.migrate();
     Migration003.migrate(session);
 
-    if (initialVersion <= 13) {
-      Migration014.migrate(session, keyspace);
+    if (initialVersion <= 15) {
+      Migration016.migrate(session, keyspace);
     }
   }
 
