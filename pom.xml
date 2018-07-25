@@ -21,8 +21,8 @@
     </licenses>
     <scm>
       <url>https://github.com/thelastpickle/cassandra-reaper</url>
-      <connection>scm:git:https://github.com/thelastpickle/cassandra-reaper.git</connection>
-      <developerConnection>scm:git:https://github.com/thelastpickle/cassandra-reaper.git</developerConnection>
+      <connection>scm:git:git@github.com:thelastpickle/cassandra-reaper.git</connection>
+      <developerConnection>scm:git:git@github.com:thelastpickle/cassandra-reaper.git</developerConnection>
       <tag>HEAD</tag>
     </scm>
     <issueManagement>
