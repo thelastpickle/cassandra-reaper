@@ -5,7 +5,7 @@
 
     <groupId>io.cassandrareaper</groupId>
     <artifactId>cassandra-reaper-pom</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Cassandra Reaper project</name>
