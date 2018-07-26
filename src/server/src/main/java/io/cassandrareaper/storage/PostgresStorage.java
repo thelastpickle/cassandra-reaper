@@ -41,10 +41,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.SortedSet;
 import java.util.UUID;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -86,7 +86,7 @@ public final class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getCluster(clusterName);
     }
-    return Optional.fromNullable(result);
+    return Optional.ofNullable(result);
   }
 
   @Override
@@ -109,7 +109,7 @@ public final class PostgresStorage implements IStorage {
         }
       }
     }
-    return Optional.fromNullable(result);
+    return Optional.ofNullable(result);
   }
 
   @Override
@@ -166,14 +166,14 @@ public final class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairRun(UuidUtil.toSequenceId(id));
     }
-    return Optional.fromNullable(result);
+    return Optional.ofNullable(result);
   }
 
   @Override
   public Collection<RepairRun> getRepairRunsForCluster(String clusterName, Optional<Integer> limit) {
     Collection<RepairRun> result;
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getRepairRunsForCluster(clusterName, limit.or(1000));
+      result = getPostgresStorage(h).getRepairRunsForCluster(clusterName, limit.orElse(1000));
     }
     return result == null ? Lists.<RepairRun>newArrayList() : result;
   }
@@ -227,7 +227,7 @@ public final class PostgresStorage implements IStorage {
         handle.close();
       }
     }
-    return Optional.fromNullable(result);
+    return Optional.ofNullable(result);
   }
 
   @Override
@@ -291,7 +291,7 @@ public final class PostgresStorage implements IStorage {
               params.blacklistedTables,
               params.repairThreadCount);
     }
-    return Optional.fromNullable(result);
+    return Optional.ofNullable(result);
   }
 
   private void addRepairSegments(Collection<RepairSegment.Builder> newSegments, UUID runId)
@@ -326,7 +326,7 @@ public final class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairSegment(UuidUtil.toSequenceId(segmentId));
     }
-    return Optional.fromNullable(result);
+    return Optional.ofNullable(result);
   }
 
   @Override
@@ -341,7 +341,7 @@ public final class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getNextFreeRepairSegment(UuidUtil.toSequenceId(runId));
     }
-    return Optional.fromNullable(result);
+    return Optional.ofNullable(result);
   }
 
   @Override
@@ -358,7 +358,7 @@ public final class PostgresStorage implements IStorage {
               UuidUtil.toSequenceId(runId), range.get().getStart(), range.get().getEnd());
         }
       }
-      return Optional.fromNullable(result);
+      return Optional.ofNullable(result);
     } else {
       return getNextFreeSegment(runId);
     }
@@ -422,7 +422,7 @@ public final class PostgresStorage implements IStorage {
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getRepairSchedule(UuidUtil.toSequenceId(repairScheduleId));
     }
-    return Optional.fromNullable(result);
+    return Optional.ofNullable(result);
   }
 
   @Override
@@ -488,7 +488,7 @@ public final class PostgresStorage implements IStorage {
         }
       }
     }
-    return Optional.fromNullable(result);
+    return Optional.ofNullable(result);
   }
 
   @Override

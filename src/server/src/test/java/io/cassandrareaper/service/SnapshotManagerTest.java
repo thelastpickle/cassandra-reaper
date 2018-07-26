@@ -24,10 +24,10 @@ import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IStorage;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.TreeSet;
 import java.util.concurrent.Executors;
 
-import com.google.common.base.Optional;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

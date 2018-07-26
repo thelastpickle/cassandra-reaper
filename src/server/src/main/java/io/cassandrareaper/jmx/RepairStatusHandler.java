@@ -14,7 +14,8 @@
 
 package io.cassandrareaper.jmx;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
+
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 

@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -33,7 +34,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -181,7 +181,7 @@ public class JmxConnectionFactory {
   }
 
   public Optional<JmxCredentials> getJmxCredentialsForCluster(String clusterName) {
-    Optional<JmxCredentials> jmxCreds = Optional.fromNullable(jmxAuth);
+    Optional<JmxCredentials> jmxCreds = Optional.ofNullable(jmxAuth);
     if (jmxCredentials != null && jmxCredentials.containsKey(clusterName)) {
       jmxCreds = Optional.of(jmxCredentials.get(clusterName));
     }

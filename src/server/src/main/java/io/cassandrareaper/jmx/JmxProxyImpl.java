@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -67,7 +68,6 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.datastax.driver.core.VersionNumber;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
-import com.google.common.base.Optional;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Lists;
@@ -857,7 +857,7 @@ final class JmxProxyImpl implements JmxProxy {
 
         repairStatusHandlers
             .get(repairNo)
-            .handle(repairNo, Optional.of(status), Optional.absent(), message, this);
+            .handle(repairNo, Optional.of(status), Optional.empty(), message, this);
       }
     } catch (RuntimeException e) {
       LOG.error("Error while processing JMX notification", e);
@@ -882,7 +882,7 @@ final class JmxProxyImpl implements JmxProxy {
 
         repairStatusHandlers
             .get(repairNo)
-            .handle(repairNo, Optional.absent(), Optional.of(progress), message, this);
+            .handle(repairNo, Optional.empty(), Optional.of(progress), message, this);
       }
     } catch (RuntimeException e) {
       LOG.error("Error while processing JMX notification", e);

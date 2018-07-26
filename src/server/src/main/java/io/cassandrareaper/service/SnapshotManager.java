@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -34,7 +35,6 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.InstrumentedExecutorService;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -294,11 +294,11 @@ public final class SnapshotManager {
   }
 
   private Snapshot enrichSnapshotWithMetadata(Snapshot snapshot) {
-    Optional<Snapshot> snapshotMetadata = Optional.fromNullable(
+    Optional<Snapshot> snapshotMetadata = Optional.ofNullable(
         cache.getIfPresent(snapshot.getClusterName() + "-" + snapshot.getName()));
 
     if (!snapshotMetadata.isPresent()) {
-      snapshotMetadata = Optional.fromNullable(
+      snapshotMetadata = Optional.ofNullable(
           context.storage.getSnapshot(snapshot.getClusterName(), snapshot.getName()));
 
       if (snapshotMetadata.isPresent()) {
@@ -317,9 +317,12 @@ public final class SnapshotManager {
 
     if (snapshotMetadata.isPresent()) {
       snapshotBuilder = snapshotBuilder
-              .withCause(snapshotMetadata.get().getCause().or(""))
-              .withOwner(snapshotMetadata.get().getOwner().or(""))
-              .withCreationDate(snapshotMetadata.get().getCreationDate().orNull());
+              .withCause(snapshotMetadata.get().getCause().orElse(""))
+              .withOwner(snapshotMetadata.get().getOwner().orElse(""));
+      if (snapshotMetadata.get().getCreationDate().isPresent()) {
+        snapshotBuilder = snapshotBuilder
+              .withCreationDate(snapshotMetadata.get().getCreationDate().get());
+      }
     }
 
     return snapshotBuilder.build();

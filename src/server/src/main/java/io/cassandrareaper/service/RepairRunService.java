@@ -30,13 +30,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CharMatcher;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
@@ -102,7 +102,7 @@ public final class RepairRunService {
         .intensity(intensity)
         .segmentCount(segments)
         .repairParallelism(repairParallelism)
-        .cause(cause.or("no cause specified"))
+        .cause(cause.orElse("no cause specified"))
         .owner(owner);
 
     // the last preparation step is to generate actual repair segments

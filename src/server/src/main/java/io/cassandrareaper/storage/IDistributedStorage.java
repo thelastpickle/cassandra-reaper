@@ -18,9 +18,9 @@ import io.cassandrareaper.core.NodeMetrics;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-import com.google.common.base.Optional;
 
 /**
  * Definition for a storage that can run in distributed (peer-to-peer) mode. For example Cassandra.

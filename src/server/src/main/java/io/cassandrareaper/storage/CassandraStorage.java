@@ -40,6 +40,7 @@ import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
@@ -72,7 +73,6 @@ import com.datastax.driver.core.policies.RetryPolicy;
 import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -417,9 +417,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     Row row = session.execute(getClusterPrepStmt.bind(clusterName)).one();
 
     return row != null
-        ? Optional.fromNullable(
+        ? Optional.ofNullable(
             new Cluster(row.getString("name"), row.getString("partitioner"), row.getSet("seed_hosts", String.class)))
-        : Optional.absent();
+        : Optional.empty();
   }
 
   @Override
@@ -441,7 +441,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       }
     }
     session.executeAsync(deleteClusterPrepStmt.bind(clusterName));
-    return Optional.fromNullable(new Cluster(clusterName, null, null));
+    return Optional.ofNullable(new Cluster(clusterName, null, null));
   }
 
   @Override
@@ -567,7 +567,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         // has been since deleted, but zombie segments has been re-inserted
       }
     }
-    return Optional.fromNullable(repairRun);
+    return Optional.ofNullable(repairRun);
   }
 
   @Override
@@ -579,7 +579,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     // Grab repair runs asynchronously for all the ids returned by the index table
     for (UUID repairRunId : repairRunIds) {
       repairRunFutures.add(session.executeAsync(getRepairRunPrepStmt.bind(repairRunId)));
-      if (repairRunFutures.size() == limit.or(1000)) {
+      if (repairRunFutures.size() == limit.orElse(1000)) {
         break;
       }
     }
@@ -744,7 +744,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       }
     }
 
-    return Optional.fromNullable(repairUnit);
+    return Optional.ofNullable(repairUnit);
   }
 
   @Override
@@ -798,7 +798,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       segment = createRepairSegmentFromRow(segmentRow);
     }
 
-    return Optional.fromNullable(segment);
+    return Optional.ofNullable(segment);
   }
 
   @Override
@@ -821,7 +821,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     List<RingRange> tokenRanges =
         JsonParseUtils.parseRingRangeList(
-            Optional.fromNullable(segmentRow.getString("token_ranges")));
+            Optional.ofNullable(segmentRow.getString("token_ranges")));
 
     Segment.Builder segmentBuilder = Segment.builder();
 
@@ -863,7 +863,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         return Optional.of(seg);
       }
     }
-    return Optional.absent();
+    return Optional.empty();
   }
 
   @Override
@@ -886,7 +886,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName) {
     Collection<RepairParameters> repairs = Lists.<RepairParameters>newArrayList();
-    Collection<RepairRun> repairRuns = getRepairRunsForCluster(clusterName, Optional.absent());
+    Collection<RepairRun> repairRuns = getRepairRunsForCluster(clusterName, Optional.empty());
 
     for (RepairRun repairRun : repairRuns) {
       Collection<RepairSegment> runningSegments = getSegmentsWithState(repairRun.getId(), State.RUNNING);
@@ -951,7 +951,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public Optional<RepairSchedule> getRepairSchedule(UUID repairScheduleId) {
     Row sched = session.execute(getRepairSchedulePrepStmt.bind(repairScheduleId)).one();
 
-    return sched != null ? Optional.fromNullable(createRepairScheduleFromRow(sched)) : Optional.absent();
+    return sched != null ? Optional.ofNullable(createRepairScheduleFromRow(sched)) : Optional.empty();
   }
 
   private RepairSchedule createRepairScheduleFromRow(Row repairScheduleRow) {
@@ -1252,7 +1252,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public Optional<NodeMetrics> getNodeMetrics(UUID runId, String node) {
     long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
     Row row = session.execute(getNodeMetricsByNodePrepStmt.bind(minute, runId, node)).one();
-    return null != row ? Optional.of(createNodeMetrics(row)) : Optional.absent();
+    return null != row ? Optional.of(createNodeMetrics(row)) : Optional.empty();
   }
 
   private static NodeMetrics createNodeMetrics(Row row) {
@@ -1397,8 +1397,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         saveSnapshotPrepStmt.bind(
             snapshot.getClusterName(),
             snapshot.getName(),
-            snapshot.getOwner().or("reaper"),
-            snapshot.getCause().or("taken with reaper"),
+            snapshot.getOwner().orElse("reaper"),
+            snapshot.getCause().orElse("taken with reaper"),
             snapshot.getCreationDate().get()));
 
     return true;

@@ -25,6 +25,7 @@ import io.cassandrareaper.storage.MemoryStorage;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
@@ -32,7 +33,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.eclipse.jetty.http.HttpStatus;
@@ -130,7 +130,7 @@ public final class ClusterResourceTest {
     when(mocks.jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
     ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
-    Response response = clusterResource.getCluster(I_DONT_EXIST, Optional.<Integer>absent());
+    Response response = clusterResource.getCluster(I_DONT_EXIST, Optional.<Integer>empty());
     assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
   }
 
@@ -143,7 +143,7 @@ public final class ClusterResourceTest {
     mocks.context.storage.addCluster(cluster);
 
     ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
-    Response response = clusterResource.getCluster(I_DO_EXIST, Optional.<Integer>absent());
+    Response response = clusterResource.getCluster(I_DO_EXIST, Optional.<Integer>empty());
     assertEquals(HttpStatus.OK_200, response.getStatus());
   }
 

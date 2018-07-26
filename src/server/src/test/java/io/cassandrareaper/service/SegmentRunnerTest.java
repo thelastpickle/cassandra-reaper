@@ -34,13 +34,13 @@ import io.cassandrareaper.storage.MemoryStorage;
 
 import java.math.BigInteger;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -102,7 +102,7 @@ public final class SegmentRunnerTest {
                     cf.getId())));
 
     final UUID runId = run.getId();
-    final UUID segmentId = context.storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID segmentId = context.storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -145,7 +145,7 @@ public final class SegmentRunnerTest {
                                       .handle(
                                           1,
                                           Optional.of(ActiveRepairService.Status.STARTED),
-                                          Optional.absent(),
+                                          Optional.empty(),
                                           "Repair command 1 has started",
                                           jmx);
 
@@ -213,7 +213,7 @@ public final class SegmentRunnerTest {
                     cf.getId())));
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -259,7 +259,7 @@ public final class SegmentRunnerTest {
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.STARTED),
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         "Repair command 1 has started",
                                         jmx);
 
@@ -273,7 +273,7 @@ public final class SegmentRunnerTest {
                                       .handle(
                                           2,
                                           Optional.of(ActiveRepairService.Status.SESSION_FAILED),
-                                          Optional.absent(),
+                                          Optional.empty(),
                                           "Repair command 2 has failed",
                                           jmx);
 
@@ -284,7 +284,7 @@ public final class SegmentRunnerTest {
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         "Repair session succeeded in command 1",
                                         jmx);
 
@@ -296,7 +296,7 @@ public final class SegmentRunnerTest {
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.FINISHED),
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         "Repair command 1 has finished",
                                         jmx);
 
@@ -359,7 +359,7 @@ public final class SegmentRunnerTest {
                     cf.getId())));
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -405,7 +405,7 @@ public final class SegmentRunnerTest {
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.STARTED),
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         "Repair command 1 has started",
                                         jmx);
 
@@ -417,7 +417,7 @@ public final class SegmentRunnerTest {
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.SESSION_FAILED),
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         "Repair command 1 has failed",
                                         jmx);
 
@@ -429,7 +429,7 @@ public final class SegmentRunnerTest {
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.FINISHED),
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         "Repair command 1 has finished",
                                         jmx);
 
@@ -495,7 +495,7 @@ public final class SegmentRunnerTest {
                     cf.getId())));
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -543,7 +543,7 @@ public final class SegmentRunnerTest {
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.STARTED),
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         "Repair command 1 has started",
                                         jmx);
 
@@ -551,7 +551,7 @@ public final class SegmentRunnerTest {
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.FINISHED),
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         "Repair command 1 has finished",
                                         jmx);
 
@@ -563,7 +563,7 @@ public final class SegmentRunnerTest {
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         "Repair session succeeded in command 1",
                                         jmx);
 
@@ -630,7 +630,7 @@ public final class SegmentRunnerTest {
                     cf.getId())));
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -677,7 +677,7 @@ public final class SegmentRunnerTest {
                                 ((RepairStatusHandler) invocation.getArgument(7))
                                     .handle(
                                         1,
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         Optional.of(ProgressEventType.START),
                                         "Repair command 1 has started",
                                         jmx);
@@ -685,7 +685,7 @@ public final class SegmentRunnerTest {
                                 ((RepairStatusHandler) invocation.getArgument(7))
                                     .handle(
                                         1,
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         Optional.of(ProgressEventType.COMPLETE),
                                         "Repair command 1 has finished",
                                         jmx);
@@ -697,7 +697,7 @@ public final class SegmentRunnerTest {
                                 ((RepairStatusHandler) invocation.getArgument(7))
                                     .handle(
                                         1,
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         Optional.of(ProgressEventType.SUCCESS),
                                         "Repair session succeeded in command 1",
                                         jmx);
@@ -765,7 +765,7 @@ public final class SegmentRunnerTest {
                     cf.getId())));
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -813,7 +813,7 @@ public final class SegmentRunnerTest {
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.STARTED),
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         "Repair command 1 has started",
                                         jmx);
 
@@ -821,7 +821,7 @@ public final class SegmentRunnerTest {
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.FINISHED),
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         "Repair command 1 has finished",
                                         jmx);
 
@@ -833,7 +833,7 @@ public final class SegmentRunnerTest {
                                     .handle(
                                         1,
                                         Optional.of(ActiveRepairService.Status.SESSION_FAILED),
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         "Repair session succeeded in command 1",
                                         jmx);
 
@@ -901,7 +901,7 @@ public final class SegmentRunnerTest {
                     cf.getId())));
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -948,7 +948,7 @@ public final class SegmentRunnerTest {
                                 ((RepairStatusHandler) invocation.getArgument(7))
                                     .handle(
                                         1,
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         Optional.of(ProgressEventType.START),
                                         "Repair command 1 has started",
                                         jmx);
@@ -956,7 +956,7 @@ public final class SegmentRunnerTest {
                                 ((RepairStatusHandler) invocation.getArgument(7))
                                     .handle(
                                         1,
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         Optional.of(ProgressEventType.COMPLETE),
                                         "Repair command 1 has finished",
                                         jmx);
@@ -968,7 +968,7 @@ public final class SegmentRunnerTest {
                                 ((RepairStatusHandler) invocation.getArgument(7))
                                     .handle(
                                         1,
-                                        Optional.absent(),
+                                        Optional.empty(),
                                         Optional.of(ProgressEventType.ERROR),
                                         "Repair session succeeded in command 1",
                                         jmx);
@@ -1115,7 +1115,7 @@ public final class SegmentRunnerTest {
     final AppContext context = new AppContext();
     context.storage = Mockito.mock(CassandraStorage.class);
     when(((IDistributedStorage) context.storage).getNodeMetrics(any(), any()))
-        .thenReturn(Optional.absent());
+        .thenReturn(Optional.empty());
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(jmxConnectionFactory.connect(any(), anyInt())).thenReturn(mock(JmxProxy.class));
     context.jmxConnectionFactory = jmxConnectionFactory;

@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -53,7 +54,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -199,7 +199,7 @@ public final class RepairRunResource {
               .nodes(nodesToRepair)
               .datacenters(datacentersToRepair)
               .blacklistedTables(blacklistedTableNames)
-              .repairThreadCount(repairThreadCountParam.or(context.config.getRepairThreadCount()));
+              .repairThreadCount(repairThreadCountParam.orElse(context.config.getRepairThreadCount()));
 
       RepairUnit theRepairUnit = repairUnitService.getOrCreateRepairUnit(cluster, builder);
 
@@ -312,7 +312,7 @@ public final class RepairRunResource {
           .build();
     }
 
-    if (!datacentersStr.or("").isEmpty() && !nodesStr.or("").isEmpty()) {
+    if (!datacentersStr.orElse("").isEmpty() && !nodesStr.orElse("").isEmpty()) {
       return Response.status(Response.Status.BAD_REQUEST)
           .entity(
               "Parameters \"datacenters\" and \"nodes\" are mutually exclusive. Please fill just one between the two.")
@@ -602,7 +602,7 @@ public final class RepairRunResource {
       @PathParam("cluster_name") String clusterName) {
 
     LOG.debug("get repair run for cluster called with: cluster_name = {}", clusterName);
-    final Collection<RepairRun> repairRuns = context.storage.getRepairRunsForCluster(clusterName, Optional.absent());
+    final Collection<RepairRun> repairRuns = context.storage.getRepairRunsForCluster(clusterName, Optional.empty());
     final Collection<RepairRunStatus> repairRunViews = new ArrayList<>();
     for (final RepairRun repairRun : repairRuns) {
       repairRunViews.add(getRepairRunStatus(repairRun));
@@ -651,12 +651,12 @@ public final class RepairRunResource {
       }
 
       Collection<Cluster> clusters = cluster
-          .transform((clstr) -> context.storage.getCluster(clstr).get())
-          .transform((clstr) -> (Collection<Cluster>)Collections.singleton(clstr))
-          .or(context.storage.getClusters());
+          .map((clstr) -> context.storage.getCluster(clstr).get())
+          .map((clstr) -> (Collection<Cluster>)Collections.singleton(clstr))
+          .orElse(context.storage.getClusters());
 
       for (final Cluster clstr : clusters) {
-        Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(clstr.getName(), Optional.absent());
+        Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(clstr.getName(), Optional.empty());
         runStatuses.addAll(
             (List<RepairRunStatus>) getRunStatuses(runs, desiredStates)
                 .stream()

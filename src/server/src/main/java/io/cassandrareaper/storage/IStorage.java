@@ -27,10 +27,10 @@ import io.cassandrareaper.service.RepairParameters;
 import io.cassandrareaper.service.RingRange;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.SortedSet;
 import java.util.UUID;
 
-import com.google.common.base.Optional;
 
 /**
  * API definition for cassandra-reaper.
