@@ -17,8 +17,8 @@
 
 package io.cassandrareaper.acceptance;
 
-import io.cassandrareaper.AppContext;
-import io.cassandrareaper.acceptance.ReaperTestJettyRunner.ReaperJettyTestSupport;
+
+import java.util.Optional;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 public class ReaperH2IT {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperH2IT.class);
-  private static ReaperJettyTestSupport runnerInstance;
+  private static ReaperTestJettyRunner runner;
   private static final String H2_CONFIG_FILE = "cassandra-reaper-h2-at.yaml";
 
 
@@ -50,9 +50,7 @@ public class ReaperH2IT {
         "setting up testing Reaper runner with {} seed hosts defined and H2 storage",
         TestContext.TEST_CLUSTER_SEED_HOSTS.size());
 
-    AppContext context = new AppContext();
-    ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
-    runnerInstance = runner.setup(context, H2_CONFIG_FILE);
+    runner = new ReaperTestJettyRunner(H2_CONFIG_FILE, Optional.empty());
 
     BasicSteps.addReaperRunner(runner);
   }
@@ -60,7 +58,7 @@ public class ReaperH2IT {
   @AfterClass
   public static void tearDown() {
     LOG.info("Stopping reaper service...");
-    runnerInstance.after();
+    runner.runnerInstance.after();
   }
 
 }

@@ -44,10 +44,18 @@ case "${TEST_TYPE}" in
             mvn -B surefire:test -Dtest=ReaperAuthIT
             mvn -B surefire:test -Dtest=ReaperH2IT
             mvn -B surefire:test -Dtest=ReaperPostgresIT
-            mvn -B surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT
         else
-            mvn -B surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
+            mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
         fi
+        ;;
+    "upgrade")
+        mvn --version -B
+        ccm start
+        sleep 30
+        ccm status
+
+        mvn install -B -DskipTests -Pintegration-upgrade-tests
+        MAVEN_OPTS="-Xmx512m" mvn -B surefire:test -Dtest=ReaperCassandraIT -Dcucumber.options="${CO}"
         ;;
     "docker")
         docker-compose -f ./src/packaging/docker-build/docker-compose.yml build

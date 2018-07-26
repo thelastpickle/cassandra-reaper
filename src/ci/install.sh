@@ -22,9 +22,9 @@ case "${TEST_TYPE}" in
         echo "ERROR: Environment variable TEST_TYPE is unspecified."
         exit 1
         ;;
-    "ccm")
-        cp src/ci/jmxremote.password /home/travis/.local/jmxremote.password
-        chmod 400 /home/travis/.local/jmxremote.password
+    "ccm"|"upgrade")
+        cp src/ci/jmxremote.password ~/.local/jmxremote.password
+        chmod 400 ~/.local/jmxremote.password
         cat /usr/lib/jvm/java-8-oracle/jre/lib/management/jmxremote.access
         sudo chmod 777 /usr/lib/jvm/java-8-oracle/jre/lib/management/jmxremote.access
         echo "cassandra     readwrite" >> /usr/lib/jvm/java-8-oracle/jre/lib/management/jmxremote.access
@@ -32,26 +32,29 @@ case "${TEST_TYPE}" in
         ccm create test -v $CASSANDRA_VERSION > /dev/null
         # use "2:0" to ensure the first datacenter name is "dc1" instead of "datacenter1", so to be compatible with CircleCI tests
         ccm populate --vnodes -n 2:0 > /dev/null
-        sed -i 's/etc\/cassandra\/jmxremote.password/home\/travis\/.local\/jmxremote.password/' /home/travis/.ccm/test/node1/conf/cassandra-env.sh
-        sed -i 's/etc\/cassandra\/jmxremote.password/home\/travis\/.local\/jmxremote.password/' /home/travis/.ccm/test/node2/conf/cassandra-env.sh
-        sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/travis/.ccm/test/node1/conf/cassandra-env.sh
-        sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/travis/.ccm/test/node2/conf/cassandra-env.sh
-        sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="100M"/' /home/travis/.ccm/test/node1/conf/cassandra-env.sh
-        sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="100M"/' /home/travis/.ccm/test/node2/conf/cassandra-env.sh
-        sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/travis/.ccm/test/node1/conf/cassandra.yaml
-        sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' /home/travis/.ccm/test/node2/conf/cassandra.yaml
-        sed -i 's/start_rpc: true/start_rpc: false/' /home/travis/.ccm/test/node1/conf/cassandra.yaml
-        sed -i 's/start_rpc: true/start_rpc: false/' /home/travis/.ccm/test/node2/conf/cassandra.yaml
-        sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' /home/travis/.ccm/test/node1/conf/cassandra.yaml
-        sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' /home/travis/.ccm/test/node2/conf/cassandra.yaml
-        sed -i 's/concurrent_reads: 32/concurrent_reads: 4/' /home/travis/.ccm/test/node1/conf/cassandra.yaml
-        sed -i 's/concurrent_reads: 32/concurrent_reads: 4/' /home/travis/.ccm/test/node2/conf/cassandra.yaml
-        sed -i 's/concurrent_writes: 32/concurrent_writes: 4/' /home/travis/.ccm/test/node1/conf/cassandra.yaml
-        sed -i 's/concurrent_writes: 32/concurrent_writes: 4/' /home/travis/.ccm/test/node2/conf/cassandra.yaml
-        sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 4/' /home/travis/.ccm/test/node1/conf/cassandra.yaml
-        sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 4/' /home/travis/.ccm/test/node2/conf/cassandra.yaml
-        sed -i 's/num_tokens: 256/num_tokens: 32/' /home/travis/.ccm/test/node1/conf/cassandra.yaml
-        sed -i 's/num_tokens: 256/num_tokens: 32/' /home/travis/.ccm/test/node2/conf/cassandra.yaml
+        for i in `seq 1 2` ; do
+          sed -i 's/etc\/cassandra\/jmxremote.password/home\/travis\/.local\/jmxremote.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+          sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+          sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="200M"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+          sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' ~/.ccm/test/node$i/conf/cassandra.yaml
+          sed -i 's/start_rpc: true/start_rpc: false/' ~/.ccm/test/node$i/conf/cassandra.yaml
+          sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' ~/.ccm/test/node$i/conf/cassandra.yaml
+          sed -i 's/concurrent_reads: 32/concurrent_reads: 4/' ~/.ccm/test/node$i/conf/cassandra.yaml
+          sed -i 's/concurrent_writes: 32/concurrent_writes: 4/' ~/.ccm/test/node$i/conf/cassandra.yaml
+          sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 4/' ~/.ccm/test/node$i/conf/cassandra.yaml
+          sed -i 's/num_tokens: 256/num_tokens: 4/' ~/.ccm/test/node$i/conf/cassandra.yaml
+          sed -i 's/auto_snapshot: true/auto_snapshot: false/' ~/.ccm/test/node$i/conf/cassandra.yaml
+          sed -i 's/enable_materialized_views: true/enable_materialized_views: false/' ~/.ccm/test/node$i/conf/cassandra.yaml
+          sed -i 's/internode_compression: dc/internode_compression: none/' ~/.ccm/test/node$i/conf/cassandra.yaml
+          echo 'phi_convict_threshold: 16' >> ~/.ccm/test/node$i/conf/cassandra.yaml
+          if  echo "$CASSANDRA_VERSION" | grep -q "trunk"  ; then
+            sed -i 's/start_rpc: true//' ~/.ccm/test/node$i/conf/cassandra.yaml
+            echo '-Dcassandra.max_local_pause_in_ms=15000' >> ~/.ccm/test/node$i/conf/jvm-server.options
+            sed -i 's/#-Dcassandra.available_processors=number_of_processors/-Dcassandra.available_processors=2/' ~/.ccm/test/node$i/conf/jvm-server.options
+          else
+            sed -i 's/start_rpc: true/start_rpc: false/' ~/.ccm/test/node$i/conf/cassandra.yaml
+          fi
+        done
         ;;
     *)
         echo "Skipping, no actions for TEST_TYPE=${TEST_TYPE}."

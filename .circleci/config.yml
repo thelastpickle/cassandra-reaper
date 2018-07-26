@@ -170,20 +170,32 @@ jobs:
         CASSANDRA_VERSION: 2.1.20
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
-    c_2-1_one-reaper_incremental:
+    c_2-1_one-reaper__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: 2.1.20
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable
       <<: *default_job
-    c_2-1_two-reapers_incremental:
+    c_2-1_two-reapers__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: 2.1.20
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
-    c_2-1_flapping-reapers_incremental:
+    c_2-1_flapping-reapers__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: 2.1.20
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_2-1_upgrades:
+      environment:
+        CASSANDRA_VERSION: 2.1.20
+        CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable"
+        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+      <<: *default_job
+    c_2-1_upgrades__all_nodes_reachable:
+      environment:
+        CASSANDRA_VERSION: 2.1.20
+        CUCUMBER_OPTIONS: "-t @all_nodes_reachable"
+        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
       <<: *default_job
     c_2-2_memory:
       environment:
@@ -210,20 +222,32 @@ jobs:
         CASSANDRA_VERSION: 2.2.13
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
-    c_2-2_one-reaper_incremental:
+    c_2-2_one-reaper__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: 2.2.13
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable
       <<: *default_job
-    c_2-2_two-reapers_incremental:
+    c_2-2_two-reapers__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: 2.2.13
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
-    c_2-2_flapping-reapers_incremental:
+    c_2-2_flapping-reapers__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: 2.2.13
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_2-2_upgrades:
+      environment:
+        CASSANDRA_VERSION: 2.2.13
+        CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable"
+        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+      <<: *default_job
+    c_2-2_upgrades__all_nodes_reachable:
+      environment:
+        CASSANDRA_VERSION: 2.2.13
+        CUCUMBER_OPTIONS: "-t @all_nodes_reachable"
+        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
       <<: *default_job
     c_3-0_memory:
       environment:
@@ -250,20 +274,32 @@ jobs:
         CASSANDRA_VERSION: 3.0.17
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
-    c_3-0_one-reaper_incremental:
+    c_3-0_one-reaper__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: 3.0.17
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable
       <<: *default_job
-    c_3-0_two-reapers_incremental:
+    c_3-0_two-reapers__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: 3.0.17
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
-    c_3-0_flapping-reapers_incremental:
+    c_3-0_flapping-reapers__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: 3.0.17
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_3-0_upgrades:
+      environment:
+        CASSANDRA_VERSION: 3.0.17
+        CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable"
+        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+      <<: *default_job
+    c_3-0_upgrades__all_nodes_reachable:
+      environment:
+        CASSANDRA_VERSION: 3.0.17
+        CUCUMBER_OPTIONS: "-t @all_nodes_reachable"
+        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
       <<: *default_job
     c_3-11_memory:
       environment:
@@ -290,20 +326,32 @@ jobs:
         CASSANDRA_VERSION: 3.11.3
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
-    c_3-11_one-reaper_incremental:
+    c_3-11_one-reaper__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: 3.11.3
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable
       <<: *default_job
-    c_3-11_two-reapers_incremental:
+    c_3-11_two-reapers__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: 3.11.3
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
-    c_3-11_flapping-reapers_incremental:
+    c_3-11_flapping-reapers__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: 3.11.3
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_3-11_upgrades:
+      environment:
+        CASSANDRA_VERSION: 3.11.3
+        CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable"
+        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+      <<: *default_job
+    c_3-11_upgrades__all_nodes_reachable:
+      environment:
+        CASSANDRA_VERSION: 3.11.3
+        CUCUMBER_OPTIONS: "-t @all_nodes_reachable"
+        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
       <<: *default_job
     c_4-0_memory:
       environment:
@@ -330,20 +378,32 @@ jobs:
         CASSANDRA_VERSION: git:trunk
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx398m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
-    c_4-0_one-reaper_incremental:
+    c_4-0_one-reaper__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: git:trunk
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable
       <<: *default_job
-    c_4-0_two-reapers_incremental:
+    c_4-0_two-reapers__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: git:trunk
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
-    c_4-0_flapping-reapers_incremental:
+    c_4-0_flapping-reapers__all_nodes_reachable:
       environment:
         CASSANDRA_VERSION: git:trunk
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx398m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_4-0_upgrades:
+      environment:
+        CASSANDRA_VERSION: git:trunk
+        CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable"
+        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+      <<: *default_job
+    c_4-0_upgrades__all_nodes_reachable:
+      environment:
+        CASSANDRA_VERSION: git:trunk
+        CUCUMBER_OPTIONS: "-t @all_nodes_reachable"
+        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
       <<: *default_job
 workflows:
   version: 2
@@ -372,21 +432,29 @@ workflows:
             - c_2-1_memory
             - c_2-1_one-reaper
             - c_2-1_two-reapers
-      - c_2-1_one-reaper_incremental:
+      - c_2-1_one-reaper__all_nodes_reachable:
           requires:
             - build
             - c_2-1_memory
-      - c_2-1_two-reapers_incremental:
+      - c_2-1_two-reapers__all_nodes_reachable:
           requires:
             - build
             - c_2-1_memory
-            - c_2-1_one-reaper_incremental
-      - c_2-1_flapping-reapers_incremental:
+            - c_2-1_one-reaper__all_nodes_reachable
+      - c_2-1_flapping-reapers__all_nodes_reachable:
           requires:
             - build
             - c_2-1_memory
-            - c_2-1_one-reaper_incremental
-            - c_2-1_two-reapers_incremental
+            - c_2-1_one-reaper__all_nodes_reachable
+            - c_2-1_two-reapers__all_nodes_reachable
+      - c_2-1_upgrades:
+          requires:
+            - build
+            - c_2-1_one-reaper
+      - c_2-1_upgrades__all_nodes_reachable:
+          requires:
+            - build
+            - c_2-1_upgrades
       - c_2-2_memory:
           requires:
             - build
@@ -409,21 +477,29 @@ workflows:
             - c_2-2_memory
             - c_2-2_one-reaper
             - c_2-2_two-reapers
-      - c_2-2_one-reaper_incremental:
+      - c_2-2_one-reaper__all_nodes_reachable:
           requires:
             - build
             - c_2-2_memory
-      - c_2-2_two-reapers_incremental:
+      - c_2-2_two-reapers__all_nodes_reachable:
           requires:
             - build
             - c_2-2_memory
-            - c_2-2_one-reaper_incremental
-      - c_2-2_flapping-reapers_incremental:
+            - c_2-2_one-reaper__all_nodes_reachable
+      - c_2-2_flapping-reapers__all_nodes_reachable:
           requires:
             - build
             - c_2-2_memory
-            - c_2-2_one-reaper_incremental
-            - c_2-2_two-reapers_incremental
+            - c_2-2_one-reaper__all_nodes_reachable
+            - c_2-2_two-reapers__all_nodes_reachable
+      - c_2-2_upgrades:
+          requires:
+            - build
+            - c_2-2_one-reaper
+      - c_2-2_upgrades__all_nodes_reachable:
+          requires:
+            - build
+            - c_2-2_upgrades
       - c_3-0_memory:
           requires:
             - build
@@ -446,21 +522,29 @@ workflows:
             - c_3-0_memory
             - c_3-0_one-reaper
             - c_3-0_two-reapers
-      - c_3-0_one-reaper_incremental:
+      - c_3-0_one-reaper__all_nodes_reachable:
           requires:
             - build
             - c_3-0_memory
-      - c_3-0_two-reapers_incremental:
+      - c_3-0_two-reapers__all_nodes_reachable:
           requires:
             - build
             - c_3-0_memory
-            - c_3-0_one-reaper_incremental
-      - c_3-0_flapping-reapers_incremental:
+            - c_3-0_one-reaper__all_nodes_reachable
+      - c_3-0_flapping-reapers__all_nodes_reachable:
           requires:
             - build
             - c_3-0_memory
-            - c_3-0_one-reaper_incremental
-            - c_3-0_two-reapers_incremental
+            - c_3-0_one-reaper__all_nodes_reachable
+            - c_3-0_two-reapers__all_nodes_reachable
+      - c_3-0_upgrades:
+          requires:
+            - build
+            - c_3-0_one-reaper
+      - c_3-0_upgrades__all_nodes_reachable:
+          requires:
+            - build
+            - c_3-0_upgrades
       - c_3-11_memory:
           requires:
             - build
@@ -483,21 +567,29 @@ workflows:
             - c_3-11_memory
             - c_3-11_one-reaper
             - c_3-11_two-reapers
-      - c_3-11_one-reaper_incremental:
+      - c_3-11_one-reaper__all_nodes_reachable:
           requires:
             - build
             - c_3-11_memory
-      - c_3-11_two-reapers_incremental:
+      - c_3-11_two-reapers__all_nodes_reachable:
           requires:
             - build
             - c_3-11_memory
-            - c_3-11_one-reaper_incremental
-      - c_3-11_flapping-reapers_incremental:
+            - c_3-11_one-reaper__all_nodes_reachable
+      - c_3-11_flapping-reapers__all_nodes_reachable:
           requires:
             - build
             - c_3-11_memory
-            - c_3-11_one-reaper_incremental
-            - c_3-11_two-reapers_incremental
+            - c_3-11_one-reaper__all_nodes_reachable
+            - c_3-11_two-reapers__all_nodes_reachable
+      - c_3-11_upgrades:
+          requires:
+            - build
+            - c_3-11_one-reaper
+      - c_3-11_upgrades__all_nodes_reachable:
+          requires:
+            - build
+            - c_3-11_upgrades
       - c_4-0_memory:
           requires:
             - build
@@ -514,30 +606,37 @@ workflows:
             - build
             - c_4-0_memory
             - c_4-0_one-reaper
-      - c_4-0_one-reaper_incremental:
+      - c_4-0_one-reaper__all_nodes_reachable:
           requires:
             - build
             - c_4-0_memory
-      - c_4-0_two-reapers_incremental:
+      - c_4-0_two-reapers__all_nodes_reachable:
           requires:
             - build
             - c_4-0_memory
-            - c_4-0_one-reaper_incremental
+            - c_4-0_one-reaper__all_nodes_reachable
 # FIXME – the following requires more memory than free OSS CircleCI offers
-#      - c_4-0_flapping-reapers_incremental:
+#      - c_4-0_flapping-reapers__all_nodes_reachable:
 #          requires:
 #            - build
 #            - c_4-0_memory
-#            - c_4-0_one-reaper_incremental
-#            - c_4-0_two-reapers_incremental
-# FIXME – the following requires more memory than free OSS CircleCI offers
+#            - c_4-0_one-reaper__all_nodes_reachable
+#            - c_4-0_two-reapers__all_nodes_reachable
 #      - c_4-0_flapping-reapers:
 #          requires:
 #            - build
 #            - c_4-0_memory
 #            - c_4-0_one-reaper
 #            - c_4-0_two-reapers
-#            - c_4-0_flapping-reapers_incremental
+#            - c_4-0_flapping-reapers__all_nodes_reachable
+#      - c_4-0_upgrades:
+#          requires:
+#            - build
+#            - c_4-0_one-reaper
+#      - c_4-0_upgrades__all_nodes_reachable:
+#          requires:
+#            - build
+#            - c_4-0_upgrades
 
 notify:
   webhooks:

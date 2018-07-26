@@ -32,6 +32,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -43,7 +44,6 @@ import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +56,7 @@ import static org.junit.Assert.assertEquals;
 public final class SimpleReaperClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(SimpleReaperClient.class);
-  private static final Optional<Map<String, String>> EMPTY_PARAMS = Optional.absent();
+  private static final Optional<Map<String, String>> EMPTY_PARAMS = Optional.empty();
 
   private final String reaperHost;
   private final int reaperPort;

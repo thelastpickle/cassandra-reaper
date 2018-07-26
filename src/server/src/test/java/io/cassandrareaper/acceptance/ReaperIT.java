@@ -17,8 +17,8 @@
 
 package io.cassandrareaper.acceptance;
 
-import io.cassandrareaper.AppContext;
-import io.cassandrareaper.acceptance.ReaperTestJettyRunner.ReaperJettyTestSupport;
+
+import java.util.Optional;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class ReaperIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperIT.class);
-  private static ReaperJettyTestSupport runnerInstance;
+  private static ReaperTestJettyRunner runner;
   private static final String MEMORY_CONFIG_FILE = "cassandra-reaper-at.yaml";
 
   protected ReaperIT() {}
@@ -47,16 +47,14 @@ public class ReaperIT {
         "setting up testing Reaper runner with {} seed hosts defined and memory storage",
         TestContext.TEST_CLUSTER_SEED_HOSTS.size());
 
-    AppContext context = new AppContext();
-    ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
-    runnerInstance = runner.setup(context, MEMORY_CONFIG_FILE);
+    runner = new ReaperTestJettyRunner(MEMORY_CONFIG_FILE, Optional.empty());
     BasicSteps.addReaperRunner(runner);
   }
 
   @AfterClass
   public static void tearDown() {
     LOG.info("Stopping reaper service...");
-    runnerInstance.after();
+    runner.runnerInstance.after();
   }
 
 }

@@ -51,7 +51,7 @@ jmxPorts:
   127.0.0.6: 7600
   127.0.0.7: 7700
   127.0.0.8: 7800
-  
+
 jmxCredentials:
   "test cluster":
     username: cassandra
