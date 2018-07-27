@@ -2,6 +2,7 @@ import React from "react";
 import { WithContext as ReactTags } from 'react-tag-input';
 import $ from "jquery";
 import { DateTimePicker } from 'react-widgets';
+import { getUrlPrefix } from "jsx/mixin";
 import momentLocalizer from 'react-widgets-moment';
 import Moment from 'moment';
 import moment from "moment";
@@ -19,9 +20,7 @@ const scheduleForm = React.createClass({
   },
 
   getInitialState: function() {
-    const isDev = window.top.location.pathname.includes('webpack-dev-server');
-    const contexPath = (window.top.location.pathname).includes('/webui') ? (window.top.location.pathname).substring(0, (window.top.location.pathname).indexOf("/webui")) : '';
-    const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : contexPath;
+    const URL_PREFIX = getUrlPrefix(window.top.location.pathname);
 
     return {
       addScheduleResultMsg: null, clusterNames: [], submitEnabled: false,
