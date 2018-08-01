@@ -73,7 +73,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentRunner.class);
 
-  private static final int MAX_PENDING_COMPACTIONS = 20;
   private static final int MAX_TIMEOUT_EXTENSIONS = 10;
   private static final Pattern REPAIR_UUID_PATTERN
       = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
@@ -505,11 +504,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           } else {
             NodeMetrics metrics = result.getRight().get();
             int pendingCompactions = metrics.getPendingCompactions();
-            if (pendingCompactions > MAX_PENDING_COMPACTIONS) {
+            if (pendingCompactions > context.config.getMaxPendingCompactions()) {
               LOG.info(
                   "SegmentRunner declined to repair segment {} because of"
                       + " too many pending compactions (> {}) on host \"{}\"",
-                  segmentId, MAX_PENDING_COMPACTIONS, metrics.getNode());
+                  segmentId, context.config.getMaxPendingCompactions(), metrics.getNode());
 
               String msg = String.format("Postponed due to pending compactions (%d)", pendingCompactions);
               repairRunner.updateLastEvent(msg);
