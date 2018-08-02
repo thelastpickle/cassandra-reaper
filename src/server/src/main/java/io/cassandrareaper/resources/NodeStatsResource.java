@@ -20,6 +20,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
 
 import java.util.List;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -127,4 +128,24 @@ public final class NodeStatsResource {
     }
   }
 
+  /**
+   * Endpoint used to collect thread pool stats for a node.
+   *
+   * @return a list of thread pools if ok, and a status code 500 in case of errors.
+   */
+  @GET
+  @Path("/compactions/{clusterName}/{host}")
+  public Response listCompactions(
+      @Context UriInfo uriInfo,
+      @PathParam("clusterName") String clusterName,
+      @PathParam("host") String host) {
+
+    try {
+      Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
+      return Response.ok().entity(context.metricsGrabber.listActiveCompactions(node)).build();
+    } catch (RuntimeException | ReaperException e) {
+      LOG.error(e.getMessage(), e);
+      return Response.serverError().entity(e.getMessage()).build();
+    }
+  }
 }

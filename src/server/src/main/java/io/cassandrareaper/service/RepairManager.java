@@ -16,6 +16,7 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
@@ -32,6 +33,11 @@ import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import javax.management.AttributeNotFoundException;
+import javax.management.MBeanException;
+import javax.management.MalformedObjectNameException;
+import javax.management.ReflectionException;
 
 import com.codahale.metrics.InstrumentedScheduledExecutorService;
 import com.codahale.metrics.MetricRegistry;
@@ -96,6 +102,7 @@ public final class RepairManager implements AutoCloseable {
   public void resumeRunningRepairRuns() throws ReaperException {
     try {
       heart.beat();
+      checkCompactions();
       Collection<RepairRun> runningRepairRuns = context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
       Collection<RepairRun> pausedRepairRuns = context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED);
       abortAllRunningSegmentsWithNoLeader(runningRepairRuns);
@@ -104,6 +111,28 @@ public final class RepairManager implements AutoCloseable {
       resumeUnknownPausedRepairRuns(pausedRepairRuns);
     } catch (RuntimeException e) {
       throw new ReaperException(e);
+    }
+  }
+
+  private void checkCompactions() {
+    for (Cluster cluster : context.storage.getClusters()) {
+      for (String seed : cluster.getSeedHosts()) {
+        try {
+          JmxProxy jmxProxy =
+              context.jmxConnectionFactory.connect(
+                  Node.builder().withCluster(cluster).withHostname(seed).build(),
+                  context.config.getJmxConnectionTimeoutInSeconds());
+          jmxProxy.listActiveCompactions();
+        } catch (ReaperException
+            | InterruptedException
+            | AttributeNotFoundException
+            | MalformedObjectNameException
+            | MBeanException
+            | ReflectionException e) {
+          // TODO Auto-generated catch block
+          LOG.error("Failed listing compactions for node {}", seed, e);
+        }
+      }
     }
   }
 
