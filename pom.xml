@@ -222,24 +222,6 @@
 
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
-                        <configuration>
-                            <passphraseServerId>ossrh</passphraseServerId>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                                <phase>verify</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <configuration>
                           <skip>false</skip>
