@@ -2,6 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <prerequisites><maven>${maven.version.minimum}</maven></prerequisites>
 
     <groupId>io.cassandrareaper</groupId>
     <artifactId>cassandra-reaper-pom</artifactId>
@@ -112,8 +113,48 @@
     </modules>
 
     <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>enforce-java</id>
+                <goals><goal>enforce</goal></goals>
+                <configuration>
+                  <rules>
+                    <requireJavaVersion>
+                      <version>[${build.jdk.minimum},)</version>
+                    </requireJavaVersion>
+                   <requireMavenVersion>
+                      <version>[${maven.version.minimum},)</version>
+                   </requireMavenVersion>
+                   <banDuplicatePomDependencyVersions/>
+                   <reactorModuleConvergence/>
+                   <requirePluginVersions/>
+                  </rules>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
         <pluginManagement>
           <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.5.2</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>3.7.1</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+            </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.21.0</version>
@@ -129,6 +170,19 @@
                   <workingDirectory>${project.build.directory}</workingDirectory>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.0.0-M2</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.0.1</version>
+                <configuration>
+                  <skip>true</skip>
+                </configuration>
+            </plugin>
           </plugins>
         </pluginManagement>
     </build>
@@ -138,7 +192,6 @@
         <profile>
 
             <id>release</id>
-
             <build>
                 <plugins>
                     <plugin>
@@ -184,6 +237,14 @@
                             </execution>
                         </executions>
                     </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                          <skip>false</skip>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
@@ -191,6 +252,11 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <version.jdk>1.8</version.jdk>
+        <!-- travis of July 2018 was still using _151 -->
+        <build.jdk.minimum>1.8.0-151</build.jdk.minimum>
+        <!-- travis of July 2018 was still using maven-3.5.2 -->
+        <maven.version.minimum>3.5.2</maven.version.minimum>
 
         <!--
         Properties that influence various parts of the NetBeans IDE, especially code formatting and the like.

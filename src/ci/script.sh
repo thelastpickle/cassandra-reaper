@@ -10,6 +10,7 @@ case "${TEST_TYPE}" in
         exit 1
         ;;
     "ccm")
+        mvn --version
         ccm start
         sleep 30
         ccm status
@@ -21,14 +22,12 @@ case "${TEST_TYPE}" in
                 BETA_VERSION=$(echo $VERSION | sed "s/SNAPSHOT/BETA/")
                 mvn versions:set "-DnewVersion=${BETA_VERSION}-${DATE}"
         fi
-        
-        if [ "x${GRIM_MIN}" = "x" ]
+        if mvn help:evaluate -Dexpression=project.version | grep -v "^\[" | grep -q SNAPSHOT 
         then
-            # Rebuild the UI to get the right version number there
-            MAVEN_OPTS="-Xmx1g" mvn clean generate-sources  1> /dev/null
+          MAVEN_OPTS="-Xmx1g" mvn clean install
+        else
+          MAVEN_OPTS="-Xmx1g" mvn clean install -Prelease
         fi
-
-        MAVEN_OPTS="-Xmx1g" mvn clean install
 
         if [ "x${GRIM_MIN}" = "x" ]
         then
