@@ -4,6 +4,7 @@ import TpStats from "jsx/tpstats";
 import Streams from "jsx/streams";
 import DroppedMessages from "jsx/dropped-messages";
 import ClientRequestLatency from "jsx/client-request-latency";
+import ActiveCompactions from "jsx/active-compactions";
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
 import Modal from 'react-bootstrap/lib/Modal';
 import Button from 'react-bootstrap/lib/Button';
@@ -229,7 +230,11 @@ const NodeStatus = React.createClass({
                       <ClientRequestLatency endpoint={this.props.endpointStatus.endpoint}
                         clusterName={this.props.clusterName}/>
                     </Tab>
-                    <Tab eventKey={4} title="Snapshots">
+                    <Tab eventKey={4} title="Compactions">
+                      <ActiveCompactions endpoint={this.props.endpointStatus.endpoint}
+                        clusterName={this.props.clusterName}/>
+                    </Tab>
+                    <Tab eventKey={5} title="Snapshots">
                       <div className="panel panel-success">
                         <div className="panel-heading">
                           <div className="panel-title">
@@ -250,7 +255,7 @@ const NodeStatus = React.createClass({
                         </div>
                       </div>
                       </Tab>
-                      <Tab eventKey={5} title="Streams">
+                      <Tab eventKey={6} title="Streams">
                           <Streams endpoint={this.props.endpointStatus.endpoint} clusterName={this.props.clusterName}/>
                       </Tab>
                     </Tabs>               

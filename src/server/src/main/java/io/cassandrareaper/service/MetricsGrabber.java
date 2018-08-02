@@ -27,8 +27,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import javax.management.JMException;
@@ -43,7 +41,6 @@ public final class MetricsGrabber {
   private static final Logger LOG = LoggerFactory.getLogger(MetricsGrabber.class);
 
   private final AppContext context;
-  private final ExecutorService executor = Executors.newFixedThreadPool(5);
 
   private MetricsGrabber(AppContext context) {
     this.context = context;

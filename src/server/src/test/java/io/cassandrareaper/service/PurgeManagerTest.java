@@ -51,7 +51,6 @@ public final class PurgeManagerTest {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.config.setPurgeRecordsAfterInDays(1);
-    context.purgeManager = PurgeManager.create(context);
 
     // Create storage mock
     context.storage = mock(IStorage.class);
@@ -80,7 +79,7 @@ public final class PurgeManagerTest {
     when(context.storage.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
 
     // Invoke the purge manager
-    int purged = context.purgeManager.purgeDatabase();
+    int purged = PurgeManager.create(context).purgeDatabase();
 
     // Check that runs were removed
     assertEquals(9, purged);
@@ -91,7 +90,6 @@ public final class PurgeManagerTest {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.config.setNumberOfRunsToKeepPerUnit(5);
-    context.purgeManager = PurgeManager.create(context);
 
     // Create storage mock
     context.storage = mock(IStorage.class);
@@ -120,7 +118,7 @@ public final class PurgeManagerTest {
     when(context.storage.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
 
     // Invoke the purge manager
-    int purged = context.purgeManager.purgeDatabase();
+    int purged = PurgeManager.create(context).purgeDatabase();
 
     // Check that runs were removed
     assertEquals(15, purged);
@@ -131,7 +129,6 @@ public final class PurgeManagerTest {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.config.setPurgeRecordsAfterInDays(1);
-    context.purgeManager = PurgeManager.create(context);
 
     // Create storage mock
     context.storage = mock(IStorage.class);
@@ -160,7 +157,7 @@ public final class PurgeManagerTest {
     when(context.storage.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
 
     // Invoke the purge manager
-    int purged = context.purgeManager.purgeDatabase();
+    int purged = PurgeManager.create(context).purgeDatabase();
 
     // Check that runs were removed
     assertEquals(0, purged);
