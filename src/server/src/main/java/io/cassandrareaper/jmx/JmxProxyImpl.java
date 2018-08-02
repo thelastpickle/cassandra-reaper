@@ -48,6 +48,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.InstanceNotFoundException;
@@ -81,6 +82,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.net.HostAndPort;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
+import org.apache.cassandra.db.compaction.CompactionManager;
+import org.apache.cassandra.db.compaction.CompactionManagerMBean;
 import org.apache.cassandra.gms.FailureDetector;
 import org.apache.cassandra.gms.FailureDetectorMBean;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
@@ -93,7 +96,6 @@ import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toList;
@@ -128,6 +130,7 @@ final class JmxProxyImpl implements JmxProxy {
   private final ObjectName ssMbeanName;
   private final ObjectName smMbeanName;
   private final MBeanServerConnection mbeanServer;
+  private final CompactionManagerMBean cmProxy;
   private final EndpointSnitchInfoMBean endpointSnitchMbean;
   private final Object ssProxy;
   private final Object fdProxy;
@@ -148,6 +151,7 @@ final class JmxProxyImpl implements JmxProxy {
       Object ssProxy,
       ObjectName ssMbeanName,
       MBeanServerConnection mbeanServer,
+      CompactionManagerMBean cmProxy,
       EndpointSnitchInfoMBean endpointSnitchMbean,
       FailureDetectorMBean fdProxy,
       MetricRegistry metricRegistry,
@@ -161,6 +165,7 @@ final class JmxProxyImpl implements JmxProxy {
     this.ssMbeanName = ssMbeanName;
     this.mbeanServer = mbeanServer;
     this.ssProxy = ssProxy;
+    this.cmProxy = cmProxy;
     this.endpointSnitchMbean = endpointSnitchMbean;
     this.clusterName = Cluster.toSymbolicName(((StorageServiceMBean) ssProxy).getClusterName());
     this.fdProxy = fdProxy;
@@ -221,6 +226,7 @@ final class JmxProxyImpl implements JmxProxy {
       throws ReaperException, InterruptedException {
 
     ObjectName ssMbeanName;
+    ObjectName cmMbeanName;
     ObjectName fdMbeanName;
     ObjectName smMbeanName;
     ObjectName endpointSnitchMbeanName;
@@ -236,6 +242,7 @@ final class JmxProxyImpl implements JmxProxy {
       LOG.debug("Connecting to {}...", host);
       jmxUrl = JmxAddresses.getJmxServiceUrl(host, port);
       ssMbeanName = new ObjectName(SS_OBJECT_NAME);
+      cmMbeanName = new ObjectName(CompactionManager.MBEAN_OBJECT_NAME);
       fdMbeanName = new ObjectName(FailureDetector.MBEAN_NAME);
       smMbeanName = new ObjectName(SM_OBJECT_NAME);
       endpointSnitchMbeanName = new ObjectName("org.apache.cassandra.db:type=EndpointSnitchInfo");
@@ -259,6 +266,7 @@ final class JmxProxyImpl implements JmxProxy {
       }
       Object smProxy = JMX.newMBeanProxy(mbeanServerConn, smMbeanName, StreamManagerMBean.class);
 
+      CompactionManagerMBean cmProxy = JMX.newMBeanProxy(mbeanServerConn, cmMbeanName, CompactionManagerMBean.class);
       FailureDetectorMBean fdProxy = JMX.newMBeanProxy(mbeanServerConn, fdMbeanName, FailureDetectorMBean.class);
 
       EndpointSnitchInfoMBean endpointSnitchProxy
@@ -273,6 +281,7 @@ final class JmxProxyImpl implements JmxProxy {
               ssProxy,
               ssMbeanName,
               mbeanServerConn,
+              cmProxy,
               endpointSnitchProxy,
               fdProxy,
               metricRegistry,
@@ -1268,4 +1277,15 @@ final class JmxProxyImpl implements JmxProxy {
     return ((StreamManagerMBean) smProxy).getCurrentStreams();
   }
 
+  StorageServiceMBean getStorageServiceMBean() {
+    return (StorageServiceMBean)ssProxy;
+  }
+
+  MBeanServerConnection getMBeanServerConnection() {
+    return mbeanServer;
+  }
+
+  CompactionManagerMBean getCompactionManagerMBean() {
+    return cmProxy;
+  }
 }
