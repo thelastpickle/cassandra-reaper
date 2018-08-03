@@ -108,8 +108,8 @@ public final class ReaperTestJettyRunner {
       context.isRunning.set(false);
       try {
         Thread.sleep(100);
+        super.after();
       } catch (InterruptedException expected) { }
-      super.after();
     }
 
     private static int getAnyAvailablePort() {

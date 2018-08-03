@@ -3,9 +3,12 @@ Feature: Using Reaper to launch repairs and schedule them
   ## TODO: clean-up and split the scenarios to be more like Given -> When -> Then [-> But]
   Background:
     Given cluster seed host "127.0.0.1@test" points to cluster with name "test"
-    And ccm cluster "test" has keyspace "booya" with tables "booya1, booya2"
+    And cluster "test" has keyspace "booya" with tables "booya1, booya2"
+    And cluster "test" has keyspace "test_keyspace" with tables "test_table1, test_table2"
+    And cluster "test" has keyspace "test_keyspace2" with tables "test_table1, test_table2"
+    And cluster "test" has keyspace "test_keyspace3" with tables "test_table1, test_table2"
 
-  @full
+
   Scenario: Registering a cluster
     Given that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
@@ -13,8 +16,7 @@ Feature: Using Reaper to launch repairs and schedule them
     Then reaper has the last added cluster in storage
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-    
-  @full
+
   Scenario: Create a cluster and a scheduled repair run and delete them
     Given that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
@@ -31,7 +33,43 @@ Feature: Using Reaper to launch repairs and schedule them
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
 
-  @full
+  Scenario: Registering multiple scheduled repairs
+    Given that we are going to use "127.0.0.1@test" as cluster seed host
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    And reaper has 0 scheduled repairs for cluster called "test"
+    When a new daily "full" repair schedule is added for "test" and keyspace "test_keyspace"
+    Then reaper has a cluster called "test" in storage
+    And reaper has 1 scheduled repairs for cluster called "test"
+    When a new daily "full" repair schedule is added for "test" and keyspace "test_keyspace2"
+    And a second daily repair schedule is added for "test" and keyspace "test_keyspace3"
+    Then reaper has a cluster called "test" in storage
+    And reaper has 3 scheduled repairs for cluster called "test"
+    When the last added schedule is deleted for cluster called "test"
+    Then reaper has 2 scheduled repairs for cluster called "test"
+    When a new daily "full" repair schedule is added that already exists for "test" and keyspace "test_keyspace2"
+    Then reaper has 2 scheduled repairs for cluster called "test"
+    And deleting cluster called "test" fails
+    When all added schedules are deleted for the last added cluster
+    And the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
+
+  @incremental
+  Scenario: Adding a scheduled full repair and a scheduled incremental repair for the same keyspace
+    Given that we are going to use "127.0.0.1@test" as cluster seed host
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    And reaper has 0 scheduled repairs for cluster called "test"
+    When a new daily "incremental" repair schedule is added for "test" and keyspace "test_keyspace3"
+    And a new daily "full" repair schedule is added that already exists for "test" and keyspace "test_keyspace3"
+    Then reaper has 1 scheduled repairs for cluster called "test"
+    And deleting cluster called "test" fails
+    When all added schedules are deleted for the last added cluster
+    And the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
+
   Scenario: Create a cluster and a scheduled repair run with repair run history and delete them
     Given that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
@@ -52,7 +90,6 @@ Feature: Using Reaper to launch repairs and schedule them
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
 
-  @full
   Scenario: Create a cluster and a repair run and delete them
     Given that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
@@ -69,7 +106,7 @@ Feature: Using Reaper to launch repairs and schedule them
     And the last added repair run is deleted
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-    
+
   @incremental
   Scenario: Create a cluster and an incremental repair run and delete them
     Given that we are going to use "127.0.0.1@test" as cluster seed host
@@ -85,8 +122,26 @@ Feature: Using Reaper to launch repairs and schedule them
     When the last added repair is stopped
     And the last added repair run is deleted
     And the last added cluster is deleted
-  
-  @incremental  
+
+  @incremental
+  Scenario: Create a cluster and one incremental repair run and one full repair run
+    Given that we are going to use "127.0.0.1@test" as cluster seed host
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    And reaper has 0 scheduled repairs for cluster called "test"
+    When a new incremental repair is added for "test" and keyspace "test_keyspace"
+    And the last added repair is activated
+    And a new repair is added for "test" and keyspace "test_keyspace2"
+    And the last added repair is activated
+    Then reaper has 2 repairs for cluster called "test"
+    Then reaper has 2 started or done repairs for the last added cluster
+    And we wait for at least 1 segments to be repaired
+    When all added repair runs are deleted for the last added cluster
+    And the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
+
+  @incremental
   Scenario: Create a cluster, create a cluster wide snapshot and delete it
     Given that we are going to use "127.0.0.1" as cluster seed host
     And reaper has no cluster in storage
@@ -99,8 +154,8 @@ Feature: Using Reaper to launch repairs and schedule them
     Then there is 0 snapshot returned when listing snapshots
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
-  
-  @incremental  
+
+  @incremental
   Scenario: Create a cluster, create a snapshot on a single host and delete it
     Given that we are going to use "127.0.0.1" as cluster seed host
     And reaper has no cluster in storage
@@ -113,4 +168,3 @@ Feature: Using Reaper to launch repairs and schedule them
     Then there is 0 snapshot returned when listing snapshots
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
- 
