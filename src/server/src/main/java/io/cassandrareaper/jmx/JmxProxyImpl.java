@@ -51,13 +51,11 @@ import java.util.stream.Collectors;
 
 import javax.management.Attribute;
 import javax.management.AttributeList;
-import javax.management.AttributeNotFoundException;
 import javax.management.InstanceNotFoundException;
 import javax.management.JMException;
 import javax.management.JMX;
 import javax.management.ListenerNotFoundException;
 import javax.management.MBeanAttributeInfo;
-import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
@@ -450,7 +448,7 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   @Override
-  public int getPendingCompactions() throws MBeanException, AttributeNotFoundException, ReflectionException {
+  public int getPendingCompactions() throws JMException {
     try {
       ObjectName name = new ObjectName(COMP_OBJECT_NAME);
       int pendingCount = (int) mbeanServer.getAttribute(name, VALUE_ATTRIBUTE);
@@ -472,14 +470,14 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   @Override
-  public boolean isRepairRunning() throws MBeanException, AttributeNotFoundException, ReflectionException {
+  public boolean isRepairRunning() throws JMException {
     return isRepairRunningPre22() || isRepairRunningPost22() || isValidationCompactionRunning();
   }
 
   /**
    * @return true if any repairs are running on the node.
    */
-  private boolean isRepairRunningPre22() throws MBeanException, AttributeNotFoundException, ReflectionException {
+  private boolean isRepairRunningPre22() throws JMException {
     // Check if AntiEntropySession is actually running on the node
     try {
       ObjectName name = new ObjectName(AES_OBJECT_NAME);
@@ -505,8 +503,7 @@ final class JmxProxyImpl implements JmxProxy {
   /**
    * @return true if any repairs are running on the node.
    */
-  private boolean isValidationCompactionRunning()
-      throws MBeanException, AttributeNotFoundException, ReflectionException {
+  private boolean isValidationCompactionRunning() throws JMException {
 
     // Check if AntiEntropySession is actually running on the node
     try {
@@ -1151,9 +1148,7 @@ final class JmxProxyImpl implements JmxProxy {
    * @param beans the list of beans to collect through JMX
    * @return a map with a key for each bean and a list of jmx stat in generic format.
    */
-  private Map<String, List<JmxStat>> collectMetrics(List<String> beans)
-      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
-          InstanceNotFoundException, MBeanException, ReflectionException {
+  private Map<String, List<JmxStat>> collectMetrics(List<String> beans) throws JMException, IOException {
     List<List<JmxStat>> allStats = Lists.newArrayList();
     Set beanSet = Sets.newLinkedHashSet();
     for (String bean : beans) {
@@ -1177,10 +1172,7 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   @Override
-  public Map<String, List<JmxStat>> collectTpStats()
-      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
-          InstanceNotFoundException, MBeanException, ReflectionException {
-
+  public Map<String, List<JmxStat>> collectTpStats() throws JMException, IOException {
     return collectMetrics(
         Arrays.asList(
             "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
@@ -1188,18 +1180,12 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   @Override
-  public Map<String, List<JmxStat>> collectDroppedMessages()
-      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
-          InstanceNotFoundException, MBeanException, ReflectionException {
-
+  public Map<String, List<JmxStat>> collectDroppedMessages() throws JMException, IOException {
     return collectMetrics(Arrays.asList("org.apache.cassandra.metrics:type=DroppedMessage,*"));
   }
 
   @Override
-  public Map<String, List<JmxStat>> collectLatencyMetrics()
-      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
-          InstanceNotFoundException, MBeanException, ReflectionException {
-
+  public Map<String, List<JmxStat>> collectLatencyMetrics() throws JMException, IOException {
     Map<String, List<JmxStat>> metrics =
         collectMetrics(Arrays.asList("org.apache.cassandra.metrics:type=ClientRequest,*"));
     LOG.info("latencies : {}", metrics);

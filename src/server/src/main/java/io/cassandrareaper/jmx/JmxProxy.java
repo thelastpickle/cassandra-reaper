@@ -28,12 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.management.AttributeNotFoundException;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanException;
-import javax.management.MalformedObjectNameException;
+import javax.management.JMException;
 import javax.management.NotificationListener;
-import javax.management.ReflectionException;
 import javax.validation.constraints.NotNull;
 
 import org.apache.cassandra.repair.RepairParallelism;
@@ -88,7 +84,7 @@ public interface JmxProxy extends NotificationListener {
   /**
    * @return number of pending compactions on the node this proxy is connected to
    */
-  int getPendingCompactions() throws MBeanException, AttributeNotFoundException, ReflectionException;
+  int getPendingCompactions() throws JMException;
 
   Map<List<String>, List<String>> getRangeToEndpointMap(String keyspace) throws ReaperException;
 
@@ -108,7 +104,7 @@ public interface JmxProxy extends NotificationListener {
   /**
    * @return true if any repairs are running on the node.
    */
-  boolean isRepairRunning() throws MBeanException, AttributeNotFoundException, ReflectionException;
+  boolean isRepairRunning() throws JMException;
 
   /** Checks if table exists in the cluster by instantiating a MBean for that table. */
   Map<String, List<String>> listTablesByKeyspace();
@@ -151,15 +147,9 @@ public interface JmxProxy extends NotificationListener {
   void takeColumnFamilySnapshot(String keyspaceName, String columnFamilyName, String snapshotName)
       throws ReaperException;
 
-  Map<String, List<JmxStat>> collectTpStats()
-      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
-          InstanceNotFoundException, MBeanException, ReflectionException;
+  Map<String, List<JmxStat>> collectTpStats() throws JMException, IOException;
 
-  Map<String, List<JmxStat>> collectDroppedMessages()
-      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
-          InstanceNotFoundException, MBeanException, ReflectionException;
+  Map<String, List<JmxStat>> collectDroppedMessages() throws JMException, IOException;
 
-  Map<String, List<JmxStat>> collectLatencyMetrics()
-      throws MalformedObjectNameException, IOException, AttributeNotFoundException,
-          InstanceNotFoundException, MBeanException, ReflectionException;
+  Map<String, List<JmxStat>> collectLatencyMetrics() throws JMException, IOException;
 }

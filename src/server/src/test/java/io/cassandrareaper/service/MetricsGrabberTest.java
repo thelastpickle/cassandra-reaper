@@ -31,12 +31,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
+import javax.management.JMException;
 
-import javax.management.AttributeNotFoundException;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanException;
-import javax.management.MalformedObjectNameException;
-import javax.management.ReflectionException;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
@@ -53,10 +49,7 @@ import static org.mockito.Mockito.when;
 public class MetricsGrabberTest {
 
   @Test
-  public void testGetTpstats()
-      throws InterruptedException, ReaperException, MalformedObjectNameException,
-          AttributeNotFoundException, InstanceNotFoundException, MBeanException,
-          ReflectionException, IOException {
+  public void testGetTpstats() throws InterruptedException, ReaperException, JMException, IOException {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.config.setJmxConnectionTimeoutInSeconds(10);
@@ -153,10 +146,7 @@ public class MetricsGrabberTest {
   }
 
   @Test
-  public void testGetDroppedMessages()
-      throws InterruptedException, ReaperException, MalformedObjectNameException,
-          AttributeNotFoundException, InstanceNotFoundException, MBeanException,
-          ReflectionException, IOException {
+  public void testGetDroppedMessages() throws InterruptedException, ReaperException, JMException, IOException {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.config.setJmxConnectionTimeoutInSeconds(10);
