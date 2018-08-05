@@ -2,7 +2,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <prerequisites><maven>${maven.version.minimum}</maven></prerequisites>
 
     <parent>
         <groupId>io.cassandrareaper</groupId>
@@ -236,7 +235,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
@@ -249,7 +247,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>buildnumber-maven-plugin</artifactId>
-                <version>1.4</version>
                 <executions>
                     <execution>
                         <phase>validate</phase>
@@ -267,7 +264,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0</version>
                 <configuration>
                     <source>${version.jdk}</source>
                     <target>${version.jdk}</target>
@@ -296,7 +292,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>animal-sniffer-maven-plugin</artifactId>
-                <version>1.16</version>
                 <configuration>
                     <signature>
                         <groupId>org.codehaus.mojo.signature</groupId>
@@ -315,7 +310,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.1.0</version>
                 <configuration>
                     <archive>
                         <manifest>
@@ -326,8 +320,8 @@
                 </configuration>
             </plugin>
             <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-source-plugin</artifactId>
-              <version>3.0.1</version>
               <executions>
                 <execution>
                   <id>attach-sources</id>
@@ -341,7 +335,6 @@
                 <!-- Creating a fat jar by including all classes required for running the app -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.1.1</version>
                 <configuration>
                     <createDependencyReducedPom>true</createDependencyReducedPom>
                     <filters>
@@ -377,7 +370,6 @@
             <plugin>
                 <groupId>com.spotify</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
-                <version>1.1.0</version>
                 <configuration>
                     <imageName>cassandra-reaper</imageName>
                     <dockerDirectory>${docker.directory}</dockerDirectory>
@@ -396,7 +388,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <id>validate</id>
@@ -419,7 +410,6 @@
             <!-- following plugins are for building the UI -->
             <plugin>
               <artifactId>maven-clean-plugin</artifactId>
-              <version>3.1.0</version>
               <configuration>
                 <filesets>
                   <fileset>
@@ -432,7 +422,6 @@
             <plugin>
                 <groupId>com.google.code.maven-replacer-plugin</groupId>
                 <artifactId>replacer</artifactId>
-                <version>1.5.3</version>
                 <executions>
                     <execution>
                         <phase>generate-sources</phase>
@@ -463,7 +452,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
                 <executions>
                     <execution>
                         <id>exec-npm-install</id>
@@ -512,8 +500,8 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>3.1.0</version>
                 <executions>
                   <execution>
                     <id>copy-ui-resources</id>
