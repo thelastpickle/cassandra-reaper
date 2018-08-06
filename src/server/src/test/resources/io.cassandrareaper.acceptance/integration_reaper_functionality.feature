@@ -55,7 +55,7 @@ Feature: Using Reaper to launch repairs and schedule them
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
 
-  @incremental
+  @all_nodes_reachable
   Scenario: Adding a scheduled full repair and a scheduled incremental repair for the same keyspace
     Given that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
@@ -107,7 +107,7 @@ Feature: Using Reaper to launch repairs and schedule them
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
 
-  @incremental
+  @all_nodes_reachable
   Scenario: Create a cluster and an incremental repair run and delete them
     Given that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
@@ -123,7 +123,7 @@ Feature: Using Reaper to launch repairs and schedule them
     And the last added repair run is deleted
     And the last added cluster is deleted
 
-  @incremental
+  @all_nodes_reachable
   Scenario: Create a cluster and one incremental repair run and one full repair run
     Given that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
@@ -141,7 +141,7 @@ Feature: Using Reaper to launch repairs and schedule them
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
 
-  @incremental
+  @all_nodes_reachable
   Scenario: Create a cluster, create a cluster wide snapshot and delete it
     Given that we are going to use "127.0.0.1" as cluster seed host
     And reaper has no cluster in storage
@@ -155,7 +155,8 @@ Feature: Using Reaper to launch repairs and schedule them
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
 
-  @incremental
+
+  @all_nodes_reachable
   Scenario: Create a cluster, create a snapshot on a single host and delete it
     Given that we are going to use "127.0.0.1" as cluster seed host
     And reaper has no cluster in storage
