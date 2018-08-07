@@ -102,6 +102,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
   private static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
+  private static final String SELECT_RUNNING_REAPERS = "SELECT reaper_instance_id FROM running_reapers";
 
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
 
@@ -201,18 +202,36 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     // initialize/upgrade db schema
     Database database = new Database(cassandra, keyspace);
-    int initialVersion = database.getVersion();
-    if (initialVersion > 3 && initialVersion < 9) {
-      // only applicable after `003_switch_to_uuids.cql`
-      // Migration009 needs to happen before `migration.migrate()` in case it fails and needs re-trying
-      Migration009.migrate(session);
-    }
-    MigrationTask migration = new MigrationTask(database, new MigrationRepository("db/cassandra"));
-    migration.migrate();
-    Migration003.migrate(session);
+    int currentVersion = database.getVersion();
+    MigrationRepository migrationRepo = new MigrationRepository("db/cassandra");
+    if (currentVersion < migrationRepo.getLatestVersion()) {
+      LOG.warn("Starting db migration from {} to {}…", currentVersion, migrationRepo.getLatestVersion());
 
-    if (initialVersion <= 15) {
-      Migration016.migrate(session, keyspace);
+      if (4 <= currentVersion) {
+        List<String> otherRunningReapers = session.execute("SELECT reaper_instance_host FROM running_reapers").all()
+            .stream()
+            .map((row) -> row.getString("reaper_instance_host"))
+            .filter((reaperInstanceHost) -> !AppContext.REAPER_INSTANCE_ADDRESS.equals(reaperInstanceHost))
+            .collect(Collectors.toList());
+
+        Preconditions.checkState(
+            otherRunningReapers.isEmpty(),
+            "Database migration can not happen with other reaper instances running. Found ",
+            StringUtils.join(otherRunningReapers));
+      }
+
+      if (currentVersion > 3 && currentVersion < 9) {
+        // only applicable after `003_switch_to_uuids.cql`
+        // Migration009 needs to happen before `migration.migrate()` in case it fails and needs re-trying
+        Migration009.migrate(session);
+      }
+      MigrationTask migration = new MigrationTask(database, migrationRepo);
+      migration.migrate();
+      Migration003.migrate(session);
+
+      if (currentVersion <= 15) {
+        Migration016.migrate(session, keyspace);
+      }
     }
   }
 
@@ -321,7 +340,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                 + " last_heartbeat = " + timeUdf + "(now()) WHERE leader_id = ? IF reaper_instance_id = ?");
     releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?");
     forceReleaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ?");
-    getRunningReapersCountPrepStmt = session.prepare("SELECT reaper_instance_id FROM running_reapers");
+    getRunningReapersCountPrepStmt = session.prepare(SELECT_RUNNING_REAPERS);
     saveHeartbeatPrepStmt = session
         .prepare(
             "INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat)"
