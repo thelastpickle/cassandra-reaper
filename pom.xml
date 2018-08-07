@@ -298,6 +298,7 @@
         <build.jdk.minimum>1.8.0-151</build.jdk.minimum>
         <!-- travis of July 2018 was still using maven-3.5.2 -->
         <maven.version.minimum>3.5.2</maven.version.minimum>
+        <surefireArgLine></surefireArgLine>
 
         <!--
         Properties that influence various parts of the NetBeans IDE, especially code formatting and the like.
