@@ -303,6 +303,66 @@
 
 <h1 id="downloads-and-installation">Downloads and Installation</h1>
 
+<h2 id="upgrading-from-1-2-0-1-2-1-to-1-2-2">Upgrading from 1.2.0/1.2.1 to 1.2.2</h2>
+
+<p>We unfortunately had to break schema migrations for upgrades to 1.2.2 from 1.2.0 and 1.2.1.<br />
+Here is the upgrade procedure for each Reaper backend:</p>
+
+<h3 id="cassandra">Cassandra</h3>
+
+<ul>
+<li>Stop all Reaper instances</li>
+<li>Run the following DDL statement on the backend cluster :</li>
+</ul>
+
+<pre><code>ALTER TABLE reaper_db.repair_unit_v1 DROP repair_thread_count;
+</code></pre>
+
+<ul>
+<li>Upgrade Reaper to 1.2.2 and start it</li>
+</ul>
+
+<p><strong>Note:</strong> by doing so the number of threads for each existing schedule will revert back to 0, which will be translated to a single repair thread. If you previously had defined a specific number of threads you will need to recreate these schedules or update the <code>repair_unit_v1</code> table manually (this field is only useful with Cassandra 2.2, there is no benefit in Cassandra &lt;=2.1 or &gt;=3.0).</p>
+
+<h3 id="h2">H2</h3>
+
+<ul>
+<li>Stop Reaper</li>
+<li>Pointing to your current Reaper jar file (located in <code>/usr/share/cassandra-reaper</code> for packaged installs), run the following command :
+<code>
+java -cp /usr/share/cassandra-reaper/cassandra-reaper-1.2.*.jar org.h2.tools.Shell
+</code><br />
+When asked, provide the JDBC URL from your Cassandra Reaper yaml file (for example : <code>jdbc:h2:~/reaper-db/db;MODE=PostgreSQL</code>), use the default <code>Driver</code> and leave username/password empty.<br />
+Then run the following statements:<br /></li>
+</ul>
+
+<pre><code>ALTER TABLE REPAIR_UNIT DROP COLUMN repair_thread_count;
+ALTER TABLE REPAIR_SEGMENT DROP COLUMN TOKEN_RANGES;
+</code></pre>
+
+<ul>
+<li>Upgrade Reaper to 1.2.2 and start it</li>
+</ul>
+
+<p><strong>Note:</strong> by doing so the number of threads for each existing schedule will revert back to 0, which will be translated to a single repair thread. If you previously had defined a specific number of threads you will need to recreate these schedules or update the <code>repair_unit</code> table manually (this field is only useful with Cassandra 2.2, there is no benefit in Cassandra &lt;=2.1 or &gt;=3.0).</p>
+
+<h3 id="postgres">Postgres</h3>
+
+<ul>
+<li>Stop Reaper</li>
+<li>Connect to your Postgres database using the psql shell (or any other client) and run the following statements:</li>
+</ul>
+
+<pre><code>ALTER TABLE &quot;repair_unit&quot; DROP COLUMN &quot;repair_thread_count&quot;;
+ALTER TABLE &quot;repair_segment&quot; DROP COLUMN &quot;token_ranges&quot;;
+</code></pre>
+
+<ul>
+<li>Upgrade Reaper to 1.2.2 and start it</li>
+</ul>
+
+<p><strong>Note:</strong> by doing so the number of threads for each existing schedule will revert back to 0, which will be translated to a single repair thread. If you previously had defined a specific number of threads you will need to recreate these schedules or update the <code>repair_unit</code> table manually (this field is only useful with Cassandra 2.2, there is no benefit in Cassandra &lt;=2.1 or &gt;=3.0).</p>
+
 <h2 id="packages">Packages</h2>
 
 <p>The current stable version can be downloaded in the following packaging formats :</p>
