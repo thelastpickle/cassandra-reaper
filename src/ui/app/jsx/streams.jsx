@@ -66,16 +66,21 @@ const Streams = React.createClass({
             return;
         }
 
-        const incomingStreams = this.state.streamSessions
+        let incomingStreams = this.state.streamSessions
             .map(this._getIncomingStreams)
             // concatenates streams from different sessions into one list
             .reduce((sum, item) => sum.concat(item), [])
+        if (!incomingStreams || incomingStreams.length == 0 ) {
+            incomingStreams = (<tr><td>There are no incoming streams.</td></tr>)
+        }
 
-        const outgoingStreams = this.state.streamSessions
+        let outgoingStreams = this.state.streamSessions
             .map(this._getOutgoingStreams)
             // concatenates streams from different sessions into one list
             .reduce((sum, item) => sum.concat(item), [])
-
+        if (!outgoingStreams || outgoingStreams.length == 0 ) {
+            outgoingStreams = (<tr><td>There are no outgoing streams.</td></tr>)
+        }
 
         return (
             <div>
