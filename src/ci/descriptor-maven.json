@@ -34,7 +34,7 @@
                 "matrixParams": { "override": 1 }
             }
             ,
-            {"includePattern": "src/pom.xml", "uploadPattern": "io/cassandrareaper/cassandra-reaper-pom/VERSION/cassandra-reaper-pom-VERSION.pom",
+            {"includePattern": "pom.xml", "uploadPattern": "io/cassandrareaper/cassandra-reaper-pom/VERSION/cassandra-reaper-pom-VERSION.pom",
                 "matrixParams": { "override": 1 }
             }
         ],
