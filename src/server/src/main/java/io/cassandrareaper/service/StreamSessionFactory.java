@@ -119,7 +119,16 @@ public final class StreamSessionFactory {
                                  "127.0.0.3", "192.168.0.2", "IN",
                                  1024L, 512L, ImmutableList.of(new Stream.TableProgress("ks.t", 512L, 1024L)),
                                  0L, 0L, ImmutableList.of(),
-                                 false, true)
+                                 false, true),
+
+        // multi-table stream
+        "127.0.0.3-IN-127.0.0.8",
+        StreamFactory.testStream("127.0.0.3-IN-127.0.0.8",
+                                 "127.0.0.3", "127.0.0.8", "IN",
+                                 2048L, 650L, ImmutableList.of(new Stream.TableProgress("ks.t1", 512L, 1024L),
+                                                               new Stream.TableProgress("ks.t2", 128L, 1024L)),
+                                 0L, 0L, ImmutableList.of(),
+                                 false, false)
     );
 
     return StreamSession.builder()
