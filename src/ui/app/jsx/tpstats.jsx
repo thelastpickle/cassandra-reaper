@@ -62,7 +62,7 @@ const TpStats = React.createClass({
       const tpstatsBody = this.state.tpstats.sort((a, b) => {if(a.name < b.name) return -1;
       if(a.name > b.name) return 1;
       return 0;}).map(pool => 
-        <tr>
+        <tr key={pool.name} >
           <td >{pool.name}</td>
           <td style={alignRightStyle}>{pool.activeTasks}</td>
           <td style={alignRightStyle}>{pool.pendingTasks}</td>
