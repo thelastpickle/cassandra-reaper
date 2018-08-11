@@ -24,6 +24,7 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.RepairRunStatus;
+import io.cassandrareaper.service.PurgeManager;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.service.RepairUnitService;
 
@@ -760,7 +761,7 @@ public final class RepairRunResource {
   @GET
   @Path("/purge")
   public Response purgeRepairRuns() {
-    int purgedRepairs = context.purgeManager.purgeDatabase();
+    int purgedRepairs = PurgeManager.create(context).purgeDatabase();
     return Response.ok().entity(purgedRepairs).build();
   }
 

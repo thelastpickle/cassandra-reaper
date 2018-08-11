@@ -20,6 +20,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.service.CompactionService;
 import io.cassandrareaper.service.MetricsGrabber;
+import io.cassandrareaper.service.StreamManager;
 
 import java.util.List;
 
@@ -42,11 +43,13 @@ public final class NodeStatsResource {
   private static final Logger LOG = LoggerFactory.getLogger(NodeStatsResource.class);
 
   private final AppContext context;
+  private final StreamManager streamManager;
   private final MetricsGrabber metricsGrabber;
   private final CompactionService compactionService;
 
   public NodeStatsResource(AppContext context) {
     this.context = context;
+    this.streamManager = StreamManager.create(context);
     this.metricsGrabber = MetricsGrabber.create(context);
     this.compactionService = CompactionService.create(context);
   }
@@ -126,7 +129,7 @@ public final class NodeStatsResource {
   ) {
     try {
       Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
-      List<StreamSession> streams = context.streamManager.listStreams(node);
+      List<StreamSession> streams = streamManager.listStreams(node);
       return Response.ok().entity(streams).build();
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
