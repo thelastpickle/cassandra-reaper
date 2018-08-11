@@ -723,12 +723,20 @@ public final class BasicSteps {
   @And("^deleting the last added cluster fails$")
   public void deleting_the_last_added_cluster_fails() throws Throwable {
     synchronized (BasicSteps.class) {
-      callAndExpect(
-          "DELETE",
-          "/cluster/" + TestContext.TEST_CLUSTER,
-          EMPTY_PARAMS,
-          Optional.absent(),
-          Response.Status.CONFLICT);
+      await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+        try {
+          callAndExpect(
+              "DELETE",
+              "/cluster/" + TestContext.TEST_CLUSTER,
+              EMPTY_PARAMS,
+              Optional.absent(),
+              Response.Status.CONFLICT);
+        } catch (AssertionError ex) {
+          LOG.warn(ex.getMessage());
+          return false;
+        }
+        return true;
+      });
     }
   }
 
