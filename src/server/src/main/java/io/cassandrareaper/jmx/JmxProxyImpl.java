@@ -16,7 +16,6 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Snapshot;
@@ -114,8 +113,6 @@ final class JmxProxyImpl implements JmxProxy {
   private static final String VALIDATION_PENDING_OBJECT_NAME
       = "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,name=PendingTasks";
   private static final String COMP_OBJECT_NAME = "org.apache.cassandra.metrics:type=Compaction,name=PendingTasks";
-  private static final String ACTIVE_COMPACTION_OBJECT_NAME =
-      "org.apache.cassandra.db:type=CompactionManager,name=Compactions";
   private static final String VALUE_ATTRIBUTE = "Value";
   private static final String FAILED_TO_CONNECT_TO_USING_JMX = "Failed to connect to {} using JMX";
   private static final String ERROR_GETTING_ATTR_JMX = "Error getting attribute from JMX";
@@ -1280,28 +1277,15 @@ final class JmxProxyImpl implements JmxProxy {
     return ((StreamManagerMBean) smProxy).getCurrentStreams();
   }
 
-  public List<Compaction> listActiveCompactions()
-      throws ReflectionException, MalformedObjectNameException {
-    checkNotNull(cmProxy, "Looks like the proxy is not connected");
-    List<Compaction> activeCompactions = Lists.newArrayList();
-    List<Map<String, String>> compactions = cmProxy.getCompactions();
-    if (!compactions.isEmpty()) {
-      for (Map<String, String> c : compactions) {
-        Compaction compaction =
-            Compaction.builder()
-                .withId(c.get("compactionId"))
-                .withKeyspace(c.get("keyspace"))
-                .withTable(c.get("columnfamily"))
-                .withProgress(Long.parseLong(c.get("completed")))
-                .withTotal(Long.parseLong(c.get("total")))
-                .withUnit(c.get("unit"))
-                .withType(c.get("taskType"))
-                .build();
+  StorageServiceMBean getStorageServiceMBean() {
+    return (StorageServiceMBean)ssProxy;
+  }
 
-        activeCompactions.add(compaction);
-      }
-    }
+  MBeanServerConnection getMBeanServerConnection() {
+    return mbeanServer;
+  }
 
-    return activeCompactions;
+  CompactionManagerMBean getCompactionManagerMBean() {
+    return cmProxy;
   }
 }

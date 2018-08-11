@@ -15,7 +15,6 @@
 package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Snapshot;
@@ -29,12 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.management.AttributeNotFoundException;
 import javax.management.JMException;
-import javax.management.MBeanException;
-import javax.management.MalformedObjectNameException;
 import javax.management.NotificationListener;
-import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 import javax.validation.constraints.NotNull;
 
@@ -161,7 +156,4 @@ public interface JmxProxy extends NotificationListener {
 
   Set<CompositeData> listStreams();
 
-  List<Compaction> listActiveCompactions()
-      throws AttributeNotFoundException, MBeanException, ReflectionException,
-          MalformedObjectNameException;
 }

@@ -16,7 +16,6 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.MetricsHistogram;
@@ -210,19 +209,4 @@ public final class MetricsGrabber {
     }
   }
 
-  public List<Compaction> listActiveCompactions(Node host) throws ReaperException {
-    JmxProxy jmxProxy;
-    try {
-      jmxProxy =
-          context.jmxConnectionFactory.connect(
-              host, context.config.getJmxConnectionTimeoutInSeconds());
-
-      return jmxProxy.listActiveCompactions();
-    } catch (JMException | RuntimeException | InterruptedException e) {
-      LOG.error("Failed listing compactions for host {}", host, e);
-      throw new ReaperException(e);
-    }
-
-
-  }
 }

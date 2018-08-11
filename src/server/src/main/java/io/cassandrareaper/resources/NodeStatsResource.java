@@ -18,6 +18,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
+import io.cassandrareaper.service.CompactionService;
 
 import java.util.List;
 
@@ -40,9 +41,11 @@ public final class NodeStatsResource {
   private static final Logger LOG = LoggerFactory.getLogger(NodeStatsResource.class);
 
   private final AppContext context;
+  private final CompactionService compactionService;
 
   public NodeStatsResource(AppContext context) {
     this.context = context;
+    this.compactionService = CompactionService.create(context);
   }
 
   /**
@@ -142,7 +145,7 @@ public final class NodeStatsResource {
 
     try {
       Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
-      return Response.ok().entity(context.metricsGrabber.listActiveCompactions(node)).build();
+      return Response.ok().entity(compactionService.listActiveCompactions(node)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);
       return Response.serverError().entity(e.getMessage()).build();
