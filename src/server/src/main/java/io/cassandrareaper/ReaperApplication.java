@@ -256,7 +256,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       AutoSchedulingManager.start(context);
     }
 
-    context.purgeManager = PurgeManager.create(context);
     initializeJmxSeedsForAllClusters();
     LOG.info("resuming pending repair runs");
 
@@ -303,10 +302,12 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   }
 
   private void schedulePurge(ScheduledExecutorService scheduler) {
+    final PurgeManager purgeManager = PurgeManager.create(context);
+
     scheduler.scheduleWithFixedDelay(
         () -> {
           try {
-            int purgedRuns = context.purgeManager.purgeDatabase();
+            int purgedRuns = purgeManager.purgeDatabase();
             LOG.info("Purged {} repair runs from history", purgedRuns);
           } catch (RuntimeException e) {
             LOG.error("Failed purging repair runs from history", e);
