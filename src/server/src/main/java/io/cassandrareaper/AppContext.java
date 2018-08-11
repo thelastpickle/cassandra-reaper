@@ -16,7 +16,6 @@ package io.cassandrareaper;
 
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.service.RepairManager;
-import io.cassandrareaper.service.SnapshotManager;
 import io.cassandrareaper.storage.IStorage;
 
 import java.net.InetAddress;
@@ -45,7 +44,6 @@ public final class AppContext {
   public JmxConnectionFactory jmxConnectionFactory;
   public ReaperApplicationConfiguration config;
   public MetricRegistry metricRegistry = new MetricRegistry();
-  public SnapshotManager snapshotManager;
 
   private static String initialiseInstanceAddress() {
     String reaperInstanceAddress;

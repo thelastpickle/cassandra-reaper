@@ -31,7 +31,6 @@ import io.cassandrareaper.service.AutoSchedulingManager;
 import io.cassandrareaper.service.PurgeManager;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
-import io.cassandrareaper.service.SnapshotManager;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
@@ -155,10 +154,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         .addServlet("prometheusMetrics", new MetricsServlet(CollectorRegistry.defaultRegistry))
         .addMapping("/prometheusMetrics");
 
-    context.snapshotManager = SnapshotManager.create(
-        context,
-        environment.lifecycle().executorService("SnapshotManager").minThreads(5).maxThreads(5).build());
-
     int repairThreads = config.getRepairRunThreadCount();
     LOG.info("initializing runner thread pool with {} threads", repairThreads);
 
@@ -233,7 +228,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     environment.jersey().register(addRepairRunResource);
     final RepairScheduleResource addRepairScheduleResource = new RepairScheduleResource(context);
     environment.jersey().register(addRepairScheduleResource);
-    final SnapshotResource snapshotResource = new SnapshotResource(context);
+    final SnapshotResource snapshotResource = new SnapshotResource(context, environment);
     environment.jersey().register(snapshotResource);
 
     final NodeStatsResource nodeStatsResource = new NodeStatsResource(context);
