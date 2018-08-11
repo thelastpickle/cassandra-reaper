@@ -28,7 +28,6 @@ import io.cassandrareaper.resources.SnapshotResource;
 import io.cassandrareaper.resources.auth.LoginResource;
 import io.cassandrareaper.resources.auth.ShiroExceptionMapper;
 import io.cassandrareaper.service.AutoSchedulingManager;
-import io.cassandrareaper.service.MetricsGrabber;
 import io.cassandrareaper.service.PurgeManager;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
@@ -161,7 +160,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         context,
         environment.lifecycle().executorService("SnapshotManager").minThreads(5).maxThreads(5).build());
 
-    context.metricsGrabber = MetricsGrabber.create(context);
     context.streamManager = StreamManager.create(context);
 
     int repairThreads = config.getRepairRunThreadCount();

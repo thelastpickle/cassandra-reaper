@@ -19,6 +19,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.service.CompactionService;
+import io.cassandrareaper.service.MetricsGrabber;
 
 import java.util.List;
 
@@ -41,10 +42,12 @@ public final class NodeStatsResource {
   private static final Logger LOG = LoggerFactory.getLogger(NodeStatsResource.class);
 
   private final AppContext context;
+  private final MetricsGrabber metricsGrabber;
   private final CompactionService compactionService;
 
   public NodeStatsResource(AppContext context) {
     this.context = context;
+    this.metricsGrabber = MetricsGrabber.create(context);
     this.compactionService = CompactionService.create(context);
   }
 
@@ -62,7 +65,7 @@ public final class NodeStatsResource {
 
     try {
       Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
-      return Response.ok().entity(context.metricsGrabber.getTpStats(node)).build();
+      return Response.ok().entity(metricsGrabber.getTpStats(node)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);
       return Response.serverError().entity(e.getMessage()).build();
@@ -83,7 +86,7 @@ public final class NodeStatsResource {
 
     try {
       Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
-      return Response.ok().entity(context.metricsGrabber.getDroppedMessages(node)).build();
+      return Response.ok().entity(metricsGrabber.getDroppedMessages(node)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);
       return Response.serverError().entity(e.getMessage()).build();
@@ -104,7 +107,7 @@ public final class NodeStatsResource {
 
     try {
       Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
-      return Response.ok().entity(context.metricsGrabber.getClientRequestLatencies(node)).build();
+      return Response.ok().entity(metricsGrabber.getClientRequestLatencies(node)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);
       return Response.serverError().entity(e.getMessage()).build();
