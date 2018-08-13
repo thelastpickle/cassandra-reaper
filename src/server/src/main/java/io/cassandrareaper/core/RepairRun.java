@@ -17,6 +17,7 @@ package io.cassandrareaper.core;
 import java.util.Objects;
 import java.util.UUID;
 
+import com.google.common.base.Preconditions;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeComparator;
@@ -57,6 +58,10 @@ public final class RepairRun implements Comparable<RepairRun> {
     this.lastEvent = builder.lastEvent;
     this.segmentCount = builder.segmentCount;
     this.repairParallelism = builder.repairParallelism;
+  }
+
+  public static Builder builder(String clusterName, UUID repairUnitId) {
+    return new Builder(clusterName, repairUnitId);
   }
 
   public UUID getId() {
@@ -153,6 +158,11 @@ public final class RepairRun implements Comparable<RepairRun> {
     return Objects.hash(this.id, this.repairUnitId);
   }
 
+  @Override
+  public String toString() {
+    return String.format("%s[%s] for %s", getClass().getSimpleName(), id.toString(), clusterName);
+  }
+
   public enum RunState {
     NOT_STARTED,
     RUNNING,
@@ -175,33 +185,21 @@ public final class RepairRun implements Comparable<RepairRun> {
 
     public final String clusterName;
     public final UUID repairUnitId;
-    private RunState runState;
-    private DateTime creationTime;
-    private double intensity;
-    private String cause;
-    private String owner;
+    private RunState runState = RunState.NOT_STARTED;
+    private DateTime creationTime = DateTime.now();
+    private Double intensity;
+    private String cause = "";
+    private String owner = "";
     private DateTime startTime;
     private DateTime endTime;
     private DateTime pauseTime;
     private String lastEvent = "no events";
-    private int segmentCount;
+    private Integer segmentCount;
     private RepairParallelism repairParallelism;
 
-    public Builder(
-        String clusterName,
-        UUID repairUnitId,
-        DateTime creationTime,
-        double intensity,
-        int segmentCount,
-        RepairParallelism repairParallelism) {
-
+    private Builder(String clusterName, UUID repairUnitId) {
       this.clusterName = clusterName;
       this.repairUnitId = repairUnitId;
-      this.runState = RunState.NOT_STARTED;
-      this.creationTime = creationTime;
-      this.intensity = intensity;
-      this.segmentCount = segmentCount;
-      this.repairParallelism = repairParallelism;
     }
 
     private Builder(RepairRun original) {
@@ -276,6 +274,9 @@ public final class RepairRun implements Comparable<RepairRun> {
     }
 
     public RepairRun build(UUID id) {
+      Preconditions.checkState(null != repairParallelism, "repairParallelism(..) must be called before build(..)");
+      Preconditions.checkState(null != intensity, "intensity(..) must be called before build(..)");
+      Preconditions.checkState(null != segmentCount, "segmentCount(..) must be called before build(..)");
       return new RepairRun(this, id);
     }
   }

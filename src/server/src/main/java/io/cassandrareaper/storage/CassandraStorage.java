@@ -34,7 +34,7 @@ import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.cassandra.DateTimeCodec;
 import io.cassandrareaper.storage.cassandra.Migration003;
 import io.cassandrareaper.storage.cassandra.Migration009;
-import io.cassandrareaper.storage.cassandra.Migration014;
+import io.cassandrareaper.storage.cassandra.Migration016;
 
 import java.math.BigInteger;
 import java.util.Collection;
@@ -84,6 +84,7 @@ import com.google.common.util.concurrent.Futures;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import org.apache.cassandra.repair.RepairParallelism;
+import org.apache.commons.lang3.StringUtils;
 import org.cognitor.cassandra.migration.Database;
 import org.cognitor.cassandra.migration.MigrationRepository;
 import org.cognitor.cassandra.migration.MigrationTask;
@@ -101,6 +102,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
   private static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
+  private static final String SELECT_RUNNING_REAPERS = "SELECT reaper_instance_id FROM running_reapers";
 
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
 
@@ -132,6 +134,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement deleteRepairRunByUnitPrepStmt;
   private PreparedStatement insertRepairUnitPrepStmt;
   private PreparedStatement getRepairUnitPrepStmt;
+  private PreparedStatement deleteRepairUnitPrepStmt;
   private PreparedStatement insertRepairSegmentPrepStmt;
   private PreparedStatement insertRepairSegmentIncrementalPrepStmt;
   private PreparedStatement updateRepairSegmentPrepStmt;
@@ -199,16 +202,37 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     // initialize/upgrade db schema
     Database database = new Database(cassandra, keyspace);
-    if (database.getVersion() > 3 && database.getVersion() < 9) {
-      // only applicable after `003_switch_to_uuids.cql`
-      // Migration009 needs to happen before `migration.migrate()` in case it fails and needs re-trying
-      Migration009.migrate(session);
+    int currentVersion = database.getVersion();
+    MigrationRepository migrationRepo = new MigrationRepository("db/cassandra");
+    if (currentVersion < migrationRepo.getLatestVersion()) {
+      LOG.warn("Starting db migration from {} to {}…", currentVersion, migrationRepo.getLatestVersion());
+
+      if (4 <= currentVersion) {
+        List<String> otherRunningReapers = session.execute("SELECT reaper_instance_host FROM running_reapers").all()
+            .stream()
+            .map((row) -> row.getString("reaper_instance_host"))
+            .filter((reaperInstanceHost) -> !AppContext.REAPER_INSTANCE_ADDRESS.equals(reaperInstanceHost))
+            .collect(Collectors.toList());
+
+        Preconditions.checkState(
+            otherRunningReapers.isEmpty(),
+            "Database migration can not happen with other reaper instances running. Found ",
+            StringUtils.join(otherRunningReapers));
+      }
+
+      if (currentVersion > 3 && currentVersion < 9) {
+        // only applicable after `003_switch_to_uuids.cql`
+        // Migration009 needs to happen before `migration.migrate()` in case it fails and needs re-trying
+        Migration009.migrate(session);
+      }
+      MigrationTask migration = new MigrationTask(database, migrationRepo);
+      migration.migrate();
+      Migration003.migrate(session);
+
+      if (currentVersion <= 15) {
+        Migration016.migrate(session, keyspace);
+      }
     }
-    MigrationTask migration = new MigrationTask(database, new MigrationRepository("db/cassandra"));
-    migration.migrate();
-    Migration003.migrate(session);
-    // always run 013 step, incase new tables are added
-    Migration014.migrate(session, keyspace);
   }
 
   private void prepareStatements() {
@@ -253,6 +277,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     getRepairUnitPrepStmt = session
         .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
     insertRepairSegmentPrepStmt = session
         .prepare(
             "INSERT INTO repair_run"
@@ -315,7 +340,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                 + " last_heartbeat = " + timeUdf + "(now()) WHERE leader_id = ? IF reaper_instance_id = ?");
     releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?");
     forceReleaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ?");
-    getRunningReapersCountPrepStmt = session.prepare("SELECT reaper_instance_id FROM running_reapers");
+    getRunningReapersCountPrepStmt = session.prepare(SELECT_RUNNING_REAPERS);
     saveHeartbeatPrepStmt = session
         .prepare(
             "INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat)"
@@ -399,6 +424,22 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Optional<Cluster> deleteCluster(String clusterName) {
+    assert getRepairSchedulesForCluster(clusterName).isEmpty()
+        : StringUtils.join(getRepairSchedulesForCluster(clusterName));
+
+    assert getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)).isEmpty()
+        : StringUtils.join(getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)));
+
+    Statement stmt = new SimpleStatement(SELECT_REPAIR_UNIT);
+    stmt.setIdempotent(Boolean.TRUE);
+    ResultSet results = session.execute(stmt);
+    for (Row row : results) {
+      if (row.getString("cluster_name").equals(clusterName)) {
+        UUID id = row.getUUID("id");
+        assert getRepairRunsForUnit(id).isEmpty() : StringUtils.join(getRepairRunsForUnit(id));
+        session.executeAsync(deleteRepairUnitPrepStmt.bind(id));
+      }
+    }
     session.executeAsync(deleteClusterPrepStmt.bind(clusterName));
     return Optional.fromNullable(new Cluster(clusterName, null, null));
   }
@@ -650,15 +691,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private RepairUnit getRepairUnitImpl(UUID id) {
     Row repairUnitRow = session.execute(getRepairUnitPrepStmt.bind(id)).one();
     if (repairUnitRow != null) {
-      return new RepairUnit.Builder(
-                  repairUnitRow.getString("cluster_name"),
-                  repairUnitRow.getString("keyspace_name"),
-                  repairUnitRow.getSet("column_families", String.class),
-                  repairUnitRow.getBool("incremental_repair"),
-                  repairUnitRow.getSet("nodes", String.class),
-                  repairUnitRow.getSet("datacenters", String.class),
-                  repairUnitRow.getSet("blacklisted_tables", String.class),
-                  repairUnitRow.getInt("repair_thread_count"))
+      return RepairUnit.builder()
+              .clusterName(repairUnitRow.getString("cluster_name"))
+              .keyspaceName(repairUnitRow.getString("keyspace_name"))
+              .columnFamilies(repairUnitRow.getSet("column_families", String.class))
+              .incrementalRepair(repairUnitRow.getBool("incremental_repair"))
+              .nodes(repairUnitRow.getSet("nodes", String.class))
+              .datacenters(repairUnitRow.getSet("datacenters", String.class))
+              .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
+              .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
               .build(id);
     }
     throw new IllegalArgumentException("No repair unit exists for " + id);
@@ -688,17 +729,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               .equals(params.blacklistedTables)
           && repairUnitRow.getInt("repair_thread_count") == params.repairThreadCount) {
 
-        repairUnit =
-            new RepairUnit.Builder(
-                    repairUnitRow.getString("cluster_name"),
-                    repairUnitRow.getString("keyspace_name"),
-                    repairUnitRow.getSet("column_families", String.class),
-                    repairUnitRow.getBool("incremental_repair"),
-                    repairUnitRow.getSet("nodes", String.class),
-                    repairUnitRow.getSet("datacenters", String.class),
-                    repairUnitRow.getSet("blacklisted_tables", String.class),
-                    repairUnitRow.getInt("repair_thread_count"))
-                .build(repairUnitRow.getUUID("id"));
+        repairUnit = RepairUnit.builder()
+            .clusterName(repairUnitRow.getString("cluster_name"))
+            .keyspaceName(repairUnitRow.getString("keyspace_name"))
+            .columnFamilies(repairUnitRow.getSet("column_families", String.class))
+            .incrementalRepair(repairUnitRow.getBool("incremental_repair"))
+            .nodes(repairUnitRow.getSet("nodes", String.class))
+            .datacenters(repairUnitRow.getSet("datacenters", String.class))
+            .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
+            .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
+            .build(repairUnitRow.getUUID("id"));
         // exit the loop once we find a match
         break;
       }
@@ -915,17 +955,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   private RepairSchedule createRepairScheduleFromRow(Row repairScheduleRow) {
-    return new RepairSchedule.Builder(
-            repairScheduleRow.getUUID("repair_unit_id"),
-            RepairSchedule.State.valueOf(repairScheduleRow.getString("state")),
-            repairScheduleRow.getInt("days_between"),
-            new DateTime(repairScheduleRow.getTimestamp("next_activation")),
-            ImmutableList.copyOf(repairScheduleRow.getSet("run_history", UUID.class)),
-            repairScheduleRow.getInt("segment_count"),
-            RepairParallelism.fromName(repairScheduleRow.getString("repair_parallelism")),
-            repairScheduleRow.getDouble("intensity"),
-            new DateTime(repairScheduleRow.getTimestamp("creation_time")),
-            repairScheduleRow.getInt("segment_count_per_node"))
+    return RepairSchedule.builder(repairScheduleRow.getUUID("repair_unit_id"))
+        .state(RepairSchedule.State.valueOf(repairScheduleRow.getString("state")))
+        .daysBetween(repairScheduleRow.getInt("days_between"))
+        .nextActivation(new DateTime(repairScheduleRow.getTimestamp("next_activation")))
+        .runHistory(ImmutableList.copyOf(repairScheduleRow.getSet("run_history", UUID.class)))
+        .segmentCount(repairScheduleRow.getInt("segment_count"))
+        .repairParallelism(RepairParallelism.fromName(repairScheduleRow.getString("repair_parallelism")))
+        .intensity(repairScheduleRow.getDouble("intensity"))
+        .creationTime(new DateTime(repairScheduleRow.getTimestamp("creation_time")))
+        .segmentCountPerNode(repairScheduleRow.getInt("segment_count_per_node"))
         .owner(repairScheduleRow.getString("owner"))
         .pauseTime(new DateTime(repairScheduleRow.getTimestamp("pause_time")))
         .build(repairScheduleRow.getUUID("id"));
@@ -1089,13 +1128,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private RepairRun buildRepairRunFromRow(Row repairRunResult, UUID id) {
     LOG.trace("buildRepairRunFromRow {} / {}", id, repairRunResult);
-    return new RepairRun.Builder(
-        repairRunResult.getString("cluster_name"),
-        repairRunResult.getUUID("repair_unit_id"),
-        new DateTime(repairRunResult.getTimestamp("creation_time")),
-        repairRunResult.getDouble("intensity"),
-        repairRunResult.getInt("segment_count"),
-        RepairParallelism.fromName(repairRunResult.getString("repair_parallelism")))
+    return RepairRun.builder(repairRunResult.getString("cluster_name"), repairRunResult.getUUID("repair_unit_id"))
+        .creationTime(new DateTime(repairRunResult.getTimestamp("creation_time")))
+        .intensity(repairRunResult.getDouble("intensity"))
+        .segmentCount(repairRunResult.getInt("segment_count"))
+        .repairParallelism(RepairParallelism.fromName(repairRunResult.getString("repair_parallelism")))
         .cause(repairRunResult.getString("cause"))
         .owner(repairRunResult.getString("owner"))
         .endTime(new DateTime(repairRunResult.getTimestamp("end_time")))
@@ -1233,7 +1270,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public int countRunningReapers() {
     ResultSet result = session.execute(getRunningReapersCountPrepStmt.bind());
-    int runningReapers = (int) result.all().size();
+    int runningReapers = result.all().size();
     LOG.debug("Running reapers = {}", runningReapers);
     return runningReapers > 0 ? runningReapers : 1;
   }

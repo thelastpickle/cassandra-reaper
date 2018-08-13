@@ -17,7 +17,8 @@ case "${TEST_TYPE}" in
         echo "cassandra     readwrite" >> /usr/lib/jvm/java-8-oracle/jre/lib/management/jmxremote.access
         cat /usr/lib/jvm/java-8-oracle/jre/lib/management/jmxremote.access
         ccm create test -v $CASSANDRA_VERSION > /dev/null
-        ccm populate --vnodes -n 2 > /dev/null
+        # use "2:0" to ensure the first datacenter name is "dc1" instead of "datacenter1", so to be compatible with CircleCI tests
+        ccm populate --vnodes -n 2:0 > /dev/null
         sed -i 's/etc\/cassandra\/jmxremote.password/home\/travis\/.local\/jmxremote.password/' /home/travis/.ccm/test/node1/conf/cassandra-env.sh
         sed -i 's/etc\/cassandra\/jmxremote.password/home\/travis\/.local\/jmxremote.password/' /home/travis/.ccm/test/node2/conf/cassandra-env.sh
         sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="192m"/' /home/travis/.ccm/test/node1/conf/cassandra-env.sh

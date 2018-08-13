@@ -14,7 +14,6 @@
     <packaging>jar</packaging>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dropwizard.version>1.1.7</dropwizard.version>
         <docker.directory>src/main/docker</docker.directory>
         <timestamp>${maven.build.timestamp}</timestamp>
@@ -236,7 +235,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
@@ -249,7 +247,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>buildnumber-maven-plugin</artifactId>
-                <version>1.4</version>
                 <executions>
                     <execution>
                         <phase>validate</phase>
@@ -267,10 +264,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>${version.jdk}</source>
+                    <target>${version.jdk}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                     <optimize>true</optimize>
                     <debug>true</debug>
                     <compilerId>javac-with-errorprone</compilerId>
@@ -295,7 +292,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>animal-sniffer-maven-plugin</artifactId>
-                <version>1.16</version>
                 <configuration>
                     <signature>
                         <groupId>org.codehaus.mojo.signature</groupId>
@@ -313,31 +309,7 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.21.0</version>
-                <executions>
-                  <execution>
-                    <id>integration-tests</id>
-                    <goals>
-                      <goal>integration-test</goal>
-                      <goal>verify</goal>
-                    </goals>
-                    <configuration>
-                      <skipTests>true</skipTests>
-                      <argLine>${failsafeArgLine}</argLine>
-                      <failIfNoTests>false</failIfNoTests>
-                      <includes>
-                        <include>**/AddClusterIT.java</include>
-                        <include>**/ReaperIT.java</include>
-                      </includes>
-                    </configuration>
-                  </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.1.0</version>
                 <configuration>
                     <archive>
                         <manifest>
@@ -348,8 +320,8 @@
                 </configuration>
             </plugin>
             <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-source-plugin</artifactId>
-              <version>3.0.1</version>
               <executions>
                 <execution>
                   <id>attach-sources</id>
@@ -363,7 +335,6 @@
                 <!-- Creating a fat jar by including all classes required for running the app -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.1.1</version>
                 <configuration>
                     <createDependencyReducedPom>true</createDependencyReducedPom>
                     <filters>
@@ -399,7 +370,6 @@
             <plugin>
                 <groupId>com.spotify</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
-                <version>1.1.0</version>
                 <configuration>
                     <imageName>cassandra-reaper</imageName>
                     <dockerDirectory>${docker.directory}</dockerDirectory>
@@ -418,7 +388,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <id>validate</id>
@@ -441,15 +410,18 @@
             <!-- following plugins are for building the UI -->
             <plugin>
               <artifactId>maven-clean-plugin</artifactId>
-              <version>3.1.0</version>
               <configuration>
-                <directory>../ui/build</directory>
+                <filesets>
+                  <fileset>
+                    <directory>${project.build.directory}</directory>
+                    <directory>../ui/build</directory>
+                  </fileset>
+                </filesets>
               </configuration>
             </plugin>
             <plugin>
                 <groupId>com.google.code.maven-replacer-plugin</groupId>
                 <artifactId>replacer</artifactId>
-                <version>1.5.3</version>
                 <executions>
                     <execution>
                         <phase>generate-sources</phase>
@@ -480,7 +452,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
                 <executions>
                     <execution>
                         <id>exec-npm-install</id>
@@ -529,8 +500,8 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>3.1.0</version>
                 <executions>
                   <execution>
                     <id>copy-ui-resources</id>
@@ -551,7 +522,36 @@
             </plugin>
         </plugins>
     </build>
-
+    <profiles>
+      <profile>
+        <id>skip-tests-needing-all-nodes-reachable</id>
+        <build>
+          <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <inherited>true</inherited>
+                <configuration>
+                  <argLine>${surefireArgLine} -Dcucumber.options="-t ~@all_nodes_reachable"</argLine>
+                </configuration>
+            </plugin>
+          </plugins>
+        </build>
+      </profile>
+      <profile>
+        <id>only-tests-needing-all-nodes-reachable</id>
+        <build>
+          <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <inherited>true</inherited>
+                <configuration>
+                  <argLine>${surefireArgLine} -Dcucumber.options="-t @all_nodes_reachable"</argLine>
+                </configuration>
+            </plugin>
+          </plugins>
+        </build>
+      </profile>
+    </profiles>
     <reporting>
         <plugins>
             <plugin>

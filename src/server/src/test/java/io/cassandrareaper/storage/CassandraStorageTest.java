@@ -12,15 +12,20 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.acceptance;
+package io.cassandrareaper.storage;
 
-import cucumber.api.CucumberOptions;
-import cucumber.api.junit.Cucumber;
-import org.junit.runner.RunWith;
+import org.cognitor.cassandra.migration.MigrationRepository;
+import org.fest.assertions.api.Assertions;
+import org.junit.Test;
 
-@RunWith(Cucumber.class)
-@CucumberOptions(
-    features = "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature",
-    tags = {"~@incremental"}
-    )
-public final class ReaperNoIncrementalIT extends ReaperIT {}
+
+
+public final class CassandraStorageTest {
+
+  @Test
+  public void testMigrationRepository() {
+    MigrationRepository migration = new MigrationRepository("db/cassandra");
+    Assertions.assertThat(migration.getLatestVersion()).isGreaterThan(0);
+  }
+
+}

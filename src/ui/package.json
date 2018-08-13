@@ -36,8 +36,8 @@
     "react-widgets-moment": "^4.0.15",
     "raw-loader": "^0.5.1",
     "sass-loader": "^7.0.3",
-    "scss":"^0.2.4",
-    "node-sass":"^4.9.0",
+    "scss": "^0.2.4",
+    "node-sass": "^4.9.0",
     "resolve-url-loader": "^2.3.0"
   },
   "scripts": {

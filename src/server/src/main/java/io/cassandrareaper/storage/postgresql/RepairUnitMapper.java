@@ -43,16 +43,15 @@ public final class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
             ? new String[] {}
             : parseStringArray(rs.getArray("blacklisted_tables").getArray());
 
-    RepairUnit.Builder builder =
-        new RepairUnit.Builder(
-            rs.getString("cluster_name"),
-            rs.getString("keyspace_name"),
-            Sets.newHashSet(columnFamilies),
-            rs.getBoolean("incremental_repair"),
-            Sets.newHashSet(nodes),
-            Sets.newHashSet(datacenters),
-            Sets.newHashSet(blacklistedTables),
-            rs.getInt("repair_thread_count"));
+    RepairUnit.Builder builder = RepairUnit.builder()
+            .clusterName(rs.getString("cluster_name"))
+            .keyspaceName(rs.getString("keyspace_name"))
+            .columnFamilies(Sets.newHashSet(columnFamilies))
+            .incrementalRepair(rs.getBoolean("incremental_repair"))
+            .nodes(Sets.newHashSet(nodes))
+            .datacenters(Sets.newHashSet(datacenters))
+            .blacklistedTables(Sets.newHashSet(blacklistedTables))
+            .repairThreadCount(rs.getInt("repair_thread_count"));
 
     return builder.build(UuidUtil.fromSequenceId(rs.getLong("id")));
   }

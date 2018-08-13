@@ -48,7 +48,6 @@ import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.commons.lang3.tuple.Pair;
-import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -80,21 +79,21 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
     context.storage = new MemoryStorage();
-    RepairUnit cf =
-        context.storage.addRepairUnit(
-            new RepairUnit.Builder(
-                "reaper",
-                "reaper",
-                Sets.newHashSet("reaper"),
-                false,
-                Sets.newHashSet("127.0.0.1"),
-                Collections.emptySet(),
-                Collections.emptySet(),
-                1));
-    RepairRun run =
-        context.storage.addRepairRun(
-            new RepairRun.Builder(
-                "reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
+
+    RepairUnit cf = context.storage.addRepairUnit(
+            RepairUnit.builder()
+                .clusterName("reaper")
+                .keyspaceName("reaper")
+                .columnFamilies(Sets.newHashSet("reaper"))
+                .incrementalRepair(false)
+                .nodes(Sets.newHashSet("127.0.0.1"))
+                .repairThreadCount(1));
+
+    RepairRun run = context.storage.addRepairRun(
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(RepairParallelism.PARALLEL),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
@@ -191,27 +190,28 @@ public final class SegmentRunnerTest {
   @Test
   public void successTest() throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
-    RepairUnit cf =
-        storage.addRepairUnit(
-            new RepairUnit.Builder(
-                "reaper",
-                "reaper",
-                Sets.newHashSet("reaper"),
-                false,
-                Sets.newHashSet("127.0.0.1"),
-                Collections.emptySet(),
-                Collections.emptySet(),
-                1));
-    RepairRun run =
-        storage.addRepairRun(
-            new RepairRun.Builder(
-                "reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
+
+    RepairUnit cf = storage.addRepairUnit(
+            RepairUnit.builder()
+                .clusterName("reaper")
+                .keyspaceName("reaper")
+                .columnFamilies(Sets.newHashSet("reaper"))
+                .incrementalRepair(false)
+                .nodes(Sets.newHashSet("127.0.0.1"))
+                .repairThreadCount(1));
+
+    RepairRun run = storage.addRepairRun(
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(RepairParallelism.PARALLEL),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
                         .build(),
                     cf.getId())));
+
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
@@ -266,14 +266,19 @@ public final class SegmentRunnerTest {
                                 assertEquals(
                                     RepairSegment.State.RUNNING,
                                     storage.getRepairSegment(runId, segmentId).get().getState());
-                                // report about an unrelated repair. Shouldn't affect anything.
-                                ((RepairStatusHandler)invocation.getArgument(7))
-                                    .handle(
-                                        2,
-                                        Optional.of(ActiveRepairService.Status.SESSION_FAILED),
-                                        Optional.absent(),
-                                        "Repair command 2 has failed",
-                                        jmx);
+
+                                // test an unrelated repair. Should throw exception
+                                try {
+                                  ((RepairStatusHandler)invocation.getArgument(7))
+                                      .handle(
+                                          2,
+                                          Optional.of(ActiveRepairService.Status.SESSION_FAILED),
+                                          Optional.absent(),
+                                          "Repair command 2 has failed",
+                                          jmx);
+
+                                  throw new AssertionError("illegal handle of wrong repairNo");
+                                } catch (IllegalArgumentException ignore) { }
 
                                 ((RepairStatusHandler)invocation.getArgument(7))
                                     .handle(
@@ -332,27 +337,27 @@ public final class SegmentRunnerTest {
   @Test
   public void failureTest() throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
-    RepairUnit cf =
-        storage.addRepairUnit(
-            new RepairUnit.Builder(
-                "reaper",
-                "reaper",
-                Sets.newHashSet("reaper"),
-                false,
-                Sets.newHashSet("127.0.0.1"),
-                Collections.emptySet(),
-                Collections.emptySet(),
-                1));
-    RepairRun run =
-        storage.addRepairRun(
-            new RepairRun.Builder(
-                "reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
+    RepairUnit cf = storage.addRepairUnit(
+            RepairUnit.builder()
+                .clusterName("reaper")
+                .keyspaceName("reaper")
+                .columnFamilies(Sets.newHashSet("reaper"))
+                .incrementalRepair(false)
+                .nodes(Sets.newHashSet("127.0.0.1"))
+                .repairThreadCount(1));
+
+    RepairRun run = storage.addRepairRun(
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(RepairParallelism.PARALLEL),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
                         .build(),
                     cf.getId())));
+
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
@@ -467,30 +472,30 @@ public final class SegmentRunnerTest {
   public void outOfOrderSuccessCass21Test()
       throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
-    RepairUnit cf =
-        storage.addRepairUnit(
-            new RepairUnit.Builder(
-                "reaper",
-                "reaper",
-                Sets.newHashSet("reaper"),
-                false,
-                Sets.newHashSet("127.0.0.1"),
-                Collections.emptySet(),
-                Collections.emptySet(),
-                1));
-    RepairRun run =
-        storage.addRepairRun(
-            new RepairRun.Builder(
-                "reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
+
+    RepairUnit cf = storage.addRepairUnit(
+            RepairUnit.builder()
+                .clusterName("reaper")
+                .keyspaceName("reaper")
+                .columnFamilies(Sets.newHashSet("reaper"))
+                .incrementalRepair(false)
+                .nodes(Sets.newHashSet("127.0.0.1"))
+                .repairThreadCount(1));
+
+    RepairRun run = storage.addRepairRun(
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(RepairParallelism.PARALLEL),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
                         .build(),
                     cf.getId())));
+
     final UUID runId = run.getId();
-    final UUID segmentId =
-        storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -602,30 +607,30 @@ public final class SegmentRunnerTest {
   public void outOfOrderSuccessCass22Test()
       throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
-    RepairUnit cf =
-        storage.addRepairUnit(
-            new RepairUnit.Builder(
-                "reaper",
-                "reaper",
-                Sets.newHashSet("reaper"),
-                false,
-                Sets.newHashSet("127.0.0.1"),
-                Collections.emptySet(),
-                Collections.emptySet(),
-                1));
-    RepairRun run =
-        storage.addRepairRun(
-            new RepairRun.Builder(
-                "reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
+
+    RepairUnit cf = storage.addRepairUnit(
+            RepairUnit.builder()
+                .clusterName("reaper")
+                .keyspaceName("reaper")
+                .columnFamilies(Sets.newHashSet("reaper"))
+                .incrementalRepair(false)
+                .nodes(Sets.newHashSet("127.0.0.1"))
+                .repairThreadCount(1));
+
+    RepairRun run = storage.addRepairRun(
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(RepairParallelism.PARALLEL),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
                         .build(),
                     cf.getId())));
+
     final UUID runId = run.getId();
-    final UUID segmentId =
-        storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -737,30 +742,30 @@ public final class SegmentRunnerTest {
   public void outOfOrderFailureCass21Test()
       throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
-    RepairUnit cf =
-        storage.addRepairUnit(
-            new RepairUnit.Builder(
-                "reaper",
-                "reaper",
-                Sets.newHashSet("reaper"),
-                false,
-                Sets.newHashSet("127.0.0.1"),
-                Collections.emptySet(),
-                Collections.emptySet(),
-                1));
-    RepairRun run =
-        storage.addRepairRun(
-            new RepairRun.Builder(
-                "reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
+
+    RepairUnit cf = storage.addRepairUnit(
+            RepairUnit.builder()
+                .clusterName("reaper")
+                .keyspaceName("reaper")
+                .columnFamilies(Sets.newHashSet("reaper"))
+                .incrementalRepair(false)
+                .nodes(Sets.newHashSet("127.0.0.1"))
+                .repairThreadCount(1));
+
+    RepairRun run = storage.addRepairRun(
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(RepairParallelism.PARALLEL),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
                         .build(),
                     cf.getId())));
+
     final UUID runId = run.getId();
-    final UUID segmentId =
-        storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -873,30 +878,30 @@ public final class SegmentRunnerTest {
   public void outOfOrderFailureTestCass22()
       throws InterruptedException, ReaperException, ExecutionException {
     final IStorage storage = new MemoryStorage();
-    RepairUnit cf =
-        storage.addRepairUnit(
-            new RepairUnit.Builder(
-                "reaper",
-                "reaper",
-                Sets.newHashSet("reaper"),
-                false,
-                Sets.newHashSet("127.0.0.1"),
-                Collections.emptySet(),
-                Collections.emptySet(),
-                1));
-    RepairRun run =
-        storage.addRepairRun(
-            new RepairRun.Builder(
-                "reaper", cf.getId(), DateTime.now(), 0.5, 1, RepairParallelism.PARALLEL),
+
+    RepairUnit cf = storage.addRepairUnit(
+            RepairUnit.builder()
+                .clusterName("reaper")
+                .keyspaceName("reaper")
+                .columnFamilies(Sets.newHashSet("reaper"))
+                .incrementalRepair(false)
+                .nodes(Sets.newHashSet("127.0.0.1"))
+                .repairThreadCount(1));
+
+    RepairRun run = storage.addRepairRun(
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(RepairParallelism.PARALLEL),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
                         .build(),
                     cf.getId())));
+
     final UUID runId = run.getId();
-    final UUID segmentId =
-        storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();

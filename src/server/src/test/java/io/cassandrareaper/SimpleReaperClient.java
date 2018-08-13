@@ -14,8 +14,11 @@
 
 package io.cassandrareaper;
 
+import io.cassandrareaper.core.DroppedMessages;
+import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.Snapshot;
+import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 
@@ -164,6 +167,18 @@ public final class SimpleReaperClient {
 
   public static Map<String, List<Snapshot>> parseSnapshotMapJSON(String json) {
     return parseJSON(json, new TypeReference<Map<String, List<Snapshot>>>() {});
+  }
+
+  public static List<ThreadPoolStat> parseTpStatJSON(String json) {
+    return parseJSON(json, new TypeReference<List<ThreadPoolStat>>() {});
+  }
+
+  public static List<DroppedMessages> parseDroppedMessagesJSON(String json) {
+    return parseJSON(json, new TypeReference<List<DroppedMessages>>() {});
+  }
+
+  public static List<MetricsHistogram> parseClientRequestMetricsJSON(String json) {
+    return parseJSON(json, new TypeReference<List<MetricsHistogram>>() {});
   }
 
 }

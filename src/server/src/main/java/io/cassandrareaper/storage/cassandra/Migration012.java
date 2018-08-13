@@ -12,16 +12,21 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.acceptance;
+package io.cassandrareaper.storage.cassandra;
 
-import cucumber.api.CucumberOptions;
-import cucumber.api.junit.Cucumber;
-import org.junit.runner.RunWith;
 
-@RunWith(Cucumber.class)
-@CucumberOptions(
-    features = "classpath:io.cassandrareaper.acceptance/basic_reaper_functionality.feature"
-    )
-public final class AddClusterIT {
-  // Required only to get the Cucumber acceptance tests actually run.
+import com.datastax.driver.core.Session;
+
+public final class Migration012 {
+
+  private Migration012() {
+  }
+
+  /**
+   * fix segment start and end times in the repair_run table.
+   *  delegates to Migration009 as that does everything already.
+   */
+  public static void migrate(Session session) {
+    Migration009.migrate(session);
+  }
 }

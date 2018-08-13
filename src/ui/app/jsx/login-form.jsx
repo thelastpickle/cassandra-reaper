@@ -1,5 +1,5 @@
 import React from "react";
-
+import ReactDOM from "react-dom";
 
 const loginForm = React.createClass({
 
@@ -33,8 +33,8 @@ const loginForm = React.createClass({
 
   _onLogin: function (e) {
     const login = {
-      username: React.findDOMNode(this.refs.in_username).value,
-      password: React.findDOMNode(this.refs.in_password).value
+      username: ReactDOM.findDOMNode(this.refs.in_username).value,
+      password: ReactDOM.findDOMNode(this.refs.in_password).value
     };
     this.props.loginSubject.onNext(login);
   },
@@ -73,8 +73,7 @@ const loginForm = React.createClass({
     </div>
 
 
-    return (
-    <div className="panel panel-default">
+    return (<div className="panel panel-default">
       <div className="panel-body">
         {loginError}
         {form}

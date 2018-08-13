@@ -101,10 +101,12 @@ public interface IStoragePostgreSql {
           + SQL_REPAIR_UNIT_ALL_FIELDS
           + " FROM repair_unit "
           + "WHERE cluster_name = :clusterName AND keyspace_name = :keyspaceName "
-          + "AND column_families = :columnFamilies AND nodes = :nodes AND datacenters = :datacenters "
+          + "AND column_families = :columnFamilies AND incremental_repair = :incrementalRepair "
+          + "AND nodes = :nodes AND datacenters = :datacenters "
           + "AND blackListed_tables = :blacklisted_tables AND repair_thread_count = :repairThreadCount";
 
   String SQL_DELETE_REPAIR_UNIT = "DELETE FROM repair_unit WHERE id = :id";
+  String SQL_DELETE_REPAIR_UNITS = "DELETE FROM repair_unit WHERE cluster_name = :clusterName";
 
   // RepairSegmen
   //
@@ -210,8 +212,8 @@ public interface IStoragePostgreSql {
           + "WHERE run_id = repair_run.id) AS segments_repaired, "
           + "(SELECT COUNT(*) FROM repair_segment WHERE run_id = repair_run.id) AS segments_total, "
           + "repair_run.state, repair_run.start_time, "
-          + "repair_run.end_time, cause, owner, last_event, "
-          + "creation_time, pause_time, intensity, repair_parallelism, incremental_repair "
+          + "repair_run.end_time, cause, owner, last_event, creation_time, "
+          + "pause_time, intensity, repair_parallelism, incremental_repair, repair_thread_count "
           + "FROM repair_run "
           + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
           + "WHERE repair_unit.cluster_name = :clusterName "
@@ -222,7 +224,7 @@ public interface IStoragePostgreSql {
       "SELECT repair_schedule.id, owner, cluster_name, keyspace_name, column_families, state, "
           + "creation_time, next_activation, pause_time, intensity, segment_count, "
           + "repair_parallelism, days_between, incremental_repair, nodes, "
-          + "datacenters, blacklisted_tables, segment_count_per_node "
+          + "datacenters, blacklisted_tables, segment_count_per_node, repair_thread_count "
           + "FROM repair_schedule "
           + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
           + "WHERE cluster_name = :clusterName";
@@ -309,6 +311,7 @@ public interface IStoragePostgreSql {
       @Bind("clusterName") String clusterName,
       @Bind("keyspaceName") String keyspaceName,
       @Bind("columnFamilies") Collection<String> columnFamilies,
+      @Bind("incrementalRepair") boolean incrementalRepair,
       @Bind("nodes") Collection<String> nodes,
       @Bind("datacenters") Collection<String> datacenters,
       @Bind("blacklisted_tables") Collection<String> blacklistedTables,
@@ -322,6 +325,10 @@ public interface IStoragePostgreSql {
   @SqlUpdate(SQL_DELETE_REPAIR_UNIT)
   int deleteRepairUnit(
       @Bind("id") long repairUnitId);
+
+  @SqlUpdate(SQL_DELETE_REPAIR_UNITS)
+  int deleteRepairUnits(
+      @Bind("clusterName") String clusterName);
 
   @SqlBatch(SQL_INSERT_REPAIR_SEGMENT)
   @BatchChunkSize(500)

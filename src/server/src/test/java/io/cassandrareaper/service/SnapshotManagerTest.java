@@ -25,6 +25,7 @@ import io.cassandrareaper.storage.IStorage;
 
 import java.util.Arrays;
 import java.util.TreeSet;
+import java.util.concurrent.Executors;
 
 import com.google.common.base.Optional;
 import org.junit.Test;
@@ -49,7 +50,8 @@ public final class SnapshotManagerTest {
     context.config.setJmxConnectionTimeoutInSeconds(10);
     final JmxProxy jmx = mock(JmxProxy.class);
 
-    SnapshotManager snapshotManager = SnapshotManager.create(context);
+    SnapshotManager snapshotManager = SnapshotManager.create(context, Executors.newFixedThreadPool(2));
+
     context.jmxConnectionFactory =
         new JmxConnectionFactory() {
           @Override
@@ -70,7 +72,8 @@ public final class SnapshotManagerTest {
     context.config.setJmxConnectionTimeoutInSeconds(10);
     final JmxProxy jmx = mock(JmxProxy.class);
 
-    SnapshotManager snapshotManager = SnapshotManager.create(context);
+    SnapshotManager snapshotManager = SnapshotManager.create(context, Executors.newFixedThreadPool(2));
+
     context.jmxConnectionFactory =
         new JmxConnectionFactory() {
           @Override
@@ -95,7 +98,8 @@ public final class SnapshotManagerTest {
     context.config.setJmxConnectionTimeoutInSeconds(10);
     final JmxProxy jmx = mock(JmxProxy.class);
 
-    SnapshotManager snapshotManager = SnapshotManager.create(context);
+    SnapshotManager snapshotManager = SnapshotManager.create(context, Executors.newFixedThreadPool(2));
+
     context.jmxConnectionFactory =
         new JmxConnectionFactory() {
           @Override
@@ -117,7 +121,8 @@ public final class SnapshotManagerTest {
     context.config.setJmxConnectionTimeoutInSeconds(10);
     final JmxProxy jmx = mock(JmxProxy.class);
 
-    SnapshotManager snapshotManager = SnapshotManager.create(context);
+    SnapshotManager snapshotManager = SnapshotManager.create(context, Executors.newFixedThreadPool(2));
+
     context.jmxConnectionFactory =
         new JmxConnectionFactory() {
           @Override
@@ -146,7 +151,8 @@ public final class SnapshotManagerTest {
     final JmxProxy jmx = mock(JmxProxy.class);
     when(jmx.getLiveNodes()).thenReturn(Arrays.asList("127.0.0.1", "127.0.0.2"));
 
-    SnapshotManager snapshotManager = SnapshotManager.create(context);
+    SnapshotManager snapshotManager = SnapshotManager.create(context, Executors.newFixedThreadPool(2));
+
     context.jmxConnectionFactory =
         new JmxConnectionFactory() {
           @Override
@@ -180,7 +186,8 @@ public final class SnapshotManagerTest {
     final JmxProxy jmx = mock(JmxProxy.class);
     when(jmx.getLiveNodes()).thenReturn(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3"));
 
-    SnapshotManager snapshotManager = SnapshotManager.create(context);
+    SnapshotManager snapshotManager = SnapshotManager.create(context, Executors.newFixedThreadPool(2));
+
     context.jmxConnectionFactory =
         new JmxConnectionFactory() {
           @Override

@@ -19,6 +19,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxConnectionsInitializer;
 import io.cassandrareaper.resources.ClusterResource;
+import io.cassandrareaper.resources.NodeStatsResource;
 import io.cassandrareaper.resources.PingResource;
 import io.cassandrareaper.resources.ReaperHealthCheck;
 import io.cassandrareaper.resources.RepairRunResource;
@@ -27,10 +28,12 @@ import io.cassandrareaper.resources.SnapshotResource;
 import io.cassandrareaper.resources.auth.LoginResource;
 import io.cassandrareaper.resources.auth.ShiroExceptionMapper;
 import io.cassandrareaper.service.AutoSchedulingManager;
+import io.cassandrareaper.service.MetricsGrabber;
 import io.cassandrareaper.service.PurgeManager;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
 import io.cassandrareaper.service.SnapshotManager;
+import io.cassandrareaper.service.StreamManager;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
@@ -39,13 +42,13 @@ import io.cassandrareaper.storage.PostgresStorage;
 
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 
+import com.codahale.metrics.InstrumentedScheduledExecutorService;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
@@ -76,7 +79,6 @@ import sun.misc.Signal;
 public final class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
-  private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
   private final AppContext context;
 
   public ReaperApplication() {
@@ -155,12 +157,19 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         .addServlet("prometheusMetrics", new MetricsServlet(CollectorRegistry.defaultRegistry))
         .addMapping("/prometheusMetrics");
 
-    context.snapshotManager = SnapshotManager.create(context);
+    context.snapshotManager = SnapshotManager.create(
+        context,
+        environment.lifecycle().executorService("SnapshotManager").minThreads(5).maxThreads(5).build());
 
-    LOG.info("initializing runner thread pool with {} threads", config.getRepairRunThreadCount());
-    context.repairManager = RepairManager.create(context);
-    context.repairManager.initializeThreadPool(
-        config.getRepairRunThreadCount(),
+    context.metricsGrabber = MetricsGrabber.create(context);
+    context.streamManager = StreamManager.create(context);
+
+    int repairThreads = config.getRepairRunThreadCount();
+    LOG.info("initializing runner thread pool with {} threads", repairThreads);
+
+    context.repairManager = RepairManager.create(
+        context,
+        environment.lifecycle().scheduledExecutorService("RepairRunner").threads(repairThreads).build(),
         config.getHangingRepairTimeoutMins(),
         TimeUnit.MINUTES,
         config.getRepairManagerSchedulingIntervalSeconds(),
@@ -219,7 +228,11 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.info("creating resources and registering endpoints");
     final PingResource pingResource = new PingResource(healthCheck);
     environment.jersey().register(pingResource);
-    final ClusterResource addClusterResource = new ClusterResource(context);
+
+    final ClusterResource addClusterResource = new ClusterResource(
+        context,
+        environment.lifecycle().executorService("SnapshotManager").minThreads(6).maxThreads(6).build());
+
     environment.jersey().register(addClusterResource);
     final RepairRunResource addRepairRunResource = new RepairRunResource(context);
     environment.jersey().register(addRepairRunResource);
@@ -227,6 +240,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     environment.jersey().register(addRepairScheduleResource);
     final SnapshotResource snapshotResource = new SnapshotResource(context);
     environment.jersey().register(snapshotResource);
+
+    final NodeStatsResource nodeStatsResource = new NodeStatsResource(context);
+    environment.jersey().register(nodeStatsResource);
 
     if (config.isAccessControlEnabled()) {
       SessionHandler sessionHandler = new SessionHandler();
@@ -245,8 +261,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       AutoSchedulingManager.start(context);
     }
 
-    PurgeManager purgeManager = PurgeManager.create(context);
-    context.purgeManager = purgeManager;
+    context.purgeManager = PurgeManager.create(context);
     initializeJmxSeedsForAllClusters();
     LOG.info("resuming pending repair runs");
 
@@ -255,29 +270,36 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
             || DatacenterAvailability.EACH != context.config.getDatacenterAvailability(),
         "Cassandra backend storage is the only one allowing EACH datacenter availability modes.");
 
+    ScheduledExecutorService scheduler = new InstrumentedScheduledExecutorService(
+            environment.lifecycle().scheduledExecutorService("ReaperApplication-scheduler").threads(1).build(),
+            context.metricRegistry);
+
     if (context.storage instanceof IDistributedStorage) {
       // Allowing multiple Reaper instances to work concurrently requires
       // us to poll the database for running repairs regularly
       // only with Cassandra storage
-      scheduleRepairManager();
+      scheduleRepairManager(scheduler);
     } else {
       // Storage is different than Cassandra, assuming we have a single instance
       context.repairManager.resumeRunningRepairRuns();
     }
 
-    schedulePurge();
+    schedulePurge(scheduler);
 
     LOG.info("Initialization complete!");
     LOG.warn("Reaper is ready to get things done!");
   }
 
-  private void scheduleRepairManager() {
+  private void scheduleRepairManager(ScheduledExecutorService scheduler) {
     scheduler.scheduleWithFixedDelay(
         () -> {
           try {
             context.repairManager.resumeRunningRepairRuns();
-          } catch (ReaperException e) {
+          } catch (ReaperException | RuntimeException e) {
+            // test-pollution: grim_reaper trashes this log error
+            //if (!Boolean.getBoolean("grim.reaper.running")) {
             LOG.error("Couldn't resume running repair runs", e);
+            //}
           }
         },
         0,
@@ -285,7 +307,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         TimeUnit.SECONDS);
   }
 
-  private void schedulePurge() {
+  private void schedulePurge(ScheduledExecutorService scheduler) {
     scheduler.scheduleWithFixedDelay(
         () -> {
           try {

@@ -102,8 +102,7 @@ public final class RepairScheduleResource {
       @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam) {
 
     try {
-      Response possibleFailResponse =
-          RepairRunResource.checkRequestForAddRepair(
+      Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
               context,
               clusterName,
               keyspace,
@@ -140,8 +139,6 @@ public final class RepairScheduleResource {
             .build();
       }
 
-      int segments = getSegmentCount(segmentCountPerNode);
-      int daysBetween = getDaysBetween(scheduleDaysBetween);
       Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get())).get();
       Set<String> tableNames;
       try {
@@ -177,76 +174,94 @@ public final class RepairScheduleResource {
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
 
-      boolean incrementalRepair = isIncrementalRepair(incrementalRepairStr);
-
-      RepairUnit.Builder builder =
-          new RepairUnit.Builder(
-              cluster.getName(),
-              keyspace.get(),
-              tableNames,
-              incrementalRepair,
-              nodesToRepair,
-              datacentersToRepair,
-              blacklistedTableNames,
-              repairThreadCountParam.or(context.config.getRepairThreadCount()));
-
-      RepairUnit unit = repairUnitService.getNewOrExistingRepairUnit(cluster, builder);
-      Preconditions.checkState(unit.getIncrementalRepair() == incrementalRepair);
+      boolean incremental = isIncrementalRepair(incrementalRepairStr);
       RepairParallelism parallelism = context.config.getRepairParallelism();
       if (repairParallelism.isPresent()) {
         LOG.debug("using given repair parallelism {} over configured value {}", repairParallelism.get(), parallelism);
         parallelism = RepairParallelism.valueOf(repairParallelism.get().toUpperCase());
       }
 
-      if (!parallelism.equals(RepairParallelism.PARALLEL) && incrementalRepair) {
+      if (!parallelism.equals(RepairParallelism.PARALLEL) && incremental) {
         return Response.status(Response.Status.BAD_REQUEST)
             .entity("Can't mix sequential repair and incremental repairs")
             .build();
       }
 
-      Double intensity = getIntensity(intensityStr);
-      Optional<RepairSchedule> conflictingRepairSchedule
-          = repairScheduleService.conflictingRepairSchedule(cluster, unit);
+      RepairUnit.Builder unitBuilder = RepairUnit.builder()
+          .clusterName(cluster.getName())
+          .keyspaceName(keyspace.get())
+          .columnFamilies(tableNames)
+          .incrementalRepair(incremental)
+          .nodes(nodesToRepair)
+          .datacenters(datacentersToRepair)
+          .blacklistedTables(blacklistedTableNames)
+          .repairThreadCount(repairThreadCountParam.or(context.config.getRepairThreadCount()));
 
-      if (conflictingRepairSchedule.isPresent()) {
-        RepairSchedule existingSchedule = conflictingRepairSchedule.get();
+      return addRepairSchedule(
+          cluster,
+          unitBuilder,
+          getDaysBetween(scheduleDaysBetween),
+          owner.get(),
+          parallelism,
+          uriInfo,
+          incremental,
+          nextActivation,
+          getSegmentCount(segmentCountPerNode),
+          getIntensity(intensityStr));
 
-        if (existingSchedule.getRepairUnitId().equals(unit.getId())
-            && existingSchedule.getDaysBetween() == daysBetween
-            && existingSchedule.getOwner().equals(owner.get())
-            && existingSchedule.getRepairParallelism() == parallelism) {
-
-          return Response.noContent().location(buildRepairScheduleUri(uriInfo, existingSchedule)).build();
-        }
-
-        String msg = String.format(
-            "A repair schedule already exists for cluster \"%s\", keyspace \"%s\", and column families: %s",
-            cluster.getName(),
-            unit.getKeyspaceName(),
-            unit.getColumnFamilies());
-
-        return Response
-            .status(Response.Status.CONFLICT)
-            .location(buildRepairScheduleUri(uriInfo, existingSchedule))
-            .entity(msg)
-            .build();
-      } else {
-
-        RepairSchedule newRepairSchedule = repairScheduleService.storeNewRepairSchedule(
-            cluster,
-            unit,
-            daysBetween,
-            nextActivation,
-            owner.get(),
-            segments,
-            parallelism,
-            intensity);
-
-        return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule)).build();
-      }
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
       return Response.serverError().entity(e.getMessage()).build();
+    }
+  }
+
+  private Response addRepairSchedule(
+      Cluster cluster,
+      RepairUnit.Builder unitBuilder,
+      int days,
+      String owner,
+      RepairParallelism parallel,
+      UriInfo uriInfo,
+      boolean incremental,
+      DateTime next,
+      int segments,
+      Double intensity) {
+
+    Optional<RepairSchedule> conflictingRepairSchedule
+        = repairScheduleService.conflictingRepairSchedule(cluster, unitBuilder);
+
+    if (conflictingRepairSchedule.isPresent()) {
+      RepairSchedule existingSchedule = conflictingRepairSchedule.get();
+
+      if (existingSchedule.getDaysBetween() == days
+          && existingSchedule.getOwner().equals(owner)
+          && existingSchedule.getRepairParallelism() == parallel) {
+
+        return Response.noContent().location(buildRepairScheduleUri(uriInfo, existingSchedule)).build();
+      }
+
+      String msg = String.format(
+          "A repair schedule already exists for cluster \"%s\", keyspace \"%s\", and column families: %s",
+          cluster.getName(),
+          unitBuilder.keyspaceName,
+          unitBuilder.columnFamilies);
+
+      return Response
+          .status(Response.Status.CONFLICT)
+          .location(buildRepairScheduleUri(uriInfo, existingSchedule))
+          .entity(msg)
+          .build();
+    } else {
+
+      RepairUnit unit = repairUnitService.getOrCreateRepairUnit(cluster, unitBuilder);
+
+      Preconditions
+          .checkState(unit.getIncrementalRepair() == incremental, "%s!=%s", unit.getIncrementalRepair(), incremental);
+
+      RepairSchedule newRepairSchedule = repairScheduleService
+          .storeNewRepairSchedule(cluster, unit, days, next, owner, segments, parallel, intensity);
+
+      return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule)).build();
     }
   }
 
@@ -394,10 +409,11 @@ public final class RepairScheduleResource {
     LOG.debug("start repair_schedule called with: id = {}", repairScheduleId);
     Optional<RepairSchedule> repairSchedule = context.storage.getRepairSchedule(repairScheduleId);
     if (repairSchedule.isPresent()) {
-      RepairSchedule newSchedule =
-          new RepairSchedule.Builder(repairSchedule.get())
-              .nextActivation(DateTime.now())
-              .build(repairScheduleId);
+      RepairSchedule newSchedule = repairSchedule.get()
+          .with()
+          .nextActivation(DateTime.now())
+          .build(repairScheduleId);
+
       context.storage.updateRepairSchedule(newSchedule);
       return Response.ok().entity(getRepairScheduleStatus(newSchedule)).build();
     } else {

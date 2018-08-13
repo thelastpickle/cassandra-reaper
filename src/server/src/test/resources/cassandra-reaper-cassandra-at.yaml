@@ -59,6 +59,14 @@ cassandra:
   socketOptions:
       connectTimeoutMillis: 20000
       readTimeoutMillis: 40000
+  loadBalancingPolicy:
+    type: tokenAware
+    shuffleReplicas: true
+    subPolicy:
+      type: dcAwareRoundRobin
+      localDC: dc1
+      usedHostsPerRemoteDC: 0
+      allowRemoteDCsForLocalConsistencyLevel: false
   poolingOptions:
       idleTimeout: 5s
       local:
@@ -66,9 +74,9 @@ cassandra:
         maxConnections: 4
         maxRequestsPerConnection: 16
       remote:
-        coreConnections: 1
-        maxConnections: 1
-        maxRequestsPerConnection: 4
+        coreConnections: 0
+        maxConnections: 0
+        maxRequestsPerConnection: 0
 
 metrics:
   frequency: 1 second

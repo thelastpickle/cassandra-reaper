@@ -42,15 +42,11 @@ public final class RepairRunMapper implements ResultSetMapper<RepairRun> {
     RepairParallelism repairParallelism = RepairParallelism.fromName(
         rs.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel"));
 
-    RepairRun.Builder repairRunBuilder = new RepairRun.Builder(
-        rs.getString("cluster_name"),
-        UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")),
-        getDateTimeOrNull(rs, "creation_time"),
-        rs.getFloat("intensity"),
-        rs.getInt("segment_count"),
-        repairParallelism);
-
-    return repairRunBuilder
+    return RepairRun.builder(rs.getString("cluster_name"), UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")))
+        .creationTime(getDateTimeOrNull(rs, "creation_time"))
+        .intensity(rs.getDouble("intensity"))
+        .segmentCount(rs.getInt("segment_count"))
+        .repairParallelism(repairParallelism)
         .runState(runState)
         .owner(rs.getString("owner"))
         .cause(rs.getString("cause"))

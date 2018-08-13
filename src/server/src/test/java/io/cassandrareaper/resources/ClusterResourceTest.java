@@ -19,6 +19,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
+import io.cassandrareaper.service.StreamManager;
 import io.cassandrareaper.service.TestRepairConfiguration;
 import io.cassandrareaper.storage.MemoryStorage;
 
@@ -26,6 +27,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.concurrent.Executors;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -63,7 +65,7 @@ public final class ClusterResourceTest {
   public void testAddCluster() throws Exception {
     final MockObjects mocks = initMocks();
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
     Response response = clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST));
 
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
@@ -85,7 +87,7 @@ public final class ClusterResourceTest {
     Cluster cluster = new Cluster(CLUSTER_NAME, PARTITIONER, Sets.newHashSet(SEED_HOST));
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
     Response response = clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST));
 
     assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
@@ -108,7 +110,7 @@ public final class ClusterResourceTest {
     Cluster cluster = new Cluster(CLUSTER_NAME, PARTITIONER, Sets.newHashSet(SEED_HOST));
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
     Response response = clusterResource.addOrUpdateCluster(mocks.uriInfo, CLUSTER_NAME, Optional.of(SEED_HOST));
 
     assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
@@ -128,7 +130,7 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
     when(mocks.jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
     Response response = clusterResource.getCluster(I_DONT_EXIST, Optional.<Integer>absent());
     assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
   }
@@ -141,7 +143,7 @@ public final class ClusterResourceTest {
     Cluster cluster = new Cluster(I_DO_EXIST, PARTITIONER, Sets.newHashSet(SEED_HOST));
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
     Response response = clusterResource.getCluster(I_DO_EXIST, Optional.<Integer>absent());
     assertEquals(HttpStatus.OK_200, response.getStatus());
   }
@@ -150,7 +152,7 @@ public final class ClusterResourceTest {
   public void testModifyClusterSeeds() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
     clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST));
     doReturn(Arrays.asList(SEED_HOST + 1)).when(mocks.jmxProxy).getLiveNodes();
 
@@ -173,7 +175,7 @@ public final class ClusterResourceTest {
   public void testModifyClusterSeedsWithClusterName() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
     clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST));
     doReturn(Arrays.asList(SEED_HOST + 1)).when(mocks.jmxProxy).getLiveNodes();
 
@@ -209,7 +211,7 @@ public final class ClusterResourceTest {
                 .build())
         .build();
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
     Response response = clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST));
 
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
@@ -249,6 +251,7 @@ public final class ClusterResourceTest {
     AppContext context = new AppContext();
     context.storage = new MemoryStorage();
     context.config = TestRepairConfiguration.defaultConfig();
+    context.streamManager = StreamManager.create(context);
 
     UriInfo uriInfo = mock(UriInfo.class);
     when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(SAMPLE_URI));

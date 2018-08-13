@@ -13,10 +13,9 @@ jmxConnectionTimeoutInSeconds: 300
 datacenterAvailability: LOCAL
 
 logging:
-  level: DEBUG
+  level: INFO
   loggers:
-    io.dropwizard: INFO
-    org.eclipse.jetty: INFO
+    io.cassandrareaper: DEBUG
   appenders:
     - type: console
 
