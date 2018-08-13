@@ -71,6 +71,25 @@ john = 807A09440428C0A8AEF58BD3ECE32938B0D76E638119E47619756F5C2C20FF3A
 /** = anon
 ```
 
+To generate a password, you case use for example :
+
+* From the command line :
+
+```shell
+echo -n "Hello World" | shasum -a 256
+echo -n "Hello World" | sha256sum
+```
+
+* Or some language of your choice  (like Python here) :
+
+```python
+import hashlib
+hash_object = hashlib.sha256(b'Hello World')
+hex_dig = hash_object.hexdigest()
+print(hex_dig)
+a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e
+```
+
 Then start Reaper.
 
 Both the REST API and the `/webui/login.html` pages will be accessible anonymously, but all other pages will require to be authenticated.
