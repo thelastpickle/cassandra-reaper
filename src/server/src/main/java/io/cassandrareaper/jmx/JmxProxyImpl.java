@@ -16,6 +16,7 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Snapshot.Builder;
@@ -29,11 +30,13 @@ import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMISocketFactory;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,16 +49,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import javax.management.AttributeNotFoundException;
+import javax.management.Attribute;
+import javax.management.AttributeList;
 import javax.management.InstanceNotFoundException;
+import javax.management.JMException;
 import javax.management.JMX;
 import javax.management.ListenerNotFoundException;
-import javax.management.MBeanException;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanInfo;
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.Notification;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
+import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
@@ -72,8 +79,11 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.net.HostAndPort;
 import org.apache.cassandra.db.ColumnFamilyStoreMBean;
+import org.apache.cassandra.db.compaction.CompactionManager;
+import org.apache.cassandra.db.compaction.CompactionManagerMBean;
 import org.apache.cassandra.gms.FailureDetector;
 import org.apache.cassandra.gms.FailureDetectorMBean;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
@@ -81,12 +91,14 @@ import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.repair.messages.RepairOption;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.service.StorageServiceMBean;
+import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toList;
 
 final class JmxProxyImpl implements JmxProxy {
 
@@ -94,6 +106,7 @@ final class JmxProxyImpl implements JmxProxy {
 
   private static final int JMX_PORT = 7199;
   private static final String SS_OBJECT_NAME = "org.apache.cassandra.db:type=StorageService";
+  private static final String SM_OBJECT_NAME = "org.apache.cassandra.net:type=StreamManager";
   private static final String AES_OBJECT_NAME = "org.apache.cassandra.internal:type=AntiEntropySessions";
   private static final String VALIDATION_ACTIVE_OBJECT_NAME
       = "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,name=ActiveTasks";
@@ -115,7 +128,9 @@ final class JmxProxyImpl implements JmxProxy {
 
   private final JMXConnector jmxConnector;
   private final ObjectName ssMbeanName;
+  private final ObjectName smMbeanName;
   private final MBeanServerConnection mbeanServer;
+  private final CompactionManagerMBean cmProxy;
   private final EndpointSnitchInfoMBean endpointSnitchMbean;
   private final Object ssProxy;
   private final Object fdProxy;
@@ -126,6 +141,7 @@ final class JmxProxyImpl implements JmxProxy {
   private final ConcurrentMap<Integer, ExecutorService> repairStatusExecutors = Maps.newConcurrentMap();
   private final ConcurrentMap<Integer, RepairStatusHandler> repairStatusHandlers = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
+  private final Object smProxy;
 
   private JmxProxyImpl(
       String host,
@@ -135,9 +151,12 @@ final class JmxProxyImpl implements JmxProxy {
       Object ssProxy,
       ObjectName ssMbeanName,
       MBeanServerConnection mbeanServer,
+      CompactionManagerMBean cmProxy,
       EndpointSnitchInfoMBean endpointSnitchMbean,
       FailureDetectorMBean fdProxy,
-      MetricRegistry metricRegistry) {
+      MetricRegistry metricRegistry,
+      ObjectName smMbeanName,
+      Object smProxy) {
 
     this.host = host;
     this.hostBeforeTranslation = hostBeforeTranslation;
@@ -146,10 +165,13 @@ final class JmxProxyImpl implements JmxProxy {
     this.ssMbeanName = ssMbeanName;
     this.mbeanServer = mbeanServer;
     this.ssProxy = ssProxy;
+    this.cmProxy = cmProxy;
     this.endpointSnitchMbean = endpointSnitchMbean;
     this.clusterName = Cluster.toSymbolicName(((StorageServiceMBean) ssProxy).getClusterName());
     this.fdProxy = fdProxy;
     this.metricRegistry = metricRegistry;
+    this.smMbeanName = smMbeanName;
+    this.smProxy = smProxy;
     registerConnectionsGauge();
   }
 
@@ -204,7 +226,9 @@ final class JmxProxyImpl implements JmxProxy {
       throws ReaperException, InterruptedException {
 
     ObjectName ssMbeanName;
+    ObjectName cmMbeanName;
     ObjectName fdMbeanName;
+    ObjectName smMbeanName;
     ObjectName endpointSnitchMbeanName;
     JMXServiceURL jmxUrl;
     String host = originalHost;
@@ -218,7 +242,9 @@ final class JmxProxyImpl implements JmxProxy {
       LOG.debug("Connecting to {}...", host);
       jmxUrl = JmxAddresses.getJmxServiceUrl(host, port);
       ssMbeanName = new ObjectName(SS_OBJECT_NAME);
+      cmMbeanName = new ObjectName(CompactionManager.MBEAN_OBJECT_NAME);
       fdMbeanName = new ObjectName(FailureDetector.MBEAN_NAME);
+      smMbeanName = new ObjectName(SM_OBJECT_NAME);
       endpointSnitchMbeanName = new ObjectName("org.apache.cassandra.db:type=EndpointSnitchInfo");
     } catch (MalformedURLException | MalformedObjectNameException e) {
       LOG.error(String.format("Failed to prepare the JMX connection to %s:%s", host, port));
@@ -238,7 +264,9 @@ final class JmxProxyImpl implements JmxProxy {
       if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")) {
         ssProxy = JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean20.class);
       }
+      Object smProxy = JMX.newMBeanProxy(mbeanServerConn, smMbeanName, StreamManagerMBean.class);
 
+      CompactionManagerMBean cmProxy = JMX.newMBeanProxy(mbeanServerConn, cmMbeanName, CompactionManagerMBean.class);
       FailureDetectorMBean fdProxy = JMX.newMBeanProxy(mbeanServerConn, fdMbeanName, FailureDetectorMBean.class);
 
       EndpointSnitchInfoMBean endpointSnitchProxy
@@ -253,13 +281,17 @@ final class JmxProxyImpl implements JmxProxy {
               ssProxy,
               ssMbeanName,
               mbeanServerConn,
+              cmProxy,
               endpointSnitchProxy,
               fdProxy,
-              metricRegistry);
+              metricRegistry,
+              smMbeanName,
+              smProxy);
 
       // registering a listener throws bunch of exceptions, so we do it here rather than in the
       // constructor
       mbeanServerConn.addNotificationListener(ssMbeanName, proxy, null, null);
+      mbeanServerConn.addNotificationListener(smMbeanName, proxy, null, null);
       LOG.debug("JMX connection to {} properly connected: {}", host, jmxUrl.toString());
 
       return proxy;
@@ -441,7 +473,7 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   @Override
-  public int getPendingCompactions() throws MBeanException, AttributeNotFoundException, ReflectionException {
+  public int getPendingCompactions() throws JMException {
     try {
       ObjectName name = new ObjectName(COMP_OBJECT_NAME);
       int pendingCount = (int) mbeanServer.getAttribute(name, VALUE_ATTRIBUTE);
@@ -463,14 +495,14 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   @Override
-  public boolean isRepairRunning() throws MBeanException, AttributeNotFoundException, ReflectionException {
+  public boolean isRepairRunning() throws JMException {
     return isRepairRunningPre22() || isRepairRunningPost22() || isValidationCompactionRunning();
   }
 
   /**
    * @return true if any repairs are running on the node.
    */
-  private boolean isRepairRunningPre22() throws MBeanException, AttributeNotFoundException, ReflectionException {
+  private boolean isRepairRunningPre22() throws JMException {
     // Check if AntiEntropySession is actually running on the node
     try {
       ObjectName name = new ObjectName(AES_OBJECT_NAME);
@@ -496,8 +528,7 @@ final class JmxProxyImpl implements JmxProxy {
   /**
    * @return true if any repairs are running on the node.
    */
-  private boolean isValidationCompactionRunning()
-      throws MBeanException, AttributeNotFoundException, ReflectionException {
+  private boolean isValidationCompactionRunning() throws JMException {
 
     // Check if AntiEntropySession is actually running on the node
     try {
@@ -582,7 +613,7 @@ final class JmxProxyImpl implements JmxProxy {
               .collect(
                   Collectors.groupingBy(
                       JmxColumnFamily::getKeyspace,
-                      Collectors.mapping(JmxColumnFamily::getColumnFamily, Collectors.toList())));
+                      Collectors.mapping(JmxColumnFamily::getColumnFamily, toList())));
 
     } catch (MalformedObjectNameException | IOException e) {
       LOG.warn("Couldn't get a list of tables through JMX", e);
@@ -807,10 +838,15 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   /**
-   * Invoked when the MBean this class listens to publishes an event. We're only interested in repair-related events.
-   * Their format is explained at {@link org.apache.cassandra.service.StorageServiceMBean#forceRepairAsync} The forma
-   * is: notification type: "repair" notification userData: int array of length 2 where [0] = command number [1] =
-   * ordinal of AntiEntropyService.Status
+   * Invoked when the MBean this class listens to publishes an event.
+   *
+   * <p>We're interested in repair-related events. Their format is explained at
+   * {@link org.apache.cassandra.service.StorageServiceMBean#forceRepairAsync}. The format is:
+   *    notification type: "repair"
+   *    notification userData: int array of length 2 where
+   *      [0] = command number
+   *      [1] = ordinal of AntiEntropyService.Status
+   *
    */
   @Override
   public void handleNotification(final Notification notification, Object handback) {
@@ -916,6 +952,7 @@ final class JmxProxyImpl implements JmxProxy {
   public void close() {
     try {
       mbeanServer.removeNotificationListener(ssMbeanName, this);
+      mbeanServer.removeNotificationListener(smMbeanName, this);
       LOG.debug("Successfully removed notification listener for '{}': {}", host, jmxUrl);
     } catch (InstanceNotFoundException | ListenerNotFoundException | IOException e) {
       LOG.debug("failed on removing notification listener", e);
@@ -1134,5 +1171,121 @@ final class JmxProxyImpl implements JmxProxy {
     } catch (IOException e) {
       throw new ReaperException(e);
     }
+  }
+
+  /**
+   * Collects all attributes for a given set of JMX beans.
+   *
+   * @param beans the list of beans to collect through JMX
+   * @return a map with a key for each bean and a list of jmx stat in generic format.
+   */
+  private Map<String, List<JmxStat>> collectMetrics(List<String> beans) throws JMException, IOException {
+    List<List<JmxStat>> allStats = Lists.newArrayList();
+    Set beanSet = Sets.newLinkedHashSet();
+    for (String bean : beans) {
+      beanSet.addAll(mbeanServer.queryNames(new ObjectName(bean), null));
+    }
+
+    for (Object bean : beanSet) {
+      ObjectName objName = (ObjectName) bean;
+      List<JmxStat> attributes = scrapeBean(objName);
+      allStats.add(attributes);
+    }
+
+    List<JmxStat> flatStatList =
+        allStats.stream().flatMap(attr -> attr.stream()).collect(Collectors.toList());
+
+    // Group the stats by scope to ease displaying/manipulating the data
+    Map<String, List<JmxStat>> groupedStatList =
+        flatStatList.stream().collect(Collectors.groupingBy(JmxStat::getScope));
+
+    return groupedStatList;
+  }
+
+  @Override
+  public Map<String, List<JmxStat>> collectTpStats() throws JMException, IOException {
+    return collectMetrics(
+        Arrays.asList(
+            "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
+            "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*"));
+  }
+
+  @Override
+  public Map<String, List<JmxStat>> collectDroppedMessages() throws JMException, IOException {
+    return collectMetrics(Arrays.asList("org.apache.cassandra.metrics:type=DroppedMessage,*"));
+  }
+
+  @Override
+  public Map<String, List<JmxStat>> collectLatencyMetrics() throws JMException, IOException {
+    Map<String, List<JmxStat>> metrics =
+        collectMetrics(Arrays.asList("org.apache.cassandra.metrics:type=ClientRequest,*"));
+    LOG.info("latencies : {}", metrics);
+
+    return metrics;
+  }
+
+  private List<JmxStat> scrapeBean(ObjectName mbeanName) {
+    MBeanInfo info;
+    List<JmxStat> attributeList = Lists.newArrayList();
+    try {
+      info = mbeanServer.getMBeanInfo(mbeanName);
+    } catch (IOException e) {
+      return attributeList;
+    } catch (JMException e) {
+      LOG.error(mbeanName.toString(), "getMBeanInfo Fail: " + e);
+      return attributeList;
+    }
+    MBeanAttributeInfo[] attrInfos = info.getAttributes();
+
+    Map<String, MBeanAttributeInfo> name2AttrInfo = new LinkedHashMap<String, MBeanAttributeInfo>();
+    for (MBeanAttributeInfo attrInfo : attrInfos) {
+      MBeanAttributeInfo attr = attrInfo;
+      if (!attr.isReadable()) {
+        LOG.warn("{}.{} not readable", mbeanName, attr);
+        continue;
+      }
+      name2AttrInfo.put(attr.getName(), attr);
+    }
+    final AttributeList attributes;
+    try {
+      attributes =
+          mbeanServer.getAttributes(mbeanName, name2AttrInfo.keySet().toArray(new String[0]));
+    } catch (RuntimeException | InstanceNotFoundException | ReflectionException | IOException e) {
+      LOG.error("Fail grabbing attributes for mbean {} ", mbeanName, e);
+      return attributeList;
+    }
+    for (Attribute attribute : attributes.asList()) {
+      Object value = attribute.getValue();
+      JmxStat.Builder jmxStatBuilder =
+          JmxStat.builder()
+              .withAttribute(attribute.getName())
+              .withName(mbeanName.getKeyProperty("name"))
+              .withScope(mbeanName.getKeyProperty("scope"));
+      if (value == null) {
+        attributeList.add(jmxStatBuilder.withValue(0.0).build());
+      } else if (value instanceof Number) {
+        attributeList.add(jmxStatBuilder.withValue(((Number) value).doubleValue()).build());
+      }
+    }
+
+    return attributeList;
+  }
+
+  @Override
+  public Set<CompositeData> listStreams() {
+    checkNotNull(smProxy, "Looks like the proxy is not connected");
+    return ((StreamManagerMBean) smProxy).getCurrentStreams();
+  }
+
+  StorageServiceMBean getStorageServiceMBean() {
+    return (StorageServiceMBean)ssProxy;
+  }
+
+  MBeanServerConnection getMBeanServerConnection() {
+    return mbeanServer;
+  }
+
+  CompactionManagerMBean getCompactionManagerMBean() {
+    return cmProxy;
   }
 }

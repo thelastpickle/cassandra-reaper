@@ -37,6 +37,7 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import com.google.common.base.Optional;
+import io.dropwizard.setup.Environment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,10 +47,13 @@ public final class SnapshotResource {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotResource.class);
 
-  private final AppContext context;
+  private final SnapshotManager snapshotManager;
 
-  public SnapshotResource(AppContext context) {
-    this.context = context;
+  public SnapshotResource(AppContext context, Environment environment) {
+
+    snapshotManager = SnapshotManager.create(
+        context,
+        environment.lifecycle().executorService("SnapshotManager").minThreads(5).maxThreads(5).build());
   }
 
   /**
@@ -71,13 +75,13 @@ public final class SnapshotResource {
       Node node = Node.builder().withClusterName(clusterName).withHostname(host.get()).build();
       if (host.isPresent()) {
         if (keyspace.isPresent()) {
-          context.snapshotManager.takeSnapshotForKeyspaces(
-                  context.snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
+          snapshotManager.takeSnapshotForKeyspaces(
+                  snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
                   node,
                   keyspace.get());
         } else {
-          context.snapshotManager.takeSnapshot(
-                  context.snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
+          snapshotManager.takeSnapshot(
+                  snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
                   node);
         }
         return Response.ok()
@@ -110,15 +114,15 @@ public final class SnapshotResource {
     try {
       if (clusterName.isPresent()) {
         if (keyspace.isPresent() && !keyspace.get().isEmpty()) {
-          context.snapshotManager.takeSnapshotClusterWide(
-                  context.snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
+          snapshotManager.takeSnapshotClusterWide(
+                  snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
                   clusterName.get(),
                   owner.or("reaper"),
                   cause.or("Snapshot taken with Reaper"),
                   keyspace.get());
         } else {
-          context.snapshotManager.takeSnapshotClusterWide(
-                  context.snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
+          snapshotManager.takeSnapshotClusterWide(
+                  snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
                   clusterName.get(),
                   owner.or("reaper"),
                   cause.or("Snapshot taken with Reaper"));
@@ -142,7 +146,7 @@ public final class SnapshotResource {
       @PathParam("host") String host) {
 
     try {
-      Map<String, List<Snapshot>> snapshots = context.snapshotManager
+      Map<String, List<Snapshot>> snapshots = snapshotManager
           .listSnapshotsGroupedByName(Node.builder().withClusterName(clusterName).withHostname(host).build());
 
       return Response.ok().entity(snapshots).build();
@@ -157,7 +161,7 @@ public final class SnapshotResource {
   public Response listSnapshotsClusterWide(@PathParam("clusterName") String clusterName) {
     Map<String, Map<String, List<Snapshot>>> snapshots;
     try {
-      snapshots = context.snapshotManager.listSnapshotsClusterWide(clusterName);
+      snapshots = snapshotManager.listSnapshotsClusterWide(clusterName);
       return Response.ok().entity(snapshots).build();
     } catch (UnsupportedOperationException e) {
       return Response.status(Status.NOT_IMPLEMENTED).entity(e.getMessage()).build();
@@ -185,13 +189,12 @@ public final class SnapshotResource {
         Node node = Node.builder().withClusterName(clusterName).withHostname(host.get()).build();
         // check that the snapshot still exists
         // even though this rest endpoint is not synchronised, a 404 response is helpful where possible
-        List<Snapshot> snapshots
-            = context.snapshotManager.listSnapshotsGroupedByName(node).get(snapshotName.get());
+        List<Snapshot> snapshots = snapshotManager.listSnapshotsGroupedByName(node).get(snapshotName.get());
 
         if (null == snapshots || snapshots.isEmpty()) {
           return Response.status(Status.NOT_FOUND).build();
         }
-        context.snapshotManager.clearSnapshot(snapshotName.get(), node);
+        snapshotManager.clearSnapshot(snapshotName.get(), node);
         return Response.accepted().build();
       } else {
         return Response.status(Status.BAD_REQUEST)
@@ -221,12 +224,12 @@ public final class SnapshotResource {
         // check that the snapshot still exists
         // even though this rest endpoint is not synchronised, a 404 response is helpful where possible
         Map<String, List<Snapshot>> snapshots
-             = context.snapshotManager.listSnapshotsClusterWide(clusterName.get()).get(snapshotName.get());
+             = snapshotManager.listSnapshotsClusterWide(clusterName.get()).get(snapshotName.get());
 
         if (null == snapshots || snapshots.isEmpty()) {
           return Response.status(Status.NOT_FOUND).build();
         }
-        context.snapshotManager.clearSnapshotClusterWide(snapshotName.get(), clusterName.get());
+        snapshotManager.clearSnapshotClusterWide(snapshotName.get(), clusterName.get());
         return Response.accepted().build();
       } else {
         return Response.status(Status.BAD_REQUEST)

@@ -33,6 +33,10 @@
             {"includePattern": "src/server/pom.xml", "uploadPattern": "io/cassandrareaper/cassandra-reaper/VERSION/cassandra-reaper-VERSION.pom",
                 "matrixParams": { "override": 1 }
             }
+            ,
+            {"includePattern": "pom.xml", "uploadPattern": "io/cassandrareaper/cassandra-reaper-pom/VERSION/cassandra-reaper-pom-VERSION.pom",
+                "matrixParams": { "override": 1 }
+            }
         ],
     "publish": true
 }

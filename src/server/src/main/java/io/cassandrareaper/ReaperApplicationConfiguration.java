@@ -36,6 +36,10 @@ import systems.composable.dropwizard.cassandra.CassandraFactory;
 public final class ReaperApplicationConfiguration extends Configuration {
 
   private static final int DEFAULT_SEGMENT_COUNT_PER_NODE = 16;
+  private static final Integer DEFAULT_MAX_PENDING_COMPACTIONS = 20;
+
+  @JsonProperty
+  private Integer maxPendingCompactions;
 
   @Deprecated
   @JsonProperty
@@ -144,6 +148,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setSegmentCountPerNode(int segmentCountPerNode) {
     this.segmentCountPerNode = segmentCountPerNode;
+  }
+
+  public int getMaxPendingCompactions() {
+    return maxPendingCompactions == null ? DEFAULT_MAX_PENDING_COMPACTIONS : maxPendingCompactions;
+  }
+
+  public void setMaxPendingCompactions(int maxPendingCompactions) {
+    this.maxPendingCompactions = maxPendingCompactions;
   }
 
   public RepairParallelism getRepairParallelism() {
@@ -497,5 +509,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
     public Duration getSessionTimeout() {
       return sessionTimeout;
     }
+
+
   }
 }
