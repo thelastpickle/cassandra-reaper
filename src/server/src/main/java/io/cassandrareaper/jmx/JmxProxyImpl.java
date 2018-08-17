@@ -533,10 +533,12 @@ final class JmxProxyImpl implements JmxProxy {
     // Check if AntiEntropySession is actually running on the node
     try {
       int activeCount
-          = (Integer) mbeanServer.getAttribute(new ObjectName(VALIDATION_ACTIVE_OBJECT_NAME), VALUE_ATTRIBUTE);
+          = ((Number) mbeanServer.getAttribute(new ObjectName(VALIDATION_ACTIVE_OBJECT_NAME), VALUE_ATTRIBUTE))
+              .intValue();
 
-      long pendingCount
-          = (Long) mbeanServer.getAttribute(new ObjectName(VALIDATION_PENDING_OBJECT_NAME), VALUE_ATTRIBUTE);
+      int pendingCount
+          = ((Number) mbeanServer.getAttribute(new ObjectName(VALIDATION_PENDING_OBJECT_NAME), VALUE_ATTRIBUTE))
+              .intValue();
 
       return activeCount + pendingCount != 0;
     } catch (IOException ignored) {

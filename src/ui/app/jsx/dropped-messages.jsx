@@ -62,7 +62,7 @@ const DroppedMessages = React.createClass({
       const droppedMessagesBody = this.state.droppedMessages.sort((a, b) => {if(a.name < b.name) return -1;
       if(a.name > b.name) return 1;
       return 0;}).map(pool => 
-        <tr>
+        <tr key={pool.name}>
           <td>{pool.name}</td>
           <td style={alignRightStyle}>{pool.count}</td>
           <td style={alignRightStyle}>{pool.oneMinuteRate}</td>

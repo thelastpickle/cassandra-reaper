@@ -129,7 +129,7 @@ const ClientRequestLatency = React.createClass({
         return 0;})
         .filter(metric => metric.type == "Latency")
         .map(clientRequest => 
-          <tr>
+          <tr key={clientRequest.name}>
             <td>{clientRequest.name}</td>
             <td style={alignRightStyle}><OverlayTrigger placement="top" overlay={tooltipP50}><span>{roundLatency(clientRequest.p50, 3)}</span></OverlayTrigger></td>
             <td style={alignRightStyle}><OverlayTrigger placement="top" overlay={tooltipP75}><span>{roundLatency(clientRequest.p75, 3)}</span></OverlayTrigger></td>
@@ -150,7 +150,7 @@ const ClientRequestLatency = React.createClass({
         return 0;})
         .filter(metric => metric.type != "Latency")
         .map(clientRequest => 
-          <tr>
+          <tr key={clientRequest.name + clientRequest.type}>
             <td >{clientRequest.name} {clientRequest.type}</td>
             <td style={alignRightStyle}><OverlayTrigger placement="top" overlay={tooltipP50}><span>{roundLatency(clientRequest.p50, 3)}</span></OverlayTrigger></td>
             <td style={alignRightStyle}><OverlayTrigger placement="top" overlay={tooltipP75}><span>{roundLatency(clientRequest.p75, 3)}</span></OverlayTrigger></td>
