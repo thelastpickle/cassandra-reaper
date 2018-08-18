@@ -24,6 +24,7 @@ import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
+import io.cassandrareaper.jmx.SnapshotProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.lang.management.ManagementFactory;
@@ -1027,12 +1028,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     if (repairId != null) {
       for (String involvedNode : potentialCoordinators) {
         try {
-          JmxProxy jmx =
-              context.jmxConnectionFactory.connect(
+          JmxProxy jmx = context.jmxConnectionFactory.connect(
                   Node.builder().withClusterName(clusterName).withHostname(involvedNode).build(),
                   context.config.getJmxConnectionTimeoutInSeconds());
+
           // there is no way of telling if the snapshot was cleared or not :(
-          jmx.clearSnapshot(repairId, keyspace);
+          SnapshotProxy.create(jmx).clearSnapshot(repairId, keyspace);
         } catch (ReaperException | NumberFormatException | InterruptedException e) {
           LOG.warn(
               "Failed to clear snapshot after failed session for host {}, keyspace {}: {}",

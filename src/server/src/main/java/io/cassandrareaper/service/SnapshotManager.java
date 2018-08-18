@@ -21,6 +21,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Snapshot.Builder;
 import io.cassandrareaper.jmx.JmxProxy;
+import io.cassandrareaper.jmx.SnapshotProxy;
 
 import java.io.IOError;
 import java.time.LocalDateTime;
@@ -49,10 +50,10 @@ public final class SnapshotManager {
 
   public static final String SNAPSHOT_PREFIX = "reaper";
 
+  private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotManager.class);
 
   private final AppContext context;
-  private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
   private final ExecutorService executor;
   private final Cache<String, Snapshot> cache = CacheBuilder.newBuilder().weakValues().maximumSize(1000).build();
 
@@ -65,15 +66,14 @@ public final class SnapshotManager {
     return new SnapshotManager(context, executor);
   }
 
-  public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspace) throws ReaperException {
+  public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspaces) throws ReaperException {
     try {
-      JmxProxy jmxProxy
-          = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
-
-      LOG.info("Taking snapshot for node {} and keyspace {}", host, keyspace);
-      return Pair.of(host, jmxProxy.takeSnapshot(snapshotName, keyspace));
+      JmxProxy jmx = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
+      SnapshotProxy snapshotProxy = SnapshotProxy.create(jmx);
+      LOG.info("Taking snapshot for node {} and keyspace {}", host, keyspaces);
+      return Pair.of(host, snapshotProxy.takeSnapshot(snapshotName, keyspaces));
     } catch (InterruptedException e) {
-      LOG.error("Interrupted taking snapshot for host {}", host, e);
+      LOG.error("Interrupted taking snapshot for host {} and keyspaces {}", host, keyspaces, e);
       throw new ReaperException(e);
     }
   }
@@ -134,22 +134,6 @@ public final class SnapshotManager {
     }
   }
 
-  public Pair<Node, String> takeSnapshotForKeyspaces(
-      String snapshotName,
-      Node host,
-      String... keyspaces) throws ReaperException {
-
-    try {
-      JmxProxy jmxProxy
-          = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
-
-      return Pair.of(host, jmxProxy.takeSnapshot(snapshotName, keyspaces));
-    } catch (InterruptedException e) {
-      LOG.error("Interrupted taking snapshot for host {} and keyspaces {}", host, keyspaces, e);
-      throw new ReaperException(e);
-    }
-  }
-
   public Map<String, List<Snapshot>> listSnapshotsGroupedByName(Node host) throws ReaperException {
     try {
       List<Snapshot> snapshots = listSnapshots(host);
@@ -166,11 +150,13 @@ public final class SnapshotManager {
 
   public List<Snapshot> listSnapshots(Node host) throws ReaperException {
     try {
-      return context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds())
-          .listSnapshots()
-          .stream()
+      JmxProxy jmx = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
+      SnapshotProxy snapshotProxy = SnapshotProxy.create(jmx);
+
+      return snapshotProxy.listSnapshots().stream()
           .map(snapshot -> enrichSnapshotWithMetadata(snapshot))
           .collect(Collectors.toList());
+
     } catch (UnsupportedOperationException unsupported) {
       LOG.debug("Listing snapshot is unsupported with Cassandra 2.0 and prior");
       throw unsupported;
@@ -240,9 +226,9 @@ public final class SnapshotManager {
 
   public void clearSnapshot(String snapshotName, Node host) throws ReaperException {
     try {
-      context.jmxConnectionFactory
-          .connect(host, context.config.getJmxConnectionTimeoutInSeconds())
-          .clearSnapshot(snapshotName);
+      JmxProxy jmx = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
+      SnapshotProxy snapshotProxy = SnapshotProxy.create(jmx);
+      snapshotProxy.clearSnapshot(snapshotName);
     } catch (IOError e) {
       // StorageService.clearSnapshot(..) throws a FSWriteError when snapshot already deleted
       LOG.info("already cleared snapshot " + snapshotName, e);
@@ -290,7 +276,7 @@ public final class SnapshotManager {
   }
 
   public String formatSnapshotName(String snapshotName) {
-    return snapshotName + "-" + LocalDateTime.now().format(formatter);
+    return snapshotName + "-" + LocalDateTime.now().format(FORMATTER);
   }
 
   private Snapshot enrichSnapshotWithMetadata(Snapshot snapshot) {

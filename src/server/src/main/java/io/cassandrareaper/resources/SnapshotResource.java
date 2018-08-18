@@ -75,7 +75,7 @@ public final class SnapshotResource {
       Node node = Node.builder().withClusterName(clusterName).withHostname(host.get()).build();
       if (host.isPresent()) {
         if (keyspace.isPresent()) {
-          snapshotManager.takeSnapshotForKeyspaces(
+          snapshotManager.takeSnapshot(
                   snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
                   node,
                   keyspace.get());

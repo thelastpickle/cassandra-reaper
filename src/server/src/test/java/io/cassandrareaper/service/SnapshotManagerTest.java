@@ -15,25 +15,31 @@
 package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
-import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
+import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.storage.IStorage;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
-import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.google.common.collect.ImmutableSet;
+import org.apache.cassandra.service.StorageServiceMBean;
+import org.apache.commons.lang3.tuple.Pair;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.mockito.Mockito;
 
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.matches;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -41,169 +47,150 @@ import static org.mockito.Mockito.when;
 
 public final class SnapshotManagerTest {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SnapshotManagerTest.class);
+  private static final ExecutorService SNAPSHOT_MANAGER_EXECUTOR = Executors.newFixedThreadPool(2);
 
   @Test
-  public void testTakeSnapshot() throws InterruptedException, ReaperException {
-    AppContext context = new AppContext();
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setJmxConnectionTimeoutInSeconds(10);
-    final JmxProxy jmx = mock(JmxProxy.class);
+  public void testTakeSnapshot() throws InterruptedException, ReaperException, ClassNotFoundException, IOException {
 
-    SnapshotManager snapshotManager = SnapshotManager.create(context, Executors.newFixedThreadPool(2));
+    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
+    JmxProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-          @Override
-          public JmxProxy connect(Node host, int connectionTimeout) throws ReaperException {
-            return jmx;
-          }
-        };
+    AppContext cxt = new AppContext();
+    cxt.config = TestRepairConfiguration.defaultConfig();
+    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
-    snapshotManager.takeSnapshot(
-        "Test", Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
-    verify(jmx, times(1)).takeSnapshot(anyString());
+    Pair<Node,String> result = SnapshotManager
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
+        .takeSnapshot("Test", Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
+
+    Assertions.assertThat(result.getLeft().getCluster().getName()).isEqualTo("test");
+    Assertions.assertThat(result.getLeft().getHostname()).isEqualTo("127.0.0.1");
+    Assertions.assertThat(result.getRight()).isEqualTo("Test");
+    verify(storageMBean, times(1)).takeSnapshot("Test");
   }
 
   @Test
-  public void testTakeSnapshotForKeyspaces() throws InterruptedException, ReaperException {
-    AppContext context = new AppContext();
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setJmxConnectionTimeoutInSeconds(10);
-    final JmxProxy jmx = mock(JmxProxy.class);
+  public void testTakeSnapshotForKeyspaces()
+      throws InterruptedException, ReaperException, ClassNotFoundException, IOException {
 
-    SnapshotManager snapshotManager = SnapshotManager.create(context, Executors.newFixedThreadPool(2));
+    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
+    JmxProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-          @Override
-          public JmxProxy connect(Node host, int connectionTimeout)
-              throws ReaperException, InterruptedException {
-            return jmx;
-          }
-        };
+    AppContext cxt = new AppContext();
+    cxt.config = TestRepairConfiguration.defaultConfig();
+    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
+    Node host = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
 
-    snapshotManager.takeSnapshotForKeyspaces(
-        "Test",
-        Node.builder().withClusterName("test").withHostname("127.0.0.1").build(),
-        "keyspace1",
-        "keyspace2");
-    verify(jmx, times(1)).takeSnapshot(anyString(), matches("keyspace1"), matches("keyspace2"));
+    Pair<Node,String> result = SnapshotManager
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
+        .takeSnapshot("Test", host, "keyspace1", "keyspace2");
+
+    Assertions.assertThat(result.getLeft().getCluster().getName()).isEqualTo("test");
+    Assertions.assertThat(result.getLeft().getHostname()).isEqualTo("127.0.0.1");
+    Assertions.assertThat(result.getRight()).isEqualTo("Test");
+    verify(storageMBean, times(1)).takeSnapshot("Test", "keyspace1", "keyspace2");
   }
 
   @Test
-  public void testListSnapshot() throws InterruptedException, ReaperException {
-    AppContext context = new AppContext();
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setJmxConnectionTimeoutInSeconds(10);
-    final JmxProxy jmx = mock(JmxProxy.class);
+  public void testListSnapshot() throws InterruptedException, ReaperException, ClassNotFoundException {
 
-    SnapshotManager snapshotManager = SnapshotManager.create(context, Executors.newFixedThreadPool(2));
+    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    when(proxy.getCassandraVersion()).thenReturn("2.1.0");
+    StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
+    JmxProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
+    when(storageMBean.getSnapshotDetails()).thenReturn(Collections.emptyMap());
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-          @Override
-          public JmxProxy connect(Node host, int connectionTimeout)
-              throws ReaperException, InterruptedException {
-            return jmx;
-          }
-        };
+    AppContext cxt = new AppContext();
+    cxt.config = TestRepairConfiguration.defaultConfig();
+    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
-    snapshotManager.listSnapshots(
-        Node.builder().withClusterName("Test").withHostname("127.0.0.1").build());
-    verify(jmx, times(1)).listSnapshots();
+    List<Snapshot> result = SnapshotManager
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
+        .listSnapshots(Node.builder().withClusterName("Test").withHostname("127.0.0.1").build());
+
+    Assertions.assertThat(result).isEmpty();
+    verify(storageMBean, times(1)).getSnapshotDetails();
   }
 
   @Test
-  public void testClearSnapshot() throws InterruptedException, ReaperException {
-    AppContext context = new AppContext();
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setJmxConnectionTimeoutInSeconds(10);
-    final JmxProxy jmx = mock(JmxProxy.class);
+  public void testClearSnapshot() throws InterruptedException, ReaperException, ClassNotFoundException, IOException {
 
-    SnapshotManager snapshotManager = SnapshotManager.create(context, Executors.newFixedThreadPool(2));
+    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
+    JmxProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-          @Override
-          public JmxProxy connect(Node host, int connectionTimeout)
-              throws ReaperException, InterruptedException {
-            return jmx;
-          }
-        };
+    AppContext cxt = new AppContext();
+    cxt.config = TestRepairConfiguration.defaultConfig();
+    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
-    snapshotManager.clearSnapshot(
-        "test", Node.builder().withClusterName("Test").withHostname("127.0.0.1").build());
-    verify(jmx, times(1)).clearSnapshot(matches("test"));
+    SnapshotManager
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
+        .clearSnapshot("test", Node.builder().withClusterName("Test").withHostname("127.0.0.1").build());
+
+    verify(storageMBean, times(1)).clearSnapshot("test");
   }
 
   @Test
-  public void testClearSnapshotClusterWide() throws InterruptedException, ReaperException {
-    AppContext context = new AppContext();
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setJmxConnectionTimeoutInSeconds(10);
+  public void testClearSnapshotClusterWide()
+      throws InterruptedException, ReaperException, ClassNotFoundException, IOException {
 
-    context.storage = mock(IStorage.class);
-    Cluster cluster =
-        new Cluster("testCluster", "murmur3", new TreeSet<String>(Arrays.asList("127.0.0.1")));
-    when(context.storage.getCluster(anyString())).thenReturn(Optional.of(cluster));
+    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    when(proxy.getLiveNodes()).thenReturn(Arrays.asList("127.0.0.1", "127.0.0.2"));
+    StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
+    JmxProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
-    final JmxProxy jmx = mock(JmxProxy.class);
-    when(jmx.getLiveNodes()).thenReturn(Arrays.asList("127.0.0.1", "127.0.0.2"));
+    AppContext cxt = new AppContext();
+    cxt.config = TestRepairConfiguration.defaultConfig();
+    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class), Mockito.anyInt())).thenReturn(proxy);
 
-    SnapshotManager snapshotManager = SnapshotManager.create(context, Executors.newFixedThreadPool(2));
+    cxt.storage = mock(IStorage.class);
+    Cluster cluster = new Cluster("testCluster", "murmur3", ImmutableSet.of("127.0.0.1"));
+    when(cxt.storage.getCluster(anyString())).thenReturn(Optional.of(cluster));
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-          @Override
-          public JmxProxy connect(Node host, int connectionTimeout)
-              throws ReaperException, InterruptedException {
-            return jmx;
-          }
+    SnapshotManager
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
+        .clearSnapshotClusterWide("snapshot", "testCluster");
 
-          @Override
-          public JmxProxy connectAny(Cluster cluster, int connectionTimeout)
-              throws ReaperException {
-            return jmx;
-          }
-        };
-
-    snapshotManager.clearSnapshotClusterWide("snapshot", "testCluster");
-    verify(jmx, times(2)).clearSnapshot(matches("snapshot"));
+    verify(storageMBean, times(2)).clearSnapshot("snapshot");
   }
 
   @Test
-  public void testTakeSnapshotClusterWide() throws InterruptedException, ReaperException {
-    AppContext context = new AppContext();
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setJmxConnectionTimeoutInSeconds(10);
+  public void testTakeSnapshotClusterWide()
+      throws InterruptedException, ReaperException, ClassNotFoundException, IOException {
 
-    context.storage = mock(IStorage.class);
-    Cluster cluster =
-        new Cluster("testCluster", "murmur3", new TreeSet<String>(Arrays.asList("127.0.0.1")));
-    when(context.storage.getCluster(anyString())).thenReturn(Optional.of(cluster));
+    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    when(proxy.getLiveNodes()).thenReturn(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3"));
+    StorageServiceMBean storageMBean = Mockito.mock(StorageServiceMBean.class);
+    JmxProxyTest.mockGetStorageServiceMBean(proxy, storageMBean);
 
-    final JmxProxy jmx = mock(JmxProxy.class);
-    when(jmx.getLiveNodes()).thenReturn(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3"));
+    AppContext cxt = new AppContext();
+    cxt.config = TestRepairConfiguration.defaultConfig();
+    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class), Mockito.anyInt())).thenReturn(proxy);
 
-    SnapshotManager snapshotManager = SnapshotManager.create(context, Executors.newFixedThreadPool(2));
+    cxt.storage = mock(IStorage.class);
+    Cluster cluster = new Cluster("testCluster", "murmur3", ImmutableSet.of("127.0.0.1"));
+    when(cxt.storage.getCluster(anyString())).thenReturn(Optional.of(cluster));
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-          @Override
-          public JmxProxy connect(Node host, int connectionTimeout)
-              throws ReaperException, InterruptedException {
-            return jmx;
-          }
+    List<Pair<Node,String>> result = SnapshotManager
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
+        .takeSnapshotClusterWide("snapshot", "testCluster", "testOwner", "testCause");
 
-          @Override
-          public JmxProxy connectAny(Cluster cluster, int connectionTimeout)
-              throws ReaperException {
-            return jmx;
-          }
-        };
-
-    snapshotManager.takeSnapshotClusterWide("snapshot", "testCluster", "test", "test");
-    verify(jmx, times(3)).takeSnapshot(matches("snapshot"));
+    Assertions.assertThat(result.size()).isEqualTo(3);
+    for (int i = 0 ; i < 3 ; ++i) {
+      Assertions.assertThat(result.get(i).getLeft().getCluster().getName()).isEqualTo("testcluster");
+      Assertions.assertThat(result.get(i).getLeft().getHostname()).isEqualTo("127.0.0." + (i + 1));
+      Assertions.assertThat(result.get(i).getRight()).isEqualTo("snapshot");
+    }
+    verify(storageMBean, times(3)).takeSnapshot("snapshot");
   }
 }

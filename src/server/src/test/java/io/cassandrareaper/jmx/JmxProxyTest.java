@@ -16,11 +16,19 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 
+import com.google.common.base.Preconditions;
+import org.apache.cassandra.service.StorageServiceMBean;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 
 public final class JmxProxyTest {
+
+  public static void mockGetStorageServiceMBean(JmxProxy proxy, StorageServiceMBean storageMBean) {
+    Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
+    Mockito.when(((JmxProxyImpl)proxy).getStorageServiceMBean()).thenReturn(storageMBean);
+  }
 
   @Test
   public void testVersionCompare() throws ReaperException {

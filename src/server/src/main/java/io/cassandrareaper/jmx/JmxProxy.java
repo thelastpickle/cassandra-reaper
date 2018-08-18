@@ -17,7 +17,6 @@ package io.cassandrareaper.jmx;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.Segment;
-import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -44,10 +43,6 @@ public interface JmxProxy extends NotificationListener {
    * Terminates all ongoing repairs on the node this proxy is connected to
    */
   void cancelAllRepairs();
-
-  void clearSnapshot(String repairId, String keyspaceName);
-
-  void clearSnapshot(String snapshotName);
 
   String getAllEndpointsState();
 
@@ -140,13 +135,6 @@ public interface JmxProxy extends NotificationListener {
   void close();
 
   void removeRepairStatusHandler(int repairNo);
-
-  List<Snapshot> listSnapshots() throws UnsupportedOperationException;
-
-  String takeSnapshot(String snapshotName, String... keyspaceNames) throws ReaperException;
-
-  void takeColumnFamilySnapshot(String keyspaceName, String columnFamilyName, String snapshotName)
-      throws ReaperException;
 
   Map<String, List<JmxStat>> collectTpStats() throws JMException, IOException;
 
