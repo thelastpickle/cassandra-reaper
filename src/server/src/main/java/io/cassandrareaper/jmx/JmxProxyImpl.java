@@ -61,7 +61,6 @@ import javax.management.MalformedObjectNameException;
 import javax.management.Notification;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
-import javax.management.openmbean.CompositeData;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
@@ -123,7 +122,7 @@ final class JmxProxyImpl implements JmxProxy {
   private final MBeanServerConnection mbeanServer;
   private final CompactionManagerMBean cmProxy;
   private final EndpointSnitchInfoMBean endpointSnitchMbean;
-  private final Object ssProxy;
+  private final StorageServiceMBean ssProxy;
   private final Object fdProxy;
   private final String host;
   private final String hostBeforeTranslation;
@@ -132,14 +131,14 @@ final class JmxProxyImpl implements JmxProxy {
   private final ConcurrentMap<Integer, ExecutorService> repairStatusExecutors = Maps.newConcurrentMap();
   private final ConcurrentMap<Integer, RepairStatusHandler> repairStatusHandlers = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
-  private final Object smProxy;
+  private final StreamManagerMBean smProxy;
 
   private JmxProxyImpl(
       String host,
       String hostBeforeTranslation,
       JMXServiceURL jmxUrl,
       JMXConnector jmxConnector,
-      Object ssProxy,
+      StorageServiceMBean ssProxy,
       ObjectName ssMbeanName,
       MBeanServerConnection mbeanServer,
       CompactionManagerMBean cmProxy,
@@ -147,7 +146,7 @@ final class JmxProxyImpl implements JmxProxy {
       FailureDetectorMBean fdProxy,
       MetricRegistry metricRegistry,
       ObjectName smMbeanName,
-      Object smProxy) {
+      StreamManagerMBean smProxy) {
 
     this.host = host;
     this.hostBeforeTranslation = hostBeforeTranslation;
@@ -158,7 +157,7 @@ final class JmxProxyImpl implements JmxProxy {
     this.ssProxy = ssProxy;
     this.cmProxy = cmProxy;
     this.endpointSnitchMbean = endpointSnitchMbean;
-    this.clusterName = Cluster.toSymbolicName(((StorageServiceMBean) ssProxy).getClusterName());
+    this.clusterName = Cluster.toSymbolicName(ssProxy.getClusterName());
     this.fdProxy = fdProxy;
     this.metricRegistry = metricRegistry;
     this.smMbeanName = smMbeanName;
@@ -250,12 +249,12 @@ final class JmxProxyImpl implements JmxProxy {
       env.put("com.sun.jndi.rmi.factory.socket", getRmiClientSocketFactory());
       JMXConnector jmxConn = connectWithTimeout(jmxUrl, connectionTimeout, TimeUnit.SECONDS, env);
       MBeanServerConnection mbeanServerConn = jmxConn.getMBeanServerConnection();
-      Object ssProxy = JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean.class);
+      StorageServiceMBean ssProxy = JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean.class);
       String cassandraVersion = ((StorageServiceMBean) ssProxy).getReleaseVersion();
       if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")) {
         ssProxy = JMX.newMBeanProxy(mbeanServerConn, ssMbeanName, StorageServiceMBean20.class);
       }
-      Object smProxy = JMX.newMBeanProxy(mbeanServerConn, smMbeanName, StreamManagerMBean.class);
+      StreamManagerMBean smProxy = JMX.newMBeanProxy(mbeanServerConn, smMbeanName, StreamManagerMBean.class);
 
       CompactionManagerMBean cmProxy = JMX.newMBeanProxy(mbeanServerConn, cmMbeanName, CompactionManagerMBean.class);
       FailureDetectorMBean fdProxy = JMX.newMBeanProxy(mbeanServerConn, fdMbeanName, FailureDetectorMBean.class);
@@ -1132,14 +1131,8 @@ final class JmxProxyImpl implements JmxProxy {
     return attributeList;
   }
 
-  @Override
-  public Set<CompositeData> listStreams() {
-    checkNotNull(smProxy, "Looks like the proxy is not connected");
-    return ((StreamManagerMBean) smProxy).getCurrentStreams();
-  }
-
   StorageServiceMBean getStorageServiceMBean() {
-    return (StorageServiceMBean)ssProxy;
+    return ssProxy;
   }
 
   MBeanServerConnection getMBeanServerConnection() {
@@ -1148,5 +1141,9 @@ final class JmxProxyImpl implements JmxProxy {
 
   CompactionManagerMBean getCompactionManagerMBean() {
     return cmProxy;
+  }
+
+  StreamManagerMBean getStreamManagerMBean() {
+    return smProxy;
   }
 }

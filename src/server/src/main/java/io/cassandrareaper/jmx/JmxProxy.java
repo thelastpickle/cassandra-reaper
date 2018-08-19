@@ -29,7 +29,6 @@ import java.util.Set;
 
 import javax.management.JMException;
 import javax.management.NotificationListener;
-import javax.management.openmbean.CompositeData;
 import javax.validation.constraints.NotNull;
 
 import org.apache.cassandra.repair.RepairParallelism;
@@ -141,7 +140,5 @@ public interface JmxProxy extends NotificationListener {
   Map<String, List<JmxStat>> collectDroppedMessages() throws JMException, IOException;
 
   Map<String, List<JmxStat>> collectLatencyMetrics() throws JMException, IOException;
-
-  Set<CompositeData> listStreams();
 
 }

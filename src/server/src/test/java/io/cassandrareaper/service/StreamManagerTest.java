@@ -15,12 +15,12 @@
 package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
-import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
+import io.cassandrareaper.jmx.JmxProxyTest;
 
 import java.io.IOException;
 import java.net.URL;
@@ -38,7 +38,9 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
+import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -50,27 +52,27 @@ import static org.mockito.Mockito.when;
 public class StreamManagerTest {
 
   @Test
-  public void testListStreams() throws ReaperException {
-    AppContext context = new AppContext();
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setJmxConnectionTimeoutInSeconds(10);
-    final JmxProxy jmx = mock(JmxProxy.class);
+  public void testListStreams() throws ReaperException, ClassNotFoundException, InterruptedException {
 
-    StreamManager streamManager = StreamManager.create(context);
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-          @Override
-          public JmxProxy connect(Node host, int connectionTimeout) throws ReaperException {
-            return jmx;
-          }
-        };
+    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
+    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
 
-    streamManager.listStreams(Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
-    verify(jmx, times(1)).listStreams();
+    AppContext cxt = new AppContext();
+    cxt.config = TestRepairConfiguration.defaultConfig();
+    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
+
+    StreamManager
+        .create(cxt)
+        .listStreams(Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
+
+    verify(streamingManagerMBean, times(1)).getCurrentStreams();
   }
 
   @Test
-  public void testGetStreams_2_0_17() throws OpenDataException, IOException, ReaperException {
+  public void testGetStreams_2_0_17()
+      throws OpenDataException, IOException, ReaperException, ClassNotFoundException, InterruptedException {
 
     // fake the response a 2.0.17 would return when asked for streams
     CompositeData streamSession = makeCompositeData_2_0_17();
@@ -78,72 +80,63 @@ public class StreamManagerTest {
     // compare the test payload with an actual payload grabbed from a 2.0.17 ccm node
     URL url = Resources.getResource("repair-samples/stream-report-2-0-17.txt");
     String ref = Resources.toString(url, Charsets.UTF_8);
-    assertEquals(ref.replaceAll("\\s", ""),
-                 streamSession.toString().replaceAll("\\s", "")
-    );
+    assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    AppContext context = new AppContext();
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setJmxConnectionTimeoutInSeconds(10);
-    final JmxProxy jmx = mock(JmxProxy.class);
+    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
+    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
+    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
-    StreamManager streamManager = StreamManager.create(context);
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-          @Override
-          public JmxProxy connect(Node host, int connectionTimeout) throws ReaperException {
-            return jmx;
-          }
-        };
-
-    // when stream manager pulls streams, return the fake one
-    when(jmx.listStreams()).thenReturn(ImmutableSet.of(streamSession));
+    AppContext cxt = new AppContext();
+    cxt.config = TestRepairConfiguration.defaultConfig();
+    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
-    List<StreamSession> result = streamManager
+    List<StreamSession> result = StreamManager
+        .create(cxt)
         .listStreams(Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
+
+    verify(streamingManagerMBean, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
   }
 
   @Test
-  public void testGetStreams_2_1_20() throws OpenDataException, IOException, ReaperException {
+  public void testGetStreams_2_1_20()
+      throws OpenDataException, IOException, ReaperException, ClassNotFoundException, InterruptedException {
+
     // fake the response a 2.1.20 would return when asked for streams
     CompositeData streamSession = makeCompositeData_2_1_20();
 
     // compare the test payload with an actual payload grabbed from a 2.1.20 ccm node
     URL url = Resources.getResource("repair-samples/stream-report-2-1-20.txt");
     String ref = Resources.toString(url, Charsets.UTF_8);
-    assertEquals(ref.replaceAll("\\s", ""),
-                 streamSession.toString().replaceAll("\\s", "")
-    );
+    assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    AppContext context = new AppContext();
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setJmxConnectionTimeoutInSeconds(10);
-    final JmxProxy jmx = mock(JmxProxy.class);
+    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
+    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
+    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
-    StreamManager streamManager = StreamManager.create(context);
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-          @Override
-          public JmxProxy connect(Node host, int connectionTimeout) throws ReaperException {
-            return jmx;
-          }
-        };
-
-    // when stream manager pulls streams, return the fake one
-    when(jmx.listStreams()).thenReturn(ImmutableSet.of(streamSession));
+    AppContext cxt = new AppContext();
+    cxt.config = TestRepairConfiguration.defaultConfig();
+    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
-    List<StreamSession> result = streamManager
+    List<StreamSession> result = StreamManager
+        .create(cxt)
         .listStreams(Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
+
+    verify(streamingManagerMBean, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
   }
 
   @Test
-  public void testGetStreams_2_2_12() throws IOException, ReaperException, OpenDataException {
+  public void testGetStreams_2_2_12()
+      throws IOException, ReaperException, OpenDataException, ClassNotFoundException, InterruptedException {
 
     // fake the response a 2.2.12 would return when asked for streams
     CompositeData streamSession = makeCompositeData_2_2_12();
@@ -151,67 +144,57 @@ public class StreamManagerTest {
     // compare the test payload with an actual payload grabbed from a 2.1.20 ccm node
     URL url = Resources.getResource("repair-samples/stream-report-2-2-12.txt");
     String ref = Resources.toString(url, Charsets.UTF_8);
-    assertEquals(ref.replaceAll("\\s", ""),
-                 streamSession.toString().replaceAll("\\s", "")
-    );
+    assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    AppContext context = new AppContext();
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setJmxConnectionTimeoutInSeconds(10);
-    final JmxProxy jmx = mock(JmxProxy.class);
+    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
+    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
+    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
-    StreamManager streamManager = StreamManager.create(context);
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-          @Override
-          public JmxProxy connect(Node host, int connectionTimeout) throws ReaperException {
-            return jmx;
-          }
-        };
-
-    // when stream manager pulls streams, return the fake one
-    when(jmx.listStreams()).thenReturn(ImmutableSet.of(streamSession));
+    AppContext cxt = new AppContext();
+    cxt.config = TestRepairConfiguration.defaultConfig();
+    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
-    List<StreamSession> result = streamManager
+    List<StreamSession> result = StreamManager
+        .create(cxt)
         .listStreams(Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
+
+    verify(streamingManagerMBean, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
   }
 
   @Test
-  public void testGetStreams_3_11_2() throws OpenDataException, IOException, ReaperException {
+  public void testGetStreams_3_11_2()
+      throws OpenDataException, IOException, ReaperException, ClassNotFoundException, InterruptedException {
+
     // fake the response a 2.2.12 would return when asked for streams
     CompositeData streamSession = makeCompositeData_3_11_2();
 
     // compare the test payload with an actual payload grabbed from a 2.1.20 ccm node
     URL url = Resources.getResource("repair-samples/stream-report-3-11-2.txt");
     String ref = Resources.toString(url, Charsets.UTF_8);
-    assertEquals(ref.replaceAll("\\s", ""),
-                 streamSession.toString().replaceAll("\\s", "")
-    );
+    assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
 
     // init the stream manager
-    AppContext context = new AppContext();
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setJmxConnectionTimeoutInSeconds(10);
-    final JmxProxy jmx = mock(JmxProxy.class);
+    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
+    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
+    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
 
-    StreamManager streamManager = StreamManager.create(context);
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
-          @Override
-          public JmxProxy connect(Node host, int connectionTimeout) throws ReaperException {
-            return jmx;
-          }
-        };
-
-    // when stream manager pulls streams, return the fake one
-    when(jmx.listStreams()).thenReturn(ImmutableSet.of(streamSession));
+    AppContext cxt = new AppContext();
+    cxt.config = TestRepairConfiguration.defaultConfig();
+    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
-    List<StreamSession> result = streamManager
+    List<StreamSession> result = StreamManager
+        .create(cxt)
         .listStreams(Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
+
+    verify(streamingManagerMBean, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
   }
 

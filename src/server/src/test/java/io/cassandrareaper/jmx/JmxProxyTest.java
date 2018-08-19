@@ -18,6 +18,7 @@ import io.cassandrareaper.ReaperException;
 
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.service.StorageServiceMBean;
+import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -28,6 +29,11 @@ public final class JmxProxyTest {
   public static void mockGetStorageServiceMBean(JmxProxy proxy, StorageServiceMBean storageMBean) {
     Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
     Mockito.when(((JmxProxyImpl)proxy).getStorageServiceMBean()).thenReturn(storageMBean);
+  }
+
+  public static void mockGetStreamManagerMBean(JmxProxy proxy, StreamManagerMBean streamingManagerMBean) {
+    Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
+    Mockito.when(((JmxProxyImpl)proxy).getStreamManagerMBean()).thenReturn(streamingManagerMBean);
   }
 
   @Test

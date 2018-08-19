@@ -19,6 +19,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.jmx.JmxProxy;
+import io.cassandrareaper.jmx.StreamsProxy;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -26,8 +27,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.management.openmbean.CompositeData;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.streaming.ProgressInfo;
@@ -38,10 +41,6 @@ import org.apache.cassandra.streaming.management.StreamStateCompositeData;
 import org.apache.cassandra.streaming.management.StreamSummaryCompositeData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
-import static jersey.repackaged.com.google.common.base.Preconditions.checkNotNull;
 
 
 public final class StreamManager {
@@ -71,7 +70,7 @@ public final class StreamManager {
   private List<StreamSession> pullStreamInfo(Node node) throws ReaperException {
     try {
       JmxProxy jmxProxy = context.jmxConnectionFactory.connect(node, context.config.getJmxConnectionTimeoutInSeconds());
-      Set<CompositeData> streams = jmxProxy.listStreams();
+      Set<CompositeData> streams = StreamsProxy.create(jmxProxy).listStreams();
 
       if (streams.isEmpty()) {
         return ImmutableList.of();
@@ -81,9 +80,9 @@ public final class StreamManager {
 
       return streamStates.stream()
           .map(streamState -> StreamSessionFactory.fromStreamState(node.getHostname(), streamState))
-          .collect(toList());
+          .collect(Collectors.toList());
 
-    } catch (InterruptedException | ReaperException e) {
+    } catch (InterruptedException e) {
       throw new ReaperException(e);
     }
   }
@@ -122,7 +121,7 @@ public final class StreamManager {
 
     Set<SessionInfo> sessions = Arrays.stream(sessionCompositeData)
         .map(this::parseSessionInfoPre2_1)
-        .collect(toSet());
+        .collect(Collectors.toSet());
 
     return new StreamState(planId, description, sessions);
   }
@@ -139,11 +138,11 @@ public final class StreamManager {
       CompositeData[] receivingSummariesData = (CompositeData[]) compositeData.get("receivingSummaries");
       Set<StreamSummary> receivingSummaries = Arrays.stream(receivingSummariesData)
           .map(StreamSummaryCompositeData::fromCompositeData)
-          .collect(toSet());
+          .collect(Collectors.toSet());
       CompositeData[] sendingSummariesData = (CompositeData[]) compositeData.get("sendingSummaries");
       Set<StreamSummary> sendingSummaries = Arrays.stream(sendingSummariesData)
           .map(StreamSummaryCompositeData::fromCompositeData)
-          .collect(toSet());
+          .collect(Collectors.toSet());
 
       // Prior to 2.1, Session does not have session Index in the SessionInfo class
       int sessionIndex = Integer.MIN_VALUE;
@@ -166,8 +165,7 @@ public final class StreamManager {
 
       return sessionInfo;
     } catch (UnknownHostException e) {
-      e.printStackTrace();
-      return null;
+      throw new IllegalStateException(e);
     }
   }
 
@@ -179,7 +177,7 @@ public final class StreamManager {
       LOG.warn("Could not resolve host when parsing ProgressInfo {}", compositeData.toString());
     }
 
-    checkNotNull(peer);
+    Preconditions.checkNotNull(peer);
 
     String fileName = (String) compositeData.get("fileName");
     ProgressInfo.Direction direction = ProgressInfo.Direction.valueOf((String) compositeData.get("direction"));
