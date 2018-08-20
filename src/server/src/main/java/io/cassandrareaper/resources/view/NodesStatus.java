@@ -18,13 +18,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -118,13 +118,14 @@ public final class NodesStatus {
     Double totalLoad = 0.0;
 
     for (String endpointString: strEndpoints) {
-      Optional<String> status = Optional.absent();
+      Optional<String> status = Optional.empty();
       Optional<String> endpoint = parseEndpointState(ENDPOINT_NAME_PATTERNS, endpointString, 1, String.class);
 
       for (Pattern endpointStatusPattern : ENDPOINT_STATUS_PATTERNS) {
         matcher = endpointStatusPattern.matcher(endpointString);
         if (matcher.find() && matcher.groupCount() >= 3) {
-          status = Optional.of(matcher.group(3) + " - " + simpleStates.getOrDefault("/" + endpoint.or(""), "UNKNOWN"));
+          status = Optional
+              .of(matcher.group(3) + " - " + simpleStates.getOrDefault("/" + endpoint.orElse(""), "UNKNOWN"));
           break;
         }
       }
@@ -136,20 +137,20 @@ public final class NodesStatus {
       Optional<String> hostId = parseEndpointState(ENDPOINT_HOSTID_PATTERNS, endpointString, 3, String.class);
       Optional<String> tokens = parseEndpointState(ENDPOINT_TOKENS_PATTERNS, endpointString, 2, String.class);
       Optional<Double> load = parseEndpointState(ENDPOINT_LOAD_PATTERNS, endpointString, 3, Double.class);
-      totalLoad += load.or(0.0);
+      totalLoad += load.orElse(0.0);
 
       EndpointState endpointState = new EndpointState(
-          endpoint.or(NOT_AVAILABLE),
-          hostId.or(NOT_AVAILABLE),
-          dc.or(NOT_AVAILABLE),
-          rack.or(NOT_AVAILABLE),
-          status.or(NOT_AVAILABLE),
-          severity.or(0.0),
-          releaseVersion.or(NOT_AVAILABLE),
-          tokens.or(NOT_AVAILABLE),
-          load.or(0.0));
+          endpoint.orElse(NOT_AVAILABLE),
+          hostId.orElse(NOT_AVAILABLE),
+          dc.orElse(NOT_AVAILABLE),
+          rack.orElse(NOT_AVAILABLE),
+          status.orElse(NOT_AVAILABLE),
+          severity.orElse(0.0),
+          releaseVersion.orElse(NOT_AVAILABLE),
+          tokens.orElse(NOT_AVAILABLE),
+          load.orElse(0.0));
 
-      endpoints.add(endpoint.or(NOT_AVAILABLE));
+      endpoints.add(endpoint.orElse(NOT_AVAILABLE));
       endpointStates.add(endpointState);
     }
 
@@ -167,7 +168,7 @@ public final class NodesStatus {
   }
 
   private <T> Optional<T> parseEndpointState(List<Pattern> patterns, String endpointString, int group, Class<T> type) {
-    Optional<T> result = Optional.absent();
+    Optional<T> result = Optional.empty();
     for (Pattern pattern : patterns) {
       Matcher matcher = pattern.matcher(endpointString);
       if (matcher.find() && matcher.groupCount() >= group) {

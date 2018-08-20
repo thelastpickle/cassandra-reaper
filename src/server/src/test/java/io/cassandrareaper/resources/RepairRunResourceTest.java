@@ -34,6 +34,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -44,7 +45,6 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -197,17 +197,17 @@ public final class RepairRunResourceTest {
 
     return resource.addRepairRun(
         uriInfo,
-        Optional.fromNullable(clusterName),
-        Optional.fromNullable(keyspace),
+        Optional.ofNullable(clusterName),
+        Optional.ofNullable(keyspace),
         Optional.of(StringUtils.join(columnFamilies, ',')),
-        Optional.fromNullable(owner),
-        Optional.fromNullable(cause),
-        Optional.fromNullable(segments),
+        Optional.ofNullable(owner),
+        Optional.ofNullable(cause),
+        Optional.ofNullable(segments),
         Optional.of(REPAIR_PARALLELISM.name()),
-        Optional.<String>absent(),
-        Optional.<String>absent(),
+        Optional.<String>empty(),
+        Optional.<String>empty(),
         Optional.of(StringUtils.join(nodes, ',')),
-        Optional.<String>absent(),
+        Optional.<String>empty(),
         Optional.of(StringUtils.join(blacklistedTables, ',')),
         Optional.of(repairThreadCount));
   }

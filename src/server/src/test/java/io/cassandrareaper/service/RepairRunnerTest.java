@@ -33,6 +33,7 @@ import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -40,7 +41,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -113,7 +113,7 @@ public final class RepairRunnerTest {
                     cf.getId())));
 
     final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
 
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
@@ -157,7 +157,7 @@ public final class RepairRunnerTest {
                               ((RepairStatusHandler)invocation.getArgument(7))
                                   .handle(repairNumber,
                                       Optional.of(ActiveRepairService.Status.STARTED),
-                                      Optional.absent(), null, jmx);
+                                      Optional.empty(), null, jmx);
 
                               assertEquals(
                                   RepairSegment.State.RUNNING,
@@ -174,7 +174,7 @@ public final class RepairRunnerTest {
                                   .handle(
                                       repairNumber,
                                       Optional.of(ActiveRepairService.Status.STARTED),
-                                      Optional.absent(), null, jmx);
+                                      Optional.empty(), null, jmx);
 
                               assertEquals(
                                   RepairSegment.State.RUNNING,
@@ -184,7 +184,7 @@ public final class RepairRunnerTest {
                                   .handle(
                                       repairNumber,
                                       Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
-                                      Optional.absent(), null, jmx);
+                                      Optional.empty(), null, jmx);
 
                               assertEquals(
                                   RepairSegment.State.DONE,
@@ -193,7 +193,7 @@ public final class RepairRunnerTest {
                               ((RepairStatusHandler)invocation.getArgument(7))
                                   .handle(repairNumber,
                                       Optional.of(ActiveRepairService.Status.FINISHED),
-                                      Optional.absent(), null, jmx);
+                                      Optional.empty(), null, jmx);
 
                               mutex.release();
                               LOG.info("MUTEX RELEASED");
@@ -268,7 +268,7 @@ public final class RepairRunnerTest {
                     cf.getId())));
 
     final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
 
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
@@ -318,7 +318,7 @@ public final class RepairRunnerTest {
                             public void run() {
                               ((RepairStatusHandler)invocation.getArgument(7))
                                   .handle(
-                                      repairNumber, Optional.absent(),
+                                      repairNumber, Optional.empty(),
                                       Optional.of(ProgressEventType.START), null, jmx);
                               assertEquals(
                                   RepairSegment.State.RUNNING,
@@ -332,21 +332,21 @@ public final class RepairRunnerTest {
                             public void run() {
                               ((RepairStatusHandler)invocation.getArgument(7))
                                   .handle(
-                                      repairNumber, Optional.absent(),
+                                      repairNumber, Optional.empty(),
                                       Optional.of(ProgressEventType.START), null, jmx);
                               assertEquals(
                                   RepairSegment.State.RUNNING,
                                   storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                               ((RepairStatusHandler)invocation.getArgument(7))
                                   .handle(
-                                      repairNumber, Optional.absent(),
+                                      repairNumber, Optional.empty(),
                                       Optional.of(ProgressEventType.SUCCESS), null, jmx);
                               assertEquals(
                                   RepairSegment.State.DONE,
                                   storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
                               ((RepairStatusHandler)invocation.getArgument(7))
                                   .handle(
-                                      repairNumber, Optional.absent(),
+                                      repairNumber, Optional.empty(),
                                       Optional.of(ProgressEventType.COMPLETE), null, jmx);
                               mutex.release();
                               LOG.info("MUTEX RELEASED");
@@ -440,7 +440,7 @@ public final class RepairRunnerTest {
                     cf)));
 
     final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.absent()).get().getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
 
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
@@ -480,7 +480,7 @@ public final class RepairRunnerTest {
                               .handle(
                                   1,
                                   Optional.of(ActiveRepairService.Status.STARTED),
-                                  Optional.absent(),
+                                  Optional.empty(),
                                   null,
                                   jmx);
 
@@ -488,7 +488,7 @@ public final class RepairRunnerTest {
                               .handle(
                                   1,
                                   Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
-                                  Optional.absent(),
+                                  Optional.empty(),
                                   null,
                                   jmx);
 
@@ -496,7 +496,7 @@ public final class RepairRunnerTest {
                               .handle(
                                   1,
                                   Optional.of(ActiveRepairService.Status.FINISHED),
-                                  Optional.absent(),
+                                  Optional.empty(),
                                   null,
                                   jmx);
                         }

@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -53,7 +54,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import com.codahale.metrics.InstrumentedExecutorService;
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -111,9 +111,9 @@ public final class ClusterResource {
     } else {
       ClusterStatus clusterStatus = new ClusterStatus(
             cluster.get(),
-            context.storage.getClusterRunStatuses(cluster.get().getName(), limit.or(Integer.MAX_VALUE)),
+            context.storage.getClusterRunStatuses(cluster.get().getName(), limit.orElse(Integer.MAX_VALUE)),
             context.storage.getClusterScheduleStatuses(cluster.get().getName()),
-            getNodesStatus(cluster).orNull());
+            getNodesStatus(cluster).orElse(null));
 
       return Response.ok().entity(clusterStatus).build();
     }
@@ -146,8 +146,8 @@ public final class ClusterResource {
       @Context UriInfo uriInfo,
       @QueryParam("seedHost") Optional<String> seedHost) {
 
-    LOG.info("POST addOrUpdateCluster called with seedHost: {}", seedHost.orNull());
-    return addOrUpdateCluster(uriInfo, Optional.absent(), seedHost);
+    LOG.info("POST addOrUpdateCluster called with seedHost: {}", seedHost.orElse(null));
+    return addOrUpdateCluster(uriInfo, Optional.empty(), seedHost);
   }
 
   @PUT
@@ -157,7 +157,10 @@ public final class ClusterResource {
       @PathParam("cluster_name") String clusterName,
       @QueryParam("seedHost") Optional<String> seedHost) {
 
-    LOG.info("PUT addOrUpdateCluster called with: cluster_name = {}, seedHost = {}", clusterName, seedHost.orNull());
+    LOG.info(
+        "PUT addOrUpdateCluster called with: cluster_name = {}, seedHost = {}",
+        clusterName, seedHost.orElse(null));
+
     return addOrUpdateCluster(uriInfo, Optional.of(clusterName), seedHost);
   }
 
@@ -167,14 +170,17 @@ public final class ClusterResource {
       Optional<String> seedHost) {
 
     if (!seedHost.isPresent()) {
-      LOG.error("POST/PUT on cluster resource {} called without seedHost", clusterName.orNull());
+      LOG.error("POST/PUT on cluster resource {} called without seedHost", clusterName.orElse(null));
       return Response.status(Response.Status.BAD_REQUEST).entity("query parameter \"seedHost\" required").build();
     }
 
     try {
       Cluster cluster = findClusterWithSeedHost(seedHost.get());
       if (null == cluster) {
-        String msg = String.format("failed to find cluster %s with seed host %s", clusterName.or(""), seedHost.get());
+
+        String msg = String
+            .format("failed to find cluster %s with seed host %s", clusterName.orElse(""), seedHost.get());
+
         return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
       }
       if (clusterName.isPresent() && !cluster.getName().equals(clusterName.get())) {
@@ -213,7 +219,7 @@ public final class ClusterResource {
           } catch (ReaperException e) {
             String msg = String.format(
                 "failed to automatically schedule repairs for cluster %s with seed host %s",
-                clusterName.or(""),
+                clusterName.orElse(""),
                 seedHost.get());
 
             LOG.error(msg, e);
@@ -224,7 +230,7 @@ public final class ClusterResource {
       return Response.created(location).build();
 
     } catch (ReaperException e) {
-      String msg = String.format("update cluster failed, %s with seed host %s", clusterName.or(""), seedHost.get());
+      String msg = String.format("update cluster failed, %s with seed host %s", clusterName.orElse(""), seedHost.get());
       LOG.error(msg, e);
       return Response.serverError().entity(msg).build();
     }
@@ -232,12 +238,12 @@ public final class ClusterResource {
 
   @Nullable // if cluster can't be found
   private Cluster findClusterWithSeedHost(String seedHost) {
-    Optional<String> clusterName = Optional.absent();
-    Optional<String> partitioner = Optional.absent();
-    Optional<List<String>> liveNodes = Optional.absent();
+    Optional<String> clusterName = Optional.empty();
+    Optional<String> partitioner = Optional.empty();
+    Optional<List<String>> liveNodes = Optional.empty();
 
     Set<String> seedHosts = parseSeedHosts(seedHost);
-    String cluster = parseClusterNameFromSeedHost(seedHost).or("");
+    String cluster = parseClusterNameFromSeedHost(seedHost).orElse("");
 
     try {
       JmxProxy jmxProxy = connectAny(seedHosts, cluster);
@@ -309,7 +315,7 @@ public final class ClusterResource {
           .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair schedules")
           .build();
     }
-    if (!context.storage.getRepairRunsForCluster(clusterName, Optional.absent()).isEmpty()) {
+    if (!context.storage.getRepairRunsForCluster(clusterName, Optional.empty()).isEmpty()) {
       return Response.status(Response.Status.CONFLICT)
           .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair runs")
           .build();
@@ -329,16 +335,16 @@ public final class ClusterResource {
     return () -> {
       try {
         JmxProxy jmxProxy = connectAny(seeds, clusterName);
-        Optional<String> allEndpointsState = Optional.fromNullable(jmxProxy.getAllEndpointsState());
-        Optional<Map<String, String>> simpleStates = Optional.fromNullable(jmxProxy.getSimpleStates());
+        Optional<String> allEndpointsState = Optional.ofNullable(jmxProxy.getAllEndpointsState());
+        Optional<Map<String, String>> simpleStates = Optional.ofNullable(jmxProxy.getSimpleStates());
 
         return Optional.of(
-            new NodesStatus(jmxProxy.getHost(), allEndpointsState.or(""), simpleStates.or(new HashMap<>())));
+            new NodesStatus(jmxProxy.getHost(), allEndpointsState.orElse(""), simpleStates.orElse(new HashMap<>())));
 
       } catch (RuntimeException e) {
         LOG.debug("failed to get endpoints for cluster {} with seeds {}", clusterName, seeds, e);
         Thread.sleep((int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds() * 1000);
-        return Optional.absent();
+        return Optional.empty();
       }
     };
   }
@@ -367,7 +373,7 @@ public final class ClusterResource {
         LOG.debug("failed grabbing nodes status", e);
       }
     }
-    return Optional.absent();
+    return Optional.empty();
   }
 
   /*
@@ -403,7 +409,7 @@ public final class ClusterResource {
       }
     }
 
-    return Optional.absent();
+    return Optional.empty();
   }
 
   private JmxProxy connectAny(Collection<String> seedHosts, String cluster) throws ReaperException {

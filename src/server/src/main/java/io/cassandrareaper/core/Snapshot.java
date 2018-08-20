@@ -14,9 +14,10 @@
 
 package io.cassandrareaper.core;
 
+import java.util.Optional;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import com.google.common.base.Optional;
 import org.joda.time.DateTime;
 
 @JsonDeserialize(builder = Snapshot.Builder.class)
@@ -39,10 +40,10 @@ public final class Snapshot {
     this.table = builder.table;
     this.trueSize = builder.trueSize;
     this.sizeOnDisk = builder.sizeOnDisk;
-    this.owner = Optional.fromNullable(builder.owner);
-    this.cause = Optional.fromNullable(builder.cause);
-    this.creationDate = Optional.fromNullable(builder.creationDate);
-    this.clusterName = Optional.fromNullable(builder.clusterName);
+    this.owner = Optional.ofNullable(builder.owner);
+    this.cause = Optional.ofNullable(builder.cause);
+    this.creationDate = Optional.ofNullable(builder.creationDate);
+    this.clusterName = Optional.ofNullable(builder.clusterName);
   }
 
   public String getName() {
@@ -82,7 +83,7 @@ public final class Snapshot {
   }
 
   public String getClusterName() {
-    return clusterName.or("");
+    return clusterName.orElse("");
   }
 
   public String toString() {

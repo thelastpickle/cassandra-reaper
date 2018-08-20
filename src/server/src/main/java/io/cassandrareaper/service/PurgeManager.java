@@ -22,11 +22,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Optional;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +55,7 @@ public final class PurgeManager {
       // List repair runs
       for (Cluster cluster : clusters) {
         Collection<RepairRun> repairRuns =
-            context.storage.getRepairRunsForCluster(cluster.getName(), Optional.absent());
+            context.storage.getRepairRunsForCluster(cluster.getName(), Optional.empty());
         if (context.config.getPurgeRecordsAfterInDays() > 0) {
           // Purge all runs that are older than threshold
           purgedRuns += purgeRepairRunsByDate(repairRuns);

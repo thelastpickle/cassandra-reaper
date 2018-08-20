@@ -22,6 +22,7 @@ import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -31,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +83,7 @@ public final class JmxConnectionsInitializer implements AutoCloseable {
 
       } catch (RuntimeException e) {
         LOG.info("failed to connect to hosts {} through JMX", endpoints.get(0), e);
-        return Optional.absent();
+        return Optional.empty();
       }
     };
   }

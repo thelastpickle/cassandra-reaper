@@ -31,6 +31,7 @@ import java.lang.management.OperatingSystemMXBean;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -49,7 +50,6 @@ import javax.management.JMException;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -174,7 +174,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     String metric = MetricRegistry.name(
         SegmentRunner.class,
         "abort",
-        Optional.fromNullable(segment.getCoordinatorHost()).or("null").replace('.', '-'));
+        Optional.ofNullable(segment.getCoordinatorHost()).orElse("null").replace('.', '-'));
 
     context.metricRegistry.counter(metric).inc();
     jmxConnection.cancelAllRepairs();
@@ -416,7 +416,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return MetricRegistry.name(
             SegmentRunner.class,
             "postpone",
-            Optional.fromNullable(segment.getCoordinatorHost()).or("null").replace('.', '-'),
+            Optional.ofNullable(segment.getCoordinatorHost()).orElse("null").replace('.', '-'),
             unit.getClusterName().replace('.', '-'),
             unit.getKeyspaceName());
   }
@@ -425,7 +425,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return MetricRegistry.name(
         SegmentRunner.class,
         "repairing",
-        Optional.fromNullable(rs.getCoordinatorHost()).or("null").replace('.', '-'),
+        Optional.ofNullable(rs.getCoordinatorHost()).orElse("null").replace('.', '-'),
         clusterName.replace('.', '-'),
         repairUnit.getKeyspaceName());
   }
@@ -434,7 +434,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return MetricRegistry.name(
         SegmentRunner.class,
         "runRepair",
-        Optional.fromNullable(rs.getCoordinatorHost()).or("null").replace('.', '-'),
+        Optional.ofNullable(rs.getCoordinatorHost()).orElse("null").replace('.', '-'),
         clusterName.replace('.', '-'),
         repairUnit.getKeyspaceName());
   }
@@ -618,7 +618,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private Optional<NodeMetrics> getRemoteNodeMetrics(String node, String nodeDc) {
     Preconditions.checkState(DatacenterAvailability.ALL != context.config.getDatacenterAvailability());
 
-    Optional<NodeMetrics> result = Optional.absent();
+    Optional<NodeMetrics> result = Optional.empty();
     if (context.storage instanceof IDistributedStorage) {
       IDistributedStorage storage = ((IDistributedStorage) context.storage);
       result = storage.getNodeMetrics(repairRunner.getRepairRunId(), node);

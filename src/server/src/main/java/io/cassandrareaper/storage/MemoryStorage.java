@@ -31,13 +31,13 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 
 import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -87,7 +87,7 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Optional<Cluster> getCluster(String clusterName) {
-    return Optional.fromNullable(clusters.get(clusterName));
+    return Optional.ofNullable(clusters.get(clusterName));
   }
 
   @Override
@@ -109,9 +109,9 @@ public final class MemoryStorage implements IStorage {
             repairUnitsByKey.remove(unit.with());
           });
 
-      return Optional.fromNullable(clusters.remove(clusterName));
+      return Optional.ofNullable(clusters.remove(clusterName));
     }
-    return Optional.absent();
+    return Optional.empty();
   }
 
   @Override
@@ -134,7 +134,7 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Optional<RepairRun> getRepairRun(UUID id) {
-    return Optional.fromNullable(repairRuns.get(id));
+    return Optional.ofNullable(repairRuns.get(id));
   }
 
   @Override
@@ -145,7 +145,7 @@ public final class MemoryStorage implements IStorage {
     for (RepairRun repairRun : reverseOrder.values()) {
       if (repairRun.getClusterName().equalsIgnoreCase(clusterName)) {
         foundRepairRuns.add(repairRun);
-        if (foundRepairRuns.size() == limit.or(1000)) {
+        if (foundRepairRuns.size() == limit.orElse(1000)) {
           break;
         }
       }
@@ -202,7 +202,7 @@ public final class MemoryStorage implements IStorage {
       deletedUnit = repairUnits.remove(repairUnitId);
       repairUnitsByKey.remove(deletedUnit.with());
     }
-    return Optional.fromNullable(deletedUnit);
+    return Optional.ofNullable(deletedUnit);
   }
 
   private int deleteRepairSegmentsForRun(UUID runId) {
@@ -225,7 +225,7 @@ public final class MemoryStorage implements IStorage {
         deletedRun = deletedRun.with().runState(RepairRun.RunState.DELETED).build(id);
       }
     }
-    return Optional.fromNullable(deletedRun);
+    return Optional.ofNullable(deletedRun);
   }
 
   @Override
@@ -250,7 +250,7 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Optional<RepairUnit> getRepairUnit(RepairUnit.Builder params) {
-    return Optional.fromNullable(repairUnitsByKey.get(params));
+    return Optional.ofNullable(repairUnitsByKey.get(params));
   }
 
   private void addRepairSegments(Collection<RepairSegment.Builder> segments, UUID runId) {
@@ -277,7 +277,7 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId) {
-    return Optional.fromNullable(repairSegments.get(segmentId));
+    return Optional.ofNullable(repairSegments.get(segmentId));
   }
 
   @Override
@@ -291,7 +291,7 @@ public final class MemoryStorage implements IStorage {
         return Optional.of(segment);
       }
     }
-    return Optional.absent();
+    return Optional.empty();
   }
 
   @Override
@@ -306,7 +306,7 @@ public final class MemoryStorage implements IStorage {
     } else {
       return getNextFreeSegment(runId);
     }
-    return Optional.absent();
+    return Optional.empty();
   }
 
   @Override
@@ -374,7 +374,7 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Optional<RepairSchedule> getRepairSchedule(UUID id) {
-    return Optional.fromNullable(repairSchedules.get(id));
+    return Optional.ofNullable(repairSchedules.get(id));
   }
 
   @Override
@@ -434,7 +434,7 @@ public final class MemoryStorage implements IStorage {
     if (deletedSchedule != null) {
       deletedSchedule = deletedSchedule.with().state(RepairSchedule.State.DELETED).build(id);
     }
-    return Optional.fromNullable(deletedSchedule);
+    return Optional.ofNullable(deletedSchedule);
   }
 
   @Override

@@ -20,8 +20,8 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 
 import java.util.Collection;
+import java.util.Optional;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
@@ -55,7 +55,7 @@ public final class RepairScheduleService {
         return Optional.of(sched);
       }
     }
-    return Optional.absent();
+    return Optional.empty();
   }
 
   /**

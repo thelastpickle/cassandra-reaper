@@ -21,8 +21,8 @@ import io.cassandrareaper.storage.JsonParseUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Optional;
 
-import com.google.common.base.Optional;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -44,7 +44,7 @@ public final class RepairSegmentMapper implements ResultSetMapper<RepairSegment>
                 Segment.builder()
                     .withTokenRanges(
                         JsonParseUtils.parseRingRangeList(
-                            Optional.fromNullable(rs.getString("token_ranges"))))
+                            Optional.ofNullable(rs.getString("token_ranges"))))
                     .build());
 
     if (null != rs.getString("coordinator_host")) {

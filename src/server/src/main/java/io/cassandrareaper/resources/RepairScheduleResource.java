@@ -30,6 +30,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -46,7 +47,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -195,7 +195,7 @@ public final class RepairScheduleResource {
           .nodes(nodesToRepair)
           .datacenters(datacentersToRepair)
           .blacklistedTables(blacklistedTableNames)
-          .repairThreadCount(repairThreadCountParam.or(context.config.getRepairThreadCount()));
+          .repairThreadCount(repairThreadCountParam.orElse(context.config.getRepairThreadCount()));
 
       return addRepairSchedule(
           cluster,

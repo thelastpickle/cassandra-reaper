@@ -30,13 +30,13 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeSet;
 
 import javax.management.JMException;
 
-import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import jersey.repackaged.com.google.common.collect.Lists;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -55,8 +55,7 @@ public class MetricsGrabberTest {
     context.config.setJmxConnectionTimeoutInSeconds(10);
 
     context.storage = mock(IStorage.class);
-    Cluster cluster =
-        new Cluster("testCluster", "murmur3", new TreeSet<String>(Arrays.asList("127.0.0.1")));
+    Cluster cluster = new Cluster("testCluster", "murmur3", new TreeSet<>(Arrays.asList("127.0.0.1")));
     when(context.storage.getCluster(anyString())).thenReturn(Optional.of(cluster));
 
     final JmxProxy jmx = mock(JmxProxy.class);
@@ -152,8 +151,7 @@ public class MetricsGrabberTest {
     context.config.setJmxConnectionTimeoutInSeconds(10);
 
     context.storage = mock(IStorage.class);
-    Cluster cluster =
-        new Cluster("testCluster", "murmur3", new TreeSet<String>(Arrays.asList("127.0.0.1")));
+    Cluster cluster = new Cluster("testCluster", "murmur3", new TreeSet<>(Arrays.asList("127.0.0.1")));
     when(context.storage.getCluster(anyString())).thenReturn(Optional.of(cluster));
 
     final JmxProxy jmx = mock(JmxProxy.class);
