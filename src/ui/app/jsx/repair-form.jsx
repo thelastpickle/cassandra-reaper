@@ -1,5 +1,6 @@
 import React from "react";
 import { WithContext as ReactTags } from 'react-tag-input';
+import { getUrlPrefix } from "jsx/mixin";
 import $ from "jquery";
 
 
@@ -12,8 +13,7 @@ const repairForm = React.createClass({
   },
 
   getInitialState: function() {
-    const isDev = window.top.location.pathname.includes('webpack-dev-server');
-    const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
+    const URL_PREFIX = getUrlPrefix(window.top.location.pathname);
     
     return {
       addRepairResultMsg: null, clusterNames: [], submitEnabled: false,

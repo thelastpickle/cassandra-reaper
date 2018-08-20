@@ -12,7 +12,12 @@
     <title>Cassandra Reaper<%= htmlWebpackPlugin.options.title %></title>
 
     <!-- <base href="/webui/"> -->
-    <base href="<%= htmlWebpackPlugin.options.baseUrl %>" />
+    <script type="text/javascript">
+        var pathName = document.location.pathname;
+        var baseUrl = "<%= htmlWebpackPlugin.options.baseUrl %>".endsWith('/') ? "<%= htmlWebpackPlugin.options.baseUrl %>".substring(0,"<%= htmlWebpackPlugin.options.baseUrl %>".lastIndexOf('/')):"<%= htmlWebpackPlugin.options.baseUrl %>";
+        var contextPath = pathName.substring(0, pathName.indexOf(baseUrl));
+        document.write('<base href="' + contextPath + '<%= htmlWebpackPlugin.options.baseUrl %>" />');
+    </script>
 
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->

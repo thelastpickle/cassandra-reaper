@@ -1,6 +1,6 @@
 import React from "react";
 import moment from "moment";
-import {CFsListRender} from "jsx/mixin";
+import {CFsListRender, getUrlPrefix} from "jsx/mixin";
 import Button from 'react-bootstrap/lib/Button';
 import Modal from 'react-bootstrap/lib/Modal';
 import $ from "jquery";
@@ -14,8 +14,7 @@ const SegmentList = React.createClass({
     },
   
     getInitialState: function() {
-      const isDev = window.top.location.pathname.includes('webpack-dev-server');
-      const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
+      const URL_PREFIX = getUrlPrefix(window.top.location.pathname);
       return {segments: null, repairRunId:this.props.repairRunId, scheduler:{}, urlPrefix: URL_PREFIX,
       runningCollapsed: false, doneCollapsed: false, notStartedCollapsed: false};
     },

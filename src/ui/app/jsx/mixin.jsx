@@ -113,7 +113,8 @@ export const humanFileSize = function(bytes, si) {
 
 export const getUrlPrefix = function(location) {
   const isDev = location.includes('webpack-dev-server');
-  const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
+  const contextPath = location.includes('/webui') ? location.substring(0, location.indexOf("/webui")) : '';
+  const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : contextPath;
   return URL_PREFIX;
 }
 
