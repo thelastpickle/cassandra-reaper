@@ -6,11 +6,10 @@
   "keywords": [
     "cassandra"
   ],
-  "author": "Stefan Podkowinski <github@midnightdrift.com>",
-  "license": "MIT",
+  "license": "Apache 2.0 License",
   "repository": {
     "type": "git",
-    "url": "https://github.com/spodkowinski/cassandra-reaper-ui.git"
+    "url": "https://github.com/thelastpickle/cassandra-reaper.git"
   },
   "devDependencies": {
     "babel-core": "^4.1.1",

@@ -1,4 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2014-2017 Spotify AB
+        Copyright 2016-2018 The Last Pickle Ltd
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -11,6 +26,12 @@
     <name>Cassandra Reaper project</name>
     <url>https://cassandra-reaper.io</url>
     <description>Reaper is a centralized, stateful, and highly configurable tool for running Apache Cassandra repairs against single or multi-site clusters</description>
+
+    <parent>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>20</version>
+    </parent>
 
     <licenses>
       <license>
@@ -154,6 +175,39 @@
                 </fileset>
               </filesets>
             </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.rat</groupId>
+            <artifactId>apache-rat-plugin</artifactId>
+            <version>0.12</version>
+            <configuration>
+              <excludes>
+                <exclude>**/target/**</exclude>
+                <exclude>docs/**</exclude>
+                <exclude>src/docs/themes/**</exclude>
+                <exclude>src/docs/data/**</exclude>
+                <exclude>src/docs/layouts/**</exclude>
+                <exclude>src/docs/static/**</exclude>
+                <exclude>src/ui/node_modules/**</exclude>
+                <exclude>src/ui/bower_components/**</exclude>
+                <exclude>src/ui/build/**</exclude>
+                <exclude>**/*.md</exclude>
+                <exclude>**/*.json</exclude>
+                <exclude>**/*.access</exclude>
+                <exclude>**/*.password</exclude>
+                <exclude>**/*.txt</exclude>
+                <exclude>src/packaging/debian/compat</exclude>
+                <exclude>src/packaging/debian/changelog</exclude>
+              </excludes>
+            </configuration>
+            <executions>
+                <execution>
+                    <phase>verify</phase>
+                    <goals>
+                        <goal>check</goal>
+                    </goals>
+                </execution>
+            </executions>
           </plugin>
         </plugins>
         <pluginManagement>
