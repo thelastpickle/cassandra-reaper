@@ -57,7 +57,7 @@ public class MetricsServiceTest {
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(jmx);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(jmx);
     MBeanServerConnection serverConn = mock(MBeanServerConnection.class);
     JmxProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
 
@@ -142,7 +142,7 @@ public class MetricsServiceTest {
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(jmx);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(jmx);
     MBeanServerConnection serverConn = mock(MBeanServerConnection.class);
     JmxProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
 
@@ -219,7 +219,7 @@ public class MetricsServiceTest {
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(jmx);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(jmx);
     MBeanServerConnection serverConn = mock(MBeanServerConnection.class);
     JmxProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
 

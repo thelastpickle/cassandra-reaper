@@ -221,7 +221,7 @@ public final class RepairManager implements AutoCloseable {
                     .build();
 
             JmxProxy jmxProxy
-                = context.jmxConnectionFactory.connect(node, context.config.getJmxConnectionTimeoutInSeconds());
+                = context.jmxConnectionFactory.connect(node, context);
 
             SegmentRunner.abort(context, segment, jmxProxy);
           } catch (ReaperException | NumberFormatException | InterruptedException e) {

@@ -53,7 +53,7 @@ public class JmxConnectionsInitializerTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
-          protected JmxProxy connectImpl(Node node, int timeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node node, AppContext context) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
             return jmx;
@@ -91,7 +91,7 @@ public class JmxConnectionsInitializerTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
-          protected JmxProxy connectImpl(Node node, int timeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node node, AppContext context) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
             return jmx;
@@ -127,7 +127,7 @@ public class JmxConnectionsInitializerTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
-          protected JmxProxy connectImpl(Node node, int timeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node node, AppContext context) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
             return jmx;
@@ -163,7 +163,7 @@ public class JmxConnectionsInitializerTest {
 
     context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
-          protected JmxProxy connectImpl(Node node, int timeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node node, AppContext context) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
             return jmx;

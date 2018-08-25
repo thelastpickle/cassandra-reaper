@@ -67,10 +67,10 @@ public final class ClusterRepairSchedulerTest {
     clusterRepairAuto = new ClusterRepairScheduler(context);
     jmxProxy = mock(JmxProxy.class);
 
-    when(context.jmxConnectionFactory.connectAny(CLUSTER, context.config.getJmxConnectionTimeoutInSeconds()))
+    when(context.jmxConnectionFactory.connectAny(CLUSTER, context))
         .thenReturn(jmxProxy);
 
-    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection(), Mockito.anyInt()))
+    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection(), Mockito.any()))
         .thenReturn(jmxProxy);
   }
 

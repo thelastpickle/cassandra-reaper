@@ -332,7 +332,7 @@ public final class RepairRunResource {
                     .stream()
                     .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
                     .collect(Collectors.toList()),
-                context.config.getJmxConnectionTimeoutInSeconds());
+                context);
 
         String version = jmxProxy.getCassandraVersion();
         if (null != version && version.startsWith("2.0")) {

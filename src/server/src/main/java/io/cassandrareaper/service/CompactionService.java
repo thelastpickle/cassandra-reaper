@@ -25,6 +25,7 @@ import io.cassandrareaper.jmx.CompactionProxy;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.util.List;
+
 import javax.management.JMException;
 
 import org.slf4j.Logger;
@@ -47,7 +48,7 @@ public final class CompactionService {
 
   public List<Compaction> listActiveCompactions(Node host) throws ReaperException {
     try {
-      JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
+      JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host, context);
       return CompactionProxy.create(jmxProxy, context.metricRegistry).listActiveCompactions();
     } catch (JMException | RuntimeException | InterruptedException e) {
       LOG.error("Failed listing compactions for host {}", host, e);

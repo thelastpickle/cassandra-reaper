@@ -102,7 +102,6 @@ final class Heart implements AutoCloseable {
     registerGauges();
 
     if (!updatingNodeMetrics.getAndSet(true)) {
-      int jmxTimeoutSeconds = context.config.getJmxConnectionTimeoutInSeconds();
 
       forkJoinPool.submit(() -> {
         try (Timer.Context t0 = timer(context, "updatingNodeMetrics")) {
@@ -128,7 +127,7 @@ final class Heart implements AutoCloseable {
                                 = context.jmxConnectionFactory.connect(
                                    Node.builder().withCluster(context.storage.getCluster(req.getCluster()).get())
                                    .withHostname(req.getNode()).build(),
-                                   jmxTimeoutSeconds);
+                                   context);
 
                             storage.storeNodeMetrics(
                                 runId,

@@ -19,8 +19,10 @@ package io.cassandrareaper;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxConnectionsInitializer;
+import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.ClusterResource;
 import io.cassandrareaper.resources.NodeStatsResource;
 import io.cassandrareaper.resources.PingResource;
@@ -255,7 +257,13 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     }
 
     initializeJmxSeedsForAllClusters();
+    maybeInitializeSidecarMode();
     LOG.info("resuming pending repair runs");
+
+    Preconditions.checkState(
+        context.storage instanceof IDistributedStorage
+            || DatacenterAvailability.SIDECAR != context.config.getDatacenterAvailability(),
+        "Cassandra backend storage is the only one allowing SIDECAR datacenter availability modes.");
 
     Preconditions.checkState(
         context.storage instanceof IDistributedStorage
@@ -280,6 +288,25 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     LOG.info("Initialization complete!");
     LOG.warn("Reaper is ready to get things done!");
+  }
+
+  /**
+   * If Reaper is in sidecar mode, grab the local host id and the associated broadcast address
+   *
+   * @throws ReaperException any caught runtime exception
+   */
+  private void maybeInitializeSidecarMode() throws ReaperException {
+    Node host = Node.builder().withHostname("127.0.0.1").withClusterName("bogus").build();
+    try {
+      JmxProxy jmxProxy
+          = context.jmxConnectionFactory.connect(
+              host, context);
+      context.localNodeAddress = jmxProxy.getLocalEndpoint();
+      LOG.info("Sidecar mode. Local node is : {}", context.localNodeAddress);
+    } catch (RuntimeException | InterruptedException | ReaperException e) {
+      LOG.error("Failed listing compactions for host {}", host, e);
+      throw new ReaperException(e);
+    }
   }
 
   private void scheduleRepairManager(ScheduledExecutorService scheduler) {

@@ -34,6 +34,7 @@ import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -236,7 +237,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                               .withHostname(host)
                               .build())
                   .collect(Collectors.toSet()),
-              context.config.getJmxConnectionTimeoutInSeconds());
+              context);
 
       if (SEGMENT_RUNNERS.containsKey(segmentId)) {
         LOG.error("SegmentRunner already exists for segment with ID: {}", segmentId);
@@ -581,7 +582,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                     .withCluster(context.storage.getCluster(clusterName).get())
                     .withHostname(hostName)
                     .build(),
-                context.config.getJmxConnectionTimeoutInSeconds());
+                context);
         // We double check that repair is still running there before actually canceling repairs
         if (hostProxy.isRepairRunning()) {
           LOG.warn(
@@ -615,7 +616,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                       .withCluster(context.storage.getCluster(clusterName).get())
                       .withHostname(node)
                       .build(),
-                  context.config.getJmxConnectionTimeoutInSeconds());
+                  context);
 
           NodeMetrics metrics = NodeMetrics.builder()
                   .withNode(node)
@@ -646,7 +647,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       IDistributedStorage storage = ((IDistributedStorage) context.storage);
       result = storage.getNodeMetrics(repairRunner.getRepairRunId(), node);
 
-      if (!result.isPresent() && DatacenterAvailability.EACH == context.config.getDatacenterAvailability()) {
+      if (!result.isPresent() && Arrays.asList(DatacenterAvailability.EACH , DatacenterAvailability.SIDECAR).contains(context.config.getDatacenterAvailability())) {
         // Sending a request for metrics to the other reaper instances through the Cassandra backend
         storeNodeMetrics(
             NodeMetrics.builder()
@@ -680,7 +681,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                     .withCluster(context.storage.getCluster(clusterName).get())
                     .withHostname(segmentInRun.getCoordinatorHost())
                     .build(),
-                context.config.getJmxConnectionTimeoutInSeconds());
+                context);
         if (hostProxy.isRepairRunning()) {
           return true;
         }
@@ -1055,7 +1056,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                       .withCluster(context.storage.getCluster(clusterName).get())
                       .withHostname(involvedNode)
                       .build(),
-                  context.config.getJmxConnectionTimeoutInSeconds());
+                  context);
 
           // there is no way of telling if the snapshot was cleared or not :(
           SnapshotProxy.create(jmx).clearSnapshot(repairId, keyspace);

@@ -45,7 +45,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 
 public final class HeartTest {
@@ -204,7 +203,7 @@ public final class HeartTest {
 
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).getNodeMetrics(any());
-    Mockito.verify(context.jmxConnectionFactory, Mockito.times(0)).connect(any(), anyInt());
+    Mockito.verify(context.jmxConnectionFactory, Mockito.times(0)).connect(any(), any());
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(0)).storeNodeMetrics(any(), any());
   }
 
@@ -245,7 +244,7 @@ public final class HeartTest {
 
     Mockito.when(
             context.jmxConnectionFactory.connect(
-                any(), eq(context.config.getJmxConnectionTimeoutInSeconds())))
+                any(), eq(context)))
         .thenReturn(nodeProxy);
 
     HostConnectionCounters hostConnectionCounters = Mockito.mock(HostConnectionCounters.class);
@@ -253,7 +252,7 @@ public final class HeartTest {
 
     Mockito.when(
             context.jmxConnectionFactory.connect(
-                any(), eq(context.config.getJmxConnectionTimeoutInSeconds())))
+                any(), eq(context)))
         .thenThrow(InterruptedException.class);
 
     try (Heart heart = Heart.create(context)) {
@@ -263,7 +262,7 @@ public final class HeartTest {
 
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).getNodeMetrics(any());
-    Mockito.verify(context.jmxConnectionFactory, Mockito.times(0)).connect(any(), anyInt());
+    Mockito.verify(context.jmxConnectionFactory, Mockito.times(0)).connect(any(), any());
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(0)).storeNodeMetrics(any(), any());
   }
 
@@ -312,7 +311,7 @@ public final class HeartTest {
 
     JmxProxy nodeProxy = Mockito.mock(JmxProxy.class);
 
-    Mockito.when(context.jmxConnectionFactory.connect(any(), anyInt())).thenReturn(nodeProxy);
+    Mockito.when(context.jmxConnectionFactory.connect(any(), any())).thenReturn(nodeProxy);
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
@@ -321,7 +320,7 @@ public final class HeartTest {
 
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).getNodeMetrics(any());
-    Mockito.verify(context.jmxConnectionFactory, Mockito.times(2)).connect(any(), anyInt());
+    Mockito.verify(context.jmxConnectionFactory, Mockito.times(2)).connect(any(), any());
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).storeNodeMetrics(any(), any());
   }
 
@@ -369,7 +368,7 @@ public final class HeartTest {
                     ClusterProperties.builder().withJmxPort(7199).build())));
 
     JmxProxy nodeProxy = Mockito.mock(JmxProxy.class);
-    Mockito.when(context.jmxConnectionFactory.connect(any(), anyInt())).thenReturn(nodeProxy);
+    Mockito.when(context.jmxConnectionFactory.connect(any(), any())).thenReturn(nodeProxy);
 
     Mockito.when(nodeProxy.getPendingCompactions())
         .then(a -> {
@@ -388,7 +387,7 @@ public final class HeartTest {
 
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).saveHeartbeat();
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).getNodeMetrics(any());
-    Mockito.verify(context.jmxConnectionFactory, Mockito.times(2)).connect(any(), anyInt());
+    Mockito.verify(context.jmxConnectionFactory, Mockito.times(2)).connect(any(), any());
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).storeNodeMetrics(any(), any());
   }
 }

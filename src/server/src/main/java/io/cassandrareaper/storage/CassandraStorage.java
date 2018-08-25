@@ -906,6 +906,26 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
+  public Optional<RepairSegment> getNextFreeSegmentForRanges(
+      UUID runId, Optional<RingRange> parallelRange, List<RingRange> ranges) {
+    List<RepairSegment> segments
+        = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
+    Collections.shuffle(segments);
+
+    for (RepairSegment seg : segments) {
+      if (seg.getState().equals(State.NOT_STARTED) && withinRange(seg, parallelRange)) {
+        for (RingRange range : ranges) {
+          if (segmentIsWithinRange(seg, range)) {
+            LOG.info("Segment [{}, {}] is within range [{}, {}]", seg.getStartToken(), seg.getEndToken(), range.getStart(), range.getEnd());
+            return Optional.of(seg);
+          }
+        }
+      }
+    }
+    return Optional.empty();
+  }
+
+  @Override
   public Collection<RepairSegment> getSegmentsWithState(UUID runId, State segmentState) {
     Collection<RepairSegment> segments = Lists.newArrayList();
 

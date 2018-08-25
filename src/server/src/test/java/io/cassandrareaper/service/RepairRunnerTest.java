@@ -132,7 +132,7 @@ public final class RepairRunnerTest {
           final AtomicInteger repairAttempts = new AtomicInteger(1);
 
           @Override
-          protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node host, AppContext context) throws ReaperException {
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
             when(jmx.isConnectionAlive()).thenReturn(true);
@@ -284,7 +284,7 @@ public final class RepairRunnerTest {
     context.jmxConnectionFactory = new JmxConnectionFactory() {
           final AtomicInteger repairAttempts = new AtomicInteger(1);
           @Override
-          protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node host, AppContext context) throws ReaperException {
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
             when(jmx.isConnectionAlive()).thenReturn(true);
@@ -450,7 +450,7 @@ public final class RepairRunnerTest {
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
     context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
-          protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node host, AppContext context) throws ReaperException {
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
             when(jmx.isConnectionAlive()).thenReturn(true);

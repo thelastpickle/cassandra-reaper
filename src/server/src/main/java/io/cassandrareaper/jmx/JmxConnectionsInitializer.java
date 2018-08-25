@@ -56,7 +56,8 @@ public final class JmxConnectionsInitializer implements AutoCloseable {
 
   public void on(Cluster cluster) {
     if (context.storage instanceof IDistributedStorage
-        && context.config.getDatacenterAvailability() != DatacenterAvailability.ALL) {
+        && context.config.getDatacenterAvailability() != DatacenterAvailability.ALL
+        && !context.config.isInSidecarMode()) {
       LOG.info("Initializing JMX seed list for cluster {}...", cluster.getName());
       List<Callable<Optional<String>>> jmxTasks = Lists.newArrayList();
       List<String> seedHosts = Lists.newArrayList();
@@ -80,7 +81,7 @@ public final class JmxConnectionsInitializer implements AutoCloseable {
                     .stream()
                     .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
                     .collect(Collectors.toList()),
-                (int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds());
+                this.context);
 
         return Optional.of(endpoints.get(0));
 

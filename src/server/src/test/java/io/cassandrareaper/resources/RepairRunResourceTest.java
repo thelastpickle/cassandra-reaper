@@ -151,10 +151,10 @@ public final class RepairRunResourceTest {
 
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
 
-    when(context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds()))
+    when(context.jmxConnectionFactory.connectAny(cluster, context))
         .thenReturn(proxy);
 
-    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection(), Mockito.anyInt()))
+    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection(), Mockito.any()))
         .thenReturn(proxy);
 
     RepairUnit.Builder repairUnitBuilder = RepairUnit.builder()

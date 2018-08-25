@@ -18,6 +18,8 @@
 package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.NodeMetrics;
+import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.service.RingRange;
 
 import java.util.Collection;
 import java.util.List;
@@ -49,5 +51,16 @@ public interface IDistributedStorage {
   Optional<NodeMetrics> getNodeMetrics(UUID runId, String node);
 
   void storeNodeMetrics(UUID runId, NodeMetrics nodeMetrics);
+
+  /**
+   * Gets the next free segment from the backend that is both within the parallel range and the local node ranges.
+   *
+   * @param runId
+   * @param parallelRange
+   * @param ranges
+   * @return an optional repair segment to process
+   */
+  Optional<RepairSegment> getNextFreeSegmentForRanges(
+      UUID runId, Optional<RingRange> parallelRange, List<RingRange> ranges);
 
 }

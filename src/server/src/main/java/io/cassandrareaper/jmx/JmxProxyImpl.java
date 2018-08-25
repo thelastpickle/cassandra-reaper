@@ -322,6 +322,8 @@ final class JmxProxyImpl implements JmxProxy {
     }
   }
 
+  @NotNull
+  @Override
   public String getLocalEndpoint() throws ReaperException {
     String cassandraVersion = getCassandraVersion();
     if (versionCompare(cassandraVersion, "2.1.10") >= 0) {

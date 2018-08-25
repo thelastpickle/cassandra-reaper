@@ -57,6 +57,8 @@ public interface JmxProxy extends NotificationListener {
   @NotNull
   Map<String, String> getEndpointToHostId();
 
+  String getLocalEndpoint() throws ReaperException;
+
   String getHost();
 
   /**

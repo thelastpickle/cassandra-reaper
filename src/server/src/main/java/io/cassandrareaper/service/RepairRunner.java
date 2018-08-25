@@ -26,6 +26,7 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxProxy;
+import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,6 +68,7 @@ final class RepairRunner implements Runnable {
   private float repairProgress;
   private float segmentsDone;
   private float segmentsTotal;
+  private final List<RingRange> localEndpointRanges;
 
   RepairRunner(AppContext context, UUID repairRunId) throws ReaperException {
     LOG.debug("Creating RepairRunner for run with ID {}", repairRunId);
@@ -80,7 +82,7 @@ final class RepairRunner implements Runnable {
     this.clusterName = cluster.get().getName();
 
     JmxProxy jmx = this.context.jmxConnectionFactory
-        .connectAny(cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
+        .connectAny(cluster.get(), context);
 
     String keyspace = repairUnitOpt.getKeyspaceName();
     int parallelRepairs
@@ -103,6 +105,10 @@ final class RepairRunner implements Runnable {
             Lists.newArrayList(
                 Collections2.transform(
                     repairSegments, segment -> segment.getTokenRange().getBaseRange())));
+
+    localEndpointRanges = context.config.isInSidecarMode()
+        ? jmx.getRangesForLocalEndpoint(repairUnitOpt.getKeyspaceName())
+        : Collections.emptyList();
 
     String repairUnitClusterName = repairUnitOpt.getClusterName();
     String repairUnitKeyspaceName = repairUnitOpt.getKeyspaceName();
@@ -306,7 +312,7 @@ final class RepairRunner implements Runnable {
       LOG.debug("connecting JMX proxy for repair runner on run id: {}", repairRunId);
       Cluster cluster = context.storage.getCluster(this.clusterName).get();
       jmxConnection = context.jmxConnectionFactory.connectAny(
-              cluster, context.config.getJmxConnectionTimeoutInSeconds());
+              cluster, context);
       LOG.debug("successfully reestablished JMX proxy for repair runner");
     }
   }
@@ -354,9 +360,11 @@ final class RepairRunner implements Runnable {
       }
 
       // We have an empty slot, so let's start new segment runner if possible.
+      // When in sidecar mode, filter on ranges that the local node is a replica for only.
       LOG.info("Running segment for range {}", parallelRanges.get(rangeIndex));
-      Optional<RepairSegment> nextRepairSegment = context.storage.getNextFreeSegmentInRange(
-              repairRunId, Optional.of(parallelRanges.get(rangeIndex)));
+      Optional<RepairSegment> nextRepairSegment = context.config.isInSidecarMode()
+          ? ((IDistributedStorage) context.storage).getNextFreeSegmentForRanges(repairRunId, Optional.of(parallelRanges.get(rangeIndex)), localEndpointRanges)
+          : context.storage.getNextFreeSegmentInRange(repairRunId, Optional.of(parallelRanges.get(rangeIndex)));
 
       if (!nextRepairSegment.isPresent()) {
         LOG.debug("No repair segment available for range {}", parallelRanges.get(rangeIndex));

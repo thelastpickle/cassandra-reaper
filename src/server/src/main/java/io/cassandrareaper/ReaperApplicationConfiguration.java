@@ -385,6 +385,10 @@ public final class ReaperApplicationConfiguration extends Configuration {
     this.numberOfRunsToKeepPerUnit = numberOfRunsToKeepPerUnit;
   }
 
+  public Boolean isInSidecarMode() {
+    return datacenterAvailability == DatacenterAvailability.SIDECAR;
+  }
+
   public static final class JmxCredentials {
 
     @JsonProperty
@@ -497,7 +501,9 @@ public final class ReaperApplicationConfiguration extends Configuration {
     /* We require jmx access to all nodes in the local datacenter */
     LOCAL,
     /* Each datacenter requires at minimum one reaper instance that has jmx access to all nodes in that datacenter */
-    EACH
+    EACH,
+    /* Sets Reaper in sidecar mode where each Cassandra node has a collocated Reaper instance */
+    SIDECAR
   }
 
   public static final class AccessControlConfiguration {

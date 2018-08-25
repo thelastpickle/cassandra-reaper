@@ -158,7 +158,7 @@ public final class RepairRunService {
                   .stream()
                   .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
                   .collect(Collectors.toList()),
-              context.config.getJmxConnectionTimeoutInSeconds());
+              context);
 
       List<BigInteger> tokens = jmxProxy.getTokens();
       Map<List<String>, List<String>> rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());
@@ -321,7 +321,7 @@ public final class RepairRunService {
                   .stream()
                   .map(host -> Node.builder().withCluster(targetCluster).withHostname(host).build())
                   .collect(Collectors.toList()),
-              context.config.getJmxConnectionTimeoutInSeconds());
+              context);
 
       rangeToEndpoint = jmxProxy.getRangeToEndpointMap(repairUnit.getKeyspaceName());
     } catch (ReaperException e) {
@@ -346,7 +346,7 @@ public final class RepairRunService {
     Set<String> knownTables;
 
     JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-            cluster, context.config.getJmxConnectionTimeoutInSeconds());
+            cluster, context);
 
     knownTables = jmxProxy.getTableNamesForKeyspace(keyspace);
     if (knownTables.isEmpty()) {
@@ -373,7 +373,7 @@ public final class RepairRunService {
     Set<String> nodesInCluster;
 
     JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-            cluster, context.config.getJmxConnectionTimeoutInSeconds());
+            cluster, context);
 
     nodesInCluster = jmxProxy.getEndpointToHostId().keySet();
     if (nodesInCluster.isEmpty()) {

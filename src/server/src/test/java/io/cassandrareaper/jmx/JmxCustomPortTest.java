@@ -51,7 +51,7 @@ public class JmxCustomPortTest {
     context.jmxConnectionFactory
         = new JmxConnectionFactory() {
           @Override
-          protected JmxProxy connectImpl(Node node, int timeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node node, AppContext context) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
             port.set(node.getCluster().getProperties().getJmxPort());
             return jmx;
@@ -68,7 +68,7 @@ public class JmxCustomPortTest {
             new LinkedHashSet<String>(Arrays.asList("127.0.0.1", "127.0.0.2")),
             ClusterProperties.builder().withJmxPort(7188).build());
 
-    context.jmxConnectionFactory.connectAny(cluster, 10);
+    context.jmxConnectionFactory.connectAny(cluster, context);
     assertEquals(7188, port.get());
 
     Cluster cluster2
@@ -79,7 +79,7 @@ public class JmxCustomPortTest {
             ClusterProperties.builder().withJmxPort(7198).build());
 
     context.jmxConnectionFactory.connect(
-        Node.builder().withCluster(cluster2).withHostname("127.0.0.3").build(), 10);
+        Node.builder().withCluster(cluster2).withHostname("127.0.0.3").build(), context);
     assertEquals(7198, port.get());
   }
 }

@@ -292,10 +292,10 @@ public final class ClusterResourceTest {
 
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
 
-    when(context.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class), Mockito.anyInt()))
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class), Mockito.any()))
         .thenReturn(jmxProxy);
 
-    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection(), Mockito.anyInt()))
+    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection(), Mockito.any()))
         .thenReturn(jmxProxy);
 
     return new MockObjects(context, uriInfo, jmxProxy);

@@ -134,7 +134,7 @@ public final class ClusterResource {
     if (cluster.isPresent()) {
       try {
         JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-                cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
+                cluster.get(), context);
         tablesByKeyspace = jmxProxy.listTablesByKeyspace();
       } catch (RuntimeException e) {
         LOG.error("Couldn't retrieve the list of tables for cluster {}", clusterName, e);
@@ -459,7 +459,7 @@ public final class ClusterResource {
                 host ->
                     Node.builder().withCluster(cluster).withHostname(parseSeedHost(host)).build())
             .collect(Collectors.toList()),
-        context.config.getJmxConnectionTimeoutInSeconds());
+        context);
   }
 
   private JmxProxy connectAny(Collection<String> seedHosts, Cluster cluster)
@@ -471,6 +471,6 @@ public final class ClusterResource {
                 host ->
                     Node.builder().withCluster(cluster).withHostname(parseSeedHost(host)).build())
             .collect(Collectors.toList()),
-        context.config.getJmxConnectionTimeoutInSeconds());
+        context);
   }
 }

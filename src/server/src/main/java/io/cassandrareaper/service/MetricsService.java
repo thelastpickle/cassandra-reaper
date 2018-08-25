@@ -55,8 +55,7 @@ public final class MetricsService {
 
   public List<ThreadPoolStat> getTpStats(Node host) throws ReaperException {
     try {
-      int jmxTimeout = context.config.getJmxConnectionTimeoutInSeconds();
-      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host, jmxTimeout));
+      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host, context));
       return convertToThreadPoolStats(proxy.collectTpStats());
     } catch (JMException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", host, e);
@@ -80,8 +79,7 @@ public final class MetricsService {
 
   public List<DroppedMessages> getDroppedMessages(Node host) throws ReaperException {
     try {
-      int jmxTimeout = context.config.getJmxConnectionTimeoutInSeconds();
-      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host, jmxTimeout));
+      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host, context));
       return convertToDroppedMessages(proxy.collectDroppedMessages());
     } catch (JMException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", host, e);
@@ -105,8 +103,7 @@ public final class MetricsService {
 
   public List<MetricsHistogram> getClientRequestLatencies(Node host) throws ReaperException {
     try {
-      int jmxTimeout = context.config.getJmxConnectionTimeoutInSeconds();
-      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host, jmxTimeout));
+      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host, context));
       return convertToMetricsHistogram(proxy.collectLatencyMetrics());
     } catch (JMException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", host, e);
