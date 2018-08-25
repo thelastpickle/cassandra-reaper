@@ -21,6 +21,7 @@
       <pattern>%d %-5p [%c{0}] %m%n</pattern>
     </encoder>
   </appender>
+
   <root>
     <level value="DEBUG" />
     <appender-ref ref="file"/>

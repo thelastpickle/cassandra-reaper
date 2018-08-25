@@ -95,6 +95,8 @@ import org.cognitor.cassandra.migration.Database;
 import org.cognitor.cassandra.migration.MigrationRepository;
 import org.cognitor.cassandra.migration.MigrationTask;
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
@@ -103,12 +105,14 @@ import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 public final class CassandraStorage implements IStorage, IDistributedStorage {
 
+  private static final int LEAD_DURATION = 600;
   /* Simple stmts */
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
   private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
   private static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
   private static final String SELECT_RUNNING_REAPERS = "SELECT reaper_instance_id FROM running_reapers";
+  private static final DateTimeFormatter HOURLY_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHH");
 
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
 
@@ -167,11 +171,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement storeNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsByNodePrepStmt;
+  private PreparedStatement delNodeMetricsByNodePrepStmt;
   private PreparedStatement getSnapshotPrepStmt;
   private PreparedStatement deleteSnapshotPrepStmt;
   private PreparedStatement saveSnapshotPrepStmt;
 
-  public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
+  public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) throws ReaperException {
     CassandraFactory cassandraFactory = config.getCassandraFactory();
     overrideQueryOptions(cassandraFactory);
     overrideRetryPolicy(cassandraFactory);
@@ -202,50 +207,55 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static void initializeAndUpgradeSchema(
       com.datastax.driver.core.Cluster cassandra,
       Session session,
-      String keyspace) {
+      String keyspace) throws ReaperException {
 
-    cassandra.getMetadata().getAllHosts().forEach((host) -> {
-      Preconditions.checkState(
-              0 >= VersionNumber.parse("2.1").compareTo(host.getCassandraVersion()),
-              "All Cassandra nodes in Reaper's backend storage must be running version 2.1+");
-    });
-
-    // initialize/upgrade db schema
-    Database database = new Database(cassandra, keyspace);
-    int currentVersion = database.getVersion();
-    MigrationRepository migrationRepo = new MigrationRepository("db/cassandra");
-    if (currentVersion < migrationRepo.getLatestVersion()) {
-      LOG.warn("Starting db migration from {} to {}…", currentVersion, migrationRepo.getLatestVersion());
-
-      if (4 <= currentVersion) {
-        List<String> otherRunningReapers = session.execute("SELECT reaper_instance_host FROM running_reapers").all()
-            .stream()
-            .map((row) -> row.getString("reaper_instance_host"))
-            .filter((reaperInstanceHost) -> !AppContext.REAPER_INSTANCE_ADDRESS.equals(reaperInstanceHost))
-            .collect(Collectors.toList());
-
+    try {
+      cassandra.getMetadata().getAllHosts().forEach((host) -> {
         Preconditions.checkState(
-            otherRunningReapers.isEmpty(),
-            "Database migration can not happen with other reaper instances running. Found ",
-            StringUtils.join(otherRunningReapers));
-      }
+                0 >= VersionNumber.parse("2.1").compareTo(host.getCassandraVersion()),
+                "All Cassandra nodes in Reaper's backend storage must be running version 2.1+");
+      });
 
-      if (currentVersion > 3 && currentVersion < 9) {
-        // only applicable after `003_switch_to_uuids.cql`
-        // Migration009 needs to happen before `migration.migrate()` in case it fails and needs re-trying
-        Migration009.migrate(session);
-      }
-      MigrationTask migration = new MigrationTask(database, migrationRepo);
-      migration.migrate();
-      Migration003.migrate(session);
+      // initialize/upgrade db schema
+      Database database = new Database(cassandra, keyspace);
+      int currentVersion = database.getVersion();
+      MigrationRepository migrationRepo = new MigrationRepository("db/cassandra");
+      if (currentVersion < migrationRepo.getLatestVersion()) {
+        LOG.warn("Starting db migration from {} to {}…", currentVersion, migrationRepo.getLatestVersion());
 
-      if (currentVersion <= 15) {
-        Migration016.migrate(session, keyspace);
+        if (4 <= currentVersion) {
+          List<String> otherRunningReapers = session.execute("SELECT reaper_instance_host FROM running_reapers").all()
+              .stream()
+              .map((row) -> row.getString("reaper_instance_host"))
+              .filter((reaperInstanceHost) -> !AppContext.REAPER_INSTANCE_ADDRESS.equals(reaperInstanceHost))
+              .collect(Collectors.toList());
+
+          Preconditions.checkState(
+              otherRunningReapers.isEmpty(),
+              "Database migration can not happen with other reaper instances running. Found ",
+              StringUtils.join(otherRunningReapers));
+        }
+
+        if (currentVersion > 3 && currentVersion < 9) {
+          // only applicable after `003_switch_to_uuids.cql`
+          // Migration009 needs to happen before `migration.migrate()` in case it fails and needs re-trying
+          Migration009.migrate(session);
+        }
+        MigrationTask migration = new MigrationTask(database, migrationRepo);
+        migration.migrate();
+        Migration003.migrate(session);
+
+        if (currentVersion <= 15) {
+          Migration016.migrate(session, keyspace);
+        }
       }
+    } catch (RuntimeException e) {
+      LOG.error("Failed performing Cassandra schema migrations", e);
+      throw new ReaperException(e);
     }
   }
 
-  private void prepareStatements() {
+  private void prepareStatements() throws ReaperException {
     final String timeUdf = 0 < VersionNumber.parse("2.2").compareTo(version) ? "dateOf" : "toTimestamp";
     insertClusterPrepStmt
         = session
@@ -321,15 +331,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
             + "segment_end_time,fail_count, token_ranges FROM repair_run WHERE id = ?");
     getRepairSegmentCountByRunIdPrepStmt = session.prepare("SELECT count(*) FROM repair_run WHERE id = ?");
-    insertRepairSchedulePrepStmt = session
+    insertRepairSchedulePrepStmt
+        = session
             .prepare(
-                "INSERT INTO repair_schedule_v1(id, repair_unit_id, state, days_between, next_activation, run_history, "
+                "INSERT INTO repair_schedule_v1(id, repair_unit_id, state,"
+                    + "days_between, next_activation, run_history, "
                     + "segment_count, repair_parallelism, intensity, "
                     + "creation_time, owner, pause_time, segment_count_per_node) "
                     + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
             .setConsistencyLevel(ConsistencyLevel.QUORUM);
     getRepairSchedulePrepStmt
-        = session.prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?").setConsistencyLevel(ConsistencyLevel.QUORUM);
+        = session
+            .prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?")
+            .setConsistencyLevel(ConsistencyLevel.QUORUM);
     insertRepairScheduleByClusterAndKsPrepStmt = session.prepare(
         "INSERT INTO repair_schedule_by_cluster_and_keyspace(cluster_name, keyspace_name, repair_schedule_id)"
             + " VALUES(?, ?, ?)");
@@ -340,31 +354,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     deleteRepairScheduleByClusterAndKsPrepStmt = session.prepare(
         "DELETE FROM repair_schedule_by_cluster_and_keyspace "
             + "WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
-    takeLeadPrepStmt = session
-        .prepare(
-            "INSERT INTO leader(leader_id, reaper_instance_id, reaper_instance_host, last_heartbeat) "
-                + "VALUES(?, ?, ?, " + timeUdf + "(now())) IF NOT EXISTS");
-    renewLeadPrepStmt = session
-        .prepare(
-            "UPDATE leader SET reaper_instance_id = ?, reaper_instance_host = ?,"
-                + " last_heartbeat = " + timeUdf + "(now()) WHERE leader_id = ? IF reaper_instance_id = ?");
-    releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?");
-    forceReleaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ?");
+    prepareLeaderElectionStatements(timeUdf);
     getRunningReapersCountPrepStmt = session.prepare(SELECT_RUNNING_REAPERS);
     saveHeartbeatPrepStmt = session
         .prepare(
             "INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat)"
                 + " VALUES(?,?," + timeUdf + "(now()))")
         .setIdempotent(false);
-    storeNodeMetricsPrepStmt = session
-        .prepare(
-            "INSERT INTO node_metrics_v1 (time_partition,run_id,node,datacenter,cluster,requested,pending_compactions,"
-                + "has_repair_running,active_anticompactions) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setIdempotent(false);
-    getNodeMetricsPrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
-        + " WHERE time_partition = ? AND run_id = ?");
-    getNodeMetricsByNodePrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
-        + " WHERE time_partition = ? AND run_id = ? AND node = ?");
 
     getSnapshotPrepStmt = session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
     deleteSnapshotPrepStmt = session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
@@ -386,6 +382,34 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             ex);
       }
     }
+    prepareMetricStatements();
+  }
+
+  private void prepareLeaderElectionStatements(final String timeUdf) {
+    takeLeadPrepStmt = session
+        .prepare(
+            "INSERT INTO leader(leader_id, reaper_instance_id, reaper_instance_host, last_heartbeat)"
+                + "VALUES(?, ?, ?, " + timeUdf + "(now())) IF NOT EXISTS USING TTL ?");
+    renewLeadPrepStmt = session
+        .prepare(
+            "UPDATE leader USING TTL ? SET reaper_instance_id = ?, reaper_instance_host = ?,"
+                + " last_heartbeat = " + timeUdf + "(now()) WHERE leader_id = ? IF reaper_instance_id = ?");
+    releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?");
+    forceReleaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ?");
+  }
+
+  private void prepareMetricStatements() {
+    storeNodeMetricsPrepStmt = session
+        .prepare(
+            "INSERT INTO node_metrics_v1 (time_partition,run_id,node,datacenter,cluster,requested,pending_compactions,"
+                + "has_repair_running,active_anticompactions) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .setIdempotent(false);
+    getNodeMetricsPrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
+        + " WHERE time_partition = ? AND run_id = ?");
+    getNodeMetricsByNodePrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
+        + " WHERE time_partition = ? AND run_id = ? AND node = ?");
+    delNodeMetricsByNodePrepStmt = session.prepare("DELETE FROM node_metrics_v1"
+        + " WHERE time_partition = ? AND run_id = ? AND node = ?");
   }
 
   @Override
@@ -1188,9 +1212,14 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public boolean takeLead(UUID leaderId) {
+    return takeLead(leaderId, LEAD_DURATION);
+  }
+
+  @Override
+  public boolean takeLead(UUID leaderId, int ttl) {
     LOG.debug("Trying to take lead on segment {}", leaderId);
     ResultSet lwtResult = session.execute(
-        takeLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS));
+        takeLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS, ttl));
 
     if (lwtResult.wasApplied()) {
       LOG.debug("Took lead on segment {}", leaderId);
@@ -1204,8 +1233,14 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public boolean renewLead(UUID leaderId) {
+    return renewLead(leaderId, LEAD_DURATION);
+  }
+
+  @Override
+  public boolean renewLead(UUID leaderId, int ttl) {
     ResultSet lwtResult = session.execute(
         renewLeadPrepStmt.bind(
+            ttl,
             AppContext.REAPER_INSTANCE_ID,
             AppContext.REAPER_INSTANCE_ADDRESS,
             leaderId,
@@ -1252,6 +1287,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private boolean hasLeadOnSegment(UUID leaderId) {
     ResultSet lwtResult = session.execute(
         renewLeadPrepStmt.bind(
+            LEAD_DURATION,
             AppContext.REAPER_INSTANCE_ID,
             AppContext.REAPER_INSTANCE_ADDRESS,
             leaderId,
@@ -1296,6 +1332,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
     Row row = session.execute(getNodeMetricsByNodePrepStmt.bind(minute, runId, node)).one();
     return null != row ? Optional.of(createNodeMetrics(row)) : Optional.empty();
+  }
+
+  @Override
+  public void deleteNodeMetrics(UUID runId, String node) {
+    long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
+    session.executeAsync(delNodeMetricsByNodePrepStmt.bind(minute, runId, node));
   }
 
   private static NodeMetrics createNodeMetrics(Row row) {
@@ -1467,5 +1509,4 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     return snapshotBuilder.build();
   }
-
 }

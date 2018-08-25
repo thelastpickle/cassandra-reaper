@@ -41,6 +41,7 @@ import io.cassandrareaper.storage.MemoryStorage;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
@@ -50,7 +51,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -67,7 +67,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -122,15 +121,13 @@ public final class SegmentRunnerTest {
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          public JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
+          public JmxProxy connectImpl(Node host) throws ReaperException {
 
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
-                .thenReturn(Lists.newArrayList(""));
 
             EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
             when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
@@ -190,7 +187,7 @@ public final class SegmentRunnerTest {
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
         context,
         segmentId,
         Collections.singleton(""),
@@ -247,13 +244,12 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class))).thenReturn(Lists.newArrayList(""));
             EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
             when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
             try {
@@ -338,12 +334,11 @@ public final class SegmentRunnerTest {
             return jmx;
           }
         };
-
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
         context,
         segmentId,
         Collections.singleton(""),
@@ -401,14 +396,12 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
-                .thenReturn(Lists.newArrayList(""));
 
             EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
             when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
@@ -482,12 +475,11 @@ public final class SegmentRunnerTest {
             return jmx;
           }
         };
-
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
         context,
         segmentId,
         Collections.singleton(""),
@@ -548,15 +540,13 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
 
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
-                .thenReturn(Lists.newArrayList(""));
 
             EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
             when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
@@ -625,12 +615,11 @@ public final class SegmentRunnerTest {
             return jmx;
           }
         };
-
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
             context,
             segmentId,
             Collections.singleton(""),
@@ -692,15 +681,13 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
 
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
-                .thenReturn(Lists.newArrayList(""));
 
             EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
             when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
@@ -769,12 +756,11 @@ public final class SegmentRunnerTest {
             return jmx;
           }
         };
-
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
             context,
             segmentId,
             Collections.singleton(""),
@@ -836,15 +822,13 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
 
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
-                .thenReturn(Lists.newArrayList(""));
 
             EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
             when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
@@ -913,12 +897,11 @@ public final class SegmentRunnerTest {
             return jmx;
           }
         };
-
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
             context,
             segmentId,
             Collections.singleton(""),
@@ -981,15 +964,13 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
 
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
-                .thenReturn(Lists.newArrayList(""));
 
             EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
             when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
@@ -1058,12 +1039,11 @@ public final class SegmentRunnerTest {
             return jmx;
           }
         };
-
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
             context,
             segmentId,
             Collections.singleton(""),
@@ -1121,17 +1101,25 @@ public final class SegmentRunnerTest {
     when(((IDistributedStorage) context.storage).getNodeMetrics(any(), any()))
         .thenReturn(Optional.empty());
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(jmxConnectionFactory.connect(any(), anyInt())).thenReturn(mock(JmxProxy.class));
+    when(jmxConnectionFactory.connect(any())).thenReturn(mock(JmxProxy.class));
     context.jmxConnectionFactory = jmxConnectionFactory;
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
-    SegmentRunner segmentRunner = new SegmentRunner(context,UUID.randomUUID(), Collections.emptyList(),
-            1000, 1.1,RepairParallelism.DATACENTER_AWARE,
-            "test", mock(RepairUnit.class), mock(RepairRunner.class));
+    SegmentRunner segmentRunner
+        = SegmentRunner.create(
+            context,
+            UUID.randomUUID(),
+            Collections.emptyList(),
+            1000,
+            1.1,
+            RepairParallelism.DATACENTER_AWARE,
+            "test",
+            mock(RepairUnit.class),
+            mock(RepairRunner.class));
 
     Pair<String, Optional<NodeMetrics>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc2").call();
     assertFalse(result.getRight().isPresent());
-    verify(jmxConnectionFactory, times(0)).connect(any(), anyInt());
+    verify(jmxConnectionFactory, times(0)).connect(any());
   }
 
   @Test
@@ -1149,16 +1137,28 @@ public final class SegmentRunnerTest {
     when(proxy.getPendingCompactions()).thenReturn(3);
     when(proxy.isRepairRunning()).thenReturn(true);
 
-    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(jmxConnectionFactory.connect(any(), anyInt())).thenReturn(proxy);
-    context.jmxConnectionFactory = jmxConnectionFactory;
+    EndpointSnitchInfoMBean endpointSnitchInfoMBeanMock = mock(EndpointSnitchInfoMBean.class);
+    when(endpointSnitchInfoMBeanMock.getDatacenter(any())).thenReturn("dc1");
+    JmxProxyTest.mockGetEndpointSnitchInfoMBean(proxy, endpointSnitchInfoMBeanMock);
 
+    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(jmxConnectionFactory.connect(any())).thenReturn(proxy);
+    when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
+    context.jmxConnectionFactory = jmxConnectionFactory;
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
 
-    SegmentRunner segmentRunner = new SegmentRunner(context,UUID.randomUUID(), Collections.emptyList(),
-          1000, 1.1,RepairParallelism.DATACENTER_AWARE,
-          "test", mock(RepairUnit.class), mock(RepairRunner.class));
+    SegmentRunner segmentRunner
+        = SegmentRunner.create(
+            context,
+            UUID.randomUUID(),
+            Collections.emptyList(),
+            1000,
+            1.1,
+            RepairParallelism.DATACENTER_AWARE,
+            "test",
+            mock(RepairUnit.class),
+            mock(RepairRunner.class));
     Pair<String, Optional<NodeMetrics>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc1").call();
     assertTrue(result.getRight().isPresent());
     NodeMetrics metrics = result.getRight().get();
@@ -1166,5 +1166,4 @@ public final class SegmentRunnerTest {
     assertEquals(3, metrics.getPendingCompactions());
     assertTrue(metrics.hasRepairRunning());
   }
-
 }

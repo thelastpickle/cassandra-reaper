@@ -24,9 +24,11 @@ import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
+import io.cassandrareaper.jmx.MetricsProxy;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -43,6 +45,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -53,11 +56,13 @@ public class MetricsServiceTest {
       throws InterruptedException, ReaperException, JMException, IOException, ClassNotFoundException {
 
     AppContext cxt = new AppContext();
+    ClusterFacade clusterFacade = Mockito.mock(ClusterFacade.class);
+    Mockito.doReturn(Collections.singletonList("")).when(clusterFacade).getTpStats(any());
     cxt.config = new ReaperApplicationConfiguration();
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(jmx);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(jmx);
     MBeanServerConnection serverConn = mock(MBeanServerConnection.class);
     JmxProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
 
@@ -66,15 +71,12 @@ public class MetricsServiceTest {
     when(serverConn.queryNames(Mockito.any(ObjectName.class), Mockito.isNull())).thenReturn(Collections.emptySet());
 
     Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
-    MetricsService.create(cxt).getTpStats(node);
-    Mockito.verify(serverConn, Mockito.times(2)).queryNames(Mockito.any(ObjectName.class), Mockito.isNull());
+    MetricsService.create(cxt, () -> clusterFacade).getTpStats(node);
+    Mockito.verify(clusterFacade, Mockito.times(1)).getTpStats(Mockito.any());
   }
 
   @Test
   public void testConvertToThreadPoolStats() {
-    AppContext context = new AppContext();
-    final MetricsService metricsGrabber = MetricsService.create(context);
-
     List<JmxStat> statList = Lists.newArrayList();
     statList.add(
         JmxStat.builder()
@@ -121,8 +123,11 @@ public class MetricsServiceTest {
 
     Map<String, List<JmxStat>> jmxStats = Maps.newHashMap();
     jmxStats.put("ReadStage", statList);
-
-    List<ThreadPoolStat> threadPoolStats = metricsGrabber.convertToThreadPoolStats(jmxStats);
+    Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
+    AppContext context = new AppContext();
+    List<ThreadPoolStat> threadPoolStats
+        = ClusterFacade.create(context).convertToThreadPoolStats(
+            MetricsProxy.convertToGenericMetrics(jmxStats, node));
     ThreadPoolStat tpstat = threadPoolStats.get(0);
 
     assertEquals(1, tpstat.getPendingTasks().intValue());
@@ -138,11 +143,13 @@ public class MetricsServiceTest {
       throws InterruptedException, ReaperException, JMException, IOException, ClassNotFoundException {
 
     AppContext cxt = new AppContext();
+    ClusterFacade clusterFacade = Mockito.mock(ClusterFacade.class);
+    Mockito.doReturn(Collections.singletonList("")).when(clusterFacade).getDroppedMessages(any());
     cxt.config = new ReaperApplicationConfiguration();
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(jmx);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(jmx);
     MBeanServerConnection serverConn = mock(MBeanServerConnection.class);
     JmxProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
 
@@ -151,14 +158,15 @@ public class MetricsServiceTest {
     when(serverConn.queryNames(Mockito.any(ObjectName.class), Mockito.isNull())).thenReturn(Collections.emptySet());
 
     Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
-    MetricsService.create(cxt).getDroppedMessages(node);
-    Mockito.verify(serverConn, Mockito.times(1)).queryNames(Mockito.any(ObjectName.class), Mockito.isNull());
+    MetricsService.create(cxt, () -> clusterFacade).getDroppedMessages(node);
+    Mockito.verify(clusterFacade, Mockito.times(1)).getDroppedMessages(Mockito.any());
   }
 
   @Test
   public void testConvertToDroppedMessages() {
     AppContext context = new AppContext();
-    final MetricsService metricsGrabber = MetricsService.create(context);
+    ClusterFacade clusterFacade = ClusterFacade.create(context);
+    final MetricsService metricsGrabber = MetricsService.create(context, () -> clusterFacade);
 
     List<JmxStat> statList = Lists.newArrayList();
     statList.add(
@@ -200,7 +208,10 @@ public class MetricsServiceTest {
     Map<String, List<JmxStat>> jmxStats = Maps.newHashMap();
     jmxStats.put("READ", statList);
 
-    List<DroppedMessages> droppedMessages = metricsGrabber.convertToDroppedMessages(jmxStats);
+    Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
+    List<DroppedMessages> droppedMessages
+        = clusterFacade.convertToDroppedMessages(
+            MetricsProxy.convertToGenericMetrics(jmxStats, node));
     DroppedMessages dropped = droppedMessages.get(0);
 
     assertEquals(1, dropped.getMeanRate().intValue());
@@ -215,11 +226,13 @@ public class MetricsServiceTest {
       throws InterruptedException, ReaperException, JMException, IOException, ClassNotFoundException {
 
     AppContext cxt = new AppContext();
+    ClusterFacade clusterFacadeMock = Mockito.mock(ClusterFacade.class);
+    Mockito.when(clusterFacadeMock.getClientRequestLatencies(any())).thenReturn(Collections.EMPTY_LIST);
     cxt.config = new ReaperApplicationConfiguration();
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(jmx);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(jmx);
     MBeanServerConnection serverConn = mock(MBeanServerConnection.class);
     JmxProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
 
@@ -228,7 +241,7 @@ public class MetricsServiceTest {
     when(serverConn.queryNames(Mockito.any(ObjectName.class), Mockito.isNull())).thenReturn(Collections.emptySet());
 
     Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
-    MetricsService.create(cxt).getClientRequestLatencies(node);
-    Mockito.verify(serverConn, Mockito.times(1)).queryNames(Mockito.any(ObjectName.class), Mockito.isNull());
+    MetricsService.create(cxt, () -> clusterFacadeMock).getClientRequestLatencies(node);
+    Mockito.verify(clusterFacadeMock, Mockito.times(1)).getClientRequestLatencies(Mockito.any());
   }
 }
