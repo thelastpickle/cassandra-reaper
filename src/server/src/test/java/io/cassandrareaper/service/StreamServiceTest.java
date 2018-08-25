@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+
 import javax.management.openmbean.ArrayType;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.CompositeDataSupport;
@@ -64,7 +65,7 @@ public class StreamServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     StreamService
         .create(cxt)
@@ -94,7 +95,7 @@ public class StreamServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -126,7 +127,7 @@ public class StreamServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -158,7 +159,7 @@ public class StreamServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -190,7 +191,7 @@ public class StreamServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService

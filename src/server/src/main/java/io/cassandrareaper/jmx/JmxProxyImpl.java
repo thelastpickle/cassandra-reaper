@@ -19,7 +19,6 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.service.RingRange;
 
@@ -296,33 +295,8 @@ final class JmxProxyImpl implements JmxProxy {
     }
   }
 
+  @NotNull
   @Override
-  public List<RingRange> getRangesForLocalEndpoint(String keyspace) throws ReaperException {
-    Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
-    List<RingRange> localRanges = Lists.newArrayList();
-    try {
-      Map<List<String>, List<String>> ranges = ssProxy.getRangeToEndpointMap(keyspace);
-      String localEndpoint = getLocalEndpoint();
-      // Filtering ranges for which the local node is a replica
-      // For local mode
-      ranges
-          .entrySet()
-          .stream()
-          .forEach(entry -> {
-            if (entry.getValue().contains(localEndpoint)) {
-              localRanges.add(
-                  new RingRange(new BigInteger(entry.getKey().get(0)), new BigInteger(entry.getKey().get(1))));
-            }
-          });
-
-      LOG.info("LOCAL RANGES {}", localRanges);
-      return localRanges;
-    } catch (RuntimeException e) {
-      LOG.error(e.getMessage());
-      throw new ReaperException(e.getMessage(), e);
-    }
-  }
-
   public String getLocalEndpoint() throws ReaperException {
     String cassandraVersion = getCassandraVersion();
     if (versionCompare(cassandraVersion, "2.1.10") >= 0) {
@@ -333,29 +307,6 @@ final class JmxProxyImpl implements JmxProxy {
       String localHostId = ssProxy.getLocalHostId();
       return hostIdBiMap.inverse().get(localHostId);
     }
-  }
-
-  @NotNull
-  @Override
-  public List<String> tokenRangeToEndpoint(String keyspace, Segment segment) {
-    Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
-
-    Set<Map.Entry<List<String>, List<String>>> entries = ssProxy.getRangeToEndpointMap(keyspace).entrySet();
-
-    for (Map.Entry<List<String>, List<String>> entry : entries) {
-      BigInteger rangeStart = new BigInteger(entry.getKey().get(0));
-      BigInteger rangeEnd = new BigInteger(entry.getKey().get(1));
-      if (new RingRange(rangeStart, rangeEnd).encloses(segment.getTokenRanges().get(0))) {
-        LOG.debug(
-            "[tokenRangeToEndpoint] Found replicas for token range {} : {}",
-            segment.getTokenRanges().get(0),
-            entry.getValue());
-        return entry.getValue();
-      }
-    }
-    LOG.error("[tokenRangeToEndpoint] no replicas found for token range {}", segment);
-    LOG.debug("[tokenRangeToEndpoint] checked token ranges were {}", entries);
-    return Lists.newArrayList();
   }
 
   @NotNull
@@ -492,21 +443,36 @@ final class JmxProxyImpl implements JmxProxy {
     try {
       // list all mbeans in search of one with the name Repair#??
       // This is the replacement for AntiEntropySessions since Cassandra 2.2
+      return getRunningRepairMetricsPost22().isEmpty()
+          ? false
+          : true;
+    } catch (RuntimeException e) {
+      LOG.error(ERROR_GETTING_ATTR_JMX, e);
+    }
+    // If uncertain, assume it's running
+    return true;
+  }
+
+  @Override
+  public List<String> getRunningRepairMetricsPost22() {
+    List<String> repairMbeans = Lists.newArrayList();
+    try {
+      // list all mbeans in search of one with the name Repair#??
+      // This is the replacement for AntiEntropySessions since Cassandra 2.2
       Set beanSet = mbeanServer.queryNames(ObjectNames.INTERNALS, null);
       for (Object bean : beanSet) {
         ObjectName objName = (ObjectName) bean;
         if (objName.getCanonicalName().contains("Repair#")) {
-          return true;
+          repairMbeans.add(objName.getCanonicalName());
         }
       }
-      return false;
     } catch (IOException ignored) {
       LOG.warn(FAILED_TO_CONNECT_TO_USING_JMX, host, ignored);
     } catch (RuntimeException e) {
       LOG.error(ERROR_GETTING_ATTR_JMX, e);
     }
     // If uncertain, assume it's running
-    return true;
+    return repairMbeans;
   }
 
   @Override

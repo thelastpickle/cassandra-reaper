@@ -19,10 +19,10 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
@@ -41,7 +41,9 @@ import java.util.stream.Collectors;
 import com.codahale.metrics.InstrumentedScheduledExecutorService;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -59,6 +61,7 @@ public final class RepairManager implements AutoCloseable {
   private final Lock repairRunnersLock = new ReentrantLock();
 
   private final AppContext context;
+  private final ClusterFacade clusterFacade;
   private final Heart heart;
   private final ListeningScheduledExecutorService executor;
   private final long repairTimeoutMillis;
@@ -66,6 +69,7 @@ public final class RepairManager implements AutoCloseable {
 
   private RepairManager(
       AppContext context,
+      Supplier<ClusterFacade> clusterFacadeSupplier,
       ScheduledExecutorService executor,
       long repairTimeout,
       TimeUnit repairTimeoutTimeUnit,
@@ -73,12 +77,33 @@ public final class RepairManager implements AutoCloseable {
       TimeUnit retryDelayTimeUnit)  {
 
     this.context = context;
+    this.clusterFacade = clusterFacadeSupplier.get();
     this.heart = Heart.create(context);
     this.repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
     this.retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
 
     this.executor = MoreExecutors.listeningDecorator(
         new InstrumentedScheduledExecutorService(executor, context.metricRegistry));
+  }
+
+  @VisibleForTesting
+  static RepairManager create(
+      AppContext context,
+      Supplier<ClusterFacade> clusterFacadeSupplier,
+      ScheduledExecutorService executor,
+      long repairTimeout,
+      TimeUnit repairTimeoutTimeUnit,
+      long retryDelay,
+      TimeUnit retryDelayTimeUnit) {
+
+    return new RepairManager(
+        context,
+        clusterFacadeSupplier,
+        executor,
+        repairTimeout,
+        repairTimeoutTimeUnit,
+        retryDelay,
+        retryDelayTimeUnit);
   }
 
   public static RepairManager create(
@@ -89,7 +114,14 @@ public final class RepairManager implements AutoCloseable {
       long retryDelay,
       TimeUnit retryDelayTimeUnit) {
 
-    return new RepairManager(context, executor, repairTimeout, repairTimeoutTimeUnit, retryDelay, retryDelayTimeUnit);
+    return create(
+        context,
+        () -> ClusterFacade.create(context),
+        executor,
+        repairTimeout,
+        repairTimeoutTimeUnit,
+        retryDelay,
+        retryDelayTimeUnit);
   }
 
   long getRepairTimeoutMillis() {
@@ -108,6 +140,14 @@ public final class RepairManager implements AutoCloseable {
       abortAllRunningSegmentsInKnownPausedRepairRuns(pausedRepairRuns);
       resumeUnkownRunningRepairRuns(runningRepairRuns);
       resumeUnknownPausedRepairRuns(pausedRepairRuns);
+    } catch (RuntimeException e) {
+      throw new ReaperException(e);
+    }
+  }
+
+  public void handleMetricsRequests() throws ReaperException {
+    try {
+      heart.beatMetrics();
     } catch (RuntimeException e) {
       throw new ReaperException(e);
     }
@@ -238,17 +278,14 @@ public final class RepairManager implements AutoCloseable {
         segment = context.storage.getRepairSegment(repairRun.getId(), segment.getId()).get();
         if (RepairSegment.State.RUNNING == segment.getState()) {
           try {
-            Node node
-                = Node.builder()
-                    .withCluster(context.storage.getCluster(repairRun.getClusterName()).get())
-                    .withHostname(segment.getCoordinatorHost())
-                    .build();
-
             JmxProxy jmxProxy
-                = context.jmxConnectionFactory.connect(node, context.config.getJmxConnectionTimeoutInSeconds());
+                = ClusterFacade.create(context)
+                    .connectAny(
+                        context.storage.getCluster(repairRun.getClusterName()).get(),
+                        Arrays.asList(segment.getCoordinatorHost()));
 
             SegmentRunner.abort(context, segment, jmxProxy);
-          } catch (ReaperException | NumberFormatException | InterruptedException e) {
+          } catch (ReaperException | NumberFormatException e) {
             String msg = "Tried to abort repair on segment {} marked as RUNNING, but the "
                 + "host was down (so abortion won't be needed). Postponing the segment.";
 
@@ -328,7 +365,7 @@ public final class RepairManager implements AutoCloseable {
 
       LOG.info("scheduling repair for repair run #{}", runId);
       try {
-        RepairRunner newRunner = new RepairRunner(context, runId);
+        RepairRunner newRunner = RepairRunner.create(context, runId);
         repairRunners.put(runId, newRunner);
         executor.submit(newRunner);
       } catch (ReaperException e) {
