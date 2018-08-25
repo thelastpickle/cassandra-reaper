@@ -113,6 +113,14 @@ public final class RepairManager implements AutoCloseable {
     }
   }
 
+  public void handleMetricsRequests() throws ReaperException {
+    try {
+      heart.beatMetrics();
+    } catch (RuntimeException e) {
+      throw new ReaperException(e);
+    }
+  }
+
   private void abortAllRunningSegmentsWithNoLeader(Collection<RepairRun> runningRepairRuns) throws ReaperException {
     runningRepairRuns
         .forEach((repairRun) -> {
@@ -245,7 +253,7 @@ public final class RepairManager implements AutoCloseable {
                     .build();
 
             JmxProxy jmxProxy
-                = context.jmxConnectionFactory.connect(node, context.config.getJmxConnectionTimeoutInSeconds());
+                = context.jmxConnectionFactory.connect(node);
 
             SegmentRunner.abort(context, segment, jmxProxy);
           } catch (ReaperException | NumberFormatException | InterruptedException e) {

@@ -21,8 +21,6 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
-import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.jmx.StorageServiceProxy;
 import io.cassandrareaper.service.CompactionService;
 import io.cassandrareaper.service.MetricsService;
 import io.cassandrareaper.service.StreamService;
@@ -39,6 +37,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import jersey.repackaged.com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -198,13 +197,10 @@ public final class NodeStatsResource {
       throws InterruptedException {
 
     try {
-      JmxProxy jmxProxy
-          = context.jmxConnectionFactory.connect(
-              Node.builder().withCluster(context.storage.getCluster(clusterName).get()).withHostname(host).build(),
-              context.config.getJmxConnectionTimeoutInSeconds());
+      Preconditions.checkState(clusterName != null && !clusterName.isEmpty(), "Cluster name must be set");
 
-      StorageServiceProxy ssProxy = StorageServiceProxy.create(jmxProxy);
-      Map<String, List<String>> tokens = ssProxy.getTokensByNode();
+      Map<String, List<String>> tokens
+          = context.clusterProxy.getTokensByNode(context.storage.getCluster(clusterName).get());
       return Response.ok().entity(tokens.get(host)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);

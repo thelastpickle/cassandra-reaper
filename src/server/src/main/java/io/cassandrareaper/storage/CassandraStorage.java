@@ -22,6 +22,8 @@ import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.ClusterProperties;
+import io.cassandrareaper.core.Compaction;
+import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.Builder;
@@ -40,6 +42,7 @@ import io.cassandrareaper.storage.cassandra.DateTimeCodec;
 import io.cassandrareaper.storage.cassandra.Migration003;
 import io.cassandrareaper.storage.cassandra.Migration009;
 import io.cassandrareaper.storage.cassandra.Migration016;
+import io.cassandrareaper.storage.cassandra.Migration018;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -78,6 +81,7 @@ import com.datastax.driver.core.policies.DowngradingConsistencyRetryPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
 import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
@@ -95,6 +99,8 @@ import org.cognitor.cassandra.migration.Database;
 import org.cognitor.cassandra.migration.MigrationRepository;
 import org.cognitor.cassandra.migration.MigrationTask;
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
@@ -103,12 +109,14 @@ import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 public final class CassandraStorage implements IStorage, IDistributedStorage {
 
+  private static final int LEAD_DURATION = 600;
   /* Simple stmts */
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
   private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
   private static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
   private static final String SELECT_RUNNING_REAPERS = "SELECT reaper_instance_id FROM running_reapers";
+  private static final DateTimeFormatter HOURLY_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHH");
 
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
 
@@ -167,11 +175,17 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement storeNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsByNodePrepStmt;
+  private PreparedStatement delNodeMetricsByNodePrepStmt;
   private PreparedStatement getSnapshotPrepStmt;
   private PreparedStatement deleteSnapshotPrepStmt;
   private PreparedStatement saveSnapshotPrepStmt;
+  private PreparedStatement storeMetricsPrepStmt;
+  private PreparedStatement getMetricsForHostPrepStmt;
+  private PreparedStatement getMetricsForClusterPrepStmt;
+  private PreparedStatement insertOperationsPrepStmt;
+  private PreparedStatement listOperationsForNodePrepStmt;
 
-  public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) {
+  public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) throws ReaperException {
     CassandraFactory cassandraFactory = config.getCassandraFactory();
     overrideQueryOptions(cassandraFactory);
     overrideRetryPolicy(cassandraFactory);
@@ -202,160 +216,206 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static void initializeAndUpgradeSchema(
       com.datastax.driver.core.Cluster cassandra,
       Session session,
-      String keyspace) {
+      String keyspace) throws ReaperException {
 
-    cassandra.getMetadata().getAllHosts().forEach((host) -> {
-      Preconditions.checkState(
-              0 >= VersionNumber.parse("2.1").compareTo(host.getCassandraVersion()),
-              "All Cassandra nodes in Reaper's backend storage must be running version 2.1+");
-    });
-
-    // initialize/upgrade db schema
-    Database database = new Database(cassandra, keyspace);
-    int currentVersion = database.getVersion();
-    MigrationRepository migrationRepo = new MigrationRepository("db/cassandra");
-    if (currentVersion < migrationRepo.getLatestVersion()) {
-      LOG.warn("Starting db migration from {} to {}…", currentVersion, migrationRepo.getLatestVersion());
-
-      if (4 <= currentVersion) {
-        List<String> otherRunningReapers = session.execute("SELECT reaper_instance_host FROM running_reapers").all()
-            .stream()
-            .map((row) -> row.getString("reaper_instance_host"))
-            .filter((reaperInstanceHost) -> !AppContext.REAPER_INSTANCE_ADDRESS.equals(reaperInstanceHost))
-            .collect(Collectors.toList());
-
+    try {
+      cassandra.getMetadata().getAllHosts().forEach((host) -> {
         Preconditions.checkState(
-            otherRunningReapers.isEmpty(),
-            "Database migration can not happen with other reaper instances running. Found ",
-            StringUtils.join(otherRunningReapers));
-      }
+                0 >= VersionNumber.parse("2.1").compareTo(host.getCassandraVersion()),
+                "All Cassandra nodes in Reaper's backend storage must be running version 2.1+");
+      });
 
-      if (currentVersion > 3 && currentVersion < 9) {
-        // only applicable after `003_switch_to_uuids.cql`
-        // Migration009 needs to happen before `migration.migrate()` in case it fails and needs re-trying
-        Migration009.migrate(session);
-      }
-      MigrationTask migration = new MigrationTask(database, migrationRepo);
-      migration.migrate();
-      Migration003.migrate(session);
+      // initialize/upgrade db schema
+      Database database = new Database(cassandra, keyspace);
+      int currentVersion = database.getVersion();
+      MigrationRepository migrationRepo = new MigrationRepository("db/cassandra");
+      if (currentVersion < migrationRepo.getLatestVersion()) {
+        LOG.warn("Starting db migration from {} to {}…", currentVersion, migrationRepo.getLatestVersion());
 
-      if (currentVersion <= 15) {
-        Migration016.migrate(session, keyspace);
+        if (4 <= currentVersion) {
+          List<String> otherRunningReapers = session.execute("SELECT reaper_instance_host FROM running_reapers").all()
+              .stream()
+              .map((row) -> row.getString("reaper_instance_host"))
+              .filter((reaperInstanceHost) -> !AppContext.REAPER_INSTANCE_ADDRESS.equals(reaperInstanceHost))
+              .collect(Collectors.toList());
+
+          Preconditions.checkState(
+              otherRunningReapers.isEmpty(),
+              "Database migration can not happen with other reaper instances running. Found ",
+              StringUtils.join(otherRunningReapers));
+        }
+
+        if (currentVersion > 3 && currentVersion < 9) {
+          // only applicable after `003_switch_to_uuids.cql`
+          // Migration009 needs to happen before `migration.migrate()` in case it fails and needs re-trying
+          Migration009.migrate(session);
+        }
+        MigrationTask migration = new MigrationTask(database, migrationRepo);
+        migration.migrate();
+        Migration003.migrate(session);
+
+        if (currentVersion <= 15) {
+          Migration016.migrate(session, keyspace);
+        }
+        // Switch metrics table to TWCS if possible
+        Migration018.migrate(session, keyspace);
       }
+    } catch (RuntimeException e) {
+      LOG.error("Failed performing Cassandra schema migrations", e);
+      throw new ReaperException(e);
     }
   }
 
-  private void prepareStatements() {
+  private void prepareStatements() throws ReaperException {
     final String timeUdf = 0 < VersionNumber.parse("2.2").compareTo(version) ? "dateOf" : "toTimestamp";
-    insertClusterPrepStmt
-        = session
-            .prepare(
-                "INSERT INTO cluster(name, partitioner, seed_hosts, properties) values(?, ?, ?, ?)")
-            .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    getClusterPrepStmt = session
-        .prepare("SELECT * FROM cluster WHERE name = ?")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM)
-        .setRetryPolicy(DowngradingConsistencyRetryPolicy.INSTANCE);
-    deleteClusterPrepStmt = session.prepare("DELETE FROM cluster WHERE name = ?");
-    insertRepairRunPrepStmt = session
-        .prepare(
-            "INSERT INTO repair_run(id, cluster_name, repair_unit_id, cause, owner, state, creation_time, "
-                + "start_time, end_time, pause_time, intensity, last_event, segment_count, repair_parallelism) "
-                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    insertRepairRunClusterIndexPrepStmt
-        = session.prepare("INSERT INTO repair_run_by_cluster(cluster_name, id) values(?, ?)");
-    insertRepairRunUnitIndexPrepStmt
-        = session.prepare("INSERT INTO repair_run_by_unit(repair_unit_id, id) values(?, ?)");
-    getRepairRunPrepStmt = session
-        .prepare(
-            "SELECT id,cluster_name,repair_unit_id,cause,owner,state,creation_time,start_time,end_time,"
-                + "pause_time,intensity,last_event,segment_count,repair_parallelism "
-                + "FROM repair_run WHERE id = ? LIMIT 1")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    getRepairRunForClusterPrepStmt = session.prepare("SELECT * FROM repair_run_by_cluster WHERE cluster_name = ?");
-    getRepairRunForUnitPrepStmt = session.prepare("SELECT * FROM repair_run_by_unit WHERE repair_unit_id = ?");
-    deleteRepairRunPrepStmt = session.prepare("DELETE FROM repair_run WHERE id = ?");
-    deleteRepairRunByClusterPrepStmt
-        = session.prepare("DELETE FROM repair_run_by_cluster WHERE id = ? and cluster_name = ?");
-    deleteRepairRunByUnitPrepStmt = session.prepare("DELETE FROM repair_run_by_unit "
-        + "WHERE id = ? and repair_unit_id= ?");
-    insertRepairUnitPrepStmt = session
-        .prepare(
-            "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
-                + "incremental_repair, nodes, \"datacenters\", blacklisted_tables, repair_thread_count) "
-                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    getRepairUnitPrepStmt = session
-        .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
-    insertRepairSegmentPrepStmt = session
-        .prepare(
-            "INSERT INTO repair_run"
-                + "(id,segment_id,repair_unit_id,start_token,end_token,segment_state,fail_count, token_ranges)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    insertRepairSegmentIncrementalPrepStmt = session
-        .prepare(
-            "INSERT INTO repair_run"
-                + "(id,segment_id,repair_unit_id,start_token,end_token,segment_state,coordinator_host,fail_count)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    updateRepairSegmentPrepStmt = session
-        .prepare(
-            "INSERT INTO repair_run"
-                + "(id,segment_id,segment_state,coordinator_host,segment_start_time,fail_count)"
-                + " VALUES(?, ?, ?, ?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    insertRepairSegmentEndTimePrepStmt = session
-        .prepare("INSERT INTO repair_run(id, segment_id, segment_end_time) VALUES(?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    getRepairSegmentPrepStmt = session
-            .prepare(
-                "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
-                    + "segment_start_time,segment_end_time,fail_count, token_ranges"
-                    + " FROM repair_run WHERE id = ? and segment_id = ?")
-            .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    getRepairSegmentsByRunIdPrepStmt = session.prepare(
-        "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
-            + "segment_end_time,fail_count, token_ranges FROM repair_run WHERE id = ?");
-    getRepairSegmentCountByRunIdPrepStmt = session.prepare("SELECT count(*) FROM repair_run WHERE id = ?");
-    insertRepairSchedulePrepStmt = session
-            .prepare(
-                "INSERT INTO repair_schedule_v1(id, repair_unit_id, state, days_between, next_activation, run_history, "
-                    + "segment_count, repair_parallelism, intensity, "
-                    + "creation_time, owner, pause_time, segment_count_per_node) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-            .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    getRepairSchedulePrepStmt
-        = session.prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?").setConsistencyLevel(ConsistencyLevel.QUORUM);
-    insertRepairScheduleByClusterAndKsPrepStmt = session.prepare(
-        "INSERT INTO repair_schedule_by_cluster_and_keyspace(cluster_name, keyspace_name, repair_schedule_id)"
-            + " VALUES(?, ?, ?)");
-    getRepairScheduleByClusterAndKsPrepStmt = session.prepare(
-        "SELECT repair_schedule_id FROM repair_schedule_by_cluster_and_keyspace "
-            + "WHERE cluster_name = ? and keyspace_name = ?");
-    deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule_v1 WHERE id = ?");
-    deleteRepairScheduleByClusterAndKsPrepStmt = session.prepare(
-        "DELETE FROM repair_schedule_by_cluster_and_keyspace "
-            + "WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
+    try {
+      insertClusterPrepStmt
+          = session
+              .prepare(
+                  "INSERT INTO cluster(name, partitioner, seed_hosts, properties) values(?, ?, ?, ?)")
+              .setConsistencyLevel(ConsistencyLevel.QUORUM);
+      getClusterPrepStmt = session
+          .prepare("SELECT * FROM cluster WHERE name = ?")
+          .setConsistencyLevel(ConsistencyLevel.QUORUM)
+          .setRetryPolicy(DowngradingConsistencyRetryPolicy.INSTANCE);
+      deleteClusterPrepStmt = session.prepare("DELETE FROM cluster WHERE name = ?");
+      insertRepairRunPrepStmt = session
+          .prepare(
+              "INSERT INTO repair_run(id, cluster_name, repair_unit_id, cause, owner, state, creation_time, "
+                  + "start_time, end_time, pause_time, intensity, last_event, segment_count, repair_parallelism) "
+                  + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+          .setConsistencyLevel(ConsistencyLevel.QUORUM);
+      insertRepairRunClusterIndexPrepStmt
+          = session.prepare("INSERT INTO repair_run_by_cluster(cluster_name, id) values(?, ?)");
+      insertRepairRunUnitIndexPrepStmt
+          = session.prepare("INSERT INTO repair_run_by_unit(repair_unit_id, id) values(?, ?)");
+      getRepairRunPrepStmt = session
+          .prepare(
+              "SELECT id,cluster_name,repair_unit_id,cause,owner,state,creation_time,start_time,end_time,"
+                  + "pause_time,intensity,last_event,segment_count,repair_parallelism "
+                  + "FROM repair_run WHERE id = ? LIMIT 1")
+          .setConsistencyLevel(ConsistencyLevel.QUORUM);
+      getRepairRunForClusterPrepStmt = session.prepare("SELECT * FROM repair_run_by_cluster WHERE cluster_name = ?");
+      getRepairRunForUnitPrepStmt = session.prepare("SELECT * FROM repair_run_by_unit WHERE repair_unit_id = ?");
+      deleteRepairRunPrepStmt = session.prepare("DELETE FROM repair_run WHERE id = ?");
+      deleteRepairRunByClusterPrepStmt
+          = session.prepare("DELETE FROM repair_run_by_cluster WHERE id = ? and cluster_name = ?");
+      deleteRepairRunByUnitPrepStmt = session.prepare("DELETE FROM repair_run_by_unit "
+          + "WHERE id = ? and repair_unit_id= ?");
+      insertRepairUnitPrepStmt = session
+          .prepare(
+              "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
+                  + "incremental_repair, nodes, \"datacenters\", blacklisted_tables, repair_thread_count) "
+                  + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+          .setConsistencyLevel(ConsistencyLevel.QUORUM);
+      getRepairUnitPrepStmt = session
+          .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
+          .setConsistencyLevel(ConsistencyLevel.QUORUM);
+      deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
+      insertRepairSegmentPrepStmt = session
+          .prepare(
+              "INSERT INTO repair_run"
+                  + "(id,segment_id,repair_unit_id,start_token,end_token,segment_state,fail_count, token_ranges)"
+                  + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
+          .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+      insertRepairSegmentIncrementalPrepStmt = session
+          .prepare(
+              "INSERT INTO repair_run"
+                  + "(id,segment_id,repair_unit_id,start_token,end_token,segment_state,coordinator_host,fail_count)"
+                  + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
+          .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+      updateRepairSegmentPrepStmt = session
+          .prepare(
+              "INSERT INTO repair_run"
+                  + "(id,segment_id,segment_state,coordinator_host,segment_start_time,fail_count)"
+                  + " VALUES(?, ?, ?, ?, ?, ?)")
+          .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+      insertRepairSegmentEndTimePrepStmt = session
+          .prepare("INSERT INTO repair_run(id, segment_id, segment_end_time) VALUES(?, ?, ?)")
+          .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+      getRepairSegmentPrepStmt = session
+              .prepare(
+                  "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
+                      + "segment_start_time,segment_end_time,fail_count, token_ranges"
+                      + " FROM repair_run WHERE id = ? and segment_id = ?")
+              .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+      getRepairSegmentsByRunIdPrepStmt = session.prepare(
+          "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
+              + "segment_end_time,fail_count, token_ranges FROM repair_run WHERE id = ?");
+      getRepairSegmentCountByRunIdPrepStmt = session.prepare("SELECT count(*) FROM repair_run WHERE id = ?");
+      insertRepairSchedulePrepStmt
+          = session
+              .prepare(
+                  "INSERT INTO repair_schedule_v1(id, repair_unit_id, state,"
+                      + "days_between, next_activation, run_history, "
+                      + "segment_count, repair_parallelism, intensity, "
+                      + "creation_time, owner, pause_time, segment_count_per_node) "
+                      + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+              .setConsistencyLevel(ConsistencyLevel.QUORUM);
+      getRepairSchedulePrepStmt
+          = session
+              .prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?")
+              .setConsistencyLevel(ConsistencyLevel.QUORUM);
+      insertRepairScheduleByClusterAndKsPrepStmt = session.prepare(
+          "INSERT INTO repair_schedule_by_cluster_and_keyspace(cluster_name, keyspace_name, repair_schedule_id)"
+              + " VALUES(?, ?, ?)");
+      getRepairScheduleByClusterAndKsPrepStmt = session.prepare(
+          "SELECT repair_schedule_id FROM repair_schedule_by_cluster_and_keyspace "
+              + "WHERE cluster_name = ? and keyspace_name = ?");
+      deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule_v1 WHERE id = ?");
+      deleteRepairScheduleByClusterAndKsPrepStmt = session.prepare(
+          "DELETE FROM repair_schedule_by_cluster_and_keyspace "
+              + "WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
+      prepareLeaderElectionStatements(timeUdf);
+      getRunningReapersCountPrepStmt = session.prepare(SELECT_RUNNING_REAPERS);
+      saveHeartbeatPrepStmt = session
+          .prepare(
+              "INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat)"
+                  + " VALUES(?,?," + timeUdf + "(now()))")
+          .setIdempotent(false);
+
+      getSnapshotPrepStmt = session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
+      deleteSnapshotPrepStmt = session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
+      saveSnapshotPrepStmt = session.prepare(
+              "INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
+                  + " VALUES(?,?,?,?,?)");
+
+      if (0 >= VersionNumber.parse("3.0").compareTo(version)) {
+        try {
+          getRepairSegmentsByRunIdAndStatePrepStmt = session.prepare(
+              "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
+                  + "segment_start_time,segment_end_time,fail_count, token_ranges FROM repair_run "
+                  + "WHERE id = ? AND segment_state = ? ALLOW FILTERING");
+          getRepairSegmentCountByRunIdAndStatePrepStmt = session.prepare(
+              "SELECT count(segment_id) FROM repair_run WHERE id = ? AND segment_state = ? ALLOW FILTERING");
+        } catch (InvalidQueryException ex) {
+          throw new AssertionError(
+              "Failure preparing `SELECT… FROM repair_run WHERE… ALLOW FILTERING` should only happen on Cassandra-2",
+              ex);
+        }
+      }
+      prepareMetricStatements();
+      prepareOperationsStatements();
+    } catch (RuntimeException e) {
+      LOG.error("Failed preparing Cassandra statements", e);
+      throw new ReaperException(e);
+    }
+  }
+
+  private void prepareLeaderElectionStatements(final String timeUdf) {
     takeLeadPrepStmt = session
         .prepare(
-            "INSERT INTO leader(leader_id, reaper_instance_id, reaper_instance_host, last_heartbeat) "
-                + "VALUES(?, ?, ?, " + timeUdf + "(now())) IF NOT EXISTS");
+            "INSERT INTO leader(leader_id, reaper_instance_id, reaper_instance_host, last_heartbeat)"
+                + "VALUES(?, ?, ?, " + timeUdf + "(now())) IF NOT EXISTS USING TTL ?");
     renewLeadPrepStmt = session
         .prepare(
-            "UPDATE leader SET reaper_instance_id = ?, reaper_instance_host = ?,"
+            "UPDATE leader USING TTL ? SET reaper_instance_id = ?, reaper_instance_host = ?,"
                 + " last_heartbeat = " + timeUdf + "(now()) WHERE leader_id = ? IF reaper_instance_id = ?");
     releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?");
     forceReleaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ?");
-    getRunningReapersCountPrepStmt = session.prepare(SELECT_RUNNING_REAPERS);
-    saveHeartbeatPrepStmt = session
-        .prepare(
-            "INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat)"
-                + " VALUES(?,?," + timeUdf + "(now()))")
-        .setIdempotent(false);
+  }
+
+  private void prepareMetricStatements() {
     storeNodeMetricsPrepStmt = session
         .prepare(
             "INSERT INTO node_metrics_v1 (time_partition,run_id,node,datacenter,cluster,requested,pending_compactions,"
@@ -365,27 +425,43 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         + " WHERE time_partition = ? AND run_id = ?");
     getNodeMetricsByNodePrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
         + " WHERE time_partition = ? AND run_id = ? AND node = ?");
+    delNodeMetricsByNodePrepStmt = session.prepare("DELETE FROM node_metrics_v1"
+        + " WHERE time_partition = ? AND run_id = ? AND node = ?");
+    storeMetricsPrepStmt
+        = session
+            .prepare(
+                "INSERT INTO node_metrics_v2 (cluster, metric_domain, metric_type, time_bucket, "
+                    + "host, metric_scope, metric_name, ts, metric_attribute, value) "
+                    + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
+    getMetricsForHostPrepStmt
+        = session
+            .prepare(
+                "SELECT cluster, metric_domain, metric_type, time_bucket, host, "
+                    + "metric_scope, metric_name, ts, metric_attribute, value "
+                    + "FROM node_metrics_v2 "
+                    + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ? and host = ?")
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
+    getMetricsForClusterPrepStmt
+      = session
+            .prepare(
+                "SELECT cluster, metric_domain, metric_type, time_bucket, host, "
+                    + "metric_scope, metric_name, ts, metric_attribute, value "
+                    + "FROM node_metrics_v2 "
+                    + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ?")
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
+  }
 
-    getSnapshotPrepStmt = session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
-    deleteSnapshotPrepStmt = session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
-    saveSnapshotPrepStmt = session.prepare(
-            "INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
-                + " VALUES(?,?,?,?,?)");
+  private void prepareOperationsStatements() {
+    insertOperationsPrepStmt
+        = session.prepare(
+            "INSERT INTO node_operations(cluster, type, time_bucket, host, ts, data) "
+                + "values(?,?,?,?,?,?)");
 
-    if (0 >= VersionNumber.parse("3.0").compareTo(version)) {
-      try {
-        getRepairSegmentsByRunIdAndStatePrepStmt = session.prepare(
-            "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
-                + "segment_start_time,segment_end_time,fail_count, token_ranges FROM repair_run "
-                + "WHERE id = ? AND segment_state = ? ALLOW FILTERING");
-        getRepairSegmentCountByRunIdAndStatePrepStmt = session.prepare(
-            "SELECT count(segment_id) FROM repair_run WHERE id = ? AND segment_state = ? ALLOW FILTERING");
-      } catch (InvalidQueryException ex) {
-        throw new AssertionError(
-            "Failure preparing `SELECT… FROM repair_run WHERE… ALLOW FILTERING` should only happen on Cassandra-2",
-            ex);
-      }
-    }
+    listOperationsForNodePrepStmt
+        = session.prepare(
+            "SELECT cluster, type, time_bucket, host, ts, data FROM node_operations "
+                + "WHERE cluster = ? AND type = ? and time_bucket = ? and host = ? LIMIT 1");
   }
 
   @Override
@@ -910,6 +986,31 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
+  public Optional<RepairSegment> getNextFreeSegmentForRanges(
+      UUID runId, Optional<RingRange> parallelRange, List<RingRange> ranges) {
+    List<RepairSegment> segments
+        = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
+    Collections.shuffle(segments);
+
+    for (RepairSegment seg : segments) {
+      if (seg.getState().equals(State.NOT_STARTED) && withinRange(seg, parallelRange)) {
+        for (RingRange range : ranges) {
+          if (segmentIsWithinRange(seg, range)) {
+            LOG.debug(
+                "Segment [{}, {}] is within range [{}, {}]",
+                seg.getStartToken(),
+                seg.getEndToken(),
+                range.getStart(),
+                range.getEnd());
+            return Optional.of(seg);
+          }
+        }
+      }
+    }
+    return Optional.empty();
+  }
+
+  @Override
   public Collection<RepairSegment> getSegmentsWithState(UUID runId, State segmentState) {
     Collection<RepairSegment> segments = Lists.newArrayList();
 
@@ -1188,9 +1289,14 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public boolean takeLead(UUID leaderId) {
+    return takeLead(leaderId, LEAD_DURATION);
+  }
+
+  @Override
+  public boolean takeLead(UUID leaderId, int ttl) {
     LOG.debug("Trying to take lead on segment {}", leaderId);
     ResultSet lwtResult = session.execute(
-        takeLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS));
+        takeLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS, ttl));
 
     if (lwtResult.wasApplied()) {
       LOG.debug("Took lead on segment {}", leaderId);
@@ -1204,8 +1310,14 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public boolean renewLead(UUID leaderId) {
+    return renewLead(leaderId, LEAD_DURATION);
+  }
+
+  @Override
+  public boolean renewLead(UUID leaderId, int ttl) {
     ResultSet lwtResult = session.execute(
         renewLeadPrepStmt.bind(
+            ttl,
             AppContext.REAPER_INSTANCE_ID,
             AppContext.REAPER_INSTANCE_ADDRESS,
             leaderId,
@@ -1296,6 +1408,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
     Row row = session.execute(getNodeMetricsByNodePrepStmt.bind(minute, runId, node)).one();
     return null != row ? Optional.of(createNodeMetrics(row)) : Optional.empty();
+  }
+
+  @Override
+  public void deleteNodeMetrics(UUID runId, String node) {
+    long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
+    session.executeAsync(delNodeMetricsByNodePrepStmt.bind(minute, runId, node));
   }
 
   private static NodeMetrics createNodeMetrics(Row row) {
@@ -1468,4 +1586,114 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     return snapshotBuilder.build();
   }
 
+  @Override
+  public List<GenericMetric> getMetrics(
+      String clusterName,
+      Optional<String> host,
+      String metricDomain,
+      String metricType,
+      long since) {
+    List<GenericMetric> metrics = Lists.newArrayList();
+    List<ResultSetFuture> futures = Lists.newArrayList();
+    List<String> timeBuckets = Lists.newArrayList();
+    long now = DateTime.now().getMillis();
+    long startTime = since;
+
+    // Compute the hourly buckets since the requested lower bound timestamp
+    while (startTime < now) {
+      timeBuckets.add(DateTime.now().withMillis(startTime).toString(HOURLY_FORMATTER));
+      startTime += 3600000;
+    }
+
+    for (String timeBucket:timeBuckets) {
+      if (host.isPresent()) {
+        //metric = ? and cluster = ? and time_bucket = ? and host = ? and ts >= ? and ts <= ?
+        futures.add(session.executeAsync(
+            getMetricsForHostPrepStmt.bind(
+                metricDomain,
+                metricType,
+                clusterName,
+                timeBucket,
+                host.get())));
+      } else {
+        futures.add(
+            session.executeAsync(
+                getMetricsForClusterPrepStmt.bind(
+                    metricDomain, metricType, clusterName, timeBucket)));
+      }
+    }
+
+    for (ResultSetFuture future : futures) {
+      for (Row row : future.getUninterruptibly()) {
+        // Filtering on the timestamp lower bound since it's not filtered in cluster wide metrics requests
+        if (row.getTimestamp("ts").getTime() >= since) {
+          metrics.add(
+              GenericMetric.builder()
+                  .withClusterName(row.getString("cluster"))
+                  .withHost(row.getString("host"))
+                  .withMetricType(row.getString("metric_type"))
+                  .withMetricScope(row.getString("metric_scope"))
+                  .withMetricName(row.getString("metric_name"))
+                  .withMetricAttribute(row.getString("metric_attribute"))
+                  .withTs(new DateTime(row.getTimestamp("ts")))
+                  .withValue(row.getDouble("value"))
+                  .build());
+        }
+      }
+    }
+
+
+    return metrics;
+  }
+
+  @Override
+  public void storeMetric(GenericMetric metric) {
+    session.execute(
+        storeMetricsPrepStmt.bind(
+            metric.getClusterName(),
+            metric.getMetricDomain(),
+            metric.getMetricType(),
+            metric.getTs().toString(HOURLY_FORMATTER),
+            metric.getHost(),
+            metric.getMetricScope(),
+            metric.getMetricName(),
+            metric.getTs().toDate(),
+            metric.getMetricAttribute(),
+            metric.getValue()));
+  }
+
+  @Override
+  public void storeCompactions(String clusterName, String host, List<Compaction> activeCompactions)
+      throws JsonProcessingException {
+    session.executeAsync(
+        insertOperationsPrepStmt.bind(
+            clusterName,
+            "compaction",
+            DateTime.now().toString(HOURLY_FORMATTER),
+            host,
+            DateTime.now().toDate(),
+            objectMapper.writeValueAsString(activeCompactions)));
+  }
+
+  @Override
+  public List<Compaction> listCompactions(String clusterName, String host)
+      throws IOException {
+    // cluster = ? AND type = ? and time_bucket = ? and host = ?
+    ResultSet compactions
+        = session.execute(
+            listOperationsForNodePrepStmt.bind(
+                clusterName, "compaction", DateTime.now().toString(HOURLY_FORMATTER), host));
+    return compactions.isExhausted()
+        ? Collections.emptyList()
+        : parseJson(compactions.one().getString("data"), new TypeReference<List<Compaction>>(){});
+  }
+
+  private static <T> T parseJson(String json, TypeReference<T> ref) {
+    try {
+      return new ObjectMapper().readValue(json, ref);
+    } catch (IOException e) {
+      LOG.error("error parsing json", e);
+      throw new RuntimeException(e);
+    }
+  }
 }

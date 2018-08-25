@@ -19,6 +19,7 @@ package io.cassandrareaper;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
+import io.cassandrareaper.jmx.ClusterProxy;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxConnectionsInitializer;
 import io.cassandrareaper.resources.ClusterResource;
@@ -178,7 +179,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     if (context.jmxConnectionFactory == null) {
       LOG.info("no JMX connection factory given in context, creating default");
-      context.jmxConnectionFactory = new JmxConnectionFactory(context.metricRegistry);
+      context.jmxConnectionFactory = new JmxConnectionFactory(context);
 
       // read jmx host/port mapping from config and provide to jmx con.factory
       Map<String, Integer> jmxPorts = config.getJmxPorts();
@@ -203,6 +204,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       LOG.debug("using specified JMX credentials per cluster for authentication");
       context.jmxConnectionFactory.setJmxCredentials(jmxCredentials);
     }
+
+    context.clusterProxy = ClusterProxy.create(context);
 
     // Enable cross-origin requests for using external GUI applications.
     if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {
@@ -266,7 +269,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         "Cassandra backend storage is the only one allowing EACH datacenter availability modes.");
 
     ScheduledExecutorService scheduler = new InstrumentedScheduledExecutorService(
-            environment.lifecycle().scheduledExecutorService("ReaperApplication-scheduler").threads(1).build(),
+            environment.lifecycle().scheduledExecutorService("ReaperApplication-scheduler").threads(3).build(),
             context.metricRegistry);
 
     if (context.storage instanceof IDistributedStorage) {
@@ -274,6 +277,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       // us to poll the database for running repairs regularly
       // only with Cassandra storage
       scheduleRepairManager(scheduler);
+      scheduleHandleMetricsRequest(scheduler);
     } else {
       // Storage is different than Cassandra, assuming we have a single instance
       context.repairManager.resumeRunningRepairRuns();
@@ -285,6 +289,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.warn("Reaper is ready to get things done!");
   }
 
+
   private void scheduleRepairManager(ScheduledExecutorService scheduler) {
     scheduler.scheduleWithFixedDelay(
         () -> {
@@ -294,6 +299,23 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
             // test-pollution: grim_reaper trashes this log error
             //if (!Boolean.getBoolean("grim.reaper.running")) {
             LOG.error("Couldn't resume running repair runs", e);
+            //}
+          }
+        },
+        0,
+        10,
+        TimeUnit.SECONDS);
+  }
+
+  private void scheduleHandleMetricsRequest(ScheduledExecutorService scheduler) {
+    scheduler.scheduleWithFixedDelay(
+        () -> {
+          try {
+            context.repairManager.handleMetricsRequests();
+          } catch (ReaperException | RuntimeException e) {
+            // test-pollution: grim_reaper trashes this log error
+            //if (!Boolean.getBoolean("grim.reaper.running")) {
+            LOG.error("Couldn't handle metrics requests", e);
             //}
           }
         },

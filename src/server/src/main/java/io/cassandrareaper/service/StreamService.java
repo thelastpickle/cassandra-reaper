@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 import javax.management.openmbean.CompositeData;
 
 import com.google.common.base.Preconditions;
@@ -72,7 +73,7 @@ public final class StreamService {
 
   private List<StreamSession> pullStreamInfo(Node node) throws ReaperException {
     try {
-      JmxProxy jmxProxy = context.jmxConnectionFactory.connect(node, context.config.getJmxConnectionTimeoutInSeconds());
+      JmxProxy jmxProxy = context.jmxConnectionFactory.connect(node);
       Set<CompositeData> streams = StreamsProxy.create(jmxProxy).listStreams();
 
       if (streams.isEmpty()) {

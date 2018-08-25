@@ -24,8 +24,6 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
-import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
-import io.cassandrareaper.jmx.JmxProxy;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,6 +44,7 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import jersey.repackaged.com.google.common.base.Preconditions;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
@@ -59,11 +58,11 @@ final class RepairRunner implements Runnable {
   private final AppContext context;
   private final UUID repairRunId;
   private final String clusterName;
-  private JmxProxy jmxConnection;
   private final AtomicReferenceArray<UUID> currentlyRunningSegments;
   private final List<RingRange> parallelRanges;
   private final String metricNameForMillisSinceLastRepairPerKeyspace;
   private final String metricNameForMillisSinceLastRepair;
+  private final Optional<Cluster> cluster;
   private float repairProgress;
   private float segmentsDone;
   private float segmentsTotal;
@@ -74,17 +73,17 @@ final class RepairRunner implements Runnable {
     this.repairRunId = repairRunId;
     Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
-    Optional<Cluster> cluster = context.storage.getCluster(repairRun.get().getClusterName());
+    cluster = context.storage.getCluster(repairRun.get().getClusterName());
     assert cluster.isPresent() : "No Cluster with name " + repairRun.get().getClusterName() + " found from storage";
     RepairUnit repairUnitOpt = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
     this.clusterName = cluster.get().getName();
 
-    JmxProxy jmx = this.context.jmxConnectionFactory
-        .connectAny(cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
-
+    Preconditions.checkArgument(cluster.isPresent(), "Cluster couldn't be found in storage");
     String keyspace = repairUnitOpt.getKeyspaceName();
     int parallelRepairs
-        = getPossibleParallelRepairsCount(jmx.getRangeToEndpointMap(keyspace), jmx.getEndpointToHostId());
+        = getPossibleParallelRepairsCount(
+            context.clusterProxy.getRangeToEndpointMap(cluster.get(), keyspace),
+            context.clusterProxy.getEndpointToHostId(cluster.get()));
 
     if (repairUnitOpt.getIncrementalRepair()) {
       // with incremental repair, can't have more parallel repairs than nodes
@@ -113,8 +112,8 @@ final class RepairRunner implements Runnable {
 
     String metricNameForRepairProgress = metricName("repairProgress", repairUnitClusterName, repairRunId);
 
-    context.metricRegistry.register(metricNameForRepairProgressPerKeyspace, (Gauge<Float>) ()  -> repairProgress);
-    context.metricRegistry.register(metricNameForRepairProgress, (Gauge<Float>) ()  -> repairProgress);
+    registerMetric(metricNameForRepairProgressPerKeyspace, (Gauge<Float>) ()  -> repairProgress);
+    registerMetric(metricNameForRepairProgress, (Gauge<Float>) ()  -> repairProgress);
 
     metricNameForMillisSinceLastRepairPerKeyspace
         = metricName("millisSinceLastRepair", repairUnitClusterName, repairUnitKeyspaceName, repairRunId);
@@ -126,16 +125,22 @@ final class RepairRunner implements Runnable {
 
     String metricNameForDoneSegments = metricName("segmentsDone", repairUnitClusterName, repairRunId);
 
-    context.metricRegistry.register(metricNameForDoneSegmentsPerKeyspace, (Gauge<Float>) ()  -> segmentsDone);
-    context.metricRegistry.register(metricNameForDoneSegments, (Gauge<Integer>) ()  -> (int)segmentsDone);
+    registerMetric(metricNameForDoneSegmentsPerKeyspace, (Gauge<Float>) ()  -> segmentsDone);
+    registerMetric(metricNameForDoneSegments, (Gauge<Integer>) ()  -> (int)segmentsDone);
 
     String metricNameForTotalSegmentsPerKeyspace
         = metricName("segmentsTotal", repairUnitClusterName, repairUnitKeyspaceName, repairRunId);
 
     String metricNameForTotalSegments = metricName("segmentsTotal", repairUnitClusterName, repairRunId);
 
-    context.metricRegistry.register(metricNameForTotalSegmentsPerKeyspace, (Gauge<Integer>) ()  -> (int)segmentsTotal);
-    context.metricRegistry.register(metricNameForTotalSegments, (Gauge<Float>) ()  -> segmentsTotal);
+    registerMetric(metricNameForTotalSegmentsPerKeyspace, (Gauge<Integer>) ()  -> (int)segmentsTotal);
+    registerMetric(metricNameForTotalSegments, (Gauge<Float>) ()  -> segmentsTotal);
+  }
+
+  private void registerMetric(String metricName, Gauge<?> gauge) {
+    if (!context.metricRegistry.getMetrics().containsKey(metricName)) {
+      context.metricRegistry.register(metricName, gauge);
+    }
   }
 
   UUID getRepairRunId() {
@@ -252,7 +257,7 @@ final class RepairRunner implements Runnable {
    * @throws ReaperException Thrown in case the cluster cannot be found in storage
    */
   private void updateClusterNodeList() throws ReaperException {
-    Set<String> liveNodes = jmxConnection.getLiveNodes().stream().collect(Collectors.toSet());
+    Set<String> liveNodes = context.clusterProxy.getLiveNodes(cluster.get()).stream().collect(Collectors.toSet());
     Optional<Cluster> cluster = context.storage.getCluster(clusterName);
     if (!cluster.isPresent()) {
       throw new ReaperException(
@@ -301,24 +306,12 @@ final class RepairRunner implements Runnable {
     }
   }
 
-  private void confirmJmxConnectionIsOpen() throws ReaperException {
-    if (jmxConnection == null || !jmxConnection.isConnectionAlive()) {
-      LOG.debug("connecting JMX proxy for repair runner on run id: {}", repairRunId);
-      Cluster cluster = context.storage.getCluster(this.clusterName).get();
-      jmxConnection = context.jmxConnectionFactory.connectAny(
-              cluster, context.config.getJmxConnectionTimeoutInSeconds());
-      LOG.debug("successfully reestablished JMX proxy for repair runner");
-    }
-  }
-
   /**
    * Get the next segment and repair it. If there is none, we're done.
    */
   private void startNextSegment() throws ReaperException, InterruptedException {
     boolean scheduleRetry = true;
     boolean anythingRunningStill = false;
-
-    confirmJmxConnectionIsOpen();
 
     // We want to know whether a repair was started,
     // so that a rescheduling of this runner will happen.
@@ -354,9 +347,11 @@ final class RepairRunner implements Runnable {
       }
 
       // We have an empty slot, so let's start new segment runner if possible.
+      // When in sidecar mode, filter on ranges that the local node is a replica for only.
       LOG.info("Running segment for range {}", parallelRanges.get(rangeIndex));
-      Optional<RepairSegment> nextRepairSegment = context.storage.getNextFreeSegmentInRange(
-              repairRunId, Optional.of(parallelRanges.get(rangeIndex)));
+      Optional<RepairSegment> nextRepairSegment
+          = context.storage.getNextFreeSegmentInRange(
+                  repairRunId, Optional.of(parallelRanges.get(rangeIndex)));
 
       if (!nextRepairSegment.isPresent()) {
         LOG.debug("No repair segment available for range {}", parallelRanges.get(rangeIndex));
@@ -408,9 +403,10 @@ final class RepairRunner implements Runnable {
    * @param segmentId id of the segment to repair.
    * @param segment token range of the segment to repair.
    * @return Boolean indicating whether rescheduling next run is needed.
+   * @throws ReaperException any runtime exception we caught in the execution
    */
   private boolean repairSegment(final int rangeIndex, final UUID segmentId, Segment segment)
-      throws InterruptedException {
+      throws InterruptedException, ReaperException {
 
     final UUID unitId;
     final double intensity;
@@ -429,22 +425,13 @@ final class RepairRunner implements Runnable {
     String keyspace = repairUnit.getKeyspaceName();
     LOG.debug("preparing to repair segment {} on run with id {}", segmentId, repairRunId);
 
-    try {
-      confirmJmxConnectionIsOpen();
-    } catch (ReaperException e) {
-      LOG.warn("Failed to reestablish JMX connection in runner {}, retrying", repairRunId, e);
-      currentlyRunningSegments.set(rangeIndex, null);
-      return true;
-    }
-
     List<String> potentialCoordinators;
     if (!repairUnit.getIncrementalRepair()) {
       // full repair
       try {
         potentialCoordinators = filterPotentialCoordinatorsByDatacenters(
                 repairUnit.getDatacenters(),
-                jmxConnection.tokenRangeToEndpoint(keyspace, segment),
-                jmxConnection);
+                context.clusterProxy.tokenRangeToEndpoint(cluster.get(), keyspace, segment));
       } catch (RuntimeException e) {
         LOG.warn("Couldn't get token ranges from coordinator: #{}", e);
         return true;
@@ -510,14 +497,16 @@ final class RepairRunner implements Runnable {
     return true;
   }
 
-  private static List<String> filterPotentialCoordinatorsByDatacenters(
+  private List<String> filterPotentialCoordinatorsByDatacenters(
       Collection<String> datacenters,
-      List<String> potentialCoordinators,
-      JmxProxy jmxProxy) {
+      List<String> potentialCoordinators) throws ReaperException {
+    List<Pair<String, String>> coordinatorsWithDc = Lists.newArrayList();
+    for (String coordinator:potentialCoordinators) {
+      coordinatorsWithDc.add(getNodeDatacenterPair(coordinator));
+    }
 
-    List<String> coordinators = potentialCoordinators
+    List<String> coordinators = coordinatorsWithDc
         .stream()
-        .map(coord -> getNodeDatacenterPair(coord, jmxProxy))
         .filter(node -> datacenters.contains(node.getRight()) || datacenters.isEmpty())
         .map(nodeTuple -> nodeTuple.getLeft())
         .collect(Collectors.toList());
@@ -531,8 +520,8 @@ final class RepairRunner implements Runnable {
     return coordinators;
   }
 
-  private static Pair<String, String> getNodeDatacenterPair(String node, JmxProxy jmxProxy) {
-    Pair<String, String> result = Pair.of(node, EndpointSnitchInfoProxy.create(jmxProxy).getDataCenter(node));
+  private Pair<String, String> getNodeDatacenterPair(String node) throws ReaperException {
+    Pair<String, String> result = Pair.of(node, context.clusterProxy.getDatacenter(cluster.get(), node));
     LOG.debug("[getNodeDatacenterPair] node/datacenter association {}", result);
     return result;
   }
@@ -598,5 +587,4 @@ final class RepairRunner implements Runnable {
     String cleanRepairRunId = repairRunId.toString().replaceAll("-", "");
     return MetricRegistry.name(RepairRunner.class, metric, cleanClusterName, cleanRepairRunId);
   }
-
 }

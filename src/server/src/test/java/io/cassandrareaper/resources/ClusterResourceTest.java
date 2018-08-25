@@ -21,6 +21,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Table;
+import io.cassandrareaper.jmx.ClusterProxy;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.service.TestRepairConfiguration;
@@ -296,11 +297,13 @@ public final class ClusterResourceTest {
 
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
 
-    when(context.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class), Mockito.anyInt()))
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class)))
         .thenReturn(jmxProxy);
 
-    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection(), Mockito.anyInt()))
+    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection()))
         .thenReturn(jmxProxy);
+
+    context.clusterProxy = ClusterProxy.create(context);
 
     return new MockObjects(context, uriInfo, jmxProxy);
   }

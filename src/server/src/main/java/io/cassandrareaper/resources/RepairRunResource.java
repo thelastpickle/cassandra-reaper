@@ -20,12 +20,10 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.PurgeService;
 import io.cassandrareaper.service.RepairRunService;
@@ -331,14 +329,7 @@ public final class RepairRunResource {
 
     if (incrementalRepairStr.isPresent() && "true".equalsIgnoreCase(incrementalRepairStr.get())) {
       try {
-        JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-                cluster.get().getSeedHosts()
-                    .stream()
-                    .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
-                    .collect(Collectors.toList()),
-                context.config.getJmxConnectionTimeoutInSeconds());
-
-        String version = jmxProxy.getCassandraVersion();
+        String version = context.clusterProxy.getCassandraVersion(cluster.get());
         if (null != version && version.startsWith("2.0")) {
           String msg = "Incremental repair does not work with Cassandra versions before 2.1";
           return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();

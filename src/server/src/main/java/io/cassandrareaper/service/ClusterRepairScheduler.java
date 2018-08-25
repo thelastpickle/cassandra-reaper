@@ -22,7 +22,6 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.jmx.JmxProxy;
 
 import java.util.Collection;
 import java.util.List;
@@ -127,6 +126,15 @@ public final class ClusterRepairScheduler {
     LOG.info("Scheduled repair created: {}", repairSchedule);
   }
 
+  private boolean keyspaceHasNoTable(AppContext context, Cluster cluster, String keyspace) {
+    try {
+      Set<String> tables = context.clusterProxy.getTableNamesForKeyspace(cluster, keyspace);
+      return tables.isEmpty();
+    } catch (ReaperException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
   private static class ScheduledRepairDiffView {
 
     private final ImmutableSet<String> keyspacesThatRequireSchedules;
@@ -165,10 +173,7 @@ public final class ClusterRepairScheduler {
     }
 
     private Set<String> keyspacesInCluster(AppContext context, Cluster cluster) throws ReaperException {
-      JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-              cluster, context.config.getJmxConnectionTimeoutInSeconds());
-
-      List<String> keyspaces = jmxProxy.getKeyspaces();
+      List<String> keyspaces = context.clusterProxy.getKeyspaces(cluster);
       if (keyspaces.isEmpty()) {
         String message = format("No keyspace found in cluster %s", cluster.getName());
         LOG.debug(message);

@@ -51,9 +51,9 @@ public class JmxConnectionsInitializerTest {
     final JmxProxy jmxProxyMock = mock(JmxProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node node, int timeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node node) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
             return jmx;
@@ -63,6 +63,7 @@ public class JmxConnectionsInitializerTest {
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
     context.storage = mock(CassandraStorage.class);
+    context.clusterProxy = ClusterProxy.create(context);
 
     Cluster cluster = new Cluster(
             "test",
@@ -89,9 +90,9 @@ public class JmxConnectionsInitializerTest {
     final JmxProxy jmxProxyMock = mock(JmxProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node node, int timeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node node) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
             return jmx;
@@ -101,6 +102,7 @@ public class JmxConnectionsInitializerTest {
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
     context.storage = mock(CassandraStorage.class);
+    context.clusterProxy = ClusterProxy.create(context);
 
     Cluster cluster = new Cluster(
             "test",
@@ -125,9 +127,9 @@ public class JmxConnectionsInitializerTest {
     final JmxProxy jmxProxyMock = mock(JmxProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node node, int timeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node node) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
             return jmx;
@@ -161,9 +163,9 @@ public class JmxConnectionsInitializerTest {
     final JmxProxy jmxProxyMock = mock(JmxProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node node, int timeout) throws ReaperException {
+          protected JmxProxy connectImpl(Node node) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
             connectionAttempts.incrementAndGet();
             return jmx;

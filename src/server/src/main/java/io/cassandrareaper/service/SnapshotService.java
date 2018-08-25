@@ -71,7 +71,7 @@ public final class SnapshotService {
 
   public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspaces) throws ReaperException {
     try {
-      JmxProxy jmx = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
+      JmxProxy jmx = context.jmxConnectionFactory.connect(host);
       SnapshotProxy snapshotProxy = SnapshotProxy.create(jmx);
       LOG.info("Taking snapshot for node {} and keyspace {}", host, keyspaces);
       return Pair.of(host, snapshotProxy.takeSnapshot(snapshotName, keyspaces));
@@ -112,10 +112,7 @@ public final class SnapshotService {
 
       Preconditions.checkArgument(cluster.isPresent());
 
-      JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-              cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
-
-      List<String> liveNodes = jmxProxy.getLiveNodes();
+      List<String> liveNodes = context.clusterProxy.getLiveNodes(cluster.get());
       List<Callable<Pair<Node, String>>> snapshotTasks = liveNodes
               .stream()
               .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
@@ -150,7 +147,7 @@ public final class SnapshotService {
 
   public List<Snapshot> listSnapshots(Node host) throws ReaperException {
     try {
-      JmxProxy jmx = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
+      JmxProxy jmx = context.jmxConnectionFactory.connect(host);
       SnapshotProxy snapshotProxy = SnapshotProxy.create(jmx);
 
       return snapshotProxy.listSnapshots().stream()
@@ -173,10 +170,7 @@ public final class SnapshotService {
 
       Preconditions.checkArgument(cluster.isPresent());
 
-      JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-              cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
-
-      List<String> liveNodes = jmxProxy.getLiveNodes();
+      List<String> liveNodes = context.clusterProxy.getLiveNodes(cluster.get());
       List<Callable<List<Snapshot>>> listSnapshotTasks = liveNodes
               .stream()
               .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
@@ -223,7 +217,7 @@ public final class SnapshotService {
 
   public void clearSnapshot(String snapshotName, Node host) throws ReaperException {
     try {
-      JmxProxy jmx = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
+      JmxProxy jmx = context.jmxConnectionFactory.connect(host);
       SnapshotProxy snapshotProxy = SnapshotProxy.create(jmx);
       snapshotProxy.clearSnapshot(snapshotName);
     } catch (IOError e) {
@@ -246,11 +240,7 @@ public final class SnapshotService {
     try {
       Optional<Cluster> cluster = context.storage.getCluster(clusterName);
       Preconditions.checkArgument(cluster.isPresent());
-
-      JmxProxy jmxProxy
-          = context.jmxConnectionFactory.connectAny(cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
-
-      List<String> liveNodes = jmxProxy.getLiveNodes();
+      List<String> liveNodes = context.clusterProxy.getLiveNodes(cluster.get());
       List<Callable<Node>> clearSnapshotTasks = liveNodes
               .stream()
               .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())

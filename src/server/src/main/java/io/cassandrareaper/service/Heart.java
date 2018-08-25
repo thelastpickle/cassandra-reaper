@@ -19,12 +19,17 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
+import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Compaction;
+import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
@@ -32,10 +37,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.management.JMException;
+import javax.management.MalformedObjectNameException;
+import javax.management.ReflectionException;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
@@ -46,17 +54,19 @@ final class Heart implements AutoCloseable {
 
   private static final AtomicBoolean GAUGES_REGISTERED = new AtomicBoolean(false);
   private static final Logger LOG = LoggerFactory.getLogger(Heart.class);
-  private static final long DEFAULT_MAX_FREQUENCY = TimeUnit.SECONDS.toMillis(10);
+  private static final long DEFAULT_MAX_FREQUENCY = TimeUnit.SECONDS.toMillis(30);
 
   private final AtomicLong lastBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
   private final ForkJoinPool forkJoinPool = new ForkJoinPool(64);
   private final AppContext context;
+  private final MetricsService metricsService;
   private final long maxBeatFrequencyMillis;
   private final AtomicBoolean updatingNodeMetrics = new AtomicBoolean(false);
 
   private Heart(AppContext context, long maxBeatFrequency) {
     this.context = context;
     this.maxBeatFrequencyMillis = maxBeatFrequency;
+    this.metricsService = MetricsService.create(context);
   }
 
   static Heart create(AppContext context) {
@@ -74,10 +84,14 @@ final class Heart implements AutoCloseable {
 
       lastBeat.set(System.currentTimeMillis());
       ((IDistributedStorage) context.storage).saveHeartbeat();
+    }
+  }
 
-      if (ReaperApplicationConfiguration.DatacenterAvailability.EACH == context.config.getDatacenterAvailability()) {
-        updateRequestedNodeMetrics();
-      }
+  synchronized void beatMetrics() {
+    if (context.storage instanceof IDistributedStorage
+            && ReaperApplicationConfiguration.DatacenterAvailability.EACH
+                == context.config.getDatacenterAvailability()) {
+      updateRequestedNodeMetrics();
     }
   }
 
@@ -102,8 +116,6 @@ final class Heart implements AutoCloseable {
     registerGauges();
 
     if (!updatingNodeMetrics.getAndSet(true)) {
-      int jmxTimeoutSeconds = context.config.getJmxConnectionTimeoutInSeconds();
-
       forkJoinPool.submit(() -> {
         try (Timer.Context t0 = timer(context, "updatingNodeMetrics")) {
 
@@ -114,7 +126,7 @@ final class Heart implements AutoCloseable {
 
                   storage.getNodeMetrics(runId)
                       .parallelStream()
-                      .filter(nodeMetrics -> nodeMetrics.isRequested())
+                      .filter(metrics -> canAnswerToNodeMetricsRequest(metrics))
                       .forEach(req -> {
 
                         LOG.info("Got metric request for node {} in {}", req.getNode(), req.getCluster());
@@ -124,22 +136,7 @@ final class Heart implements AutoCloseable {
                             req.getNode().replace('.', '-'))) {
 
                           try {
-                            JmxProxy nodeProxy
-                                = context.jmxConnectionFactory.connect(
-                                   Node.builder().withCluster(context.storage.getCluster(req.getCluster()).get())
-                                   .withHostname(req.getNode()).build(),
-                                   jmxTimeoutSeconds);
-
-                            storage.storeNodeMetrics(
-                                runId,
-                                NodeMetrics.builder()
-                                    .withNode(req.getNode())
-                                    .withCluster(req.getCluster())
-                                    .withDatacenter(req.getDatacenter())
-                                    .withPendingCompactions(nodeProxy.getPendingCompactions())
-                                    .withHasRepairRunning(nodeProxy.isRepairRunning())
-                                    .withActiveAnticompactions(0) // for future use
-                                    .build());
+                            grabAndStoreNodeMetrics(storage, runId, req);
 
                             LOG.info("Responded to metric request for node {}", req.getNode());
                           } catch (ReaperException | RuntimeException | InterruptedException ex) {
@@ -153,15 +150,71 @@ final class Heart implements AutoCloseable {
                       });
                 });
           }).get();
-
         } catch (ExecutionException | InterruptedException | RuntimeException ex) {
-          LOG.warn("failed updateAllReachableNodeMetrics submission", ex);
+          LOG.warn("Failed metric collection during heartbeat", ex);
         } finally {
           assert updatingNodeMetrics.get();
           updatingNodeMetrics.set(false);
         }
       });
     }
+  }
+
+  /**
+   * Checks if the local Reaper instance is supposed to answer a metrics request.
+   * Requires to be in sidecar on the node for which metrics are requested, or to be in a different mode than ALL.
+   * Also checks that the metrics record as requested set to true.
+   *
+   * @param metric a metric request
+   * @return true if reaper should try to answer the metric request
+   */
+  private boolean canAnswerToNodeMetricsRequest(NodeMetrics metric) {
+    return context.config.getDatacenterAvailability() != DatacenterAvailability.ALL
+        && metric.isRequested();
+  }
+
+  private void grabAndStoreNodeMetrics(IDistributedStorage storage, UUID runId, NodeMetrics req)
+      throws ReaperException, InterruptedException, JMException {
+    JmxProxy nodeProxy
+        = context.jmxConnectionFactory.connect(
+           Node.builder().withCluster(context.storage.getCluster(req.getCluster()).get())
+           .withHostname(req.getNode()).build());
+
+    storage.storeNodeMetrics(
+        runId,
+        NodeMetrics.builder()
+            .withNode(req.getNode())
+            .withCluster(req.getCluster())
+            .withDatacenter(req.getDatacenter())
+            .withPendingCompactions(nodeProxy.getPendingCompactions())
+            .withHasRepairRunning(nodeProxy.isRepairRunning())
+            .withActiveAnticompactions(0) // for future use
+            .build());
+  }
+
+  private void grabAndStoreGenericMetrics()
+      throws ReaperException, InterruptedException, JMException {
+    Node node = Node.builder().withClusterName(context.localClusterName).withHostname(context.localNodeAddress).build();
+    List<GenericMetric> metrics
+        = this.metricsService.convertToGenericMetrics(this.metricsService.collectMetrics(node), node);
+
+    for (GenericMetric metric:metrics) {
+      ((IDistributedStorage)context.storage).storeMetric(metric);
+    }
+    LOG.info("Grabbing and storing metrics for {}", context.localNodeAddress);
+
+  }
+
+  private void grabAndStoreActiveCompactions()
+      throws JsonProcessingException, MalformedObjectNameException, ReflectionException,
+          ReaperException, InterruptedException {
+    Node node = Node.builder().withClusterName(context.localClusterName).withHostname(context.localNodeAddress).build();
+    List<Compaction> activeCompactions = context.clusterProxy.listActiveCompactionsDirect(node);
+
+    ((IDistributedStorage) context.storage)
+        .storeCompactions(context.localClusterName, context.localNodeAddress, activeCompactions);
+
+    LOG.info("Grabbing and storing compactions for {}", context.localNodeAddress);
   }
 
   private static Timer.Context timer(AppContext context, String... names) {
