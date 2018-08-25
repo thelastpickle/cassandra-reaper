@@ -24,7 +24,6 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
@@ -107,10 +106,7 @@ public final class RepairRunResourceTest {
 
   @Before
   public void setUp() throws Exception {
-    //SegmentRunner.SEGMENT_RUNNERS.clear();
-
     context = new AppContext();
-
     context.repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(THREAD_CNT),
@@ -140,9 +136,7 @@ public final class RepairRunResourceTest {
     when(proxy.getEndpointToHostId()).thenReturn(NODES_MAP);
     when(proxy.getTokens()).thenReturn(TOKENS);
     when(proxy.isConnectionAlive()).thenReturn(Boolean.TRUE);
-    when(proxy.tokenRangeToEndpoint(anyString(), any(Segment.class)))
-        .thenReturn(Collections.singletonList(""));
-    when(proxy.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
+    when(proxy.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
     when(proxy.triggerRepair(
             any(BigInteger.class),
             any(BigInteger.class),
@@ -158,12 +152,11 @@ public final class RepairRunResourceTest {
 
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
 
-    when(context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds()))
+    when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
 
-    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection(), Mockito.anyInt()))
+    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection()))
         .thenReturn(proxy);
-
     RepairUnit.Builder repairUnitBuilder = RepairUnit.builder()
             .clusterName(CLUSTER_NAME)
             .keyspaceName(KEYSPACE)
@@ -245,9 +238,9 @@ public final class RepairRunResourceTest {
     assertNull(run.getEndTime());
     assertEquals(2, unit.getRepairThreadCount());
 
-    // tokens [0, 100, 200], 6 requested segments per node and 6 nodes causes generating 38 RepairSegments
+    // tokens [0, 100, 200], 6 requested segments per node and 3 nodes causes generating 20 RepairSegments
     assertEquals(
-        38,
+        20,
         context.storage.getSegmentAmountForRepairRunWithState(
             run.getId(), RepairSegment.State.NOT_STARTED));
 

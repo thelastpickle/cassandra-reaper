@@ -21,8 +21,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
-import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.jmx.StreamsProxy;
+import io.cassandrareaper.jmx.ClusterFacade;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -31,6 +30,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 import javax.management.openmbean.CompositeData;
 
 import com.google.common.base.Preconditions;
@@ -51,9 +51,11 @@ public final class StreamService {
   private static final Logger LOG = LoggerFactory.getLogger(StreamService.class);
 
   private final AppContext context;
+  private final ClusterFacade clusterFacade;
 
   private StreamService(AppContext context) {
     this.context = context;
+    this.clusterFacade = ClusterFacade.create(context);
   }
 
   public static StreamService create(AppContext context) {
@@ -71,23 +73,17 @@ public final class StreamService {
   }
 
   private List<StreamSession> pullStreamInfo(Node node) throws ReaperException {
-    try {
-      JmxProxy jmxProxy = context.jmxConnectionFactory.connect(node, context.config.getJmxConnectionTimeoutInSeconds());
-      Set<CompositeData> streams = StreamsProxy.create(jmxProxy).listStreams();
+    Set<CompositeData> streams = clusterFacade.listStreams(node);
 
-      if (streams.isEmpty()) {
-        return ImmutableList.of();
-      }
-
-      Set<StreamState> streamStates = parse(streams);
-
-      return streamStates.stream()
-          .map(streamState -> StreamSessionFactory.fromStreamState(node.getHostname(), streamState))
-          .collect(Collectors.toList());
-
-    } catch (InterruptedException e) {
-      throw new ReaperException(e);
+    if (streams.isEmpty()) {
+      return ImmutableList.of();
     }
+
+    Set<StreamState> streamStates = parse(streams);
+
+    return streamStates.stream()
+        .map(streamState -> StreamSessionFactory.fromStreamState(node.getHostname(), streamState))
+        .collect(Collectors.toList());
   }
 
   private Set<StreamState> parse(Set<CompositeData> payload) throws ReaperException {

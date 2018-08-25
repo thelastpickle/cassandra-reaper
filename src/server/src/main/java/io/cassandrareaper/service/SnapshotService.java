@@ -23,10 +23,8 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Snapshot.Builder;
-import io.cassandrareaper.jmx.JmxProxy;
-import io.cassandrareaper.jmx.SnapshotProxy;
+import io.cassandrareaper.jmx.ClusterFacade;
 
-import java.io.IOError;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -39,7 +37,9 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.InstrumentedExecutorService;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
@@ -57,28 +57,28 @@ public final class SnapshotService {
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotService.class);
 
   private final AppContext context;
+  private final ClusterFacade clusterFacade;
   private final ExecutorService executor;
   private final Cache<String, Snapshot> cache = CacheBuilder.newBuilder().weakValues().maximumSize(1000).build();
 
-  private SnapshotService(AppContext context, ExecutorService executor) {
+  private SnapshotService(AppContext context, ExecutorService executor, Supplier<ClusterFacade> clusterFacadeSupplier) {
     this.context = context;
+    this.clusterFacade = clusterFacadeSupplier.get();
     this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
   }
 
+  @VisibleForTesting
+  static SnapshotService create(
+      AppContext context, ExecutorService executor, Supplier<ClusterFacade> clusterFacadeSupplier) {
+    return new SnapshotService(context, executor, clusterFacadeSupplier);
+  }
+
   public static SnapshotService create(AppContext context, ExecutorService executor) {
-    return new SnapshotService(context, executor);
+    return new SnapshotService(context, executor, () -> ClusterFacade.create(context));
   }
 
   public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspaces) throws ReaperException {
-    try {
-      JmxProxy jmx = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
-      SnapshotProxy snapshotProxy = SnapshotProxy.create(jmx);
-      LOG.info("Taking snapshot for node {} and keyspace {}", host, keyspaces);
-      return Pair.of(host, snapshotProxy.takeSnapshot(snapshotName, keyspaces));
-    } catch (InterruptedException e) {
-      LOG.error("Interrupted taking snapshot for host {} and keyspaces {}", host, keyspaces, e);
-      throw new ReaperException(e);
-    }
+    return clusterFacade.takeSnapshot(snapshotName, host, keyspaces);
   }
 
   Callable<Pair<Node, String>> takeSnapshotTask(String snapshotName, Node host, String... keyspace) {
@@ -112,10 +112,7 @@ public final class SnapshotService {
 
       Preconditions.checkArgument(cluster.isPresent());
 
-      JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-              cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
-
-      List<String> liveNodes = jmxProxy.getLiveNodes();
+      List<String> liveNodes = clusterFacade.getLiveNodes(cluster.get());
       List<Callable<Pair<Node, String>>> snapshotTasks = liveNodes
               .stream()
               .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
@@ -149,21 +146,11 @@ public final class SnapshotService {
   }
 
   public List<Snapshot> listSnapshots(Node host) throws ReaperException {
-    try {
-      JmxProxy jmx = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
-      SnapshotProxy snapshotProxy = SnapshotProxy.create(jmx);
-
-      return snapshotProxy.listSnapshots().stream()
-          .map(snapshot -> enrichSnapshotWithMetadata(snapshot))
-          .collect(Collectors.toList());
-
-    } catch (UnsupportedOperationException unsupported) {
-      LOG.debug("Listing snapshot is unsupported with Cassandra 2.0 and prior");
-      throw unsupported;
-    } catch (InterruptedException e) {
-      LOG.error("Interrupted listing snapshots for host {}", host, e);
-      throw new ReaperException(e);
-    }
+    return clusterFacade
+        .listSnapshots(host)
+        .stream()
+        .map(snapshot -> enrichSnapshotWithMetadata(snapshot))
+        .collect(Collectors.toList());
   }
 
   public Map<String, Map<String, List<Snapshot>>> listSnapshotsClusterWide(String clusterName) throws ReaperException {
@@ -173,10 +160,7 @@ public final class SnapshotService {
 
       Preconditions.checkArgument(cluster.isPresent());
 
-      JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-              cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
-
-      List<String> liveNodes = jmxProxy.getLiveNodes();
+      List<String> liveNodes = clusterFacade.getLiveNodes(cluster.get());
       List<Callable<List<Snapshot>>> listSnapshotTasks = liveNodes
               .stream()
               .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
@@ -222,17 +206,7 @@ public final class SnapshotService {
   }
 
   public void clearSnapshot(String snapshotName, Node host) throws ReaperException {
-    try {
-      JmxProxy jmx = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
-      SnapshotProxy snapshotProxy = SnapshotProxy.create(jmx);
-      snapshotProxy.clearSnapshot(snapshotName);
-    } catch (IOError e) {
-      // StorageService.clearSnapshot(..) throws a FSWriteError when snapshot already deleted
-      LOG.info("already cleared snapshot " + snapshotName, e);
-    } catch (InterruptedException e) {
-      LOG.error("Interrupted clearing snapshot {} for host {}", snapshotName, host, e);
-      throw new ReaperException(e);
-    }
+    clusterFacade.clearSnapshot(snapshotName, host);
   }
 
   Callable<Node> clearSnapshotTask(String snapshotName, Node host) {
@@ -246,11 +220,7 @@ public final class SnapshotService {
     try {
       Optional<Cluster> cluster = context.storage.getCluster(clusterName);
       Preconditions.checkArgument(cluster.isPresent());
-
-      JmxProxy jmxProxy
-          = context.jmxConnectionFactory.connectAny(cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
-
-      List<String> liveNodes = jmxProxy.getLiveNodes();
+      List<String> liveNodes = clusterFacade.getLiveNodes(cluster.get());
       List<Callable<Node>> clearSnapshotTasks = liveNodes
               .stream()
               .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())

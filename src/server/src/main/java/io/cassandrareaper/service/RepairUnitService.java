@@ -23,6 +23,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.util.Collection;
@@ -59,10 +60,7 @@ public final class RepairUnitService {
   public RepairUnit getOrCreateRepairUnit(Cluster cluster, RepairUnit.Builder params) {
     if (params.incrementalRepair) {
       try {
-        JmxProxy jmxProxy
-            = context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds());
-
-        String version = jmxProxy.getCassandraVersion();
+        String version = ClusterFacade.create(context).getCassandraVersion(cluster);
         if (null != version && version.startsWith("2.0")) {
           throw new IllegalArgumentException("Incremental repair does not work with Cassandra versions before 2.1");
         }
@@ -113,8 +111,8 @@ public final class RepairUnitService {
   public Set<String> findBlacklistedCompactionStrategyTables(Cluster cluster, String keyspace) {
     if (context.config.getBlacklistTwcsTables()) {
       try {
-        return context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds())
-            .getTablesForKeyspace(keyspace)
+        return ClusterFacade.create(context)
+            .getTablesForKeyspace(cluster, keyspace)
             .stream()
             .filter(RepairUnitService::isBlackListedCompactionStrategy)
             .map(Table::getName)
@@ -174,9 +172,12 @@ public final class RepairUnitService {
 
   public Set<String> getTableNamesForKeyspace(Cluster cluster, String keyspace) {
     try {
-      return context
-          .jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds())
-          .getTablesForKeyspace(keyspace).stream().map(Table::getName).collect(Collectors.toSet());
+      return ClusterFacade
+          .create(context)
+          .getTablesForKeyspace(cluster, keyspace)
+          .stream()
+          .map(Table::getName)
+          .collect(Collectors.toSet());
     } catch (ReaperException e) {
       LOG.warn("unknown table list to cluster {} keyspace", cluster.getName(), keyspace, e);
       return Collections.emptySet();

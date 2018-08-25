@@ -20,7 +20,6 @@ package io.cassandrareaper.jmx;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.Node;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.Arrays;
@@ -33,7 +32,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -75,15 +73,8 @@ public final class JmxConnectionsInitializer implements AutoCloseable {
   private Callable<Optional<String>> connectToJmx(Cluster cluster, List<String> endpoints) {
     return () -> {
       try {
-        JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-                endpoints
-                    .stream()
-                    .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
-                    .collect(Collectors.toList()),
-                (int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds());
-
+        ClusterFacade.create(context).preHeatJmxConnections(cluster, endpoints);
         return Optional.of(endpoints.get(0));
-
       } catch (RuntimeException e) {
         LOG.info("failed to connect to hosts {} through JMX", endpoints.get(0), e);
         return Optional.empty();
