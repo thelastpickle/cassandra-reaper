@@ -17,12 +17,22 @@
 
 package io.cassandrareaper.storage;
 
+import io.cassandrareaper.core.Compaction;
+import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.NodeMetrics;
+import io.cassandrareaper.core.RepairSegment;
+import io.cassandrareaper.service.RingRange;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+
+import javax.management.openmbean.CompositeData;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 
 /**
@@ -32,7 +42,11 @@ public interface IDistributedStorage {
 
   boolean takeLead(UUID leaderId);
 
+  boolean takeLead(UUID leaderId, int ttl);
+
   boolean renewLead(UUID leaderId);
+
+  boolean renewLead(UUID leaderId, int ttl);
 
   List<UUID> getLeaders();
 
@@ -51,5 +65,37 @@ public interface IDistributedStorage {
   void deleteNodeMetrics(UUID runId, String node);
 
   void storeNodeMetrics(UUID runId, NodeMetrics nodeMetrics);
+
+  /**
+   * Gets the next free segment from the backend that is both within the parallel range and the local node ranges.
+   *
+   * @param runId id of the repair run
+   * @param parallelRange list of ranges that can run in parallel
+   * @param ranges list of ranges we're looking a segment for
+   * @return an optional repair segment to process
+   */
+  Optional<RepairSegment> getNextFreeSegmentForRanges(
+      UUID runId, Optional<RingRange> parallelRange, List<RingRange> ranges);
+
+  List<GenericMetric> getMetrics(
+      String clusterName,
+      Optional<String> host,
+      String metricDomain,
+      String metricType,
+      long since);
+
+  void storeMetric(GenericMetric metric);
+
+  void storeCompactions(String clusterName, String host, List<Compaction> activeCompactions)
+      throws JsonProcessingException;
+
+  List<Compaction> listCompactions(String clusterName, String host)
+      throws JsonProcessingException, IOException;
+
+  void storeStreams(String clusterName, String host, Set<CompositeData> activeStreams)
+      throws JsonProcessingException;
+
+  Set<CompositeData> listStreamingOperations(String clusterName, String host)
+      throws JsonProcessingException, IOException;
 
 }

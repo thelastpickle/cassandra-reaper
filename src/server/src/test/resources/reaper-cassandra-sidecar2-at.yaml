@@ -1,5 +1,4 @@
-# Copyright 2017-2017 Spotify AB
-# Copyright 2017-2019 The Last Pickle Ltd
+# Copyright 2019-2019 The Last Pickle Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +25,10 @@ incrementalRepair: false
 blacklistTwcsTables: true
 jmxConnectionTimeoutInSeconds: 300
 activateQueryLogger: true
-datacenterAvailability: LOCAL
+datacenterAvailability: SIDECAR
+enforcedLocalNode: 127.0.0.2
+enforcedLocalClusterName: test
+enforcedLocalDatacenter: dc1
 
 logging:
   level: WARN
@@ -37,21 +39,15 @@ server:
   type: default
   applicationConnectors:
     - type: http
-      port: 8083
+      port: 8085
       bindHost: 127.0.0.1
   adminConnectors:
     - type: http
-      port: 8084
+      port: 8086
       bindHost: 127.0.0.1
 
 jmxPorts:
   127.0.0.2: 7200
-  127.0.0.3: 7500
-  127.0.0.4: 7500
-  127.0.0.5: 7500
-  127.0.0.6: 7600
-  127.0.0.7: 7700
-  127.0.0.8: 7800
 
 jmxCredentials:
   "test cluster":
@@ -60,13 +56,6 @@ jmxCredentials:
   test:
     username: cassandra
     password: cassandrapassword
-
-# database section will be ignored if storageType is set to "cassandra"
-h2:
-  driverClass: org.h2.Driver
-  url: jdbc:h2:mem:reaper-db;MODE=PostgreSQL
-  user:
-  password:
   
 cassandra:
   clusterName: "test"
@@ -80,7 +69,7 @@ cassandra:
     shuffleReplicas: true
     subPolicy:
       type: dcAwareRoundRobin
-      localDC: dc1
+      localDC: 
       usedHostsPerRemoteDC: 0
       allowRemoteDCsForLocalConsistencyLevel: false
   poolingOptions:
@@ -93,3 +82,9 @@ cassandra:
         coreConnections: 0
         maxConnections: 0
         maxRequestsPerConnection: 0
+
+metrics:
+  frequency: 1 second
+  reporters:
+    - type: csv
+      file: target/dropwizard-metrics

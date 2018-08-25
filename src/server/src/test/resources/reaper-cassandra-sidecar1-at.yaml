@@ -1,5 +1,4 @@
-# Copyright 2017-2017 Spotify AB
-# Copyright 2017-2019 The Last Pickle Ltd
+# Copyright 2019-2019 The Last Pickle Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +25,10 @@ incrementalRepair: false
 blacklistTwcsTables: true
 jmxConnectionTimeoutInSeconds: 300
 activateQueryLogger: true
-datacenterAvailability: LOCAL
+datacenterAvailability: SIDECAR
+enforcedLocalNode: 127.0.0.1
+enforcedLocalClusterName: test
+enforcedLocalDatacenter: dc1
 
 logging:
   level: WARN
@@ -45,13 +47,7 @@ server:
       bindHost: 127.0.0.1
 
 jmxPorts:
-  127.0.0.2: 7200
-  127.0.0.3: 7500
-  127.0.0.4: 7500
-  127.0.0.5: 7500
-  127.0.0.6: 7600
-  127.0.0.7: 7700
-  127.0.0.8: 7800
+  127.0.0.1: 7100
 
 jmxCredentials:
   "test cluster":
@@ -80,7 +76,7 @@ cassandra:
     shuffleReplicas: true
     subPolicy:
       type: dcAwareRoundRobin
-      localDC: dc1
+      localDC: 
       usedHostsPerRemoteDC: 0
       allowRemoteDCsForLocalConsistencyLevel: false
   poolingOptions:
@@ -93,3 +89,9 @@ cassandra:
         coreConnections: 0
         maxConnections: 0
         maxRequestsPerConnection: 0
+
+metrics:
+  frequency: 1 second
+  reporters:
+    - type: csv
+      file: target/dropwizard-metrics

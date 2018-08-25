@@ -19,6 +19,9 @@ package io.cassandrareaper;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
+import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Node;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxConnectionsInitializer;
 import io.cassandrareaper.resources.ClusterResource;
@@ -41,8 +44,10 @@ import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorage;
 import io.cassandrareaper.storage.PostgresStorage;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -56,6 +61,7 @@ import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
@@ -181,7 +187,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         LOG.debug("using JMX ports mapping: {}", jmxPorts);
         context.jmxConnectionFactory.setJmxPorts(jmxPorts);
       }
-
       if (config.useAddressTranslator()) {
         context.jmxConnectionFactory.setAddressTranslator(new EC2MultiRegionAddressTranslator());
       }
@@ -253,7 +258,13 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     }
 
     initializeJmxSeedsForAllClusters();
+    maybeInitializeSidecarMode();
     LOG.info("resuming pending repair runs");
+
+    Preconditions.checkState(
+        context.storage instanceof IDistributedStorage
+            || DatacenterAvailability.SIDECAR != context.config.getDatacenterAvailability(),
+        "Cassandra backend storage is the only one allowing SIDECAR datacenter availability modes.");
 
     Preconditions.checkState(
         context.storage instanceof IDistributedStorage
@@ -302,6 +313,41 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       }
     } else {
       LOG.info("storage already given in context, not initializing a new one");
+    }
+  }
+
+  /**
+   * If Reaper is in sidecar mode, grab the local host id and the associated broadcast address
+   *
+   * @throws ReaperException any caught runtime exception
+   */
+  private void maybeInitializeSidecarMode() throws ReaperException {
+    if (context.config.isInSidecarMode()) {
+      ClusterFacade clusterFacade = ClusterFacade.create(context);
+      Node host
+          = Node.builder()
+              .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1"))
+              .withClusterName("bogus")
+              .build();
+      try {
+        context.localNodeAddress
+            = context
+                .config
+                .getEnforcedLocalNode()
+                .orElse(clusterFacade.getLocalEndpoint(host));
+        context.localClusterName = Cluster.toSymbolicName(clusterFacade.getClusterName(host));
+        context.localDatacenter
+            = clusterFacade.getDatacenter(
+                new Cluster(
+                    context.localClusterName,
+                    Optional.empty(),
+                    Sets.newHashSet(Arrays.asList(context.localNodeAddress))),
+                context.localNodeAddress);
+        LOG.info("Sidecar mode. Local node is : {}", context.localNodeAddress);
+      } catch (RuntimeException | InterruptedException | ReaperException e) {
+        LOG.error("Failed connecting to the local node in sidecar mode {}", host, e);
+        throw new ReaperException(e);
+      }
     }
   }
 

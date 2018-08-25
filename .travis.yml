@@ -32,6 +32,7 @@ env:
   - secure: "XMbKIFr2v18e6g4777Mohi1bLxJSlu7vaC63T/9d7aV/X5oWQXDead/seJWj2yt6oGhitWR4e2imBJnXoz7nWYE+bkOrJ4UyYBESiMDN7SXo2fYK7bj7Z07hbwmsI+98+eJshFNE821bVrCmzTs6TgpU5yRMrcbxyAzi7DYOPzDPASo5K1xTLfkeUt/MbpFDTi+M/8YnHcH4UmMk095POR2AnyVT8ixAn+7mgU/v2nPgsERPdNydfSFFpiByvsyzvYGQuosdmfKvJ4fxvkPWO77KpgbJRBQ/bPgOuqFDDY8N1oA5Ndf4nGH84fVT97XjNSOCVHchJjqVg1gOm5eOH4SVi660CMy4OdD1IkDl2IMqcFCydLfCsvsknd3LN0F/QLbeV9TPUjAnlK2rKekzH9Bwa/UKSJGVaFhddzDO7h59NPxOZ05HErpWnU1Vw1IhHoGmRjpPr0jUjY/zIGaDhUoFAhq2BdqSSdTVMl4bBfudTt7N7+G7Osfq0Z7IYyOS6Z3uwIDPS9hGSUYXygYOhYVQ/BSKInJ4UgUTICxmmYtMSHzfeypteiKFhQMzv94DILj+cfUNIZQw6kkzkDCa0DluL4d4DcvIyHgGqSan3WeZd1kj6qwiJoDm2bcKRrEd9rPIVFX2vdNq1lQFQtmoY1JeNcyQPVG3CZRBm0UsjYQ="
 stages:
   - Integration Tests
+  - Sidecar Integration Tests
   - Distributed Reaper Integration Tests
   - Flapping Distributed Reaper Integration Tests
   - name: Upgrade Integration Tests
@@ -51,6 +52,7 @@ jobs:
   - env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=2 GRIM_MAX=4
   - env: TEST_TYPE=upgrade CASSANDRA_VERSION=git:trunk CO="-t @all_nodes_reachable"
   - env: TEST_TYPE=upgrade CASSANDRA_VERSION=git:trunk CO="-t ~@all_nodes_reachable"
+  - env: TEST_TYPE=sidecar CASSANDRA_VERSION=git:trunk GRIM_MIN=1 GRIM_MAX=1 CO="-t @sidecar"
   include:
     - stage: Integration Tests
       name: Memory, H2 and Postgresql reaping Cassandra 1.2.19
@@ -103,6 +105,21 @@ jobs:
     - stage: Distributed Reaper Integration Tests
       name: Two Reapers on Cassandra 4.0
       env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=2 GRIM_MAX=2
+    - stage: Sidecar Integration Tests
+      name: Sidecar on Cassandra 2.1.20
+      env: TEST_TYPE=sidecar CASSANDRA_VERSION=2.1.20 GRIM_MIN=1 GRIM_MAX=1
+    - stage: Sidecar Integration Tests
+      name: Sidecar on Cassandra 2.2.13
+      env: TEST_TYPE=sidecar CASSANDRA_VERSION=2.2.13 GRIM_MIN=1 GRIM_MAX=1
+    - stage: Sidecar Integration Tests
+      name: Sidecar on Cassandra 3.0.17
+      env: TEST_TYPE=sidecar CASSANDRA_VERSION=3.0.17 GRIM_MIN=1 GRIM_MAX=1
+    - stage: Sidecar Integration Tests
+      name: Sidecar on Cassandra 3.11.3
+      env: TEST_TYPE=sidecar CASSANDRA_VERSION=3.11.3 GRIM_MIN=1 GRIM_MAX=1
+    - stage: Sidecar Integration Tests
+      name: Sidecar on Cassandra 4.0
+      env: TEST_TYPE=sidecar CASSANDRA_VERSION=git:trunk GRIM_MIN=1 GRIM_MAX=1
     - stage: Flapping Distributed Reaper Integration Tests
       name: Four Flapping Reaper on Cassandra 2.1.20
       env: TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20 GRIM_MIN=2 GRIM_MAX=4

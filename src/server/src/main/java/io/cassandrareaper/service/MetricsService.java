@@ -19,6 +19,7 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.JmxStat;
@@ -26,11 +27,19 @@ import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
+import javax.management.JMException;
+import javax.management.MalformedObjectNameException;
+import javax.management.ReflectionException;
+import javax.management.openmbean.CompositeData;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
@@ -41,6 +50,11 @@ import org.slf4j.LoggerFactory;
 public final class MetricsService {
 
   private static final Logger LOG = LoggerFactory.getLogger(MetricsService.class);
+  private static final String[] COLLECTED_METRICS
+    = {"org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
+       "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*",
+       "org.apache.cassandra.metrics:type=ClientRequest,*",
+       "org.apache.cassandra.metrics:type=DroppedMessage,*"};
 
   private final AppContext context;
   private final ClusterFacade clusterFacade;
@@ -93,4 +107,43 @@ public final class MetricsService {
 
     return metrics;
   }
+
+  void grabAndStoreGenericMetrics()
+      throws ReaperException, InterruptedException, JMException {
+    Node node = Node.builder().withClusterName(context.localClusterName).withHostname(context.localNodeAddress).build();
+    List<GenericMetric> metrics
+        = convertToGenericMetrics(
+            ClusterFacade.create(context).collectMetrics(node, COLLECTED_METRICS), node);
+
+    for (GenericMetric metric:metrics) {
+      ((IDistributedStorage)context.storage).storeMetric(metric);
+    }
+    LOG.debug("Grabbing and storing metrics for {}", context.localNodeAddress);
+
+  }
+
+  void grabAndStoreActiveCompactions()
+      throws JsonProcessingException, MalformedObjectNameException, ReflectionException,
+          ReaperException, InterruptedException {
+    Node node = Node.builder().withClusterName(context.localClusterName).withHostname(context.localNodeAddress).build();
+    List<Compaction> activeCompactions = ClusterFacade.create(context).listActiveCompactionsDirect(node);
+
+    ((IDistributedStorage) context.storage)
+        .storeCompactions(context.localClusterName, context.localNodeAddress, activeCompactions);
+
+    LOG.debug("Grabbing and storing compactions for {}", context.localNodeAddress);
+  }
+
+  void grabAndStoreActiveStreams()
+      throws JsonProcessingException, MalformedObjectNameException, ReflectionException,
+          ReaperException, InterruptedException {
+    Node node = Node.builder().withClusterName(context.localClusterName).withHostname(context.localNodeAddress).build();
+    Set<CompositeData> activeStreams = ClusterFacade.create(context).listStreamsDirect(node);
+
+    ((IDistributedStorage) context.storage)
+        .storeStreams(context.localClusterName, context.localNodeAddress, activeStreams);
+
+    LOG.debug("Grabbing and storing streams for {}", context.localNodeAddress);
+  }
+
 }

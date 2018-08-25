@@ -30,8 +30,27 @@ import org.mockito.Mockito;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ClusterFacadeTest {
+
+  @Test
+  public void nodeIsAccessibleThroughJmxSidecarTest() throws ReaperException {
+    final AppContext context = new AppContext();
+    context.config = new ReaperApplicationConfiguration();
+    context.localNodeAddress = "127.0.0.1";
+    context.localDatacenter = "dc1";
+    context.localClusterName = "Test";
+
+    context.config.setDatacenterAvailability(DatacenterAvailability.SIDECAR);
+    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(jmxConnectionFactory.getAccessibleDatacenters()).thenReturn(new HashSet<String>(Arrays.asList("dc1")));
+    context.jmxConnectionFactory = jmxConnectionFactory;
+    ClusterFacade clusterFacade = ClusterFacade.create(context);
+    assertTrue(clusterFacade.nodeIsAccessibleThroughJmx(context.localDatacenter, context.localNodeAddress));
+    assertFalse(clusterFacade.nodeIsAccessibleThroughJmx(context.localDatacenter, "127.0.0.2"));
+  }
 
   @Test
   public void nodeIsAccessibleThroughJmxAllTest() throws ReaperException {

@@ -23,6 +23,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.jmx.ClusterFacade;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 import javax.management.openmbean.CompositeData;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.streaming.ProgressInfo;
@@ -50,31 +52,32 @@ public final class StreamService {
 
   private static final Logger LOG = LoggerFactory.getLogger(StreamService.class);
 
-  private final AppContext context;
   private final ClusterFacade clusterFacade;
 
-  private StreamService(AppContext context) {
-    this.context = context;
-    this.clusterFacade = ClusterFacade.create(context);
+  private StreamService(Supplier<ClusterFacade> clusterFacadeSupplier) {
+    this.clusterFacade = clusterFacadeSupplier.get();
   }
 
   public static StreamService create(AppContext context) {
-    return new StreamService(context);
+    return new StreamService(() -> ClusterFacade.create(context));
+  }
+
+  static StreamService create(Supplier<ClusterFacade> clusterFacadeSupplier) {
+    return new StreamService(clusterFacadeSupplier);
   }
 
   public List<StreamSession> listStreams(Node node) throws ReaperException {
     try {
       LOG.debug("Pulling streams for node {}", node);
       return pullStreamInfo(node);
-    } catch (ReaperException e) {
+    } catch (ReaperException | InterruptedException | IOException e) {
       LOG.info("Pulling streams failed: {}", e.getMessage());
       throw new ReaperException(e);
     }
   }
 
-  private List<StreamSession> pullStreamInfo(Node node) throws ReaperException {
-    Set<CompositeData> streams = clusterFacade.listStreams(node);
-
+  private List<StreamSession> pullStreamInfo(Node node) throws ReaperException, InterruptedException, IOException {
+    Set<CompositeData> streams = clusterFacade.listActiveStreams(node);
     if (streams.isEmpty()) {
       return ImmutableList.of();
     }

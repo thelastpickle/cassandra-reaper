@@ -61,6 +61,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -197,7 +198,7 @@ public final class RepairRunnerTest {
               return repairNumber;
             });
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(NODES));
@@ -341,7 +342,7 @@ public final class RepairRunnerTest {
               return repairNumber;
             });
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(NODES));
@@ -452,7 +453,7 @@ public final class RepairRunnerTest {
     }
     JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(NODES));
@@ -510,6 +511,10 @@ public final class RepairRunnerTest {
             return jmx;
           }
         };
+    ClusterFacade clusterProxy = ClusterFacade.create(context);
+    ClusterFacade clusterProxySpy = Mockito.spy(clusterProxy);
+    Mockito.doReturn(Collections.singletonList("")).when(clusterProxySpy).tokenRangeToEndpoint(any(), any(), any());
+
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
     context.repairManager.resumeRunningRepairRuns();
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());

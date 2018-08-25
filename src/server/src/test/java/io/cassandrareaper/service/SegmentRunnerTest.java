@@ -176,7 +176,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -318,7 +318,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -448,7 +448,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -574,7 +574,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -701,7 +701,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -829,7 +829,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -958,7 +958,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -1022,7 +1022,7 @@ public final class SegmentRunnerTest {
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
 
     SegmentRunner segmentRunner = SegmentRunner.create(
             context,
@@ -1069,7 +1069,7 @@ public final class SegmentRunnerTest {
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAny(any(), any())).thenReturn(proxy);
+    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(proxy);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     SegmentRunner segmentRunner = SegmentRunner.create(
