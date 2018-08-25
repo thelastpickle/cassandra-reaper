@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.annotation.Nullable;
 import javax.validation.constraints.DecimalMin;
@@ -139,6 +140,15 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private DataSourceFactory database;
 
   private DataSourceFactory relationalDb = new DataSourceFactory();
+
+  @JsonProperty
+  private Optional<String> enforcedLocalNode = Optional.empty();
+
+  @JsonProperty
+  private Optional<String> enforcedLocalClusterName = Optional.empty();
+
+  @JsonProperty
+  private Optional<String> enforcedLocalDatacenter = Optional.empty();
 
   public int getSegmentCount() {
     return segmentCount == null ? 0 : segmentCount;
@@ -396,6 +406,36 @@ public final class ReaperApplicationConfiguration extends Configuration {
     this.numberOfRunsToKeepPerUnit = numberOfRunsToKeepPerUnit;
   }
 
+  public Boolean isInSidecarMode() {
+    return datacenterAvailability == DatacenterAvailability.SIDECAR;
+  }
+
+  public Optional<String> getEnforcedLocalNode() {
+    return enforcedLocalNode;
+  }
+
+  public Optional<String> getEnforcedLocalClusterName() {
+    return enforcedLocalClusterName;
+  }
+
+  public Optional<String> getEnforcedLocalDatacenter() {
+    return enforcedLocalDatacenter;
+  }
+
+  public void setEnforcedLocalNode(Optional<String> enforcedLocalNode) {
+    this.enforcedLocalNode = enforcedLocalNode;
+  }
+
+  public void setEnforcedLocalClusterName(Optional<String> enforcedLocalClusterName) {
+    this.enforcedLocalClusterName = enforcedLocalClusterName;
+  }
+
+  public void setEnforcedLocalDatacenter(Optional<String> enforcedLocalDatacenter) {
+    this.enforcedLocalDatacenter = enforcedLocalDatacenter;
+  }
+
+
+
   public static final class JmxCredentials {
 
     @JsonProperty
@@ -508,7 +548,25 @@ public final class ReaperApplicationConfiguration extends Configuration {
     /* We require jmx access to all nodes in the local datacenter */
     LOCAL,
     /* Each datacenter requires at minimum one reaper instance that has jmx access to all nodes in that datacenter */
-    EACH
+    EACH,
+    /* Sets Reaper in sidecar mode where each Cassandra node has a collocated Reaper instance */
+    SIDECAR;
+
+
+    /**
+     * Check if the current datacenter availability mode is to have collocation between Reaper and a DC/node.
+     * @return true if we're in a collocated mode, false otherwise
+     */
+    public boolean isInCollocatedMode() {
+      switch (this) {
+        case LOCAL:
+        case SIDECAR:
+        case EACH:
+          return true;
+        default:
+          return false;
+      }
+    }
   }
 
   public static final class AccessControlConfiguration {

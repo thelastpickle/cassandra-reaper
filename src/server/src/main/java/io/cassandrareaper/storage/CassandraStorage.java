@@ -22,6 +22,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.ClusterProperties;
+import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.Builder;
@@ -38,6 +39,7 @@ import io.cassandrareaper.service.RepairParameters;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.cassandra.DateTimeCodec;
 import io.cassandrareaper.storage.cassandra.Migration016;
+import io.cassandrareaper.storage.cassandra.Migration021;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -87,6 +89,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -95,6 +98,8 @@ import org.cognitor.cassandra.migration.Database;
 import org.cognitor.cassandra.migration.MigrationRepository;
 import org.cognitor.cassandra.migration.MigrationTask;
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
@@ -103,12 +108,16 @@ import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 public final class CassandraStorage implements IStorage, IDistributedStorage {
 
+  private static final String OP_COMPACTION = "compaction";
+  private static final String OP_STREAMING = "streaming";
+  private static final int LEAD_DURATION = 600;
   /* Simple stmts */
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
   private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
   private static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
   private static final String SELECT_RUNNING_REAPERS = "SELECT reaper_instance_id FROM running_reapers";
+  private static final DateTimeFormatter HOURLY_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHH");
 
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
 
@@ -173,6 +182,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement getSnapshotPrepStmt;
   private PreparedStatement deleteSnapshotPrepStmt;
   private PreparedStatement saveSnapshotPrepStmt;
+  private PreparedStatement storeMetricsPrepStmt;
+  private PreparedStatement getMetricsForHostPrepStmt;
+  private PreparedStatement getMetricsForClusterPrepStmt;
+  private PreparedStatement insertOperationsPrepStmt;
+  private PreparedStatement listOperationsForNodePrepStmt;
 
   public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) throws ReaperException {
     CassandraFactory cassandraFactory = config.getCassandraFactory();
@@ -240,6 +254,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         migrate(database.getVersion(), migrationRepo, session);
         // some migration steps depend on the Cassandra version, so must be rerun every startup
         Migration016.migrate(session, keyspace);
+        // Switch metrics table to TWCS if possible, this is intentionally executed every startup
+        Migration021.migrate(session, keyspace);
       } else {
         LOG.info(
             String.format("Keyspace %s already at schema version %d", session.getLoggedKeyspace(), currentVersion));
@@ -410,16 +426,17 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       }
     }
     prepareMetricStatements();
+    prepareOperationsStatements();
   }
 
   private void prepareLeaderElectionStatements(final String timeUdf) {
     takeLeadPrepStmt = session
         .prepare(
             "INSERT INTO leader(leader_id, reaper_instance_id, reaper_instance_host, last_heartbeat)"
-                + "VALUES(?, ?, ?, " + timeUdf + "(now())) IF NOT EXISTS");
+                + "VALUES(?, ?, ?, " + timeUdf + "(now())) IF NOT EXISTS USING TTL ?");
     renewLeadPrepStmt = session
         .prepare(
-            "UPDATE leader SET reaper_instance_id = ?, reaper_instance_host = ?,"
+            "UPDATE leader USING TTL ? SET reaper_instance_id = ?, reaper_instance_host = ?,"
                 + " last_heartbeat = " + timeUdf + "(now()) WHERE leader_id = ? IF reaper_instance_id = ?");
     releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?");
     forceReleaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ?");
@@ -437,6 +454,38 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         + " WHERE time_partition = ? AND run_id = ? AND node = ?");
     delNodeMetricsByNodePrepStmt = session.prepare("DELETE FROM node_metrics_v1"
         + " WHERE time_partition = ? AND run_id = ? AND node = ?");
+    storeMetricsPrepStmt
+        = session
+            .prepare(
+                "INSERT INTO node_metrics_v2 (cluster, metric_domain, metric_type, time_bucket, "
+                    + "host, metric_scope, metric_name, ts, metric_attribute, value) "
+                    + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    getMetricsForHostPrepStmt
+        = session
+            .prepare(
+                "SELECT cluster, metric_domain, metric_type, time_bucket, host, "
+                    + "metric_scope, metric_name, ts, metric_attribute, value "
+                    + "FROM node_metrics_v2 "
+                    + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ? and host = ?");
+    getMetricsForClusterPrepStmt
+      = session
+            .prepare(
+                "SELECT cluster, metric_domain, metric_type, time_bucket, host, "
+                    + "metric_scope, metric_name, ts, metric_attribute, value "
+                    + "FROM node_metrics_v2 "
+                    + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ?");
+  }
+
+  private void prepareOperationsStatements() {
+    insertOperationsPrepStmt
+        = session.prepare(
+            "INSERT INTO node_operations(cluster, type, time_bucket, host, ts, data) "
+                + "values(?,?,?,?,?,?)");
+
+    listOperationsForNodePrepStmt
+        = session.prepare(
+            "SELECT cluster, type, time_bucket, host, ts, data FROM node_operations "
+                + "WHERE cluster = ? AND type = ? and time_bucket = ? and host = ? LIMIT 1");
   }
 
   @Override
@@ -966,6 +1015,33 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
+  public Optional<RepairSegment> getNextFreeSegmentForRanges(
+      UUID runId,
+      Optional<RingRange> parallelRange,
+      List<RingRange> ranges) {
+    List<RepairSegment> segments
+        = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
+    Collections.shuffle(segments);
+
+    for (RepairSegment seg : segments) {
+      if (seg.getState().equals(State.NOT_STARTED) && withinRange(seg, parallelRange)) {
+        for (RingRange range : ranges) {
+          if (segmentIsWithinRange(seg, range)) {
+            LOG.debug(
+                "Segment [{}, {}] is within range [{}, {}]",
+                seg.getStartToken(),
+                seg.getEndToken(),
+                range.getStart(),
+                range.getEnd());
+            return Optional.of(seg);
+          }
+        }
+      }
+    }
+    return Optional.empty();
+  }
+
+  @Override
   public Collection<RepairSegment> getSegmentsWithState(UUID runId, State segmentState) {
     Collection<RepairSegment> segments = Lists.newArrayList();
 
@@ -1253,24 +1329,35 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public boolean takeLead(UUID leaderId) {
+    return takeLead(leaderId, LEAD_DURATION);
+  }
+
+  @Override
+  public boolean takeLead(UUID leaderId, int ttl) {
     LOG.debug("Trying to take lead on segment {}", leaderId);
     ResultSet lwtResult = session.execute(
-        takeLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS));
+        takeLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS, ttl));
 
     if (lwtResult.wasApplied()) {
       LOG.debug("Took lead on segment {}", leaderId);
       return true;
     }
 
-    // Another instance took the lead on the segmen
+    // Another instance took the lead on the segment
     LOG.debug("Could not take lead on segment {}", leaderId);
     return false;
   }
 
   @Override
   public boolean renewLead(UUID leaderId) {
+    return renewLead(leaderId, LEAD_DURATION);
+  }
+
+  @Override
+  public boolean renewLead(UUID leaderId, int ttl) {
     ResultSet lwtResult = session.execute(
         renewLeadPrepStmt.bind(
+            ttl,
             AppContext.REAPER_INSTANCE_ID,
             AppContext.REAPER_INSTANCE_ADDRESS,
             leaderId,
@@ -1298,9 +1385,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public void releaseLead(UUID leaderId) {
     Preconditions.checkNotNull(leaderId);
     ResultSet lwtResult = session.execute(releaseLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID));
-
+    LOG.info("Trying to release lead on segment {} for instance {}", leaderId, AppContext.REAPER_INSTANCE_ID);
     if (lwtResult.wasApplied()) {
-      LOG.debug("Released lead on segment {}", leaderId);
+      LOG.info("Released lead on segment {}", leaderId);
     } else {
       assert false : "Could not release lead on segment " + leaderId;
       LOG.error("Could not release lead on segment {}", leaderId);
@@ -1317,6 +1404,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private boolean hasLeadOnSegment(UUID leaderId) {
     ResultSet lwtResult = session.execute(
         renewLeadPrepStmt.bind(
+            LEAD_DURATION,
             AppContext.REAPER_INSTANCE_ID,
             AppContext.REAPER_INSTANCE_ADDRESS,
             leaderId,
@@ -1349,23 +1437,50 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Collection<NodeMetrics> getNodeMetrics(UUID runId) {
+    List<ResultSetFuture> futures = Lists.newArrayList();
+    long minuteBefore = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - 60_000);
     long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
-
-    return session.execute(getNodeMetricsPrepStmt.bind(minute, runId)).all().stream()
-        .map((row) -> createNodeMetrics(row))
-        .collect(Collectors.toSet());
+    futures.add(session.executeAsync(getNodeMetricsPrepStmt.bind(minuteBefore, runId)));
+    futures.add(session.executeAsync(getNodeMetricsPrepStmt.bind(minute, runId)));
+    ListenableFuture<List<ResultSet>> results = Futures.successfulAsList(futures);
+    try {
+      Set<NodeMetrics> metrics = results.get()
+               .stream()
+               .map(result -> result.all())
+               .flatMap(Collection::stream)
+               .map(row -> createNodeMetrics(row))
+               .collect(Collectors.toSet());
+      return metrics;
+    } catch (InterruptedException | ExecutionException e) {
+      LOG.warn("Failed collecting metrics requests for run {}", runId, e);
+      return Collections.emptySet();
+    }
   }
 
   @Override
   public Optional<NodeMetrics> getNodeMetrics(UUID runId, String node) {
+    List<ResultSetFuture> futures = Lists.newArrayList();
+    long minuteBefore = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - 60_000);
     long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
-    Row row = session.execute(getNodeMetricsByNodePrepStmt.bind(minute, runId, node)).one();
-    return null != row ? Optional.of(createNodeMetrics(row)) : Optional.empty();
+    futures.add(session.executeAsync(getNodeMetricsByNodePrepStmt.bind(minute, runId, node)));
+    futures.add(session.executeAsync(getNodeMetricsByNodePrepStmt.bind(minuteBefore, runId, node)));
+    ListenableFuture<List<ResultSet>> results = Futures.successfulAsList(futures);
+    try {
+      for (ResultSet result:results.get()) {
+        for (Row row:result) {
+          return Optional.of(createNodeMetrics(row));
+        }
+      }
+    } catch (InterruptedException | ExecutionException e) {
+      LOG.warn("Failed grabbing metrics for node {}. Will try again later.", node, e);
+    }
+    return Optional.empty();
   }
 
   @Override
   public void deleteNodeMetrics(UUID runId, String node) {
     long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
+    LOG.info("Deleting metrics for node {}", node);
     session.executeAsync(delNodeMetricsByNodePrepStmt.bind(minute, runId, node));
   }
 
@@ -1537,5 +1652,104 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     }
 
     return snapshotBuilder.build();
+  }
+
+  @Override
+  public List<GenericMetric> getMetrics(
+      String clusterName,
+      Optional<String> host,
+      String metricDomain,
+      String metricType,
+      long since) {
+    List<GenericMetric> metrics = Lists.newArrayList();
+    List<ResultSetFuture> futures = Lists.newArrayList();
+    List<String> timeBuckets = Lists.newArrayList();
+    long now = DateTime.now().getMillis();
+    long startTime = since;
+
+    // Compute the hourly buckets since the requested lower bound timestamp
+    while (startTime < now) {
+      timeBuckets.add(DateTime.now().withMillis(startTime).toString(HOURLY_FORMATTER));
+      startTime += 3600000;
+    }
+
+    for (String timeBucket:timeBuckets) {
+      if (host.isPresent()) {
+        //metric = ? and cluster = ? and time_bucket = ? and host = ? and ts >= ? and ts <= ?
+        futures.add(session.executeAsync(
+            getMetricsForHostPrepStmt.bind(
+                metricDomain,
+                metricType,
+                clusterName,
+                timeBucket,
+                host.get())));
+      } else {
+        futures.add(
+            session.executeAsync(
+                getMetricsForClusterPrepStmt.bind(
+                    metricDomain, metricType, clusterName, timeBucket)));
+      }
+    }
+
+    for (ResultSetFuture future : futures) {
+      for (Row row : future.getUninterruptibly()) {
+        // Filtering on the timestamp lower bound since it's not filtered in cluster wide metrics requests
+        if (row.getTimestamp("ts").getTime() >= since) {
+          metrics.add(
+              GenericMetric.builder()
+                  .withClusterName(row.getString("cluster"))
+                  .withHost(row.getString("host"))
+                  .withMetricType(row.getString("metric_type"))
+                  .withMetricScope(row.getString("metric_scope"))
+                  .withMetricName(row.getString("metric_name"))
+                  .withMetricAttribute(row.getString("metric_attribute"))
+                  .withTs(new DateTime(row.getTimestamp("ts")))
+                  .withValue(row.getDouble("value"))
+                  .build());
+        }
+      }
+    }
+
+
+    return metrics;
+  }
+
+  @Override
+  public void storeMetric(GenericMetric metric) {
+    session.execute(
+        storeMetricsPrepStmt.bind(
+            metric.getClusterName(),
+            metric.getMetricDomain(),
+            metric.getMetricType(),
+            metric.getTs().toString(HOURLY_FORMATTER),
+            metric.getHost(),
+            metric.getMetricScope(),
+            metric.getMetricName(),
+            metric.getTs().toDate(),
+            metric.getMetricAttribute(),
+            metric.getValue()));
+  }
+
+  @Override
+  public void storeOperations(String clusterName, OpType operationType, String host, String operationsJson) {
+    session.executeAsync(
+        insertOperationsPrepStmt.bind(
+            clusterName,
+            operationType.getName(),
+            DateTime.now().toString(HOURLY_FORMATTER),
+            host,
+            DateTime.now().toDate(),
+            operationsJson));
+  }
+
+  @Override
+  public String listOperations(String clusterName, OpType operationType, String host) {
+    ResultSet operations
+        = session.execute(
+            listOperationsForNodePrepStmt.bind(
+                clusterName, operationType.getName(), DateTime.now().toString(HOURLY_FORMATTER), host));
+    return operations.isExhausted()
+        ? "[]"
+        : operations.one().getString("data");
   }
 }

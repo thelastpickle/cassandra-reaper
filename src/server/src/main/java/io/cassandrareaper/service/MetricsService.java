@@ -19,6 +19,8 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.JmxStat;
@@ -26,12 +28,21 @@ import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.storage.IDistributedStorage;
+import io.cassandrareaper.storage.OpType;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
+import javax.management.JMException;
+import javax.management.openmbean.CompositeData;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
 import org.joda.time.DateTime;
@@ -42,20 +53,40 @@ public final class MetricsService {
 
   private static final Logger LOG = LoggerFactory.getLogger(MetricsService.class);
 
+  private static final String[] COLLECTED_METRICS = {
+    "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
+    "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*",
+    "org.apache.cassandra.metrics:type=ClientRequest,*",
+    "org.apache.cassandra.metrics:type=DroppedMessage,*"
+  };
+
   private final AppContext context;
   private final ClusterFacade clusterFacade;
+  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final String localClusterName;
 
-  private MetricsService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier) {
+  private MetricsService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier) throws ReaperException {
     this.context = context;
     this.clusterFacade = clusterFacadeSupplier.get();
+    if (context.config.isInSidecarMode()) {
+
+      Node host = Node.builder()
+            .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1"))
+            .withClusterName("bogus")
+            .build();
+
+      localClusterName = Cluster.toSymbolicName(clusterFacade.getClusterName(host));
+    } else {
+      localClusterName = null;
+    }
   }
 
   @VisibleForTesting
-  static MetricsService create(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier) {
-    return new MetricsService(context, clusterFacadeSupplier);
+  static MetricsService create(AppContext context, Supplier<ClusterFacade> supplier) throws ReaperException {
+    return new MetricsService(context, supplier);
   }
 
-  public static MetricsService create(AppContext context) {
+  public static MetricsService create(AppContext context) throws ReaperException {
     return new MetricsService(context, () -> ClusterFacade.create(context));
   }
 
@@ -87,10 +118,63 @@ public final class MetricsService {
             .withValue(jmxStat.getValue())
             .withTs(now)
             .build();
+
         metrics.add(metric);
       }
     }
-
     return metrics;
   }
+
+  void grabAndStoreGenericMetrics() throws ReaperException, InterruptedException, JMException {
+    Preconditions.checkState(
+        context.config.isInSidecarMode(),
+        "grabAndStoreGenericMetrics() can only be called in sidecar");
+
+    Node node = Node.builder().withClusterName(localClusterName).withHostname(context.getLocalNodeAddress()).build();
+
+    List<GenericMetric> metrics
+        = convertToGenericMetrics(ClusterFacade.create(context).collectMetrics(node, COLLECTED_METRICS), node);
+
+    for (GenericMetric metric:metrics) {
+      ((IDistributedStorage)context.storage).storeMetric(metric);
+    }
+    LOG.debug("Grabbing and storing metrics for {}", context.getLocalNodeAddress());
+
+  }
+
+  void grabAndStoreActiveCompactions() throws JsonProcessingException, JMException, ReaperException {
+    Preconditions.checkState(
+        context.config.isInSidecarMode(),
+        "grabAndStoreActiveCompactions() can only be called in sidecar");
+
+    Node node = Node.builder().withClusterName(localClusterName).withHostname(context.getLocalNodeAddress()).build();
+    List<Compaction> activeCompactions = ClusterFacade.create(context).listActiveCompactionsDirect(node);
+
+    ((IDistributedStorage) context.storage)
+        .storeOperations(
+            localClusterName,
+            OpType.OP_COMPACTION,
+            context.getLocalNodeAddress(),
+            objectMapper.writeValueAsString(activeCompactions));
+
+    LOG.debug("Grabbing and storing compactions for {}", context.getLocalNodeAddress());
+  }
+
+  void grabAndStoreActiveStreams() throws JsonProcessingException, ReaperException {
+    Preconditions.checkState(
+        context.config.isInSidecarMode(),
+        "grabAndStoreActiveStreams() can only be called in sidecar");
+
+    Node node = Node.builder().withClusterName(localClusterName).withHostname(context.getLocalNodeAddress()).build();
+    Set<CompositeData> activeStreams = ClusterFacade.create(context).listStreamsDirect(node);
+
+    ((IDistributedStorage) context.storage)
+        .storeOperations(
+            localClusterName,
+            OpType.OP_STREAMING,context.getLocalNodeAddress(),
+            objectMapper.writeValueAsString(activeStreams));
+
+    LOG.debug("Grabbing and storing streams for {}", context.getLocalNodeAddress());
+  }
+
 }

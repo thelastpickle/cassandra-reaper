@@ -18,15 +18,17 @@
 package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
-import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
+import io.cassandrareaper.storage.IStorage;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -39,6 +41,7 @@ import javax.management.JMException;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
@@ -50,24 +53,31 @@ final class Heart implements AutoCloseable {
   private static final AtomicBoolean GAUGES_REGISTERED = new AtomicBoolean(false);
   private static final Logger LOG = LoggerFactory.getLogger(Heart.class);
   private static final long DEFAULT_MAX_FREQUENCY = TimeUnit.SECONDS.toMillis(30);
+  private static final String[] COLLECTED_METRICS
+    = {"org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
+       "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*",
+       "org.apache.cassandra.metrics:type=ClientRequest,*",
+       "org.apache.cassandra.metrics:type=DroppedMessage,*"};
 
   private final AtomicLong lastBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
   private final ForkJoinPool forkJoinPool = new ForkJoinPool(64);
   private final AppContext context;
+  private final MetricsService metricsService;
   private final long maxBeatFrequencyMillis;
   private final AtomicBoolean updatingNodeMetrics = new AtomicBoolean(false);
 
-  private Heart(AppContext context, long maxBeatFrequency) {
+  private Heart(AppContext context, long maxBeatFrequency) throws ReaperException {
     this.context = context;
     this.maxBeatFrequencyMillis = maxBeatFrequency;
+    this.metricsService = MetricsService.create(context);
   }
 
-  static Heart create(AppContext context) {
+  static Heart create(AppContext context) throws ReaperException {
     return new Heart(context, DEFAULT_MAX_FREQUENCY);
   }
 
   @VisibleForTesting
-  static Heart create(AppContext context, long maxBeatFrequencyMillis) {
+  static Heart create(AppContext context, long maxBeatFrequencyMillis) throws ReaperException {
     return new Heart(context, maxBeatFrequencyMillis);
   }
 
@@ -82,8 +92,7 @@ final class Heart implements AutoCloseable {
 
   synchronized void beatMetrics() {
     if (context.storage instanceof IDistributedStorage
-            && ReaperApplicationConfiguration.DatacenterAvailability.EACH
-                == context.config.getDatacenterAvailability()) {
+            && context.config.getDatacenterAvailability().isInCollocatedMode()) {
       updateRequestedNodeMetrics();
     }
   }
@@ -105,7 +114,7 @@ final class Heart implements AutoCloseable {
 
   private void updateRequestedNodeMetrics() {
     Preconditions.checkArgument(context.storage instanceof IDistributedStorage);
-    IDistributedStorage storage = ((IDistributedStorage) context.storage);
+    //IDistributedStorage storage = ((IDistributedStorage) context.storage);
     registerGauges();
 
     if (!updatingNodeMetrics.getAndSet(true)) {
@@ -117,7 +126,7 @@ final class Heart implements AutoCloseable {
                 .parallelStream()
                 .forEach(runId -> {
 
-                  storage.getNodeMetrics(runId)
+                  ((IDistributedStorage) context.storage).getNodeMetrics(runId)
                       .parallelStream()
                       .filter(metrics -> canAnswerToNodeMetricsRequest(metrics))
                       .forEach(req -> {
@@ -129,7 +138,7 @@ final class Heart implements AutoCloseable {
                             req.getNode().replace('.', '-'))) {
 
                           try {
-                            grabAndStoreNodeMetrics(storage, runId, req);
+                            grabAndStoreNodeMetrics(context.storage, runId, req);
 
                             LOG.info("Responded to metric request for node {}", req.getNode());
                           } catch (ReaperException | RuntimeException | InterruptedException ex) {
@@ -143,7 +152,15 @@ final class Heart implements AutoCloseable {
                       });
                 });
           }).get();
-        } catch (ExecutionException | InterruptedException | RuntimeException ex) {
+
+          if (context.config.getDatacenterAvailability() == DatacenterAvailability.SIDECAR) {
+            // In sidecar mode we store metrics in the db on a regular basis
+            metricsService.grabAndStoreGenericMetrics();
+            metricsService.grabAndStoreActiveCompactions();
+            metricsService.grabAndStoreActiveStreams();
+          }
+        } catch (ExecutionException | InterruptedException | RuntimeException
+            | ReaperException | JMException | JsonProcessingException ex) {
           LOG.warn("Failed metric collection during heartbeat", ex);
         } finally {
           assert updatingNodeMetrics.get();
@@ -162,18 +179,21 @@ final class Heart implements AutoCloseable {
    * @return true if reaper should try to answer the metric request
    */
   private boolean canAnswerToNodeMetricsRequest(NodeMetrics metric) {
-    return context.config.getDatacenterAvailability() != DatacenterAvailability.ALL
+    return (context.config.getDatacenterAvailability() == DatacenterAvailability.SIDECAR
+            && metric.getNode().equals(context.getLocalNodeAddress()))
+        || (context.config.getDatacenterAvailability() != DatacenterAvailability.ALL
+        && context.config.getDatacenterAvailability() != DatacenterAvailability.SIDECAR)
         && metric.isRequested();
   }
 
-  private void grabAndStoreNodeMetrics(IDistributedStorage storage, UUID runId, NodeMetrics req)
+  private void grabAndStoreNodeMetrics(IStorage storage, UUID runId, NodeMetrics req)
       throws ReaperException, InterruptedException, JMException {
+    Optional<Cluster> cluster = storage.getCluster(req.getCluster());
+    Preconditions.checkArgument(cluster.isPresent(), "The cluster should be present in storage.");
     JmxProxy nodeProxy
-        = ClusterFacade.create(context)
-            .connectAny(
-                context.storage.getCluster(req.getCluster()).get(), Arrays.asList(req.getNode()));
+        = ClusterFacade.create(context).connectAndAllowSidecar(cluster.get(), Arrays.asList(req.getNode()));
 
-    storage.storeNodeMetrics(
+    ((IDistributedStorage) storage).storeNodeMetrics(
         runId,
         NodeMetrics.builder()
             .withNode(req.getNode())

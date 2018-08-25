@@ -530,6 +530,10 @@ public final class BasicSteps {
 
             return false;
           }
+
+          if (runs.isEmpty()) {
+            return false;
+          }
           runningRepairs.add(runs.get(0).getId());
           return true;
         });

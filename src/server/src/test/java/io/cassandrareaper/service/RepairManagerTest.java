@@ -58,9 +58,10 @@ public final class RepairManagerTest {
    * even if a repair runner exists for the run, when using a IDistributedStorage backend
    *
    * @throws ReaperException if some goes wrong :)
+   * @throws InterruptedException if some goes wrong :)
    */
   @Test
-  public void abortRunningSegmentWithNoLeader() throws ReaperException {
+  public void abortRunningSegmentWithNoLeader() throws ReaperException, InterruptedException {
     final String clusterName = "reaper";
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
@@ -137,9 +138,10 @@ public final class RepairManagerTest {
    * using a IDistributedStorage backend
    *
    * @throws ReaperException if some goes wrong :)
+   * @throws InterruptedException if some goes wrong :)
    */
   @Test
-  public void doNotAbortRunningSegmentWithLeader() throws ReaperException {
+  public void doNotAbortRunningSegmentWithLeader() throws ReaperException, InterruptedException {
     final String clusterName = "reaper";
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
@@ -217,9 +219,11 @@ public final class RepairManagerTest {
    * IDistributedStorage backend if a repair runner exists
    *
    * @throws ReaperException if some goes wrong :)
+   * @throws InterruptedException if some goes wrong :)
    */
   @Test
-  public void doNotAbortRunningSegmentWithRepairRunnerAndNoDistributedStorage() throws ReaperException {
+  public void doNotAbortRunningSegmentWithRepairRunnerAndNoDistributedStorage()
+      throws ReaperException, InterruptedException {
     final String clusterName = "reaper";
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
@@ -293,9 +297,11 @@ public final class RepairManagerTest {
    * IDistributedStorage backend if no repair runner exists (first boot or Reaper)
    *
    * @throws ReaperException if some goes wrong :)
+   * @throws InterruptedException if some goes wrong :)
    */
   @Test
-  public void abortRunningSegmentWithNoRepairRunnerAndNoDistributedStorage() throws ReaperException {
+  public void abortRunningSegmentWithNoRepairRunnerAndNoDistributedStorage()
+      throws ReaperException, InterruptedException {
     final String clusterName = "reaper";
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
@@ -364,7 +370,7 @@ public final class RepairManagerTest {
   }
 
   @Test
-  public void updateRepairRunIntensityTest() throws ReaperException {
+  public void updateRepairRunIntensityTest() throws ReaperException, InterruptedException {
     final String clusterName = "reaper";
 
     AppContext context = new AppContext();

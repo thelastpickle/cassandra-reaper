@@ -163,8 +163,9 @@ public class MetricsServiceTest {
   }
 
   @Test
-  public void testConvertToDroppedMessages() {
+  public void testConvertToDroppedMessages() throws ReaperException, InterruptedException {
     AppContext context = new AppContext();
+    context.config = new ReaperApplicationConfiguration();
     ClusterFacade clusterFacade = ClusterFacade.create(context);
     final MetricsService metricsGrabber = MetricsService.create(context, () -> clusterFacade);
 
