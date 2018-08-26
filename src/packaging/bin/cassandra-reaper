@@ -22,11 +22,15 @@ fi
 
 if [ -z "$CLASS_PATH" ]; then
   echo "Looking for reaper in /usr/share/cassandra-reaper/"
-  CLASS_PATH="/usr/share/cassandra-reaper/*"
+  CLASS_PATH="/usr/share/cassandra-reaper/*:/usr/local/share/cassandra-reaper/*"
 fi
 
 if [ $# -eq 0 ]; then
-    CONFIG_PATH="/etc/cassandra-reaper/cassandra-reaper.yaml"
+    if [ -e /usr/local/etc/cassandra-reaper/cassandra-reaper.yaml ]; then
+        CONFIG_PATH="/usr/local/etc/cassandra-reaper/cassandra-reaper.yaml"
+    else
+        CONFIG_PATH="/etc/cassandra-reaper/cassandra-reaper.yaml"
+    fi
 else
     CONFIG_PATH="$@"
 fi
