@@ -26,6 +26,7 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
+import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.jmx.RepairStatusHandler;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.IDistributedStorage;
@@ -33,6 +34,7 @@ import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorage;
 
 import java.math.BigInteger;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,6 +45,7 @@ import java.util.concurrent.Future;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.progress.ProgressEventType;
@@ -111,13 +114,20 @@ public final class SegmentRunnerTest {
           @Override
           public JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
 
-            JmxProxy jmx = mock(JmxProxy.class);
+            JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
             when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
                 .thenReturn(Lists.newArrayList(""));
-            when(jmx.getDataCenter()).thenReturn("dc1");
-            when(jmx.getDataCenter(anyString())).thenReturn("dc1");
+
+            EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+            when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+            try {
+              when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+            } catch (UnknownHostException ex) {
+              throw new AssertionError(ex);
+            }
+            JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
             when(jmx.triggerRepair(
                     any(BigInteger.class),
@@ -227,13 +237,18 @@ public final class SegmentRunnerTest {
     context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
           protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
-            JmxProxy jmx = mock(JmxProxy.class);
+            JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
-                .thenReturn(Lists.newArrayList(""));
-            when(jmx.getDataCenter()).thenReturn("dc1");
-            when(jmx.getDataCenter(anyString())).thenReturn("dc1");
+            when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class))).thenReturn(Lists.newArrayList(""));
+            EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+            when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+            try {
+              when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+            } catch (UnknownHostException ex) {
+              throw new AssertionError(ex);
+            }
+            JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
             when(jmx.triggerRepair(
                     any(BigInteger.class),
@@ -373,13 +388,20 @@ public final class SegmentRunnerTest {
     context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
           protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
-            JmxProxy jmx = mock(JmxProxy.class);
+            JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
             when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
                 .thenReturn(Lists.newArrayList(""));
-            when(jmx.getDataCenter()).thenReturn("dc1");
-            when(jmx.getDataCenter(anyString())).thenReturn("dc1");
+
+            EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+            when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+            try {
+              when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+            } catch (UnknownHostException ex) {
+              throw new AssertionError(ex);
+            }
+            JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
             when(jmx.triggerRepair(
                     any(BigInteger.class),
@@ -511,13 +533,20 @@ public final class SegmentRunnerTest {
           @Override
           protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
 
-            JmxProxy jmx = mock(JmxProxy.class);
+            JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
             when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
                 .thenReturn(Lists.newArrayList(""));
-            when(jmx.getDataCenter()).thenReturn("dc1");
-            when(jmx.getDataCenter(anyString())).thenReturn("dc1");
+
+            EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+            when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+            try {
+              when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+            } catch (UnknownHostException ex) {
+              throw new AssertionError(ex);
+            }
+            JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
             when(jmx.triggerRepair(
                     any(BigInteger.class),
@@ -646,13 +675,20 @@ public final class SegmentRunnerTest {
           @Override
           protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
 
-            JmxProxy jmx = mock(JmxProxy.class);
+            JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
             when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
                 .thenReturn(Lists.newArrayList(""));
-            when(jmx.getDataCenter()).thenReturn("dc1");
-            when(jmx.getDataCenter(anyString())).thenReturn("dc1");
+
+            EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+            when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+            try {
+              when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+            } catch (UnknownHostException ex) {
+              throw new AssertionError(ex);
+            }
+            JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
             when(jmx.triggerRepair(
                     any(BigInteger.class),
@@ -781,13 +817,20 @@ public final class SegmentRunnerTest {
           @Override
           protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
 
-            JmxProxy jmx = mock(JmxProxy.class);
+            JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
             when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
                 .thenReturn(Lists.newArrayList(""));
-            when(jmx.getDataCenter()).thenReturn("dc1");
-            when(jmx.getDataCenter(anyString())).thenReturn("dc1");
+
+            EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+            when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+            try {
+              when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+            } catch (UnknownHostException ex) {
+              throw new AssertionError(ex);
+            }
+            JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
             when(jmx.triggerRepair(
                     any(BigInteger.class),
@@ -917,13 +960,20 @@ public final class SegmentRunnerTest {
           @Override
           protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
 
-            JmxProxy jmx = mock(JmxProxy.class);
+            JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
             when(jmx.tokenRangeToEndpoint(anyString(), any(Segment.class)))
                 .thenReturn(Lists.newArrayList(""));
-            when(jmx.getDataCenter()).thenReturn("dc1");
-            when(jmx.getDataCenter(anyString())).thenReturn("dc1");
+
+            EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+            when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+            try {
+              when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+            } catch (UnknownHostException ex) {
+              throw new AssertionError(ex);
+            }
+            JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
 
             when(jmx.triggerRepair(
                     any(BigInteger.class),
@@ -1041,7 +1091,7 @@ public final class SegmentRunnerTest {
 
   @Test
   public void getTablesToRepairRemoveOneTableTest() throws ReaperException {
-    JmxProxy coord = mock(JmxProxy.class);
+    JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
     when(coord.getTableNamesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
 
@@ -1056,7 +1106,7 @@ public final class SegmentRunnerTest {
 
   @Test
   public void getTablesToRepairRemoveTwoTablesTest() throws ReaperException {
-    JmxProxy coord = mock(JmxProxy.class);
+    JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
     when(coord.getTableNamesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
 
@@ -1070,7 +1120,7 @@ public final class SegmentRunnerTest {
 
   @Test
   public void getTablesToRepairRemoveOneTableFromListTest() throws ReaperException {
-    JmxProxy coord = mock(JmxProxy.class);
+    JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
     when(coord.getTableNamesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
 
@@ -1084,7 +1134,7 @@ public final class SegmentRunnerTest {
 
   @Test(expected = IllegalStateException.class)
   public void getTablesToRepairRemoveAllFailingTest() throws ReaperException {
-    JmxProxy coord = mock(JmxProxy.class);
+    JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
     when(coord.getTableNamesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
 
@@ -1098,7 +1148,7 @@ public final class SegmentRunnerTest {
 
   @Test(expected = IllegalStateException.class)
   public void getTablesToRepairRemoveAllFromListFailingTest() throws ReaperException {
-    JmxProxy coord = mock(JmxProxy.class);
+    JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
     when(coord.getTableNamesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet("table1", "table2", "table3", "table4"));
 
@@ -1135,7 +1185,7 @@ public final class SegmentRunnerTest {
     final AppContext context = new AppContext();
     context.storage = Mockito.mock(CassandraStorage.class);
 
-    JmxProxy proxy = mock(JmxProxy.class);
+    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getClusterName()).thenReturn("test");
     when(proxy.getPendingCompactions()).thenReturn(3);
     when(proxy.isRepairRunning()).thenReturn(true);

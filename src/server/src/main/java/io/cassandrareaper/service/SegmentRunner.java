@@ -22,6 +22,7 @@ import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
 import io.cassandrareaper.jmx.SnapshotProxy;
@@ -480,11 +481,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       repairRunner.updateLastEvent(msg);
       return false;
     }
-    String dc = coordinator.getDataCenter();
+    String dc = EndpointSnitchInfoProxy.create(coordinator).getDataCenter();
     boolean allLocalDcHosts = true;
     boolean allHosts = true;
     Map<String, String> dcByNode = Maps.newHashMap();
-    nodes.forEach(node -> dcByNode.put(node, coordinator.getDataCenter(node)));
+    nodes.forEach(node -> dcByNode.put(node, EndpointSnitchInfoProxy.create(coordinator).getDataCenter(node)));
 
     List<Callable<Pair<String, Optional<NodeMetrics>>>> getMetricsTasks = nodes.stream()
         .filter(node

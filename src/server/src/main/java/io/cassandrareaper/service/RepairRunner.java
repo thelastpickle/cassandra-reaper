@@ -21,6 +21,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.util.Arrays;
@@ -529,7 +530,7 @@ final class RepairRunner implements Runnable {
   }
 
   private static Pair<String, String> getNodeDatacenterPair(String node, JmxProxy jmxProxy) {
-    Pair<String, String> result = Pair.of(node, jmxProxy.getDataCenter(node));
+    Pair<String, String> result = Pair.of(node, EndpointSnitchInfoProxy.create(jmxProxy).getDataCenter(node));
     LOG.debug("[getNodeDatacenterPair] node/datacenter association {}", result);
     return result;
   }

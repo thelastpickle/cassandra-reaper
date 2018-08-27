@@ -25,7 +25,6 @@ import java.lang.reflect.UndeclaredThrowableException;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
-import java.net.UnknownHostException;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMISocketFactory;
 import java.util.Arrays;
@@ -274,20 +273,6 @@ final class JmxProxyImpl implements JmxProxy {
   @Override
   public String getHost() {
     return host;
-  }
-
-  @Override
-  public String getDataCenter() {
-    return getDataCenter(hostBeforeTranslation);
-  }
-
-  @Override
-  public String getDataCenter(String host) {
-    try {
-      return endpointSnitchMbean.getDatacenter(host);
-    } catch (UnknownHostException ex) {
-      throw new IllegalArgumentException(ex);
-    }
   }
 
   @Override
@@ -1076,6 +1061,14 @@ final class JmxProxyImpl implements JmxProxy {
 
   FailureDetectorMBean getFailureDetectorMBean() {
     return fdProxy;
+  }
+
+  EndpointSnitchInfoMBean getEndpointSnitchInfoMBean() {
+    return endpointSnitchMbean;
+  }
+
+  String getUntranslatedHost() {
+    return hostBeforeTranslation;
   }
 
   // Initialization-on-demand holder for jmx ObjectNames

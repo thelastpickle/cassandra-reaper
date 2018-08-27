@@ -50,10 +50,6 @@ public interface JmxProxy extends NotificationListener {
    */
   String getClusterName();
 
-  String getDataCenter();
-
-  String getDataCenter(String host);
-
   /**
    * @return all hosts in the ring with their host id
    */
