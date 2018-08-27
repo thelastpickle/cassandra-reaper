@@ -18,6 +18,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.jmx.FailureDetectorProxy;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.ClusterStatus;
 import io.cassandrareaper.resources.view.NodesStatus;
@@ -27,7 +28,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -335,12 +335,8 @@ public final class ClusterResource {
     return () -> {
       try {
         JmxProxy jmxProxy = connectAny(seeds, clusterName);
-        Optional<String> allEndpointsState = Optional.ofNullable(jmxProxy.getAllEndpointsState());
-        Optional<Map<String, String>> simpleStates = Optional.ofNullable(jmxProxy.getSimpleStates());
-
-        return Optional.of(
-            new NodesStatus(jmxProxy.getHost(), allEndpointsState.orElse(""), simpleStates.orElse(new HashMap<>())));
-
+        FailureDetectorProxy proxy = FailureDetectorProxy.create(jmxProxy);
+        return Optional.of(new NodesStatus(jmxProxy.getHost(), proxy.getAllEndpointsState(), proxy.getSimpleStates()));
       } catch (RuntimeException e) {
         LOG.debug("failed to get endpoints for cluster {} with seeds {}", clusterName, seeds, e);
         Thread.sleep((int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds() * 1000);

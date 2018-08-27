@@ -43,8 +43,6 @@ public interface JmxProxy extends NotificationListener {
    */
   void cancelAllRepairs();
 
-  String getAllEndpointsState();
-
   String getCassandraVersion();
 
   /**
@@ -84,8 +82,6 @@ public interface JmxProxy extends NotificationListener {
   Map<List<String>, List<String>> getRangeToEndpointMap(String keyspace) throws ReaperException;
 
   List<RingRange> getRangesForLocalEndpoint(String keyspace) throws ReaperException;
-
-  Map<String, String> getSimpleStates();
 
   Set<String> getTableNamesForKeyspace(String keyspace) throws ReaperException;
 

@@ -756,16 +756,6 @@ final class JmxProxyImpl implements JmxProxy {
                 columnFamilies.toArray(new String[columnFamilies.size()]));
   }
 
-  @Override
-  public String getAllEndpointsState() {
-    return ((FailureDetectorMBean) fdProxy).getAllEndpointStates();
-  }
-
-  @Override
-  public Map<String, String> getSimpleStates() {
-    return ((FailureDetectorMBean) fdProxy).getSimpleStates();
-  }
-
   /**
    * Invoked when the MBean this class listens to publishes an event.
    *
@@ -1082,6 +1072,10 @@ final class JmxProxyImpl implements JmxProxy {
 
   StreamManagerMBean getStreamManagerMBean() {
     return smProxy;
+  }
+
+  FailureDetectorMBean getFailureDetectorMBean() {
+    return fdProxy;
   }
 
   // Initialization-on-demand holder for jmx ObjectNames
