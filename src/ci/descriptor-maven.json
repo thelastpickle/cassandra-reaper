@@ -1,6 +1,6 @@
 {
     "package": {
-        "name": "cassandra-reaper", // Bintray package name
+        "name": "io.cassandrareaper:cassandra-reaper", // Bintray package name
         "repo": "reaper-maven", // Bintray repository name
         "subject": "thelastpickle", // Bintray subject (user or organization)
         "desc": "Apache Cassandra Reaper stable releases",
