@@ -380,6 +380,16 @@ The storage type to use in which Reaper will store its control data. The value m
 
 <br/>
 
+### `useAddressTranslator`
+
+Type: *Boolean*
+
+Default: *false*
+
+When running multi region clusters in AWS, turn this setting to `true` in order to use the EC2MultiRegionAddressTranslator from the Datastax Java Driver. This will allow translating the public address that the nodes broadcast to the private IP address that is used to expose JMX.
+
+<br/>
+
 ### `accessControl`
 
 Settings to activate and configure authentication for the web UI.
