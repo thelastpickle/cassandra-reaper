@@ -181,7 +181,7 @@ If JMX authentication is required and all clusters share the same credentials, t
       <guid>http://cassandra-reaper.io/docs/usage/authentication/</guid>
       <description>Activating Web UI Authentication Authentication can be activated in Reaper for the web UI only. It relies on Apache Shiro, which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box.
 To activate authentication, add the following block to your Reaper yaml file :
-accessControl: sessionTimeout: PT10M shiro: iniConfigs: [&amp;quot;file:/path/to/shiro.ini&amp;quot;]  Create a shiro.ini file and adapt it from the following sample :</description>
+accessControl: sessionTimeout: PT10M shiro: iniConfigs: [&amp;quot;file:/path/to/shiro.ini&amp;quot;]  With clear passwords Create a shiro.ini file and adapt it from the following sample :</description>
     </item>
     
     <item>

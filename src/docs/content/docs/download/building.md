@@ -25,7 +25,7 @@ mvn clean package
 
 # Building Docker Image from source
 
- See the [Docker]({{<ref "docs/download/docker.md">}}) section for more details.
+ See the [Docker]({{<ref "/docs/download/docker.md">}}) section for more details.
 
 # Building Using Docker
 
