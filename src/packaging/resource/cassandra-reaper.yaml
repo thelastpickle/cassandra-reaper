@@ -71,13 +71,6 @@ server:
   requestLog:
     appenders: []
 
-database:
-  # PostgreSQL JDBC settings
-  driverClass: org.postgresql.Driver
-  user: postgres
-  password: postgres
-  url: jdbc:postgresql://127.0.0.1/reaper
-
 autoScheduling:
   enabled: false
   initialDelayPeriod: PT15S
