@@ -44,14 +44,7 @@ jmxCredentials:
     username: cassandra
     password: cassandrapassword
 
-# database section will be ignored if storageType is set to "memory"
-#h2:
-  # H2 JDBC settings
-#  url: jdbc:h2:/tmp/reaper-db;MODE=PostgreSQL
-#  user:
-#  password:
-
-database:
+h2:
   # H2 JDBC settings
   driverClass: org.h2.Driver
   url: jdbc:h2:/tmp/reaper-db/db;MODE=PostgreSQL
