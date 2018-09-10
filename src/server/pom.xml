@@ -407,18 +407,26 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- following plugins are for building the UI -->
-            <plugin>
-              <artifactId>maven-clean-plugin</artifactId>
-              <configuration>
-                <filesets>
-                  <fileset>
-                    <directory>${project.build.directory}</directory>
-                    <directory>../ui/build</directory>
-                  </fileset>
-                </filesets>
-              </configuration>
-            </plugin>
+              <!-- following plugins are for building the UI -->
+              <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                  <filesets>
+                    <fileset>
+                      <directory>${project.build.directory}</directory>
+                    </fileset>
+                    <fileset>
+                      <directory>../ui/build</directory>
+                    </fileset>
+                    <fileset>
+                      <directory>../ui/bower_components</directory>
+                    </fileset>
+                    <fileset>
+                      <directory>../ui/node_modules</directory>
+                    </fileset>
+                  </filesets>
+                </configuration>
+              </plugin>
             <plugin>
                 <groupId>com.google.code.maven-replacer-plugin</groupId>
                 <artifactId>replacer</artifactId>

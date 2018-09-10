@@ -136,6 +136,22 @@
               </execution>
             </executions>
           </plugin>
+          <plugin>
+            <artifactId>maven-clean-plugin</artifactId>
+            <configuration>
+              <filesets>
+                <fileset>
+                  <directory>${project.build.directory}</directory>
+                </fileset>
+                <fileset>
+                  <directory>src/packaging/build</directory>
+                </fileset>
+                <fileset>
+                  <directory>src/packages</directory>
+                </fileset>
+              </filesets>
+            </configuration>
+          </plugin>
         </plugins>
         <pluginManagement>
           <plugins>
