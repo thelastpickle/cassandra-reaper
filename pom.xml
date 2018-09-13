@@ -148,6 +148,9 @@
                 </fileset>
                 <fileset>
                   <directory>src/packages</directory>
+                  <includes>
+                      <include>**/*</include>
+                  </includes>
                 </fileset>
               </filesets>
             </configuration>
