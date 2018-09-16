@@ -18,6 +18,7 @@
 package io.cassandrareaper.core;
 
 import java.util.Collections;
+import java.util.Optional;
 
 public final class Node {
 
@@ -57,7 +58,7 @@ public final class Node {
     }
 
     public Builder withClusterName(String clusterName) {
-      this.cluster = new Cluster(clusterName, null, Collections.emptySet());
+      this.cluster = new Cluster(clusterName, Optional.empty(), Collections.emptySet());
       return this;
     }
 

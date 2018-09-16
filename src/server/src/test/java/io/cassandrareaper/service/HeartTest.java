@@ -20,6 +20,8 @@ package io.cassandrareaper.service;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.ClusterProperties;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.jmx.HostConnectionCounters;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
@@ -27,7 +29,10 @@ import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.MemoryStorage;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -68,7 +73,8 @@ public final class HeartTest {
   }
 
   @Test
-  public void testBeat_distributedStorage_noDatacenterAvailability() throws InterruptedException {
+  public void testBeat_distributedStorage_noDatacenterAvailability()
+      throws InterruptedException, ReaperException {
 
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
@@ -93,7 +99,8 @@ public final class HeartTest {
   }
 
   @Test
-  public void testBeat_distributedStorage_allDatacenterAvailability() throws InterruptedException {
+  public void testBeat_distributedStorage_allDatacenterAvailability()
+      throws InterruptedException, ReaperException {
 
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
@@ -294,6 +301,15 @@ public final class HeartTest {
                     .withRequested(true)
             .build()));
 
+    Mockito.when(((CassandraStorage) context.storage).getCluster(any()))
+        .thenReturn(
+            Optional.of(
+                new Cluster(
+                    "cluster1",
+                    Optional.empty(),
+                    new HashSet<String>(Arrays.asList("test")),
+                    ClusterProperties.builder().withJmxPort(7199).build())));
+
     JmxProxy nodeProxy = Mockito.mock(JmxProxy.class);
 
     Mockito.when(context.jmxConnectionFactory.connect(any(), anyInt())).thenReturn(nodeProxy);
@@ -342,6 +358,15 @@ public final class HeartTest {
                     .withCluster("cluster1")
                     .withRequested(true)
             .build()));
+
+    Mockito.when(((CassandraStorage) context.storage).getCluster(any()))
+        .thenReturn(
+            Optional.of(
+                new Cluster(
+                    "cluster1",
+                    Optional.empty(),
+                    new HashSet<String>(Arrays.asList("test")),
+                    ClusterProperties.builder().withJmxPort(7199).build())));
 
     JmxProxy nodeProxy = Mockito.mock(JmxProxy.class);
     Mockito.when(context.jmxConnectionFactory.connect(any(), anyInt())).thenReturn(nodeProxy);

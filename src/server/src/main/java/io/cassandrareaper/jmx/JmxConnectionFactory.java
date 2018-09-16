@@ -85,6 +85,10 @@ public class JmxConnectionFactory {
     String host = node.getHostname();
     if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
       host = host + ":" + jmxPorts.get(host);
+      LOG.debug("Connecting to {} with specific port", host);
+    } else {
+      host = host + ":" + node.getCluster().getProperties().getJmxPort();
+      LOG.debug("Connecting to {} with custom port", host);
     }
 
     String username = null;

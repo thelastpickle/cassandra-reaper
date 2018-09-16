@@ -18,6 +18,7 @@
 package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
+import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 
@@ -48,7 +49,7 @@ public final class PurgeService {
     return new PurgeService(context);
   }
 
-  public Integer purgeDatabase() {
+  public Integer purgeDatabase() throws ReaperException {
     int purgedRuns = 0;
     if (context.config.getNumberOfRunsToKeepPerUnit() != 0
         || context.config.getPurgeRecordsAfterInDays() != 0) {

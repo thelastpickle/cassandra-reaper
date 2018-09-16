@@ -25,7 +25,7 @@ const clusterForm = React.createClass({
   },
 
   getInitialState: function() {
-    return {addClusterResultMsg: null, seed_node:""};
+    return {addClusterResultMsg: null, seed_node:"", jmx_port:"7199"};
   },
 
   componentWillMount: function() {
@@ -52,7 +52,8 @@ const clusterForm = React.createClass({
   }, 
 
   _onAdd: function(e) {
-    this.props.addClusterSubject.onNext(this.state.seed_node);
+    let addClusterObj = {'seed_node':this.state.seed_node, 'jmx_port':this.state.jmx_port};
+    this.props.addClusterSubject.onNext(addClusterObj);
   },
 
   render: function() {
@@ -71,6 +72,12 @@ const clusterForm = React.createClass({
               <input type="text" className="form-control" ref="in_seed_node" id="in_seed_node" 
               onChange={this._handleChange}
               placeholder="hostname or ip"></input>
+            </div>
+            <div className="form-group">
+              <label htmlFor="in_jmx_port">JMX port:</label>
+              <input type="text" className="form-control" ref="in_jmx_port" id="in_jmx_port" 
+              onChange={this._handleChange}
+              placeholder="7199"></input>
             </div>
             <button type="button" className="btn btn-success" onClick={this._onAdd}>Add Cluster</button>
           </div>

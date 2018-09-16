@@ -48,6 +48,8 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.UUID;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -136,15 +138,26 @@ public final class PostgresStorage implements IStorage {
   }
 
   @Override
-  public boolean addCluster(Cluster newCluster) {
+  public boolean addCluster(Cluster newCluster) throws ReaperException {
     Cluster result = null;
     try (Handle h = jdbi.open()) {
-      int rowsAdded = getPostgresStorage(h).insertCluster(newCluster);
+      String properties = new ObjectMapper().writeValueAsString(newCluster.getProperties());
+      Preconditions.checkState(newCluster.getPartitioner().isPresent(),
+          "Cannot insert cluster with no partitioner.");
+      int rowsAdded
+          = getPostgresStorage(h)
+              .insertCluster(
+                  newCluster.getName(),
+                  newCluster.getPartitioner().get(),
+                  newCluster.getSeedHosts(),
+                  properties);
       if (rowsAdded < 1) {
         LOG.warn("failed inserting cluster with name: {}", newCluster.getName());
       } else {
         result = newCluster; // no created id, as cluster name used for primary key
       }
+    } catch (JsonProcessingException e) {
+      throw new ReaperException(e);
     }
     return result != null;
   }

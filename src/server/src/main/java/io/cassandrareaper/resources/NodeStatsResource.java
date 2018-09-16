@@ -73,7 +73,11 @@ public final class NodeStatsResource {
       @PathParam("host") String host) {
 
     try {
-      Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
+      Node node
+          = Node.builder()
+              .withCluster(context.storage.getCluster(clusterName).get())
+              .withHostname(host)
+              .build();
       return Response.ok().entity(metricsGrabber.getTpStats(node)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -94,7 +98,11 @@ public final class NodeStatsResource {
       @PathParam("host") String host) {
 
     try {
-      Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
+      Node node
+          = Node.builder()
+              .withCluster(context.storage.getCluster(clusterName).get())
+              .withHostname(host)
+              .build();
       return Response.ok().entity(metricsGrabber.getDroppedMessages(node)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -115,7 +123,11 @@ public final class NodeStatsResource {
       @PathParam("host") String host) {
 
     try {
-      Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
+      Node node
+          = Node.builder()
+              .withCluster(context.storage.getCluster(clusterName).get())
+              .withHostname(host)
+              .build();
       return Response.ok().entity(metricsGrabber.getClientRequestLatencies(node)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -134,7 +146,11 @@ public final class NodeStatsResource {
                              @PathParam("host") String host
   ) {
     try {
-      Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
+      Node node
+          = Node.builder()
+              .withCluster(context.storage.getCluster(clusterName).get())
+              .withHostname(host)
+              .build();
       List<StreamSession> streams = streamManager.listStreams(node);
       return Response.ok().entity(streams).build();
     } catch (ReaperException e) {
@@ -156,7 +172,11 @@ public final class NodeStatsResource {
       @PathParam("host") String host) {
 
     try {
-      Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
+      Node node
+          = Node.builder()
+              .withCluster(context.storage.getCluster(clusterName).get())
+              .withHostname(host)
+              .build();
       return Response.ok().entity(compactionService.listActiveCompactions(node)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -180,7 +200,7 @@ public final class NodeStatsResource {
     try {
       JmxProxy jmxProxy
           = context.jmxConnectionFactory.connect(
-              Node.builder().withClusterName(clusterName).withHostname(host).build(),
+              Node.builder().withCluster(context.storage.getCluster(clusterName).get()).withHostname(host).build(),
               context.config.getJmxConnectionTimeoutInSeconds());
 
       StorageServiceProxy ssProxy = StorageServiceProxy.create(jmxProxy);

@@ -171,6 +171,7 @@ def _arguments_for_status_schedule(parser):
 def _arguments_for_add_cluster(parser):
     """Arguments relevant for registering a cluster"""
     parser.add_argument("seed_host", help="the seed host of the Cassandra cluster to be registered")
+    parser.add_argument("jmx_port", help="the JMX port of the Cassandra cluster to be registered", default="7199")
 
 
 def _argument_owner(parser):
@@ -596,8 +597,8 @@ class ReaperCLI(object):
             "Register a cluster.",
             extra_arguments=_arguments_for_add_cluster
         )
-        printq("# Registering Cassandra cluster with seed host: {0}".format(args.seed_host))
-        cluster_data = reaper.post("cluster", seedHost=args.seed_host)
+        printq("# Registering Cassandra cluster with seed host: {0} and jmx port : {1}".format(args.seed_host, args.jmx_port))
+        cluster_data = reaper.post("cluster", seedHost=args.seed_host, jmxPort=args.jmx_port)
         printq("# Registration succeeded:")
         print json.dumps(json.loads(cluster_data), indent=2, sort_keys=True)
 

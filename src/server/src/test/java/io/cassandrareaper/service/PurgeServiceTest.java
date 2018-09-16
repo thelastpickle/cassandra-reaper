@@ -28,6 +28,7 @@ import io.cassandrareaper.storage.IStorage;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.datastax.driver.core.utils.UUIDs;
@@ -58,7 +59,7 @@ public final class PurgeServiceTest {
     // Create storage mock
     context.storage = mock(IStorage.class);
 
-    List<Cluster> clusters = Arrays.asList(new Cluster(CLUSTER_NAME, "", Collections.EMPTY_SET));
+    List<Cluster> clusters = Arrays.asList(new Cluster(CLUSTER_NAME, Optional.empty(), Collections.EMPTY_SET));
     when(context.storage.getClusters()).thenReturn(clusters);
 
     // Add repair runs to the mock
@@ -97,7 +98,7 @@ public final class PurgeServiceTest {
     // Create storage mock
     context.storage = mock(IStorage.class);
 
-    List<Cluster> clusters = Arrays.asList(new Cluster(CLUSTER_NAME, "", Collections.EMPTY_SET));
+    List<Cluster> clusters = Arrays.asList(new Cluster(CLUSTER_NAME, Optional.empty(), Collections.EMPTY_SET));
     when(context.storage.getClusters()).thenReturn(clusters);
 
     // Add repair runs to the mock
@@ -136,7 +137,7 @@ public final class PurgeServiceTest {
     // Create storage mock
     context.storage = mock(IStorage.class);
 
-    List<Cluster> clusters = Arrays.asList(new Cluster(CLUSTER_NAME, "", Collections.EMPTY_SET));
+    List<Cluster> clusters = Arrays.asList(new Cluster(CLUSTER_NAME, Optional.empty(), Collections.EMPTY_SET));
     when(context.storage.getClusters()).thenReturn(clusters);
 
     // Add repair runs to the mock

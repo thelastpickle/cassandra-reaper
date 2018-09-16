@@ -138,11 +138,11 @@ public final class RepairRunService {
 
     List<Segment> segments = Lists.newArrayList();
 
-    Preconditions.checkNotNull(
-        targetCluster.getPartitioner(),
+    Preconditions.checkState(
+        targetCluster.getPartitioner().isPresent(),
         "no partitioner for cluster: " + targetCluster.getName());
 
-    SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner());
+    SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner().get());
     Set<String> seedHosts = targetCluster.getSeedHosts();
     if (seedHosts.isEmpty()) {
       String errMsg = String.format("didn't get any seed hosts for cluster \"%s\"", targetCluster.getName());
@@ -151,15 +151,12 @@ public final class RepairRunService {
     }
 
     try {
-      JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
+      Cluster cluster = context.storage.getCluster(targetCluster.getName()).get();
+      JmxProxy jmxProxy
+          = context.jmxConnectionFactory.connectAny(
               seedHosts
                   .stream()
-                  .map(
-                      host ->
-                          Node.builder()
-                              .withClusterName(targetCluster.getName())
-                              .withHostname(host)
-                              .build())
+                  .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
                   .collect(Collectors.toList()),
               context.config.getJmxConnectionTimeoutInSeconds());
 

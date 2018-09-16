@@ -20,6 +20,7 @@ package io.cassandrareaper.service;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
@@ -223,13 +224,17 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
 
     try (Timer.Context cxt = context.metricRegistry.timer(metricNameForRunRepair(segment)).time()) {
+      Cluster cluster = context.storage.getCluster(clusterName).get();
       JmxProxy coordinator
           = context.jmxConnectionFactory.connectAny(
               potentialCoordinators
                   .stream()
                   .map(
                       host ->
-                          Node.builder().withClusterName(clusterName).withHostname(host).build())
+                          Node.builder()
+                              .withCluster(cluster)
+                              .withHostname(host)
+                              .build())
                   .collect(Collectors.toSet()),
               context.config.getJmxConnectionTimeoutInSeconds());
 
@@ -570,8 +575,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
     if (!busyHosts.get().contains(hostName) && context.storage instanceof IDistributedStorage) {
       try {
-        JmxProxy hostProxy = context.jmxConnectionFactory.connect(
-                Node.builder().withClusterName(clusterName).withHostname(hostName).build(),
+        JmxProxy hostProxy
+            = context.jmxConnectionFactory.connect(
+                Node.builder()
+                    .withCluster(context.storage.getCluster(clusterName).get())
+                    .withHostname(hostName)
+                    .build(),
                 context.config.getJmxConnectionTimeoutInSeconds());
         // We double check that repair is still running there before actually canceling repairs
         if (hostProxy.isRepairRunning()) {
@@ -600,8 +609,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         return Pair.of(node, getRemoteNodeMetrics(node, nodeDc));
       } else {
         try {
-          JmxProxy nodeProxy = context.jmxConnectionFactory.connect(
-                  Node.builder().withClusterName(clusterName).withHostname(node).build(),
+          JmxProxy nodeProxy
+              = context.jmxConnectionFactory.connect(
+                  Node.builder()
+                      .withCluster(context.storage.getCluster(clusterName).get())
+                      .withHostname(node)
+                      .build(),
                   context.config.getJmxConnectionTimeoutInSeconds());
 
           NodeMetrics metrics = NodeMetrics.builder()
@@ -664,7 +677,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       try {
         JmxProxy hostProxy = context.jmxConnectionFactory.connect(
                 Node.builder()
-                    .withClusterName(clusterName)
+                    .withCluster(context.storage.getCluster(clusterName).get())
                     .withHostname(segmentInRun.getCoordinatorHost())
                     .build(),
                 context.config.getJmxConnectionTimeoutInSeconds());
@@ -1036,8 +1049,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     if (repairId != null) {
       for (String involvedNode : potentialCoordinators) {
         try {
-          JmxProxy jmx = context.jmxConnectionFactory.connect(
-                  Node.builder().withClusterName(clusterName).withHostname(involvedNode).build(),
+          JmxProxy jmx
+              = context.jmxConnectionFactory.connect(
+                  Node.builder()
+                      .withCluster(context.storage.getCluster(clusterName).get())
+                      .withHostname(involvedNode)
+                      .build(),
                   context.config.getJmxConnectionTimeoutInSeconds());
 
           // there is no way of telling if the snapshot was cleared or not :(

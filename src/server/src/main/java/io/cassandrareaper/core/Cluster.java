@@ -17,20 +17,33 @@
 
 package io.cassandrareaper.core;
 
+import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
 
 public final class Cluster {
 
+  public static final int DEFAULT_JMX_PORT = 7199;
   private final String name;
-  private final String partitioner; // Full name of the partitioner class
+  private final Optional<String> partitioner; // Full name of the partitioner class
   private final Set<String> seedHosts;
+  private final ClusterProperties properties;
 
-  public Cluster(String name, String partitioner, Set<String> seedHosts) {
+  public Cluster(String name, Optional<String> partitioner, Set<String> seedHosts) {
+    this(
+        name,
+        partitioner,
+        seedHosts,
+        ClusterProperties.builder().withJmxPort(DEFAULT_JMX_PORT).build());
+  }
+
+  public Cluster(
+      String name, Optional<String> partitioner, Set<String> seedHosts, ClusterProperties properties) {
     this.name = toSymbolicName(name);
     this.partitioner = partitioner;
     this.seedHosts = seedHosts;
+    this.properties = properties;
   }
 
   public static String toSymbolicName(String name) {
@@ -42,11 +55,15 @@ public final class Cluster {
     return name;
   }
 
-  public String getPartitioner() {
+  public Optional<String> getPartitioner() {
     return partitioner;
   }
 
   public Set<String> getSeedHosts() {
     return seedHosts;
+  }
+
+  public ClusterProperties getProperties() {
+    return properties;
   }
 }
