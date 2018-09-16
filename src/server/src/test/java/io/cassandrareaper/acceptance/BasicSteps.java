@@ -238,6 +238,7 @@ public final class BasicSteps {
               runner -> {
                 Map<String, String> params = Maps.newHashMap();
                 params.put("seedHost", TestContext.SEED_HOST);
+                params.put("jmxPort", "7100");
                 Response response = runner.callReaper("POST", "/cluster", Optional.of(params));
                 int responseStatus = response.getStatus();
                 String responseEntity = response.readEntity(String.class);
@@ -254,11 +255,13 @@ public final class BasicSteps {
                 Assertions.assertThat(responseEntity).isEmpty();
 
                 // follow to new location (to GET resource)
-                response = runner.callReaper("GET", response.getLocation().toString(), Optional.absent());
+                response
+                    = runner.callReaper("GET", response.getLocation().toString(), Optional.absent());
 
                 String responseData = response.readEntity(String.class);
                 Assertions.assertThat(responseData).isNotEmpty();
-                Map<String, Object> cluster = SimpleReaperClient.parseClusterStatusJSON(responseData);
+                Map<String, Object> cluster
+                    = SimpleReaperClient.parseClusterStatusJSON(responseData);
 
                 if (Response.Status.CREATED.getStatusCode() == responseStatus) {
                   TestContext.TEST_CLUSTER = (String) cluster.get("name");

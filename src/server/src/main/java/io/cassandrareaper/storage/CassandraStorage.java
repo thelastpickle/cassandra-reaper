@@ -19,7 +19,9 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
+import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.ClusterProperties;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.Builder;
@@ -39,6 +41,7 @@ import io.cassandrareaper.storage.cassandra.Migration003;
 import io.cassandrareaper.storage.cassandra.Migration009;
 import io.cassandrareaper.storage.cassandra.Migration016;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Collections;
@@ -240,9 +243,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private void prepareStatements() {
     final String timeUdf = 0 < VersionNumber.parse("2.2").compareTo(version) ? "dateOf" : "toTimestamp";
-    insertClusterPrepStmt = session
-        .prepare("INSERT INTO cluster(name, partitioner, seed_hosts) values(?, ?, ?)")
-        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    insertClusterPrepStmt
+        = session
+            .prepare(
+                "INSERT INTO cluster(name, partitioner, seed_hosts, properties) values(?, ?, ?, ?)")
+            .setConsistencyLevel(ConsistencyLevel.QUORUM);
     getClusterPrepStmt = session
         .prepare("SELECT * FROM cluster WHERE name = ?")
         .setConsistencyLevel(ConsistencyLevel.QUORUM)
@@ -385,39 +390,77 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Collection<Cluster> getClusters() {
+  public Collection<Cluster> getClusters() throws ReaperException {
     Collection<Cluster> clusters = Lists.<Cluster>newArrayList();
     Statement stmt = new SimpleStatement(SELECT_CLUSTER);
     stmt.setIdempotent(Boolean.TRUE);
     ResultSet clusterResults = session.execute(stmt);
     for (Row cluster : clusterResults) {
-      clusters.add(
-          new Cluster(
-              cluster.getString("name"), cluster.getString("partitioner"), cluster.getSet("seed_hosts", String.class)));
+      try {
+        ClusterProperties properties
+            = cluster.getString("properties") != null
+                ? objectMapper.readValue(cluster.getString("properties"), ClusterProperties.class)
+                : ClusterProperties.builder().withJmxPort(Cluster.DEFAULT_JMX_PORT).build();
+
+        clusters.add(
+            new Cluster(
+                cluster.getString("name"),
+                Optional.ofNullable(cluster.getString("partitioner")),
+                cluster.getSet("seed_hosts", String.class),
+                properties));
+      } catch (IOException e) {
+        LOG.error("Failed parsing cluster information from the database entry", e);
+        throw new ReaperException(e);
+      }
     }
 
     return clusters;
   }
 
   @Override
-  public boolean addCluster(Cluster cluster) {
-    session.execute(insertClusterPrepStmt.bind(cluster.getName(), cluster.getPartitioner(), cluster.getSeedHosts()));
+  public boolean addCluster(Cluster cluster) throws ReaperException {
+    try {
+      Preconditions.checkState(cluster.getPartitioner().isPresent(),
+          "Cannot store a cluster that has no partitioner.");
+      session.execute(
+          insertClusterPrepStmt.bind(
+              cluster.getName(),
+              cluster.getPartitioner().get(),
+              cluster.getSeedHosts(),
+              objectMapper.writeValueAsString(cluster.getProperties())));
+    } catch (JsonProcessingException e) {
+      LOG.error("Failed serializing cluster information for database write", e);
+      throw new ReaperException(e);
+    }
     return true;
   }
 
   @Override
-  public boolean updateCluster(Cluster newCluster) {
+  public boolean updateCluster(Cluster newCluster) throws ReaperException {
     return addCluster(newCluster);
   }
 
   @Override
-  public Optional<Cluster> getCluster(String clusterName) {
+  public Optional<Cluster> getCluster(String clusterName) throws ReaperException {
     Row row = session.execute(getClusterPrepStmt.bind(clusterName)).one();
 
-    return row != null
-        ? Optional.ofNullable(
-            new Cluster(row.getString("name"), row.getString("partitioner"), row.getSet("seed_hosts", String.class)))
-        : Optional.empty();
+    try {
+      ClusterProperties properties
+          = row != null && row.getString("properties") != null
+              ? objectMapper.readValue(row.getString("properties"), ClusterProperties.class)
+              : ClusterProperties.builder().withJmxPort(Cluster.DEFAULT_JMX_PORT).build();
+      return row != null
+          ? Optional.ofNullable(
+              new Cluster(
+                  row.getString("name"),
+                  Optional.ofNullable(row.getString("partitioner")),
+                  row.getSet("seed_hosts", String.class),
+                  properties))
+          : Optional.empty();
+    } catch (RuntimeException | IOException e) {
+      LOG.error("Failed parsing cluster information from the database entry", e);
+      throw new ReaperException(e);
+    }
   }
 
   @Override
@@ -618,7 +661,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Collection<RepairRun> getRepairRunsWithState(RunState runState) {
+  public Collection<RepairRun> getRepairRunsWithState(RunState runState) throws ReaperException {
     Set<RepairRun> repairRunsWithState = Sets.newHashSet();
 
     List<Collection<UUID>> repairRunIds = getClusters()

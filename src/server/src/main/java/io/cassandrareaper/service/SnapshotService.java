@@ -118,7 +118,7 @@ public final class SnapshotService {
       List<String> liveNodes = jmxProxy.getLiveNodes();
       List<Callable<Pair<Node, String>>> snapshotTasks = liveNodes
               .stream()
-              .map(host -> Node.builder().withClusterName(clusterName).withHostname(host).build())
+              .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
               .map(node -> takeSnapshotTask(snapshotName, node, keyspace))
               .collect(Collectors.toList());
 
@@ -179,7 +179,7 @@ public final class SnapshotService {
       List<String> liveNodes = jmxProxy.getLiveNodes();
       List<Callable<List<Snapshot>>> listSnapshotTasks = liveNodes
               .stream()
-              .map(host -> Node.builder().withClusterName(clusterName).withHostname(host).build())
+              .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
               .map(node -> listSnapshotTask(node))
               .collect(Collectors.toList());
 
@@ -253,7 +253,7 @@ public final class SnapshotService {
       List<String> liveNodes = jmxProxy.getLiveNodes();
       List<Callable<Node>> clearSnapshotTasks = liveNodes
               .stream()
-              .map(host -> Node.builder().withClusterName(cluster.get().getName()).withHostname(host).build())
+              .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
               .map(node -> clearSnapshotTask(snapshotName, node))
               .collect(Collectors.toList());
 

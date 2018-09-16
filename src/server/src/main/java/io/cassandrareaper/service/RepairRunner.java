@@ -266,7 +266,12 @@ final class RepairRunner implements Runnable {
       LOG.info(
           "Updating the seed list for cluster {} as topology changed since the last repair.",
           clusterName);
-      Cluster newCluster = new Cluster(cluster.get().getName(), cluster.get().getPartitioner(), liveNodes);
+      Cluster newCluster
+          = new Cluster(
+              cluster.get().getName(),
+              cluster.get().getPartitioner(),
+              liveNodes,
+              cluster.get().getProperties());
       context.storage.updateCluster(newCluster);
     }
   }

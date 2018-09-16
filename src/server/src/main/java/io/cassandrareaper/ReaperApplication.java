@@ -307,7 +307,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
           try {
             int purgedRuns = purgeManager.purgeDatabase();
             LOG.info("Purged {} repair runs from history", purgedRuns);
-          } catch (RuntimeException e) {
+          } catch (RuntimeException | ReaperException e) {
             LOG.error("Failed purging repair runs from history", e);
           }
         },
@@ -405,7 +405,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
           .forEach(cluster -> jmxConnectionsIntializer.on(cluster));
 
       LOG.info("Initialized JMX seed list for all clusters.");
-    } catch (RuntimeException e) {
+    } catch (RuntimeException | ReaperException e) {
       LOG.error("Failed initializing JMX seed list", e);
     }
   }

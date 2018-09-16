@@ -155,7 +155,7 @@ public final class SnapshotServiceTest {
     when(cxt.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class), Mockito.anyInt())).thenReturn(proxy);
 
     cxt.storage = mock(IStorage.class);
-    Cluster cluster = new Cluster("testCluster", "murmur3", ImmutableSet.of("127.0.0.1"));
+    Cluster cluster = new Cluster("testCluster", Optional.of("murmur3"), ImmutableSet.of("127.0.0.1"));
     when(cxt.storage.getCluster(anyString())).thenReturn(Optional.of(cluster));
 
     SnapshotService
@@ -181,7 +181,7 @@ public final class SnapshotServiceTest {
     when(cxt.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class), Mockito.anyInt())).thenReturn(proxy);
 
     cxt.storage = mock(IStorage.class);
-    Cluster cluster = new Cluster("testCluster", "murmur3", ImmutableSet.of("127.0.0.1"));
+    Cluster cluster = new Cluster("testCluster", Optional.of("murmur3"), ImmutableSet.of("127.0.0.1"));
     when(cxt.storage.getCluster(anyString())).thenReturn(Optional.of(cluster));
 
     List<Pair<Node,String>> result = SnapshotService
