@@ -241,8 +241,7 @@ public final class ClusterResourceTest {
 
   @Test
   public void testParseClusterNameInSeedHost() {
-    String seedHostStringList =
-        "127.0.0.1@cluster one , 127.0.0.2@cluster one,  127.0.0.3@cluster one";
+    String seedHostStringList = "127.0.0.1@cluster one , 127.0.0.2@cluster one,  127.0.0.3@cluster one";
     Optional<String> clusterName = ClusterResource.parseClusterNameFromSeedHost(seedHostStringList);
 
     assertEquals("cluster one", clusterName.get());

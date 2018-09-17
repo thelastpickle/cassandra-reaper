@@ -134,8 +134,8 @@ public final class StreamManager {
       // these fields can be directly parsed
       InetAddress peer = InetAddress.getByName((String)compositeData.get("peer"));
       InetAddress connecting = InetAddress.getByName((String)compositeData.get("connecting"));
-      org.apache.cassandra.streaming.StreamSession.State state =
-          org.apache.cassandra.streaming.StreamSession.State.valueOf((String)compositeData.get("state"));
+      org.apache.cassandra.streaming.StreamSession.State state
+          = org.apache.cassandra.streaming.StreamSession.State.valueOf((String)compositeData.get("state"));
 
       // sending and receiving summaries parsing can be delegated to their composite data classes
       CompositeData[] receivingSummariesData = (CompositeData[]) compositeData.get("receivingSummaries");
@@ -150,8 +150,8 @@ public final class StreamManager {
       // Prior to 2.1, Session does not have session Index in the SessionInfo class
       int sessionIndex = Integer.MIN_VALUE;
 
-      SessionInfo sessionInfo =
-          new SessionInfo(peer, sessionIndex, connecting, receivingSummaries, sendingSummaries, state);
+      SessionInfo sessionInfo
+          = new SessionInfo(peer, sessionIndex, connecting, receivingSummaries, sendingSummaries, state);
 
       // when pulling streams, C* also bundles in the progress of files. it's not possible to add them to SessionInfo
       // through the constructor, but it's possible via .updateProgress() calls

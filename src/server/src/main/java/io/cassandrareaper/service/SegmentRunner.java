@@ -288,8 +288,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           LOG.debug("Enter synchronized section with segment ID {}", segmentId);
           synchronized (condition) {
 
-            segment =
-                segment
+            segment = segment
                     .with()
                     .withCoordinatorHost(coordinator.getHost())
                     .withStartTime(DateTime.now())
@@ -562,8 +561,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
     if (!busyHosts.get().contains(hostName) && context.storage instanceof IDistributedStorage) {
       try {
-        JmxProxy hostProxy =
-            context.jmxConnectionFactory.connect(
+        JmxProxy hostProxy = context.jmxConnectionFactory.connect(
                 Node.builder().withClusterName(clusterName).withHostname(hostName).build(),
                 context.config.getJmxConnectionTimeoutInSeconds());
         // We double check that repair is still running there before actually canceling repairs
@@ -593,13 +591,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         return Pair.of(node, getRemoteNodeMetrics(node, nodeDc));
       } else {
         try {
-          JmxProxy nodeProxy =
-              context.jmxConnectionFactory.connect(
+          JmxProxy nodeProxy = context.jmxConnectionFactory.connect(
                   Node.builder().withClusterName(clusterName).withHostname(node).build(),
                   context.config.getJmxConnectionTimeoutInSeconds());
 
-          NodeMetrics metrics =
-              NodeMetrics.builder()
+          NodeMetrics metrics = NodeMetrics.builder()
                   .withNode(node)
                   .withDatacenter(nodeDc)
                   .withCluster(nodeProxy.getClusterName())
@@ -657,8 +653,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private boolean isRepairRunningOnOneNode(RepairSegment segment) {
     for (RepairSegment segmentInRun : context.storage.getRepairSegmentsForRun(segment.getRunId())) {
       try {
-        JmxProxy hostProxy =
-            context.jmxConnectionFactory.connect(
+        JmxProxy hostProxy = context.jmxConnectionFactory.connect(
                 Node.builder()
                     .withClusterName(clusterName)
                     .withHostname(segmentInRun.getCoordinatorHost())
@@ -1146,8 +1141,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     Set<String> tables = unit.getColumnFamilies();
 
     if (!unit.getBlacklistedTables().isEmpty() && unit.getColumnFamilies().isEmpty()) {
-      tables =
-          coordinator
+      tables = coordinator
               .getTableNamesForKeyspace(unit.getKeyspaceName())
               .stream()
               .filter(tableName -> !unit.getBlacklistedTables().contains(tableName))
@@ -1155,8 +1149,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
 
     if (!unit.getBlacklistedTables().isEmpty() && !unit.getColumnFamilies().isEmpty()) {
-      tables =
-          unit.getColumnFamilies()
+      tables = unit.getColumnFamilies()
               .stream()
               .filter(tableName -> !unit.getBlacklistedTables().contains(tableName))
               .collect(Collectors.toSet());

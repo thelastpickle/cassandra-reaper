@@ -137,11 +137,10 @@ final class SegmentGenerator {
 
         // the below, in essence, does this:
         // segmentCount = ceiling((rangeSize / RANGE_SIZE) * totalSegmentCount)
-        BigInteger[] segmentCountAndRemainder =
-            rs.multiply(BigInteger.valueOf(totalSegmentCount)).divideAndRemainder(rangeSize);
+        BigInteger[] segmentCountAndRemainder
+            = rs.multiply(BigInteger.valueOf(totalSegmentCount)).divideAndRemainder(rangeSize);
 
-        int segmentCount =
-            segmentCountAndRemainder[0].intValue()
+        int segmentCount = segmentCountAndRemainder[0].intValue()
                 + (segmentCountAndRemainder[1].equals(BigInteger.ZERO) ? 0 : 1);
 
         LOG.info("Dividing token range [{},{}) into {} segments", start, stop, segmentCount);
@@ -149,8 +148,7 @@ final class SegmentGenerator {
         // Make big0 list of all the endpoints for the repair segments, including both start and stop
         List<BigInteger> endpointTokens = Lists.newArrayList();
         for (int j = 0; j <= segmentCount; j++) {
-          BigInteger offset =
-              rs.multiply(BigInteger.valueOf(j)).divide(BigInteger.valueOf(segmentCount));
+          BigInteger offset = rs.multiply(BigInteger.valueOf(j)).divide(BigInteger.valueOf(segmentCount));
           BigInteger reaperToken = start.add(offset);
           if (greaterThan(reaperToken, rangeMax)) {
             reaperToken = reaperToken.subtract(rangeSize);
@@ -186,8 +184,7 @@ final class SegmentGenerator {
       // We want less segments than there are token ranges.
       // Token ranges will be grouped to match the requirements.
       LOG.info("Less segments required than there are vnode. Coalescing eligible token ranges...");
-      repairSegments =
-          coalesceTokenRanges(getTargetSegmentSize(totalSegmentCount), replicasToRange);
+      repairSegments = coalesceTokenRanges(getTargetSegmentSize(totalSegmentCount), replicasToRange);
     }
 
     return repairSegments;
@@ -240,15 +237,13 @@ final class SegmentGenerator {
 
   private static boolean allTokensHaveBeenCoalesced(
       List<Segment> coalescedRepairSegments, Map<List<String>, List<RingRange>> replicasToRange) {
-    int coalescedRanges =
-        coalescedRepairSegments
+    int coalescedRanges = coalescedRepairSegments
             .stream()
             .map(segment -> segment.getTokenRanges().size())
             .reduce((first, second) -> first + second)
             .orElse(0);
 
-    int totalRanges =
-        replicasToRange
+    int totalRanges = replicasToRange
             .values()
             .stream()
             .map(List::size)

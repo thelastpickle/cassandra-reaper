@@ -57,8 +57,10 @@ public final class PurgeManager {
 
       // List repair runs
       for (Cluster cluster : clusters) {
-        Collection<RepairRun> repairRuns =
-            context.storage.getRepairRunsForCluster(cluster.getName(), Optional.empty());
+
+        Collection<RepairRun> repairRuns
+            = context.storage.getRepairRunsForCluster(cluster.getName(), Optional.empty());
+
         if (context.config.getPurgeRecordsAfterInDays() > 0) {
           // Purge all runs that are older than threshold
           purgedRuns += purgeRepairRunsByDate(repairRuns);
@@ -82,8 +84,7 @@ public final class PurgeManager {
    */
   private int purgeRepairRunsByHistoryDepth(Collection<RepairRun> repairRuns) {
     int purgedRuns = 0;
-    Map<UUID, List<RepairRun>> repairRunsByRepairUnit =
-        repairRuns
+    Map<UUID, List<RepairRun>> repairRunsByRepairUnit = repairRuns
             .stream()
             .filter(run -> run.getRunState().isTerminated()) // only delete terminated runs
             .collect(Collectors.groupingBy(RepairRun::getRepairUnitId));

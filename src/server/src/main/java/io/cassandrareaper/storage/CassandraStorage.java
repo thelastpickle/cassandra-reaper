@@ -302,8 +302,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     insertRepairSegmentEndTimePrepStmt = session
         .prepare("INSERT INTO repair_run(id, segment_id, segment_end_time) VALUES(?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    getRepairSegmentPrepStmt =
-        session
+    getRepairSegmentPrepStmt = session
             .prepare(
                 "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
                     + "segment_start_time,segment_end_time,fail_count, token_ranges"
@@ -313,8 +312,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
             + "segment_end_time,fail_count, token_ranges FROM repair_run WHERE id = ?");
     getRepairSegmentCountByRunIdPrepStmt = session.prepare("SELECT count(*) FROM repair_run WHERE id = ?");
-    insertRepairSchedulePrepStmt =
-        session
+    insertRepairSchedulePrepStmt = session
             .prepare(
                 "INSERT INTO repair_schedule_v1(id, repair_unit_id, state, days_between, next_activation, run_history, "
                     + "segment_count, repair_parallelism, intensity, "
@@ -359,12 +357,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     getNodeMetricsByNodePrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
         + " WHERE time_partition = ? AND run_id = ? AND node = ?");
 
-    getSnapshotPrepStmt =
-        session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
-    deleteSnapshotPrepStmt =
-        session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
-    saveSnapshotPrepStmt =
-        session.prepare(
+    getSnapshotPrepStmt = session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
+    deleteSnapshotPrepStmt = session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
+    saveSnapshotPrepStmt = session.prepare(
             "INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
                 + " VALUES(?,?,?,?,?)");
 
@@ -473,8 +468,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     int nbRanges = 0;
     for (RepairSegment.Builder builder : newSegments) {
-      RepairSegment segment =
-          builder.withRunId(newRepairRun.getId()).withId(UUIDs.timeBased()).build();
+      RepairSegment segment = builder.withRunId(newRepairRun.getId()).withId(UUIDs.timeBased()).build();
       isIncremental = null == isIncremental ? null != segment.getCoordinatorHost() : isIncremental;
 
       assert RepairSegment.State.NOT_STARTED == segment.getState();
@@ -822,9 +816,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private static RepairSegment createRepairSegmentFromRow(Row segmentRow) {
 
-    List<RingRange> tokenRanges =
-        JsonParseUtils.parseRingRangeList(
-            Optional.ofNullable(segmentRow.getString("token_ranges")));
+    List<RingRange> tokenRanges
+        = JsonParseUtils.parseRingRangeList(Optional.ofNullable(segmentRow.getString("token_ranges")));
 
     Segment.Builder segmentBuilder = Segment.builder();
 
@@ -838,8 +831,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               new BigInteger(segmentRow.getVarint("end_token") + "")));
     }
 
-    RepairSegment.Builder builder =
-        RepairSegment.builder(segmentBuilder.build(), segmentRow.getUUID("repair_unit_id"))
+    RepairSegment.Builder builder
+        = RepairSegment.builder(segmentBuilder.build(), segmentRow.getUUID("repair_unit_id"))
             .withRunId(segmentRow.getUUID("id"))
             .withState(State.values()[segmentRow.getInt("segment_state")])
             .withFailCount(segmentRow.getInt("fail_count"));
@@ -1415,8 +1408,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Snapshot getSnapshot(String clusterName, String snapshotName) {
-    Snapshot.Builder snapshotBuilder =
-        Snapshot.builder().withClusterName(clusterName).withName(snapshotName);
+    Snapshot.Builder snapshotBuilder = Snapshot.builder().withClusterName(clusterName).withName(snapshotName);
 
     ResultSet result = session.execute(getSnapshotPrepStmt.bind(clusterName, snapshotName));
     for (Row row : result) {

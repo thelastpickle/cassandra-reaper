@@ -60,8 +60,7 @@ public final class RepairRunServiceTest {
     rangeToEndpoint.put(Arrays.asList("4", "6"), Arrays.asList("node1"));
     rangeToEndpoint.put(Arrays.asList("6", "8"), Arrays.asList("node1", "node2"));
 
-    List<Segment> segments =
-        Arrays.asList(
+    List<Segment> segments = Arrays.asList(
             Segment.builder().withTokenRange(new RingRange("1", "2")).build(),
             Segment.builder().withTokenRange(new RingRange("2", "3")).build(),
             Segment.builder().withTokenRange(new RingRange("3", "4")).build(),
@@ -78,9 +77,9 @@ public final class RepairRunServiceTest {
     final RepairUnit repairUnit3 = mock(RepairUnit.class);
     when(repairUnit3.getNodes()).thenReturn(new HashSet<String>(Arrays.asList("node3")));
 
-    List<Segment> filtered =
-        RepairRunService.filterSegmentsByNodes(
+    List<Segment> filtered = RepairRunService.filterSegmentsByNodes(
             segments, repairUnit1, RepairRunService.buildEndpointToRangeMap(rangeToEndpoint));
+
     assertEquals(filtered.size(), 4);
 
     filtered = RepairRunService.filterSegmentsByNodes(segments, repairUnit2,
@@ -178,8 +177,8 @@ public final class RepairRunServiceTest {
     rangeToEndpoint.put(Arrays.asList("9", "10"), Arrays.asList("node1", "node2"));
     rangeToEndpoint.put(Arrays.asList("11", "12"), Arrays.asList("node2", "node3", "node1"));
 
-    Map<List<String>, List<RingRange>> replicasToRangeMap =
-        RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
+    Map<List<String>, List<RingRange>> replicasToRangeMap
+        = RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
 
     assertEquals(replicasToRangeMap.entrySet().size(), 3);
     assertEquals(replicasToRangeMap.get(Arrays.asList("node1", "node2", "node3")).size(), 3);

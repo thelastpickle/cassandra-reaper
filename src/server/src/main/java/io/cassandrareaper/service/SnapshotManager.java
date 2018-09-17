@@ -97,8 +97,7 @@ public final class SnapshotManager {
     try {
       List<Pair<Node, String>> snapshotResults = Lists.newArrayList();
       Optional<Cluster> cluster = context.storage.getCluster(clusterName);
-      Snapshot snapshot =
-          Snapshot.builder()
+      Snapshot snapshot = Snapshot.builder()
               .withClusterName(clusterName)
               .withName(snapshotName)
               .withOwner(owner)
@@ -113,13 +112,11 @@ public final class SnapshotManager {
 
       Preconditions.checkArgument(cluster.isPresent());
 
-      JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connectAny(
+      JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
               cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
 
       List<String> liveNodes = jmxProxy.getLiveNodes();
-      List<Callable<Pair<Node, String>>> snapshotTasks =
-          liveNodes
+      List<Callable<Pair<Node, String>>> snapshotTasks = liveNodes
               .stream()
               .map(host -> Node.builder().withClusterName(clusterName).withHostname(host).build())
               .map(node -> takeSnapshotTask(snapshotName, node, keyspace))
@@ -176,13 +173,11 @@ public final class SnapshotManager {
 
       Preconditions.checkArgument(cluster.isPresent());
 
-      JmxProxy jmxProxy =
-          context.jmxConnectionFactory.connectAny(
+      JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
               cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
 
       List<String> liveNodes = jmxProxy.getLiveNodes();
-      List<Callable<List<Snapshot>>> listSnapshotTasks =
-          liveNodes
+      List<Callable<List<Snapshot>>> listSnapshotTasks = liveNodes
               .stream()
               .map(host -> Node.builder().withClusterName(clusterName).withHostname(host).build())
               .map(node -> listSnapshotTask(node))
@@ -195,14 +190,13 @@ public final class SnapshotManager {
         snapshots.addAll(future.get());
       }
 
-      Map<String, List<Snapshot>> snapshotsByName =
-          snapshots.stream().collect(Collectors.groupingBy(Snapshot::getName, Collectors.toList()));
+      Map<String, List<Snapshot>> snapshotsByName
+          = snapshots.stream().collect(Collectors.groupingBy(Snapshot::getName, Collectors.toList()));
 
       Map<String, Map<String, List<Snapshot>>> snapshotsByNameAndHost = Maps.newHashMap();
 
       for (String snapshotName : snapshotsByName.keySet()) {
-        Map<String, List<Snapshot>> snapshotsByHost =
-            snapshotsByName
+        Map<String, List<Snapshot>> snapshotsByHost = snapshotsByName
                 .get(snapshotName)
                 .stream()
                 .collect(Collectors.groupingBy(Snapshot::getHost, Collectors.toList()));
@@ -257,8 +251,7 @@ public final class SnapshotManager {
           = context.jmxConnectionFactory.connectAny(cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
 
       List<String> liveNodes = jmxProxy.getLiveNodes();
-      List<Callable<Node>> clearSnapshotTasks =
-          liveNodes
+      List<Callable<Node>> clearSnapshotTasks = liveNodes
               .stream()
               .map(host -> Node.builder().withClusterName(cluster.get().getName()).withHostname(host).build())
               .map(node -> clearSnapshotTask(snapshotName, node))

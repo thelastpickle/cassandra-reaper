@@ -45,9 +45,8 @@ public final class Migration009 {
   public static void migrate(Session session) {
     LOG.warn("Removing NULLs in the repair_run table. This may take some minutes…");
 
-    Statement getRepairSegmentsPrepStmt =
-        new SimpleStatement(
-                "SELECT id,segment_id,segment_state,segment_start_time,segment_end_time FROM repair_run")
+    Statement getRepairSegmentsPrepStmt
+        = new SimpleStatement("SELECT id,segment_id,segment_state,segment_start_time,segment_end_time FROM repair_run")
             .setConsistencyLevel(ConsistencyLevel.QUORUM);
 
     PreparedStatement updateRepairSegmentPrepStmt = session

@@ -98,8 +98,7 @@ final class RepairRunner implements Runnable {
 
     Collection<RepairSegment> repairSegments = context.storage.getRepairSegmentsForRun(repairRunId);
 
-    parallelRanges =
-        getParallelRanges(
+    parallelRanges = getParallelRanges(
             parallelRepairs,
             Lists.newArrayList(
                 Collections2.transform(
@@ -267,8 +266,7 @@ final class RepairRunner implements Runnable {
       LOG.info(
           "Updating the seed list for cluster {} as topology changed since the last repair.",
           clusterName);
-      Cluster newCluster =
-          new Cluster(cluster.get().getName(), cluster.get().getPartitioner(), liveNodes);
+      Cluster newCluster = new Cluster(cluster.get().getName(), cluster.get().getPartitioner(), liveNodes);
       context.storage.updateCluster(newCluster);
     }
   }
@@ -302,8 +300,7 @@ final class RepairRunner implements Runnable {
     if (jmxConnection == null || !jmxConnection.isConnectionAlive()) {
       LOG.debug("connecting JMX proxy for repair runner on run id: {}", repairRunId);
       Cluster cluster = context.storage.getCluster(this.clusterName).get();
-      jmxConnection =
-          context.jmxConnectionFactory.connectAny(
+      jmxConnection = context.jmxConnectionFactory.connectAny(
               cluster, context.config.getJmxConnectionTimeoutInSeconds());
       LOG.debug("successfully reestablished JMX proxy for repair runner");
     }
@@ -353,8 +350,7 @@ final class RepairRunner implements Runnable {
 
       // We have an empty slot, so let's start new segment runner if possible.
       LOG.info("Running segment for range {}", parallelRanges.get(rangeIndex));
-      Optional<RepairSegment> nextRepairSegment =
-          context.storage.getNextFreeSegmentInRange(
+      Optional<RepairSegment> nextRepairSegment = context.storage.getNextFreeSegmentInRange(
               repairRunId, Optional.of(parallelRanges.get(rangeIndex)));
 
       if (!nextRepairSegment.isPresent()) {
@@ -368,8 +364,7 @@ final class RepairRunner implements Runnable {
           LOG.debug("Didn't set segment id `{}` to slot {} because it was busy", segmentId, rangeIndex);
         } else {
           LOG.debug("Did set segment id `{}` to slot {}", segmentId, rangeIndex);
-          scheduleRetry =
-              repairSegment(
+          scheduleRetry = repairSegment(
                   rangeIndex,
                   nextRepairSegment.get().getId(),
                   nextRepairSegment.get().getTokenRange());
@@ -441,8 +436,7 @@ final class RepairRunner implements Runnable {
     if (!repairUnit.getIncrementalRepair()) {
       // full repair
       try {
-        potentialCoordinators =
-            filterPotentialCoordinatorsByDatacenters(
+        potentialCoordinators = filterPotentialCoordinatorsByDatacenters(
                 repairUnit.getDatacenters(),
                 jmxConnection.tokenRangeToEndpoint(keyspace, segment),
                 jmxConnection);

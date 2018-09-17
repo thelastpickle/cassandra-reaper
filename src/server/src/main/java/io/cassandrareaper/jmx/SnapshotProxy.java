@@ -103,8 +103,8 @@ public final class SnapshotProxy {
       return snapshots;
     }
     // display column names only once
-    final List<String> indexNames =
-        snapshotDetails.entrySet().iterator().next().getValue().getTabularType().getIndexNames();
+    final List<String> indexNames
+        = snapshotDetails.entrySet().iterator().next().getValue().getTabularType().getIndexNames();
 
     for (final Map.Entry<String, TabularData> snapshotDetail : snapshotDetails.entrySet()) {
       Set<?> values = snapshotDetail.getValue().keySet();

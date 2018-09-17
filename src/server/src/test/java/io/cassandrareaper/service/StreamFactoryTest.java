@@ -49,8 +49,9 @@ public final class StreamFactoryTest {
     InetAddress connecting = InetAddress.getByName("127.0.0.2");
     ImmutableSet<StreamSummary> receivingSummaries = ImmutableSet.of(streamSummary);
     ImmutableSet<StreamSummary> sendingSummaries = ImmutableSet.of();
-    SessionInfo sessionInfo =
-        new SessionInfo(peer, index, connecting, receivingSummaries, sendingSummaries, StreamSession.State.STREAMING);
+
+    SessionInfo sessionInfo
+        = new SessionInfo(peer, index, connecting, receivingSummaries, sendingSummaries, StreamSession.State.STREAMING);
 
     String file1 = "/cass/data/keyspace1/standard1-af5311f0633a11e89d71710c22f847e7/lb-4-big-Data.db";
     String file2 = "/cass/data/keyspace1/standard1-af5311f0633a11e89d71710c22f847e7/lb-5-big-Data.db";
@@ -61,8 +62,9 @@ public final class StreamFactoryTest {
     ImmutableSet<SessionInfo> sessionInfos = ImmutableSet.of(sessionInfo);
     StreamState streamState = new StreamState(planId, "descr", sessionInfos);
 
-    io.cassandrareaper.core.StreamSession streamSession =
-        StreamSessionFactory.fromStreamState(peer.toString(), streamState);
+    io.cassandrareaper.core.StreamSession streamSession
+        = StreamSessionFactory.fromStreamState(peer.toString(), streamState);
+
     assertEquals(1, streamSession.getStreams().size());
 
     List<Stream.TableProgress> progressSent = streamSession.getStreams().values().asList().get(0).getProgressSent();
@@ -86,8 +88,9 @@ public final class StreamFactoryTest {
     InetAddress connecting = InetAddress.getByName("127.0.0.2");
     ImmutableSet<StreamSummary> receivingSummaries = ImmutableSet.of(streamSummary);
     ImmutableSet<StreamSummary> sendingSummaries = ImmutableSet.of();
-    SessionInfo sessionInfo =
-        new SessionInfo(peer, index, connecting, receivingSummaries, sendingSummaries, StreamSession.State.STREAMING);
+
+    SessionInfo sessionInfo
+        = new SessionInfo(peer, index, connecting, receivingSummaries, sendingSummaries, StreamSession.State.STREAMING);
 
     String file1 = "/cass/data/keyspace1/standard1-af5311f0633a11e89d71710c22f847e7/lb-4-big-Data.db";
     sessionInfo.updateProgress(new ProgressInfo(peer, index, file1, ProgressInfo.Direction.OUT, 32, 1024));
@@ -102,8 +105,9 @@ public final class StreamFactoryTest {
     ImmutableSet<SessionInfo> sessionInfos = ImmutableSet.of(sessionInfo);
     StreamState streamState = new StreamState(planId, "descr", sessionInfos);
 
-    io.cassandrareaper.core.StreamSession streamSession =
-        StreamSessionFactory.fromStreamState(peer.toString(), streamState);
+    io.cassandrareaper.core.StreamSession streamSession
+        = StreamSessionFactory.fromStreamState(peer.toString(), streamState);
+
     assertEquals(1, streamSession.getStreams().size());
 
     List<Stream.TableProgress> progressSent = streamSession.getStreams().values().asList().get(0).getProgressSent();

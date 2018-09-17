@@ -335,8 +335,8 @@ public final class RepairRunResourceTest {
   @Test
   public void testAddRunMissingArgument() {
     RepairRunResource resource = new RepairRunResource(context);
-    Response response =
-        addRepairRun(
+
+    Response response = addRepairRun(
             resource,
             uriInfo,
             CLUSTER_NAME,
@@ -348,6 +348,7 @@ public final class RepairRunResourceTest {
             NODES,
             BLACKLISTED_TABLES,
             REPAIR_THREAD_COUNT);
+
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
   }
@@ -355,8 +356,8 @@ public final class RepairRunResourceTest {
   @Test
   public void testTriggerRunMissingArgument() {
     RepairRunResource resource = new RepairRunResource(context);
-    Response response =
-        addRepairRun(
+
+    Response response = addRepairRun(
             resource,
             uriInfo,
             CLUSTER_NAME,
@@ -368,6 +369,7 @@ public final class RepairRunResourceTest {
             NODES,
             BLACKLISTED_TABLES,
             REPAIR_THREAD_COUNT);
+
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
   }

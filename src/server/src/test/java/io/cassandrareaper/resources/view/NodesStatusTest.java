@@ -144,8 +144,7 @@ public final class NodesStatusTest {
                                                String endpoint1, String endpoint2, String endpoint3) {
     Map<String, String> simpleStates = Maps.newHashMap();
 
-    String endpointsStatusString =
-        endpoint1 + "\n"
+    String endpointsStatusString = endpoint1 + "\n"
             + "  generation:1496849190\n"
             + "  heartbeat:1231900\n"
             + "  STATUS:14:NORMAL,-9223372036854775808\n"
@@ -226,8 +225,7 @@ public final class NodesStatusTest {
                                                String endpoint1, String endpoint2, String endpoint3) {
     Map<String, String> simpleStates = Maps.newHashMap();
 
-    String endpointsStatusString =
-        endpoint1 + "\n"
+    String endpointsStatusString = endpoint1 + "\n"
             + "  generation:1496849190\n"
             + "  heartbeat:1231900\n"
             + "  STATUS:NORMAL,-9223372036854775808\n"
@@ -306,8 +304,7 @@ public final class NodesStatusTest {
                                                       String endpoint1, String endpoint2, String endpoint3) {
     Map<String, String> simpleStates = Maps.newHashMap();
 
-    String endpointsStatusString =
-        endpoint1 + "\n"
+    String endpointsStatusString = endpoint1 + "\n"
             + "  generation:1506371953\n"
             + "  heartbeat:360312\n"
             + "  STATUS:17:NORMAL,-1046276550383960957\n"
@@ -367,8 +364,9 @@ public final class NodesStatusTest {
     assertEquals(1, nodesStatus.endpointStates.size());
     assertEquals(sourceNode, nodesStatus.endpointStates.get(0).sourceNode);
 
-    Map<String, Map<String, List<EndpointState>>> endpoints =
-        nodesStatus.endpointStates.get(0).endpoints;
+    Map<String, Map<String, List<EndpointState>>> endpoints
+        = nodesStatus.endpointStates.get(0).endpoints;
+
     assertEquals(1, endpoints.get("us-west-2").keySet().size());
     assertEquals(3, endpoints.get("us-west-2").get("a").size());
     assertEquals("NORMAL - DOWN", endpoints.get("us-west-2").get("a").get(0).status);

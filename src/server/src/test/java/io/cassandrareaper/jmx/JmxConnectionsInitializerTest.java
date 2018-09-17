@@ -63,11 +63,10 @@ public class JmxConnectionsInitializerTest {
     context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
     context.storage = mock(CassandraStorage.class);
 
-    Cluster cluster =
-        new Cluster(
+    Cluster cluster = new Cluster(
             "test",
             "murmur3partitioner",
-            new LinkedHashSet<String>(Arrays.asList("127.0.0.1", "127.0.0.2")));
+            new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2")));
 
     JmxConnectionsInitializer initializer = JmxConnectionsInitializer.create(context);
     initializer.on(cluster);
@@ -102,11 +101,10 @@ public class JmxConnectionsInitializerTest {
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
     context.storage = mock(CassandraStorage.class);
 
-    Cluster cluster =
-        new Cluster(
+    Cluster cluster = new Cluster(
             "test",
             "murmur3partitioner",
-            new LinkedHashSet<String>(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")));
+            new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")));
 
     JmxConnectionsInitializer initializer = JmxConnectionsInitializer.create(context);
     initializer.on(cluster);
@@ -139,11 +137,10 @@ public class JmxConnectionsInitializerTest {
     context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
     context.storage = mock(CassandraStorage.class);
 
-    Cluster cluster =
-        new Cluster(
+    Cluster cluster = new Cluster(
             "test",
             "murmur3partitioner",
-            new LinkedHashSet<String>(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")));
+            new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")));
 
     JmxConnectionsInitializer initializer = JmxConnectionsInitializer.create(context);
     initializer.on(cluster);
@@ -176,11 +173,10 @@ public class JmxConnectionsInitializerTest {
     context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
     context.storage = mock(PostgresStorage.class);
 
-    Cluster cluster =
-        new Cluster(
+    Cluster cluster = new Cluster(
             "test",
             "murmur3partitioner",
-            new LinkedHashSet<String>(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")));
+            new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")));
 
     JmxConnectionsInitializer initializer = JmxConnectionsInitializer.create(context);
     initializer.on(cluster);

@@ -29,8 +29,7 @@ public final class SnapshotMapper implements ResultSetMapper<Snapshot> {
 
   @Override
   public Snapshot map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
-    Snapshot.Builder builder =
-        Snapshot.builder()
+    Snapshot.Builder builder = Snapshot.builder()
             .withClusterName(rs.getString("cluster"))
             .withName(rs.getString("snapshot_name"))
             .withCause(rs.getString("cause"))

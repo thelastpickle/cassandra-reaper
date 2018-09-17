@@ -29,8 +29,9 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 @JsonDeserialize(builder = Segment.Builder.class)
 public final class Segment {
-  public static final Comparator<Segment> START_COMPARATOR =
-      (Segment o1, Segment o2) ->
+
+  public static final Comparator<Segment> START_COMPARATOR
+      = (Segment o1, Segment o2) ->
           o1.getBaseRange().getStart().compareTo(o2.getBaseRange().getStart());
 
   RingRange baseRange;

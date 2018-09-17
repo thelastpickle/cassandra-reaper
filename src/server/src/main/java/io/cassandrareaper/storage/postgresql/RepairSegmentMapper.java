@@ -36,8 +36,7 @@ public final class RepairSegmentMapper implements ResultSetMapper<RepairSegment>
     RingRange range
         = new RingRange(rs.getBigDecimal("start_token").toBigInteger(), rs.getBigDecimal("end_token").toBigInteger());
 
-    RepairSegment.Builder builder =
-        RepairSegment.builder(
+    RepairSegment.Builder builder = RepairSegment.builder(
                 Segment.builder().withTokenRange(range).build(),
                 UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")))
             .withRunId(UuidUtil.fromSequenceId(rs.getLong("run_id")))

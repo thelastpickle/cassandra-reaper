@@ -892,13 +892,11 @@ public final class BasicSteps {
           .parallelStream()
           .forEach(
               runner -> {
-                Response response =
-                    runner.callReaper(
+                Response response = runner.callReaper(
                         "GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
                 String responseData = response.readEntity(String.class);
                 assertEquals(responseData, Response.Status.OK.getStatusCode(), response.getStatus());
-                List<RepairRunStatus> runs =
-                    SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
+                List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
                 assertTrue(runs.get(0).getBlacklistedTables().contains(blacklistedTable));
               });
     }
@@ -1233,27 +1231,23 @@ public final class BasicSteps {
                     .atMost(2, MINUTES)
                     .until(
                         () -> {
-                          Response response =
-                              runner.callReaper(
+                          Response response = runner.callReaper(
                                   "GET",
                                   "/repair_run/" + TestContext.LAST_MODIFIED_ID + "/segments",
                                   EMPTY_PARAMS);
 
                           assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
                           String responseData = response.readEntity(String.class);
-                          List<RepairSegment> segments =
-                              SimpleReaperClient.parseRepairSegmentsJSON(responseData);
+                          List<RepairSegment> segments = SimpleReaperClient.parseRepairSegmentsJSON(responseData);
 
-                          boolean gotDoneSegments =
-                              segments
+                          boolean gotDoneSegments = segments
                                       .stream()
                                       .filter(seg -> seg.getState() == RepairSegment.State.DONE)
                                       .count()
                                   > 0;
 
                           if (gotDoneSegments) {
-                            TestContext.FINISHED_SEGMENT =
-                                segments
+                            TestContext.FINISHED_SEGMENT = segments
                                     .stream()
                                     .filter(seg -> seg.getState() == RepairSegment.State.DONE)
                                     .map(segment -> segment.getId())
@@ -1275,8 +1269,7 @@ public final class BasicSteps {
                     .atMost(2, MINUTES)
                     .until(
                         () -> {
-                          Response abort =
-                              runner.callReaper(
+                          Response abort = runner.callReaper(
                                   "GET",
                                   "/repair_run/"
                                       + TestContext.LAST_MODIFIED_ID
@@ -1284,16 +1277,14 @@ public final class BasicSteps {
                                       + TestContext.FINISHED_SEGMENT,
                                   EMPTY_PARAMS);
 
-                          Response response =
-                              runner.callReaper(
+                          Response response = runner.callReaper(
                                   "GET",
                                   "/repair_run/" + TestContext.LAST_MODIFIED_ID + "/segments",
                                   EMPTY_PARAMS);
 
                           assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
                           String responseData = response.readEntity(String.class);
-                          List<RepairSegment> segments =
-                              SimpleReaperClient.parseRepairSegmentsJSON(responseData);
+                          List<RepairSegment> segments = SimpleReaperClient.parseRepairSegmentsJSON(responseData);
 
                           return segments
                                   .stream()
@@ -1315,13 +1306,11 @@ public final class BasicSteps {
           .parallelStream()
           .forEach(
               runner -> {
-                Response response =
-                    runner.callReaper(
+                Response response = runner.callReaper(
                         "GET", "/cluster/" + TestContext.TEST_CLUSTER + "/tables", EMPTY_PARAMS);
                 assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
                 String responseData = response.readEntity(String.class);
-                Map<String, List<String>> tablesByKeyspace =
-                    SimpleReaperClient.parseTableListJSON(responseData);
+                Map<String, List<String>> tablesByKeyspace = SimpleReaperClient.parseTableListJSON(responseData);
                 assertTrue(tablesByKeyspace.containsKey("reaper_db"));
                 assertTrue(tablesByKeyspace.get("reaper_db").contains("repair_run"));
               });
@@ -1332,8 +1321,10 @@ public final class BasicSteps {
   public void a_cluster_wide_snapshot_request_is_made_to_reaper() throws Throwable {
     synchronized (BasicSteps.class) {
       ReaperTestJettyRunner runner = RUNNERS.get(0);
-      Response response =
-          runner.callReaper("POST", "/snapshot/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
+
+      Response response
+          = runner.callReaper("POST", "/snapshot/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
+
       assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
     }
   }
@@ -1343,8 +1334,7 @@ public final class BasicSteps {
       throws Throwable {
     synchronized (BasicSteps.class) {
       ReaperTestJettyRunner runner = RUNNERS.get(0);
-      Response response =
-          runner.callReaper(
+      Response response = runner.callReaper(
               "GET",
               "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST,
               EMPTY_PARAMS);
@@ -1389,8 +1379,7 @@ public final class BasicSteps {
   public void a_host_snapshot_request_is_made_to_reaper() throws Throwable {
     synchronized (BasicSteps.class) {
       ReaperTestJettyRunner runner = RUNNERS.get(0);
-      Response response =
-          runner.callReaper(
+      Response response = runner.callReaper(
               "POST",
               "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST,
               EMPTY_PARAMS);
@@ -1402,8 +1391,7 @@ public final class BasicSteps {
   public void a_request_is_made_to_clear_the_existing_host_snapshots() throws Throwable {
     synchronized (BasicSteps.class) {
       ReaperTestJettyRunner runner = RUNNERS.get(0);
-      Response response =
-          runner.callReaper(
+      Response response = runner.callReaper(
               "GET",
               "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST,
               EMPTY_PARAMS);
@@ -1457,8 +1445,7 @@ public final class BasicSteps {
           .parallelStream()
           .forEach(
               runner -> {
-                Response response =
-                    runner.callReaper(
+                Response response = runner.callReaper(
                         "GET",
                         "/node/tpstats/"
                             + TestContext.TEST_CLUSTER
@@ -1491,8 +1478,7 @@ public final class BasicSteps {
           .parallelStream()
           .forEach(
               runner -> {
-                Response response =
-                    runner.callReaper(
+                Response response = runner.callReaper(
                         "GET",
                         "/node/dropped/"
                             + TestContext.TEST_CLUSTER
@@ -1501,8 +1487,7 @@ public final class BasicSteps {
                         EMPTY_PARAMS);
                 assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
                 String responseData = response.readEntity(String.class);
-                List<DroppedMessages> tpstats =
-                    SimpleReaperClient.parseDroppedMessagesJSON(responseData);
+                List<DroppedMessages> tpstats = SimpleReaperClient.parseDroppedMessagesJSON(responseData);
 
                 assertTrue(
                     tpstats.stream().filter(tpstat -> tpstat.getName().equals("READ")).count()
@@ -1525,8 +1510,7 @@ public final class BasicSteps {
           .parallelStream()
           .forEach(
               runner -> {
-                Response response =
-                    runner.callReaper(
+                Response response = runner.callReaper(
                         "GET",
                         "/node/clientRequestLatencies/"
                             + TestContext.TEST_CLUSTER
@@ -1535,8 +1519,8 @@ public final class BasicSteps {
                         EMPTY_PARAMS);
                 assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
                 String responseData = response.readEntity(String.class);
-                List<MetricsHistogram> clientRequestMetrics =
-                    SimpleReaperClient.parseClientRequestMetricsJSON(responseData);
+                List<MetricsHistogram> clientRequestMetrics
+                    = SimpleReaperClient.parseClientRequestMetricsJSON(responseData);
 
                 assertTrue(
                     clientRequestMetrics

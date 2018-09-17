@@ -90,8 +90,7 @@ public final class RepairRunService {
 
     // preparing a repair run involves several steps
     // the first step is to generate token segments
-    List<Segment> tokenSegments =
-        repairUnit.getIncrementalRepair()
+    List<Segment> tokenSegments = repairUnit.getIncrementalRepair()
             ? Lists.newArrayList()
             : generateSegments(cluster, segments, segmentsPerNode, repairUnit);
 
@@ -175,8 +174,7 @@ public final class RepairRunService {
         globalSegmentCount = computeGlobalSegmentCount(segmentCountPerNode, endpointToRange);
       }
 
-      segments =
-          filterSegmentsByNodes(
+      segments = filterSegmentsByNodes(
               sg.generateSegments(
                   globalSegmentCount,
                   tokens,
@@ -350,8 +348,7 @@ public final class RepairRunService {
 
     Set<String> knownTables;
 
-    JmxProxy jmxProxy =
-        context.jmxConnectionFactory.connectAny(
+    JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
             cluster, context.config.getJmxConnectionTimeoutInSeconds());
 
     knownTables = jmxProxy.getTableNamesForKeyspace(keyspace);
@@ -378,8 +375,7 @@ public final class RepairRunService {
 
     Set<String> nodesInCluster;
 
-    JmxProxy jmxProxy =
-        context.jmxConnectionFactory.connectAny(
+    JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
             cluster, context.config.getJmxConnectionTimeoutInSeconds());
 
     nodesInCluster = jmxProxy.getEndpointToHostId().keySet();

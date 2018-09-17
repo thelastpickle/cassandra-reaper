@@ -56,8 +56,8 @@ public final class RepairRunStatusTest {
 
   @Test
   public void testRunningRepairDuration() {
-    RepairRunStatus repairStatus =
-        new RepairRunStatus(
+    RepairRunStatus repairStatus
+        = new RepairRunStatus(
             UUID.randomUUID(), // runId
             "test", // clusterName
             "test", // keyspaceName
@@ -85,8 +85,7 @@ public final class RepairRunStatusTest {
 
   @Test
   public void testFinishedRepairDuration() {
-    RepairRunStatus repairStatus =
-        new RepairRunStatus(
+    RepairRunStatus repairStatus = new RepairRunStatus(
             UUID.randomUUID(), // runId
             "test", // clusterName
             "test", // keyspaceName
@@ -114,8 +113,7 @@ public final class RepairRunStatusTest {
 
   @Test
   public void testPausedRepairDuration() {
-    RepairRunStatus repairStatus =
-        new RepairRunStatus(
+    RepairRunStatus repairStatus = new RepairRunStatus(
             UUID.randomUUID(), // runId
             "test", // clusterName
             "test", // keyspaceName
@@ -143,8 +141,7 @@ public final class RepairRunStatusTest {
 
   @Test
   public void testAbortedRepairDuration() {
-    RepairRunStatus repairStatus =
-        new RepairRunStatus(
+    RepairRunStatus repairStatus = new RepairRunStatus(
             UUID.randomUUID(), // runId
             "test", // clusterName
             "test", // keyspaceName

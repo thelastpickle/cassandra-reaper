@@ -95,8 +95,7 @@ public class JmxConnectionFactory {
     }
 
     try {
-      JmxConnectionProvider provider =
-          new JmxConnectionProvider(
+      JmxConnectionProvider provider = new JmxConnectionProvider(
               host, username, password, connectionTimeout, this.metricRegistry);
       JMX_CONNECTIONS.computeIfAbsent(host, provider::apply);
       JmxProxy proxy = JMX_CONNECTIONS.get(host);
@@ -150,8 +149,7 @@ public class JmxConnectionFactory {
   }
 
   public JmxProxy connectAny(Cluster cluster, int connectionTimeout) throws ReaperException {
-    Set<Node> nodes =
-        cluster
+    Set<Node> nodes = cluster
             .getSeedHosts()
             .stream()
             .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
@@ -222,8 +220,7 @@ public class JmxConnectionFactory {
     public JmxProxy apply(String host) {
       Preconditions.checkArgument(host.equals(this.host));
       try {
-        JmxProxy proxy =
-            JmxProxyImpl.connect(
+        JmxProxy proxy = JmxProxyImpl.connect(
                 host, username, password, addressTranslator, connectionTimeout, metricRegistry);
         hostConnectionCounters.incrementSuccessfulConnections(host);
         return proxy;

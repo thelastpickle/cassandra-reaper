@@ -131,8 +131,8 @@ public final class SchedulingManager extends TimerTask {
       case ACTIVE:
         if (schdle.getNextActivation().isBeforeNow()) {
 
-          RepairSchedule schedule =
-              schdle.with().nextActivation(schdle.getFollowingActivation()).build(schdle.getId());
+          RepairSchedule schedule
+              = schdle.with().nextActivation(schdle.getFollowingActivation()).build(schdle.getId());
 
           context.storage.updateRepairSchedule(schedule);
 
@@ -149,19 +149,19 @@ public final class SchedulingManager extends TimerTask {
           try {
             RepairRun newRepairRun = createNewRunForUnit(schedule, repairUnit);
 
-            ImmutableList<UUID> newRunHistory =
-                new ImmutableList.Builder<UUID>()
+            ImmutableList<UUID> newRunHistory
+                = new ImmutableList.Builder<UUID>()
                     .addAll(schedule.getRunHistory())
                     .add(newRepairRun.getId())
                     .build();
 
-            RepairSchedule latestSchedule =
-                context.storage.getRepairSchedule(schedule.getId()).get();
+            RepairSchedule latestSchedule
+                = context.storage.getRepairSchedule(schedule.getId()).get();
 
             if (equal(schedule, latestSchedule)) {
 
-              boolean result =
-                  context.storage.updateRepairSchedule(
+              boolean result
+                  = context.storage.updateRepairSchedule(
                       schedule.with().runHistory(newRunHistory).build(schedule.getId()));
               // FIXME – concurrency is broken unless we atomically add/remove run history items
               // boolean result = context.storage

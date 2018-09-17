@@ -78,8 +78,7 @@ public final class CompactionProxy {
     List<Map<String, String>> compactions = proxy.getCompactionManagerMBean().getCompactions();
     if (!compactions.isEmpty()) {
       for (Map<String, String> c : compactions) {
-        Compaction compaction =
-            Compaction.builder()
+        Compaction compaction = Compaction.builder()
                 .withId(c.get("compactionId"))
                 .withKeyspace(c.get("keyspace"))
                 .withTable(c.get("columnfamily"))

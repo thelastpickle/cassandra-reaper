@@ -542,8 +542,8 @@ public final class RepairRunnerTest {
         .transform(Lists.newArrayList("0", "50", "100", "150", "200", "250"), (string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
-    List<Segment> segments =
-        generator.generateSegments(
+
+    List<Segment> segments = generator.generateSegments(
             32,
             tokens,
             Boolean.FALSE,
@@ -552,11 +552,12 @@ public final class RepairRunnerTest {
 
     Map<List<String>, List<String>> map = RepairRunnerTest.sixNodeCluster();
     Map<String, String> endpointsSixNodes = RepairRunnerTest.sixNodeClusterEndpoint();
-    List<RingRange> ranges =
-        RepairRunner.getParallelRanges(
+
+    List<RingRange> ranges = RepairRunner.getParallelRanges(
             RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes),
             Lists.newArrayList(
                 Collections2.transform(segments, segment -> segment.getBaseRange())));
+
     assertEquals(2, ranges.size());
     assertEquals("0", ranges.get(0).getStart().toString());
     assertEquals("150", ranges.get(0).getEnd().toString());
@@ -574,14 +575,15 @@ public final class RepairRunnerTest {
 
     Map<List<String>, List<String>> map = RepairRunnerTest.sixNodeCluster();
     Map<String, String> endpointsSixNodes = RepairRunnerTest.sixNodeClusterEndpoint();
-    List<Segment> segments =
-        generator.generateSegments(
+
+    List<Segment> segments = generator.generateSegments(
             32, tokens, Boolean.FALSE, RepairRunService.buildReplicasToRangeMap(map), "2.2.10");
-    List<RingRange> ranges =
-        RepairRunner.getParallelRanges(
+
+    List<RingRange> ranges = RepairRunner.getParallelRanges(
             RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes),
             Lists.newArrayList(
                 Collections2.transform(segments, segment -> segment.getBaseRange())));
+
     assertEquals(2, ranges.size());
     assertEquals("0", ranges.get(0).getStart().toString());
     assertEquals("150", ranges.get(0).getEnd().toString());
@@ -591,17 +593,14 @@ public final class RepairRunnerTest {
 
   @Test
   public void getNoSegmentCoalescingTest() throws ReaperException {
-    List<BigInteger> tokens =
-        Lists.transform(
-            Lists.newArrayList(
-                "0", "25", "50", "75", "100", "125", "150", "175", "200", "225", "250"),
-            (string) -> new BigInteger(string));
+    List<BigInteger> tokens = Lists.transform(
+        Lists.newArrayList("0", "25", "50", "75", "100", "125", "150", "175", "200", "225", "250"),
+        (string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
 
     Map<List<String>, List<String>> map = RepairRunnerTest.sixNodeCluster();
-    List<Segment> segments =
-        generator.generateSegments(
+    List<Segment> segments = generator.generateSegments(
             6, tokens, Boolean.FALSE, RepairRunService.buildReplicasToRangeMap(map), "2.1.17");
 
     assertEquals(11, segments.size());
@@ -609,17 +608,15 @@ public final class RepairRunnerTest {
 
   @Test
   public void getSegmentCoalescingTest() throws ReaperException {
-    List<BigInteger> tokens =
-        Lists.transform(
-            Lists.newArrayList(
-                "0", "25", "50", "75", "100", "125", "150", "175", "200", "225", "250"),
-            (string) -> new BigInteger(string));
+    List<BigInteger> tokens = Lists.transform(
+        Lists.newArrayList("0", "25", "50", "75", "100", "125", "150", "175", "200", "225", "250"),
+        (string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator(new BigInteger("0"), new BigInteger("299"));
 
     Map<List<String>, List<String>> map = RepairRunnerTest.sixNodeCluster();
-    List<Segment> segments =
-        generator.generateSegments(
+
+    List<Segment> segments = generator.generateSegments(
             6, tokens, Boolean.FALSE, RepairRunService.buildReplicasToRangeMap(map), "2.2.17");
 
     assertEquals(6, segments.size());

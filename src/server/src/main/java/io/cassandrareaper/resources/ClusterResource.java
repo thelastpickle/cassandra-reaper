@@ -131,8 +131,7 @@ public final class ClusterResource {
     Optional<Cluster> cluster = context.storage.getCluster(clusterName);
     if (cluster.isPresent()) {
       try {
-        JmxProxy jmxProxy =
-            context.jmxConnectionFactory.connectAny(
+        JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
                 cluster.get(), context.config.getJmxConnectionTimeoutInSeconds());
         tablesByKeyspace = jmxProxy.listTablesByKeyspace();
       } catch (RuntimeException e) {

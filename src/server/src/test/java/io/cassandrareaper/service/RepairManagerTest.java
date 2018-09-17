@@ -103,8 +103,7 @@ public final class RepairManagerTest {
             .repairParallelism(RepairParallelism.PARALLEL)
             .build(UUIDs.timeBased());
 
-    final RepairSegment segment =
-        RepairSegment.builder(
+    final RepairSegment segment = RepairSegment.builder(
                 Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())
@@ -182,8 +181,7 @@ public final class RepairManagerTest {
             .repairParallelism(RepairParallelism.PARALLEL)
             .build(UUIDs.timeBased());
 
-    final RepairSegment segment =
-        RepairSegment.builder(
+    final RepairSegment segment = RepairSegment.builder(
                 Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())
@@ -261,8 +259,7 @@ public final class RepairManagerTest {
             .repairParallelism(RepairParallelism.PARALLEL)
             .build(UUIDs.timeBased());
 
-    final RepairSegment segment =
-        RepairSegment.builder(
+    final RepairSegment segment = RepairSegment.builder(
                 Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())
@@ -337,8 +334,7 @@ public final class RepairManagerTest {
             .repairParallelism(RepairParallelism.PARALLEL)
             .build(UUIDs.timeBased());
 
-    final RepairSegment segment =
-        RepairSegment.builder(
+    final RepairSegment segment = RepairSegment.builder(
                 Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())

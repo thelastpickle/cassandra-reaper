@@ -48,8 +48,10 @@ public final class SegmentGeneratorTest {
         (String string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    List<Segment> segments =
-        generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
+
+    List<Segment> segments
+        = generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
+
     assertEquals(15, segments.size());
 
     assertEquals("(0,1]", segments.get(0).getBaseRange().toString());
@@ -115,8 +117,10 @@ public final class SegmentGeneratorTest {
     List<BigInteger> tokens = Lists.transform(tokenStrings, (String string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    List<Segment> segments =
-        generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
+
+    List<Segment> segments
+        = generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
+
     assertEquals(15, segments.size());
 
     assertEquals(
@@ -206,8 +210,8 @@ public final class SegmentGeneratorTest {
     rangeToEndpoint.put(Arrays.asList("800", "1000"), Arrays.asList("node1", "node2"));
     rangeToEndpoint.put(Arrays.asList("1100", "1200"), Arrays.asList("node2", "node3", "node1"));
 
-    Map<List<String>, List<RingRange>> replicasToRangeMap =
-        RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
+    Map<List<String>, List<RingRange>> replicasToRangeMap
+        = RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
 
     List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(1200), replicasToRangeMap);
 
@@ -229,8 +233,8 @@ public final class SegmentGeneratorTest {
     rangeToEndpoint.put(Arrays.asList("1300", "1400"), Arrays.asList("node2", "node3", "node1"));
     rangeToEndpoint.put(Arrays.asList("1400", "1500"), Arrays.asList("node2", "node3", "node1"));
 
-    Map<List<String>, List<RingRange>> replicasToRangeMap =
-        RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
+    Map<List<String>, List<RingRange>> replicasToRangeMap
+        = RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
 
     List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(1), replicasToRangeMap);
 
@@ -253,8 +257,8 @@ public final class SegmentGeneratorTest {
     rangeToEndpoint.put(Arrays.asList("1300", "1400"), Arrays.asList("node1", "node2", "node3"));
     rangeToEndpoint.put(Arrays.asList("1400", "1500"), Arrays.asList("node1", "node2", "node3"));
 
-    Map<List<String>, List<RingRange>> replicasToRangeMap =
-        RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
+    Map<List<String>, List<RingRange>> replicasToRangeMap
+        = RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
 
     List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(200), replicasToRangeMap);
 

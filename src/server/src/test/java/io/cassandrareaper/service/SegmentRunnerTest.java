@@ -531,8 +531,7 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
           protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
 
@@ -613,8 +612,7 @@ public final class SegmentRunnerTest {
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
 
-    SegmentRunner sr =
-        new SegmentRunner(
+    SegmentRunner sr = new SegmentRunner(
             context,
             segmentId,
             Collections.singleton(""),
@@ -673,8 +671,7 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
           protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
 
@@ -755,8 +752,7 @@ public final class SegmentRunnerTest {
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
 
-    SegmentRunner sr =
-        new SegmentRunner(
+    SegmentRunner sr = new SegmentRunner(
             context,
             segmentId,
             Collections.singleton(""),
@@ -815,8 +811,7 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
           protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
 
@@ -897,8 +892,7 @@ public final class SegmentRunnerTest {
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
 
-    SegmentRunner sr =
-        new SegmentRunner(
+    SegmentRunner sr = new SegmentRunner(
             context,
             segmentId,
             Collections.singleton(""),
@@ -958,8 +952,7 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory =
-        new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory() {
           @Override
           protected JmxProxy connectImpl(Node host, int connectionTimeout) throws ReaperException {
 
@@ -1040,8 +1033,7 @@ public final class SegmentRunnerTest {
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
 
-    SegmentRunner sr =
-        new SegmentRunner(
+    SegmentRunner sr = new SegmentRunner(
             context,
             segmentId,
             Collections.singleton(""),
