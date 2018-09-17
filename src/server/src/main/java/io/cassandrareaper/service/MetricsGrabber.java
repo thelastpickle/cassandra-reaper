@@ -24,7 +24,7 @@ import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
-import io.cassandrareaper.jmx.JmxProxy;
+import io.cassandrareaper.jmx.MetricsProxy;
 
 import java.io.IOException;
 import java.util.List;
@@ -55,11 +55,10 @@ public final class MetricsGrabber {
 
   public List<ThreadPoolStat> getTpStats(Node host) throws ReaperException {
     try {
-      JmxProxy jmxProxy
-          = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
-
-      return convertToThreadPoolStats(jmxProxy.collectTpStats());
-    } catch (JMException | RuntimeException | InterruptedException | IOException e) {
+      int jmxTimeout = context.config.getJmxConnectionTimeoutInSeconds();
+      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host, jmxTimeout));
+      return convertToThreadPoolStats(proxy.collectTpStats());
+    } catch (JMException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", host, e);
       throw new ReaperException(e);
     }
@@ -81,11 +80,10 @@ public final class MetricsGrabber {
 
   public List<DroppedMessages> getDroppedMessages(Node host) throws ReaperException {
     try {
-      JmxProxy jmxProxy
-          = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
-
-      return convertToDroppedMessages(jmxProxy.collectDroppedMessages());
-    } catch (JMException | RuntimeException | InterruptedException | IOException e) {
+      int jmxTimeout = context.config.getJmxConnectionTimeoutInSeconds();
+      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host, jmxTimeout));
+      return convertToDroppedMessages(proxy.collectDroppedMessages());
+    } catch (JMException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", host, e);
       throw new ReaperException(e);
     }
@@ -107,11 +105,10 @@ public final class MetricsGrabber {
 
   public List<MetricsHistogram> getClientRequestLatencies(Node host) throws ReaperException {
     try {
-      JmxProxy jmxProxy
-          = context.jmxConnectionFactory.connect(host, context.config.getJmxConnectionTimeoutInSeconds());
-
-      return convertToMetricsHistogram(jmxProxy.collectLatencyMetrics());
-    } catch (JMException | RuntimeException | InterruptedException | IOException e) {
+      int jmxTimeout = context.config.getJmxConnectionTimeoutInSeconds();
+      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host, jmxTimeout));
+      return convertToMetricsHistogram(proxy.collectLatencyMetrics());
+    } catch (JMException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", host, e);
       throw new ReaperException(e);
     }

@@ -18,11 +18,9 @@
 package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.service.RingRange;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.util.Collection;
@@ -129,11 +127,5 @@ public interface JmxProxy extends NotificationListener {
   void close();
 
   void removeRepairStatusHandler(int repairNo);
-
-  Map<String, List<JmxStat>> collectTpStats() throws JMException, IOException;
-
-  Map<String, List<JmxStat>> collectDroppedMessages() throws JMException, IOException;
-
-  Map<String, List<JmxStat>> collectLatencyMetrics() throws JMException, IOException;
 
 }

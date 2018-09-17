@@ -19,6 +19,8 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 
+import javax.management.MBeanServerConnection;
+
 import com.google.common.base.Preconditions;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.service.StorageServiceMBean;
@@ -32,6 +34,11 @@ public final class JmxProxyTest {
 
   public static JmxProxy mockJmxProxyImpl() {
     return Mockito.mock(JmxProxyImpl.class);
+  }
+
+  public static void mockGetMBeanServerConnection(JmxProxy proxy, MBeanServerConnection serverConnection) {
+    Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
+    Mockito.when(((JmxProxyImpl)proxy).getMBeanServerConnection()).thenReturn(serverConnection);
   }
 
   public static void mockGetStorageServiceMBean(JmxProxy proxy, StorageServiceMBean storageMBean) {
