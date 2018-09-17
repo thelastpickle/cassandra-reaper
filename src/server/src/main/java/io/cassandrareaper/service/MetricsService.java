@@ -39,18 +39,18 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class MetricsGrabber {
+public final class MetricsService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MetricsGrabber.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MetricsService.class);
 
   private final AppContext context;
 
-  private MetricsGrabber(AppContext context) {
+  private MetricsService(AppContext context) {
     this.context = context;
   }
 
-  public static MetricsGrabber create(AppContext context) {
-    return new MetricsGrabber(context);
+  public static MetricsService create(AppContext context) {
+    return new MetricsService(context);
   }
 
   public List<ThreadPoolStat> getTpStats(Node host) throws ReaperException {

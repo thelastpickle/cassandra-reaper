@@ -22,7 +22,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.service.CompactionService;
-import io.cassandrareaper.service.MetricsGrabber;
+import io.cassandrareaper.service.MetricsService;
 import io.cassandrareaper.service.StreamManager;
 
 import java.util.List;
@@ -47,13 +47,13 @@ public final class NodeStatsResource {
 
   private final AppContext context;
   private final StreamManager streamManager;
-  private final MetricsGrabber metricsGrabber;
+  private final MetricsService metricsGrabber;
   private final CompactionService compactionService;
 
   public NodeStatsResource(AppContext context) {
     this.context = context;
     this.streamManager = StreamManager.create(context);
-    this.metricsGrabber = MetricsGrabber.create(context);
+    this.metricsGrabber = MetricsService.create(context);
     this.compactionService = CompactionService.create(context);
   }
 

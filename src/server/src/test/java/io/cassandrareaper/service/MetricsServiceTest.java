@@ -46,7 +46,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class MetricsGrabberTest {
+public class MetricsServiceTest {
 
   @Test
   public void testGetTpstats()
@@ -62,18 +62,18 @@ public class MetricsGrabberTest {
     JmxProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
 
     // @todo capture objectName and return valid set of objectNames,
-    // to properly test MetricsProxy.collectMetrics(..) and MetricsGrabber.convertToThreadPoolStats(..)
+    // to properly test MetricsProxy.collectMetrics(..) and MetricsService.convertToThreadPoolStats(..)
     when(serverConn.queryNames(Mockito.any(ObjectName.class), Mockito.isNull())).thenReturn(Collections.emptySet());
 
     Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
-    MetricsGrabber.create(cxt).getTpStats(node);
+    MetricsService.create(cxt).getTpStats(node);
     Mockito.verify(serverConn, Mockito.times(2)).queryNames(Mockito.any(ObjectName.class), Mockito.isNull());
   }
 
   @Test
   public void testConvertToThreadPoolStats() {
     AppContext context = new AppContext();
-    final MetricsGrabber metricsGrabber = MetricsGrabber.create(context);
+    final MetricsService metricsGrabber = MetricsService.create(context);
 
     List<JmxStat> statList = Lists.newArrayList();
     statList.add(
@@ -147,18 +147,18 @@ public class MetricsGrabberTest {
     JmxProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
 
     // @todo capture objectName and return valid set of objectNames,
-    // to properly test MetricsProxy.collectMetrics(..) and MetricsGrabber.convertToDroppedMessages(..)
+    // to properly test MetricsProxy.collectMetrics(..) and MetricsService.convertToDroppedMessages(..)
     when(serverConn.queryNames(Mockito.any(ObjectName.class), Mockito.isNull())).thenReturn(Collections.emptySet());
 
     Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
-    MetricsGrabber.create(cxt).getDroppedMessages(node);
+    MetricsService.create(cxt).getDroppedMessages(node);
     Mockito.verify(serverConn, Mockito.times(1)).queryNames(Mockito.any(ObjectName.class), Mockito.isNull());
   }
 
   @Test
   public void testConvertToDroppedMessages() {
     AppContext context = new AppContext();
-    final MetricsGrabber metricsGrabber = MetricsGrabber.create(context);
+    final MetricsService metricsGrabber = MetricsService.create(context);
 
     List<JmxStat> statList = Lists.newArrayList();
     statList.add(
@@ -224,11 +224,11 @@ public class MetricsGrabberTest {
     JmxProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
 
     // @todo capture objectName and return valid set of objectNames,
-    // to properly test MetricsProxy.collectMetrics(..) and MetricsGrabber.convertToMetricsHistogram(..)
+    // to properly test MetricsProxy.collectMetrics(..) and MetricsService.convertToMetricsHistogram(..)
     when(serverConn.queryNames(Mockito.any(ObjectName.class), Mockito.isNull())).thenReturn(Collections.emptySet());
 
     Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
-    MetricsGrabber.create(cxt).getClientRequestLatencies(node);
+    MetricsService.create(cxt).getClientRequestLatencies(node);
     Mockito.verify(serverConn, Mockito.times(1)).queryNames(Mockito.any(ObjectName.class), Mockito.isNull());
   }
 }
