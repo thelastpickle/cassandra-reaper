@@ -25,7 +25,7 @@ case "${TEST_TYPE}" in
     "ccm")
         if [ "${TRAVIS_PULL_REQUEST}" = "false" -a "${TRAVIS_BRANCH}" = "master" -a "${CASSANDRA_VERSION}" = "2.1.19" ]
         then
-            mvn sonar:sonar \
+            mvn -B sonar:sonar \
                 -Dsonar.host.url=https://sonarcloud.io \
                 -Dsonar.login=${SONAR_TOKEN} \
                 -Dsonar.projectKey=tlp-cassandra-reaper \

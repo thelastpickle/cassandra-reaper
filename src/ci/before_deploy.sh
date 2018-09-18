@@ -22,7 +22,7 @@ if [[ $CASSANDRA_VERSION =~ ^2\.1\..* && "x${GRIM_MIN}" = "x" ]]
 then
     if [ "${TRAVIS_BRANCH}" = "master" -a ! -d "cassandra-reaper-master" ]
     then
-        VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
+        VERSION=$(printf 'VER\t${project.version}' | mvn -B help:evaluate | grep '^VER' | cut -f2)
         DATE=$(date +"%Y%m%d")
         RELEASEDATE=$(date +"%Y-%m-%d")
         RPM_VERSION=$(echo "${VERSION}" | sed "s/-/_/")
@@ -52,7 +52,7 @@ then
         export GIT_HASH=$(git log --pretty=format:'%h' -n 1)
         docker login -u $DOCKER_USER -p $DOCKER_PASS
         export REPO=thelastpickle/cassandra-reaper
-        mvn -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
+        mvn -B -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
         docker tag cassandra-reaper:latest $REPO:master
         docker push $REPO:master
         docker tag cassandra-reaper:latest $REPO:$GIT_HASH
@@ -60,7 +60,7 @@ then
     fi
     if [ "x${TRAVIS_TAG}" != "x" -a ! -d "cassandra-reaper-${TRAVIS_TAG}" ]
     then
-        VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
+        VERSION=$(printf 'VER\t${project.version}' | mvn -B help:evaluate | grep '^VER' | cut -f2)
         RELEASEDATE=$(date +"%Y-%m-%d")
         # Update Bintray descriptor files with appropriate version numbers and release dates
         sed -i "s/VERSION/${VERSION}/g" src/ci/descriptor-rpm.json
@@ -87,7 +87,7 @@ then
         cd ../..
         docker login -u $DOCKER_USER -p $DOCKER_PASS
         export REPO=thelastpickle/cassandra-reaper
-        mvn -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
+        mvn -B -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
         docker tag cassandra-reaper:latest $REPO:latest
         docker push $REPO:latest
         docker tag cassandra-reaper:latest $REPO:$TRAVIS_TAG

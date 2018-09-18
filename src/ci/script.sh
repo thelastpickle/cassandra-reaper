@@ -23,34 +23,34 @@ case "${TEST_TYPE}" in
         exit 1
         ;;
     "ccm")
-        mvn --version
+        mvn --version -B
         ccm start
         sleep 30
         ccm status
         if [ "${TRAVIS_BRANCH}" = "master" ]
             then
-                VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
+                VERSION=$(printf 'VER\t${project.version}' | mvn -B help:evaluate | grep '^VER' | cut -f2)
                 DATE=$(date +"%Y%m%d")
                 # Bintray doesn't like snapshots, but accepts betas :)
                 BETA_VERSION=$(echo $VERSION | sed "s/SNAPSHOT/BETA/")
-                mvn versions:set "-DnewVersion=${BETA_VERSION}-${DATE}"
+                mvn -B versions:set "-DnewVersion=${BETA_VERSION}-${DATE}"
         fi
-        if mvn help:evaluate -Dexpression=project.version | grep -v "^\[" | grep -q SNAPSHOT 
+        if mvn -B help:evaluate -Dexpression=project.version | grep -v "^\[" | grep -q SNAPSHOT
         then
-          MAVEN_OPTS="-Xmx1g" mvn clean install
+          MAVEN_OPTS="-Xmx1g" mvn -B clean install
         else
-          MAVEN_OPTS="-Xmx1g" mvn clean install -Prelease
+          MAVEN_OPTS="-Xmx1g" mvn -B clean install -Prelease
         fi
 
         if [ "x${GRIM_MIN}" = "x" ]
         then
-            mvn surefire:test -Dtest=ReaperIT
-            mvn surefire:test -Dtest=ReaperAuthIT
-            mvn surefire:test -Dtest=ReaperH2IT
-            mvn surefire:test -Dtest=ReaperPostgresIT
-            mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT
+            mvn -B surefire:test -Dtest=ReaperIT
+            mvn -B surefire:test -Dtest=ReaperAuthIT
+            mvn -B surefire:test -Dtest=ReaperH2IT
+            mvn -B surefire:test -Dtest=ReaperPostgresIT
+            mvn -B surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT
         else
-            mvn surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
+            mvn -B surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
         fi
         ;;
     "docker")
@@ -60,7 +60,7 @@ case "${TEST_TYPE}" in
         # Need to change the permissions after building the packages using the Docker image because they
         # are set to root and if left unchanged they will cause Maven to fail
         sudo chown -R travis:travis ./src/server/target/
-        mvn -f src/server/pom.xml docker:build -Ddocker.directory=src/server/src/main/docker -DskipTests
+        mvn -B -f src/server/pom.xml docker:build -Ddocker.directory=src/server/src/main/docker -DskipTests
         docker images
 
         # Generation of SSL stores - this can be done at any point in time prior to running setting up the SSL environment
