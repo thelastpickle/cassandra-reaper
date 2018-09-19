@@ -46,18 +46,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public final class StreamManager {
+public final class StreamService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(StreamManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(StreamService.class);
 
   private final AppContext context;
 
-  private StreamManager(AppContext context) {
+  private StreamService(AppContext context) {
     this.context = context;
   }
 
-  public static StreamManager create(AppContext context) {
-    return new StreamManager(context);
+  public static StreamService create(AppContext context) {
+    return new StreamService(context);
   }
 
   public List<StreamSession> listStreams(Node node) throws ReaperException {

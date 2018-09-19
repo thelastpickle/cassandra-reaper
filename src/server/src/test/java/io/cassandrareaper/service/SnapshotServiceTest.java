@@ -48,7 +48,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public final class SnapshotManagerTest {
+public final class SnapshotServiceTest {
 
   private static final ExecutorService SNAPSHOT_MANAGER_EXECUTOR = Executors.newFixedThreadPool(2);
 
@@ -64,7 +64,7 @@ public final class SnapshotManagerTest {
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
-    Pair<Node,String> result = SnapshotManager
+    Pair<Node,String> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
         .takeSnapshot("Test", Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
 
@@ -88,7 +88,7 @@ public final class SnapshotManagerTest {
     when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
     Node host = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
 
-    Pair<Node,String> result = SnapshotManager
+    Pair<Node,String> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
         .takeSnapshot("Test", host, "keyspace1", "keyspace2");
 
@@ -112,7 +112,7 @@ public final class SnapshotManagerTest {
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
-    List<Snapshot> result = SnapshotManager
+    List<Snapshot> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
         .listSnapshots(Node.builder().withClusterName("Test").withHostname("127.0.0.1").build());
 
@@ -132,7 +132,7 @@ public final class SnapshotManagerTest {
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
-    SnapshotManager
+    SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
         .clearSnapshot("test", Node.builder().withClusterName("Test").withHostname("127.0.0.1").build());
 
@@ -158,7 +158,7 @@ public final class SnapshotManagerTest {
     Cluster cluster = new Cluster("testCluster", "murmur3", ImmutableSet.of("127.0.0.1"));
     when(cxt.storage.getCluster(anyString())).thenReturn(Optional.of(cluster));
 
-    SnapshotManager
+    SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
         .clearSnapshotClusterWide("snapshot", "testCluster");
 
@@ -184,7 +184,7 @@ public final class SnapshotManagerTest {
     Cluster cluster = new Cluster("testCluster", "murmur3", ImmutableSet.of("127.0.0.1"));
     when(cxt.storage.getCluster(anyString())).thenReturn(Optional.of(cluster));
 
-    List<Pair<Node,String>> result = SnapshotManager
+    List<Pair<Node,String>> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
         .takeSnapshotClusterWide("snapshot", "testCluster", "testOwner", "testCause");
 

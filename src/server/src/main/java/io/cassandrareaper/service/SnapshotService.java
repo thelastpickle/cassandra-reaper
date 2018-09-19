@@ -49,24 +49,24 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class SnapshotManager {
+public final class SnapshotService {
 
   public static final String SNAPSHOT_PREFIX = "reaper";
 
   private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
-  private static final Logger LOG = LoggerFactory.getLogger(SnapshotManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(SnapshotService.class);
 
   private final AppContext context;
   private final ExecutorService executor;
   private final Cache<String, Snapshot> cache = CacheBuilder.newBuilder().weakValues().maximumSize(1000).build();
 
-  private SnapshotManager(AppContext context, ExecutorService executor) {
+  private SnapshotService(AppContext context, ExecutorService executor) {
     this.context = context;
     this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
   }
 
-  public static SnapshotManager create(AppContext context, ExecutorService executor) {
-    return new SnapshotManager(context, executor);
+  public static SnapshotService create(AppContext context, ExecutorService executor) {
+    return new SnapshotService(context, executor);
   }
 
   public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspaces) throws ReaperException {

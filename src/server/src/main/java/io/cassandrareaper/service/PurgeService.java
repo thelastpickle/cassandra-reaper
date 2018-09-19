@@ -34,18 +34,18 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class PurgeManager {
+public final class PurgeService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(PurgeManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PurgeService.class);
 
   private final AppContext context;
 
-  private PurgeManager(AppContext context) {
+  private PurgeService(AppContext context) {
     this.context = context;
   }
 
-  public static PurgeManager create(AppContext context) {
-    return new PurgeManager(context);
+  public static PurgeService create(AppContext context) {
+    return new PurgeService(context);
   }
 
   public Integer purgeDatabase() {

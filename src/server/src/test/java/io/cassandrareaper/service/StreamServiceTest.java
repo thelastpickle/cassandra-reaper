@@ -52,7 +52,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 
-public class StreamManagerTest {
+public class StreamServiceTest {
 
   @Test
   public void testListStreams() throws ReaperException, ClassNotFoundException, InterruptedException {
@@ -66,7 +66,7 @@ public class StreamManagerTest {
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
-    StreamManager
+    StreamService
         .create(cxt)
         .listStreams(Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
 
@@ -97,7 +97,7 @@ public class StreamManagerTest {
     when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
-    List<StreamSession> result = StreamManager
+    List<StreamSession> result = StreamService
         .create(cxt)
         .listStreams(Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
 
@@ -129,7 +129,7 @@ public class StreamManagerTest {
     when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
-    List<StreamSession> result = StreamManager
+    List<StreamSession> result = StreamService
         .create(cxt)
         .listStreams(Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
 
@@ -161,7 +161,7 @@ public class StreamManagerTest {
     when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
-    List<StreamSession> result = StreamManager
+    List<StreamSession> result = StreamService
         .create(cxt)
         .listStreams(Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
 
@@ -193,7 +193,7 @@ public class StreamManagerTest {
     when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.anyInt())).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
-    List<StreamSession> result = StreamManager
+    List<StreamSession> result = StreamService
         .create(cxt)
         .listStreams(Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
 

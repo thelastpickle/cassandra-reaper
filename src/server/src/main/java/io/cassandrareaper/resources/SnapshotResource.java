@@ -21,7 +21,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
-import io.cassandrareaper.service.SnapshotManager;
+import io.cassandrareaper.service.SnapshotService;
 
 import java.util.List;
 import java.util.Map;
@@ -50,11 +50,11 @@ public final class SnapshotResource {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotResource.class);
 
-  private final SnapshotManager snapshotManager;
+  private final SnapshotService snapshotManager;
 
   public SnapshotResource(AppContext context, Environment environment) {
 
-    snapshotManager = SnapshotManager.create(
+    snapshotManager = SnapshotService.create(
         context,
         environment.lifecycle().executorService("SnapshotManager").minThreads(5).maxThreads(5).build());
   }
@@ -79,13 +79,13 @@ public final class SnapshotResource {
       if (host.isPresent()) {
         if (keyspace.isPresent()) {
           snapshotManager.takeSnapshot(
-                  snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
-                  node,
-                  keyspace.get());
+              snapshotManager.formatSnapshotName(snapshotName.or(SnapshotService.SNAPSHOT_PREFIX)),
+              node,
+              keyspace.get());
         } else {
           snapshotManager.takeSnapshot(
-                  snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
-                  node);
+              snapshotManager.formatSnapshotName(snapshotName.or(SnapshotService.SNAPSHOT_PREFIX)),
+              node);
         }
         return Response.ok()
             .location(uriInfo.getBaseUriBuilder().path("snapshot").path(clusterName).path(host.get()).build())
@@ -118,17 +118,17 @@ public final class SnapshotResource {
       if (clusterName.isPresent()) {
         if (keyspace.isPresent() && !keyspace.get().isEmpty()) {
           snapshotManager.takeSnapshotClusterWide(
-                  snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
-                  clusterName.get(),
-                  owner.or("reaper"),
-                  cause.or("Snapshot taken with Reaper"),
-                  keyspace.get());
+              snapshotManager.formatSnapshotName(snapshotName.or(SnapshotService.SNAPSHOT_PREFIX)),
+              clusterName.get(),
+              owner.or("reaper"),
+              cause.or("Snapshot taken with Reaper"),
+              keyspace.get());
         } else {
           snapshotManager.takeSnapshotClusterWide(
-                  snapshotManager.formatSnapshotName(snapshotName.or(SnapshotManager.SNAPSHOT_PREFIX)),
-                  clusterName.get(),
-                  owner.or("reaper"),
-                  cause.or("Snapshot taken with Reaper"));
+              snapshotManager.formatSnapshotName(snapshotName.or(SnapshotService.SNAPSHOT_PREFIX)),
+              clusterName.get(),
+              owner.or("reaper"),
+              cause.or("Snapshot taken with Reaper"));
         }
         return Response.ok()
             .location(uriInfo.getBaseUriBuilder().path("snapshot").path(clusterName.get()).build())

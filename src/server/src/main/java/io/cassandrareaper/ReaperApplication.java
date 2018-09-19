@@ -31,7 +31,7 @@ import io.cassandrareaper.resources.SnapshotResource;
 import io.cassandrareaper.resources.auth.LoginResource;
 import io.cassandrareaper.resources.auth.ShiroExceptionMapper;
 import io.cassandrareaper.service.AutoSchedulingManager;
-import io.cassandrareaper.service.PurgeManager;
+import io.cassandrareaper.service.PurgeService;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
 import io.cassandrareaper.storage.CassandraStorage;
@@ -300,7 +300,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   }
 
   private void schedulePurge(ScheduledExecutorService scheduler) {
-    final PurgeManager purgeManager = PurgeManager.create(context);
+    final PurgeService purgeManager = PurgeService.create(context);
 
     scheduler.scheduleWithFixedDelay(
         () -> {

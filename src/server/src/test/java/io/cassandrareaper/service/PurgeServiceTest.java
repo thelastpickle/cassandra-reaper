@@ -44,9 +44,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public final class PurgeManagerTest {
+public final class PurgeServiceTest {
 
-  private static final Logger LOG = LoggerFactory.getLogger(PurgeManagerTest.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PurgeServiceTest.class);
   private static final String CLUSTER_NAME = "test";
 
   @Test
@@ -82,7 +82,7 @@ public final class PurgeManagerTest {
     when(context.storage.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
 
     // Invoke the purge manager
-    int purged = PurgeManager.create(context).purgeDatabase();
+    int purged = PurgeService.create(context).purgeDatabase();
 
     // Check that runs were removed
     assertEquals(9, purged);
@@ -121,7 +121,7 @@ public final class PurgeManagerTest {
     when(context.storage.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
 
     // Invoke the purge manager
-    int purged = PurgeManager.create(context).purgeDatabase();
+    int purged = PurgeService.create(context).purgeDatabase();
 
     // Check that runs were removed
     assertEquals(15, purged);
@@ -160,7 +160,7 @@ public final class PurgeManagerTest {
     when(context.storage.getRepairRunsForCluster(anyString(), any())).thenReturn(repairRuns);
 
     // Invoke the purge manager
-    int purged = PurgeManager.create(context).purgeDatabase();
+    int purged = PurgeService.create(context).purgeDatabase();
 
     // Check that runs were removed
     assertEquals(0, purged);
