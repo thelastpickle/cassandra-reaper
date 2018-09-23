@@ -557,19 +557,7 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
-    if (!subscription.getId().isPresent()) {
-
-      subscription = new DiagEventSubscription(
-          Optional.of(UUID.randomUUID()),
-          subscription.getCluster(),
-          Optional.ofNullable(subscription.getDescription()),
-          subscription.getIncludeNodes(),
-          subscription.getEvents(),
-          subscription.getExportSse(),
-          subscription.getExportFileLogger(),
-          subscription.getExportHttpEndpoint());
-    }
-
+    Preconditions.checkArgument(subscription.getId().isPresent());
     subscriptionsById.put(subscription.getId().get(), subscription);
     return subscription;
   }
