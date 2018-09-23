@@ -118,7 +118,7 @@ const eventScreen = React.createClass({
 
     var btnLiveView = <button type="button" className="btn btn-sm btn-block btn-default" disabled="disabled">No active subscriptions for live view</button>
     if (this.state.activeSubscription) {
-      btnLiveView = <button type="button" className="btn btn-sm btn-block btn-warning" onClick={this._onCancelView}>Stop viewing events for "{this.state.activeSubscription.description}"</button>
+      btnLiveView = <button type="button" className="btn btn-sm btn-block btn-success" onClick={this._onCancelView}>Viewing events for {this.state.activeSubscription.description}</button>
     }
 
     return (

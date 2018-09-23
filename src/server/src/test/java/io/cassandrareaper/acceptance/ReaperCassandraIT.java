@@ -42,7 +42,10 @@ import static org.awaitility.Awaitility.await;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
-    features = "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature",
+    features = {
+      "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature",
+      "classpath:io.cassandrareaper.acceptance/event_subscriptions.feature"
+    },
     plugin = {"pretty"}
     )
 public class ReaperCassandraIT implements Upgradable {
