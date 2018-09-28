@@ -29,18 +29,14 @@ case "${TEST_TYPE}" in
         ccm status
         if [ "${TRAVIS_BRANCH}" = "master" ]
             then
-                VERSION=$(printf 'VER\t${project.version}' | mvn -B help:evaluate | grep '^VER' | cut -f2)
+                VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
                 DATE=$(date +"%Y%m%d")
                 # Bintray doesn't like snapshots, but accepts betas :)
                 BETA_VERSION=$(echo $VERSION | sed "s/SNAPSHOT/BETA/")
                 mvn -B versions:set "-DnewVersion=${BETA_VERSION}-${DATE}"
         fi
-        if mvn -B help:evaluate -Dexpression=project.version | grep -v "^\[" | grep -q SNAPSHOT
-        then
-          MAVEN_OPTS="-Xmx1g" mvn -B clean install
-        else
-          MAVEN_OPTS="-Xmx1g" mvn -B clean install -Prelease
-        fi
+
+        MAVEN_OPTS="-Xmx1g" mvn -B clean install
 
         if [ "x${GRIM_MIN}" = "x" ]
         then
