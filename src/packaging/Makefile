@@ -20,7 +20,7 @@ VERSION := `mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpr
 # VERSION := `python -c "import xml.etree.ElementTree as ET; print(ET.parse(open('pom.xml')).getroot().find('{http://maven.apache.org/POM/4.0.0}version').text)"`
 
 package:
-	mvn clean package  -f ../../pom.xml -DskipTests
+	mvn -B clean package  -f ../../pom.xml -DskipTests
 
 prepare:
 	echo "$(VERSION)..."

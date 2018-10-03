@@ -39,8 +39,6 @@ then
         cp -R src/packaging/bin cassandra-reaper-master/
         cp src/server/target/cassandra-reaper-*.jar cassandra-reaper-master/server/target
         cp -R src/packaging/resource cassandra-reaper-master/
-        tar czf cassandra-reaper-${VERSION}.tar.gz cassandra-reaper-master/
-        sudo mv cassandra-reaper-${VERSION}.tar.gz src/packages/
         # docker-compose based build stopped working so we fell back to raw fpm
         sudo apt-get install ruby ruby-dev build-essential rpm -y
         gem install --no-ri --no-rdoc fpm
@@ -49,6 +47,8 @@ then
         sudo mv reaper_*_amd64.deb ../packages/
         sudo mv reaper-*.x86_64.rpm ../packages/
         cd ../..
+        tar czf cassandra-reaper-${VERSION}.tar.gz cassandra-reaper-master/
+        sudo mv cassandra-reaper-${VERSION}.tar.gz src/packages/
         export GIT_HASH=$(git log --pretty=format:'%h' -n 1)
         docker login -u $DOCKER_USER -p $DOCKER_PASS
         export REPO=thelastpickle/cassandra-reaper
@@ -75,8 +75,6 @@ then
         cp -R src/packaging/bin cassandra-reaper-${TRAVIS_TAG}/
         cp src/server/target/cassandra-reaper-*.jar cassandra-reaper-${TRAVIS_TAG}/server/target
         cp -R src/packaging/resource cassandra-reaper-${TRAVIS_TAG}/
-        tar czf cassandra-reaper-${TRAVIS_TAG}-release.tar.gz cassandra-reaper-${TRAVIS_TAG}/
-        sudo mv cassandra-reaper-${TRAVIS_TAG}-release.tar.gz src/packages/
         # docker-compose based build stopped working so we fell back to raw fpm
         sudo apt-get install ruby ruby-dev build-essential rpm -y
         gem install --no-ri --no-rdoc fpm
@@ -85,6 +83,8 @@ then
         sudo mv reaper_*_amd64.deb ../packages/
         sudo mv reaper-*.x86_64.rpm ../packages/
         cd ../..
+        tar czf cassandra-reaper-${TRAVIS_TAG}-release.tar.gz cassandra-reaper-${TRAVIS_TAG}/
+        sudo mv cassandra-reaper-${TRAVIS_TAG}-release.tar.gz src/packages/
         docker login -u $DOCKER_USER -p $DOCKER_PASS
         export REPO=thelastpickle/cassandra-reaper
         mvn -B -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
