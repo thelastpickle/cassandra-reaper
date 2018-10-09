@@ -31,18 +31,25 @@ def _parse_arguments():
 
 if __name__ == '__main__':
     args = _parse_arguments()
-    print "calling " + 'https://api.bintray.com/packages/thelastpickle/{0}/cassandra-reaper-beta'.format(args.repository)
-    res = requests.get('https://api.bintray.com/packages/thelastpickle/{0}/cassandra-reaper-beta'.format(args.repository), auth=HTTPBasicAuth(args.bintray_user, args.bintray_api_key))
+    if "maven" in args.repository:
+        print "calling " + 'https://api.bintray.com/packages/thelastpickle/{0}/io.cassandrareaper%3Acassandra-reaper'.format(args.repository)
+        res = requests.get('https://api.bintray.com/packages/thelastpickle/{0}/io.cassandrareaper%3Acassandra-reaper'.format(args.repository), auth=HTTPBasicAuth(args.bintray_user, args.bintray_api_key))
+    else:
+        print "calling " + 'https://api.bintray.com/packages/thelastpickle/{0}/cassandra-reaper-beta'.format(args.repository)
+        res = requests.get('https://api.bintray.com/packages/thelastpickle/{0}/cassandra-reaper-beta'.format(args.repository), auth=HTTPBasicAuth(args.bintray_user, args.bintray_api_key))
     #print res.text
     print "Candidates for deletion in {0}:".format(args.repository)
     for version in res.json()['versions']:
-        if version.startswith(args.latest_release):
+        if version.startswith(args.latest_release) and ("BETA" in version or "SNAPSHOT" in version) :
             print version
     
     if not args.noop:
         for version in res.json()['versions']:
-            if version.startswith(args.latest_release):
+            if version.startswith(args.latest_release) and ("BETA" in version or "SNAPSHOT" in version):
                 print 'Deleting {0} {1}...'.format(args.repository, version)
-                res = requests.delete('https://api.bintray.com/packages/thelastpickle/{0}/cassandra-reaper-beta/versions/{1}'.format(args.repository, version), auth=HTTPBasicAuth(args.bintray_user, args.bintray_api_key))
+                if "maven" in args.repository:
+                    res = requests.delete('https://api.bintray.com/packages/thelastpickle/{0}/io.cassandrareaper%3Acassandra-reaper/versions/{1}'.format(args.repository, version), auth=HTTPBasicAuth(args.bintray_user, args.bintray_api_key))
+                else:
+                    res = requests.delete('https://api.bintray.com/packages/thelastpickle/{0}/cassandra-reaper-beta/versions/{1}'.format(args.repository, version), auth=HTTPBasicAuth(args.bintray_user, args.bintray_api_key))
     
     print "All done"
