@@ -1532,6 +1532,30 @@ public final class BasicSteps {
     }
   }
 
+  @And("^the seed node has vnodes$")
+  public void the_seed_node_has_vnodes() {
+    synchronized (BasicSteps.class) {
+      RUNNERS
+          .parallelStream()
+          .forEach(
+              runner -> {
+                Response response
+                    = runner.callReaper(
+                        "GET",
+                        "/node/tokens/"
+                            + TestContext.TEST_CLUSTER
+                            + "/"
+                            + TestContext.SEED_HOST.split("@")[0],
+                        EMPTY_PARAMS);
+                assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+                String responseData = response.readEntity(String.class);
+                List<String> tokens = SimpleReaperClient.parseTokenListJSON(responseData);
+
+                assertTrue(tokens.size() >= 1);
+              });
+    }
+  }
+
   private static int httpStatus(String statusCodeDescriptions) {
     String enumName = statusCodeDescriptions.toUpperCase().replace(' ', '_');
     return Response.Status.valueOf(enumName).getStatusCode();

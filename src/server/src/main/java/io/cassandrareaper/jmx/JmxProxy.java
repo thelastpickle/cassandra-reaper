@@ -127,5 +127,4 @@ public interface JmxProxy extends NotificationListener {
   void close();
 
   void removeRepairStatusHandler(int repairNo);
-
 }

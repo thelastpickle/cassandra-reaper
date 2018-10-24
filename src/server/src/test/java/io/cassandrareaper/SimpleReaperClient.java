@@ -184,4 +184,8 @@ public final class SimpleReaperClient {
     return parseJSON(json, new TypeReference<List<MetricsHistogram>>() {});
   }
 
+  public static List<String> parseTokenListJSON(String json) {
+    return parseJSON(json, new TypeReference<List<String>>() {});
+  }
+
 }
