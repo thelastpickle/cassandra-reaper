@@ -153,8 +153,11 @@ public final class NodesStatus {
           tokens.orElse(NOT_AVAILABLE),
           load.orElse(0.0));
 
-      endpoints.add(endpoint.orElse(NOT_AVAILABLE));
-      endpointStates.add(endpointState);
+      if (!status.orElse(NOT_AVAILABLE).toLowerCase().contains("left")) {
+        // Only add nodes that haven't left the cluster (they could still appear in Gossip state for a while)
+        endpoints.add(endpoint.orElse(NOT_AVAILABLE));
+        endpointStates.add(endpointState);
+      }
     }
 
     Map<String, Map<String, List<EndpointState>>> endpointsByDcAndRack = Maps.newHashMap();
