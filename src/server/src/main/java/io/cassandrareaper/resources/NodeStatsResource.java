@@ -21,11 +21,14 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
+import io.cassandrareaper.jmx.JmxProxy;
+import io.cassandrareaper.jmx.StorageServiceProxy;
 import io.cassandrareaper.service.CompactionService;
 import io.cassandrareaper.service.MetricsService;
 import io.cassandrareaper.service.StreamService;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -155,6 +158,34 @@ public final class NodeStatsResource {
     try {
       Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
       return Response.ok().entity(compactionService.listActiveCompactions(node)).build();
+    } catch (RuntimeException | ReaperException e) {
+      LOG.error(e.getMessage(), e);
+      return Response.serverError().entity(e.getMessage()).build();
+    }
+  }
+
+  /**
+   * Endpoint used to list the tokens owned by a node.
+   *
+   * @return a list of tokens.
+   */
+  @GET
+  @Path("/tokens/{clusterName}/{host}")
+  public Response listTokens(
+      @Context UriInfo uriInfo,
+      @PathParam("clusterName") String clusterName,
+      @PathParam("host") String host)
+      throws InterruptedException {
+
+    try {
+      JmxProxy jmxProxy
+          = context.jmxConnectionFactory.connect(
+              Node.builder().withClusterName(clusterName).withHostname(host).build(),
+              context.config.getJmxConnectionTimeoutInSeconds());
+
+      StorageServiceProxy ssProxy = StorageServiceProxy.create(jmxProxy);
+      Map<String, List<String>> tokens = ssProxy.getTokensByNode();
+      return Response.ok().entity(tokens.get(host)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);
       return Response.serverError().entity(e.getMessage()).build();
