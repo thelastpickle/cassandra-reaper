@@ -19,6 +19,8 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 
+import java.util.Optional;
+
 import javax.management.MBeanServerConnection;
 
 import com.google.common.base.Preconditions;
@@ -48,7 +50,7 @@ public final class JmxProxyTest {
 
   public static void mockGetStreamManagerMBean(JmxProxy proxy, StreamManagerMBean streamingManagerMBean) {
     Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
-    Mockito.when(((JmxProxyImpl)proxy).getStreamManagerMBean()).thenReturn(streamingManagerMBean);
+    Mockito.when(((JmxProxyImpl)proxy).getStreamManagerMBean()).thenReturn(Optional.of(streamingManagerMBean));
   }
 
   public static void mockGetEndpointSnitchInfoMBean(JmxProxy proxy, EndpointSnitchInfoMBean endpointSnitchInfoMBean) {

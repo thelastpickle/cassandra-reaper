@@ -23,7 +23,7 @@ import java.util.Set;
 import javax.management.openmbean.CompositeData;
 
 import com.google.common.base.Preconditions;
-
+import com.google.common.collect.ImmutableSet;
 
 
 public final class StreamsProxy {
@@ -40,6 +40,10 @@ public final class StreamsProxy {
   }
 
   public Set<CompositeData> listStreams() {
-    return proxy.getStreamManagerMBean().getCurrentStreams();
+    if (proxy.getStreamManagerMBean().isPresent()) {
+      return proxy.getStreamManagerMBean().get().getCurrentStreams();
+    } else {
+      return ImmutableSet.of();
+    }
   }
 }
