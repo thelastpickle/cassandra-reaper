@@ -113,7 +113,7 @@ final class JmxProxyImpl implements JmxProxy {
   private final ConcurrentMap<Integer, ExecutorService> repairStatusExecutors = Maps.newConcurrentMap();
   private final ConcurrentMap<Integer, RepairStatusHandler> repairStatusHandlers = Maps.newConcurrentMap();
   private final MetricRegistry metricRegistry;
-  private final StreamManagerMBean smProxy;
+  private final Optional<StreamManagerMBean> smProxy;
 
   private JmxProxyImpl(
       String host,
@@ -125,7 +125,7 @@ final class JmxProxyImpl implements JmxProxy {
       EndpointSnitchInfoMBean endpointSnitchMbean,
       FailureDetectorMBean fdProxy,
       MetricRegistry metricRegistry,
-      StreamManagerMBean smProxy) {
+      Optional<StreamManagerMBean> smProxy) {
 
     this.host = host;
     this.hostBeforeTranslation = hostBeforeTranslation;
@@ -174,7 +174,7 @@ final class JmxProxyImpl implements JmxProxy {
    *
    * @param handler Implementation of {@link RepairStatusHandler} to process incoming notifications
    *     of repair events.
-   * @param host hostname or ip address of Cassandra node
+   * @param originalHost hostname or ip address of Cassandra node
    * @param port port number to use for JMX connection
    * @param username username to use for JMX authentication
    * @param password password to use for JMX authentication
@@ -206,7 +206,7 @@ final class JmxProxyImpl implements JmxProxy {
       throw new ReaperException("Failure during preparations for JMX connection", e);
     }
     try {
-      Map<String, Object> env = new HashMap<>();
+      final Map<String, Object> env = new HashMap<>();
       if (username != null && password != null) {
         String[] creds = {username, password};
         env.put(JMXConnector.CREDENTIALS, creds);
@@ -218,9 +218,17 @@ final class JmxProxyImpl implements JmxProxy {
       StorageServiceMBean ssProxy
           = JMX.newMBeanProxy(mbeanServerConn, ObjectNames.STORAGE_SERVICE, StorageServiceMBean.class);
 
-      String cassandraVersion = ssProxy.getReleaseVersion();
+      final String cassandraVersion = ssProxy.getReleaseVersion();
       if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")) {
         ssProxy = JMX.newMBeanProxy(mbeanServerConn, ObjectNames.STORAGE_SERVICE, StorageServiceMBean20.class);
+      }
+
+      final Optional<StreamManagerMBean> smProxy;
+      // StreamManagerMbean is only available since Cassandra 2.0
+      if (cassandraVersion.startsWith("1.")) {
+        smProxy = Optional.empty();
+      } else {
+        smProxy = Optional.of(JMX.newMBeanProxy(mbeanServerConn, ObjectNames.STREAM_MANAGER, StreamManagerMBean.class));
       }
 
       JmxProxy proxy
@@ -234,11 +242,13 @@ final class JmxProxyImpl implements JmxProxy {
               JMX.newMBeanProxy(mbeanServerConn, ObjectNames.ENDPOINT_SNITCH_INFO, EndpointSnitchInfoMBean.class),
               JMX.newMBeanProxy(mbeanServerConn, ObjectNames.FAILURE_DETECTOR, FailureDetectorMBean.class),
               metricRegistry,
-              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.STREAM_MANAGER, StreamManagerMBean.class));
+              smProxy);
 
       // registering listeners throws bunch of exceptions, so do it here rather than in the constructor
       mbeanServerConn.addNotificationListener(ObjectNames.STORAGE_SERVICE, proxy, null, null);
-      mbeanServerConn.addNotificationListener(ObjectNames.STREAM_MANAGER, proxy, null, null);
+      if (smProxy.isPresent()) {
+        mbeanServerConn.addNotificationListener(ObjectNames.STREAM_MANAGER, proxy, null, null);
+      }
       LOG.debug("JMX connection to {} properly connected: {}", host, jmxUrl.toString());
 
       return proxy;
@@ -951,7 +961,7 @@ final class JmxProxyImpl implements JmxProxy {
     return cmProxy;
   }
 
-  StreamManagerMBean getStreamManagerMBean() {
+  Optional<StreamManagerMBean> getStreamManagerMBean() {
     return smProxy;
   }
 
