@@ -160,7 +160,7 @@ final class JmxProxyImpl implements JmxProxy {
     final HostAndPort hostAndPort = HostAndPort.fromString(host);
 
     return connect(
-          hostAndPort.getHostText(),
+          hostAndPort.getHost(),
           hostAndPort.getPortOrDefault(JMX_PORT),
           username,
           password,
