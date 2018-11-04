@@ -135,6 +135,18 @@ Sets the default repair type unless specifically defined for each run. Note that
 
 <br/>
 
+### `blacklistTwcsTables`
+
+Type: *Boolean*
+
+Default: *false*
+
+Disables repairs of any tables that use either the `TimeWindowCompactionStrategy` or `DateTieredCompactionStrategy`. This automatic blacklisting is not stored in schedules or repairs. It is applied when repairs are triggered and visible in the UI for running repairs. Not storing which tables are TWCS/DTCS ensures changes to a table's compaction strategy are honored on every new repair.
+
+*Note*: It is recommended to enable this option as repairing these tables, when they contain TTL'd data, causes overlaps between partitions across the configured time windows the sstables reside in. This leads to an increased disk usage as the older sstables are unable to be expired despite only containing TTL's data. Repairing DTCS tables has additional issues and is generally not recommended.
+
+<br/>
+
 ### `jmxAuth`
 
 Optional setting to allow Reaper to establish JMX connections to Cassandra clusters using password based JMX authentication. 

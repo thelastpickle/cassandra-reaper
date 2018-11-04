@@ -1,6 +1,6 @@
 /*
  * Copyright 2015-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.RepairRunStatus;
@@ -42,6 +43,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -92,14 +94,16 @@ public final class RepairRunResourceTest {
   private static final int SEGMENT_CNT = 6;
   private static final double REPAIR_INTENSITY = 0.5f;
   private static final RepairParallelism REPAIR_PARALLELISM = RepairParallelism.SEQUENTIAL;
+  private static final String STCS = "SizeTieredCompactionStrategy";
 
   private static final List<BigInteger> TOKENS = Lists.newArrayList(
       BigInteger.valueOf(0L),
       BigInteger.valueOf(100L),
       BigInteger.valueOf(200L));
 
-  AppContext context;
-  UriInfo uriInfo;
+  private AppContext context;
+  private UriInfo uriInfo;
+  private JmxProxy proxy;
 
   @Before
   public void setUp() throws Exception {
@@ -119,17 +123,20 @@ public final class RepairRunResourceTest {
     Cluster cluster = new Cluster(CLUSTER_NAME, Optional.of(PARTITIONER), Sets.newHashSet(SEED_HOST));
     context.storage.addCluster(cluster);
 
-    context.config = mock(ReaperApplicationConfiguration.class);
-    when(context.config.getSegmentCount()).thenReturn(SEGMENT_CNT);
-    when(context.config.getRepairIntensity()).thenReturn(REPAIR_INTENSITY);
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setSegmentCount(SEGMENT_CNT);
+    context.config.setRepairIntensity(REPAIR_INTENSITY);
 
     uriInfo = mock(UriInfo.class);
     when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(SAMPLE_URI));
 
-    final JmxProxy proxy = mock(JmxProxy.class);
+    proxy = mock(JmxProxy.class);
     when(proxy.getClusterName()).thenReturn(CLUSTER_NAME);
     when(proxy.getPartitioner()).thenReturn(PARTITIONER);
-    when(proxy.getTableNamesForKeyspace(KEYSPACE)).thenReturn(TABLES);
+    when(proxy.getTablesForKeyspace(KEYSPACE))
+        .thenReturn(TABLES.stream()
+            .map(t -> Table.builder().withName(t).withCompactionStrategy(STCS).build())
+            .collect(Collectors.toSet()));
     when(proxy.getEndpointToHostId()).thenReturn(NODES_MAP);
     when(proxy.getTokens()).thenReturn(TOKENS);
     when(proxy.isConnectionAlive()).thenReturn(Boolean.TRUE);
@@ -202,16 +209,16 @@ public final class RepairRunResourceTest {
         uriInfo,
         Optional.ofNullable(clusterName),
         Optional.ofNullable(keyspace),
-        Optional.of(StringUtils.join(columnFamilies, ',')),
+        columnFamilies.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(columnFamilies, ',')),
         Optional.ofNullable(owner),
         Optional.ofNullable(cause),
         Optional.ofNullable(segments),
         Optional.of(REPAIR_PARALLELISM.name()),
         Optional.<String>empty(),
         Optional.<String>empty(),
-        Optional.of(StringUtils.join(nodes, ',')),
+        nodes.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(nodes, ',')),
         Optional.<String>empty(),
-        Optional.of(StringUtils.join(blacklistedTables, ',')),
+        blacklistedTables.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(blacklistedTables, ',')),
         Optional.of(repairThreadCount));
   }
 
@@ -263,6 +270,92 @@ public final class RepairRunResourceTest {
         context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(2)).iterator().next().getId(),
         context.storage.getRepairRunsForCluster(CLUSTER_NAME, Optional.of(1)).iterator().next().getId());
 
+  }
+
+  @Test
+  public void doesNotDisplayBlacklistedCompactionStrategies() throws Exception {
+    context.config.setBlacklistTwcsTables(true);
+    when(proxy.getKeyspaces()).thenReturn(Lists.newArrayList(KEYSPACE));
+
+    when(proxy.getTablesForKeyspace(KEYSPACE)).thenReturn(
+            Sets.newHashSet(
+                    Table.builder().withName("table1")
+                            .withCompactionStrategy("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")
+                            .build(),
+                    Table.builder().withName("table2")
+                            .withCompactionStrategy("org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")
+                            .build(),
+                    Table.builder().withName("table3")
+                            .withCompactionStrategy("org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy")
+                            .build()));
+
+    RepairRunResource resource = new RepairRunResource(context);
+
+    Response response = addRepairRun(
+        resource,
+        uriInfo,
+        CLUSTER_NAME,
+        KEYSPACE,
+        Collections.EMPTY_SET,
+        OWNER,
+        "",
+        SEGMENT_CNT,
+        NODES,
+        BLACKLISTED_TABLES,
+        REPAIR_THREAD_COUNT);
+
+    assertTrue(response.getEntity().toString(), response.getEntity() instanceof RepairRunStatus);
+    RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
+
+    assertTrue("Blacklisted should contain 'table1'", repairRunStatus.getBlacklistedTables().contains("table1"));
+    assertTrue("Blacklisted should contain 'table2'", repairRunStatus.getBlacklistedTables().contains("table2"));
+    assertFalse("Blacklisted shouldn't contain 'table3'", repairRunStatus.getBlacklistedTables().contains("table3"));
+    assertFalse("ColumnFamilies shouldn't contain 'table1'", repairRunStatus.getColumnFamilies().contains("table1"));
+    assertFalse("ColumnFamilies shouldn't contain 'table2'", repairRunStatus.getColumnFamilies().contains("table2"));
+    assertFalse("ColumnFamilies shouldn't contain 'table3'", repairRunStatus.getColumnFamilies().contains("table3"));
+  }
+
+  @Test
+  public void displaysExplicitBlacklistedCompactionStrategies() throws Exception {
+    context.config.setBlacklistTwcsTables(true);
+    when(proxy.getKeyspaces()).thenReturn(Lists.newArrayList(KEYSPACE));
+
+    when(proxy.getTablesForKeyspace(KEYSPACE)).thenReturn(
+            Sets.newHashSet(
+                    Table.builder().withName("table1")
+                            .withCompactionStrategy("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")
+                            .build(),
+                    Table.builder().withName("table2")
+                            .withCompactionStrategy("org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")
+                            .build(),
+                    Table.builder().withName("table3")
+                            .withCompactionStrategy("org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy")
+                            .build()));
+
+    RepairRunResource resource = new RepairRunResource(context);
+
+    Response response = addRepairRun(
+        resource,
+        uriInfo,
+        CLUSTER_NAME,
+        KEYSPACE,
+        Sets.newHashSet("table1"),
+        OWNER,
+        "",
+        SEGMENT_CNT,
+        NODES,
+        BLACKLISTED_TABLES,
+        REPAIR_THREAD_COUNT);
+
+    assertTrue(response.getEntity().toString(), response.getEntity() instanceof RepairRunStatus);
+    RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
+
+    assertFalse("Blacklisted shouldn't contain 'table1'", repairRunStatus.getBlacklistedTables().contains("table1"));
+    assertFalse("Blacklisted shouldn't contain 'table2'", repairRunStatus.getBlacklistedTables().contains("table2"));
+    assertFalse("Blacklisted shouldn't contain 'table3'", repairRunStatus.getBlacklistedTables().contains("table3"));
+    assertTrue("ColumnFamilies should contain 'table1'", repairRunStatus.getColumnFamilies().contains("table1"));
+    assertFalse("ColumnFamilies shouldn't contain 'table2'", repairRunStatus.getColumnFamilies().contains("table2"));
+    assertFalse("ColumnFamilies shouldn't contain 'table3'", repairRunStatus.getColumnFamilies().contains("table3"));
   }
 
   @Test

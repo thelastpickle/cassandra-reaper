@@ -105,17 +105,19 @@ public final class RepairScheduleResource {
 
     try {
       Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
-              context,
-              clusterName,
-              keyspace,
-              owner,
-              segmentCountPerNode,
-              repairParallelism,
-              intensityStr,
-              incrementalRepairStr,
-              nodesToRepairParam,
-              datacentersToRepairParam,
-              repairThreadCountParam);
+          context,
+          clusterName,
+          keyspace,
+          tableNamesParam,
+          owner,
+          segmentCountPerNode,
+          repairParallelism,
+          intensityStr,
+          incrementalRepairStr,
+          nodesToRepairParam,
+          datacentersToRepairParam,
+          blacklistedTableNamesParam,
+          repairThreadCountParam);
 
       if (null != possibleFailResponse) {
         return possibleFailResponse;

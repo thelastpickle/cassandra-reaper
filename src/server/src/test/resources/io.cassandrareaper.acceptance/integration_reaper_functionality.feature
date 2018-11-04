@@ -18,6 +18,7 @@ Feature: Using Reaper
   Background:
     Given cluster seed host "127.0.0.1@test" points to cluster with name "test"
     And cluster "test" has keyspace "booya" with tables "booya1, booya2"
+    And cluster "test" has keyspace "booya" with tables "booya_twcs"
     And cluster "test" has keyspace "test_keyspace" with tables "test_table1, test_table2"
     And cluster "test" has keyspace "test_keyspace2" with tables "test_table1, test_table2"
     And cluster "test" has keyspace "test_keyspace3" with tables "test_table1, test_table2"
@@ -132,8 +133,29 @@ Feature: Using Reaper
     And reaper has 0 repairs for the last added cluster
     When a new repair is added for the last added cluster and keyspace "booya" with the table "booya2" blacklisted
     And the last added repair has table "booya2" in the blacklist
+    And the last added repair has table "booya_twcs" in the blacklist
     When reaper is upgraded to latest
     And the last added repair has table "booya2" in the blacklist
+    And deleting the last added cluster fails
+    And the last added repair is activated
+    And we wait for at least 1 segments to be repaired
+    Then reaper has 1 started or done repairs for the last added cluster
+    When the last added repair is stopped
+    And the last added repair run is deleted
+    And the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
+  ${cucumber.upgrade-versions}
+  
+  Scenario Outline: Create a cluster and a repair run with auto blacklist bypass and delete them
+    Given that reaper <version> is running
+    And that we are going to use "127.0.0.1@test" as cluster seed host
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    And reaper has 0 repairs for the last added cluster
+    When a new repair is added for the last added cluster and keyspace "booya" for tables "booya_twcs,booya1"
+    And the last added repair has table "booya_twcs" in the table list
+    When reaper is upgraded to latest
     And deleting the last added cluster fails
     And the last added repair is activated
     And we wait for at least 1 segments to be repaired

@@ -48,6 +48,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
+import com.datastax.driver.core.VersionNumber;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -874,6 +875,26 @@ public final class BasicSteps {
     }
   }
 
+  @When(
+      "^a new repair is added for the last added cluster "
+          + "and keyspace \"([^\"]*)\" for tables \"([^\"]*)\"$")
+  public void a_new_repair_is_added_for_and_keyspace_for_tables(
+      String keyspace, String tables) throws Throwable {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Map<String, String> params = Maps.newHashMap();
+      params.put("clusterName", TestContext.TEST_CLUSTER);
+      params.put("keyspace", keyspace);
+      params.put("owner", TestContext.TEST_USER);
+      params.put("tables", tables);
+      Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
+      assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
+      String responseData = response.readEntity(String.class);
+      RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
+      TestContext.LAST_MODIFIED_ID = run.getId();
+    }
+  }
+
   @When("^a new repair is added for the last added cluster and keyspace \"([^\"]*)\"$")
   public void a_new_repair_is_added_for_the_last_added_cluster_and_keyspace(String keyspace) throws Throwable {
     synchronized (BasicSteps.class) {
@@ -904,6 +925,24 @@ public final class BasicSteps {
                 assertEquals(responseData, Response.Status.OK.getStatusCode(), response.getStatus());
                 List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
                 assertTrue(runs.get(0).getBlacklistedTables().contains(blacklistedTable));
+              });
+    }
+  }
+
+  @And("^the last added repair has table \"([^\"]*)\" in the table list$")
+  public void the_last_added_repair_has_table_in_the_table_list(String blacklistedTable)
+      throws Throwable {
+    synchronized (BasicSteps.class) {
+      RUNNERS
+          .parallelStream()
+          .forEach(
+              runner -> {
+                Response response = runner.callReaper(
+                        "GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
+                String responseData = response.readEntity(String.class);
+                assertEquals(responseData, Response.Status.OK.getStatusCode(), response.getStatus());
+                List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
+                assertTrue(runs.get(0).getColumnFamilies().contains(blacklistedTable));
               });
     }
   }
@@ -1601,8 +1640,38 @@ public final class BasicSteps {
 
   private static void createTable(String keyspaceName, String tableName) {
     try (Cluster cluster = buildCluster(); Session tmpSession = cluster.connect()) {
-      tmpSession.execute(
-          "CREATE TABLE IF NOT EXISTS " + keyspaceName + "." + tableName + "(id int PRIMARY KEY, value text)");
+      String createTableStmt
+          = "CREATE TABLE IF NOT EXISTS "
+              + keyspaceName
+              + "."
+              + tableName
+              + "(id int PRIMARY KEY, value text)";
+      VersionNumber lowestNodeVersion
+          = tmpSession
+              .getCluster()
+              .getMetadata()
+              .getAllHosts()
+              .stream()
+              .map(host -> host.getCassandraVersion())
+              .min(VersionNumber::compareTo)
+              .get();
+
+      if (tableName.endsWith("twcs")) {
+        if (((VersionNumber.parse("3.0.8").compareTo(lowestNodeVersion) <= 0
+            && VersionNumber.parse("3.0.99").compareTo(lowestNodeVersion) >= 0)
+            || VersionNumber.parse("3.8").compareTo(lowestNodeVersion) <= 0)) {
+          // TWCS is available by default
+          createTableStmt
+              += " WITH compaction = {'class':'TimeWindowCompactionStrategy',"
+                  + "'compaction_window_size': '1', "
+                  + "'compaction_window_unit': 'MINUTES'}";
+        } else {
+          createTableStmt
+            += " WITH compaction = {'class':'DateTieredCompactionStrategy'}";
+        }
+      }
+
+      tmpSession.execute(createTableStmt);
 
       for (int i = 0; i < 100; i++) {
         tmpSession.execute(
