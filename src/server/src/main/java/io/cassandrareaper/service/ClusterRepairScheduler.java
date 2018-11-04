@@ -1,6 +1,6 @@
 /*
  * Copyright 2017-2017 Spotify AB
- * Copyright 2017-2018 The Last Pickle Ltd
+ * Copyright 2017-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
@@ -96,7 +95,7 @@ public final class ClusterRepairScheduler {
       LOG.debug("Scheduled repair skipped for system keyspace {} in cluster {}.", keyspace, cluster.getName());
       return false;
     }
-    if (keyspaceHasNoTable(context, cluster, keyspace)) {
+    if (repairUnitService.getTableNamesForKeyspace(cluster, keyspace).isEmpty()) {
       LOG.warn(
           "No tables found for keyspace {} in cluster {}. No repair will be scheduled for this keyspace.",
           keyspace,
@@ -126,18 +125,6 @@ public final class ClusterRepairScheduler {
             context.config.getRepairIntensity());
 
     LOG.info("Scheduled repair created: {}", repairSchedule);
-  }
-
-  private boolean keyspaceHasNoTable(AppContext context, Cluster cluster, String keyspace) {
-    try {
-      JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-              cluster, context.config.getJmxConnectionTimeoutInSeconds());
-
-      Set<String> tables = jmxProxy.getTableNamesForKeyspace(keyspace);
-      return tables.isEmpty();
-    } catch (ReaperException e) {
-      throw Throwables.propagate(e);
-    }
   }
 
   private static class ScheduledRepairDiffView {

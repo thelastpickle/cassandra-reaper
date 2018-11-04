@@ -1,6 +1,6 @@
 /*
  * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,11 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @NotNull
   @DefaultValue("false")
   private Boolean incrementalRepair;
+
+  @JsonProperty
+  @NotNull
+  @DefaultValue("false")
+  private Boolean blacklistTwcsTables;
 
   @DefaultValue("7")
   private Integer scheduleDaysBetween;
@@ -183,6 +188,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setIncrementalRepair(boolean incrementalRepair) {
     this.incrementalRepair = incrementalRepair;
+  }
+
+  public boolean getBlacklistTwcsTables() {
+    return blacklistTwcsTables != null ? blacklistTwcsTables : false;
+  }
+
+  public void setBlacklistTwcsTables(boolean blacklistTwcsTables) {
+    this.blacklistTwcsTables = blacklistTwcsTables;
   }
 
   public Integer getScheduleDaysBetween() {

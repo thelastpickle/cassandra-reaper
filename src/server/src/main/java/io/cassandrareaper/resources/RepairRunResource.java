@@ -1,6 +1,6 @@
 /*
  * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,17 +113,20 @@ public final class RepairRunResource {
     try {
       final Response possibleFailedResponse
           = RepairRunResource.checkRequestForAddRepair(
-              context,
-              clusterName,
-              keyspace,
-              owner,
-              segmentCountPerNode,
-              repairParallelism,
-              intensityStr,
-              incrementalRepairStr,
-              nodesToRepairParam,
-              datacentersToRepairParam,
-              repairThreadCountParam);
+          context,
+          clusterName,
+          keyspace,
+          tableNamesParam,
+          owner,
+          segmentCountPerNode,
+          repairParallelism,
+          intensityStr,
+          incrementalRepairStr,
+          nodesToRepairParam,
+          datacentersToRepairParam,
+          blacklistedTableNamesParam,
+          repairThreadCountParam);
+
       if (null != possibleFailedResponse) {
         return possibleFailedResponse;
       }
@@ -205,7 +208,7 @@ public final class RepairRunResource {
               .blacklistedTables(blacklistedTableNames)
               .repairThreadCount(repairThreadCountParam.orElse(context.config.getRepairThreadCount()));
 
-      RepairUnit theRepairUnit = repairUnitService.getOrCreateRepairUnit(cluster, builder);
+      final RepairUnit theRepairUnit = repairUnitService.getOrCreateRepairUnit(cluster, builder);
 
       if (theRepairUnit.getIncrementalRepair() != incrementalRepair) {
         String msg = String.format(
@@ -243,7 +246,7 @@ public final class RepairRunResource {
               intensity);
 
       return Response.created(buildRepairRunUri(uriInfo, newRepairRun))
-          .entity(new RepairRunStatus(newRepairRun, theRepairUnit, 0))
+          .entity(new RepairRunStatus(newRepairRun, addAnyTwcsBlacklistedTables(theRepairUnit), 0))
           .build();
 
     } catch (ReaperException e) {
@@ -261,6 +264,7 @@ public final class RepairRunResource {
       AppContext context,
       Optional<String> clusterName,
       Optional<String> keyspace,
+      Optional<String> tableNamesParam,
       Optional<String> owner,
       Optional<Integer> segmentCountPerNode,
       Optional<String> repairParallelism,
@@ -268,8 +272,8 @@ public final class RepairRunResource {
       Optional<String> incrementalRepairStr,
       Optional<String> nodesStr,
       Optional<String> datacentersStr,
-      Optional<Integer> repairThreadCountStr)
-      throws ReaperException {
+      Optional<String> blacklistedTableNamesParam,
+      Optional<Integer> repairThreadCountStr) throws ReaperException {
 
     if (!clusterName.isPresent()) {
       return createMissingArgumentResponse("clusterName");
@@ -344,6 +348,12 @@ public final class RepairRunResource {
         LOG.error(msg, e);
         return Response.serverError().entity(msg).build();
       }
+    }
+
+    if (tableNamesParam.isPresent() && blacklistedTableNamesParam.isPresent()) {
+      return Response.status(Response.Status.BAD_REQUEST)
+          .entity("invalid to specify a table list and a blacklist")
+          .build();
     }
 
     return null;
@@ -622,7 +632,7 @@ public final class RepairRunResource {
   private RepairRunStatus getRepairRunStatus(RepairRun repairRun) {
     RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
     int segmentsRepaired = getSegmentAmountForRepairRun(repairRun.getId());
-    return new RepairRunStatus(repairRun, repairUnit, segmentsRepaired);
+    return new RepairRunStatus(repairRun, addAnyTwcsBlacklistedTables(repairUnit), segmentsRepaired);
   }
 
   /**
@@ -695,7 +705,7 @@ public final class RepairRunResource {
       if (!run.getRunState().equals(RepairRun.RunState.DONE)) {
         segmentsRepaired = getSegmentAmountForRepairRun(run.getId());
       }
-      runStatuses.add(new RepairRunStatus(run, runsUnit, segmentsRepaired));
+      runStatuses.add(new RepairRunStatus(run, addAnyTwcsBlacklistedTables(runsUnit), segmentsRepaired));
     }
 
     return runStatuses;
@@ -773,6 +783,22 @@ public final class RepairRunResource {
     return Response.ok().entity(purgedRepairs).build();
   }
 
+  private RepairUnit addAnyTwcsBlacklistedTables(RepairUnit unit) {
+    if (unit.getColumnFamilies().isEmpty()) {
+      // modify the RepairUnit to show in the UI any twcs blacklisted tables
+      try {
+        Cluster cluster = context.storage.getCluster(unit.getClusterName()).get();
+
+        Set<String> twcsTables = Sets.newHashSet(
+            repairUnitService.findBlacklistedCompactionStrategyTables(cluster, unit.getKeyspaceName()));
+
+        return unit.with().blacklistedTables(Sets.union(unit.getBlacklistedTables(), twcsTables)).build(unit.getId());
+      } catch (ReaperException e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
+    return unit;
+  }
 
   private static void checkRepairParallelismString(String repairParallelism) throws ReaperException {
     try {

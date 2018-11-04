@@ -1,6 +1,6 @@
 /*
  * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.service.RingRange;
 
 import java.math.BigInteger;
@@ -80,7 +81,7 @@ public interface JmxProxy extends NotificationListener {
 
   List<RingRange> getRangesForLocalEndpoint(String keyspace) throws ReaperException;
 
-  Set<String> getTableNamesForKeyspace(String keyspace) throws ReaperException;
+  Set<Table> getTablesForKeyspace(String keyspace) throws ReaperException;
 
   /**
    * @return list of tokens in the cluster
