@@ -22,9 +22,11 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,6 +46,8 @@ public final class ClusterRepairScheduler {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterRepairScheduler.class);
   private static final String REPAIR_OWNER = "auto-scheduling";
   private static final String SYSTEM_KEYSPACE_PREFIX = "system";
+  private static final Set<String> BLACKLISTED_STRATEGEIS = ImmutableSet.of("TimeWindowCompactionStrategy",
+          "DateTieredCompactionStrategy");
 
   private final AppContext context;
   private final RepairUnitService repairUnitService;
@@ -109,10 +113,16 @@ public final class ClusterRepairScheduler {
   private void createRepairSchedule(Cluster cluster, String keyspace, DateTime nextActivationTime) {
     boolean incrementalRepair = context.config.getIncrementalRepair();
 
+    Set<String> blacklistedTables = Collections.emptySet();
+    if (context.config.getBlacklistTwcsTables()) {
+      blacklistedTables = findBlacklistedCompactionStrategyTables(context, cluster, keyspace);
+    }
+
     RepairUnit.Builder builder = RepairUnit.builder()
         .clusterName(cluster.getName())
         .keyspaceName(keyspace)
         .incrementalRepair(incrementalRepair)
+        .blacklistedTables(blacklistedTables)
         .repairThreadCount(context.config.getRepairThreadCount());
 
     RepairSchedule repairSchedule = repairScheduleService.storeNewRepairSchedule(
@@ -133,11 +143,31 @@ public final class ClusterRepairScheduler {
       JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
               cluster, context.config.getJmxConnectionTimeoutInSeconds());
 
-      Set<String> tables = jmxProxy.getTableNamesForKeyspace(keyspace);
+      Set<Table> tables = jmxProxy.getTablesForKeyspace(keyspace);
       return tables.isEmpty();
     } catch (ReaperException e) {
       throw Throwables.propagate(e);
     }
+  }
+
+  private Set<String> findBlacklistedCompactionStrategyTables(AppContext context, Cluster cluster, String keyspace) {
+    try {
+      JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
+              cluster, context.config.getJmxConnectionTimeoutInSeconds());
+
+      Set<Table> tables = jmxProxy.getTablesForKeyspace(keyspace);
+      return tables.stream()
+              .filter(this::isBlackListedCompactionStrategy)
+              .map(Table::getName)
+              .collect(Collectors.toSet());
+    } catch (ReaperException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
+  private boolean isBlackListedCompactionStrategy(Table table) {
+    return BLACKLISTED_STRATEGEIS.stream().anyMatch(s -> table
+            .getCompactionStrategy().toLowerCase().contains(s.toLowerCase()));
   }
 
   private static class ScheduledRepairDiffView {

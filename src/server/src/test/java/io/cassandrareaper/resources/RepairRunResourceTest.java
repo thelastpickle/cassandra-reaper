@@ -25,6 +25,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.RepairRunStatus;
@@ -42,6 +43,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -129,7 +131,8 @@ public final class RepairRunResourceTest {
     final JmxProxy proxy = mock(JmxProxy.class);
     when(proxy.getClusterName()).thenReturn(CLUSTER_NAME);
     when(proxy.getPartitioner()).thenReturn(PARTITIONER);
-    when(proxy.getTableNamesForKeyspace(KEYSPACE)).thenReturn(TABLES);
+    when(proxy.getTablesForKeyspace(KEYSPACE)).thenReturn(TABLES.stream().map(t -> Table.builder().withName(t).build())
+            .collect(Collectors.toSet()));
     when(proxy.getEndpointToHostId()).thenReturn(NODES_MAP);
     when(proxy.getTokens()).thenReturn(TOKENS);
     when(proxy.isConnectionAlive()).thenReturn(Boolean.TRUE);

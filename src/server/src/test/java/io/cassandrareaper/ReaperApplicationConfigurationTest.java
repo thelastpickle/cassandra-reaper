@@ -57,6 +57,7 @@ public final class ReaperApplicationConfigurationTest {
     config.setScheduleDaysBetween(7);
     config.setStorageType("foo");
     config.setIncrementalRepair(false);
+    config.setBlacklistTwcsTables(true);
   }
 
   @Test

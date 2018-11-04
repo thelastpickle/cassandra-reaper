@@ -22,12 +22,14 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
@@ -111,8 +113,7 @@ public final class RepairUnitService {
     try {
       return context
           .jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds())
-          .getTableNamesForKeyspace(keyspace);
-
+          .getTablesForKeyspace(keyspace).stream().map(Table::getName).collect(Collectors.toSet());
     } catch (ReaperException e) {
       LOG.warn("unknown table list to cluster {} keyspace", cluster.getName(), keyspace, e);
       return Collections.emptySet();

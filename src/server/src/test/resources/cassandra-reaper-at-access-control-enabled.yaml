@@ -23,6 +23,7 @@ repairRunThreadCount: 15
 hangingRepairTimeoutMins: 1
 storageType: memory
 incrementalRepair: false
+blacklistTwcsTables: true
 enableDynamicSeedList: false
 jmxConnectionTimeoutInSeconds: 300
 

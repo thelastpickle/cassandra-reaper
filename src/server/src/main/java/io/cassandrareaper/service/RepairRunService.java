@@ -25,6 +25,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.math.BigInteger;
@@ -351,7 +352,7 @@ public final class RepairRunService {
     JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
             cluster, context.config.getJmxConnectionTimeoutInSeconds());
 
-    knownTables = jmxProxy.getTableNamesForKeyspace(keyspace);
+    knownTables = jmxProxy.getTablesForKeyspace(keyspace).stream().map(Table::getName).collect(Collectors.toSet());
     if (knownTables.isEmpty()) {
       LOG.debug("no known tables for keyspace {} in cluster {}", keyspace, cluster.getName());
       throw new IllegalArgumentException("no column families found for keyspace");

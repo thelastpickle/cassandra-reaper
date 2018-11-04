@@ -20,6 +20,7 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.service.TestRepairConfiguration;
@@ -202,8 +203,8 @@ public final class ClusterResourceTest {
     when(mocks.jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
     when(mocks.jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1"));
-    when(mocks.jmxProxy.getTableNamesForKeyspace("keyspace1"))
-        .thenReturn(Sets.newHashSet("table1"));
+    when(mocks.jmxProxy.getTablesForKeyspace("keyspace1"))
+        .thenReturn(Sets.newHashSet(Table.builder().withName("table1").build()));
 
     mocks.context.config = TestRepairConfiguration.defaultConfigBuilder()
         .withAutoScheduling(

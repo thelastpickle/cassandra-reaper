@@ -65,6 +65,11 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @DefaultValue("false")
   private Boolean incrementalRepair;
 
+  @JsonProperty
+  @NotNull
+  @DefaultValue("true")
+  private Boolean blacklistTwcsTables;
+
   @DefaultValue("7")
   private Integer scheduleDaysBetween;
 
@@ -183,6 +188,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setIncrementalRepair(boolean incrementalRepair) {
     this.incrementalRepair = incrementalRepair;
+  }
+
+  public boolean getBlacklistTwcsTables() {
+    return blacklistTwcsTables != null ? blacklistTwcsTables : false;
+  }
+
+  public void setBlacklistTwcsTables(boolean blacklistTwcsTables) {
+    this.blacklistTwcsTables = blacklistTwcsTables;
   }
 
   public Integer getScheduleDaysBetween() {

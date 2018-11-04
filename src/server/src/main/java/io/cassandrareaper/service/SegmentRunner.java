@@ -25,6 +25,7 @@ import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
@@ -1142,8 +1143,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
     if (!unit.getBlacklistedTables().isEmpty() && unit.getColumnFamilies().isEmpty()) {
       tables = coordinator
-              .getTableNamesForKeyspace(unit.getKeyspaceName())
+              .getTablesForKeyspace(unit.getKeyspaceName())
               .stream()
+              .map(Table::getName)
               .filter(tableName -> !unit.getBlacklistedTables().contains(tableName))
               .collect(Collectors.toSet());
     }

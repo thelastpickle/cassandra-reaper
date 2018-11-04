@@ -27,6 +27,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
@@ -1087,9 +1088,11 @@ public final class SegmentRunnerTest {
   @Test
   public void getTablesToRepairRemoveOneTableTest() throws ReaperException {
     JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
-    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
-        .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
-
+    when(coord.getTablesForKeyspace(Mockito.anyString()))
+            .thenReturn(Sets.newHashSet(
+                    Table.builder().withName("table1").build(),
+                    Table.builder().withName("table2").build(),
+                    Table.builder().withName("table3").build()));
 
     RepairUnit unit = mock(RepairUnit.class);
     when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1"));
@@ -1102,8 +1105,11 @@ public final class SegmentRunnerTest {
   @Test
   public void getTablesToRepairRemoveTwoTablesTest() throws ReaperException {
     JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
-    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
-        .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
+    when(coord.getTablesForKeyspace(Mockito.anyString()))
+            .thenReturn(Sets.newHashSet(
+                    Table.builder().withName("table1").build(),
+                    Table.builder().withName("table2").build(),
+                    Table.builder().withName("table3").build()));
 
     RepairUnit unit = mock(RepairUnit.class);
     when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1", "table3"));
@@ -1116,8 +1122,11 @@ public final class SegmentRunnerTest {
   @Test
   public void getTablesToRepairRemoveOneTableFromListTest() throws ReaperException {
     JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
-    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
-        .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
+    when(coord.getTablesForKeyspace(Mockito.anyString()))
+            .thenReturn(Sets.newHashSet(
+                    Table.builder().withName("table1").build(),
+                    Table.builder().withName("table2").build(),
+                    Table.builder().withName("table3").build()));
 
     RepairUnit unit = mock(RepairUnit.class);
     when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1"));
@@ -1130,8 +1139,11 @@ public final class SegmentRunnerTest {
   @Test(expected = IllegalStateException.class)
   public void getTablesToRepairRemoveAllFailingTest() throws ReaperException {
     JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
-    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
-        .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
+    when(coord.getTablesForKeyspace(Mockito.anyString()))
+            .thenReturn(Sets.newHashSet(
+                    Table.builder().withName("table1").build(),
+                    Table.builder().withName("table2").build(),
+                    Table.builder().withName("table3").build()));
 
     RepairUnit unit = mock(RepairUnit.class);
     when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1", "table2", "table3"));
@@ -1144,8 +1156,12 @@ public final class SegmentRunnerTest {
   @Test(expected = IllegalStateException.class)
   public void getTablesToRepairRemoveAllFromListFailingTest() throws ReaperException {
     JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
-    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
-        .thenReturn(Sets.newHashSet("table1", "table2", "table3", "table4"));
+    when(coord.getTablesForKeyspace(Mockito.anyString()))
+        .thenReturn(Sets.newHashSet(
+                Table.builder().withName("table1").build(),
+                Table.builder().withName("table2").build(),
+                Table.builder().withName("table3").build(),
+                Table.builder().withName("table4").build()));
 
     RepairUnit unit = mock(RepairUnit.class);
     when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1", "table2", "table3"));

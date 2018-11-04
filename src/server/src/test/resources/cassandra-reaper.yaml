@@ -30,6 +30,9 @@ repairRunThreadCount: 15
 hangingRepairTimeoutMins: 30
 
 incrementalRepair: false
+
+blacklistTwcsTables: true
+
 # You can also use value 0 for scheduleDaysBetween, for continuous repairs.
 scheduleDaysBetween: 7
 
