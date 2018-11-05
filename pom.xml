@@ -234,6 +234,8 @@
                     <exclude>**/*IT.java</exclude>
                   </excludes>
                   <workingDirectory>${project.build.directory}</workingDirectory>
+                  <!-- work around https://issues.apache.org/jira/browse/SUREFIRE-1588 -->
+                  <useSystemClassLoader>false</useSystemClassLoader>
                 </configuration>
             </plugin>
             <plugin>
