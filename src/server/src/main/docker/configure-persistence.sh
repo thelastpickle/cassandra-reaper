@@ -51,6 +51,13 @@ cat <<EOT >> /etc/cassandra-reaper.yml
     type: jdk
 EOT
 fi
+
+if [ "true" = "${REAPER_CASS_ADDRESS_TRANSLATOR_ENABLED}" ]; then
+cat <<EOT >> /etc/cassandra-reaper.yml
+  addressTranslator:
+    type: ${REAPER_CASS_ADDRESS_TRANSLATOR_TYPE}
+EOT
+fi
 # END cassandra persistence options
 
     ;;
