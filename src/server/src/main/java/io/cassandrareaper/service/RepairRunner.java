@@ -584,7 +584,8 @@ final class RepairRunner implements Runnable {
   private String metricName(String metric, String clusterName, String keyspaceName, UUID repairRunId) {
     String cleanClusterName = clusterName.replaceAll("[^A-Za-z0-9]", "");
     String cleanRepairRunId = repairRunId.toString().replaceAll("-", "");
-    return MetricRegistry.name(RepairRunner.class, metric, cleanClusterName, keyspaceName, cleanRepairRunId);
+    String cleanKeyspaceName = keyspaceName.replaceAll("[^A-Za-z0-9]", "");
+    return MetricRegistry.name(RepairRunner.class, metric, cleanClusterName, cleanKeyspaceName, cleanRepairRunId);
   }
 
   private String metricName(String metric, String clusterName, UUID repairRunId) {
