@@ -936,15 +936,15 @@ final class JmxProxyImpl implements JmxProxy {
           .containsKey(
               MetricRegistry.name(
                   JmxProxyImpl.class,
-                  clusterName.replace('.', '-'),
-                  host.replace('.', '-'),
+                  clusterName.replaceAll("[^A-Za-z0-9]", ""),
+                  host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", ""),
                   "repairStatusHandlers"))) {
 
         metricRegistry.register(
             MetricRegistry.name(
                 JmxProxyImpl.class,
-                clusterName.replace('.', '-'),
-                host.replace('.', '-'),
+                clusterName.replaceAll("[^A-Za-z0-9]", ""),
+                host.replace('.', 'x').replaceAll("[^A-Za-z0-9]", ""),
                 "repairStatusHandlers"),
             (Gauge<Integer>) () -> repairStatusHandlers.size());
       }

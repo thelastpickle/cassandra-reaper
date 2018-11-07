@@ -180,6 +180,7 @@ public final class SegmentRunnerTest {
         };
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
         context,
@@ -332,6 +333,7 @@ public final class SegmentRunnerTest {
 
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
         context,
@@ -343,7 +345,6 @@ public final class SegmentRunnerTest {
         "reaper",
         ru,
         rr);
-
     sr.run();
 
     future.getValue().get();
@@ -473,6 +474,7 @@ public final class SegmentRunnerTest {
 
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
         context,
@@ -612,6 +614,7 @@ public final class SegmentRunnerTest {
 
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
             context,
@@ -752,6 +755,7 @@ public final class SegmentRunnerTest {
 
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
             context,
@@ -892,6 +896,7 @@ public final class SegmentRunnerTest {
 
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
             context,
@@ -1033,6 +1038,7 @@ public final class SegmentRunnerTest {
 
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
             context,

@@ -339,7 +339,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     } finally {
       SEGMENT_RUNNERS.remove(segment.getId());
       context.metricRegistry
-          .histogram(MetricRegistry.name(SegmentRunner.class, "open-files"))
+          .histogram(MetricRegistry.name(SegmentRunner.class, "openFiles"))
           .update(getOpenFilesAmount());
     }
     return true;
@@ -418,30 +418,39 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   private static String metricNameForPostpone(RepairUnit unit, RepairSegment segment) {
+    String cleanHostName = Optional.ofNullable(segment.getCoordinatorHost()).orElse("null")
+        .replace('.', 'x')
+        .replaceAll("[^A-Za-z0-9]", "");
     return MetricRegistry.name(
             SegmentRunner.class,
             "postpone",
-            Optional.ofNullable(segment.getCoordinatorHost()).orElse("null").replace('.', '-'),
-            unit.getClusterName().replace('.', '-'),
-            unit.getKeyspaceName());
+            cleanHostName,
+            unit.getClusterName().replaceAll("[^A-Za-z0-9]", ""),
+            unit.getKeyspaceName().replaceAll("[^A-Za-z0-9]", ""));
   }
 
   private String metricNameForRepairing(RepairSegment rs) {
+    String cleanHostName = Optional.ofNullable(rs.getCoordinatorHost()).orElse("null")
+        .replace('.', 'x')
+        .replaceAll("[^A-Za-z0-9]", "");
     return MetricRegistry.name(
         SegmentRunner.class,
         "repairing",
-        Optional.ofNullable(rs.getCoordinatorHost()).orElse("null").replace('.', '-'),
-        clusterName.replace('.', '-'),
-        repairUnit.getKeyspaceName());
+        cleanHostName,
+        clusterName.replaceAll("[^A-Za-z0-9]", ""),
+        repairUnit.getKeyspaceName().replaceAll("[^A-Za-z0-9]", ""));
   }
 
   private String metricNameForRunRepair(RepairSegment rs) {
+    String cleanHostName = Optional.ofNullable(rs.getCoordinatorHost()).orElse("null")
+        .replace('.', 'x')
+        .replaceAll("[^A-Za-z0-9]", "");
     return MetricRegistry.name(
         SegmentRunner.class,
         "runRepair",
-        Optional.ofNullable(rs.getCoordinatorHost()).orElse("null").replace('.', '-'),
-        clusterName.replace('.', '-'),
-        repairUnit.getKeyspaceName());
+        cleanHostName,
+        clusterName.replaceAll("[^A-Za-z0-9]", ""),
+        repairUnit.getKeyspaceName().replaceAll("[^A-Za-z0-9]", ""));
   }
 
   private void declineRun() {

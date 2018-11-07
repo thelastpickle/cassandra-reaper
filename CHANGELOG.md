@@ -22,8 +22,8 @@
 - [4eda10a](https://github.com/thelastpickle/cassandra-reaper/commit/4eda10a1882d76322f242a68f7e5fca53652753f) Use new bintray package names (@michaelsembwever)
 - [8dfc08c](https://github.com/thelastpickle/cassandra-reaper/commit/8dfc08c7043c6aed49489e1d6fe5c5acbd3b8bc0) Refactor EndpointSnitchInfoProxy from JmxProxy (@michaelsembwever)
 - [4e0bf87](https://github.com/thelastpickle/cassandra-reaper/commit/4e0bf870df2626698b685de1a69ecac1e21eee79) Refactor FailureDetectorProxy out of JmxProxy (@michaelsembwever)
-- [40b79c7](https://github.com/thelastpickle/cassandra-reaper/commit/40b79c7634f48e9cd7d48069680d8df9cf2e8301) Add password generation mechanism
-- [ffcb691](https://github.com/thelastpickle/cassandra-reaper/commit/ffcb6919b574955eb8a9bba8e31b5601adc3ae81) Add auth with encrypted password sample
+- [40b79c7](https://github.com/thelastpickle/cassandra-reaper/commit/40b79c7634f48e9cd7d48069680d8df9cf2e8301) Add password generation mechanism (@nsteinmetz)
+- [ffcb691](https://github.com/thelastpickle/cassandra-reaper/commit/ffcb6919b574955eb8a9bba8e31b5601adc3ae81) Add auth with encrypted password sample (@nsteinmetz)
 - [#533](https://github.com/thelastpickle/cassandra-reaper/pull/533) Update cassqndra-reaper.To be able to read config from /usr/local/etc (#533) (@KotaroYamazaki)
 - [c975ab2](https://github.com/thelastpickle/cassandra-reaper/commit/c975ab2705f9190992b1b852f7de6359c02ab493) Move jmx ObjectNames in JmxProxyImpl into a static initialisation-on-demand-holder inner class. (@michaelsembwever)
 - [b4defff](https://github.com/thelastpickle/cassandra-reaper/commit/b4defff4f83188d9e72c9c44f54d533004674b5c) Refactor StreamsProxy out of JmxProxyImpl (@michaelsembwever)
