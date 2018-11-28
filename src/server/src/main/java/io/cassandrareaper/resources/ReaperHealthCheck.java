@@ -18,6 +18,7 @@
 package io.cassandrareaper.resources;
 
 import io.cassandrareaper.AppContext;
+import io.cassandrareaper.ReaperException;
 
 import java.util.concurrent.TimeUnit;
 
@@ -38,7 +39,7 @@ public final class ReaperHealthCheck extends com.codahale.metrics.health.HealthC
   }
 
   @Override
-  protected Result check() {
+  protected Result check() throws ReaperException {
     if (context.storage.isStorageConnected()) {
       if (System.currentTimeMillis() > nextCheck) {
         nextCheck = System.currentTimeMillis() + HEALTH_CHECK_INTERVAL;

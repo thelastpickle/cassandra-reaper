@@ -189,7 +189,7 @@ Returns OK if all goes well NOT_MODIFIED if new state is the same as the old one
   * Lists snapshots for the given host in the given cluster.
   
   
-* **GET /snapshot/{clusterName}**
+* **GET /snapshot/cluster/{clusterName}**
   * Expected query parameters: *None*
   * Lists all snapshots for the the given cluster.
   

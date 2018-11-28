@@ -47,7 +47,26 @@ const NodeStatus = React.createClass({
       return { showModal: false, snapshots: [], urlPrefix: URL_PREFIX, 
               snapshotsSizeOnDisk:{}, snapshotsTrueSize:{},
               totalSnapshotSizeOnDisk: 0, totalSnapshotTrueSize: 0,
-              communicating: false};
+              communicating: false, tokens:[]};
+    },
+
+    componentWillMount: function() {
+      this._getNodeTokens();
+    },
+  
+    _getNodeTokens: function() {
+      $.ajax({
+            url: this.state.urlPrefix + '/node/tokens/' + encodeURIComponent(this.props.clusterName) + '/' + encodeURIComponent(this.props.endpointStatus.endpoint),
+            method: 'GET',
+            component: this,
+            complete: function(data) {
+              this.component.setState({tokens: $.parseJSON(data.responseText)});
+            },
+            error: function(data) {
+              console.log("Failed grabbing the tokens for node " + this.props.endpointStatus.endpoint);
+              setTimeout(this.component._getNodesTokens, 10000);
+            }
+        });
     },
   
    close() {
@@ -169,9 +188,22 @@ const NodeStatus = React.createClass({
         margin:"0px",
         textOverflow: "hidden"
       };
+
+      const overflowStyle = {
+        overflow: "auto",
+        height: "200px"
+      }
   
       const tooltip = (
         <Tooltip id="tooltip"><strong>{this.props.endpointStatus.endpoint}</strong> ({humanFileSize(this.props.endpointStatus.load, 1024)})</Tooltip>
+      );
+
+      const tokenList = this.state.tokens.map(token => <div>{token}</div>);
+
+      const tokens = (
+        <Popover id="tokens" title="Tokens" trigger="click">
+          <div style={overflowStyle}>{tokenList}</div>
+        </Popover>
       );
   
       const snapshots = Object.keys(this.state.snapshots).sort().map(snapshotName => 
@@ -215,7 +247,7 @@ const NodeStatus = React.createClass({
                     </div>
                     <div className="col-lg-3">
                       <h4>Tokens</h4>
-                      <p>{this.props.endpointStatus.tokens}</p>
+                      <p><OverlayTrigger trigger="click" placement="bottom" overlay={tokens}><button type="button" className="btn btn-md btn-success" style={takeSnapshotStyle}>{this.state.tokens.length}</button></OverlayTrigger></p>
                     </div>
                     <div className="col-lg-3">
                       <h4>Status</h4>

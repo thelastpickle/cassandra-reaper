@@ -42,13 +42,13 @@ public interface IStorage {
 
   boolean isStorageConnected();
 
-  Collection<Cluster> getClusters();
+  Collection<Cluster> getClusters() throws ReaperException;
 
-  boolean addCluster(Cluster cluster);
+  boolean addCluster(Cluster cluster) throws ReaperException;
 
-  boolean updateCluster(Cluster newCluster);
+  boolean updateCluster(Cluster newCluster) throws ReaperException;
 
-  Optional<Cluster> getCluster(String clusterName);
+  Optional<Cluster> getCluster(String clusterName) throws ReaperException;
 
   /**
    * Delete the Cluster instance identified by the given cluster name. Delete succeeds only if there are no repair runs
@@ -71,7 +71,7 @@ public interface IStorage {
 
   Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId);
 
-  Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState);
+  Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState) throws ReaperException;
 
   /**
    * Delete the RepairRun instance identified by the given id, and delete also all the related repair segments.

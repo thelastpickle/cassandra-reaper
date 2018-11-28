@@ -21,6 +21,8 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.ClusterProperties;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
@@ -39,7 +41,9 @@ import io.cassandrareaper.storage.MemoryStorage;
 
 import java.math.BigInteger;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -108,8 +112,13 @@ public final class SegmentRunnerTest {
                         .build(),
                     cf.getId())));
 
+    context.storage.addCluster(
+        new Cluster("reaper", Optional.of("murmur3"), Sets.newHashSet("127.0.0.1"),
+            ClusterProperties.builder().withJmxPort(7199).build()));
+
     final UUID runId = run.getId();
-    final UUID segmentId = context.storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID segmentId = context.storage.getNextFreeSegmentInRange(run.getId(),
+        Optional.empty()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -226,10 +235,10 @@ public final class SegmentRunnerTest {
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
                         .build(),
                     cf.getId())));
-
+    storage.addCluster(new Cluster("reaper", Optional.of("murmur3"), Sets.newHashSet("127.0.0.1"),
+        ClusterProperties.builder().withJmxPort(7199).build()));
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
-
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
 
@@ -378,6 +387,9 @@ public final class SegmentRunnerTest {
                         .build(),
                     cf.getId())));
 
+    storage.addCluster(new Cluster("reaper", Optional.of("murmur3"), Sets.newHashSet("127.0.0.1"),
+        ClusterProperties.builder().withJmxPort(7199).build()));
+
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
 
@@ -522,6 +534,9 @@ public final class SegmentRunnerTest {
                         .build(),
                     cf.getId())));
 
+    storage.addCluster(new Cluster("reaper", Optional.of("murmur3"), Sets.newHashSet("127.0.0.1"),
+        ClusterProperties.builder().withJmxPort(7199).build()));
+
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
 
@@ -662,6 +677,9 @@ public final class SegmentRunnerTest {
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
                         .build(),
                     cf.getId())));
+
+    storage.addCluster(new Cluster("reaper", Optional.of("murmur3"), Sets.newHashSet("127.0.0.1"),
+        ClusterProperties.builder().withJmxPort(7199).build()));
 
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
@@ -804,6 +822,9 @@ public final class SegmentRunnerTest {
                         .build(),
                     cf.getId())));
 
+    storage.addCluster(new Cluster("reaper", Optional.of("murmur3"), Sets.newHashSet("127.0.0.1"),
+        ClusterProperties.builder().withJmxPort(7199).build()));
+
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
 
@@ -945,6 +966,9 @@ public final class SegmentRunnerTest {
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
                         .build(),
                     cf.getId())));
+
+    storage.addCluster(new Cluster("reaper", Optional.of("murmur3"), Sets.newHashSet("127.0.0.1"),
+        ClusterProperties.builder().withJmxPort(7199).build()));
 
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
@@ -1201,6 +1225,11 @@ public final class SegmentRunnerTest {
   public void getNodeMetricsInLocalDCAvailabilityForLocalDCNodeTest() throws Exception {
     final AppContext context = new AppContext();
     context.storage = Mockito.mock(CassandraStorage.class);
+
+    Mockito.when(((CassandraStorage) context.storage).getCluster(any()))
+        .thenReturn(
+            Optional.of(new Cluster("test", Optional.of("murmur3"), new HashSet<String>(Arrays.asList("test")),
+                ClusterProperties.builder().withJmxPort(7199).build())));
 
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getClusterName()).thenReturn("test");

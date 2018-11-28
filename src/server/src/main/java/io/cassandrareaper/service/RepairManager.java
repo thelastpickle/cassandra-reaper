@@ -214,10 +214,11 @@ public final class RepairManager implements AutoCloseable {
         segment = context.storage.getRepairSegment(repairRun.getId(), segment.getId()).get();
         if (RepairSegment.State.RUNNING == segment.getState()) {
           try {
-            Node node = Node.builder()
-                .withClusterName(repairRun.getClusterName())
-                .withHostname(segment.getCoordinatorHost())
-                .build();
+            Node node
+                = Node.builder()
+                    .withCluster(context.storage.getCluster(repairRun.getClusterName()).get())
+                    .withHostname(segment.getCoordinatorHost())
+                    .build();
 
             JmxProxy jmxProxy
                 = context.jmxConnectionFactory.connect(node, context.config.getJmxConnectionTimeoutInSeconds());

@@ -118,7 +118,7 @@ public final class RepairRunResourceTest {
         TimeUnit.SECONDS);
 
     context.storage = new MemoryStorage();
-    Cluster cluster = new Cluster(CLUSTER_NAME, PARTITIONER, Sets.newHashSet(SEED_HOST));
+    Cluster cluster = new Cluster(CLUSTER_NAME, Optional.of(PARTITIONER), Sets.newHashSet(SEED_HOST));
     context.storage.addCluster(cluster);
 
     context.config = mock(ReaperApplicationConfiguration.class);

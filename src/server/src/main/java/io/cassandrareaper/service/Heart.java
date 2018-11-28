@@ -126,7 +126,8 @@ final class Heart implements AutoCloseable {
                           try {
                             JmxProxy nodeProxy
                                 = context.jmxConnectionFactory.connect(
-                                   Node.builder().withClusterName(req.getCluster()).withHostname(req.getNode()).build(),
+                                   Node.builder().withCluster(context.storage.getCluster(req.getCluster()).get())
+                                   .withHostname(req.getNode()).build(),
                                    jmxTimeoutSeconds);
 
                             storage.storeNodeMetrics(

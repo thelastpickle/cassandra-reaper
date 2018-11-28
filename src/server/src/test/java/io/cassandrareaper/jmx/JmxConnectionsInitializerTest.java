@@ -28,6 +28,7 @@ import io.cassandrareaper.storage.PostgresStorage;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
@@ -65,7 +66,7 @@ public class JmxConnectionsInitializerTest {
 
     Cluster cluster = new Cluster(
             "test",
-            "murmur3partitioner",
+            Optional.of("murmur3partitioner"),
             new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2")));
 
     JmxConnectionsInitializer initializer = JmxConnectionsInitializer.create(context);
@@ -103,7 +104,7 @@ public class JmxConnectionsInitializerTest {
 
     Cluster cluster = new Cluster(
             "test",
-            "murmur3partitioner",
+            Optional.of("murmur3partitioner"),
             new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")));
 
     JmxConnectionsInitializer initializer = JmxConnectionsInitializer.create(context);
@@ -139,7 +140,7 @@ public class JmxConnectionsInitializerTest {
 
     Cluster cluster = new Cluster(
             "test",
-            "murmur3partitioner",
+            Optional.of("murmur3partitioner"),
             new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")));
 
     JmxConnectionsInitializer initializer = JmxConnectionsInitializer.create(context);
@@ -175,7 +176,7 @@ public class JmxConnectionsInitializerTest {
 
     Cluster cluster = new Cluster(
             "test",
-            "murmur3partitioner",
+            Optional.of("murmur3partitioner"),
             new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")));
 
     JmxConnectionsInitializer initializer = JmxConnectionsInitializer.create(context);

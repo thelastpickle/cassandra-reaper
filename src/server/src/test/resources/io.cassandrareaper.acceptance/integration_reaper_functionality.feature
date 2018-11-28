@@ -40,6 +40,7 @@ Feature: Using Reaper to launch repairs and schedule them
     And we can collect the dropped messages stats from the seed node
     And we can collect the client request metrics from the seed node
     Then reaper has the last added cluster in storage
+    And the seed node has vnodes
     And reaper has 0 scheduled repairs for the last added cluster
     When a new daily "full" repair schedule is added for the last added cluster and keyspace "booya"
     Then reaper has 1 scheduled repairs for the last added cluster

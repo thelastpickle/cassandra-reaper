@@ -254,7 +254,8 @@ public final class RepairRunResource {
 
   /**
    * @return Response instance in case there is a problem, or null if everything is ok.
-   **/
+   * @throws ReaperException any caught runtime exception that can be re-thrown
+   */
   @Nullable
   static Response checkRequestForAddRepair(
       AppContext context,
@@ -267,7 +268,8 @@ public final class RepairRunResource {
       Optional<String> incrementalRepairStr,
       Optional<String> nodesStr,
       Optional<String> datacentersStr,
-      Optional<Integer> repairThreadCountStr) {
+      Optional<Integer> repairThreadCountStr)
+      throws ReaperException {
 
     if (!clusterName.isPresent()) {
       return createMissingArgumentResponse("clusterName");
@@ -654,10 +656,13 @@ public final class RepairRunResource {
         return Response.status(Response.Status.BAD_REQUEST).build();
       }
 
-      Collection<Cluster> clusters = cluster
-          .map((clstr) -> context.storage.getCluster(clstr).get())
-          .map((clstr) -> (Collection<Cluster>)Collections.singleton(clstr))
-          .orElse(context.storage.getClusters());
+      Collection<Cluster> clusters;
+      if (cluster.isPresent()) {
+        clusters = Collections.singleton(context.storage.getCluster(cluster.get()).get());
+      } else {
+        clusters = context.storage.getClusters();
+      }
+
 
       for (final Cluster clstr : clusters) {
         Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(clstr.getName(), Optional.empty());
@@ -763,7 +768,7 @@ public final class RepairRunResource {
 
   @GET
   @Path("/purge")
-  public Response purgeRepairRuns() {
+  public Response purgeRepairRuns() throws ReaperException {
     int purgedRepairs = PurgeService.create(context).purgeDatabase();
     return Response.ok().entity(purgedRepairs).build();
   }

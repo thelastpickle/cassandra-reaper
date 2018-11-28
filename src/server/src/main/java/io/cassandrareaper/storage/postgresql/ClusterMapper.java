@@ -18,11 +18,15 @@
 package io.cassandrareaper.storage.postgresql;
 
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.ClusterProperties;
 
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Optional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
@@ -33,6 +37,7 @@ public final class ClusterMapper implements ResultSetMapper<Cluster> {
   @Override
   public Cluster map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
     String[] seedHosts = null;
+    ObjectMapper objectMapper = new ObjectMapper();
     Object obj = rs.getArray("seed_hosts").getArray();
     if (obj instanceof String[]) {
       seedHosts = (String[]) obj;
@@ -40,6 +45,21 @@ public final class ClusterMapper implements ResultSetMapper<Cluster> {
       Object[] ol = (Object[]) obj;
       seedHosts = Arrays.copyOf(ol, ol.length, String[].class);
     }
-    return new Cluster(rs.getString("name"), rs.getString("partitioner"), Sets.newHashSet(seedHosts));
+
+    ClusterProperties clusterProperties;
+    try {
+      clusterProperties
+          = rs.getString("properties") != null
+              ? objectMapper.readValue(rs.getString("properties"), ClusterProperties.class)
+              : ClusterProperties.builder().withJmxPort(Cluster.DEFAULT_JMX_PORT).build();
+    } catch (IOException e) {
+      throw new SQLException(e); // Ugly but the interface won't let us throw anything else...
+    }
+
+    return new Cluster(
+        rs.getString("name"),
+        Optional.ofNullable(rs.getString("partitioner")),
+        Sets.newHashSet(seedHosts),
+        clusterProperties);
   }
 }
