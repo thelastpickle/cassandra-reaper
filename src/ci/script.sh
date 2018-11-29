@@ -22,11 +22,8 @@ case "${TEST_TYPE}" in
         echo "ERROR: Environment variable TEST_TYPE is unspecified."
         exit 1
         ;;
-    "ccm")
+    "deploy")
         mvn --version -B
-        ccm start
-        sleep 30
-        ccm status
         if [ "${TRAVIS_BRANCH}" = "master" ]
             then
                 VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
@@ -36,7 +33,15 @@ case "${TEST_TYPE}" in
                 mvn -B versions:set "-DnewVersion=${BETA_VERSION}-${DATE}"
         fi
 
-        MAVEN_OPTS="-Xmx1g" mvn -B clean install
+        mvn -B install -DskipTests
+        ;;
+    "ccm")
+        mvn --version -B
+        ccm start
+        sleep 30
+        ccm status
+
+        mvn -B install
 
         if [ "x${GRIM_MIN}" = "x" ]
         then
