@@ -474,16 +474,21 @@ public final class BasicSteps {
       RUNNERS.parallelStream().forEach(runner -> {
         LOG.info("waiting for a scheduled repair run to start for cluster: {}", clusterName);
         await().with().pollInterval(10, SECONDS).atMost(2, MINUTES).until(() -> {
-          Response response = runner
-              .callReaper("GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
+          try {
+            Response response = runner
+                .callReaper("GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
 
-          assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-          String responseData = response.readEntity(String.class);
-          List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
-          if (!runs.isEmpty()) {
-            TestContext.LAST_MODIFIED_ID = runs.get(0).getId();
+            Assertions.assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+            String responseData = response.readEntity(String.class);
+            List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
+            if (!runs.isEmpty()) {
+              TestContext.LAST_MODIFIED_ID = runs.get(0).getId();
+            }
+            return !runs.isEmpty();
+          } catch (AssertionError ex) {
+            LOG.warn(ex.getMessage());
+            return false;
           }
-          return !runs.isEmpty();
         });
       });
     }
@@ -1206,14 +1211,18 @@ public final class BasicSteps {
     synchronized (BasicSteps.class) {
       RUNNERS.parallelStream().forEach(runner -> {
         await().with().pollInterval(10, SECONDS).atMost(2, MINUTES).until(() -> {
+          try {
+            Response response = runner
+                .callReaper("GET", "/repair_run/" + TestContext.LAST_MODIFIED_ID, EMPTY_PARAMS);
 
-          Response response = runner
-              .callReaper("GET", "/repair_run/" + TestContext.LAST_MODIFIED_ID, EMPTY_PARAMS);
-
-          assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-          String responseData = response.readEntity(String.class);
-          RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
-          return nbSegmentsToBeRepaired <= run.getSegmentsRepaired();
+            Assertions.assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+            String responseData = response.readEntity(String.class);
+            RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
+            return nbSegmentsToBeRepaired <= run.getSegmentsRepaired();
+          } catch (AssertionError ex) {
+            LOG.warn(ex.getMessage());
+            return false;
+          }
         });
       });
     }
