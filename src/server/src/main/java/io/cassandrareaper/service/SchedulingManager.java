@@ -39,37 +39,32 @@ public final class SchedulingManager extends TimerTask {
 
   private static final Logger LOG = LoggerFactory.getLogger(SchedulingManager.class);
 
-  private static volatile TimerTask SCHEDULING_MANAGER;
-
   private final AppContext context;
   private final RepairRunService repairRunService;
 
   /* nextActivatedSchedule used for nicer logging only */
   private RepairSchedule nextActivatedSchedule;
 
-
   private SchedulingManager(AppContext context) {
     this.context = context;
     this.repairRunService = RepairRunService.create(context);
   }
 
-  public static void start(AppContext context) {
-    if (null == SCHEDULING_MANAGER) {
-      LOG.info("Starting new SchedulingManager instance");
-      SCHEDULING_MANAGER = new SchedulingManager(context);
-      Timer timer = new Timer("SchedulingManagerTimer");
-
-      timer.schedule(
-          SCHEDULING_MANAGER,
-          1000L,
-          1000L * Integer.getInteger(SchedulingManager.class.getName() + ".period_seconds", 60));
-
-    } else {
-      LOG.warn("there is already one instance of SchedulingManager running, not starting new one");
-    }
+  public static SchedulingManager create(AppContext context) {
+    return new SchedulingManager(context);
   }
 
-  public static RepairSchedule pauseRepairSchedule(AppContext context, RepairSchedule schedule) {
+  public void start() {
+    LOG.info("Starting new SchedulingManager instance");
+    Timer timer = new Timer("SchedulingManagerTimer");
+
+    timer.schedule(
+        this,
+        1000L,
+        1000L * Integer.getInteger(SchedulingManager.class.getName() + ".period_seconds", 60));
+  }
+
+  public RepairSchedule pauseRepairSchedule(RepairSchedule schedule) {
     RepairSchedule updatedSchedule
         = schedule.with().state(RepairSchedule.State.PAUSED).pauseTime(DateTime.now()).build(schedule.getId());
 
@@ -79,7 +74,7 @@ public final class SchedulingManager extends TimerTask {
     return updatedSchedule;
   }
 
-  public static RepairSchedule resumeRepairSchedule(AppContext context, RepairSchedule schedule) {
+  public RepairSchedule resumeRepairSchedule(RepairSchedule schedule) {
     RepairSchedule updatedSchedule
         = schedule.with().state(RepairSchedule.State.ACTIVE).pauseTime(null).build(schedule.getId());
 

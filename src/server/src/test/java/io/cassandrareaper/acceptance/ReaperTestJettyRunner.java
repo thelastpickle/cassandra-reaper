@@ -119,6 +119,7 @@ public final class ReaperTestJettyRunner {
 
     @Override
     public void after() {
+      context.schedulingManager.cancel();
       context.repairManager.close();
       context.isRunning.set(false);
       try {

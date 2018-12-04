@@ -19,6 +19,7 @@ package io.cassandrareaper;
 
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.service.RepairManager;
+import io.cassandrareaper.service.SchedulingManager;
 import io.cassandrareaper.storage.IStorage;
 
 import java.net.InetAddress;
@@ -44,6 +45,7 @@ public final class AppContext {
   public final AtomicBoolean isRunning = new AtomicBoolean(true);
   public IStorage storage;
   public RepairManager repairManager;
+  public SchedulingManager schedulingManager;
   public JmxConnectionFactory jmxConnectionFactory;
   public ReaperApplicationConfiguration config;
   public MetricRegistry metricRegistry = new MetricRegistry();
