@@ -582,6 +582,7 @@
               <configuration>
                   <systemPropertyVariables>
                     <cucumber.versions-to-test>${cucumber.upgrade-versions}</cucumber.versions-to-test>
+                    <io.cassandrareaper.service.SchedulingManager.period_seconds>1</io.cassandrareaper.service.SchedulingManager.period_seconds>
                   </systemPropertyVariables>
               </configuration>
             </plugin>
