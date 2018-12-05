@@ -13,39 +13,61 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-REAPER_JAR=$(ls -1 server/target/cassandra-reaper-*.jar)
+NAME=cassandra-reaper
+DEFAULT=/etc/default/$NAME
 
-if [ $REAPER_JAR ]; then
+REAPER_JAR=$(ls -1 server/target/${NAME}-*.jar)
+
+if [ -n "$REAPER_JAR" ]; then
     echo "Using reaper in target"
     CLASS_PATH=$REAPER_JAR
 fi
 
 if [ -z "$CLASS_PATH" ]; then
-  echo "Looking for reaper in /usr/share/cassandra-reaper/"
-  CLASS_PATH="/usr/share/cassandra-reaper/*:/usr/local/share/cassandra-reaper/*"
+  echo "Looking for reaper in /usr/share/${NAME}/"
+  CLASS_PATH="/usr/share/${NAME}/*:/usr/local/share/${NAME}/*"
 fi
 
 if [ $# -eq 0 ]; then
-    if [ -e /usr/local/etc/cassandra-reaper/cassandra-reaper.yaml ]; then
-        CONFIG_PATH="/usr/local/etc/cassandra-reaper/cassandra-reaper.yaml"
+    if [ -e /usr/local/etc/${NAME}/${NAME}.yaml ]; then
+        CONFIG_PATH="/usr/local/etc/$NAME/${NAME}.yaml"
     else
-        CONFIG_PATH="/etc/cassandra-reaper/cassandra-reaper.yaml"
+        CONFIG_PATH="/etc/${NAME}/${NAME}.yaml"
     fi
 else
     CONFIG_PATH="$@"
 fi
 
-JVM_OPTS=(
-    -ea
-    -Xms2G
-    -Xmx2G
-    # Prefer binding to IPv4 network intefaces (when net.ipv6.bindv6only=1). See
-    # http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6342561 (short version:
-    # comment out this entry to enable IPv6 support).
-    -Djava.net.preferIPv4Stack=true
-    )
+# overwrite settings from default file
+if [ -f "$DEFAULT" ]; then
+        . "$DEFAULT"
+fi
 
-exec java ${JVM_OPTS[@]} \
+if [ -x "$JAVA_HOME/bin/java" ]; then
+        JAVA="$JAVA_HOME/bin/java"
+else
+        JAVA=`which java`
+fi
+
+if [ ! -x "$JAVA" ]; then
+        echo "Could not find any executable java binary. Please install java in your PATH or set JAVA_HOME"
+        exit 1
+fi
+
+#If no jvm_opts is specified through default file => use previous defaults
+if [ -z "$JVM_OPTS" ]; then
+    JVM_OPTS=(
+        -ea
+        -Xms2G
+        -Xmx2G
+        # Prefer binding to IPv4 network intefaces (when net.ipv6.bindv6only=1). See
+        # http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6342561 (short version:
+        # comment out this entry to enable IPv6 support).
+        -Djava.net.preferIPv4Stack=true
+        )
+fi
+
+exec $JAVA ${JVM_OPTS[@]} \
     -cp ${CLASS_PATH} \
     io.cassandrareaper.ReaperApplication \
     server ${CONFIG_PATH}

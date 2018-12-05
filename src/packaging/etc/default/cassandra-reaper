@@ -1,0 +1,19 @@
+# Cassandra-reaper Java path
+JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+
+# ea enable assertions
+# Xms represents the initial size of total heap space 
+# Xmx represents the maximum size of total heap space 
+
+JVM_OPTS=(
+    -ea  
+    -Xms2g
+    -Xmx2g
+    # Prefer binding to IPv4 network intefaces (when net.ipv6.bindv6only=1). See
+    # http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6342561 (short version:
+    # comment out this entry to enable IPv6 support).
+    -Djava.net.preferIPv4Stack=true
+    -Djava.io.tmpdir=/var/tmp
+)
+
+
