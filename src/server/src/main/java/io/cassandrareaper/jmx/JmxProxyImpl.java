@@ -508,6 +508,28 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   @Override
+  public List<String> getRunningRepairMetricsPost22() {
+    List<String> repairMbeans = Lists.newArrayList();
+    try {
+      // list all mbeans in search of one with the name Repair#??
+      // This is the replacement for AntiEntropySessions since Cassandra 2.2
+      Set beanSet = mbeanServer.queryNames(ObjectNames.INTERNALS, null);
+      for (Object bean : beanSet) {
+        ObjectName objName = (ObjectName) bean;
+        if (objName.getCanonicalName().contains("Repair#")) {
+          repairMbeans.add(objName.getCanonicalName());
+        }
+      }
+    } catch (IOException ignored) {
+      LOG.warn(FAILED_TO_CONNECT_TO_USING_JMX, host, ignored);
+    } catch (RuntimeException e) {
+      LOG.error(ERROR_GETTING_ATTR_JMX, e);
+    }
+    // If uncertain, assume it's running
+    return repairMbeans;
+  }
+
+  @Override
   public void cancelAllRepairs() {
     Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
     try {

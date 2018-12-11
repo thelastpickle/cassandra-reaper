@@ -22,16 +22,22 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 @JsonDeserialize(builder = JmxStat.Builder.class)
 public final class JmxStat {
+  private final String mbeanName;
   private final String scope;
   private final String name;
   private final String attribute;
   private final Double value;
 
   private JmxStat(Builder builder) {
+    this.mbeanName = builder.mbeanName;
     this.scope = builder.scope;
     this.name = builder.name;
     this.attribute = builder.attribute;
     this.value = builder.value;
+  }
+
+  public String getMbeanName() {
+    return mbeanName;
   }
 
   public String getScope() {
@@ -53,7 +59,7 @@ public final class JmxStat {
 
   @Override
   public String toString() {
-    return scope + "/" + name + "/" + attribute + " = " + value;
+    return mbeanName + "/" + scope + "/" + name + "/" + attribute + " = " + value;
   }
 
   public static Builder builder() {
@@ -62,12 +68,18 @@ public final class JmxStat {
 
   @JsonPOJOBuilder(buildMethodName = "build", withPrefix = "with")
   public static final class Builder {
+    private String mbeanName;
     private String scope;
     private String name;
     private String attribute;
     private Double value;
 
     private Builder() {}
+
+    public Builder withMbeanName(String mbeanName) {
+      this.mbeanName = mbeanName;
+      return this;
+    }
 
     public Builder withScope(String scope) {
       this.scope = scope;

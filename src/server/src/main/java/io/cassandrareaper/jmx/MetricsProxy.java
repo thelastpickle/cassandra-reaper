@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import javax.management.JMException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -75,7 +76,7 @@ public final class MetricsProxy {
    * @param beans the list of beans to collect through JMX
    * @return a map with a key for each bean and a list of jmx stat in generic format.
    */
-  private Map<String, List<JmxStat>> collectMetrics(String... beans) throws JMException, IOException {
+  public Map<String, List<JmxStat>> collectMetrics(String... beans) throws JMException, IOException {
     List<List<JmxStat>> allStats = Lists.newArrayList();
     Set<ObjectName> beanSet = Sets.newLinkedHashSet();
     for (String bean : beans) {
@@ -89,9 +90,10 @@ public final class MetricsProxy {
     List<JmxStat> flatStatList = allStats.stream()
         .flatMap(attr -> attr.stream()).collect(Collectors.toList());
 
+    LOG.info("Stats {}", flatStatList);
     // Group the stats by scope to ease displaying/manipulating the data
     Map<String, List<JmxStat>> groupedStatList = flatStatList.stream()
-        .collect(Collectors.groupingBy(JmxStat::getScope));
+        .collect(Collectors.groupingBy(JmxStat::getMbeanName));
 
     return groupedStatList;
   }
@@ -117,7 +119,8 @@ public final class MetricsProxy {
             JmxStat.Builder jmxStatBuilder = JmxStat.builder()
                 .withAttribute(attribute.getName())
                 .withName(mbeanName.getKeyProperty("name"))
-                .withScope(mbeanName.getKeyProperty("scope"));
+                .withScope(mbeanName.getKeyProperty("scope"))
+                .withMbeanName(mbeanName.toString());
 
             if (null == value) {
               attributeList.add(jmxStatBuilder.withValue(0.0).build());

@@ -19,12 +19,16 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
+import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
@@ -51,12 +55,14 @@ final class Heart implements AutoCloseable {
   private final AtomicLong lastBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
   private final ForkJoinPool forkJoinPool = new ForkJoinPool(64);
   private final AppContext context;
+  private final MetricsService metricsService;
   private final long maxBeatFrequencyMillis;
   private final AtomicBoolean updatingNodeMetrics = new AtomicBoolean(false);
 
   private Heart(AppContext context, long maxBeatFrequency) {
     this.context = context;
     this.maxBeatFrequencyMillis = maxBeatFrequency;
+    this.metricsService = MetricsService.create(context);
   }
 
   static Heart create(AppContext context) {
@@ -75,7 +81,8 @@ final class Heart implements AutoCloseable {
       lastBeat.set(System.currentTimeMillis());
       ((IDistributedStorage) context.storage).saveHeartbeat();
 
-      if (ReaperApplicationConfiguration.DatacenterAvailability.EACH == context.config.getDatacenterAvailability()) {
+      if (ReaperApplicationConfiguration.DatacenterAvailability.EACH == context.config.getDatacenterAvailability()
+          || ReaperApplicationConfiguration.DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability()) {
         updateRequestedNodeMetrics();
       }
     }
@@ -102,59 +109,47 @@ final class Heart implements AutoCloseable {
     registerGauges();
 
     if (!updatingNodeMetrics.getAndSet(true)) {
-
       forkJoinPool.submit(() -> {
         try (Timer.Context t0 = timer(context, "updatingNodeMetrics")) {
+          if (context.config.getDatacenterAvailability() != DatacenterAvailability.SIDECAR) {
+            forkJoinPool.submit(() -> {
+              context.repairManager.repairRunners.keySet()
+                  .parallelStream()
+                  .forEach(runId -> {
 
-          forkJoinPool.submit(() -> {
-            context.repairManager.repairRunners.keySet()
-                .parallelStream()
-                .forEach(runId -> {
+                    storage.getNodeMetrics(runId)
+                        .parallelStream()
+                        .filter(nodeMetrics -> nodeMetrics.isRequested())
+                        .forEach(req -> {
 
-                  storage.getNodeMetrics(runId)
-                      .parallelStream()
-                      .filter(nodeMetrics -> nodeMetrics.isRequested())
-                      .forEach(req -> {
+                          LOG.info("Got metric request for node {} in {}", req.getNode(), req.getCluster());
+                          try (Timer.Context t1 = timer(
+                              context,
+                              req.getCluster().replace('.', '-'),
+                              req.getNode().replace('.', '-'))) {
 
-                        LOG.info("Got metric request for node {} in {}", req.getNode(), req.getCluster());
-                        try (Timer.Context t1 = timer(
-                            context,
-                            req.getCluster().replace('.', '-'),
-                            req.getNode().replace('.', '-'))) {
+                            try {
+                              grabAndStoreNodeMetrics(storage, runId, req);
 
-                          try {
-                            JmxProxy nodeProxy
-                                = context.jmxConnectionFactory.connect(
-                                   Node.builder().withCluster(context.storage.getCluster(req.getCluster()).get())
-                                   .withHostname(req.getNode()).build(),
-                                   context);
-
-                            storage.storeNodeMetrics(
-                                runId,
-                                NodeMetrics.builder()
-                                    .withNode(req.getNode())
-                                    .withCluster(req.getCluster())
-                                    .withDatacenter(req.getDatacenter())
-                                    .withPendingCompactions(nodeProxy.getPendingCompactions())
-                                    .withHasRepairRunning(nodeProxy.isRepairRunning())
-                                    .withActiveAnticompactions(0) // for future use
-                                    .build());
-
-                            LOG.info("Responded to metric request for node {}", req.getNode());
-                          } catch (ReaperException | RuntimeException | InterruptedException ex) {
-                            LOG.debug("failed seed connection in cluster " + req.getCluster(), ex);
-                          } catch (JMException e) {
-                            LOG.warn(
-                                "failed querying JMX MBean for metrics on node {} of cluster {} due to {}",
-                                req.getNode(), req.getCluster(), e.getMessage());
+                              LOG.info("Responded to metric request for node {}", req.getNode());
+                            } catch (ReaperException | RuntimeException | InterruptedException ex) {
+                              LOG.debug("failed seed connection in cluster " + req.getCluster(), ex);
+                            } catch (JMException e) {
+                              LOG.warn(
+                                  "failed querying JMX MBean for metrics on node {} of cluster {} due to {}",
+                                  req.getNode(), req.getCluster(), e.getMessage());
+                            }
                           }
-                        }
-                      });
-                });
-          }).get();
-
-        } catch (ExecutionException | InterruptedException | RuntimeException ex) {
-          LOG.warn("failed updateAllReachableNodeMetrics submission", ex);
+                        });
+                  });
+            }).get();
+          }
+          else {
+            // In sidecar mode we store metrics in the db on a regular basis
+            grabAndStoreGenericMetrics((IDistributedStorage)context.storage, context.localClusterName, context.localNodeAddress);
+          }
+        } catch (ExecutionException | InterruptedException | RuntimeException | ReaperException | JMException ex) {
+          LOG.warn("Failed metric collection during heartbeat", ex);
         } finally {
           assert updatingNodeMetrics.get();
           updatingNodeMetrics.set(false);
@@ -162,6 +157,37 @@ final class Heart implements AutoCloseable {
       });
     }
   }
+
+  private void grabAndStoreNodeMetrics(IDistributedStorage storage, UUID runId, NodeMetrics req)
+      throws ReaperException, InterruptedException, JMException {
+    JmxProxy nodeProxy
+        = context.jmxConnectionFactory.connect(
+           Node.builder().withCluster(context.storage.getCluster(req.getCluster()).get())
+           .withHostname(req.getNode()).build(),
+           context);
+
+    storage.storeNodeMetrics(
+        runId,
+        NodeMetrics.builder()
+            .withNode(req.getNode())
+            .withCluster(req.getCluster())
+            .withDatacenter(req.getDatacenter())
+            .withPendingCompactions(nodeProxy.getPendingCompactions())
+            .withHasRepairRunning(nodeProxy.isRepairRunning())
+            .withActiveAnticompactions(0) // for future use
+            .build());
+  }
+
+  private void grabAndStoreGenericMetrics(IDistributedStorage storage, String clusterName, String host)
+      throws ReaperException, InterruptedException, JMException {
+    Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
+    List<GenericMetric> metrics = this.metricsService.convertToGenericMetrics(this.metricsService.collectMetrics(node), node);
+
+    for (GenericMetric metric:metrics) {
+      storage.storeMetric(metric);
+    }
+  }
+
 
   private static Timer.Context timer(AppContext context, String... names) {
     return context.metricRegistry.timer(MetricRegistry.name(Heart.class, names)).time();

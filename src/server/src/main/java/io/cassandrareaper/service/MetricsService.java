@@ -20,13 +20,16 @@ package io.cassandrareaper.service;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.DroppedMessages;
+import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
+import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.MetricsProxy;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -36,12 +39,19 @@ import javax.management.JMException;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class MetricsService {
 
   private static final Logger LOG = LoggerFactory.getLogger(MetricsService.class);
+  private static final String[] COLLECTED_METRICS
+    = {"org.apache.cassandra.metrics:type=Compaction,*",
+       "org.apache.cassandra.internal:type=AntiEntropySessions,*",
+       "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=ValidationExecutor,*",
+       "org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
+       "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*"};
 
   private final AppContext context;
 
@@ -203,4 +213,44 @@ public final class MetricsService {
     }
   }
 
+  public Map<String, List<JmxStat>> collectMetrics(Node node) throws ReaperException {
+    try {
+      List<String> metricsToCollect = Lists.newArrayList();
+      JmxProxy jmxProxy = context.jmxConnectionFactory.connect(node, context);
+
+      // List mbeans for running repairs in Cassandra 2.2+ and add them to the collected metrics
+      List<String> runningRepairs = jmxProxy.getRunningRepairMetricsPost22();
+      LOG.info("Running repairs {}", runningRepairs);
+      metricsToCollect.addAll(runningRepairs);
+      metricsToCollect.addAll(Arrays.asList(COLLECTED_METRICS));
+      String[] metricsToCollectArray = new String[ metricsToCollect.size() ];
+      metricsToCollect.toArray( metricsToCollectArray );
+
+      MetricsProxy proxy = MetricsProxy.create(jmxProxy);
+      return proxy.collectMetrics(metricsToCollectArray);
+    } catch (JMException | InterruptedException | IOException e) {
+      LOG.error("Failed collecting metrics for host {}", node, e);
+      throw new ReaperException(e);
+    }
+  }
+
+  public List<GenericMetric> convertToGenericMetrics(Map<String, List<JmxStat>> jmxStats, Node node) {
+    List<GenericMetric> metrics = Lists.newArrayList();
+    DateTime now = DateTime.now();
+    for (Entry<String, List<JmxStat>> jmxStatEntry:jmxStats.entrySet()) {
+      for (JmxStat jmxStat:jmxStatEntry.getValue()) {
+        String metricName = jmxStat.getMbeanName() + "." + jmxStat.getAttribute();
+        GenericMetric metric = GenericMetric.builder()
+            .withClusterName(node.getCluster().getName())
+            .withHost(node.getHostname())
+            .withMetric(metricName)
+            .withValue(jmxStat.getValue())
+            .withTs(now)
+            .build();
+        metrics.add(metric);
+      }
+    }
+
+    return metrics;
+  }
 }

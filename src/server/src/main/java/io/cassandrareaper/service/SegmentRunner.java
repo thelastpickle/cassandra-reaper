@@ -603,9 +603,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return () -> {
       LOG.debug("getMetricsForHost {} / {} / {}", node, localDc, nodeDc);
 
-      if (DatacenterAvailability.ALL != context.config.getDatacenterAvailability()
-          && !nodeDc.equals(localDc)
-          && context.storage instanceof IDistributedStorage) {
+      if (nodeIsAccessibleThroughJmx(localDc, nodeDc, node)) {
         // If DatacenterAvailability is not ALL, we should assume jmx on remote dc is not reachable.
         return Pair.of(node, getRemoteNodeMetrics(node, nodeDc));
       } else {
@@ -637,6 +635,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         }
       }
     };
+  }
+
+  private boolean nodeIsAccessibleThroughJmx(String localDc, String nodeDc, String node) {
+    return (DatacenterAvailability.ALL != context.config.getDatacenterAvailability()
+        && !nodeDc.equals(localDc)
+        && context.storage instanceof IDistributedStorage)
+        || (DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability()
+        && node != context.localNodeAddress);
   }
 
   private Optional<NodeMetrics> getRemoteNodeMetrics(String node, String nodeDc) {

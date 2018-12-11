@@ -39,6 +39,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import jersey.repackaged.com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -198,10 +199,11 @@ public final class NodeStatsResource {
       throws InterruptedException {
 
     try {
+      Preconditions.checkState(clusterName != null && !clusterName.isEmpty(), "Cluster name must be set");
       JmxProxy jmxProxy
           = context.jmxConnectionFactory.connect(
               Node.builder().withCluster(context.storage.getCluster(clusterName).get()).withHostname(host).build(),
-              context.config.getJmxConnectionTimeoutInSeconds());
+              context);
 
       StorageServiceProxy ssProxy = StorageServiceProxy.create(jmxProxy);
       Map<String, List<String>> tokens = ssProxy.getTokensByNode();

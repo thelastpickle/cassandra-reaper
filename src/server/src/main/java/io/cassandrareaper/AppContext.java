@@ -48,6 +48,7 @@ public final class AppContext {
   public ReaperApplicationConfiguration config;
   public MetricRegistry metricRegistry = new MetricRegistry();
   public String localNodeAddress;
+  public String localClusterName;
 
   private static String initialiseInstanceAddress() {
     String reaperInstanceAddress;

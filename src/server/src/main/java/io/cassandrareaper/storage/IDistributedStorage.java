@@ -17,6 +17,7 @@
 
 package io.cassandrareaper.storage;
 
+import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.service.RingRange;
@@ -62,5 +63,9 @@ public interface IDistributedStorage {
    */
   Optional<RepairSegment> getNextFreeSegmentForRanges(
       UUID runId, Optional<RingRange> parallelRange, List<RingRange> ranges);
+
+  List<GenericMetric> getMetrics(String clusterName, Optional<String> host, String metric, long since);
+
+  void storeMetric(GenericMetric metric);
 
 }
