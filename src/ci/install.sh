@@ -46,6 +46,7 @@ case "${TEST_TYPE}" in
           sed -i 's/auto_snapshot: true/auto_snapshot: false/' ~/.ccm/test/node$i/conf/cassandra.yaml
           sed -i 's/enable_materialized_views: true/enable_materialized_views: false/' ~/.ccm/test/node$i/conf/cassandra.yaml
           sed -i 's/internode_compression: dc/internode_compression: none/' ~/.ccm/test/node$i/conf/cassandra.yaml
+          sed -i 's/# file_cache_size_in_mb: 512/file_cache_size_in_mb: 1/' ~/.ccm/test/node$i/conf/cassandra.yaml
           echo 'phi_convict_threshold: 16' >> ~/.ccm/test/node$i/conf/cassandra.yaml
           if  echo "$CASSANDRA_VERSION" | grep -q "trunk"  ; then
             sed -i 's/start_rpc: true//' ~/.ccm/test/node$i/conf/cassandra.yaml
