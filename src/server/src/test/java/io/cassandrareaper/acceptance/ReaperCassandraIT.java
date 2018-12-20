@@ -17,17 +17,17 @@
 
 package io.cassandrareaper.acceptance;
 
-import io.cassandrareaper.AppContext;
-import io.cassandrareaper.acceptance.ReaperTestJettyRunner.ReaperJettyTestSupport;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
+import com.google.common.base.Preconditions;
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.AfterClass;
@@ -45,7 +45,7 @@ import static org.awaitility.Awaitility.await;
     features = "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature",
     plugin = {"pretty"}
     )
-public class ReaperCassandraIT {
+public class ReaperCassandraIT implements Upgradable {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperCassandraIT.class);
   private static final List<ReaperTestJettyRunner> RUNNER_INSTANCES = new CopyOnWriteArrayList<>();
@@ -61,15 +61,14 @@ public class ReaperCassandraIT {
         "setting up testing Reaper runner with {} seed hosts defined and cassandra storage",
         TestContext.TEST_CLUSTER_SEED_HOSTS.size());
 
+    BasicSteps.setup(new ReaperCassandraIT());
+
     int minReaperInstances = Integer.getInteger("grim.reaper.min", 1);
     int maxReaperInstances = Integer.getInteger("grim.reaper.max", minReaperInstances);
 
     initSchema();
     for (int i = 0; i < minReaperInstances; ++i) {
-      ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
-      runner.setup(new AppContext(), CASS_CONFIG_FILE);
-      RUNNER_INSTANCES.add(runner);
-      BasicSteps.addReaperRunner(runner);
+      createReaperTestJettyRunner(Optional.empty());
     }
 
     GRIM_REAPER = new Thread(() -> {
@@ -77,18 +76,10 @@ public class ReaperCassandraIT {
       while (!Thread.currentThread().isInterrupted()) { //keep adding/removing reaper instances while test is running
         try {
           if (maxReaperInstances > RUNNER_INSTANCES.size()) {
-            ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
-            ReaperJettyTestSupport instance = runner.setup(new AppContext(), CASS_CONFIG_FILE);
-            RUNNER_INSTANCES.add(runner);
-            Thread.sleep(100);
-            BasicSteps.addReaperRunner(runner);
+            createReaperTestJettyRunner(Optional.empty());
           } else {
             int remove = minReaperInstances + RAND.nextInt(maxReaperInstances - minReaperInstances);
-            ReaperTestJettyRunner runner = RUNNER_INSTANCES.get(remove);
-            BasicSteps.removeReaperRunner(runner);
-            Thread.sleep(200);
-            runner.runnerInstance.after();
-            RUNNER_INSTANCES.remove(runner);
+            removeReaperTestJettyRunner(RUNNER_INSTANCES.get(remove));
           }
         } catch (RuntimeException | InterruptedException ex) {
           LOG.error("failed adding/removing reaper instance", ex);
@@ -98,6 +89,31 @@ public class ReaperCassandraIT {
     if (minReaperInstances < maxReaperInstances) {
       GRIM_REAPER.start();
     }
+  }
+
+  @Override
+  public void upgradeReaperRunner(Optional<String> version) throws InterruptedException {
+    synchronized (ReaperCassandraIT.class) {
+      Preconditions.checkState(1 >= RUNNER_INSTANCES.size(), "Upgrading with multiple Reaper instances not supported");
+      if (!RUNNER_INSTANCES.isEmpty()) {
+        removeReaperTestJettyRunner(RUNNER_INSTANCES.get(0));
+      }
+      createReaperTestJettyRunner(version);
+    }
+  }
+
+  private static void createReaperTestJettyRunner(Optional<String> version) throws InterruptedException {
+    ReaperTestJettyRunner runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE, version);
+    RUNNER_INSTANCES.add(runner);
+    Thread.sleep(100);
+    BasicSteps.addReaperRunner(runner);
+  }
+
+  private static void removeReaperTestJettyRunner(ReaperTestJettyRunner runner) throws InterruptedException {
+    BasicSteps.removeReaperRunner(runner);
+    Thread.sleep(200);
+    runner.runnerInstance.after();
+    RUNNER_INSTANCES.remove(runner);
   }
 
   public static void initSchema() throws IOException {

@@ -30,27 +30,180 @@ env:
   - secure: YEMudC4in6wjIS1km11AkSL1XbKwoWyqzx7vB3i9rdfNNEnJfTx9AdFEZM5h15rzH7raCJ/3/Y9LKXMyXB0wntyk+r6OEt79YaXOYUrlZT8/knGmEBddafEm7ZoUrpKpejVq5tzyMGpNvty4+6kD6IOIVGyltlL3K5DCd3MThoLtnk+il4BcxfJQu2FKFWXIbmuvEMUk27PQ9iDeAAiXEjlhD8YWgJN3cC+N9/w2h4hLNTWOY2WyNkgFomgOnvM5+6O+mIapplgyU5zR3MbcftRSJTWxMUAQrW8l5OWO+3q9mzC6Bqt+KC+aRElLGPp91sH23w2KJvp1Fdxo+kJRbmDlK4N05jJzhJoRlWJf59G5FZ8BtzdbpQS6TKwrZB+G9zfQURiYzLq9ySGyDfA/YOuYGEzNCGUCCILrnLZ44R9KENHGQi203NgXDwlBRP5qQHX51yHsB3WPViFhXu8TxVW7Wje/PmYPt9uTHMYtJ0yTo4rkX4YJ3mq6vPdrXLOeG+1Gp9TSlndDC+ecfx17PaT2iyLSz/UGhYo6EkRHGiYBlOheoI9B5JSd62kQM/86OIfvyOP9GnFHCCjGO+jU+iYje049WvjtIHgZEZARyBQX5pE30kLqBgNd1XbbXIMyTOa1FTqwW4R2/1dQeyb0VUuj5aaQzAzBCD48Cefe8Lc=
   - secure: RJiIFdDUrk9p/zK1YbmOa3chnlOJGtYeLmUP/7NGHElqAT2Gf2dEZb1/4yLGKyPtRaGsb7YDP+4CwExSMdX+sdxOWSrj1ejLkRlU8bz/gM+m+0CX8ygrS8AXcFte/5gU1TQQ9Vu1UBiIoP4I4rXeVceJg7W/GA9U8Gf37v1VgbKpOfNsQ2ojjLZjVSom9htfAukECnDNpCMe97khjmk8/Tq53Dk5W/WXSyI0C8tiwWYAyItCRR2CBQ1XTRVosRthtle/09xwiuFQkCF4u8j0s2scu5hFe9zO/xa3Gm+YyxEJooYCI0SdJwfU5oqCC5ZoZpu8oss2QcNAf3jS6Dl6hIUQOlosqo//a5fez42RrBYjmfNDnVlhGdrFJkhdt3zluj20tJ+Dgec8gNOn6nY8FPAimKTo2BGTiaBI0HAKOdF1kbAWTWPjpJUAz9UvltP+x2ikOZV0n8tZ3RdrT7lsip+EG9OBbPIkFWrzk2tw5swdaDvc8AgzoTK0freOqEKx2A2VbG0bvUn2N9tflk8Glc8Fe86TfeloEWOSx5VUg+w2ubKuPBoxYE/G/5hX9x7Bm1M8r54vCVCvLGeRPhqDwx89ddWMpIHBb9jZi2zZ0GDb+0u013wz4fiEYxQETw0Uk2zKoIZVfSllVXezDEeR3KrxpUgDbYjQLz8qN9kc70c=
   - secure: YfN2zY6DVBKs+ZgC+utOZF/jx5rAGtVR62UPynqQJ98RQG5M9r6eC3Z7/uAU49nNydVh5c80Cw3AXnp2u+ceciZvxczcTP8kbaVM5o8vKyeInAsu9zugNINaCZ1hzpCtD/REgV7SpWqQxz+fvdCAIk3vmGh+foyQ7aK5i/50eUSUJZgRD9XtS/XySHPr9YPTPdqoKDf9YeuaCoPa79Vm74s1Ma5pQyVZgo3JmU/rIKeyvKDkXa0g5nnr2EOownpLBM/oNpB5b9KJLqHSX9oMcxD/rRrkzsCaM3LuFkJMW2KDgv80aREoIadOuAZjR5k4xA0REDo1HGC/uyy264HQEpDc2THiEdmtszJpzt4hCR4O7n4o8ZeJjNev/izJJc+cSMyDdnFqiRYvs38HVVFRUXNPXNED0Uh1AyItLcWEupCtvAf1XJFBQhqqsHZJ/j1ldYCzgQh4o7wN5Ykjceaqjm1fsQ/P1h6H4HOq71lORuItsEo7ZU4h8sv+vUidfsX/6uOHGfH0Tba0+yzNsN5nXXyV9vL8BICQiSvXaU81my8tE2mG/u5ajo+e1pnrXdZMHPGI8q4EEEQd8dPjO8oW2DmoA/NNO+qtoOTM6KnZ4LTsVHnhKZ0E4V8BxMHNrp9yV+glcA4rs1ou4h9k58jKtknACIJiir2/G3+rDEWlAqY=
-  matrix:
-  - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20
-  - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20 GRIM_MIN=2 GRIM_MAX=2
-  - TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20 GRIM_MIN=2 GRIM_MAX=4
-  - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.13 GRIM_MIN=1 GRIM_MAX=1
-  - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.13 GRIM_MIN=2 GRIM_MAX=2
-  - TEST_TYPE=ccm CASSANDRA_VERSION=2.2.13 GRIM_MIN=2 GRIM_MAX=4
-  - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.17 GRIM_MIN=1 GRIM_MAX=1
-  - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.17 GRIM_MIN=2 GRIM_MAX=2
-  - TEST_TYPE=ccm CASSANDRA_VERSION=3.0.17 GRIM_MIN=2 GRIM_MAX=4
-  - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.3 GRIM_MIN=1 GRIM_MAX=1
-  - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.3 GRIM_MIN=2 GRIM_MAX=2
-  - TEST_TYPE=ccm CASSANDRA_VERSION=3.11.3 GRIM_MIN=2 GRIM_MAX=4
-  - TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=1 GRIM_MAX=1
-  - TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=2 GRIM_MAX=2
-  - TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=2 GRIM_MAX=4
-  - TEST_TYPE=docker
-matrix:
+stages:
+  - Integration Tests
+  - Distributed Reaper Integration Tests
+  - Flapping Distributed Reaper Integration Tests
+  - name: Upgrade Integration Tests
+    #if: branch = master OR env(TRAVIS_TAG) IS present
+  - Docker
+  - name: Deploy
+    if: branch = master OR env(TRAVIS_TAG) IS present
+jobs:
   fast_finish: true
   allow_failures:
   - env: TEST_TYPE=docker
+  include:
+    - stage: Integration Tests
+      name: Memory, H2 and Postgresql
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20
+    - stage: Integration Tests
+      name: Cassandra 2.1.20
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20 GRIM_MIN=1 GRIM_MAX=1
+    - stage: Integration Tests
+      name: Cassandra 2.2.13
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.2.13 GRIM_MIN=1 GRIM_MAX=1
+    - stage: Integration Tests
+      name: Cassandra 3.0.17
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.17 GRIM_MIN=1 GRIM_MAX=1
+    - stage: Integration Tests
+      name: Cassandra 3.11.3
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.11.3 GRIM_MIN=1 GRIM_MAX=1
+    - stage: Integration Tests
+      name: Cassandra 4.0
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=1 GRIM_MAX=1
+    - stage: Distributed Reaper Integration Tests
+      name: Two Reapers on  Cassandra 2.1.20
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20 GRIM_MIN=2 GRIM_MAX=2
+    - stage: Distributed Reaper Integration Tests
+      name: Two Reapers on Cassandra 2.2.13
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.2.13 GRIM_MIN=2 GRIM_MAX=2
+    - stage: Distributed Reaper Integration Tests
+      name: Two Reapers on Cassandra 3.0.17
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.17 GRIM_MIN=2 GRIM_MAX=2
+    - stage: Distributed Reaper Integration Tests
+      name: Two Reapers on Cassandra 3.11.3
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.11.3 GRIM_MIN=2 GRIM_MAX=2
+    - stage: Distributed Reaper Integration Tests
+      name: Two Reapers on Cassandra 4.0
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=2 GRIM_MAX=2
+    - stage: Flapping Distributed Reaper Integration Tests
+      name: Four Flapping Reaper on Cassandra 2.1.20
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20 GRIM_MIN=2 GRIM_MAX=4
+    - stage: Flapping Distributed Reaper Integration Tests
+      name: Four Flapping Reaper on Cassandra 2.2.13
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.2.13 GRIM_MIN=2 GRIM_MAX=4
+    - stage: Flapping Distributed Reaper Integration Tests
+      name: Four Flapping Reaper on Cassandra 3.0.17
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.17 GRIM_MIN=2 GRIM_MAX=4
+    - stage: Flapping Distributed Reaper Integration Tests
+      name: Four Flapping Reaper on Cassandra 3.11.3
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.11.3 GRIM_MIN=2 GRIM_MAX=4
+    - stage: Flapping Distributed Reaper Integration Tests
+      name: Four Flapping Reaper on Cassandra 4.0
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=2 GRIM_MAX=4
+    - stage: Upgrade Integration Tests
+      name: Upgrading Reaper on Cassandra 2.1.20 (all_nodes_reachable)
+      env: TEST_TYPE=upgrade CASSANDRA_VERSION=2.1.20 CO="-t @all_nodes_reachable"
+    - stage: Upgrade Integration Tests
+      name: Upgrading Reaper on Cassandra 2.1.20
+      env: TEST_TYPE=upgrade CASSANDRA_VERSION=2.1.20 CO="-t ~@all_nodes_reachable"
+    - stage: Upgrade Integration Tests
+      name: Upgrading Reaper on Cassandra 2.2.13 (all_nodes_reachable)
+      env: TEST_TYPE=upgrade CASSANDRA_VERSION=2.2.13 CO="-t @all_nodes_reachable"
+    - stage: Upgrade Integration Tests
+      name: Upgrading Reaper on Cassandra 2.2.13
+      env: TEST_TYPE=upgrade CASSANDRA_VERSION=2.2.13 CO="-t ~@all_nodes_reachable"
+    - stage: Upgrade Integration Tests
+      name: Upgrading Reaper on Cassandra 3.0.17 (all_nodes_reachable)
+      env: TEST_TYPE=upgrade CASSANDRA_VERSION=3.0.17 CO="-t @all_nodes_reachable"
+    - stage: Upgrade Integration Tests
+      name: Upgrading Reaper on Cassandra 3.0.17
+      env: TEST_TYPE=upgrade CASSANDRA_VERSION=3.0.17 CO="-t ~@all_nodes_reachable"
+    - stage: Upgrade Integration Tests
+      name: Upgrading Reaper on Cassandra 3.11.3 (all_nodes_reachable)
+      env: TEST_TYPE=upgrade CASSANDRA_VERSION=3.11.3 CO="-t @all_nodes_reachable"
+    - stage: Upgrade Integration Tests
+      name: Upgrading Reaper on Cassandra 3.11.3
+      env: TEST_TYPE=upgrade CASSANDRA_VERSION=3.11.3 CO="-t ~@all_nodes_reachable"
+    - stage: Upgrade Integration Tests
+      name: Upgrading Reaper on Cassandra 4.0 (all_nodes_reachable)
+      env: TEST_TYPE=upgrade CASSANDRA_VERSION=git:trunk CO="-t @all_nodes_reachable"
+    - stage: Upgrade Integration Tests
+      name: Upgrading Reaper on Cassandra 4.0
+      env: TEST_TYPE=upgrade CASSANDRA_VERSION=git:trunk CO="-t ~@all_nodes_reachable"
+    - stage: Docker
+      env: TEST_TYPE=docker
+    - stage: Deploy
+      name: Deploy
+      env: TEST_TYPE=deploy
+      after_success: "./src/ci/after_success.sh"
+      before_deploy: "./src/ci/before_deploy.sh"
+      deploy:
+      - provider: releases
+        api_key: "$GITHUB_TOKEN"
+        file_glob: true
+        file:
+        - src/packages/cassandra-reaper-${TRAVIS_TAG}-release.tar.gz
+        - src/packages/reaper-*-1.x86_64.rpm
+        - src/packages/reaper_*_amd64.deb
+        skip_cleanup: true
+        on:
+          tags: true
+      - provider: bintray
+        file: src/ci/descriptor-rpm-beta.json
+        user: adejanovski
+        key: "$BINTRAY_API_KEY"
+        dry-run: false
+        skip_cleanup: true
+        on:
+          branch: master
+      - provider: bintray
+        file: src/ci/descriptor-deb-beta.json
+        user: adejanovski
+        key: "$BINTRAY_API_KEY"
+        dry-run: false
+        skip_cleanup: true
+        on:
+          branch: master
+      - provider: bintray
+        file: src/ci/descriptor-tarball-beta.json
+        user: adejanovski
+        key: "$BINTRAY_API_KEY"
+        dry-run: false
+        skip_cleanup: true
+        on:
+          branch: master
+      - provider: bintray
+        file: src/ci/descriptor-maven-snapshot.json
+        user: adejanovski
+        key: "$BINTRAY_API_KEY"
+        dry-run: false
+        skip_cleanup: true
+        on:
+          branch: master
+      - provider: bintray
+        file: src/ci/descriptor-rpm.json
+        user: adejanovski
+        key: "$BINTRAY_API_KEY"
+        dry-run: false
+        skip_cleanup: true
+        on:
+          tags: true
+      - provider: bintray
+        file: src/ci/descriptor-deb.json
+        user: adejanovski
+        key: "$BINTRAY_API_KEY"
+        dry-run: false
+        skip_cleanup: true
+        on:
+          tags: true
+      - provider: bintray
+        file: src/ci/descriptor-tarball.json
+        user: adejanovski
+        key: "$BINTRAY_API_KEY"
+        dry-run: false
+        skip_cleanup: true
+        on:
+          tags: true
+      - provider: bintray
+        file: src/ci/descriptor-maven.json
+        user: adejanovski
+        key: "$BINTRAY_API_KEY"
+        dry-run: false
+        skip_cleanup: true
+        on:
+          tags: true
 services:
 - postgresql
 - docker
@@ -58,92 +211,7 @@ before_install: "./src/ci/before_install.sh"
 install: "./src/ci/install.sh"
 before_script: "./src/ci/before_script.sh"
 script: "./src/ci/script.sh"
-after_success: "./src/ci/after_success.sh"
 after_failure: "./src/ci/after_failure.sh"
-before_deploy: "./src/ci/before_deploy.sh"
-deploy:
-- provider: releases
-  api_key: "$GITHUB_TOKEN"
-  file_glob: true
-  file:
-  - src/packages/cassandra-reaper-${TRAVIS_TAG}-release.tar.gz
-  - src/packages/reaper-*-1.x86_64.rpm
-  - src/packages/reaper_*_amd64.deb
-  skip_cleanup: true
-  on:
-    tags: true
-- provider: bintray
-  file: src/ci/descriptor-rpm-beta.json
-  user: adejanovski
-  key: "$BINTRAY_API_KEY"
-  dry-run: false
-  skip_cleanup: true
-  on:
-    branch: master
-    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
-- provider: bintray
-  file: src/ci/descriptor-deb-beta.json
-  user: adejanovski
-  key: "$BINTRAY_API_KEY"
-  dry-run: false
-  skip_cleanup: true
-  on:
-    branch: master
-    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
-- provider: bintray
-  file: src/ci/descriptor-tarball-beta.json
-  user: adejanovski
-  key: "$BINTRAY_API_KEY"
-  dry-run: false
-  skip_cleanup: true
-  on:
-    branch: master
-    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
-- provider: bintray
-  file: src/ci/descriptor-maven-snapshot.json
-  user: adejanovski
-  key: "$BINTRAY_API_KEY"
-  dry-run: false
-  skip_cleanup: true
-  on:
-    branch: master
-    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
-- provider: bintray
-  file: src/ci/descriptor-rpm.json
-  user: adejanovski
-  key: "$BINTRAY_API_KEY"
-  dry-run: false
-  skip_cleanup: true
-  on:
-    tags: true
-    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
-- provider: bintray
-  file: src/ci/descriptor-deb.json
-  user: adejanovski
-  key: "$BINTRAY_API_KEY"
-  dry-run: false
-  skip_cleanup: true
-  on:
-    tags: true
-    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
-- provider: bintray
-  file: src/ci/descriptor-tarball.json
-  user: adejanovski
-  key: "$BINTRAY_API_KEY"
-  dry-run: false
-  skip_cleanup: true
-  on:
-    tags: true
-    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
-- provider: bintray
-  file: src/ci/descriptor-maven.json
-  user: adejanovski
-  key: "$BINTRAY_API_KEY"
-  dry-run: false
-  skip_cleanup: true
-  on:
-    tags: true
-    condition: $CASSANDRA_VERSION =~ ^2\.1\..* &&  "x${GRIM_MIN}" = "x"
 notifications:
   webhooks:
     urls:

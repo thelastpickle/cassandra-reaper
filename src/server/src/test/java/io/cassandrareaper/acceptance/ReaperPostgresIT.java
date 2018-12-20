@@ -17,8 +17,8 @@
 
 package io.cassandrareaper.acceptance;
 
-import io.cassandrareaper.AppContext;
-import io.cassandrareaper.acceptance.ReaperTestJettyRunner.ReaperJettyTestSupport;
+
+import java.util.Optional;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class ReaperPostgresIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperPostgresIT.class);
-  private static ReaperJettyTestSupport runnerInstance;
+  private static ReaperTestJettyRunner runner;
   private static final String POSTGRES_CONFIG_FILE = "cassandra-reaper-postgres-at.yaml";
 
 
@@ -46,16 +46,14 @@ public class ReaperPostgresIT {
   public static void setUp() throws Exception {
     LOG.info("setting up testing Reaper runner with {} seed hosts defined and Postgres storage",
         TestContext.TEST_CLUSTER_SEED_HOSTS.size());
-    AppContext context = new AppContext();
-    ReaperTestJettyRunner runner = new ReaperTestJettyRunner();
-    runnerInstance = runner.setup(context, POSTGRES_CONFIG_FILE);
+    runner = new ReaperTestJettyRunner(POSTGRES_CONFIG_FILE, Optional.empty());
     BasicSteps.addReaperRunner(runner);
   }
 
   @AfterClass
   public static void tearDown() {
     LOG.info("Stopping reaper service...");
-    runnerInstance.after();
+    runner.runnerInstance.after();
   }
 
 }

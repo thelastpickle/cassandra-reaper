@@ -27,7 +27,6 @@ import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.service.RepairScheduleService;
 import io.cassandrareaper.service.RepairUnitService;
-import io.cassandrareaper.service.SchedulingManager;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -375,13 +374,13 @@ public final class RepairScheduleResource {
 
   private Response pauseSchedule(RepairSchedule repairSchedule, UriInfo uriInfo) {
     LOG.info("Pausing schedule {}", repairSchedule.getId());
-    SchedulingManager.pauseRepairSchedule(context, repairSchedule);
+    context.schedulingManager.pauseRepairSchedule(repairSchedule);
     return Response.ok().location(buildRepairScheduleUri(uriInfo, repairSchedule)).build();
   }
 
   private Response resumeSchedule(RepairSchedule repairSchedule, UriInfo uriInfo) {
     LOG.info("Resuming schedule {}", repairSchedule.getId());
-    SchedulingManager.resumeRepairSchedule(context, repairSchedule);
+    context.schedulingManager.resumeRepairSchedule(repairSchedule);
     return Response.ok().location(buildRepairScheduleUri(uriInfo, repairSchedule)).build();
   }
 

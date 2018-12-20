@@ -24,12 +24,16 @@ import io.cassandrareaper.SimpleReaperClient;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.ServerSocket;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.ws.rs.core.Response;
 
-import com.google.common.base.Optional;
 import com.google.common.io.Resources;
 import io.dropwizard.Application;
 import io.dropwizard.testing.ConfigOverride;
@@ -44,30 +48,22 @@ import org.eclipse.jetty.server.ServerConnector;
  */
 public final class ReaperTestJettyRunner {
 
-  ReaperJettyTestSupport runnerInstance;
+  final ReaperJettyTestSupport runnerInstance;
   private Server jettyServer;
   private SimpleReaperClient reaperClientInstance;
 
-  public ReaperTestJettyRunner() {
-  }
+  public ReaperTestJettyRunner(String yamlConfigFile, Optional<String> version) {
+    runnerInstance = new ReaperJettyTestSupport(Resources.getResource(yamlConfigFile).getPath(), version);
+    runnerInstance.before();
 
-  public ReaperJettyTestSupport setup(AppContext testContext, String yamlConfigFile) {
-    if (runnerInstance == null) {
-      runnerInstance = new ReaperJettyTestSupport(Resources.getResource(yamlConfigFile).getPath(), testContext);
-
-      runnerInstance.before();
-
-      Runtime.getRuntime().addShutdownHook(new Thread() {
-        @Override
-        public void run() {
-          if (runnerInstance != null) {
-            runnerInstance.after();
-          }
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+      @Override
+      public void run() {
+        if (runnerInstance != null) {
+          runnerInstance.after();
         }
-      });
-    }
-
-    return runnerInstance;
+      }
+    });
   }
 
   public Response callReaper(String httpMethod, String urlPath, Optional<Map<String, String>> params) {
@@ -91,13 +87,29 @@ public final class ReaperTestJettyRunner {
 
     AppContext context;
 
-    private ReaperJettyTestSupport(String configFile, AppContext context) {
-      super(ReaperApplication.class,
+    private ReaperJettyTestSupport(String configFile, Optional<String> version) {
+      super(getApplicationClass(version),
           new File(configFile).getAbsolutePath(),
           ConfigOverride.config("server.adminConnectors[0].port", "" + getAnyAvailablePort()),
           ConfigOverride.config("server.applicationConnectors[0].port", "" + getAnyAvailablePort())
       );
-      this.context = context;
+      this.context = new AppContext();
+    }
+
+    private static Class getApplicationClass(Optional<String> version) {
+      if (version.isPresent()) {
+        try {
+          ClassLoader loader = new ParentLastURLClassLoader(Paths.get(
+                  "target",
+                  "test-jars",
+                  String.format("cassandra-reaper-%s.jar", version.get())).toUri().toURL());
+
+          return loader.loadClass(ReaperApplication.class.getName());
+        } catch (MalformedURLException | ClassNotFoundException ex) {
+          throw new AssertionError(ex);
+        }
+      }
+      return ReaperApplication.class;
     }
 
     @Override
@@ -107,6 +119,7 @@ public final class ReaperTestJettyRunner {
 
     @Override
     public void after() {
+      context.schedulingManager.cancel();
       context.repairManager.close();
       context.isRunning.set(false);
       try {
@@ -126,4 +139,59 @@ public final class ReaperTestJettyRunner {
     }
   }
 
+  private static final class ParentLastURLClassLoader extends ClassLoader {
+
+    private final ChildURLClassLoader childClassLoader;
+
+    private ParentLastURLClassLoader(final URL jarfile) {
+      super(Thread.currentThread().getContextClassLoader());
+      childClassLoader = new ChildURLClassLoader(new URL[]{jarfile}, new FindClassClassLoader(this.getParent()));
+    }
+
+    @Override
+    protected synchronized Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
+      try {
+        return childClassLoader.findClass(name);
+      } catch (ClassNotFoundException e) {
+        return super.loadClass(name, resolve);
+      }
+    }
+
+    /**
+     * Make accessible `classloader.findClass(name)`
+     */
+    private static final class FindClassClassLoader extends ClassLoader {
+
+      private FindClassClassLoader(final ClassLoader parent) {
+        super(parent);
+      }
+
+      @Override
+      public Class<?> findClass(final String name) throws ClassNotFoundException {
+        return super.findClass(name);
+      }
+    }
+
+    /**
+     * This class delegates (child then parent) for the findClass method for a URLClassLoader.
+     */
+    private static final class ChildURLClassLoader extends URLClassLoader {
+
+      private final FindClassClassLoader realParent;
+
+      private ChildURLClassLoader(final URL[] urls, final FindClassClassLoader realParent) {
+        super(urls, null);
+        this.realParent = realParent;
+      }
+
+      @Override
+      public Class<?> findClass(final String name) throws ClassNotFoundException {
+        try {
+          return super.findClass(name);
+        } catch (ClassNotFoundException e) {
+          return realParent.loadClass(name);
+        }
+      }
+    }
+  }
 }

@@ -39,32 +39,32 @@ public final class SchedulingManager extends TimerTask {
 
   private static final Logger LOG = LoggerFactory.getLogger(SchedulingManager.class);
 
-  private static volatile TimerTask SCHEDULING_MANAGER;
-
   private final AppContext context;
   private final RepairRunService repairRunService;
 
   /* nextActivatedSchedule used for nicer logging only */
   private RepairSchedule nextActivatedSchedule;
 
-
   private SchedulingManager(AppContext context) {
     this.context = context;
     this.repairRunService = RepairRunService.create(context);
   }
 
-  public static void start(AppContext context) {
-    if (null == SCHEDULING_MANAGER) {
-      LOG.info("Starting new SchedulingManager instance");
-      SCHEDULING_MANAGER = new SchedulingManager(context);
-      Timer timer = new Timer("SchedulingManagerTimer");
-      timer.schedule(SCHEDULING_MANAGER, 1000L, 1000L * 60);
-    } else {
-      LOG.warn("there is already one instance of SchedulingManager running, not starting new one");
-    }
+  public static SchedulingManager create(AppContext context) {
+    return new SchedulingManager(context);
   }
 
-  public static RepairSchedule pauseRepairSchedule(AppContext context, RepairSchedule schedule) {
+  public void start() {
+    LOG.info("Starting new SchedulingManager instance");
+    Timer timer = new Timer("SchedulingManagerTimer");
+
+    timer.schedule(
+        this,
+        1000L,
+        1000L * Integer.getInteger(SchedulingManager.class.getName() + ".period_seconds", 60));
+  }
+
+  public RepairSchedule pauseRepairSchedule(RepairSchedule schedule) {
     RepairSchedule updatedSchedule
         = schedule.with().state(RepairSchedule.State.PAUSED).pauseTime(DateTime.now()).build(schedule.getId());
 
@@ -74,7 +74,7 @@ public final class SchedulingManager extends TimerTask {
     return updatedSchedule;
   }
 
-  public static RepairSchedule resumeRepairSchedule(AppContext context, RepairSchedule schedule) {
+  public RepairSchedule resumeRepairSchedule(RepairSchedule schedule) {
     RepairSchedule updatedSchedule
         = schedule.with().state(RepairSchedule.State.ACTIVE).pauseTime(null).build(schedule.getId());
 
@@ -160,9 +160,11 @@ public final class SchedulingManager extends TimerTask {
 
             if (equal(schedule, latestSchedule)) {
 
+              // always overwrites and returns true. see following FIXMEs
               boolean result
                   = context.storage.updateRepairSchedule(
                       schedule.with().runHistory(newRunHistory).build(schedule.getId()));
+
               // FIXME – concurrency is broken unless we atomically add/remove run history items
               // boolean result = context.storage
               //        .addRepairRunToRepairSchedule(schedule.getId(), newRepairRun.getId());
@@ -171,25 +173,25 @@ public final class SchedulingManager extends TimerTask {
                 context.repairManager.startRepairRun(newRepairRun);
                 return true;
               }
+              // this duplicated repair_run needs to be removed from the schedule's history
+              // FIXME – concurrency is broken unless we atomically add/remove run history items
+              // boolean result = context.storage
+              //        .deleteRepairRunFromRepairSchedule(schedule.getId(), newRepairRun.getId());
             } else if (schedule.getRunHistory().size() < latestSchedule.getRunHistory().size()) {
-              latestSchedule.getRunHistory().get(latestSchedule.getRunHistory().size() - 1);
+              UUID latestRepairRun = latestSchedule.getRunHistory().get(latestSchedule.getRunHistory().size() - 1);
               LOG.info(
                   "schedule {} has already added a new repair run {}",
                   schedule.getId(),
-                  newRepairRun.getId());
-              // this repair_run is identified as a duplicate (for this activation):
-              // so take the last repair run, and try start it. it's ok if already running.
-              newRepairRun = context.storage.getRepairRun(newRepairRun.getId()).get();
+                  latestRepairRun);
+              // newRepairRun is identified as a duplicate (for this schedule and activation time)
+              // so take the actual last repair run, and try start it. it's ok if already running.
+              newRepairRun = context.storage.getRepairRun(latestRepairRun).get();
               context.repairManager.startRepairRun(newRepairRun);
             } else {
               LOG.warn(
                   "schedule {} has been altered by someone else. not running repair",
                   schedule.getId());
             }
-            // this duplicated repair_run needs to be removed from the schedule's history
-            // FIXME – concurrency is broken unless we atomically add/remove run history items
-            // boolean result = context.storage
-            //        .deleteRepairRunFromRepairSchedule(schedule.getId(), newRepairRun.getId());
           } catch (ReaperException e) {
             LOG.error(e.getMessage(), e);
           }

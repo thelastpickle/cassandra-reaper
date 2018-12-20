@@ -247,7 +247,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     }
 
     Thread.sleep(1000);
-    SchedulingManager.start(context);
+    context.schedulingManager = SchedulingManager.create(context);
+    context.schedulingManager.start();
 
     if (config.hasAutoSchedulingEnabled()) {
       LOG.debug("using specified configuration for auto scheduling: {}", config.getAutoScheduling());

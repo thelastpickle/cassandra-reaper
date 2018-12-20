@@ -22,11 +22,8 @@ case "${TEST_TYPE}" in
         echo "ERROR: Environment variable TEST_TYPE is unspecified."
         exit 1
         ;;
-    "ccm")
+    "deploy")
         mvn --version -B
-        ccm start
-        sleep 30
-        ccm status
         if [ "${TRAVIS_BRANCH}" = "master" ]
             then
                 VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
@@ -36,7 +33,15 @@ case "${TEST_TYPE}" in
                 mvn -B versions:set "-DnewVersion=${BETA_VERSION}-${DATE}"
         fi
 
-        MAVEN_OPTS="-Xmx1g" mvn -B clean install
+        mvn -B install -DskipTests
+        ;;
+    "ccm")
+        mvn --version -B
+        ccm start
+        sleep 30
+        ccm status
+
+        mvn -B install
 
         if [ "x${GRIM_MIN}" = "x" ]
         then
@@ -44,10 +49,18 @@ case "${TEST_TYPE}" in
             mvn -B surefire:test -Dtest=ReaperAuthIT
             mvn -B surefire:test -Dtest=ReaperH2IT
             mvn -B surefire:test -Dtest=ReaperPostgresIT
-            mvn -B surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT
         else
-            mvn -B surefire:test -DsurefireArgLine="-Xmx1g" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
+            mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
         fi
+        ;;
+    "upgrade")
+        mvn --version -B
+        ccm start
+        sleep 30
+        ccm status
+
+        mvn install -B -DskipTests -Pintegration-upgrade-tests
+        MAVEN_OPTS="-Xmx512m" mvn -B surefire:test -Dtest=ReaperCassandraIT -Dcucumber.options="${CO}"
         ;;
     "docker")
         docker-compose -f ./src/packaging/docker-build/docker-compose.yml build
