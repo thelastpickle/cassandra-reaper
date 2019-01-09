@@ -490,16 +490,9 @@ final class JmxProxyImpl implements JmxProxy {
     try {
       // list all mbeans in search of one with the name Repair#??
       // This is the replacement for AntiEntropySessions since Cassandra 2.2
-      Set beanSet = mbeanServer.queryNames(ObjectNames.INTERNALS, null);
-      for (Object bean : beanSet) {
-        ObjectName objName = (ObjectName) bean;
-        if (objName.getCanonicalName().contains("Repair#")) {
-          return true;
-        }
-      }
-      return false;
-    } catch (IOException ignored) {
-      LOG.warn(FAILED_TO_CONNECT_TO_USING_JMX, host, ignored);
+      return getRunningRepairMetricsPost22().isEmpty()
+          ? false
+          : true;
     } catch (RuntimeException e) {
       LOG.error(ERROR_GETTING_ATTR_JMX, e);
     }
@@ -516,7 +509,9 @@ final class JmxProxyImpl implements JmxProxy {
       Set beanSet = mbeanServer.queryNames(ObjectNames.INTERNALS, null);
       for (Object bean : beanSet) {
         ObjectName objName = (ObjectName) bean;
+        LOG.info("MBeans : {}", objName.getCanonicalName());
         if (objName.getCanonicalName().contains("Repair#")) {
+          LOG.info("Running repairs : {}", objName.getCanonicalName());
           repairMbeans.add(objName.getCanonicalName());
         }
       }

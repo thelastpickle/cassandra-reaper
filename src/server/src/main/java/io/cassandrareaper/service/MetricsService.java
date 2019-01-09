@@ -220,7 +220,6 @@ public final class MetricsService {
 
       // List mbeans for running repairs in Cassandra 2.2+ and add them to the collected metrics
       List<String> runningRepairs = jmxProxy.getRunningRepairMetricsPost22();
-      LOG.info("Running repairs {}", runningRepairs);
       metricsToCollect.addAll(runningRepairs);
       metricsToCollect.addAll(Arrays.asList(COLLECTED_METRICS));
       String[] metricsToCollectArray = new String[ metricsToCollect.size() ];

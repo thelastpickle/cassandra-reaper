@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.annotation.Nullable;
 import javax.validation.constraints.DecimalMin;
@@ -136,6 +137,15 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private DataSourceFactory database;
 
   private DataSourceFactory relationalDb = new DataSourceFactory();
+
+  @JsonProperty
+  private Optional<String> enforcedLocalNode;
+
+  @JsonProperty
+  private Optional<String> enforcedLocalClusterName;
+
+  @JsonProperty
+  private Optional<String> enforcedLocalDatacenter;
 
   public int getSegmentCount() {
     return segmentCount == null ? 0 : segmentCount;
@@ -388,6 +398,32 @@ public final class ReaperApplicationConfiguration extends Configuration {
   public Boolean isInSidecarMode() {
     return datacenterAvailability == DatacenterAvailability.SIDECAR;
   }
+
+  public Optional<String> getEnforcedLocalNode() {
+    return enforcedLocalNode;
+  }
+
+  public Optional<String> getEnforcedLocalClusterName() {
+    return enforcedLocalClusterName;
+  }
+
+  public Optional<String> getEnforcedLocalDatacenter() {
+    return enforcedLocalDatacenter;
+  }
+
+  public void setEnforcedLocalNode(Optional<String> enforcedLocalNode) {
+    this.enforcedLocalNode = enforcedLocalNode;
+  }
+
+  public void setEnforcedLocalClusterName(Optional<String> enforcedLocalClusterName) {
+    this.enforcedLocalClusterName = enforcedLocalClusterName;
+  }
+
+  public void setEnforcedLocalDatacenter(Optional<String> enforcedLocalDatacenter) {
+    this.enforcedLocalDatacenter = enforcedLocalDatacenter;
+  }
+
+
 
   public static final class JmxCredentials {
 

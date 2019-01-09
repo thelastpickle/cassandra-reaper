@@ -24,6 +24,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.NodeMetrics;
+import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
@@ -146,7 +147,7 @@ final class Heart implements AutoCloseable {
           }
           else {
             // In sidecar mode we store metrics in the db on a regular basis
-            grabAndStoreGenericMetrics((IDistributedStorage)context.storage, context.localClusterName, context.localNodeAddress);
+            grabAndStoreGenericMetrics();
           }
         } catch (ExecutionException | InterruptedException | RuntimeException | ReaperException | JMException ex) {
           LOG.warn("Failed metric collection during heartbeat", ex);
@@ -178,14 +179,58 @@ final class Heart implements AutoCloseable {
             .build());
   }
 
-  private void grabAndStoreGenericMetrics(IDistributedStorage storage, String clusterName, String host)
+  private void grabAndStoreGenericMetrics()
       throws ReaperException, InterruptedException, JMException {
-    Node node = Node.builder().withClusterName(clusterName).withHostname(host).build();
+    int runningRepairs = 0;
+    int pendingCompactions = 0;
+    Node node = Node.builder().withClusterName(context.localClusterName).withHostname(context.localNodeAddress).build();
     List<GenericMetric> metrics = this.metricsService.convertToGenericMetrics(this.metricsService.collectMetrics(node), node);
 
     for (GenericMetric metric:metrics) {
-      storage.storeMetric(metric);
+      ((IDistributedStorage)context.storage).storeMetric(metric);
+      if (isPendingCompactionsMetric(metric)) {
+        pendingCompactions += metric.getValue();
+      }
+      if (isRepairMetric(metric)) {
+        runningRepairs += metric.getValue();
+      }
     }
+    LOG.info("Grabbing and storing metrics for {}", context.localNodeAddress);
+
+    final int totalRunningRepairs = runningRepairs;
+    final int totalPendingCompactions = pendingCompactions;
+
+    context
+        .storage
+        .getRepairRunsWithState(RunState.RUNNING)
+        .stream()
+        .filter(run -> run.getClusterName().equals(context.localClusterName))
+        .forEach(
+            run ->
+                ((IDistributedStorage) context.storage)
+                    .storeNodeMetrics(
+                        run.getId(),
+                        NodeMetrics.builder()
+                            .withCluster(context.localClusterName)
+                            .withHasRepairRunning(totalRunningRepairs > 0)
+                            .withPendingCompactions(totalPendingCompactions)
+                            .withActiveAnticompactions(0)
+                            .withDatacenter(context.localDatacenter)
+                            .withNode(context.localNodeAddress)
+                            .withRequested(false)
+                            .build()));
+  }
+
+  @VisibleForTesting
+  boolean isRepairMetric(GenericMetric metric) {
+    return metric.getMetric().equals("org.apache.cassandra.internal:type=AntiEntropySessions,name=PendingTasks.Value")
+        || metric.getMetric().equals("org.apache.cassandra.internal:type=AntiEntropySessions,name=ActiveCount.Value")
+        || metric.getMetric().matches("org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=Repair#[0-9]{1,3},name=[a-zA-Z]*Tasks.Value");
+  }
+
+  @VisibleForTesting
+  boolean isPendingCompactionsMetric(GenericMetric metric) {
+    return metric.getMetric().equals("org.apache.cassandra.metrics:type=Compaction,name=PendingTasks.Value");
   }
 
 

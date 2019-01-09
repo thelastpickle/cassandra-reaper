@@ -90,7 +90,6 @@ public final class MetricsProxy {
     List<JmxStat> flatStatList = allStats.stream()
         .flatMap(attr -> attr.stream()).collect(Collectors.toList());
 
-    LOG.info("Stats {}", flatStatList);
     // Group the stats by scope to ease displaying/manipulating the data
     Map<String, List<JmxStat>> groupedStatList = flatStatList.stream()
         .collect(Collectors.groupingBy(JmxStat::getMbeanName));

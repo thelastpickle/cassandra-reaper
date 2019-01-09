@@ -21,6 +21,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxConnectionsInitializer;
 import io.cassandrareaper.jmx.JmxProxy;
@@ -297,13 +298,14 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
    * @throws ReaperException any caught runtime exception
    */
   private void maybeInitializeSidecarMode() throws ReaperException {
-    Node host = Node.builder().withHostname("127.0.0.1").withClusterName("bogus").build();
+    Node host = Node.builder().withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1")).withClusterName("bogus").build();
     try {
       JmxProxy jmxProxy
           = context.jmxConnectionFactory.connect(
               host, context);
-      context.localNodeAddress = jmxProxy.getLocalEndpoint();
+      context.localNodeAddress = context.config.getEnforcedLocalNode().orElse(jmxProxy.getLocalEndpoint());
       context.localClusterName = Cluster.toSymbolicName(jmxProxy.getClusterName());
+      context.localDatacenter = EndpointSnitchInfoProxy.create(jmxProxy).getDataCenter(context.localNodeAddress);
       LOG.info("Sidecar mode. Local node is : {}", context.localNodeAddress);
     } catch (RuntimeException | InterruptedException | ReaperException e) {
       LOG.error("Failed listing compactions for host {}", host, e);
