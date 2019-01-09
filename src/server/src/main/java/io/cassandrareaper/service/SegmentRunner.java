@@ -57,6 +57,7 @@ import javax.management.JMException;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -638,7 +639,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return () -> {
       LOG.debug("getMetricsForHost {} / {} / {}", node, localDc, nodeDc);
 
-      if (nodeIsAccessibleThroughJmx(localDc, nodeDc, node)) {
+      if (!nodeIsAccessibleThroughJmx(localDc, nodeDc, node)) {
         // If DatacenterAvailability is not ALL, we should assume jmx on remote dc is not reachable.
         return Pair.of(node, getRemoteNodeMetrics(node, nodeDc));
       } else {
@@ -672,12 +673,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     };
   }
 
-  private boolean nodeIsAccessibleThroughJmx(String localDc, String nodeDc, String node) {
-    return (DatacenterAvailability.ALL != context.config.getDatacenterAvailability()
-        && !nodeDc.equals(localDc)
-        && context.storage instanceof IDistributedStorage)
+  @VisibleForTesting
+  boolean nodeIsAccessibleThroughJmx(String localDc, String nodeDc, String node) {
+    return DatacenterAvailability.ALL == context.config.getDatacenterAvailability()
+        || DatacenterAvailability.LOCAL == context.config.getDatacenterAvailability()
+        || (DatacenterAvailability.EACH == context.config.getDatacenterAvailability()
+            && nodeDc.equals(localDc))
         || (DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability()
-        && node != context.localNodeAddress);
+            && node.equals(context.localNodeAddress));
   }
 
   private Optional<NodeMetrics> getRemoteNodeMetrics(String node, String nodeDc) {

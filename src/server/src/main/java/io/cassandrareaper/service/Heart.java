@@ -24,7 +24,6 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.NodeMetrics;
-import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
@@ -112,7 +111,7 @@ final class Heart implements AutoCloseable {
     if (!updatingNodeMetrics.getAndSet(true)) {
       forkJoinPool.submit(() -> {
         try (Timer.Context t0 = timer(context, "updatingNodeMetrics")) {
-          if (context.config.getDatacenterAvailability() != DatacenterAvailability.SIDECAR) {
+
             forkJoinPool.submit(() -> {
               context.repairManager.repairRunners.keySet()
                   .parallelStream()
@@ -120,7 +119,7 @@ final class Heart implements AutoCloseable {
 
                     storage.getNodeMetrics(runId)
                         .parallelStream()
-                        .filter(nodeMetrics -> nodeMetrics.isRequested())
+                        .filter(metrics -> canAnswerToNodeMetricsRequest(metrics))
                         .forEach(req -> {
 
                           LOG.info("Got metric request for node {} in {}", req.getNode(), req.getCluster());
@@ -144,11 +143,11 @@ final class Heart implements AutoCloseable {
                         });
                   });
             }).get();
-          }
-          else {
-            // In sidecar mode we store metrics in the db on a regular basis
-            grabAndStoreGenericMetrics();
-          }
+
+            if (context.config.getDatacenterAvailability() == DatacenterAvailability.SIDECAR) {
+              // In sidecar mode we store metrics in the db on a regular basis
+              grabAndStoreGenericMetrics();
+            }
         } catch (ExecutionException | InterruptedException | RuntimeException | ReaperException | JMException ex) {
           LOG.warn("Failed metric collection during heartbeat", ex);
         } finally {
@@ -157,6 +156,22 @@ final class Heart implements AutoCloseable {
         }
       });
     }
+  }
+
+  /**
+   * Checks if the local Reaper instance is supposed to answer a metrics request.
+   * Requires to be in sidecar on the node for which metrics are requested, or to be in a different mode than ALL.
+   * Also checks that the metrics record as requested set to true.
+   *
+   * @param metric
+   * @return true if reaper should try to answer the metric request
+   */
+  private boolean canAnswerToNodeMetricsRequest(NodeMetrics metric) {
+    return (context.config.getDatacenterAvailability() == DatacenterAvailability.SIDECAR
+            && metric.getNode().equals(context.localNodeAddress))
+        || (context.config.getDatacenterAvailability() != DatacenterAvailability.ALL
+        && context.config.getDatacenterAvailability() != DatacenterAvailability.SIDECAR)
+        && metric.isRequested();
   }
 
   private void grabAndStoreNodeMetrics(IDistributedStorage storage, UUID runId, NodeMetrics req)
@@ -199,7 +214,7 @@ final class Heart implements AutoCloseable {
 
     final int totalRunningRepairs = runningRepairs;
     final int totalPendingCompactions = pendingCompactions;
-
+    /*
     context
         .storage
         .getRepairRunsWithState(RunState.RUNNING)
@@ -219,6 +234,7 @@ final class Heart implements AutoCloseable {
                             .withNode(context.localNodeAddress)
                             .withRequested(false)
                             .build()));
+                            */
   }
 
   @VisibleForTesting

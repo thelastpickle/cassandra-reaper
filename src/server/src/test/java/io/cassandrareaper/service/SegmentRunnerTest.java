@@ -1237,4 +1237,35 @@ public final class SegmentRunnerTest {
     assertTrue(metrics.hasRepairRunning());
   }
 
+  @Test
+  public void nodeIsAccessibleThroughJmxTest() throws ReaperException {
+    final AppContext context = new AppContext();
+    context.config = new ReaperApplicationConfiguration();
+    context.localNodeAddress = "127.0.0.1";
+    context.localDatacenter = "dc1";
+    context.localClusterName = "Test";
+    SegmentRunner segmentRunner = new SegmentRunner(context,UUID.randomUUID(), Collections.emptyList(),
+        1000, 1.1,RepairParallelism.DATACENTER_AWARE,
+        "test", mock(RepairUnit.class), mock(RepairRunner.class));
+
+    context.config.setDatacenterAvailability(DatacenterAvailability.SIDECAR);
+    assertTrue(segmentRunner.nodeIsAccessibleThroughJmx("dc1", context.localDatacenter, context.localNodeAddress));
+    assertFalse(segmentRunner.nodeIsAccessibleThroughJmx("dc1", context.localDatacenter, "127.0.0.2"));
+
+    context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
+    assertTrue(segmentRunner.nodeIsAccessibleThroughJmx("dc1", context.localDatacenter, context.localNodeAddress));
+    assertTrue(segmentRunner.nodeIsAccessibleThroughJmx("dc1", "dc2", "127.0.0.2"));
+
+    context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
+    assertTrue(segmentRunner.nodeIsAccessibleThroughJmx(context.localDatacenter, context.localDatacenter, context.localNodeAddress));
+    assertTrue(segmentRunner.nodeIsAccessibleThroughJmx("dc1", "dc2", "127.0.0.2")); // it's in another DC but LOCAL allows attempting it
+    assertTrue(segmentRunner.nodeIsAccessibleThroughJmx("dc1", "dc1", "127.0.0.2")); // Should be accessible, same DC
+
+    context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
+    assertTrue(segmentRunner.nodeIsAccessibleThroughJmx(context.localDatacenter, context.localDatacenter, context.localNodeAddress));
+    assertFalse(segmentRunner.nodeIsAccessibleThroughJmx("dc1", "dc2", "127.0.0.2")); // Should not be accessible as it's in another DC
+    assertTrue(segmentRunner.nodeIsAccessibleThroughJmx("dc1", "dc1", "127.0.0.2")); // Should be accessible, same DC
+
+  }
+
 }
