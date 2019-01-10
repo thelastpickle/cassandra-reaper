@@ -110,6 +110,14 @@ public final class RepairManager implements AutoCloseable {
     }
   }
 
+  public void handleMetricsRequests() throws ReaperException {
+    try {
+      heart.beatMetrics();
+    } catch (RuntimeException e) {
+      throw new ReaperException(e);
+    }
+  }
+
   private void abortAllRunningSegmentsWithNoLeader(Collection<RepairRun> runningRepairRuns) throws ReaperException {
     runningRepairRuns
         .forEach((repairRun) -> {

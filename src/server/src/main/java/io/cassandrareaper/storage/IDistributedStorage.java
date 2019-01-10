@@ -37,6 +37,10 @@ public interface IDistributedStorage {
 
   boolean renewLead(UUID leaderId);
 
+  boolean takeLead(UUID leaderId, int ttl);
+
+  boolean renewLead(UUID leaderId, int ttl);
+
   List<UUID> getLeaders();
 
   void releaseLead(UUID leaderId);
@@ -50,6 +54,8 @@ public interface IDistributedStorage {
   Collection<NodeMetrics> getNodeMetrics(UUID runId);
 
   Optional<NodeMetrics> getNodeMetrics(UUID runId, String node);
+
+  void deleteNodeMetrics(UUID runId, String node);
 
   void storeNodeMetrics(UUID runId, NodeMetrics nodeMetrics);
 

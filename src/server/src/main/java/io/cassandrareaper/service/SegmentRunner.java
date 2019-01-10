@@ -81,13 +81,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentRunner.class);
 
+  private static final int LOCK_DURATION = 30;
   private static final int MAX_TIMEOUT_EXTENSIONS = 10;
   private static final Pattern REPAIR_UUID_PATTERN
       = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
   private static final long SLEEP_TIME_AFTER_POSTPONE_IN_MS = 10000;
   private static final ExecutorService METRICS_GRABBER_EXECUTOR = Executors.newFixedThreadPool(10);
-  private static final long METRICS_POLL_INTERVAL_MS = TimeUnit.SECONDS.toMillis(10);
+  private static final long METRICS_POLL_INTERVAL_MS = TimeUnit.SECONDS.toMillis(5);
   private static final long METRICS_MAX_WAIT_MS = TimeUnit.MINUTES.toMillis(2);
 
   private final AppContext context;
@@ -253,7 +254,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       // If we're using a distributed storage, we need to synchronize with other Reaper instances
       // So we don't start too many segments at the same time
       if (!lockSegmentRunners()) {
-        LOG.info(
+        LOG.debug(
             "Not allowed to run the segment for now as another Reaper holds the lock for repair run {}. "
             + "Will try again later",
             segment.getRunId());
@@ -329,7 +330,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
             if (0 != repairNo) {
               processTriggeredSegment(segment, coordinator, repairNo);
-              updateNodeMetrics(coordinator);
+              //updateNodeMetrics(coordinator);
             } else {
               LOG.info("Nothing to repair for segment {} in keyspace {}", segmentId, keyspace);
 
@@ -691,7 +692,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       IDistributedStorage storage = ((IDistributedStorage) context.storage);
       result = storage.getNodeMetrics(repairRunner.getRepairRunId(), node);
 
-      if (!result.isPresent() && Arrays.asList(DatacenterAvailability.EACH , DatacenterAvailability.SIDECAR).contains(context.config.getDatacenterAvailability())) {
+      if (!result.isPresent()
+          && Arrays.asList(DatacenterAvailability.EACH, DatacenterAvailability.SIDECAR)
+              .contains(context.config.getDatacenterAvailability())) {
         // Sending a request for metrics to the other reaper instances through the Cassandra backend
         storeNodeMetrics(
             NodeMetrics.builder()
@@ -707,10 +710,15 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             && start + METRICS_MAX_WAIT_MS > System.currentTimeMillis()) {
 
           try {
+            renewLockSegmentRunners();
             Thread.sleep(METRICS_POLL_INTERVAL_MS);
           } catch (InterruptedException ignore) { }
           LOG.info("Trying to get metrics from remote DCs for {} in {} of {}", node, nodeDc, clusterName);
           result = storage.getNodeMetrics(repairRunner.getRepairRunId(), node);
+          if (result.isPresent() && !result.get().isRequested()) {
+            // delete the metrics to force other instances to get a refreshed value
+            storage.deleteNodeMetrics(repairRunner.getRepairRunId(), node);
+          }
         }
       }
     }
@@ -1159,11 +1167,26 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "lockSegmentRunners")).time()) {
 
       boolean result = context.storage instanceof IDistributedStorage
-          ? ((IDistributedStorage) context.storage).takeLead(repairRunner.getRepairRunId())
+          ? ((IDistributedStorage) context.storage).takeLead(repairRunner.getRepairRunId(), LOCK_DURATION)
           : true;
 
       if (!result) {
         context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "lockSegmentRunners", "failed")).inc();
+      }
+      return result;
+    }
+  }
+
+  private boolean renewLockSegmentRunners() {
+    try (Timer.Context cx
+        = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "renewLockSegmentRunners")).time()) {
+
+      boolean result = context.storage instanceof IDistributedStorage
+          ? ((IDistributedStorage) context.storage).renewLead(repairRunner.getRepairRunId(), LOCK_DURATION)
+          : true;
+
+      if (!result) {
+        context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "renewLockSegmentRunners", "failed")).inc();
       }
       return result;
     }

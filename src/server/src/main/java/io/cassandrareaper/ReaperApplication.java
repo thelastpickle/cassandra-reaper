@@ -273,7 +273,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         "Cassandra backend storage is the only one allowing EACH datacenter availability modes.");
 
     ScheduledExecutorService scheduler = new InstrumentedScheduledExecutorService(
-            environment.lifecycle().scheduledExecutorService("ReaperApplication-scheduler").threads(1).build(),
+            environment.lifecycle().scheduledExecutorService("ReaperApplication-scheduler").threads(3).build(),
             context.metricRegistry);
 
     if (context.storage instanceof IDistributedStorage) {
@@ -281,6 +281,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       // us to poll the database for running repairs regularly
       // only with Cassandra storage
       scheduleRepairManager(scheduler);
+      scheduleHandleMetricsRequest(scheduler);
     } else {
       // Storage is different than Cassandra, assuming we have a single instance
       context.repairManager.resumeRunningRepairRuns();
@@ -327,6 +328,23 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         },
         0,
         10,
+        TimeUnit.SECONDS);
+  }
+
+  private void scheduleHandleMetricsRequest(ScheduledExecutorService scheduler) {
+    scheduler.scheduleWithFixedDelay(
+        () -> {
+          try {
+            context.repairManager.handleMetricsRequests();
+          } catch (ReaperException | RuntimeException e) {
+            // test-pollution: grim_reaper trashes this log error
+            //if (!Boolean.getBoolean("grim.reaper.running")) {
+            LOG.error("Couldn't handle metrics requests", e);
+            //}
+          }
+        },
+        0,
+        5,
         TimeUnit.SECONDS);
   }
 

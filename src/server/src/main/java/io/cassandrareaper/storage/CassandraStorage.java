@@ -106,6 +106,7 @@ import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 public final class CassandraStorage implements IStorage, IDistributedStorage {
 
+  private static final int LEAD_DURATION = 600;
   /* Simple stmts */
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
   private static final String SELECT_REPAIR_SCHEDULE = "SELECT * FROM repair_schedule_v1";
@@ -171,6 +172,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement storeNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsByNodePrepStmt;
+  private PreparedStatement delNodeMetricsByNodePrepStmt;
   private PreparedStatement getSnapshotPrepStmt;
   private PreparedStatement deleteSnapshotPrepStmt;
   private PreparedStatement saveSnapshotPrepStmt;
@@ -373,6 +375,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       getNodeMetricsPrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
           + " WHERE time_partition = ? AND run_id = ?");
       getNodeMetricsByNodePrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
+          + " WHERE time_partition = ? AND run_id = ? AND node = ?");
+      delNodeMetricsByNodePrepStmt = session.prepare("DELETE FROM node_metrics_v1"
           + " WHERE time_partition = ? AND run_id = ? AND node = ?");
 
       getSnapshotPrepStmt = session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
@@ -1229,6 +1233,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public boolean takeLead(UUID leaderId) {
+    return takeLead(leaderId, LEAD_DURATION);
+  }
+
+  @Override
+  public boolean renewLead(UUID leaderId) {
+    return renewLead(leaderId, LEAD_DURATION);
+  }
+
+  @Override
+  public boolean takeLead(UUID leaderId, int ttl) {
     LOG.debug("Trying to take lead on segment {}", leaderId);
     ResultSet lwtResult = session.execute(
         takeLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS));
@@ -1244,7 +1258,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public boolean renewLead(UUID leaderId) {
+  public boolean renewLead(UUID leaderId, int ttl) {
     ResultSet lwtResult = session.execute(
         renewLeadPrepStmt.bind(
             AppContext.REAPER_INSTANCE_ID,
@@ -1337,6 +1351,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
     Row row = session.execute(getNodeMetricsByNodePrepStmt.bind(minute, runId, node)).one();
     return null != row ? Optional.of(createNodeMetrics(row)) : Optional.empty();
+  }
+
+  @Override
+  public void deleteNodeMetrics(UUID runId, String node) {
+    long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
+    session.executeAsync(delNodeMetricsByNodePrepStmt.bind(minute, runId, node));
   }
 
   private static NodeMetrics createNodeMetrics(Row row) {

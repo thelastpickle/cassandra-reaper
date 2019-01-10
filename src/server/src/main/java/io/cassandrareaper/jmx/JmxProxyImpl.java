@@ -509,9 +509,7 @@ final class JmxProxyImpl implements JmxProxy {
       Set beanSet = mbeanServer.queryNames(ObjectNames.INTERNALS, null);
       for (Object bean : beanSet) {
         ObjectName objName = (ObjectName) bean;
-        LOG.info("MBeans : {}", objName.getCanonicalName());
         if (objName.getCanonicalName().contains("Repair#")) {
-          LOG.info("Running repairs : {}", objName.getCanonicalName());
           repairMbeans.add(objName.getCanonicalName());
         }
       }

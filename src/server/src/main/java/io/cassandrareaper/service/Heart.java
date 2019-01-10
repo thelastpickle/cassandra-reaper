@@ -50,7 +50,7 @@ final class Heart implements AutoCloseable {
 
   private static final AtomicBoolean GAUGES_REGISTERED = new AtomicBoolean(false);
   private static final Logger LOG = LoggerFactory.getLogger(Heart.class);
-  private static final long DEFAULT_MAX_FREQUENCY = TimeUnit.SECONDS.toMillis(10);
+  private static final long DEFAULT_MAX_FREQUENCY = TimeUnit.SECONDS.toMillis(30);
 
   private final AtomicLong lastBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
   private final ForkJoinPool forkJoinPool = new ForkJoinPool(64);
@@ -81,10 +81,22 @@ final class Heart implements AutoCloseable {
       lastBeat.set(System.currentTimeMillis());
       ((IDistributedStorage) context.storage).saveHeartbeat();
 
-      if (ReaperApplicationConfiguration.DatacenterAvailability.EACH == context.config.getDatacenterAvailability()
-          || ReaperApplicationConfiguration.DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability()) {
+      if (ReaperApplicationConfiguration.DatacenterAvailability.EACH
+              == context.config.getDatacenterAvailability()
+          || ReaperApplicationConfiguration.DatacenterAvailability.SIDECAR
+              == context.config.getDatacenterAvailability()) {
         updateRequestedNodeMetrics();
       }
+    }
+  }
+
+  synchronized void beatMetrics() {
+    if (context.storage instanceof IDistributedStorage
+            && ReaperApplicationConfiguration.DatacenterAvailability.EACH
+                == context.config.getDatacenterAvailability()
+        || ReaperApplicationConfiguration.DatacenterAvailability.SIDECAR
+            == context.config.getDatacenterAvailability()) {
+      updateRequestedNodeMetrics();
     }
   }
 
