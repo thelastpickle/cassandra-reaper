@@ -88,6 +88,12 @@ public final class RepairScheduleStatus {
   @JsonProperty("repair_thread_count")
   private int repairThreadCount;
 
+  @JsonProperty("active_time")
+  private String activeTime;
+
+  @JsonProperty("inactive_time")
+  private String inactiveTime;
+
   /**
    * Default public constructor Required for Jackson JSON parsing.
    */
@@ -113,7 +119,9 @@ public final class RepairScheduleStatus {
       Collection<String> datacenters,
       Collection<String> blacklistedTables,
       int segmentCountPerNode,
-      int repairThreadCount) {
+      int repairThreadCount,
+      String activeTime,
+      String inactiveTime) {
 
     this.id = id;
     this.owner = owner;
@@ -134,6 +142,8 @@ public final class RepairScheduleStatus {
     this.blacklistedTables = blacklistedTables;
     this.segmentCountPerNode = segmentCountPerNode;
     this.repairThreadCount = repairThreadCount;
+    this.activeTime = activeTime;
+    this.inactiveTime = inactiveTime;
   }
 
   public RepairScheduleStatus(RepairSchedule repairSchedule, RepairUnit repairUnit) {
@@ -156,7 +166,9 @@ public final class RepairScheduleStatus {
         repairUnit.getDatacenters(),
         repairUnit.getBlacklistedTables(),
         repairSchedule.getSegmentCountPerNode(),
-        repairUnit.getRepairThreadCount());
+        repairUnit.getRepairThreadCount(),
+        repairUnit.getActiveTime(),
+        repairUnit.getInactiveTime());
   }
 
   public UUID getId() {
@@ -269,6 +281,14 @@ public final class RepairScheduleStatus {
 
   public void setDaysBetween(int daysBetween) {
     this.daysBetween = daysBetween;
+  }
+
+  public String getActiveTime() {
+    return activeTime;
+  }
+
+  public String getInactiveTime() {
+    return inactiveTime;
   }
 
   @JsonProperty("creation_time")

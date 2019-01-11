@@ -108,6 +108,8 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withActiveTime("")
+                        .withInactiveTime("")
                         .build(),
                     cf.getId())));
 
@@ -232,6 +234,8 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withActiveTime("")
+                        .withInactiveTime("")
                         .build(),
                     cf.getId())));
     storage.addCluster(new Cluster("reaper", Optional.of("murmur3"), Sets.newHashSet("127.0.0.1"),
@@ -383,6 +387,8 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withActiveTime("")
+                        .withInactiveTime("")
                         .build(),
                     cf.getId())));
 
@@ -530,6 +536,8 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withActiveTime("")
+                        .withInactiveTime("")
                         .build(),
                     cf.getId())));
 
@@ -674,6 +682,8 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withActiveTime("")
+                        .withInactiveTime("")
                         .build(),
                     cf.getId())));
 
@@ -818,6 +828,8 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withActiveTime("")
+                        .withInactiveTime("")
                         .build(),
                     cf.getId())));
 
@@ -963,6 +975,8 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withActiveTime("")
+                        .withInactiveTime("")
                         .build(),
                     cf.getId())));
 

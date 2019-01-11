@@ -305,7 +305,10 @@ public final class PostgresStorage implements IStorage {
               params.nodes,
               params.datacenters,
               params.blacklistedTables,
-              params.repairThreadCount);
+              params.repairThreadCount,
+              params.activeTime,
+              params.inactiveTime
+      );
     }
     return Optional.ofNullable(result);
   }

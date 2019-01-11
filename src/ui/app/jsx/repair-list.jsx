@@ -20,7 +20,7 @@ import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMix
 import ProgressBar from 'react-bootstrap/lib/ProgressBar';
 import Button from 'react-bootstrap/lib/Button';
 import Modal from 'react-bootstrap/lib/Modal';
-import segmentList from 'jsx/segment-list'
+import segmentList from 'jsx/segment-list';
 
 const TableRow = React.createClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin, RowAbortMixin],
@@ -50,7 +50,7 @@ const TableRow = React.createClass({
     const segsPerc = (100/segsTotal)*segsRepaired;
     const state = this.props.row.state;
     let etaOrDuration = moment(this.props.row.estimated_time_of_arrival).from(moment(this.props.row.current_time));
-    if (!(state == 'RUNNING' || state == 'PAUSED')) {
+    if (!(state == 'RUNNING' || state == 'PAUSED' || state == 'RUNNING_TF_PAUSED')) {
       etaOrDuration = this.props.row.duration;
     } else if (segsPerc < 5) {
       etaOrDuration = 'TBD';
@@ -60,14 +60,14 @@ const TableRow = React.createClass({
     if (state == 'PAUSED') {
       progressStyleColor = "info";
     }
-    else if (state != 'DONE' && state != 'RUNNING'){
+    else if (state != 'DONE' && state != 'RUNNING' && state != 'RUNNING_TF_PAUSED'){
       progressStyleColor = "danger";
     }
 
 
     
     const btnStartStop = this.props.row.state == 'ABORTED' ? null : this.statusUpdateButton();
-    const btnAbort = state == 'RUNNING' || state == 'PAUSED' ? this.abortButton() : this.deleteButton();
+    const btnAbort = state == 'RUNNING' || state == 'PAUSED' || state == 'RUNNING_TF_PAUSED' ? this.abortButton() : this.deleteButton();
     const btnSegment = this.segmentsButton(this.props.row.id);
     const active = state == 'RUNNING';
     let repairProgress = <ProgressBar now={Math.round((segsRepaired*100)/segsTotal)} active={active} bsStyle={progressStyleColor} 
@@ -122,7 +122,8 @@ const TableRowDetails = React.createClass({
     }
     let endTime = null;
     if(this.props.row.end_time 
-      && this.props.row.state != 'RUNNING' 
+      && this.props.row.state != 'RUNNING'
+      && this.props.row.state != 'RUNNING_TF_PAUSED'
       && this.props.row.state != 'PAUSED'
       && this.props.row.state != 'NOT_STARTED') {
       if (this.props.row.state == 'ABORTED') {
@@ -204,6 +205,14 @@ const TableRowDetails = React.createClass({
                 <tr>
                     <td>Intensity</td>
                     <td>{intensity}</td>
+                </tr>
+                <tr>
+                    <td>Active Time (UTC)</td>
+                    <td>{this.props.row.active_time}</td>
+                </tr>
+                <tr>
+                    <td>Inactive Time (UTC)</td>
+                    <td>{this.props.row.inactive_time}</td>
                 </tr>
                 <tr>
                     <td>Repair parallelism</td>
@@ -359,7 +368,7 @@ const repairList = React.createClass({
     if (this.state.repairs !== null) {
         rowsRunning = this.state.repairs.sort(compareStartTimeReverse)
             .filter(repair => this.state.currentCluster === "all" || this.state.currentCluster === repair.cluster_name)
-            .filter(repair => (repair.state === "RUNNING" || repair.state === "PAUSED" || repair.state === "NOT_STARTED"))
+            .filter(repair => (repair.state === "RUNNING" || repair.state == 'RUNNING_TF_PAUSED' || repair.state === "PAUSED" || repair.state === "NOT_STARTED"))
             .map(repair =>
                 <tbody key={repair.id + '-rows'}>
                     <TableRow row={repair} key={repair.id + '-head'}
@@ -372,7 +381,7 @@ const repairList = React.createClass({
 
         rowsDone = this.state.repairs.sort(compareEndTimeReverse)
             .filter(repair => this.state.currentCluster === "all" || this.state.currentCluster === repair.cluster_name)
-            .filter(repair => (repair.state !== "RUNNING" && repair.state !== "PAUSED" && repair.state !== "NOT_STARTED"))
+            .filter(repair => (repair.state !== "RUNNING" && repair.state !== "PAUSED" && repair.state !== "NOT_STARTED" && repair.state !== "RUNNING_TF_PAUSED"))
             .slice(0, this.state.numberOfElementsToDisplay)
             .map(repair =>
                 <tbody key={repair.id + '-rows'}>

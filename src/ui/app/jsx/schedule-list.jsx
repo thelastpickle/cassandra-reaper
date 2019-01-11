@@ -123,6 +123,14 @@ const TableRowDetails = React.createClass({
                     <td>{this.props.row.intensity}</td>
                 </tr>
                 <tr>
+                    <td>Active Time (UTC)</td>
+                    <td>{this.props.row.active_time}</td>
+                </tr>
+                <tr>
+                    <td>Inactive Time (UTC)</td>
+                    <td>{this.props.row.inactive_time}</td>
+                </tr>
+                <tr>
                     <td>Repair threads</td>
                     <td>{this.props.row.repair_thread_count}</td>
                 </tr>

@@ -18,7 +18,13 @@ import React from "react";
 import { WithContext as ReactTags } from 'react-tag-input';
 import { getUrlPrefix } from "jsx/mixin";
 import $ from "jquery";
+import { TimePicker } from 'react-widgets';
+import moment from "moment";
+import Moment from 'moment';
+import momentLocalizer from 'react-widgets-moment';
 
+Moment.locale(navigator.language);
+momentLocalizer();
 
 const repairForm = React.createClass({
 
@@ -37,7 +43,7 @@ const repairForm = React.createClass({
       parallelism: null, intensity: null, cause: null, incrementalRepair: null, formCollapsed: true, nodes: "", datacenters: "", blacklistedTables: "",
       nodeList: [], datacenterList: [], clusterStatus: {}, urlPrefix: URL_PREFIX, nodeSuggestions: [], datacenterSuggestions: [], tableSuggestions: [], 
       clusterTables: {}, blacklistSuggestions: [], tableList: [], blacklistList: [], keyspaceList: [], keyspaceSuggestions: [],
-      blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true, repairThreadCount: 1
+      blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true, repairThreadCount: 1, inactiveTime: moment().toDate(), activeTime: moment().toDate()
     };
   },
 
@@ -123,6 +129,9 @@ const repairForm = React.createClass({
     if(this.state.datacenters) repair.datacenters = this.state.datacenters;
     if(this.state.blacklistedTables) repair.blacklistedTables = this.state.blacklistedTables;
     if(this.state.repairThreadCount && this.state.repairThreadCount > 0) repair.repairThreadCount = this.state.repairThreadCount;
+    if(this.state.inactiveTime) repair.inactiveTime = moment(this.state.inactiveTime).utc().format("HH:mm");
+    if(this.state.activeTime) repair.activeTime = moment(this.state.activeTime).utc().format("HH:mm");;
+
 
     // Force incremental repair to FALSE if empty
     if(!this.state.incrementalRepair) repair.incrementalRepair = "false";
@@ -532,6 +541,26 @@ const repairForm = React.createClass({
                         <input type="number" className="form-control" value={this.state.repairThreadCount}
                           min="1" max="4"
                           onChange={this._handleChange} id="in_repairThreadCount" placeholder="repair threads"/>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_activeTime" className="col-sm-3 control-label">Active time*</label>
+                      <div className="col-sm-9 col-md-7 col-lg-5">
+                        <TimePicker
+                          value={this.state.activeTime}
+                          onChange={value => this.setState({ activeTime: value })}
+                          step={5}
+                         />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_inactiveTime" className="col-sm-3 control-label">Inactive time*</label>
+                      <div className="col-sm-9 col-md-7 col-lg-5">
+                        <TimePicker
+                          value={this.state.inactiveTime}
+                          onChange={value => this.setState({ inactiveTime: value })}
+                          step={5}
+                        />
                       </div>
                     </div>
                   </div>

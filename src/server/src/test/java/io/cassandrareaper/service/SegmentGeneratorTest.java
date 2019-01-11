@@ -50,7 +50,7 @@ public final class SegmentGeneratorTest {
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
 
     List<Segment> segments
-        = generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
+        = generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10","","");
 
     assertEquals(15, segments.size());
 
@@ -73,7 +73,7 @@ public final class SegmentGeneratorTest {
             "113427455640312821154458202477256070485"),
         (String string) -> new BigInteger(string));
 
-    segments = generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
+    segments = generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10","","");
     assertEquals(15, segments.size());
 
     assertEquals("(5,6]", segments.get(0).getBaseRange().toString());
@@ -101,7 +101,7 @@ public final class SegmentGeneratorTest {
     List<BigInteger> tokens = Lists.transform(tokenStrings, (String string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
+    generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10","","");
   }
 
   @Test
@@ -119,7 +119,7 @@ public final class SegmentGeneratorTest {
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
 
     List<Segment> segments
-        = generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
+        = generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10","","");
 
     assertEquals(15, segments.size());
 
@@ -148,7 +148,7 @@ public final class SegmentGeneratorTest {
     List<BigInteger> tokens = Lists.transform(tokenStrings, (String string) -> new BigInteger(string));
 
     SegmentGenerator generator = new SegmentGenerator("foo.bar.RandomPartitioner");
-    generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10");
+    generator.generateSegments(10, tokens, Boolean.FALSE, Maps.newHashMap(), "2.2.10","","");
     // Will throw an exception when concluding that the repair segments don't add up.
     // This is because the tokens were supplied out of order.
   }
@@ -213,7 +213,7 @@ public final class SegmentGeneratorTest {
     Map<List<String>, List<RingRange>> replicasToRangeMap
         = RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
 
-    List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(1200), replicasToRangeMap);
+    List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(1200), replicasToRangeMap,"","");
 
     // We have 3 different sets of replicas so we can't have less than 3 segments
     assertEquals(3, segments.size());
@@ -236,7 +236,7 @@ public final class SegmentGeneratorTest {
     Map<List<String>, List<RingRange>> replicasToRangeMap
         = RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
 
-    List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(1), replicasToRangeMap);
+    List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(1), replicasToRangeMap,"","");
 
     // number of tokens per segment is smaller than the number of tokens per range
     // Generating a single segment per token range
@@ -260,7 +260,7 @@ public final class SegmentGeneratorTest {
     Map<List<String>, List<RingRange>> replicasToRangeMap
         = RepairRunService.buildReplicasToRangeMap(rangeToEndpoint);
 
-    List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(200), replicasToRangeMap);
+    List<Segment> segments = sg.coalesceTokenRanges(BigInteger.valueOf(200), replicasToRangeMap,"","");
 
     // Ranges with 100 tokens will get coalesced two by two
     assertEquals(7, segments.size());

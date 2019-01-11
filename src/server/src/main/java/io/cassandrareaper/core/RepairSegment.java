@@ -42,6 +42,8 @@ public final class RepairSegment {
   private final String coordinatorHost;
   private final DateTime startTime;
   private final DateTime endTime;
+  private final String activeTime;
+  private final String inactiveTime;
 
   private RepairSegment(Builder builder, @Nullable UUID id) {
     this.id = id;
@@ -53,6 +55,8 @@ public final class RepairSegment {
     this.coordinatorHost = builder.coordinatorHost;
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
+    this.activeTime = builder.activeTime;
+    this.inactiveTime = builder.inactiveTime;
   }
 
   public static Builder builder(Segment tokenRange, UUID repairUnitId) {
@@ -108,6 +112,14 @@ public final class RepairSegment {
     return endTime;
   }
 
+  public String getActiveTime() {
+    return activeTime;
+  }
+
+  public String getInactiveTime() {
+    return inactiveTime;
+  }
+
   public Builder with() {
     return new Builder(this);
   }
@@ -147,6 +159,8 @@ public final class RepairSegment {
     private String coordinatorHost;
     private DateTime startTime;
     private DateTime endTime;
+    private String activeTime;
+    private String inactiveTime;
 
     private Builder() {}
 
@@ -169,6 +183,9 @@ public final class RepairSegment {
       coordinatorHost = original.coordinatorHost;
       startTime = original.startTime;
       endTime = original.endTime;
+      activeTime = original.activeTime;
+      inactiveTime = original.inactiveTime;
+
     }
 
     public Builder withRunId(UUID runId) {
@@ -180,6 +197,18 @@ public final class RepairSegment {
     public Builder withRepairUnitId(UUID repairUnitId) {
       Preconditions.checkNotNull(repairUnitId);
       this.repairUnitId = repairUnitId;
+      return this;
+    }
+
+    public Builder withActiveTime( String activeTime) {
+      Preconditions.checkNotNull(repairUnitId);
+      this.activeTime = activeTime;
+      return this;
+    }
+
+    public Builder withInactiveTime( String inactiveTime) {
+      Preconditions.checkNotNull(repairUnitId);
+      this.inactiveTime = inactiveTime;
       return this;
     }
 

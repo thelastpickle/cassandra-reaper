@@ -85,14 +85,16 @@ public final class RepairRunService {
       int segments,
       int segmentsPerNode,
       RepairParallelism repairParallelism,
-      Double intensity)
+      Double intensity,
+      String activeTime,
+      String inactiveTime)
       throws ReaperException {
 
     // preparing a repair run involves several steps
     // the first step is to generate token segments
     List<Segment> tokenSegments = repairUnit.getIncrementalRepair()
             ? Lists.newArrayList()
-            : generateSegments(cluster, segments, segmentsPerNode, repairUnit);
+            : generateSegments(cluster, segments, segmentsPerNode, repairUnit, activeTime, inactiveTime);
 
     checkNotNull(tokenSegments, "failed generating repair segments");
 
@@ -105,12 +107,14 @@ public final class RepairRunService {
         .segmentCount(segments)
         .repairParallelism(repairParallelism)
         .cause(cause.orElse("no cause specified"))
-        .owner(owner);
+        .owner(owner)
+        .activeTime(activeTime)
+        .inactiveTime(inactiveTime);
 
     // the last preparation step is to generate actual repair segments
     List<RepairSegment.Builder> segmentBuilders = repairUnit.getIncrementalRepair()
-        ? createRepairSegmentsForIncrementalRepair(nodes, repairUnit)
-        : createRepairSegments(tokenSegments, repairUnit);
+        ? createRepairSegmentsForIncrementalRepair(nodes, repairUnit, activeTime, inactiveTime)
+        : createRepairSegments(tokenSegments, repairUnit, activeTime, inactiveTime);
 
     RepairRun repairRun = context.storage.addRepairRun(runBuilder, segmentBuilders);
 
@@ -133,7 +137,8 @@ public final class RepairRunService {
    *     of the nodes in the Cluster.
    */
   private List<Segment> generateSegments(
-      Cluster targetCluster, int segmentCount, int segmentCountPerNode, RepairUnit repairUnit)
+      Cluster targetCluster, int segmentCount, int segmentCountPerNode, RepairUnit repairUnit,
+        String activeTime, String inactiveTime)
       throws ReaperException {
 
     List<Segment> segments = Lists.newArrayList();
@@ -177,7 +182,9 @@ public final class RepairRunService {
                   tokens,
                   repairUnit.getIncrementalRepair(),
                   replicasToRange,
-                  cassandraVersion),
+                  cassandraVersion,
+                  activeTime,
+                  inactiveTime),
               repairUnit,
               endpointToRange);
 
@@ -271,10 +278,15 @@ public final class RepairRunService {
    */
   private static List<RepairSegment.Builder> createRepairSegments(
       List<Segment> tokenSegments,
-      RepairUnit repairUnit) {
+      RepairUnit repairUnit,
+      String activeTime,
+      String inactiveTime) {
 
     List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
-    tokenSegments.forEach(range -> repairSegmentBuilders.add(RepairSegment.builder(range, repairUnit.getId())));
+    tokenSegments.forEach(range -> repairSegmentBuilders.add(
+        RepairSegment.builder(range, repairUnit.getId())
+        .withActiveTime(activeTime)
+        .withInactiveTime(inactiveTime)));
     return repairSegmentBuilders;
   }
 
@@ -284,7 +296,9 @@ public final class RepairRunService {
    */
   private static List<RepairSegment.Builder> createRepairSegmentsForIncrementalRepair(
       Map<String, RingRange> nodes,
-      RepairUnit repairUnit) {
+      RepairUnit repairUnit,
+      String activeTime,
+      String inactiveTime) {
 
     List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
 
@@ -296,6 +310,8 @@ public final class RepairRunService {
                     RepairSegment.builder(
                             Segment.builder()
                                 .withTokenRanges(Arrays.asList(range.getValue()))
+                                .withActiveTime(activeTime)
+                                .withInactiveTime(inactiveTime)
                                 .build(),
                             repairUnit.getId())
                         .withCoordinatorHost(range.getKey())));

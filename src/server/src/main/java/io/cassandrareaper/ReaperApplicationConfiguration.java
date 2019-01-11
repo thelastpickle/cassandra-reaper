@@ -135,6 +135,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   private DataSourceFactory database;
 
+  @JsonProperty
+  @DefaultValue("")
+  private String activeTime;
+
+  @JsonProperty
+  @DefaultValue("")
+  private String inactiveTime;
+
   private DataSourceFactory relationalDb = new DataSourceFactory();
 
   public int getSegmentCount() {
@@ -200,6 +208,18 @@ public final class ReaperApplicationConfiguration extends Configuration {
   public void setRepairRunThreadCount(int repairRunThreadCount) {
     this.repairRunThreadCount = repairRunThreadCount;
   }
+
+  public String getActiveTime() {
+    return activeTime;
+  }
+
+  //public void setActiveTime(String activeTime) { this.activeTime = activeTime; }
+
+  public String getInactiveTime() {
+    return inactiveTime;
+  }
+
+  //public void setInactiveTime(String inactiveTime) { this.inactiveTime = inactiveTime; }
 
   public String getStorageType() {
     return storageType;

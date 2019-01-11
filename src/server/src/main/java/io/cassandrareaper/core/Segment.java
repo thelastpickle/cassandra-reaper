@@ -36,13 +36,26 @@ public final class Segment {
 
   RingRange baseRange;
   List<RingRange> tokenRanges;
+  String activeTime;
+  String inactiveTime;
+
 
   private Segment(Builder builder) {
     this.tokenRanges = builder.tokenRanges;
     this.baseRange = builder.tokenRanges.get(0);
+    this.activeTime = builder.activeTime;
+    this.inactiveTime = builder.inactiveTime;
     if (builder.baseRange != null) {
       this.baseRange = builder.baseRange;
     }
+  }
+
+  public String getActiveTime() {
+    return this.activeTime;
+  }
+
+  public String getInactiveTime() {
+    return this.inactiveTime;
   }
 
   public RingRange getBaseRange() {
@@ -70,6 +83,8 @@ public final class Segment {
   public static final class Builder {
     private List<RingRange> tokenRanges;
     private RingRange baseRange;
+    private String activeTime;
+    private String inactiveTime;
 
     private Builder() {}
 
@@ -87,6 +102,17 @@ public final class Segment {
       this.baseRange = baseRange;
       return this;
     }
+
+    public Builder withActiveTime(String activeTime) {
+      this.activeTime = activeTime;
+      return this;
+    }
+
+    public Builder withInactiveTime(String inactiveTime) {
+      this.inactiveTime = inactiveTime;
+      return this;
+    }
+
 
     public Segment build() {
       return new Segment(this);

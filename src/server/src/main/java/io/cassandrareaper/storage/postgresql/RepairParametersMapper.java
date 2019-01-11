@@ -54,7 +54,10 @@ public final class RepairParametersMapper implements ResultSetMapper<RepairParam
     RepairParallelism repairParallelism = RepairParallelism.fromName(repairParallelismStr);
 
     return new RepairParameters(
-        Segment.builder().withTokenRange(range).build(),
+        Segment.builder().withTokenRange(range)
+            .withActiveTime(rs.getString("active_time"))
+            .withInactiveTime(rs.getString("inactive_time"))
+            .build(),
         rs.getString("keyspace_name"),
         Sets.newHashSet(columnFamilies),
         repairParallelism);

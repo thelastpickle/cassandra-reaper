@@ -18,6 +18,7 @@ import React from "react";
 import { WithContext as ReactTags } from 'react-tag-input';
 import $ from "jquery";
 import { DateTimePicker } from 'react-widgets';
+import { TimePicker } from 'react-widgets';
 import { getUrlPrefix } from "jsx/mixin";
 import momentLocalizer from 'react-widgets-moment';
 import Moment from 'moment';
@@ -44,7 +45,7 @@ const scheduleForm = React.createClass({
       parallelism: null, intensity: null, startTime: moment().toDate(), intervalDays: null, incrementalRepair: null, formCollapsed: true, nodes: null, datacenters: null,
       nodes: "", datacenters: "", blacklistedTables: "", nodeList: [], datacenterList: [], clusterStatus: {}, urlPrefix: URL_PREFIX, nodeSuggestions: [], datacenterSuggestions: [],
       clusterTables: {}, tableSuggestions: [], blacklistSuggestions: [], tableList: [], blacklistList: [], keyspaceList: [], keyspaceSuggestions: [], 
-      blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true, repairThreadCount: 1
+      blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true, repairThreadCount: 1, inactiveTime: moment().toDate(), activeTime: moment().toDate()
     };
   },
 
@@ -135,6 +136,9 @@ const scheduleForm = React.createClass({
     if(this.state.datacenters) schedule.datacenters = this.state.datacenters;
     if(this.state.blacklistedTables) schedule.blacklistedTables = this.state.blacklistedTables;
     if(this.state.repairThreadCount) schedule.repairThreadCount = this.state.repairThreadCount;
+    if(this.state.inactiveTime) schedule.inactiveTime = moment(this.state.inactiveTime).utc().format("HH:mm");
+    if(this.state.activeTime) schedule.activeTime = moment(this.state.activeTime).utc().format("HH:mm");
+
 
     this.props.addScheduleSubject.onNext(schedule);
   },
@@ -551,6 +555,26 @@ const scheduleForm = React.createClass({
                           onChange={this._handleChange} id="in_repairThreadCount" placeholder="repair threads"/>
                       </div>
                     </div>
+                    <div className="form-group">
+                    <label htmlFor="in_activeTime" className="col-sm-3 control-label">Active time*</label>
+                      <div className="col-sm-9 col-md-7 col-lg-5">
+                        <TimePicker
+                          value={this.state.activeTime}
+                          onChange={value => this.setState({ activeTime: value })}
+                          step={5}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_inactiveTime" className="col-sm-3 control-label">Inactive time*</label>
+                      <div className="col-sm-9 col-md-7 col-lg-5">
+                        <TimePicker
+                          value={this.state.inactiveTime}
+                          onChange={value => this.setState({ inactiveTime: value })}
+                          step={5}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -562,7 +586,6 @@ const scheduleForm = React.createClass({
               </div>
             </div>
           </form>
-
       </div>
     </div>
 

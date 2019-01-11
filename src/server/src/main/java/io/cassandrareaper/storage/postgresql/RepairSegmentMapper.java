@@ -37,7 +37,10 @@ public final class RepairSegmentMapper implements ResultSetMapper<RepairSegment>
         = new RingRange(rs.getBigDecimal("start_token").toBigInteger(), rs.getBigDecimal("end_token").toBigInteger());
 
     RepairSegment.Builder builder = RepairSegment.builder(
-                Segment.builder().withTokenRange(range).build(),
+                Segment.builder().withTokenRange(range)
+                  .withActiveTime(rs.getString("active_time"))
+                  .withInactiveTime(rs.getString("inactive_time"))
+                  .build(),
                 UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")))
             .withRunId(UuidUtil.fromSequenceId(rs.getLong("run_id")))
             .withState(RepairSegment.State.values()[rs.getInt("state")])
@@ -47,6 +50,8 @@ public final class RepairSegmentMapper implements ResultSetMapper<RepairSegment>
                     .withTokenRanges(
                         JsonParseUtils.parseRingRangeList(
                             Optional.ofNullable(rs.getString("token_ranges"))))
+                    .withActiveTime(rs.getString("active_time"))
+                    .withInactiveTime(rs.getString("inactive_time"))
                     .build());
 
     if (null != rs.getString("coordinator_host")) {

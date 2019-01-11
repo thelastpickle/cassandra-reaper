@@ -107,7 +107,9 @@ final class SegmentGenerator {
       List<BigInteger> ringTokens,
       Boolean incrementalRepair,
       Map<List<String>, List<RingRange>> replicasToRange,
-      String cassandraVersion)
+      String cassandraVersion,
+      String activeTime,
+      String inactiveTime)
       throws ReaperException {
 
     List<Segment> repairSegments = Lists.newArrayList();
@@ -163,6 +165,8 @@ final class SegmentGenerator {
                   .withTokenRanges(
                       Arrays.asList(
                           new RingRange(endpointTokens.get(j), endpointTokens.get(j + 1))))
+                  .withActiveTime(activeTime)
+                  .withInactiveTime(inactiveTime)
                   .build());
           LOG.debug(
               "Segment #{}: [{},{})", j + 1, endpointTokens.get(j), endpointTokens.get(j + 1));
@@ -184,7 +188,8 @@ final class SegmentGenerator {
       // We want less segments than there are token ranges.
       // Token ranges will be grouped to match the requirements.
       LOG.info("Less segments required than there are vnode. Coalescing eligible token ranges...");
-      repairSegments = coalesceTokenRanges(getTargetSegmentSize(totalSegmentCount), replicasToRange);
+      repairSegments = coalesceTokenRanges(getTargetSegmentSize(totalSegmentCount), replicasToRange,
+        activeTime, inactiveTime);
     }
 
     return repairSegments;
@@ -192,7 +197,8 @@ final class SegmentGenerator {
 
   @VisibleForTesting
   List<Segment> coalesceTokenRanges(
-      BigInteger targetSegmentSize, Map<List<String>, List<RingRange>> replicasToRange) {
+      BigInteger targetSegmentSize, Map<List<String>, List<RingRange>> replicasToRange,
+        String activeTime, String inactiveTime) {
 
     List<Segment> coalescedRepairSegments = Lists.newArrayList();
     List<RingRange> tokenRangesForCurrentSegment = Lists.newArrayList();
@@ -209,7 +215,10 @@ final class SegmentGenerator {
               tokenCount,
               tokenRangesForCurrentSegment);
           coalescedRepairSegments.add(
-              Segment.builder().withTokenRanges(tokenRangesForCurrentSegment).build());
+              Segment.builder().withTokenRanges(tokenRangesForCurrentSegment)
+                .withActiveTime(activeTime)
+                .withInactiveTime(inactiveTime)
+                .build());
           tokenRangesForCurrentSegment = Lists.newArrayList();
           tokenCount = BigInteger.ZERO;
         }
@@ -221,7 +230,10 @@ final class SegmentGenerator {
 
       if (!tokenRangesForCurrentSegment.isEmpty()) {
         coalescedRepairSegments.add(
-            Segment.builder().withTokenRanges(tokenRangesForCurrentSegment).build());
+            Segment.builder().withTokenRanges(tokenRangesForCurrentSegment)
+            .withActiveTime(activeTime)
+            .withInactiveTime(inactiveTime)
+            .build());
         tokenRangesForCurrentSegment = Lists.newArrayList();
       }
     }

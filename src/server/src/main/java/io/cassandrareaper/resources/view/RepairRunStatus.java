@@ -109,6 +109,13 @@ public final class RepairRunStatus {
   @JsonProperty("repair_thread_count")
   private int repairThreadCount;
 
+  @JsonProperty("active_time")
+  private String activeTime;
+
+  @JsonProperty("inactive_time")
+  private String inactiveTime;
+
+
   /**
    * Default public constructor Required for Jackson JSON parsing.
    */
@@ -136,7 +143,9 @@ public final class RepairRunStatus {
       Collection<String> nodes,
       Collection<String> datacenters,
       Collection<String> blacklistedTables,
-      int repairThreadCount) {
+      int repairThreadCount,
+      String activeTime,
+      String inactiveTime) {
 
     this.id = runId;
     this.cause = cause;
@@ -161,6 +170,8 @@ public final class RepairRunStatus {
     this.datacenters = datacenters;
     this.blacklistedTables = blacklistedTables;
     this.repairThreadCount = repairThreadCount;
+    this.activeTime = activeTime;
+    this.inactiveTime = inactiveTime;
 
     if (startTime == null) {
       duration = null;
@@ -223,7 +234,10 @@ public final class RepairRunStatus {
         repairUnit.getNodes(),
         repairUnit.getDatacenters(),
         repairUnit.getBlacklistedTables(),
-        repairUnit.getRepairThreadCount());
+        repairUnit.getRepairThreadCount(),
+        repairUnit.getActiveTime(),
+        repairUnit.getInactiveTime()
+    );
   }
 
   @JsonProperty("creation_time")
@@ -432,6 +446,14 @@ public final class RepairRunStatus {
 
   public String getDuration() {
     return duration;
+  }
+
+  public String getActiveTime() {
+    return activeTime;
+  }
+
+  public String getInactiveTime() {
+    return inactiveTime;
   }
 
   public void setDuration(String duration) {

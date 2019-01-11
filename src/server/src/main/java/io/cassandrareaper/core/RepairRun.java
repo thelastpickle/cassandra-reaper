@@ -45,6 +45,8 @@ public final class RepairRun implements Comparable<RepairRun> {
   private final String lastEvent;
   private final int segmentCount;
   private final RepairParallelism repairParallelism;
+  private final String activeTime;
+  private final String inactiveTime;
 
   private RepairRun(Builder builder, UUID id) {
     this.id = id;
@@ -61,6 +63,8 @@ public final class RepairRun implements Comparable<RepairRun> {
     this.lastEvent = builder.lastEvent;
     this.segmentCount = builder.segmentCount;
     this.repairParallelism = builder.repairParallelism;
+    this.activeTime = builder.activeTime;
+    this.inactiveTime = builder.inactiveTime;
   }
 
   public static Builder builder(String clusterName, UUID repairUnitId) {
@@ -123,6 +127,14 @@ public final class RepairRun implements Comparable<RepairRun> {
     return repairParallelism;
   }
 
+  public String getActiveTime() {
+    return activeTime;
+  }
+
+  public String getInactiveTime() {
+    return inactiveTime;
+  }
+
   public Builder with() {
     return new Builder(this);
   }
@@ -169,6 +181,7 @@ public final class RepairRun implements Comparable<RepairRun> {
   public enum RunState {
     NOT_STARTED,
     RUNNING,
+    RUNNING_TF_PAUSED,
     ERROR,
     DONE,
     PAUSED,
@@ -176,7 +189,7 @@ public final class RepairRun implements Comparable<RepairRun> {
     DELETED;
 
     public boolean isActive() {
-      return this == RUNNING || this == PAUSED;
+      return this == RUNNING || this == PAUSED || this == RUNNING_TF_PAUSED;
     }
 
     public boolean isTerminated() {
@@ -199,6 +212,8 @@ public final class RepairRun implements Comparable<RepairRun> {
     private String lastEvent = "no events";
     private Integer segmentCount;
     private RepairParallelism repairParallelism;
+    private String activeTime = "";
+    private String inactiveTime = "";
 
     private Builder(String clusterName, UUID repairUnitId) {
       this.clusterName = clusterName;
@@ -219,6 +234,8 @@ public final class RepairRun implements Comparable<RepairRun> {
       lastEvent = original.lastEvent;
       segmentCount = original.segmentCount;
       repairParallelism = original.repairParallelism;
+      activeTime = original.activeTime;
+      inactiveTime = original.inactiveTime;
     }
 
     public Builder runState(RunState runState) {
@@ -273,6 +290,16 @@ public final class RepairRun implements Comparable<RepairRun> {
 
     public Builder repairParallelism(RepairParallelism repairParallelism) {
       this.repairParallelism = repairParallelism;
+      return this;
+    }
+
+    public Builder activeTime(String activeTime) {
+      this.activeTime = activeTime;
+      return this;
+    }
+
+    public Builder inactiveTime(String inactiveTime) {
+      this.inactiveTime = inactiveTime;
       return this;
     }
 

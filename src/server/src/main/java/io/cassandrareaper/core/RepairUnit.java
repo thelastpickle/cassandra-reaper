@@ -35,6 +35,8 @@ public final class RepairUnit {
   private final Set<String> datacenters;
   private final Set<String> blacklistedTables;
   private final int repairThreadCount;
+  private final String activeTime;
+  private final String inactiveTime;
 
   private RepairUnit(Builder builder, UUID id) {
     this.id = id;
@@ -46,6 +48,8 @@ public final class RepairUnit {
     this.datacenters = builder.datacenters;
     this.blacklistedTables = builder.blacklistedTables;
     this.repairThreadCount = builder.repairThreadCount;
+    this.activeTime = builder.activeTime;
+    this.inactiveTime = builder.inactiveTime;
   }
 
   public static Builder builder() {
@@ -88,6 +92,14 @@ public final class RepairUnit {
     return repairThreadCount;
   }
 
+  public String getActiveTime() {
+    return activeTime;
+  }
+
+  public String getInactiveTime() {
+    return inactiveTime;
+  }
+
   public Builder with() {
     return new Builder(this);
   }
@@ -102,6 +114,8 @@ public final class RepairUnit {
     public Set<String> datacenters = Collections.emptySet();
     public Set<String> blacklistedTables = Collections.emptySet();
     public Integer repairThreadCount;
+    public String activeTime = "";
+    public String inactiveTime = "";
 
     private Builder() {}
 
@@ -114,6 +128,8 @@ public final class RepairUnit {
       datacenters = original.datacenters;
       blacklistedTables = original.blacklistedTables;
       repairThreadCount = original.repairThreadCount;
+      activeTime = original.activeTime;
+      inactiveTime = original.inactiveTime;
     }
 
     public Builder clusterName(String clusterName) {
@@ -153,6 +169,16 @@ public final class RepairUnit {
 
     public Builder repairThreadCount(int repairThreadCount) {
       this.repairThreadCount = repairThreadCount;
+      return this;
+    }
+
+    public Builder activeTime(String activeTime) {
+      this.activeTime = activeTime;
+      return this;
+    }
+
+    public Builder inactiveTime(String inactiveTime) {
+      this.inactiveTime = inactiveTime;
       return this;
     }
 
@@ -200,7 +226,11 @@ public final class RepairUnit {
           && Objects.equals(this.nodes, ((Builder) obj).nodes)
           && Objects.equals(this.datacenters, ((Builder) obj).datacenters)
           && Objects.equals(this.blacklistedTables, ((Builder) obj).blacklistedTables)
-          && Objects.equals(this.repairThreadCount, ((Builder) obj).repairThreadCount);
+          && Objects.equals(this.repairThreadCount, ((Builder) obj).repairThreadCount)
+          && Objects.equals(this.activeTime, ((Builder) obj).activeTime)
+          && Objects.equals(this.inactiveTime, ((Builder) obj).inactiveTime);
     }
+
+
   }
 }

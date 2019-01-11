@@ -93,6 +93,7 @@ public final class RepairRunResourceTest {
   private static final double REPAIR_INTENSITY = 0.5f;
   private static final RepairParallelism REPAIR_PARALLELISM = RepairParallelism.SEQUENTIAL;
 
+
   private static final List<BigInteger> TOKENS = Lists.newArrayList(
       BigInteger.valueOf(0L),
       BigInteger.valueOf(100L),
@@ -165,7 +166,9 @@ public final class RepairRunResourceTest {
             .nodes(NODES)
             .datacenters(DATACENTERS)
             .blacklistedTables(BLACKLISTED_TABLES)
-            .repairThreadCount(REPAIR_THREAD_COUNT);
+            .repairThreadCount(REPAIR_THREAD_COUNT)
+            .activeTime("")
+            .inactiveTime("");
 
     context.storage.addRepairUnit(repairUnitBuilder);
   }
@@ -182,7 +185,9 @@ public final class RepairRunResourceTest {
         SEGMENT_CNT,
         NODES,
         BLACKLISTED_TABLES,
-        REPAIR_THREAD_COUNT);
+        REPAIR_THREAD_COUNT,
+        "",
+        "");
   }
 
   private Response addRepairRun(
@@ -196,7 +201,9 @@ public final class RepairRunResourceTest {
       Integer segments,
       Set<String> nodes,
       Set<String> blacklistedTables,
-      Integer repairThreadCount) {
+      Integer repairThreadCount,
+      String activeTime,
+      String inactiveTime) {
 
     return resource.addRepairRun(
         uriInfo,
@@ -212,7 +219,10 @@ public final class RepairRunResourceTest {
         Optional.of(StringUtils.join(nodes, ',')),
         Optional.<String>empty(),
         Optional.of(StringUtils.join(blacklistedTables, ',')),
-        Optional.of(repairThreadCount));
+        Optional.of(repairThreadCount),
+        Optional.ofNullable(activeTime),
+        Optional.ofNullable(inactiveTime)
+    );
   }
 
   @Test
@@ -347,7 +357,9 @@ public final class RepairRunResourceTest {
             SEGMENT_CNT,
             NODES,
             BLACKLISTED_TABLES,
-            REPAIR_THREAD_COUNT);
+            REPAIR_THREAD_COUNT,
+            "",
+            "");
 
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);
@@ -368,7 +380,9 @@ public final class RepairRunResourceTest {
             SEGMENT_CNT,
             NODES,
             BLACKLISTED_TABLES,
-            REPAIR_THREAD_COUNT);
+            REPAIR_THREAD_COUNT,
+            "",
+            "");
 
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);

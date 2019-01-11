@@ -78,7 +78,10 @@ public final class RepairRunStatusTest {
             Collections.EMPTY_LIST, // nodes
             Collections.EMPTY_LIST, // datacenters
             Collections.EMPTY_LIST, // blacklist
-            1); // repair thread count
+            1, // repair thread count
+            "", //activeTime
+            "" //inactiveTime
+    );
 
     assertEquals("1 minute 0 seconds", repairStatus.getDuration());
   }
@@ -106,7 +109,10 @@ public final class RepairRunStatusTest {
             Collections.EMPTY_LIST, // nodes
             Collections.EMPTY_LIST, // datacenters
             Collections.EMPTY_LIST, // blacklist
-            1); // repair thread count
+            1, //repairThreadCount
+            "", //activeTime
+            "" //inactiveTime
+    );
 
     assertEquals("1 minute 30 seconds", repairStatus.getDuration());
   }
@@ -134,7 +140,10 @@ public final class RepairRunStatusTest {
             Collections.EMPTY_LIST, // nodes
             Collections.EMPTY_LIST, // datacenters
             Collections.EMPTY_LIST, // blacklist
-            1); // repair thread count
+            1, // repair thread count
+            "", //activeTime
+            "" //inactiveTime
+    );
 
     assertEquals("1 minute 50 seconds", repairStatus.getDuration());
   }
@@ -162,7 +171,10 @@ public final class RepairRunStatusTest {
             Collections.EMPTY_LIST, // nodes
             Collections.EMPTY_LIST, // datacenters
             Collections.EMPTY_LIST, // blacklist
-            1); // repair thread count
+            1, // repair thread count
+            "", //activeTime
+            "" //inactiveTime
+    );
 
     assertEquals("30 seconds", repairStatus.getDuration());
   }

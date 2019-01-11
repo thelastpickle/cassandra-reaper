@@ -44,6 +44,8 @@ public final class RepairSchedule {
   private final String owner;
   private final DateTime pauseTime;
   private final int segmentCountPerNode;
+  private final String activeTime;
+  private final String inactiveTime;
 
   private RepairSchedule(Builder builder, UUID id) {
     this.id = id;
@@ -59,6 +61,8 @@ public final class RepairSchedule {
     this.owner = builder.owner;
     this.pauseTime = builder.pauseTime;
     this.segmentCountPerNode = builder.segmentCountPerNode;
+    this.activeTime = builder.activeTime;
+    this.inactiveTime = builder.inactiveTime;
   }
 
   public static Builder builder(UUID repairUnitId) {
@@ -129,6 +133,14 @@ public final class RepairSchedule {
     return pauseTime;
   }
 
+  public String getActiveTime() {
+    return activeTime;
+  }
+
+  public String getInactiveTime() {
+    return inactiveTime;
+  }
+
   public Builder with() {
     return new Builder(this);
   }
@@ -159,6 +171,9 @@ public final class RepairSchedule {
     private DateTime pauseTime;
     private Integer segmentCountPerNode;
     private boolean majorCompaction = false;
+    private String activeTime = "";
+    private String inactiveTime = "";
+
 
     private Builder(UUID repairUnitId) {
       this.repairUnitId = repairUnitId;
@@ -178,6 +193,8 @@ public final class RepairSchedule {
       pauseTime = original.pauseTime;
       intensity = original.intensity;
       segmentCountPerNode = original.segmentCountPerNode;
+      activeTime = original.activeTime;
+      inactiveTime = original.inactiveTime;
     }
 
     public Builder state(State state) {
@@ -232,6 +249,16 @@ public final class RepairSchedule {
 
     public Builder segmentCountPerNode(int segmentCountPerNode) {
       this.segmentCountPerNode = segmentCountPerNode;
+      return this;
+    }
+
+    public Builder activeTime(String activeTime) {
+      this.activeTime = activeTime;
+      return this;
+    }
+
+    public Builder inactiveTime(String inactiveTime) {
+      this.inactiveTime = inactiveTime;
       return this;
     }
 

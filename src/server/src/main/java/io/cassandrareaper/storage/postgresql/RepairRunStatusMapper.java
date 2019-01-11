@@ -58,6 +58,8 @@ public final class RepairRunStatusMapper implements ResultSetMapper<RepairRunSta
     Boolean incrementalRepair = rs.getBoolean("incremental_repair");
     RepairParallelism repairParallelism = RepairParallelism.fromName(
         rs.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel"));
+    String activeTime = rs.getString("active_time");
+    String inactiveTime = rs.getString("inactive_time");
 
     Collection<String> nodes = ImmutableSet.copyOf(
             rs.getArray("nodes") == null
@@ -99,7 +101,9 @@ public final class RepairRunStatusMapper implements ResultSetMapper<RepairRunSta
         nodes,
         datacenters,
         blacklistedTables,
-        repairThreadCount);
+        repairThreadCount,
+        activeTime,
+        inactiveTime);
   }
 
   private String[] getStringArray(Object array) {

@@ -49,6 +49,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +68,7 @@ final class RepairRunner implements Runnable {
   private float repairProgress;
   private float segmentsDone;
   private float segmentsTotal;
+  private Duration fullDuration;
 
   RepairRunner(AppContext context, UUID repairRunId) throws ReaperException {
     LOG.debug("Creating RepairRunner for run with ID {}", repairRunId);
@@ -212,6 +214,7 @@ final class RepairRunner implements Runnable {
         case NOT_STARTED:
           start();
           break;
+        case RUNNING_TF_PAUSED:
         case RUNNING:
           startNextSegment();
           // We're updating the node list of the cluster at the start of each new run.
@@ -415,16 +418,94 @@ final class RepairRunner implements Runnable {
     final UUID unitId;
     final double intensity;
     final RepairParallelism validationParallelism;
+    DateTime activeTime;
+    DateTime inactiveTime;
+    boolean checkActiveTime = false;
     {
       RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
       unitId = repairRun.getRepairUnitId();
       intensity = repairRun.getIntensity();
       validationParallelism = repairRun.getRepairParallelism();
+      String activeTimeStr = "";
+      String inactiveTimeStr = "";
+      if (segment.getActiveTime() == "" && segment.getInactiveTime() == "") {
+        activeTimeStr = "0:0";
+        inactiveTimeStr = "0:0";
+      } else {
+        activeTimeStr = segment.getActiveTime();
+        inactiveTimeStr = segment.getInactiveTime();
+      }
+      int[] activeTimeArray = Arrays.stream(activeTimeStr.split(":")).mapToInt(Integer::parseInt).toArray();
+      int[] inactiveTimeArray = Arrays.stream(inactiveTimeStr.split(":")).mapToInt(Integer::parseInt).toArray();
+      activeTime = new DateTime().withHourOfDay(activeTimeArray[0])
+              .withMinuteOfHour(activeTimeArray[1]).withMillisOfSecond(0);
+      inactiveTime = new DateTime().withHourOfDay(inactiveTimeArray[0])
+              .withMinuteOfHour(inactiveTimeArray[1]).withMillisOfSecond(0);
+
+      if (! activeTimeStr.equals(inactiveTimeStr)) {
+        checkActiveTime = true;
+        if (activeTime.isAfter(inactiveTime)) {
+          if (activeTime.isBeforeNow()) {
+            inactiveTime = inactiveTime.plusDays(1);
+          }
+        } else {
+          if (inactiveTime.isBeforeNow()) {
+            activeTime = activeTime.plusDays(1);
+          }
+        }
+        LOG.info("ActiveTime: " + activeTime.toString());
+        LOG.info("InactiveTime: " + inactiveTime.toString());
+      }
 
       int amountDone = context.storage.getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
       repairProgress = (float) amountDone / repairRun.getSegmentCount();
-    }
 
+      if (checkActiveTime) {
+        boolean shouldSleepUntilNextActive = false;
+
+        if ( ( inactiveTime.isBeforeNow() && activeTime.isAfterNow() )
+            || ( inactiveTime.getDayOfMonth() == activeTime.getDayOfMonth() && activeTime.isBefore(inactiveTime) )
+              && ( ( inactiveTime.isAfterNow() && activeTime.isAfterNow() )
+                  || ( inactiveTime.isBeforeNow() && activeTime.isBeforeNow() ) ) ) {
+
+          LOG.info("out of active time frame, should wait until next ActiveTime: " +activeTime.toString());
+          shouldSleepUntilNextActive = true;
+
+        } else if ( segmentsDone > 0 && fullDuration != null ) {
+
+          Duration untilInactiveTimeDuration = new Duration(DateTime.now(), inactiveTime);
+          Duration averageSegmentDuration = new Duration(fullDuration.dividedBy((long) segmentsDone));
+          Duration durationDifference = new Duration(untilInactiveTimeDuration.minus(averageSegmentDuration));
+
+          if (durationDifference.isShorterThan(new Duration(0))) {
+            LOG.info("not enough time to run next segment before inactiveTime, should wait");
+            shouldSleepUntilNextActive = true;
+          }
+        }
+
+        if (shouldSleepUntilNextActive) {
+          if (activeTime.isBeforeNow()) {
+            activeTime = activeTime.plusDays(1);
+          }
+          Duration untilActiveTimeDuration = new Duration(DateTime.now(), activeTime.plusMillis(100));
+          long sleepMilis = untilActiveTimeDuration.getMillis();
+          LOG.info("Sleeping {} ms until next activeTime {}",sleepMilis, activeTime.toString());
+          context.storage.updateRepairRun(
+              repairRun
+              .with()
+              .runState(RepairRun.RunState.RUNNING_TF_PAUSED)
+              .lastEvent(String.format("Paused until next activeTime"))
+              .build(repairRunId));
+          Thread.sleep(sleepMilis);
+          context.storage.updateRepairRun(
+              repairRun
+              .with()
+              .runState(RepairRun.RunState.RUNNING)
+              .lastEvent(String.format("Resumed run after activeTime passed"))
+              .build(repairRunId));
+        }
+      }
+    }
     RepairUnit repairUnit = context.storage.getRepairUnit(unitId);
     String keyspace = repairUnit.getKeyspaceName();
     LOG.debug("preparing to repair segment {} on run with id {}", segmentId, repairRunId);
@@ -542,6 +623,7 @@ final class RepairRunner implements Runnable {
 
     // Don't do rescheduling here, not to spawn uncontrolled amount of threads
     if (segment.isPresent()) {
+      Duration lastSegmentDuration;
       RepairSegment.State state = segment.get().getState();
       LOG.debug("In repair run #{}, triggerRepair on segment {} ended with state {}", repairRunId, segmentId, state);
       switch (state) {
@@ -551,6 +633,12 @@ final class RepairRunner implements Runnable {
 
         case DONE:
           // Successful repair
+          lastSegmentDuration = new Duration( segment.get().getStartTime(), segment.get().getEndTime() );
+          if (fullDuration == null) {
+            fullDuration = new Duration(lastSegmentDuration);
+          } else {
+            fullDuration = fullDuration.plus(lastSegmentDuration);
+          }
           break;
 
         default:

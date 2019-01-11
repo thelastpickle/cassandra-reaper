@@ -61,12 +61,12 @@ public final class RepairRunServiceTest {
     rangeToEndpoint.put(Arrays.asList("6", "8"), Arrays.asList("node1", "node2"));
 
     List<Segment> segments = Arrays.asList(
-            Segment.builder().withTokenRange(new RingRange("1", "2")).build(),
-            Segment.builder().withTokenRange(new RingRange("2", "3")).build(),
-            Segment.builder().withTokenRange(new RingRange("3", "4")).build(),
-            Segment.builder().withTokenRange(new RingRange("4", "5")).build(),
-            Segment.builder().withTokenRange(new RingRange("5", "6")).build(),
-            Segment.builder().withTokenRange(new RingRange("6", "8")).build());
+            Segment.builder().withTokenRange(new RingRange("1", "2")).withActiveTime("").withInactiveTime("").build(),
+            Segment.builder().withTokenRange(new RingRange("2", "3")).withActiveTime("").withInactiveTime("").build(),
+            Segment.builder().withTokenRange(new RingRange("3", "4")).withActiveTime("").withInactiveTime("").build(),
+            Segment.builder().withTokenRange(new RingRange("4", "5")).withActiveTime("").withInactiveTime("").build(),
+            Segment.builder().withTokenRange(new RingRange("5", "6")).withActiveTime("").withInactiveTime("").build(),
+            Segment.builder().withTokenRange(new RingRange("6", "8")).withActiveTime("").withInactiveTime("").build());
 
     final RepairUnit repairUnit1 = mock(RepairUnit.class);
     when(repairUnit1.getNodes()).thenReturn(new HashSet<String>(Arrays.asList("node3", "node2")));

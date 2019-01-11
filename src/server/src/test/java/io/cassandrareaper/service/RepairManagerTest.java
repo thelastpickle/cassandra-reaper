@@ -104,7 +104,10 @@ public final class RepairManagerTest {
             .build(UUIDs.timeBased());
 
     final RepairSegment segment = RepairSegment.builder(
-                Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
+                Segment.builder().withTokenRange(new RingRange("-1", "1"))
+                  .withActiveTime("")
+                  .withInactiveTime("")
+                  .build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())
             .build();
@@ -182,7 +185,10 @@ public final class RepairManagerTest {
             .build(UUIDs.timeBased());
 
     final RepairSegment segment = RepairSegment.builder(
-                Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
+                Segment.builder().withTokenRange(new RingRange("-1", "1"))
+                    .withActiveTime("")
+                    .withInactiveTime("")
+                    .build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())
             .build();
@@ -260,7 +266,10 @@ public final class RepairManagerTest {
             .build(UUIDs.timeBased());
 
     final RepairSegment segment = RepairSegment.builder(
-                Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
+                Segment.builder().withTokenRange(new RingRange("-1", "1"))
+                    .withActiveTime("")
+                    .withInactiveTime("")
+                    .build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())
             .build();
@@ -335,7 +344,10 @@ public final class RepairManagerTest {
             .build(UUIDs.timeBased());
 
     final RepairSegment segment = RepairSegment.builder(
-                Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
+                Segment.builder().withTokenRange(new RingRange("-1", "1"))
+                    .withActiveTime("")
+                    .withInactiveTime("")
+                    .build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())
             .build();

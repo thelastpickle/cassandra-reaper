@@ -96,10 +96,10 @@ const Cluster = React.createClass({
 
     if (this.state.clusterStatus.repair_runs) {
       runningRepairs = this.state.clusterStatus.repair_runs.reduce(function(previousValue, repairRun){
-                              return previousValue + (repairRun.state === 'RUNNING' ? 1: 0);
+                              return previousValue + ((repairRun.state =~ 'RUNNING') ? 1: 0);
                             }, 0);
 
-      repairProgress = this.state.clusterStatus.repair_runs.filter(repairRun => repairRun.state === 'RUNNING').map(repairRun =>
+      repairProgress = this.state.clusterStatus.repair_runs.filter(repairRun => repairRun.state =~ 'RUNNING').map(repairRun =>
                       <ProgressBar now={(repairRun.segments_repaired*100)/repairRun.total_segments} active bsStyle="success" 
                                    style={progressStyle} 
                                    label={repairRun.keyspace_name}
