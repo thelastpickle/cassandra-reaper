@@ -10,6 +10,7 @@ dependency-reduced-pom.xml
 .idea/*
 *.log
 *.log.gz
+*.swp
 
 # Mac OS X Finder
 .DS_Store
