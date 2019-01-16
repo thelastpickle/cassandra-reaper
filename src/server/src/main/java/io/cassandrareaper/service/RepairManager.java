@@ -43,7 +43,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -69,7 +68,7 @@ public final class RepairManager implements AutoCloseable {
 
   private RepairManager(
       AppContext context,
-      Supplier<ClusterFacade> clusterFacadeSupplier,
+      ClusterFacade clusterFacade,
       ScheduledExecutorService executor,
       long repairTimeout,
       TimeUnit repairTimeoutTimeUnit,
@@ -77,7 +76,7 @@ public final class RepairManager implements AutoCloseable {
       TimeUnit retryDelayTimeUnit)  {
 
     this.context = context;
-    this.clusterFacade = clusterFacadeSupplier.get();
+    this.clusterFacade = clusterFacade;
     this.heart = Heart.create(context);
     this.repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
     this.retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
@@ -89,7 +88,7 @@ public final class RepairManager implements AutoCloseable {
   @VisibleForTesting
   static RepairManager create(
       AppContext context,
-      Supplier<ClusterFacade> clusterFacadeSupplier,
+      ClusterFacade clusterFacadeSupplier,
       ScheduledExecutorService executor,
       long repairTimeout,
       TimeUnit repairTimeoutTimeUnit,
@@ -116,7 +115,7 @@ public final class RepairManager implements AutoCloseable {
 
     return create(
         context,
-        () -> ClusterFacade.create(context),
+        ClusterFacade.create(context),
         executor,
         repairTimeout,
         repairTimeoutTimeUnit,
@@ -365,7 +364,7 @@ public final class RepairManager implements AutoCloseable {
 
       LOG.info("scheduling repair for repair run #{}", runId);
       try {
-        RepairRunner newRunner = RepairRunner.create(context, runId);
+        RepairRunner newRunner = RepairRunner.create(context, runId, clusterFacade);
         repairRunners.put(runId, newRunner);
         executor.submit(newRunner);
       } catch (ReaperException e) {

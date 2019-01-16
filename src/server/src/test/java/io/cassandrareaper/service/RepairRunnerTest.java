@@ -49,6 +49,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
@@ -60,7 +61,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +69,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -112,7 +113,9 @@ public final class RepairRunnerTest {
                 .repairParallelism(RepairParallelism.PARALLEL),
             Collections.singleton(
                 RepairSegment.builder(
-                    Segment.builder().withTokenRange(new RingRange(BigInteger.ZERO, BigInteger.ONE)).build(),
+                    Segment.builder()
+                        .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100")))
+                        .build(),
                     cf.getId())));
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
@@ -121,103 +124,100 @@ public final class RepairRunnerTest {
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
     final Semaphore mutex = new Semaphore(0);
-    ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(context));
-    Mockito.doReturn(Collections.singletonList("")).when(clusterFacadeSpy).tokenRangeToEndpoint(any(), any(), any());
-    context.repairManager
-        = RepairManager.create(
+    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
+    when(jmx.isConnectionAlive()).thenReturn(true);
+    when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
+    EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+    when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+    try {
+      when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+    } catch (UnknownHostException ex) {
+      throw new AssertionError(ex);
+    }
+    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+    final AtomicInteger repairAttempts = new AtomicInteger(1);
+
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+        .then(
+            (invocation) -> {
+              assertEquals(
+                  RepairSegment.State.STARTED,
+                  storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+              final int repairNumber = repairAttempts.getAndIncrement();
+              switch (repairNumber) {
+                case 1:
+                  new Thread() {
+                    @Override
+                    public void run() {
+                      ((RepairStatusHandler)invocation.getArgument(7))
+                          .handle(repairNumber,
+                              Optional.of(ActiveRepairService.Status.STARTED),
+                              Optional.empty(), null, jmx);
+                      assertEquals(
+                          RepairSegment.State.RUNNING,
+                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                    }
+                  }.start();
+                  break;
+                case 2:
+                  new Thread() {
+                    @Override
+                    public void run() {
+                      ((RepairStatusHandler)invocation.getArgument(7))
+                          .handle(
+                              repairNumber,
+                              Optional.of(ActiveRepairService.Status.STARTED),
+                              Optional.empty(), null, jmx);
+                      assertEquals(
+                          RepairSegment.State.RUNNING,
+                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                      ((RepairStatusHandler)invocation.getArgument(7))
+                          .handle(
+                              repairNumber,
+                              Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
+                              Optional.empty(), null, jmx);
+                      assertEquals(
+                          RepairSegment.State.DONE,
+                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                      ((RepairStatusHandler)invocation.getArgument(7))
+                          .handle(repairNumber,
+                              Optional.of(ActiveRepairService.Status.FINISHED),
+                              Optional.empty(), null, jmx);
+
+                      mutex.release();
+                      LOG.info("MUTEX RELEASED");
+                    }
+                  }.start();
+                  break;
+                default:
+                  fail("triggerRepair should only have been called twice");
+              }
+              LOG.info("repair number : " + repairNumber);
+              return repairNumber;
+            });
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
+        .thenReturn(Lists.newArrayList(NODES));
+    when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
+        .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
+
+    context.repairManager = RepairManager.create(
             context,
-            () -> clusterFacadeSpy,
+            clusterFacade,
             Executors.newScheduledThreadPool(1),
             500,
             TimeUnit.MILLISECONDS,
             1,
             TimeUnit.MILLISECONDS);
     context.jmxConnectionFactory = new JmxConnectionFactory(context) {
-          final AtomicInteger repairAttempts = new AtomicInteger(1);
           @Override
           protected JmxProxy connectImpl(Node host) throws ReaperException {
-            JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
-            when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
-            when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
-            EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
-            when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
-            try {
-              when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
-            } catch (UnknownHostException ex) {
-              throw new AssertionError(ex);
-            }
-            JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
-
-            when(jmx.triggerRepair(any(BigInteger.class), any(BigInteger.class),
-                    any(), any(RepairParallelism.class), any(), anyBoolean(), any(), any(), any(), any(Integer.class)))
-                .then(
-                    (invocation) -> {
-                      assertEquals(
-                          RepairSegment.State.NOT_STARTED,
-                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-                      final int repairNumber = repairAttempts.getAndIncrement();
-                      switch (repairNumber) {
-                        case 1:
-                          new Thread() {
-                            @Override
-                            public void run() {
-                              ((RepairStatusHandler)invocation.getArgument(7))
-                                  .handle(repairNumber,
-                                      Optional.of(ActiveRepairService.Status.STARTED),
-                                      Optional.empty(), null, jmx);
-
-                              assertEquals(
-                                  RepairSegment.State.RUNNING,
-                                  storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-                            }
-                          }.start();
-                          break;
-                        case 2:
-                          new Thread() {
-                            @Override
-                            public void run() {
-
-                              ((RepairStatusHandler)invocation.getArgument(7))
-                                  .handle(
-                                      repairNumber,
-                                      Optional.of(ActiveRepairService.Status.STARTED),
-                                      Optional.empty(), null, jmx);
-
-                              assertEquals(
-                                  RepairSegment.State.RUNNING,
-                                  storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-
-                              ((RepairStatusHandler)invocation.getArgument(7))
-                                  .handle(
-                                      repairNumber,
-                                      Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
-                                      Optional.empty(), null, jmx);
-
-                              assertEquals(
-                                  RepairSegment.State.DONE,
-                                  storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-
-                              ((RepairStatusHandler)invocation.getArgument(7))
-                                  .handle(repairNumber,
-                                      Optional.of(ActiveRepairService.Status.FINISHED),
-                                      Optional.empty(), null, jmx);
-
-                              mutex.release();
-                              LOG.info("MUTEX RELEASED");
-                            }
-                          }.start();
-                          break;
-                        default:
-                          fail("triggerRepair should only have been called twice");
-                      }
-                      LOG.info("repair number : " + repairNumber);
-                      return repairNumber;
-                    });
             return jmx;
           }
         };
-
     context.repairManager.startRepairRun(run);
     await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
       try {
@@ -263,9 +263,7 @@ public final class RepairRunnerTest {
             .repairParallelism(RepairParallelism.PARALLEL),
             Collections.singleton(
                 RepairSegment.builder(
-                    Segment.builder()
-                        .withTokenRange(new RingRange(BigInteger.ZERO, BigInteger.ONE))
-                        .build(),
+                    Segment.builder().withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100"))).build(),
                     cf.getId())));
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
@@ -274,99 +272,93 @@ public final class RepairRunnerTest {
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
     final Semaphore mutex = new Semaphore(0);
-    ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(context));
-    Mockito.doReturn(Collections.singletonList("")).when(clusterFacadeSpy).tokenRangeToEndpoint(any(), any(), any());
+    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
+    when(jmx.isConnectionAlive()).thenReturn(true);
+    when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
+    EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+    when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+    try {
+      when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+    } catch (UnknownHostException ex) {
+      throw new AssertionError(ex);
+    }
+    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+    final AtomicInteger repairAttempts = new AtomicInteger(1);
+
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+        .then(
+            (invocation) -> {
+              assertEquals(
+                  RepairSegment.State.STARTED,
+                  storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+              final int repairNumber = repairAttempts.getAndIncrement();
+              switch (repairNumber) {
+                case 1:
+                  new Thread() {
+                    @Override
+                    public void run() {
+                      ((RepairStatusHandler)invocation.getArgument(7))
+                          .handle(
+                              repairNumber, Optional.empty(),
+                              Optional.of(ProgressEventType.START), null, jmx);
+                      assertEquals(
+                          RepairSegment.State.RUNNING,
+                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                    }
+                  }.start();
+                  break;
+                case 2:
+                  new Thread() {
+                    @Override
+                    public void run() {
+                      ((RepairStatusHandler)invocation.getArgument(7))
+                          .handle(
+                              repairNumber, Optional.empty(),
+                              Optional.of(ProgressEventType.START), null, jmx);
+                      assertEquals(
+                          RepairSegment.State.RUNNING,
+                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                      ((RepairStatusHandler)invocation.getArgument(7))
+                          .handle(
+                              repairNumber, Optional.empty(),
+                              Optional.of(ProgressEventType.SUCCESS), null, jmx);
+                      assertEquals(
+                          RepairSegment.State.DONE,
+                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                      ((RepairStatusHandler)invocation.getArgument(7))
+                          .handle(
+                              repairNumber, Optional.empty(),
+                              Optional.of(ProgressEventType.COMPLETE), null, jmx);
+                      mutex.release();
+                      LOG.info("MUTEX RELEASED");
+                    }
+                  }.start();
+                  break;
+                default:
+                  fail("triggerRepair should only have been called twice");
+              }
+              return repairNumber;
+            });
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
+        .thenReturn(Lists.newArrayList(NODES));
+    when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
+        .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
     context.repairManager
         = RepairManager.create(
             context,
-            () -> clusterFacadeSpy,
+            clusterFacade,
             Executors.newScheduledThreadPool(1),
             500,
             TimeUnit.MILLISECONDS,
             1,
             TimeUnit.MILLISECONDS);
     context.jmxConnectionFactory = new JmxConnectionFactory(context) {
-          final AtomicInteger repairAttempts = new AtomicInteger(1);
           @Override
           protected JmxProxy connectImpl(Node host) throws ReaperException {
-            JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
-            when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
-            when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
-            EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
-            when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
-            try {
-              when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
-            } catch (UnknownHostException ex) {
-              throw new AssertionError(ex);
-            }
-            JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
-
-            when(jmx.triggerRepair(
-                    any(BigInteger.class),
-                    any(BigInteger.class),
-                    any(),
-                    any(RepairParallelism.class),
-                    any(),
-                    anyBoolean(),
-                    any(),
-                    any(),
-                    any(),
-                    any(Integer.class)))
-                .then(
-                    (invocation) -> {
-                      assertEquals(
-                          RepairSegment.State.NOT_STARTED,
-                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-
-                      final int repairNumber = repairAttempts.getAndIncrement();
-                      switch (repairNumber) {
-                        case 1:
-                          new Thread() {
-                            @Override
-                            public void run() {
-                              ((RepairStatusHandler)invocation.getArgument(7))
-                                  .handle(
-                                      repairNumber, Optional.empty(),
-                                      Optional.of(ProgressEventType.START), null, jmx);
-                              assertEquals(
-                                  RepairSegment.State.RUNNING,
-                                  storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-                            }
-                          }.start();
-                          break;
-                        case 2:
-                          new Thread() {
-                            @Override
-                            public void run() {
-                              ((RepairStatusHandler)invocation.getArgument(7))
-                                  .handle(
-                                      repairNumber, Optional.empty(),
-                                      Optional.of(ProgressEventType.START), null, jmx);
-                              assertEquals(
-                                  RepairSegment.State.RUNNING,
-                                  storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-                              ((RepairStatusHandler)invocation.getArgument(7))
-                                  .handle(
-                                      repairNumber, Optional.empty(),
-                                      Optional.of(ProgressEventType.SUCCESS), null, jmx);
-                              assertEquals(
-                                  RepairSegment.State.DONE,
-                                  storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-                              ((RepairStatusHandler)invocation.getArgument(7))
-                                  .handle(
-                                      repairNumber, Optional.empty(),
-                                      Optional.of(ProgressEventType.COMPLETE), null, jmx);
-                              mutex.release();
-                              LOG.info("MUTEX RELEASED");
-                            }
-                          }.start();
-                          break;
-                        default:
-                          fail("triggerRepair should only have been called twice");
-                      }
-                      return repairNumber;
-                    });
             return jmx;
           }
         };
@@ -402,19 +394,10 @@ public final class RepairRunnerTest {
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
         BigInteger.valueOf(200L));
-
     final IStorage storage = new MemoryStorage();
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    context.repairManager = RepairManager.create(
-        context,
-        Executors.newScheduledThreadPool(1),
-        500,
-        TimeUnit.MILLISECONDS,
-        1,
-        TimeUnit.MILLISECONDS);
-
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
 
     UUID cf = storage.addRepairUnit(
@@ -454,75 +437,79 @@ public final class RepairRunnerTest {
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
+    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
+    when(jmx.isConnectionAlive()).thenReturn(true);
+    when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
+    when(jmx.getEndpointToHostId()).thenReturn(NODES_MAP);
+    when(jmx.getTokens()).thenReturn(TOKENS);
+    EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+    when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+    try {
+      when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+    } catch (UnknownHostException ex) {
+      throw new AssertionError(ex);
+    }
+    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
+    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
+        .thenReturn(Lists.newArrayList(NODES));
+    when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
+        .thenReturn((Map)ImmutableMap.of(
+            Lists.newArrayList("0", "100"), Lists.newArrayList(NODES),
+            Lists.newArrayList("100", "200"), Lists.newArrayList(NODES)));
+
+    context.repairManager = RepairManager.create(
+        context,
+        clusterFacade,
+        Executors.newScheduledThreadPool(1),
+        500,
+        TimeUnit.MILLISECONDS,
+        1,
+        TimeUnit.MILLISECONDS);
+    AtomicInteger repairNumberCounter = new AtomicInteger(1);
+
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+        .then(
+            (invocation) -> {
+              final int repairNumber = repairNumberCounter.getAndIncrement();
+
+              new Thread() {
+                @Override
+                public void run() {
+                  ((RepairStatusHandler)invocation.getArgument(7))
+                      .handle(
+                          repairNumber,
+                          Optional.of(ActiveRepairService.Status.STARTED),
+                          Optional.empty(),
+                          null,
+                          jmx);
+                  ((RepairStatusHandler)invocation.getArgument(7))
+                      .handle(
+                          repairNumber,
+                          Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
+                          Optional.empty(),
+                          null,
+                          jmx);
+                  ((RepairStatusHandler)invocation.getArgument(7))
+                      .handle(
+                          repairNumber,
+                          Optional.of(ActiveRepairService.Status.FINISHED),
+                          Optional.empty(),
+                          null,
+                          jmx);
+                }
+              }.start();
+              return repairNumber;
+            });
     context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
           protected JmxProxy connectImpl(Node host) throws ReaperException {
-            JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
-            when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
-            when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
-            when(jmx.getEndpointToHostId()).thenReturn(NODES_MAP);
-            when(jmx.getTokens()).thenReturn(TOKENS);
-            EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
-            when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
-            try {
-              when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
-            } catch (UnknownHostException ex) {
-              throw new AssertionError(ex);
-            }
-            JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
-
-            when(jmx.triggerRepair(
-                    any(BigInteger.class),
-                    any(BigInteger.class),
-                    any(),
-                    any(RepairParallelism.class),
-                    any(),
-                    anyBoolean(),
-                    any(),
-                    any(),
-                    any(),
-                    any(Integer.class)))
-                .then(
-                    (invocation) -> {
-                      assertEquals(
-                          RepairSegment.State.NOT_STARTED,
-                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
-
-                      new Thread() {
-                        @Override
-                        public void run() {
-                          ((RepairStatusHandler)invocation.getArgument(7))
-                              .handle(
-                                  1,
-                                  Optional.of(ActiveRepairService.Status.STARTED),
-                                  Optional.empty(),
-                                  null,
-                                  jmx);
-
-                          ((RepairStatusHandler)invocation.getArgument(7))
-                              .handle(
-                                  1,
-                                  Optional.of(ActiveRepairService.Status.SESSION_SUCCESS),
-                                  Optional.empty(),
-                                  null,
-                                  jmx);
-
-                          ((RepairStatusHandler)invocation.getArgument(7))
-                              .handle(
-                                  1,
-                                  Optional.of(ActiveRepairService.Status.FINISHED),
-                                  Optional.empty(),
-                                  null,
-                                  jmx);
-                        }
-                      }.start();
-                      return 1;
-                    });
             return jmx;
           }
         };
-
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
     context.repairManager.resumeRunningRepairRuns();
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());

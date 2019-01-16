@@ -130,9 +130,11 @@ public final class RepairSegment {
   }
 
   public enum State {
+    // don't change order or insert items (ordial is used in db)
     NOT_STARTED,
     RUNNING,
-    DONE
+    DONE,
+    STARTED
   }
 
   @JsonPOJOBuilder(buildMethodName = "build", withPrefix = "with")

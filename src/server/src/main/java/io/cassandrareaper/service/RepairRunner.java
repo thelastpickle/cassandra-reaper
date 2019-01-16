@@ -40,9 +40,7 @@ import java.util.stream.Collectors;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.FutureCallback;
@@ -72,11 +70,13 @@ final class RepairRunner implements Runnable {
   private float segmentsTotal;
 
   private RepairRunner(
-      AppContext context, UUID repairRunId, Supplier<ClusterFacade> clusterFacadeSupplier)
-      throws ReaperException {
+      AppContext context,
+      UUID repairRunId,
+      ClusterFacade clusterFacade) throws ReaperException {
+
     LOG.debug("Creating RepairRunner for run with ID {}", repairRunId);
     this.context = context;
-    this.clusterFacade = clusterFacadeSupplier.get();
+    this.clusterFacade = clusterFacade;
     this.repairRunId = repairRunId;
     Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
@@ -144,15 +144,12 @@ final class RepairRunner implements Runnable {
     registerMetric(metricNameForTotalSegments, (Gauge<Float>) ()  -> segmentsTotal);
   }
 
-  @VisibleForTesting
-  static RepairRunner create(
-      AppContext context, UUID repairRunId, Supplier<ClusterFacade> clusterFacadeSupplier)
-      throws ReaperException {
-    return new RepairRunner(context, repairRunId, clusterFacadeSupplier);
-  }
+  public static RepairRunner create(
+      AppContext context,
+      UUID repairRunId,
+      ClusterFacade clusterFacade) throws ReaperException {
 
-  public static RepairRunner create(AppContext context, UUID repairRunId) throws ReaperException {
-    return new RepairRunner(context, repairRunId, () -> ClusterFacade.create(context));
+    return new RepairRunner(context, repairRunId, clusterFacade);
   }
 
   private void registerMetric(String metricName, Gauge<?> gauge) {
@@ -487,6 +484,7 @@ final class RepairRunner implements Runnable {
     try {
       SegmentRunner segmentRunner = SegmentRunner.create(
           context,
+          clusterFacade,
           segmentId,
           potentialCoordinators,
           context.repairManager.getRepairTimeoutMillis(),

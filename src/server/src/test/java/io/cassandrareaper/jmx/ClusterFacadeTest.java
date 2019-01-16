@@ -38,13 +38,12 @@ public class ClusterFacadeTest {
     final AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.jmxConnectionFactory = Mockito.mock(JmxConnectionFactory.class);
+
     Mockito.when(context.jmxConnectionFactory.getAccessibleDatacenters())
-        .thenReturn(new HashSet<String>(Arrays.asList("dc1")));
+        .thenReturn(new HashSet<>(Arrays.asList("dc1")));
 
     context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
-    assertTrue(
-        ClusterFacade.create(context)
-            .nodeIsAccessibleThroughJmx("dc1", "127.0.0.1"));
+    assertTrue( ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc1", "127.0.0.1"));
     assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc2", "127.0.0.2"));
   }
 
@@ -53,13 +52,13 @@ public class ClusterFacadeTest {
     final AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.jmxConnectionFactory = Mockito.mock(JmxConnectionFactory.class);
+
     Mockito.when(context.jmxConnectionFactory.getAccessibleDatacenters())
-        .thenReturn(new HashSet<String>(Arrays.asList("dc1")));
+        .thenReturn(new HashSet<>(Arrays.asList("dc1")));
 
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
-    assertTrue(
-        ClusterFacade.create(context).nodeIsAccessibleThroughJmx(
-            "dc2", "127.0.0.2")); // it's in another DC but LOCAL allows attempting it
+    // it's in another DC so LOCAL disallows attempting it
+    assertFalse(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc2", "127.0.0.2"));
     // Should be accessible, same DC
     assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc1", "127.0.0.2"));
   }
@@ -69,13 +68,13 @@ public class ClusterFacadeTest {
     final AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.jmxConnectionFactory = Mockito.mock(JmxConnectionFactory.class);
+
     Mockito.when(context.jmxConnectionFactory.getAccessibleDatacenters())
-        .thenReturn(new HashSet<String>(Arrays.asList("dc1")));
+        .thenReturn(new HashSet<>(Arrays.asList("dc1")));
 
     context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
-    assertFalse(
-        ClusterFacade.create(context).nodeIsAccessibleThroughJmx(
-            "dc2", "127.0.0.2")); // Should not be accessible as it's in another DC
+    // Should not be accessible as it's in another DC
+    assertFalse(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc2", "127.0.0.2"));
     // Should be accessible, same DC
     assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc1", "127.0.0.2"));
   }

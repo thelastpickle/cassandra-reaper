@@ -41,12 +41,12 @@ Feature: Using Reaper
     And that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
-    And we can collect the tpstats from the seed node
-    And we can collect the dropped messages stats from the seed node
-    And we can collect the client request metrics from the seed node
     Then reaper has the last added cluster in storage
     And the seed node has vnodes
     And reaper has 0 scheduled repairs for the last added cluster
+    And we can collect the tpstats from the seed node
+    And we can collect the dropped messages stats from the seed node
+    And we can collect the client request metrics from the seed node
     When a new daily "full" repair schedule is added for the last added cluster and keyspace "booya"
     Then reaper has 1 scheduled repairs for the last added cluster
     When reaper is upgraded to latest

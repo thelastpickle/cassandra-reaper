@@ -440,9 +440,7 @@ public final class ClusterFacade {
    */
   public boolean nodeIsAccessibleThroughJmx(String nodeDc, String node) {
     return DatacenterAvailability.ALL == context.config.getDatacenterAvailability()
-        || DatacenterAvailability.LOCAL == context.config.getDatacenterAvailability()
-        || (DatacenterAvailability.EACH == context.config.getDatacenterAvailability()
-            && context.jmxConnectionFactory.getAccessibleDatacenters().contains(nodeDc));
+        || context.jmxConnectionFactory.getAccessibleDatacenters().contains(nodeDc);
   }
 
   /**
