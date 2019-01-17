@@ -41,6 +41,7 @@ import io.cassandrareaper.storage.cassandra.DateTimeCodec;
 import io.cassandrareaper.storage.cassandra.Migration003;
 import io.cassandrareaper.storage.cassandra.Migration009;
 import io.cassandrareaper.storage.cassandra.Migration016;
+import io.cassandrareaper.storage.cassandra.Migration018;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -248,6 +249,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         if (currentVersion <= 15) {
           Migration016.migrate(session, keyspace);
         }
+        // Switch metrics table to TWCS if possible
+        Migration018.migrate(session, keyspace);
       }
     } catch (RuntimeException e) {
       LOG.error("Failed performing Cassandra schema migrations", e);
@@ -332,15 +335,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
           "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
               + "segment_end_time,fail_count, token_ranges FROM repair_run WHERE id = ?");
       getRepairSegmentCountByRunIdPrepStmt = session.prepare("SELECT count(*) FROM repair_run WHERE id = ?");
-      insertRepairSchedulePrepStmt = session
+      insertRepairSchedulePrepStmt
+          = session
               .prepare(
-                  "INSERT INTO repair_schedule_v1(id, repair_unit_id, state, days_between, next_activation, run_history, "
+                  "INSERT INTO repair_schedule_v1(id, repair_unit_id, state,"
+                      + "days_between, next_activation, run_history, "
                       + "segment_count, repair_parallelism, intensity, "
                       + "creation_time, owner, pause_time, segment_count_per_node) "
                       + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
               .setConsistencyLevel(ConsistencyLevel.QUORUM);
       getRepairSchedulePrepStmt
-          = session.prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?").setConsistencyLevel(ConsistencyLevel.QUORUM);
+          = session
+              .prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?")
+              .setConsistencyLevel(ConsistencyLevel.QUORUM);
       insertRepairScheduleByClusterAndKsPrepStmt = session.prepare(
           "INSERT INTO repair_schedule_by_cluster_and_keyspace(cluster_name, keyspace_name, repair_schedule_id)"
               + " VALUES(?, ?, ?)");
@@ -351,33 +358,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       deleteRepairScheduleByClusterAndKsPrepStmt = session.prepare(
           "DELETE FROM repair_schedule_by_cluster_and_keyspace "
               + "WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
-      takeLeadPrepStmt = session
-          .prepare(
-              "INSERT INTO leader(leader_id, reaper_instance_id, reaper_instance_host, last_heartbeat) "
-                  + "VALUES(?, ?, ?, " + timeUdf + "(now())) IF NOT EXISTS");
-      renewLeadPrepStmt = session
-          .prepare(
-              "UPDATE leader SET reaper_instance_id = ?, reaper_instance_host = ?,"
-                  + " last_heartbeat = " + timeUdf + "(now()) WHERE leader_id = ? IF reaper_instance_id = ?");
-      releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?");
-      forceReleaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ?");
+      prepareLeaderElectionStatements(timeUdf);
       getRunningReapersCountPrepStmt = session.prepare(SELECT_RUNNING_REAPERS);
       saveHeartbeatPrepStmt = session
           .prepare(
               "INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat)"
                   + " VALUES(?,?," + timeUdf + "(now()))")
           .setIdempotent(false);
-      storeNodeMetricsPrepStmt = session
-          .prepare(
-              "INSERT INTO node_metrics_v1 (time_partition,run_id,node,datacenter,cluster,requested,pending_compactions,"
-                  + "has_repair_running,active_anticompactions) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
-          .setIdempotent(false);
-      getNodeMetricsPrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
-          + " WHERE time_partition = ? AND run_id = ?");
-      getNodeMetricsByNodePrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
-          + " WHERE time_partition = ? AND run_id = ? AND node = ?");
-      delNodeMetricsByNodePrepStmt = session.prepare("DELETE FROM node_metrics_v1"
-          + " WHERE time_partition = ? AND run_id = ? AND node = ?");
 
       getSnapshotPrepStmt = session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
       deleteSnapshotPrepStmt = session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
@@ -400,17 +387,53 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         }
       }
 
-      storeMetricsPrepStmt = session.prepare("INSERT INTO node_metrics_v2 (cluster, metric, time_bucket, host, ts, value) "
-          + "VALUES(?, ?, ?, ?, ?, ?)").setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
-      getMetricsForHostPrepStmt = session.prepare("SELECT cluster, metric, time_bucket, host, ts, value FROM node_metrics_v2 "
-          + "WHERE metric = ? and cluster = ? and time_bucket = ? and host = ? and ts >= ? and ts <= ?").setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
-      getMetricsForClusterPrepStmt = session.prepare("SELECT cluster, metric, time_bucket, host, ts, value FROM node_metrics_v2 "
-          + "WHERE metric = ? and cluster = ? and time_bucket = ?").setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
-    } catch (Exception e) {
+      prepareMetricStatements();
+    } catch (RuntimeException e) {
       LOG.error("Failed preparing Cassandra statements", e);
       throw new ReaperException(e);
     }
+  }
 
+  private void prepareLeaderElectionStatements(final String timeUdf) {
+    takeLeadPrepStmt = session
+        .prepare(
+            "INSERT INTO leader(leader_id, reaper_instance_id, reaper_instance_host, last_heartbeat)"
+                + "VALUES(?, ?, ?, " + timeUdf + "(now())) USING TTL ? IF NOT EXISTS");
+    renewLeadPrepStmt = session
+        .prepare(
+            "UPDATE leader USING TTL ? SET reaper_instance_id = ?, reaper_instance_host = ?,"
+                + " last_heartbeat = " + timeUdf + "(now()) WHERE leader_id = ? IF reaper_instance_id = ?");
+    releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?");
+    forceReleaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ?");
+  }
+
+  private void prepareMetricStatements() {
+    storeNodeMetricsPrepStmt = session
+        .prepare(
+            "INSERT INTO node_metrics_v1 (time_partition,run_id,node,datacenter,cluster,requested,pending_compactions,"
+                + "has_repair_running,active_anticompactions) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .setIdempotent(false);
+    getNodeMetricsPrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
+        + " WHERE time_partition = ? AND run_id = ?");
+    getNodeMetricsByNodePrepStmt = session.prepare("SELECT * FROM node_metrics_v1"
+        + " WHERE time_partition = ? AND run_id = ? AND node = ?");
+    delNodeMetricsByNodePrepStmt = session.prepare("DELETE FROM node_metrics_v1"
+        + " WHERE time_partition = ? AND run_id = ? AND node = ?");
+    storeMetricsPrepStmt = session
+            .prepare(
+                "INSERT INTO node_metrics_v2 (cluster, metric, time_bucket, host, ts, value) "
+                    + "VALUES(?, ?, ?, ?, ?, ?)")
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
+    getMetricsForHostPrepStmt = session
+            .prepare(
+                "SELECT cluster, metric, time_bucket, host, ts, value FROM node_metrics_v2 "
+                    + "WHERE metric = ? and cluster = ? and time_bucket = ? and host = ? and ts >= ? and ts <= ?")
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
+    getMetricsForClusterPrepStmt = session
+            .prepare(
+                "SELECT cluster, metric, time_bucket, host, ts, value FROM node_metrics_v2 "
+                    + "WHERE metric = ? and cluster = ? and time_bucket = ?")
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
   }
 
   @Override
@@ -945,7 +968,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       if (seg.getState().equals(State.NOT_STARTED) && withinRange(seg, parallelRange)) {
         for (RingRange range : ranges) {
           if (segmentIsWithinRange(seg, range)) {
-            LOG.info("Segment [{}, {}] is within range [{}, {}]", seg.getStartToken(), seg.getEndToken(), range.getStart(), range.getEnd());
+            LOG.debug(
+                "Segment [{}, {}] is within range [{}, {}]",
+                seg.getStartToken(),
+                seg.getEndToken(),
+                range.getStart(),
+                range.getEnd());
             return Optional.of(seg);
           }
         }
@@ -1237,15 +1265,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public boolean renewLead(UUID leaderId) {
-    return renewLead(leaderId, LEAD_DURATION);
-  }
-
-  @Override
   public boolean takeLead(UUID leaderId, int ttl) {
     LOG.debug("Trying to take lead on segment {}", leaderId);
     ResultSet lwtResult = session.execute(
-        takeLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS));
+        takeLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS, ttl));
 
     if (lwtResult.wasApplied()) {
       LOG.debug("Took lead on segment {}", leaderId);
@@ -1258,9 +1281,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
+  public boolean renewLead(UUID leaderId) {
+    return renewLead(leaderId, LEAD_DURATION);
+  }
+
+  @Override
   public boolean renewLead(UUID leaderId, int ttl) {
     ResultSet lwtResult = session.execute(
         renewLeadPrepStmt.bind(
+            ttl,
             AppContext.REAPER_INSTANCE_ID,
             AppContext.REAPER_INSTANCE_ADDRESS,
             leaderId,
@@ -1559,21 +1588,21 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       }
     }
 
-      for (ResultSetFuture future:futures) {
-        for (Row row : future.getUninterruptibly()) {
-          // Filtering on the timestamp lower bound since it's not filtered in cluster wide metrics requests
-          if(row.getTimestamp("ts").getTime() >= since) {
-            metrics.add(
-                GenericMetric.builder()
-                    .withClusterName(row.getString("cluster"))
-                    .withHost(row.getString("host"))
-                    .withMetric(row.getString("metric"))
-                    .withTs(new DateTime(row.getTimestamp("ts")))
-                    .withValue(row.getDouble("value"))
-                    .build());
-          }
+    for (ResultSetFuture future : futures) {
+      for (Row row : future.getUninterruptibly()) {
+        // Filtering on the timestamp lower bound since it's not filtered in cluster wide metrics requests
+        if (row.getTimestamp("ts").getTime() >= since) {
+          metrics.add(
+              GenericMetric.builder()
+                  .withClusterName(row.getString("cluster"))
+                  .withHost(row.getString("host"))
+                  .withMetric(row.getString("metric"))
+                  .withTs(new DateTime(row.getTimestamp("ts")))
+                  .withValue(row.getDouble("value"))
+                  .build());
         }
       }
+    }
 
 
     return metrics;
@@ -1581,6 +1610,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public void storeMetric(GenericMetric metric) {
-    session.executeAsync(storeMetricsPrepStmt.bind(metric.getClusterName(), metric.getMetric(), metric.getTs().toString(HOURLY_FORMATTER), metric.getHost(), metric.getTs().toDate(), metric.getValue()));
+    session.executeAsync(
+        storeMetricsPrepStmt.bind(
+            metric.getClusterName(),
+            metric.getMetric(),
+            metric.getTs().toString(HOURLY_FORMATTER),
+            metric.getHost(),
+            metric.getTs().toDate(),
+            metric.getValue()));
   }
 }

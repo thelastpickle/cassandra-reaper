@@ -35,9 +35,9 @@ public interface IDistributedStorage {
 
   boolean takeLead(UUID leaderId);
 
-  boolean renewLead(UUID leaderId);
-
   boolean takeLead(UUID leaderId, int ttl);
+
+  boolean renewLead(UUID leaderId);
 
   boolean renewLead(UUID leaderId, int ttl);
 
@@ -62,9 +62,9 @@ public interface IDistributedStorage {
   /**
    * Gets the next free segment from the backend that is both within the parallel range and the local node ranges.
    *
-   * @param runId
-   * @param parallelRange
-   * @param ranges
+   * @param runId id of the repair run
+   * @param parallelRange list of ranges that can run in parallel
+   * @param ranges list of ranges we're looking a segment for
    * @return an optional repair segment to process
    */
   Optional<RepairSegment> getNextFreeSegmentForRanges(

@@ -83,6 +83,7 @@ public final class HeartTest {
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
+      heart.beatMetrics();
       Awaitility.await().until(() -> {
         try {
           Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
@@ -110,6 +111,7 @@ public final class HeartTest {
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
+      heart.beatMetrics();
       Awaitility.await().until(() -> {
         try {
           Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
@@ -137,6 +139,7 @@ public final class HeartTest {
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
+      heart.beatMetrics();
       Thread.sleep(500);
     }
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
@@ -166,6 +169,7 @@ public final class HeartTest {
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
+      heart.beatMetrics();
       Thread.sleep(500);
     }
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
@@ -200,6 +204,7 @@ public final class HeartTest {
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
+      heart.beatMetrics();
       Thread.sleep(500);
     }
 
@@ -259,6 +264,7 @@ public final class HeartTest {
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
+      heart.beatMetrics();
       Thread.sleep(500);
     }
 
@@ -317,6 +323,7 @@ public final class HeartTest {
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
+      heart.beatMetrics();
       Thread.sleep(500);
     }
 
@@ -381,9 +388,11 @@ public final class HeartTest {
 
     try (Heart heart = Heart.create(context, TimeUnit.SECONDS.toMillis(2))) {
       heart.beat();
+      heart.beatMetrics();
       Assertions.assertThat(heart.isCurrentlyUpdatingNodeMetrics().get()).isTrue();
       Thread.sleep(2100);
       heart.beat();
+      heart.beatMetrics();
       Thread.sleep(500);
     }
 
@@ -398,16 +407,49 @@ public final class HeartTest {
     AppContext context = new AppContext();
     Heart heart = Heart.create(context, TimeUnit.SECONDS.toMillis(2));
 
-    GenericMetric metricRepair = GenericMetric.builder().withClusterName("test").withHost("127.0.0.1").withMetric("org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=Repair#18,name=ActiveTasks.Value").withTs(DateTime.now()).withValue(2.0).build();
+    GenericMetric metricRepair
+        = GenericMetric.builder()
+            .withClusterName("test")
+            .withHost("127.0.0.1")
+            .withMetric(
+                "org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=Repair#18,name=ActiveTasks.Value")
+            .withTs(DateTime.now())
+            .withValue(2.0)
+            .build();
     Assertions.assertThat(heart.isRepairMetric(metricRepair)).isTrue();
 
-    GenericMetric metricNotRepair = GenericMetric.builder().withClusterName("test").withHost("127.0.0.1").withMetric("org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=MemtablePostFlush,name=ActiveTasks.Value").withTs(DateTime.now()).withValue(2.0).build();
+    GenericMetric metricNotRepair
+        = GenericMetric.builder()
+            .withClusterName("test")
+            .withHost("127.0.0.1")
+            .withMetric(
+                "org.apache.cassandra.metrics:type=ThreadPools,path=internal,"
+                + "scope=MemtablePostFlush,name=ActiveTasks.Value")
+            .withTs(DateTime.now())
+            .withValue(2.0)
+            .build();
     Assertions.assertThat(heart.isRepairMetric(metricNotRepair)).isFalse();
 
-    GenericMetric metricRepair2 = GenericMetric.builder().withClusterName("test").withHost("127.0.0.1").withMetric("org.apache.cassandra.internal:type=AntiEntropySessions,name=PendingTasks.Value").withTs(DateTime.now()).withValue(2.0).build();
+    GenericMetric metricRepair2
+        = GenericMetric.builder()
+            .withClusterName("test")
+            .withHost("127.0.0.1")
+            .withMetric(
+                "org.apache.cassandra.internal:type=AntiEntropySessions,name=PendingTasks.Value")
+            .withTs(DateTime.now())
+            .withValue(2.0)
+            .build();
     Assertions.assertThat(heart.isRepairMetric(metricRepair2)).isTrue();
 
-    GenericMetric metricRepair3 = GenericMetric.builder().withClusterName("test").withHost("127.0.0.1").withMetric("org.apache.cassandra.internal:type=AntiEntropySessions,name=ActiveCount.Value").withTs(DateTime.now()).withValue(2.0).build();
+    GenericMetric metricRepair3
+        = GenericMetric.builder()
+            .withClusterName("test")
+            .withHost("127.0.0.1")
+            .withMetric(
+                "org.apache.cassandra.internal:type=AntiEntropySessions,name=ActiveCount.Value")
+            .withTs(DateTime.now())
+            .withValue(2.0)
+            .build();
     Assertions.assertThat(heart.isRepairMetric(metricRepair3)).isTrue();
   }
 }

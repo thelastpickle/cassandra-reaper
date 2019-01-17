@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 public final class Migration018 {
 
   private static final Logger LOG = LoggerFactory.getLogger(Migration018.class);
+  private static final String METRICS_V1_TABLE = "node_metrics_v1";
   private static final String METRICS_V2_TABLE = "node_metrics_v2";
 
   private Migration018() {
@@ -37,28 +38,50 @@ public final class Migration018 {
    */
   public static void migrate(Session session, String keyspace) {
 
-    VersionNumber highestNodeVersion = session.getCluster().getMetadata().getAllHosts()
+    VersionNumber lowestNodeVersion = session.getCluster().getMetadata().getAllHosts()
         .stream()
         .map(host -> host.getCassandraVersion())
-        .max(VersionNumber::compareTo)
+        .min(VersionNumber::compareTo)
         .get();
 
-    if ((VersionNumber.parse("3.0.8").compareTo(highestNodeVersion) <= 0
-        && VersionNumber.parse("3.0.99").compareTo(highestNodeVersion) >= 0)
-        || VersionNumber.parse("3.8").compareTo(highestNodeVersion) <= 0) {
-      LOG.warn("Altering the {} to use TWCS...", METRICS_V2_TABLE);
+    if ((VersionNumber.parse("3.0.8").compareTo(lowestNodeVersion) <= 0
+        && VersionNumber.parse("3.0.99").compareTo(lowestNodeVersion) >= 0)
+        || VersionNumber.parse("3.8").compareTo(lowestNodeVersion) <= 0) {
       try {
-        session.execute(
-                "ALTER TABLE " + METRICS_V2_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
-                    + "'unchecked_tombstone_compaction': 'true', "
-                    + "'compaction_window_size': '1', "
-                    + "'compaction_window_unit': 'DAYS'}");
+        if (!isUsingTwcs(session, keyspace)) {
+          LOG.warn("Altering the {} to use TWCS...", METRICS_V1_TABLE);
+          session.execute(
+                  "ALTER TABLE " + METRICS_V1_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
+                      + "'unchecked_tombstone_compaction': 'true', "
+                      + "'compaction_window_size': '2', "
+                      + "'compaction_window_unit': 'MINUTES'}");
+        }
+        if (!isUsingTwcs(session, keyspace)) {
+          LOG.warn("Altering the {} to use TWCS...", METRICS_V2_TABLE);
+          session.execute(
+                  "ALTER TABLE " + METRICS_V2_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
+                      + "'unchecked_tombstone_compaction': 'true', "
+                      + "'compaction_window_size': '1', "
+                      + "'compaction_window_unit': 'DAYS'}");
 
-        LOG.warn("{} was successfully altered to use TWCS.", METRICS_V2_TABLE);
+          LOG.warn("{} was successfully altered to use TWCS.", METRICS_V2_TABLE);
+        }
       } catch (RuntimeException e) {
         LOG.error("Failed altering ");
       }
     }
 
+  }
+
+  private static boolean isUsingTwcs(Session session, String keyspace) {
+    return session
+        .getCluster()
+        .getMetadata()
+        .getKeyspace(keyspace)
+        .getTable(METRICS_V1_TABLE)
+        .getOptions()
+        .getCompaction()
+        .get("class")
+        .contains("TimeWindowCompactionStrategy");
   }
 }

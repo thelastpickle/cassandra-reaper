@@ -299,7 +299,11 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
    * @throws ReaperException any caught runtime exception
    */
   private void maybeInitializeSidecarMode() throws ReaperException {
-    Node host = Node.builder().withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1")).withClusterName("bogus").build();
+    Node host
+        = Node.builder()
+            .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1"))
+            .withClusterName("bogus")
+            .build();
     try {
       JmxProxy jmxProxy
           = context.jmxConnectionFactory.connect(

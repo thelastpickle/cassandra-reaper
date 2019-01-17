@@ -80,13 +80,6 @@ final class Heart implements AutoCloseable {
 
       lastBeat.set(System.currentTimeMillis());
       ((IDistributedStorage) context.storage).saveHeartbeat();
-
-      if (ReaperApplicationConfiguration.DatacenterAvailability.EACH
-              == context.config.getDatacenterAvailability()
-          || ReaperApplicationConfiguration.DatacenterAvailability.SIDECAR
-              == context.config.getDatacenterAvailability()) {
-        updateRequestedNodeMetrics();
-      }
     }
   }
 
@@ -124,42 +117,42 @@ final class Heart implements AutoCloseable {
       forkJoinPool.submit(() -> {
         try (Timer.Context t0 = timer(context, "updatingNodeMetrics")) {
 
-            forkJoinPool.submit(() -> {
-              context.repairManager.repairRunners.keySet()
-                  .parallelStream()
-                  .forEach(runId -> {
+          forkJoinPool.submit(() -> {
+            context.repairManager.repairRunners.keySet()
+                .parallelStream()
+                .forEach(runId -> {
 
-                    storage.getNodeMetrics(runId)
-                        .parallelStream()
-                        .filter(metrics -> canAnswerToNodeMetricsRequest(metrics))
-                        .forEach(req -> {
+                  storage.getNodeMetrics(runId)
+                      .parallelStream()
+                      .filter(metrics -> canAnswerToNodeMetricsRequest(metrics))
+                      .forEach(req -> {
 
-                          LOG.info("Got metric request for node {} in {}", req.getNode(), req.getCluster());
-                          try (Timer.Context t1 = timer(
-                              context,
-                              req.getCluster().replace('.', '-'),
-                              req.getNode().replace('.', '-'))) {
+                        LOG.info("Got metric request for node {} in {}", req.getNode(), req.getCluster());
+                        try (Timer.Context t1 = timer(
+                            context,
+                            req.getCluster().replace('.', '-'),
+                            req.getNode().replace('.', '-'))) {
 
-                            try {
-                              grabAndStoreNodeMetrics(storage, runId, req);
+                          try {
+                            grabAndStoreNodeMetrics(storage, runId, req);
 
-                              LOG.info("Responded to metric request for node {}", req.getNode());
-                            } catch (ReaperException | RuntimeException | InterruptedException ex) {
-                              LOG.debug("failed seed connection in cluster " + req.getCluster(), ex);
-                            } catch (JMException e) {
-                              LOG.warn(
-                                  "failed querying JMX MBean for metrics on node {} of cluster {} due to {}",
-                                  req.getNode(), req.getCluster(), e.getMessage());
-                            }
+                            LOG.info("Responded to metric request for node {}", req.getNode());
+                          } catch (ReaperException | RuntimeException | InterruptedException ex) {
+                            LOG.debug("failed seed connection in cluster " + req.getCluster(), ex);
+                          } catch (JMException e) {
+                            LOG.warn(
+                                "failed querying JMX MBean for metrics on node {} of cluster {} due to {}",
+                                req.getNode(), req.getCluster(), e.getMessage());
                           }
-                        });
-                  });
-            }).get();
+                        }
+                      });
+                });
+          }).get();
 
-            if (context.config.getDatacenterAvailability() == DatacenterAvailability.SIDECAR) {
-              // In sidecar mode we store metrics in the db on a regular basis
-              grabAndStoreGenericMetrics();
-            }
+          if (context.config.getDatacenterAvailability() == DatacenterAvailability.SIDECAR) {
+            // In sidecar mode we store metrics in the db on a regular basis
+            grabAndStoreGenericMetrics();
+          }
         } catch (ExecutionException | InterruptedException | RuntimeException | ReaperException | JMException ex) {
           LOG.warn("Failed metric collection during heartbeat", ex);
         } finally {
@@ -175,7 +168,7 @@ final class Heart implements AutoCloseable {
    * Requires to be in sidecar on the node for which metrics are requested, or to be in a different mode than ALL.
    * Also checks that the metrics record as requested set to true.
    *
-   * @param metric
+   * @param metric a metric request
    * @return true if reaper should try to answer the metric request
    */
   private boolean canAnswerToNodeMetricsRequest(NodeMetrics metric) {
@@ -211,7 +204,8 @@ final class Heart implements AutoCloseable {
     int runningRepairs = 0;
     int pendingCompactions = 0;
     Node node = Node.builder().withClusterName(context.localClusterName).withHostname(context.localNodeAddress).build();
-    List<GenericMetric> metrics = this.metricsService.convertToGenericMetrics(this.metricsService.collectMetrics(node), node);
+    List<GenericMetric> metrics
+        = this.metricsService.convertToGenericMetrics(this.metricsService.collectMetrics(node), node);
 
     for (GenericMetric metric:metrics) {
       ((IDistributedStorage)context.storage).storeMetric(metric);
@@ -253,7 +247,8 @@ final class Heart implements AutoCloseable {
   boolean isRepairMetric(GenericMetric metric) {
     return metric.getMetric().equals("org.apache.cassandra.internal:type=AntiEntropySessions,name=PendingTasks.Value")
         || metric.getMetric().equals("org.apache.cassandra.internal:type=AntiEntropySessions,name=ActiveCount.Value")
-        || metric.getMetric().matches("org.apache.cassandra.metrics:type=ThreadPools,path=internal,scope=Repair#[0-9]{1,3},name=[a-zA-Z]*Tasks.Value");
+        || metric.getMetric().matches("org.apache.cassandra.metrics:type=ThreadPools,path=internal,"
+            + "scope=Repair#[0-9]{1,3},name=[a-zA-Z]*Tasks.Value");
   }
 
   @VisibleForTesting

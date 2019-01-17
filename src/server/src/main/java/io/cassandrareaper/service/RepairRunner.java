@@ -362,9 +362,13 @@ final class RepairRunner implements Runnable {
       // We have an empty slot, so let's start new segment runner if possible.
       // When in sidecar mode, filter on ranges that the local node is a replica for only.
       LOG.info("Running segment for range {}", parallelRanges.get(rangeIndex));
-      Optional<RepairSegment> nextRepairSegment = context.config.isInSidecarMode()
-          ? ((IDistributedStorage) context.storage).getNextFreeSegmentForRanges(repairRunId, Optional.of(parallelRanges.get(rangeIndex)), localEndpointRanges)
-          : context.storage.getNextFreeSegmentInRange(repairRunId, Optional.of(parallelRanges.get(rangeIndex)));
+      Optional<RepairSegment> nextRepairSegment
+          = context.config.isInSidecarMode()
+              ? ((IDistributedStorage) context.storage)
+                  .getNextFreeSegmentForRanges(
+                      repairRunId, Optional.of(parallelRanges.get(rangeIndex)), localEndpointRanges)
+              : context.storage.getNextFreeSegmentInRange(
+                  repairRunId, Optional.of(parallelRanges.get(rangeIndex)));
 
       if (!nextRepairSegment.isPresent()) {
         LOG.debug("No repair segment available for range {}", parallelRanges.get(rangeIndex));

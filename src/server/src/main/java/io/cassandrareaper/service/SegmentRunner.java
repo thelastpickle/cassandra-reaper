@@ -34,7 +34,6 @@ import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -693,8 +692,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       result = storage.getNodeMetrics(repairRunner.getRepairRunId(), node);
 
       if (!result.isPresent()
-          && Arrays.asList(DatacenterAvailability.EACH, DatacenterAvailability.SIDECAR)
-              .contains(context.config.getDatacenterAvailability())) {
+          && context.config.getDatacenterAvailability().isInCollocatedMode()) {
         // Sending a request for metrics to the other reaper instances through the Cassandra backend
         storeNodeMetrics(
             NodeMetrics.builder()
@@ -725,6 +723,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return result;
   }
 
+  /* TODO: Use the metrics request system instead if we're in collocated mode */
   private boolean isRepairRunningOnOneNode(RepairSegment segment) {
     for (RepairSegment segmentInRun : context.storage.getRepairSegmentsForRun(segment.getRunId())) {
       try {
@@ -1163,6 +1162,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   private boolean lockSegmentRunners() {
+    if (this.repairUnit.getIncrementalRepair())
+      return true;
+
     try (Timer.Context cx
         = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "lockSegmentRunners")).time()) {
 
@@ -1178,6 +1180,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   private boolean renewLockSegmentRunners() {
+    if (this.repairUnit.getIncrementalRepair())
+      return true;
+
     try (Timer.Context cx
         = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "renewLockSegmentRunners")).time()) {
 
@@ -1186,7 +1191,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           : true;
 
       if (!result) {
-        context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "renewLockSegmentRunners", "failed")).inc();
+        context
+            .metricRegistry
+            .counter(MetricRegistry.name(SegmentRunner.class, "renewLockSegmentRunners", "failed"))
+            .inc();
       }
       return result;
     }
