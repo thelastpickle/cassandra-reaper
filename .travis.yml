@@ -43,6 +43,13 @@ jobs:
   fast_finish: true
   allow_failures:
   - env: TEST_TYPE=docker
+  # 4.0 builds are ignored until new ccm version is released and available in pip
+  #  when fixed, uncomment in .circleci/config.yaml too
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=1 GRIM_MAX=1
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=2 GRIM_MAX=2
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=2 GRIM_MAX=4
+  - env: TEST_TYPE=upgrade CASSANDRA_VERSION=git:trunk CO="-t @all_nodes_reachable"
+  - env: TEST_TYPE=upgrade CASSANDRA_VERSION=git:trunk CO="-t ~@all_nodes_reachable"
   include:
     - stage: Integration Tests
       name: Memory, H2 and Postgresql
