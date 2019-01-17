@@ -1489,7 +1489,7 @@ public final class BasicSteps {
 
   @Then("^a \"([^\"]*)\" response is returned$")
   public void aResponseIsReturned(String statusDescription) throws Throwable {
-    assertEquals(lastResponse.getStatus(), httpStatus(statusDescription));
+    Assertions.assertThat(lastResponse.getStatus()).isEqualTo(httpStatus(statusDescription));
   }
 
   @Then("^the response was redirected to the login page$")

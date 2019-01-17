@@ -29,6 +29,22 @@ Feature: Access Control
     Then a "OK" response is returned
     Examples:
       | path   | request              |
+      | GET    | /webui/login.html    |
+
+  Scenario Outline: Request to ping resource is allowed but not healthy
+    Given that we are going to use "127.0.0.1@test" as cluster seed host
+    When a <path> <request> is made
+    Then a "NOT_ACCEPTABLE" response is returned
+    Examples:
+      | path   | request              |
+      | GET    | /ping                |
+
+  Scenario Outline: Request to protected resource without login returns forbidden
+    Given that we are going to use "127.0.0.1@test" as cluster seed host
+    When a <path> <request> is made
+    Then a "FORBIDDEN" response is returned
+    Examples:
+      | path   | request              |
       | GET    | /cluster             |
       | GET    | /repair_run          |
       | GET    | /repair_schedule     |

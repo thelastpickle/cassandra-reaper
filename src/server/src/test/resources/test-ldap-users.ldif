@@ -1,0 +1,44 @@
+dn: dc=cassandra-reaper,dc=io
+objectClass: domain
+objectClass: top
+dc: example
+
+dn: ou=Users,dc=cassandra-reaper,dc=io
+objectClass: organizationalUnit
+objectClass: top
+ou: Users
+
+dn: ou=Groups,dc=cassandra-reaper,dc=io
+objectClass: organizationalUnit
+objectClass: top
+ou: Groups
+
+dn: cn=Micha Kops,ou=Users,dc=cassandra-reaper,dc=io
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: Micha Kops
+sn: Kops
+uid: mkops
+userPassword: abcdefg
+
+dn: uid=sclaus,ou=Users,dc=cassandra-reaper,dc=io
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: Santa Claus
+sn: Claus
+uid: sclaus
+userPassword: abcdefg
+
+dn: cn=John Steinbeck,ou=Users,dc=cassandra-reaper,dc=io
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: John Steinbeck
+sn: Steinbeck
+uid: jsteinbeck
+userPassword: abcdefg
