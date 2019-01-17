@@ -267,6 +267,12 @@
             <version>2.0M10</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.zapodot</groupId>
+            <artifactId>embedded-ldap-junit</artifactId>
+            <version>0.7</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

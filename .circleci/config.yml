@@ -147,7 +147,9 @@ jobs:
               - ~/.ccm/repository
             key: v1-dependencies-{{ checksum "pom.xml" }}
         - run:
-            command: MAVEN_OPTS="-Xmx384m" mvn -B install
+            command: |
+                MAVEN_OPTS="-Xmx384m" mvn -B install
+                mvn -B surefire:test -Dtest=ReaperShiroIT
     c_2-1_memory:
       environment:
         CASSANDRA_VERSION: 2.1.20
