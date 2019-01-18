@@ -114,8 +114,18 @@ public final class ClusterResource {
           .build();
 
     } else {
+
+      final String jmxUsername;
+
+      if (context.jmxConnectionFactory.getJmxCredentialsForCluster(clusterName).isPresent()) {
+        jmxUsername = context.jmxConnectionFactory.getJmxCredentialsForCluster(clusterName).get().getUsername();
+      } else {
+        jmxUsername = "";
+      }
+
       ClusterStatus clusterStatus = new ClusterStatus(
             cluster.get(),
+            jmxUsername,
             context.storage.getClusterRunStatuses(cluster.get().getName(), limit.orElse(Integer.MAX_VALUE)),
             context.storage.getClusterScheduleStatuses(cluster.get().getName()),
             getNodesStatus(cluster).orElse(null));
