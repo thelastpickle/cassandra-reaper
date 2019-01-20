@@ -88,6 +88,7 @@ server:
     appenders: []
 
 postgres:
+  driverClass: org.postgresql.Driver
   user: postgres
   password: 
   url: jdbc:postgresql://127.0.0.1/reaper
@@ -113,9 +114,8 @@ autoScheduling:
 #    - type: log
 #      logger: metrics
 
-# Uncomment the following block to enable authentication
-
-#accessControl:
-#  sessionTimeout: PT10M
-#  shiro:
-#    iniConfigs: ["file:/path/to/shiro.ini"]
+# Authentication is enabled by default
+accessControl:
+  sessionTimeout: PT10M
+  shiro:
+    iniConfigs: ["classpath:shiro.ini"]

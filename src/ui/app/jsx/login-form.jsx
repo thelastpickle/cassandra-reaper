@@ -1,5 +1,5 @@
 //
-//  Copyright 2018-2018 The Last Pickle Ltd
+//  Copyright 2018-2019 The Last Pickle Ltd
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -49,7 +49,8 @@ const loginForm = React.createClass({
   _onLogin: function (e) {
     const login = {
       username: ReactDOM.findDOMNode(this.refs.in_username).value,
-      password: ReactDOM.findDOMNode(this.refs.in_password).value
+      password: ReactDOM.findDOMNode(this.refs.in_password).value,
+      rememberMe: ReactDOM.findDOMNode(this.refs.in_rememberMe).value
     };
     this.props.loginSubject.onNext(login);
   },
@@ -76,10 +77,17 @@ const loginForm = React.createClass({
                     placeholder="Username"></input>
             </div>
             <div className="form-group">
-              <label htmlFor="in_username">Password:</label>
+              <label htmlFor="in_password">Password:</label>
               <input type="password" className="form-control" ref="in_password" id="in_password"
                     placeholder="Password"></input>
             </div>
+            <br/>
+            <div className="form-group">
+              <label htmlFor="in_rememberMe">Remember Me</label>
+              <input type="checkbox" className="form-control" ref="in_rememberMe" value="true"
+                    placeholder="RememberMe"/>
+            </div>
+            <br/>
             <button type="button" className="btn btn-success" onClick={this._onLogin}>Login</button>
           </div>
         </div>

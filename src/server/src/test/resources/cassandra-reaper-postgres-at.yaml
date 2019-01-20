@@ -61,6 +61,7 @@ jmxCredentials:
 
 # database section will be ignored if storageType is set to "memory"
 postgres:
+  driverClass: org.postgresql.Driver
   user: postgres
   password:
   url: jdbc:postgresql://127.0.0.1/reaper
