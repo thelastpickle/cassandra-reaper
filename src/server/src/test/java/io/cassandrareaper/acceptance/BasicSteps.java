@@ -1,6 +1,6 @@
 /*
  * Copyright 2015-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Basic acceptance test (Cucumber) steps.
  */
+@SuppressWarnings("ResultOfMethodCallIgnored")
 public final class BasicSteps {
 
   private static final Logger LOG = LoggerFactory.getLogger(BasicSteps.class);
@@ -1596,6 +1597,7 @@ public final class BasicSteps {
     return Cluster.builder()
         .addContactPoint("127.0.0.1")
         .withSocketOptions(new SocketOptions().setConnectTimeoutMillis(20000).setReadTimeoutMillis(40000))
+        .withoutJMXReporting()
         .build();
   }
 
