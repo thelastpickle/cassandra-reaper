@@ -123,9 +123,23 @@ public final class ClusterResource {
         jmxUsername = "";
       }
 
+      final Boolean jmxPasswordIsSet;
+
+      if (context.jmxConnectionFactory.getJmxCredentialsForCluster(clusterName).isPresent()) {
+        jmxPasswordIsSet = !context
+                            .jmxConnectionFactory
+                            .getJmxCredentialsForCluster(clusterName)
+                            .get()
+                            .getPassword()
+                            .isEmpty();
+      } else {
+        jmxPasswordIsSet = false;
+      }
+
       ClusterStatus clusterStatus = new ClusterStatus(
             cluster.get(),
             jmxUsername,
+            jmxPasswordIsSet,
             context.storage.getClusterRunStatuses(cluster.get().getName(), limit.orElse(Integer.MAX_VALUE)),
             context.storage.getClusterScheduleStatuses(cluster.get().getName()),
             getNodesStatus(cluster).orElse(null));
