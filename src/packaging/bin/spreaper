@@ -34,6 +34,8 @@ from json import encoder
 encoder.FLOAT_REPR = lambda o: format(o, '.3f')
 
 USER = getpass.getuser()
+COOKIES = {}
+HEADERS = {}
 DEFAULT_CAUSE = "manual spreaper run"
 
 log_level = logging.WARN
@@ -65,19 +67,22 @@ class ReaperCaller(object):
         self.base_url = "{0}://{1}:{2}".format(use_ssl and 'https' or 'http',
                                                str(host_name), int(host_port))
 
-    def _http_req(self, http_method, the_url, params=None):
+    def _http_req(self, http_method, the_url, cookies={}, params=None):
         http_method = http_method.upper()
         if params is None:
             params = {}
         log.info("making HTTP %s to %s", http_method, the_url)
         if http_method == 'GET':
-            r = requests.get(the_url, params=params)
+            print("headers : {}".format(HEADERS))
+            r = requests.get(the_url, params=params, cookies=cookies, headers=HEADERS)
         elif http_method == 'POST':
-            r = requests.post(the_url, params=params)
+            r = requests.post(the_url, params=params, cookies=cookies, headers=HEADERS)
+        elif http_method == 'POST_FORM':
+            r = requests.post(the_url, data=params)
         elif http_method == 'PUT':
-            r = requests.put(the_url, params=params)
+            r = requests.put(the_url, params=params, cookies=cookies, headers=HEADERS)
         elif http_method == 'DELETE':
-            r = requests.delete(the_url, params=params)
+            r = requests.delete(the_url, params=params, cookies=cookies, headers=HEADERS)
         else:
             assert False, "invalid HTTP method: {0}".format(http_method)
         log.info("HTTP %s return code %s with content of length %s",
@@ -89,23 +94,30 @@ class ReaperCaller(object):
         if 'Location' in r.headers:
           # any non 303/307 response with a 'Location' header, is a successful mutation pointing to the resource
           return self._http_req("GET", r.headers['Location'])
-        return r.text
+        if http_method == 'POST_FORM':
+            return r
+        else:
+            return r.text
 
     def get(self, endpoint):
         the_url = urlparse.urljoin(self.base_url, endpoint)
-        return self._http_req("GET", the_url)
+        return self._http_req("GET", the_url, cookies=COOKIES)
 
     def post(self, endpoint, **params):
         the_url = urlparse.urljoin(self.base_url, endpoint)
-        return self._http_req("POST", the_url, params)
+        return self._http_req("POST", the_url, params=params)
+    
+    def postFormData(self, endpoint, payload):
+        the_url = urlparse.urljoin(self.base_url, endpoint)
+        return self._http_req("POST_FORM", the_url, params=payload)
 
     def put(self, endpoint, **params):
         the_url = urlparse.urljoin(self.base_url, endpoint)
-        return self._http_req("PUT", the_url, params)
+        return self._http_req("PUT", the_url, params=params)
 
     def delete(self, endpoint, **params):
         the_url = urlparse.urljoin(self.base_url, endpoint)
-        return self._http_req("DELETE", the_url, params)
+        return self._http_req("DELETE", the_url, params=params)
 
 
 # === Arguments for commands ============================================================
@@ -134,6 +146,7 @@ def _global_arguments(parser, command):
                        action="store_true")
     group.add_argument("-vv", help="extra output verbosity", action="store_true")
     group.add_argument("-q", "--quiet", help="unix mode", action="store_true")
+    group.add_argument("--username", default=None, help="Username to login with")
     parser.add_argument(command)
 
 
@@ -313,15 +326,16 @@ def _arguments_for_delete_snapshots(parser):
     parser.add_argument("--node", default=None,
                         help=("A single node to get the snapshot list from"))
 
-
-
 def _parse_arguments(command, description, usage=None, extra_arguments=None):
     """Generic argument parsing done by every command"""
     parser = argparse.ArgumentParser(description=description, usage=usage)
     _global_arguments(parser, command)
     if extra_arguments:
         extra_arguments(parser)
-    return parser.parse_args()
+    if (command == "login"):
+        return parser.parse_known_args()
+    else:
+        return parser.parse_args()
 
 
 # === The actual CLI ========================================================================
@@ -398,10 +412,48 @@ class ReaperCLI(object):
             exit(2)
 
     @staticmethod
+    def prepare_reaper_for_login(command, description, usage=None, extra_arguments=None):
+        (args, ignored) = _parse_arguments(command, description, usage, extra_arguments)
+        reaper = ReaperCaller(args.reaper_host, args.reaper_port, args.reaper_use_ssl)
+        return reaper, args
+
+    @staticmethod
     def prepare_reaper(command, description, usage=None, extra_arguments=None):
         args = _parse_arguments(command, description, usage, extra_arguments)
         reaper = ReaperCaller(args.reaper_host, args.reaper_port, args.reaper_use_ssl)
+        ReaperCLI.login(reaper, args)
         return reaper, args
+
+    @staticmethod
+    def login(reaper, args):
+        if (args.username != None):
+            reaper, args = ReaperCLI.prepare_reaper_for_login(
+                "login",
+                "Authenticate to Reaper"
+            )
+            password = ReaperCLI.get_password()
+            printq("# Logging in...")
+            payload = {'username':args.username, 'password':password, 'rememberMe':False}
+            reply = reaper.postFormData("login", 
+                                payload=payload)
+            # Use shiro's session id to request a JWT
+            COOKIES["JSESSIONID"] = reply.cookies["JSESSIONID"]
+            jwt = reaper.get("jwt")
+
+            # remove the session id and set the auth header with the JWT
+            COOKIES.pop("JSESSIONID", None)
+            HEADERS['Authorization'] = 'Bearer ' + jwt
+    
+    @staticmethod
+    def get_password():
+        password = None
+        # Use the password from the file if it exists or prompt the user for it
+        if (os.path.exists(os.path.expanduser('~/.reaper'))):
+            password = file(os.path.expanduser('~/.reaper'),'rU').readline().rstrip("\r\n")
+        else:
+            password = getpass.getpass()
+        
+        return password
 
     def ping(self):
         reaper, args = ReaperCLI.prepare_reaper(
