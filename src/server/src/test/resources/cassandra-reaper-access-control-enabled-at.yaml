@@ -68,12 +68,6 @@ autoScheduling:
   timeBeforeFirstSchedule: PT5M
   scheduleSpreadPeriod: PT6H
 
-metrics:
-  frequency: 1 second
-  reporters:
-    - type: csv
-      file: target/dropwizard-metrics
-
 accessControl:
   sessionTimeout: PT30S
   shiro:

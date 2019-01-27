@@ -93,9 +93,3 @@ cassandra:
         coreConnections: 0
         maxConnections: 0
         maxRequestsPerConnection: 0
-
-metrics:
-  frequency: 1 second
-  reporters:
-    - type: csv
-      file: target/dropwizard-metrics

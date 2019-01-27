@@ -145,7 +145,7 @@
         <dependency>
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
-            <version>3.5.0</version>
+            <version>3.5.1</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -198,6 +198,7 @@
              -->
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
+            <!-- can't go up to 2.26 until dropwizard-shiro-0.3.0 is released -->
             <version>2.25.1</version>
         </dependency>
         <dependency>
@@ -207,16 +208,10 @@
             <version>2.25.1</version>
         </dependency>
         <dependency>
-            <!-- required to solve dropwizard 1.1.7 & jersery-client 2.25.1 dependency issues -->
-          <groupId>org.glassfish.jersey.bundles.repackaged</groupId>
-          <artifactId>jersey-guava</artifactId>
-          <version>2.25.1</version>
-        </dependency>
-        <dependency>
-            <!-- required to solve dropwizard 1.1.7 & jersery-client 2.25.1 dependency issues -->
+            <!-- required by jersey -->
             <groupId>org.glassfish.hk2</groupId>
             <artifactId>hk2-api</artifactId>
-            <version>2.5.0-b61</version>
+            <version>2.5.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.inject</groupId>
@@ -252,7 +247,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>2.18.3</version>
+            <version>2.25.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -270,7 +265,7 @@
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>3.1.0</version>
+            <version>3.1.6</version>
             <scope>test</scope>
         </dependency>
         <dependency>

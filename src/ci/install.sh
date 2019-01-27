@@ -51,10 +51,10 @@ case "${TEST_TYPE}" in
           if  echo "$CASSANDRA_VERSION" | grep -q "trunk"  ; then
             sed -i 's/start_rpc: true//' ~/.ccm/test/node$i/conf/cassandra.yaml
             echo '-Dcassandra.max_local_pause_in_ms=15000' >> ~/.ccm/test/node$i/conf/jvm-server.options
-            sed -i 's/#-Dcassandra.available_processors=number_of_processors/-Dcassandra.available_processors=2/' ~/.ccm/test/node$i/conf/jvm-server.options
           else
             sed -i 's/start_rpc: true/start_rpc: false/' ~/.ccm/test/node$i/conf/cassandra.yaml
           fi
+          echo 'JAVA_OPTS="$JAVA_OPTS -Dcassandra.available_processors=2"' >> ~/.ccm/test/node$i/conf/cassandra-env.sh
         done
         ;;
     *)

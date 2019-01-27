@@ -45,12 +45,12 @@ case "${TEST_TYPE}" in
 
         if [ "x${GRIM_MIN}" = "x" ]
         then
-            mvn -B surefire:test -Dtest=ReaperShiroIT
-            mvn -B surefire:test -Dtest=ReaperIT
-            mvn -B surefire:test -Dtest=ReaperH2IT
-            mvn -B surefire:test -Dtest=ReaperPostgresIT
+            mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperShiroIT
+            mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperIT
+            mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperH2IT
+            mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperPostgresIT
         else
-            mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
+            mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
         fi
         ;;
     "upgrade")
@@ -60,7 +60,7 @@ case "${TEST_TYPE}" in
         ccm status
 
         mvn install -B -DskipTests -Pintegration-upgrade-tests
-        MAVEN_OPTS="-Xmx512m" mvn -B surefire:test -Dtest=ReaperCassandraIT -Dcucumber.options="${CO}"
+        MAVEN_OPTS="-Xmx384m" mvn -B surefire:test -Dtest=ReaperCassandraIT -Dcucumber.options="${CO}"
         ;;
     "docker")
         docker-compose -f ./src/packaging/docker-build/docker-compose.yml build
