@@ -237,8 +237,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                               .withCluster(cluster)
                               .withHostname(host)
                               .build())
-                  .collect(Collectors.toSet()),
-              context);
+                  .collect(Collectors.toSet()));
 
       if (SEGMENT_RUNNERS.containsKey(segmentId)) {
         LOG.error("SegmentRunner already exists for segment with ID: {}", segmentId);
@@ -617,8 +616,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                 Node.builder()
                     .withCluster(context.storage.getCluster(clusterName).get())
                     .withHostname(hostName)
-                    .build(),
-                context);
+                    .build());
         // We double check that repair is still running there before actually canceling repairs
         if (hostProxy.isRepairRunning()) {
           LOG.warn(
@@ -649,8 +647,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                   Node.builder()
                       .withCluster(context.storage.getCluster(clusterName).get())
                       .withHostname(node)
-                      .build(),
-                  context);
+                      .build());
 
           NodeMetrics metrics = NodeMetrics.builder()
                   .withNode(node)
@@ -731,8 +728,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                 Node.builder()
                     .withCluster(context.storage.getCluster(clusterName).get())
                     .withHostname(segmentInRun.getCoordinatorHost())
-                    .build(),
-                context);
+                    .build());
         if (hostProxy.isRepairRunning()) {
           return true;
         }
@@ -1106,8 +1102,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                   Node.builder()
                       .withCluster(context.storage.getCluster(clusterName).get())
                       .withHostname(involvedNode)
-                      .build(),
-                  context);
+                      .build());
 
           // there is no way of telling if the snapshot was cleared or not :(
           SnapshotProxy.create(jmx).clearSnapshot(repairId, keyspace);
@@ -1162,8 +1157,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   private boolean lockSegmentRunners() {
-    if (this.repairUnit.getIncrementalRepair())
+    if (this.repairUnit.getIncrementalRepair()) {
       return true;
+    }
 
     try (Timer.Context cx
         = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "lockSegmentRunners")).time()) {
@@ -1180,8 +1176,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   private boolean renewLockSegmentRunners() {
-    if (this.repairUnit.getIncrementalRepair())
+    if (this.repairUnit.getIncrementalRepair()) {
       return true;
+    }
 
     try (Timer.Context cx
         = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "renewLockSegmentRunners")).time()) {

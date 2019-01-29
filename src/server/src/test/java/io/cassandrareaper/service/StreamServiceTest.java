@@ -65,7 +65,7 @@ public class StreamServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     StreamService
         .create(cxt)
@@ -95,7 +95,7 @@ public class StreamServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -127,7 +127,7 @@ public class StreamServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -159,7 +159,7 @@ public class StreamServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
@@ -191,7 +191,7 @@ public class StreamServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService

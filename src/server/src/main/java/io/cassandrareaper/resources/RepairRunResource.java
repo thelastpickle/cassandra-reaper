@@ -331,8 +331,7 @@ public final class RepairRunResource {
                 cluster.get().getSeedHosts()
                     .stream()
                     .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
-                    .collect(Collectors.toList()),
-                context);
+                    .collect(Collectors.toList()));
 
         String version = jmxProxy.getCassandraVersion();
         if (null != version && version.startsWith("2.0")) {

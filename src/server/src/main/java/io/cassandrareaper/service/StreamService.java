@@ -73,7 +73,7 @@ public final class StreamService {
 
   private List<StreamSession> pullStreamInfo(Node node) throws ReaperException {
     try {
-      JmxProxy jmxProxy = context.jmxConnectionFactory.connect(node, context);
+      JmxProxy jmxProxy = context.jmxConnectionFactory.connect(node);
       Set<CompositeData> streams = StreamsProxy.create(jmxProxy).listStreams();
 
       if (streams.isEmpty()) {

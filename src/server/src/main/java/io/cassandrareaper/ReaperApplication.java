@@ -181,7 +181,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     if (context.jmxConnectionFactory == null) {
       LOG.info("no JMX connection factory given in context, creating default");
-      context.jmxConnectionFactory = new JmxConnectionFactory(context.metricRegistry);
+      context.jmxConnectionFactory = new JmxConnectionFactory(context);
 
       // read jmx host/port mapping from config and provide to jmx con.factory
       Map<String, Integer> jmxPorts = config.getJmxPorts();
@@ -307,7 +307,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     try {
       JmxProxy jmxProxy
           = context.jmxConnectionFactory.connect(
-              host, context);
+              host);
       context.localNodeAddress = context.config.getEnforcedLocalNode().orElse(jmxProxy.getLocalEndpoint());
       context.localClusterName = Cluster.toSymbolicName(jmxProxy.getClusterName());
       context.localDatacenter = EndpointSnitchInfoProxy.create(jmxProxy).getDataCenter(context.localNodeAddress);

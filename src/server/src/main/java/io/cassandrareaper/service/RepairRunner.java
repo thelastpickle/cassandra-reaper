@@ -81,8 +81,7 @@ final class RepairRunner implements Runnable {
     RepairUnit repairUnitOpt = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
     this.clusterName = cluster.get().getName();
 
-    JmxProxy jmx = this.context.jmxConnectionFactory
-        .connectAny(cluster.get(), context);
+    JmxProxy jmx = this.context.jmxConnectionFactory.connectAny(cluster.get());
 
     String keyspace = repairUnitOpt.getKeyspaceName();
     int parallelRepairs
@@ -311,8 +310,7 @@ final class RepairRunner implements Runnable {
     if (jmxConnection == null || !jmxConnection.isConnectionAlive()) {
       LOG.debug("connecting JMX proxy for repair runner on run id: {}", repairRunId);
       Cluster cluster = context.storage.getCluster(this.clusterName).get();
-      jmxConnection = context.jmxConnectionFactory.connectAny(
-              cluster, context);
+      jmxConnection = context.jmxConnectionFactory.connectAny(cluster);
       LOG.debug("successfully reestablished JMX proxy for repair runner");
     }
   }

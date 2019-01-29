@@ -128,11 +128,11 @@ public final class RepairRunnerTest {
     context.repairManager = RepairManager
         .create(context, Executors.newScheduledThreadPool(1), 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           final AtomicInteger repairAttempts = new AtomicInteger(1);
 
           @Override
-          protected JmxProxy connectImpl(Node host, AppContext context) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
             when(jmx.isConnectionAlive()).thenReturn(true);
@@ -281,10 +281,10 @@ public final class RepairRunnerTest {
     context.repairManager = RepairManager
         .create(context, Executors.newScheduledThreadPool(1), 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           final AtomicInteger repairAttempts = new AtomicInteger(1);
           @Override
-          protected JmxProxy connectImpl(Node host, AppContext context) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
             when(jmx.isConnectionAlive()).thenReturn(true);
@@ -448,9 +448,9 @@ public final class RepairRunnerTest {
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node host, AppContext context) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
             when(jmx.isConnectionAlive()).thenReturn(true);

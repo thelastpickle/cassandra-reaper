@@ -62,7 +62,7 @@ public final class SnapshotServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     Pair<Node,String> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
@@ -85,7 +85,7 @@ public final class SnapshotServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
     Node host = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
 
     Pair<Node,String> result = SnapshotService
@@ -110,7 +110,7 @@ public final class SnapshotServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     List<Snapshot> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
@@ -130,7 +130,7 @@ public final class SnapshotServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
@@ -151,8 +151,8 @@ public final class SnapshotServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(proxy);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class), Mockito.any())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class))).thenReturn(proxy);
 
     cxt.storage = mock(IStorage.class);
     Cluster cluster = new Cluster("testCluster", Optional.of("murmur3"), ImmutableSet.of("127.0.0.1"));
@@ -177,8 +177,8 @@ public final class SnapshotServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class), Mockito.any())).thenReturn(proxy);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class), Mockito.any())).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class))).thenReturn(proxy);
 
     cxt.storage = mock(IStorage.class);
     Cluster cluster = new Cluster("testCluster", Optional.of("murmur3"), ImmutableSet.of("127.0.0.1"));

@@ -65,7 +65,7 @@ public final class MetricsService {
 
   public List<ThreadPoolStat> getTpStats(Node host) throws ReaperException {
     try {
-      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host, context));
+      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host));
       return convertToThreadPoolStats(proxy.collectTpStats());
     } catch (JMException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", host, e);
@@ -89,7 +89,7 @@ public final class MetricsService {
 
   public List<DroppedMessages> getDroppedMessages(Node host) throws ReaperException {
     try {
-      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host, context));
+      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host));
       return convertToDroppedMessages(proxy.collectDroppedMessages());
     } catch (JMException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", host, e);
@@ -113,7 +113,7 @@ public final class MetricsService {
 
   public List<MetricsHistogram> getClientRequestLatencies(Node host) throws ReaperException {
     try {
-      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host, context));
+      MetricsProxy proxy = MetricsProxy.create(context.jmxConnectionFactory.connect(host));
       return convertToMetricsHistogram(proxy.collectLatencyMetrics());
     } catch (JMException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", host, e);
@@ -216,7 +216,7 @@ public final class MetricsService {
   public Map<String, List<JmxStat>> collectMetrics(Node node) throws ReaperException {
     try {
       List<String> metricsToCollect = Lists.newArrayList();
-      JmxProxy jmxProxy = context.jmxConnectionFactory.connect(node, context);
+      JmxProxy jmxProxy = context.jmxConnectionFactory.connect(node);
 
       // List mbeans for running repairs in Cassandra 2.2+ and add them to the collected metrics
       List<String> runningRepairs = jmxProxy.getRunningRepairMetricsPost22();

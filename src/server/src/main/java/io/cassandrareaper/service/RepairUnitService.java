@@ -53,7 +53,7 @@ public final class RepairUnitService {
     if (params.incrementalRepair) {
       try {
         JmxProxy jmxProxy
-            = context.jmxConnectionFactory.connectAny(cluster, context);
+            = context.jmxConnectionFactory.connectAny(cluster);
 
         String version = jmxProxy.getCassandraVersion();
         if (null != version && version.startsWith("2.0")) {
@@ -110,7 +110,7 @@ public final class RepairUnitService {
   private Set<String> getTableNamesForKeyspace(Cluster cluster, String keyspace) {
     try {
       return context
-          .jmxConnectionFactory.connectAny(cluster, context)
+          .jmxConnectionFactory.connectAny(cluster)
           .getTableNamesForKeyspace(keyspace);
 
     } catch (ReaperException e) {

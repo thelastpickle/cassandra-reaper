@@ -121,9 +121,9 @@ public final class SegmentRunnerTest {
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          public JmxProxy connectImpl(Node host, AppContext context) throws ReaperException {
+          public JmxProxy connectImpl(Node host) throws ReaperException {
 
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
@@ -246,9 +246,9 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node host, AppContext context) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
@@ -400,9 +400,9 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node host, AppContext context) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
             when(jmx.isConnectionAlive()).thenReturn(true);
@@ -547,9 +547,9 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node host, AppContext context) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
 
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
@@ -691,9 +691,9 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node host, AppContext context) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
 
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
@@ -835,9 +835,9 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node host, AppContext context) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
 
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
@@ -980,9 +980,9 @@ public final class SegmentRunnerTest {
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory() {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           @Override
-          protected JmxProxy connectImpl(Node host, AppContext context) throws ReaperException {
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
 
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn("reaper");
@@ -1191,7 +1191,7 @@ public final class SegmentRunnerTest {
     when(((IDistributedStorage) context.storage).getNodeMetrics(any(), any()))
         .thenReturn(Optional.empty());
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(jmxConnectionFactory.connect(any(), any())).thenReturn(mock(JmxProxy.class));
+    when(jmxConnectionFactory.connect(any())).thenReturn(mock(JmxProxy.class));
     context.jmxConnectionFactory = jmxConnectionFactory;
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
@@ -1201,7 +1201,7 @@ public final class SegmentRunnerTest {
 
     Pair<String, Optional<NodeMetrics>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc2").call();
     assertFalse(result.getRight().isPresent());
-    verify(jmxConnectionFactory, times(0)).connect(any(), any());
+    verify(jmxConnectionFactory, times(0)).connect(any());
   }
 
   @Test
@@ -1220,7 +1220,7 @@ public final class SegmentRunnerTest {
     when(proxy.isRepairRunning()).thenReturn(true);
 
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(jmxConnectionFactory.connect(any(), any())).thenReturn(proxy);
+    when(jmxConnectionFactory.connect(any())).thenReturn(proxy);
     context.jmxConnectionFactory = jmxConnectionFactory;
 
     context.config = new ReaperApplicationConfiguration();

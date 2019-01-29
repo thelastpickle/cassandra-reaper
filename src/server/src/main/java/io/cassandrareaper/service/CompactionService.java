@@ -48,7 +48,7 @@ public final class CompactionService {
 
   public List<Compaction> listActiveCompactions(Node host) throws ReaperException {
     try {
-      JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host, context);
+      JmxProxy jmxProxy = context.jmxConnectionFactory.connect(host);
       return CompactionProxy.create(jmxProxy, context.metricRegistry).listActiveCompactions();
     } catch (JMException | RuntimeException | InterruptedException e) {
       LOG.error("Failed listing compactions for host {}", host, e);

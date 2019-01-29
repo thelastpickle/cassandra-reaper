@@ -202,8 +202,7 @@ public final class NodeStatsResource {
       Preconditions.checkState(clusterName != null && !clusterName.isEmpty(), "Cluster name must be set");
       JmxProxy jmxProxy
           = context.jmxConnectionFactory.connect(
-              Node.builder().withCluster(context.storage.getCluster(clusterName).get()).withHostname(host).build(),
-              context);
+              Node.builder().withCluster(context.storage.getCluster(clusterName).get()).withHostname(host).build());
 
       StorageServiceProxy ssProxy = StorageServiceProxy.create(jmxProxy);
       Map<String, List<String>> tokens = ssProxy.getTokensByNode();

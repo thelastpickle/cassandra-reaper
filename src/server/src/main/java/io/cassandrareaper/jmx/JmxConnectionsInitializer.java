@@ -80,8 +80,7 @@ public final class JmxConnectionsInitializer implements AutoCloseable {
                 endpoints
                     .stream()
                     .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
-                    .collect(Collectors.toList()),
-                this.context);
+                    .collect(Collectors.toList()));
 
         return Optional.of(endpoints.get(0));
 

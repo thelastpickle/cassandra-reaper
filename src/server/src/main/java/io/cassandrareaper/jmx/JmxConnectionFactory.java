@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
@@ -50,22 +49,21 @@ public class JmxConnectionFactory {
   private static final String LOCALHOST = "127.0.0.1";
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
+  private final AppContext context;
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
   private Map<String, JmxCredentials> jmxCredentials;
   private EC2MultiRegionAddressTranslator addressTranslator;
 
-  @VisibleForTesting
-  public JmxConnectionFactory() {
-    this.metricRegistry = new MetricRegistry();
+  public JmxConnectionFactory(AppContext context) {
+    if (context.metricRegistry == null) {
+      this.metricRegistry = new MetricRegistry();
+    } else {
+      this.metricRegistry = context.metricRegistry;
+    }
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
     registerConnectionsGauge();
-  }
-
-  public JmxConnectionFactory(MetricRegistry metricRegistry) {
-    this.metricRegistry = metricRegistry;
-    hostConnectionCounters = new HostConnectionCounters(metricRegistry);
-    registerConnectionsGauge();
+    this.context = context;
   }
 
   private void registerConnectionsGauge() {
@@ -82,7 +80,7 @@ public class JmxConnectionFactory {
     }
   }
 
-  protected JmxProxy connectImpl(Node node, AppContext context) throws ReaperException, InterruptedException {
+  protected JmxProxy connectImpl(Node node) throws ReaperException, InterruptedException {
     // use configured jmx port for host if provided
     String host = context.config.isInSidecarMode()
         ? LOCALHOST
@@ -126,11 +124,11 @@ public class JmxConnectionFactory {
     }
   }
 
-  public JmxProxy connect(Node node, AppContext context) throws ReaperException, InterruptedException {
-    return connectImpl(node, context);
+  public JmxProxy connect(Node node) throws ReaperException, InterruptedException {
+    return connectImpl(node);
   }
 
-  public final JmxProxy connectAny(Collection<Node> nodes, AppContext context) throws ReaperException {
+  public final JmxProxy connectAny(Collection<Node> nodes) throws ReaperException {
 
     Preconditions.checkArgument(
         null != nodes && !nodes.isEmpty(), "no hosts provided to connectAny");
@@ -143,7 +141,7 @@ public class JmxConnectionFactory {
         // First loop, we try the most accessible nodes, then second loop we try all nodes
         if (hostConnectionCounters.getSuccessfulConnections(node.getHostname()) >= 0 || 1 == i) {
           try {
-            return connectImpl(node, context);
+            return connectImpl(node);
           } catch (ReaperException | RuntimeException e) {
             LOG.info("Unreachable host: {}: {}", e.getMessage(), e.getCause().getMessage());
             LOG.debug("Unreachable host: ", e);
@@ -156,7 +154,7 @@ public class JmxConnectionFactory {
     throw new ReaperException("no host could be reached through JMX");
   }
 
-  public JmxProxy connectAny(Cluster cluster, AppContext context) throws ReaperException {
+  public JmxProxy connectAny(Cluster cluster) throws ReaperException {
     Set<Node> nodes = cluster
             .getSeedHosts()
             .stream()
@@ -166,7 +164,7 @@ public class JmxConnectionFactory {
     if (nodes == null || nodes.isEmpty()) {
       throw new ReaperException("no seeds in cluster with name: " + cluster.getName());
     }
-    return connectAny(nodes, context);
+    return connectAny(nodes);
   }
 
   public final void setJmxAuth(JmxCredentials jmxAuth) {
