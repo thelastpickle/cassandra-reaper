@@ -930,20 +930,31 @@ public final class BasicSteps {
     }
   }
 
-  @And("^the last added repair has table \"([^\"]*)\" in the table list$")
-  public void the_last_added_repair_has_table_in_the_table_list(String blacklistedTable)
-      throws Throwable {
+  @And("^the last added repair has twcs table \"([^\"]*)\" in the blacklist$")
+  public void the_last_added_repair_has_twcs_table_in_the_blacklist(String twcsTable) throws Throwable {
     synchronized (BasicSteps.class) {
       RUNNERS
           .parallelStream()
           .forEach(
               runner -> {
-                Response response = runner.callReaper(
-                        "GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
+                Response response
+                    = runner.callReaper("GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
+
                 String responseData = response.readEntity(String.class);
                 assertEquals(responseData, Response.Status.OK.getStatusCode(), response.getStatus());
                 List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
-                assertTrue(runs.get(0).getColumnFamilies().contains(blacklistedTable));
+                if (reaperVersion.isPresent()
+                    && 0 < VersionNumber.parse("1.4.0").compareTo(VersionNumber.parse(reaperVersion.get()))) {
+
+                  Assertions
+                      .assertThat(runs.get(0).getBlacklistedTables().contains(twcsTable))
+                      .isFalse();
+                } else {
+                  // auto TWCS blacklisting was only added in Reaper 1.4.0
+                  Assertions
+                      .assertThat(runs.get(0).getBlacklistedTables().contains(twcsTable))
+                      .isTrue();
+                }
               });
     }
   }
