@@ -46,7 +46,7 @@ if "-vv" in sys.argv:
     log_level = logging.DEBUG
 if "-q" in sys.argv or "--quiet" in sys.argv:
     if logging.WARN != log_level:
-        print "--verbose and --quiet options can't both be specified"
+        print("--verbose and --quiet options can't both be specified")
         exit(1)
     quiet = True
 
@@ -73,7 +73,6 @@ class ReaperCaller(object):
             params = {}
         log.info("making HTTP %s to %s", http_method, the_url)
         if http_method == 'GET':
-            print("headers : {}".format(HEADERS))
             r = requests.get(the_url, params=params, cookies=cookies, headers=HEADERS)
         elif http_method == 'POST':
             r = requests.post(the_url, params=params, cookies=cookies, headers=HEADERS)
@@ -88,6 +87,8 @@ class ReaperCaller(object):
         log.info("HTTP %s return code %s with content of length %s",
                  http_method, r.status_code, len(str(r.text)))
         log.debug("Response content:\n%s", r.text)
+        if str(r.status_code) == "403":
+            printq("Access to this operation seems to be restricted. You may need to login and pass a JWT to access it.")
         if not str(r.status_code).startswith("2"):
             print r.text
         r.raise_for_status()
@@ -146,7 +147,7 @@ def _global_arguments(parser, command):
                        action="store_true")
     group.add_argument("-vv", help="extra output verbosity", action="store_true")
     group.add_argument("-q", "--quiet", help="unix mode", action="store_true")
-    group.add_argument("--username", default=None, help="Username to login with")
+    group.add_argument("--jwt", default=None, help="Session JSON Web Token obtained at login")
     parser.add_argument(command)
 
 
@@ -326,16 +327,17 @@ def _arguments_for_delete_snapshots(parser):
     parser.add_argument("--node", default=None,
                         help=("A single node to get the snapshot list from"))
 
+def _arguments_for_login(parser):
+    """Arguments needed to login"""
+    parser.add_argument("--username", help="Username to login with")
+
 def _parse_arguments(command, description, usage=None, extra_arguments=None):
     """Generic argument parsing done by every command"""
     parser = argparse.ArgumentParser(description=description, usage=usage)
     _global_arguments(parser, command)
     if extra_arguments:
         extra_arguments(parser)
-    if (command == "login"):
-        return parser.parse_known_args()
-    else:
-        return parser.parse_args()
+    return parser.parse_args()
 
 
 # === The actual CLI ========================================================================
@@ -356,6 +358,7 @@ REAPER_USAGE = SPREAPER_DESCRIPTION + """
 Usage: spreaper [<global_args>] <command> [<command_args>]
 
 <command> can be:
+    login           Login to Reaper.
     list-clusters   List all registered Cassandra clusters.
     list-runs       List registered repair runs.
     list-schedules  List registered repair schedules.
@@ -412,37 +415,16 @@ class ReaperCLI(object):
             exit(2)
 
     @staticmethod
-    def prepare_reaper_for_login(command, description, usage=None, extra_arguments=None):
-        (args, ignored) = _parse_arguments(command, description, usage, extra_arguments)
-        reaper = ReaperCaller(args.reaper_host, args.reaper_port, args.reaper_use_ssl)
-        return reaper, args
-
-    @staticmethod
     def prepare_reaper(command, description, usage=None, extra_arguments=None):
         args = _parse_arguments(command, description, usage, extra_arguments)
         reaper = ReaperCaller(args.reaper_host, args.reaper_port, args.reaper_use_ssl)
-        ReaperCLI.login(reaper, args)
+        ReaperCLI.addJwtHeader(args)
         return reaper, args
 
     @staticmethod
-    def login(reaper, args):
-        if (args.username != None):
-            reaper, args = ReaperCLI.prepare_reaper_for_login(
-                "login",
-                "Authenticate to Reaper"
-            )
-            password = ReaperCLI.get_password()
-            printq("# Logging in...")
-            payload = {'username':args.username, 'password':password, 'rememberMe':False}
-            reply = reaper.postFormData("login", 
-                                payload=payload)
-            # Use shiro's session id to request a JWT
-            COOKIES["JSESSIONID"] = reply.cookies["JSESSIONID"]
-            jwt = reaper.get("jwt")
-
-            # remove the session id and set the auth header with the JWT
-            COOKIES.pop("JSESSIONID", None)
-            HEADERS['Authorization'] = 'Bearer ' + jwt
+    def addJwtHeader(args):
+        if (args.jwt != None):
+            HEADERS['Authorization'] = 'Bearer ' + args.jwt
     
     @staticmethod
     def get_password():
@@ -455,6 +437,25 @@ class ReaperCLI(object):
         
         return password
 
+    def login(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "login",
+            "Authenticate to Reaper",
+            extra_arguments=_arguments_for_login
+        )
+        password = ReaperCLI.get_password()
+        printq("# Logging in...")
+        payload = {'username':args.username, 'password':password, 'rememberMe':False}
+        reply = reaper.postFormData("login", 
+                            payload=payload)
+        # Use shiro's session id to request a JWT
+        COOKIES["JSESSIONID"] = reply.cookies["JSESSIONID"]
+        jwt = reaper.get("jwt")
+        printq("Add the following flag to all subsequent spreaper calls to use your authenticated session : --jwt {}".format(jwt))
+
+        # remove the session id and set the auth header with the JWT
+        COOKIES.pop("JSESSIONID", None)
+
     def ping(self):
         reaper, args = ReaperCLI.prepare_reaper(
             "ping",
@@ -462,7 +463,7 @@ class ReaperCLI(object):
         )
         printq("# Sending PING to Reaper...")
         answer = reaper.get("ping")
-        printq("# [Reply]", answer)
+        printq("# [Reply] {}".format(answer))
         printq("# Cassandra Reaper is answering in: {0}:{1}".format(args.reaper_host, args.reaper_port))
 
     def list_clusters(self):
