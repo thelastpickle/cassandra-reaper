@@ -22,10 +22,18 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.lang.Strings;
 import org.apache.shiro.web.filter.AccessControlFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ShiroJwtVerifyingFilter.class);
 
   public ShiroJwtVerifyingFilter() {}
 
@@ -36,11 +44,17 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
     }
     HttpServletRequest httpRequest = (HttpServletRequest) req;
     String jwt = httpRequest.getHeader("Authorization");
-    if (null == jwt || !jwt.startsWith("Bearer ")) {
-      return false;
+    if (null != jwt && jwt.startsWith("Bearer ")) {
+      try {
+        jwt = jwt.substring(jwt.indexOf(' ') + 1);
+        Jws<Claims> claims = Jwts.parser().setSigningKey(ShiroJwtProvider.SIGNING_KEY).parseClaimsJws(jwt);
+        String user = claims.getBody().getSubject();
+        return Strings.hasText(user);
+      } catch (SignatureException e) {
+        LOG.error("Failed validating JWT", e);
+      }
     }
-    jwt = jwt.substring(jwt.indexOf(' ') + 1);
-    return Jwts.parser().setSigningKey(ShiroJwtProvider.SIGNING_KEY).isSigned(jwt);
+    return false;
   }
 
   @Override

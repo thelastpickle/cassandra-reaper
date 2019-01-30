@@ -66,8 +66,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Boolean incrementalRepair;
 
   @JsonProperty
-  @NotNull
-  @DefaultValue("false")
   private Boolean blacklistTwcsTables;
 
   @DefaultValue("7")
@@ -523,7 +521,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
     }
 
     public Duration getSessionTimeout() {
-      return sessionTimeout;
+      return sessionTimeout != null ? sessionTimeout : Duration.ofMinutes(10);
     }
 
 

@@ -46,10 +46,12 @@ public final class ShiroJwtProvider {
 
   @GET
   public Response get(@Context HttpServletRequest request) throws IOException {
-    return Response
-        .ok()
+    return Response.ok()
         .entity(
-            Jwts.builder().setSubject(request.getUserPrincipal().getName()).signWith(SIG_ALG, SIGNING_KEY).compact())
+            Jwts.builder()
+                .setSubject(request.getUserPrincipal().getName())
+                .signWith(SIG_ALG, SIGNING_KEY)
+                .compact())
         .build();
   }
 
