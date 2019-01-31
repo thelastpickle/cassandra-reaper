@@ -24,8 +24,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureException;
 import io.jsonwebtoken.lang.Strings;
 import org.apache.shiro.web.filter.AccessControlFilter;
 import org.slf4j.Logger;
@@ -39,7 +39,8 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
 
   @Override
   protected boolean isAccessAllowed(ServletRequest req, ServletResponse res, Object mappedValue) throws Exception {
-    if (getSubject(req, res).isRemembered() || getSubject(req, res).isAuthenticated()) {
+    if (null != getSubject(req, res).getPrincipal()
+        && (getSubject(req, res).isRemembered() || getSubject(req, res).isAuthenticated())) {
       return true;
     }
     HttpServletRequest httpRequest = (HttpServletRequest) req;
@@ -50,8 +51,8 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
         Jws<Claims> claims = Jwts.parser().setSigningKey(ShiroJwtProvider.SIGNING_KEY).parseClaimsJws(jwt);
         String user = claims.getBody().getSubject();
         return Strings.hasText(user);
-      } catch (SignatureException e) {
-        LOG.error("Failed validating JWT", e);
+      } catch (JwtException | IllegalArgumentException e) {
+        LOG.error("Failed validating JWT: " + jwt, e);
       }
     }
     return false;
