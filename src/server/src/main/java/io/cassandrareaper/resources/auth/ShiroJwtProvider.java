@@ -46,13 +46,11 @@ public final class ShiroJwtProvider {
 
   @GET
   public Response get(@Context HttpServletRequest request) throws IOException {
-    return Response.ok()
-        .entity(
-            Jwts.builder()
-                .setSubject(request.getUserPrincipal().getName())
-                .signWith(SIG_ALG, SIGNING_KEY)
-                .compact())
-        .build();
+    return Response.ok().entity(getJwt(request)).build();
+  }
+
+  String getJwt(HttpServletRequest request) throws IOException {
+    return Jwts.builder().setSubject(request.getUserPrincipal().getName()).signWith(SIG_ALG, SIGNING_KEY).compact();
   }
 
   private static Key getSigningKey(AppContext cxt) {
