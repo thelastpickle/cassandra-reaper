@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright 2014-2017 Spotify AB
-# Copyright 2016-2018 The Last Pickle Ltd
+# Copyright 2016-2019 The Last Pickle Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import getpass
 import json
 import logging
 import os
+import subprocess
 import urllib
 import urlparse
 
@@ -88,7 +89,8 @@ class ReaperCaller(object):
                  http_method, r.status_code, len(str(r.text)))
         log.debug("Response content:\n%s", r.text)
         if str(r.status_code) == "403":
-            printq("Access to this operation seems to be restricted. You may need to login and pass a JWT to access it.")
+            printq("Access to this operation seems to be restricted. Please login before making any call to the API:")
+            printq("spreaper login <username>")
         if not str(r.status_code).startswith("2"):
             print r.text
         r.raise_for_status()
@@ -147,7 +149,7 @@ def _global_arguments(parser, command):
                        action="store_true")
     group.add_argument("-vv", help="extra output verbosity", action="store_true")
     group.add_argument("-q", "--quiet", help="unix mode", action="store_true")
-    group.add_argument("--jwt", default=None, help="Session JSON Web Token obtained at login")
+    group.add_argument("--jwt", default=None, help="JSON Web Token (JWT) to authenticate with")
     parser.add_argument(command)
 
 
@@ -329,7 +331,7 @@ def _arguments_for_delete_snapshots(parser):
 
 def _arguments_for_login(parser):
     """Arguments needed to login"""
-    parser.add_argument("--username", help="Username to login with")
+    parser.add_argument("username", help="Username to login with")
 
 def _parse_arguments(command, description, usage=None, extra_arguments=None):
     """Generic argument parsing done by every command"""
@@ -418,24 +420,49 @@ class ReaperCLI(object):
     def prepare_reaper(command, description, usage=None, extra_arguments=None):
         args = _parse_arguments(command, description, usage, extra_arguments)
         reaper = ReaperCaller(args.reaper_host, args.reaper_port, args.reaper_use_ssl)
-        ReaperCLI.addJwtHeader(args)
+        jwt = ReaperCLI.get_jwt(args)
+        ReaperCLI.addJwtHeader(jwt)
         return reaper, args
 
     @staticmethod
-    def addJwtHeader(args):
-        if (args.jwt != None):
-            HEADERS['Authorization'] = 'Bearer ' + args.jwt
+    def addJwtHeader(jwt):
+        if (jwt != None):
+            HEADERS['Authorization'] = 'Bearer ' + jwt
     
     @staticmethod
     def get_password():
         password = None
         # Use the password from the file if it exists or prompt the user for it
-        if (os.path.exists(os.path.expanduser('~/.reaper'))):
-            password = file(os.path.expanduser('~/.reaper'),'rU').readline().rstrip("\r\n")
+        if (os.path.exists(os.path.expanduser('~/.reaper/credentials'))):
+            password = file(os.path.expanduser('~/.reaper/credentials'),'rU').readline().rstrip("\r\n")
         else:
             password = getpass.getpass()
         
         return password
+    
+    @staticmethod
+    def get_jwt(args):
+        jwt = None
+        if args.jwt == None:
+            # Use the password from the file if it exists or prompt the user for it
+            if (os.path.exists(os.path.expanduser('~/.reaper/jwt'))):
+                jwt = file(os.path.expanduser('~/.reaper/jwt'),'rU').readline().rstrip("\r\n")
+        else:
+            jwt = args.jwt
+        
+        return jwt
+
+    @staticmethod
+    def save_jwt(jwt):
+        try:
+            os.makedirs(os.path.expanduser('~/.reaper'))
+            os.chmod(os.path.expanduser('~/.reaper'),0700)
+        except OSError:
+            pass
+        with open(os.path.expanduser('~/.reaper/jwt'),'w+') as f:
+            f.write(jwt)
+            os.chmod(os.path.expanduser('~/.reaper/jwt'),0600)
+            printq("# JWT saved")
 
     def login(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -451,7 +478,8 @@ class ReaperCLI(object):
         # Use shiro's session id to request a JWT
         COOKIES["JSESSIONID"] = reply.cookies["JSESSIONID"]
         jwt = reaper.get("jwt")
-        printq("Add the following flag to all subsequent spreaper calls to use your authenticated session : --jwt {}".format(jwt))
+        printq("You are now authenticated to Reaper.")
+        ReaperCLI.save_jwt(jwt)
 
         # remove the session id and set the auth header with the JWT
         COOKIES.pop("JSESSIONID", None)
@@ -461,6 +489,7 @@ class ReaperCLI(object):
             "ping",
             "Test connectivity to the Reaper service."
         )
+        printq("# JWT: {}".format(os.environ.get("REAPER_JWT")))
         printq("# Sending PING to Reaper...")
         answer = reaper.get("ping")
         printq("# [Reply] {}".format(answer))
