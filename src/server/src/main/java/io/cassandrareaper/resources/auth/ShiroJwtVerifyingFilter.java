@@ -52,7 +52,8 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
         String user = claims.getBody().getSubject();
         return Strings.hasText(user);
       } catch (JwtException | IllegalArgumentException e) {
-        LOG.error("Failed validating JWT: " + jwt, e);
+        LOG.error("Failed validating JWT {} from {}", jwt, httpRequest.getRemoteAddr());
+        LOG.debug("exception", e);
       }
     }
     return false;
