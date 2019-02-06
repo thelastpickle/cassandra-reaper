@@ -41,26 +41,54 @@ case "${TEST_TYPE}" in
         sleep 30
         ccm status
 
-        if [ "x${GRIM_MIN}" = "x" ]
-        then
-            mvn -B package
-            mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperShiroIT
-            mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperIT
-            mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperH2IT
-            mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperPostgresIT
-        else
-            mvn -B package -DskipTests
-            mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
-        fi
+        case "${STORAGE_TYPE}" in
+            "")
+                echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
+                exit 1
+                ;;
+            "local")
+                mvn -B package
+                mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperShiroIT
+                mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperIT
+                mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperH2IT
+                ;;
+            "postgresql")
+                mvn -B package -DskipTests
+                mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperPostgresIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
+                ;;
+            "cassandra")
+                mvn -B package -DskipTests
+                mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
+                ;;
+            *)
+                echo "Skipping, no actions for STORAGE_TYPE=${STORAGE_TYPE}."
+                ;;
+        esac
+
         ;;
     "sidecar")
         mvn --version -B
+        mvn -B package -DskipTests
         ccm start
         sleep 30
         ccm status
 
-        mvn -B package -DskipTests
-        mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraSidecarIT
+        case "${STORAGE_TYPE}" in
+            "")
+                echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
+                exit 1
+                ;;
+            "postgresql")
+                mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperPostgresSidecarIT -Dcucumber.options="-t @sidecar"
+                ;;
+            "cassandra")
+                mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraSidecarIT -Dcucumber.options="-t @sidecar"
+                ;;
+            *)
+                echo "Skipping, no actions for STORAGE_TYPE=${STORAGE_TYPE}."
+                ;;
+        esac
+
         ;;
     "upgrade")
         mvn --version -B

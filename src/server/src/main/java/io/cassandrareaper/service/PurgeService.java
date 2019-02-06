@@ -21,6 +21,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
+import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.Collection;
 import java.util.List;
@@ -73,6 +74,7 @@ public final class PurgeService {
         }
       }
     }
+    purgeMetrics();
     return purgedRuns;
   }
 
@@ -129,5 +131,20 @@ public final class PurgeService {
             });
 
     return purgedRuns.get();
+  }
+
+  /**
+   * Purges all expired metrics from storage. Expiration time is a property of the storage, stored either in
+   * the schema itself for databases with TTL or in the storage instance for databases which must be purged manually
+   */
+  private void purgeMetrics() {
+    if (context.storage instanceof IDistributedStorage) {
+      IDistributedStorage storage = ((IDistributedStorage) context.storage);
+      if (context.config.isInSidecarMode()) {
+        storage.purgeMetrics();
+        storage.purgeNodeOperations();
+      }
+      storage.purgeNodeMetrics();
+    }
   }
 }

@@ -296,6 +296,11 @@
             <version>0.7</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.ibatis</groupId>
+            <artifactId>ibatis2-common</artifactId>
+            <version>2.1.7.597</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -19,6 +19,8 @@ package io.cassandrareaper.storage.postgresql;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
+import io.cassandrareaper.core.GenericMetric;
+import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -29,12 +31,14 @@ import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairParameters;
 
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.BindBean;
@@ -262,6 +266,136 @@ public interface IStoragePostgreSql {
 
   String SQL_DELETE_EVENT_SUBSCRIPTION_BY_ID
       = "DELETE FROM diag_event_subscription WHERE id = :id";
+
+  // leader election
+  //
+  String SQL_INSERT_LEAD = "INSERT INTO leader (leader_id, reaper_instance_id, reaper_instance_host, last_heartbeat)"
+          + " VALUES "
+          + "(:leaderId, :reaperInstanceId, :reaperInstanceHost, now())";
+
+  String SQL_UPDATE_LEAD = "UPDATE leader "
+          + " SET "
+          + "reaper_instance_id = :reaperInstanceId, reaper_instance_host = :reaperInstanceHost, last_heartbeat = now()"
+          + " WHERE "
+          + "leader_id = :leaderId AND last_heartbeat < :expirationTime";
+
+  String SQL_RENEW_LEAD = "UPDATE leader "
+      + " SET "
+      + "reaper_instance_id = :reaperInstanceId, reaper_instance_host = :reaperInstanceHost, last_heartbeat = now()"
+      + " WHERE "
+      + "leader_id = :leaderId AND reaper_instance_id = :reaperInstanceId";
+
+  String SQL_SELECT_ACTIVE_LEADERS = "SELECT leader_id from leader"
+      + " WHERE "
+      + " last_heartbeat >= :expirationTime";
+
+  String SQL_RELEASE_LEAD = "DELETE FROM leader"
+      + " WHERE "
+      + "leader_id = :leaderId AND reaper_instance_id = :reaperInstanceId";
+
+  String SQL_FORCE_RELEASE_LEAD = "DELETE FROM leader WHERE leader_id = :leaderId";
+
+  String SQL_INSERT_HEARTBEAT = "INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat)"
+      + " VALUES "
+      + "(:reaperInstanceId, :reaperInstanceHost, now())";
+
+  String SQL_UPDATE_HEARTBEAT = "UPDATE running_reapers"
+      + " SET "
+      + "reaper_instance_id = :reaperInstanceId, reaper_instance_host = :reaperInstanceHost, last_heartbeat = now()"
+      + " WHERE "
+      + "reaper_instance_id = :reaperInstanceId";
+
+  String SQL_DELETE_OLD_REAPERS = "DELETE FROM running_reapers"
+      + " WHERE "
+      + "last_heartbeat < :expirationTime";
+
+  String SQL_COUNT_RUNNING_REAPERS = "SELECT COUNT(*) FROM running_reapers"
+      + " WHERE "
+      + "last_heartbeat >= :expirationTime";
+
+  String SQL_STORE_NODE_METRICS =  "INSERT INTO node_metrics_v1 (run_id,ts,node,datacenter,"
+      + "cluster,requested,pending_compactions,has_repair_running,active_anticompactions)"
+      + " VALUES "
+      + "(:runId, now(), :node, :datacenter, :cluster, :requested, :pendingCompactions, :hasRepairRunning, "
+      + ":activeAntiCompactions)";
+
+  String SQL_GET_NODE_METRICS = "SELECT * FROM node_metrics_v1"
+      + " WHERE "
+      + "run_id = :runId AND ts > :expirationTime";
+
+  String SQL_GET_NODE_METRICS_BY_NODE = "SELECT * FROM node_metrics_v1"
+      + " WHERE"
+      + " run_id = :runId AND ts > :expirationTime AND node = :node"
+      + " ORDER BY ts DESC LIMIT 1";
+
+  String SQL_DELETE_NODE_METRICS_BY_NODE = "DELETE FROM node_metrics_v1"
+      + " WHERE "
+      + " run_id = :runId AND node = :node";
+
+  String SQL_PURGE_OLD_NODE_METRICS = "DELETE FROM node_metrics_v1"
+      + " WHERE"
+      + " ts < :expirationTime";
+
+  // sidecar-mode metrics
+  //
+  String SQL_UPDATE_SOURCE_NODE_TIMESTAMP = "UPDATE node_metrics_v2_source_nodes"
+      + " SET last_updated = :timestamp"
+      + " WHERE cluster = :cluster AND host = :host";
+
+  String SQL_ADD_SOURCE_NODE = "INSERT INTO node_metrics_v2_source_nodes (cluster, host, last_updated)"
+          + " VALUES (:cluster, :host, :timestamp)";
+
+  String SQL_ADD_METRIC_TYPE = "INSERT INTO node_metrics_v2_metric_types"
+          + " (metric_domain, metric_type, metric_scope, metric_name, metric_attribute)"
+          + " VALUES"
+          + " (:metricDomain, :metricType, :metricScope, :metricName, :metricAttribute)";
+
+  String SQL_GET_SOURCE_NODE_ID = "SELECT source_node_id FROM node_metrics_v2_source_nodes"
+          + " WHERE cluster = :cluster AND host = :host";
+
+  String SQL_GET_METRIC_TYPE_ID = "SELECT metric_type_id FROM node_metrics_v2_metric_types"
+          + " WHERE"
+          + " metric_domain = :metricDomain AND metric_type = :metricType AND metric_scope = :metricScope"
+          + " AND metric_name = :metricName AND metric_attribute = :metricAttribute";
+
+  String SQL_INSERT_METRIC = "INSERT INTO node_metrics_v2 (metric_type_id, source_node_id, ts, value)"
+          + " VALUES ("
+          + " (" + SQL_GET_METRIC_TYPE_ID + "),"
+          + " (" + SQL_GET_SOURCE_NODE_ID + "),"
+          + " :timestamp,"
+          + " :value)";
+
+  String SQL_GET_METRICS_FOR_HOST = "SELECT cluster, host, metric_domain, metric_type, metric_scope, metric_name,"
+          + " metric_attribute, ts, value"
+          + " FROM node_metrics_v2"
+          + " NATURAL JOIN node_metrics_v2_metric_types"
+          + " NATURAL JOIN node_metrics_v2_source_nodes"
+          + " WHERE"
+          + " cluster = :cluster AND host = :host AND metric_domain = :metricDomain AND metric_type = :metricType"
+          + " AND ts >= :since";
+
+  String SQL_GET_METRICS_FOR_CLUSTER = "SELECT cluster, host, metric_domain, metric_type, metric_scope, metric_name,"
+          + " metric_attribute, ts, value"
+          + " FROM node_metrics_v2"
+          + " NATURAL JOIN node_metrics_v2_metric_types"
+          + " NATURAL JOIN node_metrics_v2_source_nodes"
+          + " WHERE"
+          + " cluster = :cluster AND metric_domain = :metricDomain AND metric_type = :metricType"
+          + " AND ts >= :since";
+
+  String SQL_PURGE_OLD_METRICS = "DELETE FROM node_metrics_v2 WHERE ts < :expirationTime";
+
+  String SQL_PURGE_OLD_SOURCE_NODES = "DELETE FROM node_metrics_v2_source_nodes WHERE last_updated < :expirationTime";
+
+  String SQL_INSERT_OPERATIONS = "INSERT INTO node_operations (cluster, type, host, data, ts)"
+      + " VALUES (:cluster, :type, :host, :data, now())";
+
+  String SQL_LIST_OPERATIONS = "SELECT data FROM node_operations"
+          + " WHERE"
+          + " cluster = :cluster AND type = :operationType AND host = :host"
+          + " ORDER BY ts DESC LIMIT 1";
+
+  String SQL_PURGE_OLD_NODE_OPERATIONS = "DELETE from node_operations WHERE ts < :expirationTime";
 
   static String[] parseStringArray(Object obj) {
     String[] values = null;
@@ -515,4 +649,187 @@ public interface IStoragePostgreSql {
   @SqlUpdate(SQL_DELETE_EVENT_SUBSCRIPTION_BY_ID)
   int deleteEventSubscription(
           @Bind("id") long subscriptionId);
+
+  @SqlUpdate(SQL_INSERT_LEAD)
+  int insertLeaderEntry(
+      @Bind("leaderId") UUID leaderId,
+      @Bind("reaperInstanceId") UUID reaperInstanceId,
+      @Bind("reaperInstanceHost") String reaperInstanceHost
+  );
+
+  @SqlUpdate(SQL_UPDATE_LEAD)
+  int updateLeaderEntry(
+      @Bind("leaderId") UUID leaderId,
+      @Bind("reaperInstanceId") UUID reaperInstanceId,
+      @Bind("reaperInstanceHost") String reaperInstanceHost,
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlUpdate(SQL_RENEW_LEAD)
+  int renewLead(
+      @Bind("leaderId") UUID leaderId,
+      @Bind("reaperInstanceId") UUID reaperInstanceId,
+      @Bind("reaperInstanceHost") String reaperInstanceHost
+  );
+
+  @SqlQuery(SQL_SELECT_ACTIVE_LEADERS)
+  List<Long> getLeaders(
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlUpdate(SQL_RELEASE_LEAD)
+  int releaseLead(
+      @Bind("leaderId") UUID leaderId,
+      @Bind("reaperInstanceId") UUID reaperInstanceId
+  );
+
+  @SqlUpdate(SQL_FORCE_RELEASE_LEAD)
+  int forceReleaseLead(
+      @Bind("leaderId") UUID leaderId
+  );
+
+  @SqlUpdate(SQL_INSERT_HEARTBEAT)
+  int insertHeartbeat(
+      @Bind("reaperInstanceId") UUID reaperInstanceId,
+      @Bind("reaperInstanceHost") String reaperInstanceHost
+  );
+
+  @SqlUpdate(SQL_UPDATE_HEARTBEAT)
+  int updateHeartbeat(
+      @Bind("reaperInstanceId") UUID reaperInstanceId,
+      @Bind("reaperInstanceHost") String reaperInstanceHost
+  );
+
+  @SqlUpdate(SQL_DELETE_OLD_REAPERS)
+  int deleteOldReapers(
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlQuery(SQL_COUNT_RUNNING_REAPERS)
+  int countRunningReapers(
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlUpdate(SQL_STORE_NODE_METRICS)
+  int storeNodeMetrics(
+      @Bind("runId") long runId,
+      @Bind("node") String node,
+      @Bind("cluster") String cluster,
+      @Bind("datacenter") String datacenter,
+      @Bind("requested") Boolean requested,
+      @Bind("pendingCompactions") int pendingCompactions,
+      @Bind("hasRepairRunning") Boolean hasRepairRunning,
+      @Bind("activeAntiCompactions") int activeAntiCompactions
+  );
+
+  @SqlQuery(SQL_GET_NODE_METRICS)
+  @Mapper(NodeMetricsMapper.class)
+  Collection<NodeMetrics> getNodeMetrics(
+      @Bind("runId") long runId,
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlQuery(SQL_GET_NODE_METRICS_BY_NODE)
+  @Mapper(NodeMetricsMapper.class)
+  NodeMetrics getNodeMetricsByNode(
+      @Bind("runId") long runId,
+      @Bind("expirationTime") Instant expirationTime,
+      @Bind("node") String node
+  );
+
+  @SqlUpdate(SQL_DELETE_NODE_METRICS_BY_NODE)
+  int deleteNodeMetricsByNode(
+      @Bind("runId") long runId,
+      @Bind("node") String node
+  );
+
+  @SqlUpdate(SQL_PURGE_OLD_NODE_METRICS)
+  int purgeOldNodeMetrics(
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlUpdate(SQL_ADD_SOURCE_NODE)
+  int insertMetricSourceNode(
+      @Bind("cluster") String cluster,
+      @Bind("host") String host,
+      @Bind("timestamp") Instant timestamp
+  );
+
+  @SqlUpdate(SQL_UPDATE_SOURCE_NODE_TIMESTAMP)
+  int updateMetricSourceNodeTimestamp(
+      @Bind("cluster") String cluster,
+      @Bind("host") String host,
+      @Bind("timestamp") Instant timestamp
+  );
+
+  @SqlUpdate(SQL_ADD_METRIC_TYPE)
+  int insertMetricType(
+      @Bind("metricDomain") String metricDomain,
+      @Bind("metricType") String metricType,
+      @Bind("metricScope") String metricScope,
+      @Bind("metricName") String metricName,
+      @Bind("metricAttribute") String metricAttribute
+  );
+
+  @SqlUpdate(SQL_INSERT_METRIC)
+  int insertMetric(
+      @Bind("cluster") String cluster,
+      @Bind("host") String host,
+      @Bind("timestamp") Instant timestamp,
+      @Bind("metricDomain") String metricDomain,
+      @Bind("metricType") String metricType,
+      @Bind("metricScope") String metricScope,
+      @Bind("metricName") String metricName,
+      @Bind("metricAttribute") String metricAttribute,
+      @Bind("value") double value
+  );
+
+  @SqlQuery(SQL_GET_METRICS_FOR_HOST)
+  @Mapper(GenericMetricMapper.class)
+  Collection<GenericMetric> getMetricsForHost(
+      @Bind("cluster") String cluster,
+      @Bind("host") String host,
+      @Bind("metricDomain") String metricDomain,
+      @Bind("metricType") String metricType,
+      @Bind("since") Instant since
+  );
+
+  @SqlQuery(SQL_GET_METRICS_FOR_CLUSTER)
+  @Mapper(GenericMetricMapper.class)
+  Collection<GenericMetric> getMetricsForCluster(
+      @Bind("cluster") String cluster,
+      @Bind("metricDomain") String metricDomain,
+      @Bind("metricType") String metricType,
+      @Bind("since") Instant since
+  );
+
+  @SqlUpdate(SQL_PURGE_OLD_METRICS)
+  int purgeOldMetrics(
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlUpdate(SQL_PURGE_OLD_SOURCE_NODES)
+  int purgeOldSourceNodes(
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlUpdate(SQL_INSERT_OPERATIONS)
+  int insertOperations(
+      @Bind("cluster") String cluster,
+      @Bind("type") String operationType,
+      @Bind("host") String host,
+      @Bind("data") String data
+  );
+
+  @SqlQuery(SQL_LIST_OPERATIONS)
+  String listOperations(
+      @Bind("cluster") String cluster,
+      @Bind("operationType") String operationType,
+      @Bind("host") String host
+  );
+
+  @SqlUpdate(SQL_PURGE_OLD_NODE_OPERATIONS)
+  int purgeOldNodeOperations(
+      @Bind("expirationTime") Instant expirationTime
+  );
 }

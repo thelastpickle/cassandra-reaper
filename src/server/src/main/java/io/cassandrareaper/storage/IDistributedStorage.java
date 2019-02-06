@@ -80,4 +80,19 @@ public interface IDistributedStorage {
   void storeOperations(String clusterName, OpType operationType, String host, String operationsJson);
 
   String listOperations(String clusterName, OpType operationType, String host);
+
+  /**
+   * Purges old node metrics from the database (no-op for databases with TTL)
+   */
+  void purgeNodeMetrics();
+
+  /**
+   * Purges old metrics from the database (no-op for databases w/ TTL)
+   */
+  void purgeMetrics();
+
+  /**
+   * Purges old node operation info from the database (no-op for databases w/ TTL)
+   */
+  void purgeNodeOperations();
 }

@@ -22,10 +22,8 @@ case "${TEST_TYPE}" in
         echo "ERROR: Environment variable TEST_TYPE is unspecified."
         exit 1
         ;;
-    "ccm")
-        if [ "x${GRIM_MIN}" = "x" ] ; then
-          psql -c 'create database reaper;' -U postgres
-        fi
+    "ccm"|"sidecar")
+        psql -c 'create database reaper;' -U postgres
         ;;
     *)
         echo "Skipping, no actions for TEST_TYPE=${TEST_TYPE}."
