@@ -46,88 +46,104 @@ jobs:
   fast_finish: true
   allow_failures:
   - env: TEST_TYPE=docker
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=github:apache/trunk
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=github:apache/trunk GRIM_MIN=1 GRIM_MAX=1
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=github:apache/trunk GRIM_MIN=2 GRIM_MAX=2
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=github:apache/trunk GRIM_MIN=2 GRIM_MAX=4
   include:
     - stage: Integration Tests
-      name: Memory, H2 and Postgresql reaping Cassandra 1.2.19
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=1.2.19 CUCUMBER_OPTIONS="--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards"
+      name: Memory and H2 reaping Cassandra 1.2.19
+      env: TEST_TYPE=ccm STORAGE_TYPE=local CASSANDRA_VERSION=1.2.19 CUCUMBER_OPTIONS="--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards"
     - stage: Integration Tests
-      name: Memory, H2 and Postgresql reaping Cassandra 2.0.17
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.0.17 CUCUMBER_OPTIONS="--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards"
+      name: Memory and H2 reaping Cassandra 2.0.17
+      env: TEST_TYPE=ccm STORAGE_TYPE=local CASSANDRA_VERSION=2.0.17 CUCUMBER_OPTIONS="--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards"
     - stage: Integration Tests
-      name: Memory, H2 and Postgresql reaping Cassandra 2.1.20
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      name: Memory and H2 reaping Cassandra 2.1.20
+      env: TEST_TYPE=ccm STORAGE_TYPE=local CASSANDRA_VERSION=2.1.20 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Integration Tests
-      name: Memory, H2 and Postgresql reaping Cassandra 2.2.13
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.2.13 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      name: Memory and H2 reaping Cassandra 2.2.13
+      env: TEST_TYPE=ccm STORAGE_TYPE=local CASSANDRA_VERSION=2.2.13 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Integration Tests
-      name: Memory, H2 and Postgresql reaping Cassandra 3.0.17
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.17 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      name: Memory and H2 reaping Cassandra 3.0.17
+      env: TEST_TYPE=ccm STORAGE_TYPE=local CASSANDRA_VERSION=3.0.17 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Integration Tests
-      name: Memory, H2 and Postgresql reaping Cassandra 3.11.4
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.11.4 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      name: Memory and H2 reaping Cassandra 3.11.4
+      env: TEST_TYPE=ccm STORAGE_TYPE=local CASSANDRA_VERSION=3.11.4 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Integration Tests
-      name: Memory, H2 and Postgresql reaping Cassandra 4.0
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=github:apache/trunk
+      name: Memory and H2 reaping Cassandra 4.0
+      env: TEST_TYPE=ccm STORAGE_TYPE=local CASSANDRA_VERSION=github:apache/trunk
     - stage: Integration Tests
-      name: Cassandra 2.1.20
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      name: Cassandra reaping Cassandra 2.1.20
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=2.1.20 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Integration Tests
-      name: Cassandra 2.2.13
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.2.13 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      name: Cassandra reaping Cassandra 2.2.13
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=2.2.13 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Integration Tests
-      name: Cassandra 3.0.17
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.17 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      name: Cassandra reaping Cassandra 3.0.17
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=3.0.17 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Integration Tests
-      name: Cassandra 3.11.3
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.11.3 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      name: Cassandra reaping Cassandra 3.11.3
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=3.11.3 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Integration Tests
-      name: Cassandra 4.0
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=github:apache/trunk GRIM_MIN=1 GRIM_MAX=1
+      name: Cassandra reaping Cassandra 4.0
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=github:apache/trunk GRIM_MIN=1 GRIM_MAX=1
+    - stage: Integration Tests
+      name: Postgresql reaping Cassandra 3.11.3
+      env: TEST_TYPE=ccm STORAGE_TYPE=postgresql CASSANDRA_VERSION=3.11.3 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Distributed Reaper Integration Tests
       name: Two Reapers on Cassandra 2.1.20
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20 GRIM_MIN=2 GRIM_MAX=2 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=2.1.20 GRIM_MIN=2 GRIM_MAX=2 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Distributed Reaper Integration Tests
       name: Two Reapers on Cassandra 2.2.13
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.2.13 GRIM_MIN=2 GRIM_MAX=2 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=2.2.13 GRIM_MIN=2 GRIM_MAX=2 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Distributed Reaper Integration Tests
       name: Two Reapers on Cassandra 3.0.17
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.17 GRIM_MIN=2 GRIM_MAX=2 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=3.0.17 GRIM_MIN=2 GRIM_MAX=2 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Distributed Reaper Integration Tests
       name: Two Reapers on Cassandra 3.11.3
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.11.3 GRIM_MIN=2 GRIM_MAX=2 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=3.11.3 GRIM_MIN=2 GRIM_MAX=2 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Distributed Reaper Integration Tests
       name: Two Reapers on Cassandra 4.0
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=github:apache/trunk GRIM_MIN=2 GRIM_MAX=2
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=github:apache/trunk GRIM_MIN=2 GRIM_MAX=2
+    - stage: Distributed Reaper Integration Tests
+      name: Two Reapers on Cassandra 3.11.3 with Postgresql backend
+      env: TEST_TYPE=ccm STORAGE_TYPE=postgresql CASSANDRA_VERSION=3.11.3 GRIM_MIN=2 GRIM_MAX=2 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Sidecar Integration Tests
       name: Sidecar on Cassandra 2.1.20
-      env: TEST_TYPE=sidecar CASSANDRA_VERSION=2.1.20 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards --tags @sidecar"
+      env: TEST_TYPE=sidecar STORAGE_TYPE=cassandra CASSANDRA_VERSION=2.1.20 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards --tags @sidecar"
     - stage: Sidecar Integration Tests
       name: Sidecar on Cassandra 2.2.13
-      env: TEST_TYPE=sidecar CASSANDRA_VERSION=2.2.13 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards --tags @sidecar"
+      env: TEST_TYPE=sidecar STORAGE_TYPE=cassandra CASSANDRA_VERSION=2.2.13 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards --tags @sidecar"
     - stage: Sidecar Integration Tests
       name: Sidecar on Cassandra 3.0.17
-      env: TEST_TYPE=sidecar CASSANDRA_VERSION=3.0.17 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards --tags @sidecar"
+      env: TEST_TYPE=sidecar STORAGE_TYPE=cassandra CASSANDRA_VERSION=3.0.17 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards --tags @sidecar"
     - stage: Sidecar Integration Tests
       name: Sidecar on Cassandra 3.11.3
-      env: TEST_TYPE=sidecar CASSANDRA_VERSION=3.11.3 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards --tags @sidecar"
+      env: TEST_TYPE=sidecar STORAGE_TYPE=cassandra CASSANDRA_VERSION=3.11.3 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards --tags @sidecar"
     - stage: Sidecar Integration Tests
       name: Sidecar on Cassandra 4.0
-      env: TEST_TYPE=sidecar CASSANDRA_VERSION=github:apache/trunk GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags @sidecar"
+      env: TEST_TYPE=sidecar STORAGE_TYPE=cassandra CASSANDRA_VERSION=github:apache/trunk GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags @sidecar"
+    - stage: Sidecar Integration Tests
+      name: Sidecar on Cassandra 3.11.3 with Postgresql backend
+      env: TEST_TYPE=sidecar STORAGE_TYPE=postgresql CASSANDRA_VERSION=3.11.3 GRIM_MIN=1 GRIM_MAX=1 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards --tags @sidecar"
     - stage: Flapping Distributed Reaper Integration Tests
       name: Four Flapping Reaper on Cassandra 2.1.20
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20 GRIM_MIN=2 GRIM_MAX=4 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=2.1.20 GRIM_MIN=2 GRIM_MAX=4 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Flapping Distributed Reaper Integration Tests
       name: Four Flapping Reaper on Cassandra 2.2.13
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.2.13 GRIM_MIN=2 GRIM_MAX=4 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=2.2.13 GRIM_MIN=2 GRIM_MAX=4 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Flapping Distributed Reaper Integration Tests
       name: Four Flapping Reaper on Cassandra 3.0.17
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.17 GRIM_MIN=2 GRIM_MAX=4 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=3.0.17 GRIM_MIN=2 GRIM_MAX=4 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Flapping Distributed Reaper Integration Tests
       name: Four Flapping Reaper on Cassandra 3.11.3
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.11.3 GRIM_MIN=2 GRIM_MAX=4 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=3.11.3 GRIM_MIN=2 GRIM_MAX=4 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
     - stage: Flapping Distributed Reaper Integration Tests
       name: Four Flapping Reaper on Cassandra 4.0
-      env: TEST_TYPE=ccm CASSANDRA_VERSION=github:apache/trunk GRIM_MIN=2 GRIM_MAX=4
+      env: TEST_TYPE=ccm STORAGE_TYPE=cassandra CASSANDRA_VERSION=github:apache/trunk GRIM_MIN=2 GRIM_MAX=4
+    - stage: Flapping Distributed Reaper Integration Tests
+      name: Four Flapping Reaper on Cassandra 3.11.3 with Postgresql backend
+      env: TEST_TYPE=ccm STORAGE_TYPE=postgresql CASSANDRA_VERSION=3.11.3 GRIM_MIN=2 GRIM_MAX=4 CUCUMBER_OPTIONS="--tags ~@cassandra_4_0_onwards"
 # Upgrade Integration Tests are broken due to classloading issues around org.glassfish.jersey.internal.spi.AutoDiscoverable
 #    - stage: Upgrade Integration Tests
 #      name: Upgrading Reaper on Cassandra 2.1.20 (all_nodes_reachable)
