@@ -13,17 +13,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if [ "true" = "${REAPER_ENABLE_WEBUI_AUTH}" ]; then
+if [ ! -z "${REAPER_SHIRO_INI}" ]; then
 cat <<EOT >> /etc/cassandra-reaper.yml
 accessControl:
   sessionTimeout: PT10M
   shiro:
     iniConfigs: ["file:${REAPER_SHIRO_INI}"]
 EOT
+elif [ ! -z "${REAPER_AUTH_USER}" ]; then
+cat <<EOT >> /etc/cassandra-reaper.yml
+accessControl:
+  sessionTimeout: PT10M
+  shiro:
+    iniConfigs: ["file:/etc/shiro.ini"]
+EOT
+else
+cat <<EOT >> /etc/cassandra-reaper.yml
+accessControl:
+  sessionTimeout: PT10M
+  shiro:
+    iniConfigs: ["classpath:shiro.ini"]
+EOT
 fi
 
-if [ "true" = "${REAPER_ENABLE_WEBUI_AUTH}" ]; then
+if [ ! -z "${REAPER_AUTH_USER}" ]; then
 cat <<EOT2 >> /etc/shiro.ini
-${REAPER_WEBUI_USER} = ${REAPER_WEBUI_PASSWORD}
+${REAPER_AUTH_USER} = ${REAPER_AUTH_PASSWORD}
 EOT2
 fi
