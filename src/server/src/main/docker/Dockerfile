@@ -67,7 +67,7 @@ ENV REAPER_SEGMENT_COUNT=200 \
     REAPER_METRICS_REPORTERS="[]" \
     REAPER_AUTH_USER="" \
     REAPER_AUTH_PASSWORD="" \
-    REAPER_SHIRO_INI="/etc/shiro.ini" \
+    REAPER_SHIRO_INI="" \
     JAVA_OPTS=""
 
 ADD cassandra-reaper.yml /etc/cassandra-reaper.yml
