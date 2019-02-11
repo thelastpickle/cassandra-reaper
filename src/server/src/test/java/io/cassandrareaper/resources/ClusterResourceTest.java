@@ -1,6 +1,6 @@
 /*
  * Copyright 2015-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.service.TestRepairConfiguration;
@@ -58,6 +59,8 @@ public final class ClusterResourceTest {
   static final URI SAMPLE_URI = URI.create("http://reaper_host/cluster/");
   static final String I_DO_EXIST = "i_do_exist";
   static final String I_DONT_EXIST = "i_dont_exist";
+
+  private static final String STCS = "SizeTieredCompactionStrategy";
 
   @Before
   public void setUp() throws Exception {
@@ -230,8 +233,9 @@ public final class ClusterResourceTest {
     when(mocks.jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
     when(mocks.jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1"));
-    when(mocks.jmxProxy.getTableNamesForKeyspace("keyspace1"))
-        .thenReturn(Sets.newHashSet("table1"));
+    when(mocks.jmxProxy.getTablesForKeyspace("keyspace1"))
+        .thenReturn(Sets.newHashSet(
+            Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
 
     mocks.context.config = TestRepairConfiguration.defaultConfigBuilder()
         .withAutoScheduling(

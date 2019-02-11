@@ -1,6 +1,6 @@
 /*
  * Copyright 2015-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1126,77 +1126,6 @@ public final class SegmentRunnerTest {
     assertFalse(SegmentRunner.okToRepairSegment(true, false, DatacenterAvailability.EACH));
     assertFalse(SegmentRunner.okToRepairSegment(false, false, DatacenterAvailability.EACH));
     assertTrue(SegmentRunner.okToRepairSegment(true, true, DatacenterAvailability.EACH));
-  }
-
-  @Test
-  public void getTablesToRepairRemoveOneTableTest() throws ReaperException {
-    JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
-    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
-        .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
-
-
-    RepairUnit unit = mock(RepairUnit.class);
-    when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1"));
-    when(unit.getColumnFamilies()).thenReturn(Sets.newHashSet());
-    when(unit.getKeyspaceName()).thenReturn("test");
-
-    assertEquals(Sets.newHashSet("table2", "table3"), SegmentRunner.getTablesToRepair(coord, unit));
-  }
-
-  @Test
-  public void getTablesToRepairRemoveTwoTablesTest() throws ReaperException {
-    JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
-    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
-        .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
-
-    RepairUnit unit = mock(RepairUnit.class);
-    when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1", "table3"));
-    when(unit.getColumnFamilies()).thenReturn(Sets.newHashSet());
-    when(unit.getKeyspaceName()).thenReturn("test");
-
-    assertEquals(Sets.newHashSet("table2"), SegmentRunner.getTablesToRepair(coord, unit));
-  }
-
-  @Test
-  public void getTablesToRepairRemoveOneTableFromListTest() throws ReaperException {
-    JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
-    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
-        .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
-
-    RepairUnit unit = mock(RepairUnit.class);
-    when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1"));
-    when(unit.getColumnFamilies()).thenReturn(Sets.newHashSet("table1", "table2"));
-    when(unit.getKeyspaceName()).thenReturn("test");
-
-    assertEquals(Sets.newHashSet("table2"), SegmentRunner.getTablesToRepair(coord, unit));
-  }
-
-  @Test(expected = IllegalStateException.class)
-  public void getTablesToRepairRemoveAllFailingTest() throws ReaperException {
-    JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
-    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
-        .thenReturn(Sets.newHashSet("table1", "table2", "table3"));
-
-    RepairUnit unit = mock(RepairUnit.class);
-    when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1", "table2", "table3"));
-    when(unit.getColumnFamilies()).thenReturn(Sets.newHashSet());
-    when(unit.getKeyspaceName()).thenReturn("test");
-
-    SegmentRunner.getTablesToRepair(coord, unit);
-  }
-
-  @Test(expected = IllegalStateException.class)
-  public void getTablesToRepairRemoveAllFromListFailingTest() throws ReaperException {
-    JmxProxy coord = JmxProxyTest.mockJmxProxyImpl();
-    when(coord.getTableNamesForKeyspace(Mockito.anyString()))
-        .thenReturn(Sets.newHashSet("table1", "table2", "table3", "table4"));
-
-    RepairUnit unit = mock(RepairUnit.class);
-    when(unit.getBlacklistedTables()).thenReturn(Sets.newHashSet("table1", "table2", "table3"));
-    when(unit.getColumnFamilies()).thenReturn(Sets.newHashSet("table1", "table2", "table3"));
-    when(unit.getKeyspaceName()).thenReturn("test");
-
-    SegmentRunner.getTablesToRepair(coord, unit);
   }
 
   @Test

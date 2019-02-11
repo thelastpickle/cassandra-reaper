@@ -17,20 +17,13 @@
 
 package io.cassandrareaper.resources.auth;
 
-import io.cassandrareaper.AppContext;
 
 import java.io.IOException;
-import java.util.Map;
 
 import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
-import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.IncorrectCredentialsException;
@@ -40,27 +33,22 @@ import org.secnod.shiro.jaxrs.Auth;
 
 @Path("/")
 public class LoginResource {
-  private final AppContext context;
-
-  public LoginResource(AppContext context) {
-    this.context = context;
-  }
 
   @Path("/login")
   @POST
   public void login(
       @FormParam("username") String username,
       @FormParam("password") String password,
-      @Auth Subject subject)
-      throws IOException {
+      @FormParam("rememberMe") boolean rememberMe,
+      @Auth Subject subject) throws IOException {
+
     ensurePresent(username, "Invalid credentials: missing username.");
     ensurePresent(password, "Invalid credentials: missing password.");
 
     try {
-      subject.login(new UsernamePasswordToken(username, password));
+      subject.login(new UsernamePasswordToken(username, password, rememberMe));
     } catch (AuthenticationException e) {
-      throw new IncorrectCredentialsException(
-          "Invalid credentials combination for user: " + username);
+      throw new IncorrectCredentialsException("Invalid credentials combination for user: " + username);
     }
   }
 
@@ -74,15 +62,5 @@ public class LoginResource {
     if (StringUtils.isBlank(value)) {
       throw new IncorrectCredentialsException(message);
     }
-  }
-
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("/loginRequired")
-  @GET
-  public Response loginRequired() {
-    Map<String, Boolean> authRequired = Maps.newHashMap();
-    authRequired.put("auth", context.config.isAccessControlEnabled());
-
-    return Response.ok().entity(authRequired).build();
   }
 }

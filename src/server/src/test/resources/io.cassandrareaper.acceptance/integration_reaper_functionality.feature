@@ -18,6 +18,7 @@ Feature: Using Reaper
   Background:
     Given cluster seed host "127.0.0.1@test" points to cluster with name "test"
     And cluster "test" has keyspace "booya" with tables "booya1, booya2"
+    And cluster "test" has keyspace "booya" with tables "booya_twcs"
     And cluster "test" has keyspace "test_keyspace" with tables "test_table1, test_table2"
     And cluster "test" has keyspace "test_keyspace2" with tables "test_table1, test_table2"
     And cluster "test" has keyspace "test_keyspace3" with tables "test_table1, test_table2"
@@ -132,6 +133,7 @@ Feature: Using Reaper
     And reaper has 0 repairs for the last added cluster
     When a new repair is added for the last added cluster and keyspace "booya" with the table "booya2" blacklisted
     And the last added repair has table "booya2" in the blacklist
+    And the last added repair has table "booya_twcs" in the blacklist
     When reaper is upgraded to latest
     And the last added repair has table "booya2" in the blacklist
     And deleting the last added cluster fails
@@ -143,6 +145,9 @@ Feature: Using Reaper
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
   ${cucumber.upgrade-versions}
+
+
+# Commented out auto twcs blacklist scenario as classloading correctly atm (FIXME), ref: 88d4d5c 
 
   @all_nodes_reachable
   Scenario Outline: Create a cluster and an incremental repair run and delete them

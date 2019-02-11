@@ -6,42 +6,31 @@ identifier = "auth"
 parent = "usage"
 +++
 
-# Activating Web UI Authentication
+# Web UI Authentication
 
-Authentication can be activated in Reaper for the web UI only. It relies on [Apache Shiro](https://shiro.apache.org/), which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box. 
+Authentication is activated in Reaper by default. It relies on [Apache Shiro](https://shiro.apache.org/), which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box. The default authentication uses the dummy username and password as found in the default [shiro.ini](https://github.com/thelastpickle/cassandra-reaper/blob/master/src/server/src/main/resources/shiro.ini). It is expected you override this in a production environment.
 
-To activate authentication, add the following block to your Reaper yaml file : 
+This default Shiro authentication configuration is referenced via the  following block in the Reaper yaml file : 
 
 ```ini
 accessControl:
   sessionTimeout: PT10M
   shiro:
-    iniConfigs: ["file:/path/to/shiro.ini"]
+    iniConfigs: ["classpath:shiro.ini"]
 ```
 
 ## With clear passwords
 
-Create a `shiro.ini` file and adapt it from the following sample : 
+Copy the default `shiro.ini` file and adapt it overriding the "users" section : 
 
 ```ini
-[main]
-authc = org.apache.shiro.web.filter.authc.PassThruAuthenticationFilter
-authc.loginUrl = /webui/login.html
+…
 
 [users]
 user1 = password1
 user2 = password2
 
-[urls]
-# Allow anonynous access to login page (and dependencies), but no other pages
-/webui/ = authc
-/webui = authc
-/webui/login.html = anon
-/webui/*.html* = authc
-/webui/*.js* = anon
-/ping = anon
-/login = anon
-/** = anon
+…
 ```
 
 ## With encrypted passwords
@@ -58,17 +47,7 @@ iniRealm.credentialsMatcher = $sha256Matcher
 [users]
 john = 807A09440428C0A8AEF58BD3ECE32938B0D76E638119E47619756F5C2C20FF3A
 
-
-[urls]
-# Allow anonynous access to login page (and dependencies), but no other pages
-/webui/ = authc
-/webui = authc
-/webui/login.html = anon
-/webui/*.html* = authc
-/webui/*.js* = anon
-/ping = anon
-/login = anon
-/** = anon
+…
 ```
 
 To generate a password, you case use for example :
@@ -90,6 +69,26 @@ print(hex_dig)
 a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e
 ```
 
-Then start Reaper.
+## With LDAP accounts
 
-Both the REST API and the `/webui/login.html` pages will be accessible anonymously, but all other pages will require to be authenticated.
+Based on [Shiro's LDAP realm usage](https://shiro.apache.org/static/1.2.4/apidocs/org/apache/shiro/realm/ldap/JndiLdapContextFactory.html).
+
+An example configuration for LDAP authentication exists (commented out) in the default shiro.ini :
+
+```
+
+# Example LDAP realm, see https://shiro.apache.org/static/1.2.4/apidocs/org/apache/shiro/realm/ldap/JndiLdapContextFactory.html
+ldapRealm = org.apache.shiro.realm.ldap.JndiLdapRealm
+ldapRealm.userDnTemplate = uid={0},ou=users,dc=cassandra-reaper,dc=io
+ldapRealm.contextFactory.url = ldap://ldapHost:389
+;ldapRealm.contextFactory.authenticationMechanism = DIGEST-MD5
+;ldapRealm.contextFactory.systemUsername = cn=Manager, dc=example, dc=com
+;ldapRealm.contextFactory.systemPassword = secret
+;ldapRealm.contextFactory.environment[java.naming.security.credentials] = ldap_password
+
+```
+
+
+## Accessing Reaper via the command line `spreaper`
+
+The RESTful endpoints to Reaper can also be authenticated using JWT (Java Web Token). A token can be generated from the `/jwt` url.

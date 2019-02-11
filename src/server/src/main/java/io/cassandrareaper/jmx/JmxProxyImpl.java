@@ -1,6 +1,6 @@
 /*
  * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package io.cassandrareaper.jmx;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -387,8 +388,8 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   @Override
-  public Set<String> getTableNamesForKeyspace(String keyspace) throws ReaperException {
-    Set<String> tableNames = new HashSet<>();
+  public Set<Table> getTablesForKeyspace(String keyspace) throws ReaperException {
+    Set<Table> tables = new HashSet<>();
     Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> proxies;
     try {
       proxies = ColumnFamilyStoreMBeanIterator.getColumnFamilyStoreMBeanProxies(mbeanServer);
@@ -400,10 +401,13 @@ final class JmxProxyImpl implements JmxProxy {
       String keyspaceName = proxyEntry.getKey();
       if (keyspace.equalsIgnoreCase(keyspaceName)) {
         ColumnFamilyStoreMBean columnFamilyMBean = proxyEntry.getValue();
-        tableNames.add(columnFamilyMBean.getColumnFamilyName());
+        tables.add(Table.builder()
+                .withName(columnFamilyMBean.getColumnFamilyName())
+                .withCompactionStrategy(columnFamilyMBean.getCompactionParameters().get("class"))
+                .build());
       }
     }
-    return tableNames;
+    return tables;
   }
 
   @Override

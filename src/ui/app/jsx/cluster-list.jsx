@@ -98,6 +98,8 @@ const Cluster = React.createClass({
     let repairProgress = "";
     let totalLoad = 0;
 
+    let jmxPasswordString = this.state.clusterStatus.jmx_password_is_set ? "*******" : "";
+
     if (this.state.clusterStatus.repair_runs) {
       runningRepairs = this.state.clusterStatus.repair_runs.reduce(function(previousValue, repairRun){
                               return previousValue + ((repairRun.state.startsWith('RUNNING')) ? 1: 0);
@@ -108,7 +110,7 @@ const Cluster = React.createClass({
                                    style={progressStyle} 
                                    label={repairRun.keyspace_name}
                                    key={repairRun.id}/>
-      )
+      );
     }
     
     if(this.state.nodes_status != null) {
@@ -151,15 +153,47 @@ const Cluster = React.createClass({
       <div className="panel panel-default" style={clusterDisplayStyle}>
         <div className="panel-body">
           <div className="row">
-            <div className="col-lg-2"><a href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name} <span className="badge">{humanFileSize(totalLoad,1024)}</span></h4></a><div>Running repairs: {runningRepairsBadge}<br/>{repairProgress}</div>
+            <div className="col-lg-2">
+              <div className="row">
+                <div className="col-lg-8">
+                  <a href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name}</h4></a>
+                </div>
+                <div className="col-lg-1">
+                  <button
+                    type="button"
+                    className="cluster-info-button btn btn-lg glyphicon glyphicon-info-sign"
+                    data-toggle="modal"
+                    data-target="#clusterInfoModal">
+                  </button>
+                </div>
+              </div>
+              <div className="font-bold">Total load: <span className="badge">{humanFileSize(totalLoad,1024)}</span></div>
+              <div className="font-bold">Running repairs: {runningRepairsBadge}</div>
               <OverlayTrigger trigger="focus" placement="bottom" overlay={deleteClusterClick}><button type="button" className="btn btn-danger">Forget Cluster</button></OverlayTrigger>
             </div>
             <div className="col-lg-10">
               <div className="row" style={rowDivStyle}>
                 {datacenters}
               </div>
+              <div className="repair-progress-bar">
+                {repairProgress}
+              </div>
             </div>
           </div>
+        </div>
+
+        <!-- Cluster Information -->
+        <div className="modal fade" id="clusterInfoModal">
+          <Modal.Dialog>
+            <Modal.Header>
+              <Modal.Title><span className="text-center"><h2>{this.props.name} Information</h2></span></Modal.Title>
+              <button type="button" className="close" data-dismiss="modal">×</button>
+            </Modal.Header>
+            <Modal.Body>
+              <p><span className="font-bold">JMX username:</span> {this.state.clusterStatus.jmx_username}</p>
+              <p><span className="font-bold">JMX password:</span> {jmxPasswordString}</p>
+            </Modal.Body>
+          </Modal.Dialog>
         </div>
       </div>
     );

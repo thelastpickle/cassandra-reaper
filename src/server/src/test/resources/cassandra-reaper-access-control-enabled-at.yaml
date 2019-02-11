@@ -1,5 +1,4 @@
-# Copyright 2014-2017 Spotify AB
-# Copyright 2016-2018 The Last Pickle Ltd
+# Copyright 2018-2019 The Last Pickle Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +14,7 @@
 #
 # Cassandra Reaper Configuration for Acceptance Tests.
 #
-segmentCount: 200
+segmentCountPerNode: 16
 repairParallelism: SEQUENTIAL
 repairIntensity: 0.95
 scheduleDaysBetween: 7
@@ -23,13 +22,16 @@ repairRunThreadCount: 15
 hangingRepairTimeoutMins: 1
 storageType: memory
 incrementalRepair: false
+blacklistTwcsTables: true
 enableDynamicSeedList: false
 jmxConnectionTimeoutInSeconds: 300
+datacenterAvailability: LOCAL
 
 logging:
   level: INFO
   loggers:
     io.cassandrareaper: DEBUG
+    com.datastax.driver: WARN
   appenders:
     - type: console
 
@@ -45,7 +47,6 @@ server:
       bindHost: 127.0.0.1
 
 jmxPorts:
-  127.0.0.1: 7100
   127.0.0.2: 7200
   127.0.0.3: 7300
   127.0.0.4: 7400

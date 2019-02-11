@@ -128,7 +128,7 @@ module.exports = {
       title: ' - Login',
       template: path.join(__dirname, 'app', 'html_template.ejs'),
       inject: 'head',
-      bbaseUrl: isDev ? '/' : '/webui/'
+      baseUrl: isDev ? '/' : '/webui/'
     }),
     new webpack.ProvidePlugin({
       $: "jquery",

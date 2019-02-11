@@ -143,6 +143,7 @@ public class ReaperCassandraIT implements Upgradable {
     return Cluster.builder()
         .addContactPoint("127.0.0.1")
         .withSocketOptions(new SocketOptions().setConnectTimeoutMillis(20000).setReadTimeoutMillis(40000))
+        .withoutJMXReporting()
         .build();
   }
 }

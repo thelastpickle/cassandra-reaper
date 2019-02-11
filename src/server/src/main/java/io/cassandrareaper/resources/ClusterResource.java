@@ -61,6 +61,7 @@ import com.codahale.metrics.InstrumentedExecutorService;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,8 +115,21 @@ public final class ClusterResource {
           .build();
 
     } else {
+
+      String jmxUsername = "";
+      boolean jmxPasswordIsSet = false;
+
+      if (context.jmxConnectionFactory.getJmxCredentialsForCluster(clusterName).isPresent()) {
+        jmxUsername = context.jmxConnectionFactory.getJmxCredentialsForCluster(clusterName).get().getUsername();
+
+        jmxPasswordIsSet = !StringUtils.isEmpty(
+            context.jmxConnectionFactory.getJmxCredentialsForCluster(clusterName).get().getPassword());
+      }
+
       ClusterStatus clusterStatus = new ClusterStatus(
             cluster.get(),
+            jmxUsername,
+            jmxPasswordIsSet,
             context.storage.getClusterRunStatuses(cluster.get().getName(), limit.orElse(Integer.MAX_VALUE)),
             context.storage.getClusterScheduleStatuses(cluster.get().getName()),
             getNodesStatus(cluster).orElse(null));

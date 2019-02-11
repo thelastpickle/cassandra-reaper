@@ -40,6 +40,8 @@ import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.DropwizardTestSupport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Simple Reaper application runner for testing purposes.
@@ -47,6 +49,8 @@ import org.eclipse.jetty.server.ServerConnector;
  * and registers a shutdown hook for JVM exit event.
  */
 public final class ReaperTestJettyRunner {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ReaperTestJettyRunner.class);
 
   final ReaperJettyTestSupport runnerInstance;
   private Server jettyServer;
@@ -139,13 +143,15 @@ public final class ReaperTestJettyRunner {
     }
   }
 
-  private static final class ParentLastURLClassLoader extends ClassLoader {
+  static final class ParentLastURLClassLoader extends ClassLoader {
 
     private final ChildURLClassLoader childClassLoader;
 
-    private ParentLastURLClassLoader(final URL jarfile) {
+    private ParentLastURLClassLoader(final URL jarfile) throws MalformedURLException {
       super(Thread.currentThread().getContextClassLoader());
-      childClassLoader = new ChildURLClassLoader(new URL[]{jarfile}, new FindClassClassLoader(this.getParent()));
+      childClassLoader = new ChildURLClassLoader(
+          new URL[]{new URL("jar:file:" + jarfile.getFile() + "!/")},
+          new FindClassClassLoader(this.getParent()));
     }
 
     @Override
@@ -175,11 +181,11 @@ public final class ReaperTestJettyRunner {
     /**
      * This class delegates (child then parent) for the findClass method for a URLClassLoader.
      */
-    private static final class ChildURLClassLoader extends URLClassLoader {
+    static final class ChildURLClassLoader extends URLClassLoader {
 
       private final FindClassClassLoader realParent;
 
-      private ChildURLClassLoader(final URL[] urls, final FindClassClassLoader realParent) {
+      ChildURLClassLoader(final URL[] urls, final FindClassClassLoader realParent) {
         super(urls, null);
         this.realParent = realParent;
       }
@@ -189,6 +195,9 @@ public final class ReaperTestJettyRunner {
         try {
           return super.findClass(name);
         } catch (ClassNotFoundException e) {
+          if (name.startsWith("io.cassandrareaper.")) {
+            LOG.error("ClassNotFoundException in shaded versioned jarfile " + super.getURLs()[0], e);
+          }
           return realParent.loadClass(name);
         }
       }

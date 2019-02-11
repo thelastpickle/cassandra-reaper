@@ -1,6 +1,6 @@
 /*
  * Copyright 2017-2017 Spotify AB
- * Copyright 2017-2018 The Last Pickle Ltd
+ * Copyright 2017-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,17 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +41,10 @@ import org.slf4j.LoggerFactory;
 public final class RepairUnitService {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairUnitService.class);
+
+
+  private static final Set<String> BLACKLISTED_STRATEGEIS
+      = ImmutableSet.of("TimeWindowCompactionStrategy", "DateTieredCompactionStrategy");
 
   private final AppContext context;
 
@@ -65,6 +72,64 @@ public final class RepairUnitService {
     }
     Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(params);
     return repairUnit.isPresent() ? repairUnit.get() : createRepairUnit(cluster, params);
+  }
+
+  /**
+   * Applies blacklist filter on tables for the given repair unit.
+   *
+   * @param proxy : a JMX proxy instance
+   * @param unit : the repair unit for the current run
+   * @return the list of tables to repair for the keyspace without the blacklisted ones
+   * @throws ReaperException, IllegalStateException
+   */
+  Set<String> getTablesToRepair(JmxProxy proxy, Cluster cluster, RepairUnit repairUnit)
+      throws ReaperException, IllegalStateException {
+
+    String keyspace = repairUnit.getKeyspaceName();
+    Set<String> tables;
+
+    if (repairUnit.getColumnFamilies().isEmpty()) {
+      Set<String> twcsBlacklisted = findBlacklistedCompactionStrategyTables(cluster, keyspace);
+
+      tables = proxy.getTablesForKeyspace(keyspace).stream()
+          .map(Table::getName)
+          .filter(tableName -> !repairUnit.getBlacklistedTables().contains(tableName))
+          .filter(tableName -> !twcsBlacklisted.contains(tableName))
+          .collect(Collectors.toSet());
+    } else {
+      // if tables have been specified then don't apply the twcsBlacklisting
+      tables = repairUnit.getColumnFamilies().stream()
+            .filter(tableName -> !repairUnit.getBlacklistedTables().contains(tableName))
+            .collect(Collectors.toSet());
+    }
+
+    Preconditions.checkState(
+        repairUnit.getBlacklistedTables().isEmpty() || !tables.isEmpty(),
+        "Invalid blacklist definition. It filtered out all tables in the keyspace.");
+
+    return tables;
+  }
+
+  public Set<String> findBlacklistedCompactionStrategyTables(Cluster cluster, String keyspace) {
+    if (context.config.getBlacklistTwcsTables()) {
+      try {
+        return context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds())
+            .getTablesForKeyspace(keyspace)
+            .stream()
+            .filter(RepairUnitService::isBlackListedCompactionStrategy)
+            .map(Table::getName)
+            .collect(Collectors.toSet());
+
+      } catch (ReaperException e) {
+        LOG.error("unknown table list to cluster {} keyspace", cluster.getName(), keyspace, e);
+      }
+    }
+    return Collections.emptySet();
+  }
+
+  private static boolean isBlackListedCompactionStrategy(Table table) {
+    return BLACKLISTED_STRATEGEIS.stream()
+        .anyMatch(s -> table.getCompactionStrategy().toLowerCase().contains(s.toLowerCase()));
   }
 
   private RepairUnit createRepairUnit(Cluster cluster, RepairUnit.Builder builder) {
@@ -107,12 +172,11 @@ public final class RepairUnitService {
     return !Sets.intersection(listRepairTables(unit.with(), tables), listRepairTables(builder, tables)).isEmpty();
   }
 
-  private Set<String> getTableNamesForKeyspace(Cluster cluster, String keyspace) {
+  public Set<String> getTableNamesForKeyspace(Cluster cluster, String keyspace) {
     try {
       return context
           .jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds())
-          .getTableNamesForKeyspace(keyspace);
-
+          .getTablesForKeyspace(keyspace).stream().map(Table::getName).collect(Collectors.toSet());
     } catch (ReaperException e) {
       LOG.warn("unknown table list to cluster {} keyspace", cluster.getName(), keyspace, e);
       return Collections.emptySet();

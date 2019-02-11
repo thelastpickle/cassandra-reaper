@@ -29,6 +29,12 @@ public final class ClusterStatus {
   @JsonProperty
   public final String name;
 
+  @JsonProperty("jmx_username")
+  public final String jmxUsername;
+
+  @JsonProperty("jmx_password_is_set")
+  public final Boolean jmxPasswordIsSet;
+
   @JsonProperty("seed_hosts")
   public final Set<String> seedHosts;
 
@@ -43,11 +49,15 @@ public final class ClusterStatus {
 
   public ClusterStatus(
       Cluster cluster,
+      String jmxUsername,
+      Boolean jmxPasswordIsSet,
       Collection<RepairRunStatus> repairRuns,
       Collection<RepairScheduleStatus> repairSchedules,
       NodesStatus nodesStatus) {
 
     this.name = cluster.getName();
+    this.jmxUsername = jmxUsername;
+    this.jmxPasswordIsSet = jmxPasswordIsSet;
     this.seedHosts = cluster.getSeedHosts();
     this.repairRuns = repairRuns;
     this.repairSchedules = repairSchedules;

@@ -1,6 +1,6 @@
 /*
  * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import io.cassandrareaper.resources.RepairScheduleResource;
 import io.cassandrareaper.resources.SnapshotResource;
 import io.cassandrareaper.resources.auth.LoginResource;
 import io.cassandrareaper.resources.auth.ShiroExceptionMapper;
+import io.cassandrareaper.resources.auth.ShiroJwtProvider;
 import io.cassandrareaper.service.AutoSchedulingManager;
 import io.cassandrareaper.service.PurgeService;
 import io.cassandrareaper.service.RepairManager;
@@ -243,7 +244,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       environment.getApplicationContext().setSessionHandler(sessionHandler);
       environment.servlets().setSessionHandler(sessionHandler);
       environment.jersey().register(new ShiroExceptionMapper());
-      environment.jersey().register(new LoginResource(context));
+      environment.jersey().register(new LoginResource());
+      environment.jersey().register(new ShiroJwtProvider(context));
     }
 
     Thread.sleep(1000);

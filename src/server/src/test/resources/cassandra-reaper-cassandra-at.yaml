@@ -1,5 +1,5 @@
 # Copyright 2017-2017 Spotify AB
-# Copyright 2017-2018 The Last Pickle Ltd
+# Copyright 2017-2019 The Last Pickle Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ repairRunThreadCount: 15
 hangingRepairTimeoutMins: 1
 storageType: cassandra
 incrementalRepair: false
+blacklistTwcsTables: true
 jmxConnectionTimeoutInSeconds: 300
 activateQueryLogger: true
 datacenterAvailability: LOCAL
@@ -62,6 +63,7 @@ jmxCredentials:
 
 # database section will be ignored if storageType is set to "cassandra"
 h2:
+  driverClass: org.h2.Driver
   url: jdbc:h2:mem:reaper-db;MODE=PostgreSQL
   user:
   password:

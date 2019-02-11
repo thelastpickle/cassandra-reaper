@@ -176,6 +176,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     overrideQueryOptions(cassandraFactory);
     overrideRetryPolicy(cassandraFactory);
     overridePoolingOptions(cassandraFactory);
+
+    // https://docs.datastax.com/en/developer/java-driver/3.5/manual/metrics/#metrics-4-compatibility
+    cassandraFactory.setJmxEnabled(false);
+
     cassandra = cassandraFactory.build(environment);
     if (config.getActivateQueryLogger()) {
       cassandra.register(QueryLogger.builder().build());

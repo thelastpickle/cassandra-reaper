@@ -51,7 +51,9 @@ aliases:
               ccm create test_2_2 --no-switch -v 2.2.13
               ccm create test_3_0 --no-switch -v 3.0.17
               ccm create test_3_11 --no-switch -v 3.11.3
-              ccm create test_trunk --no-switch -v git:trunk
+              # 4.0 builds are ignored until new ccm version is released and available in pip
+              #   see comment below under "workflows"
+              #ccm create test_trunk --no-switch -v git:trunk
 
         - save_cache:
             paths:
@@ -97,6 +99,7 @@ aliases:
                   sed -i 's/enable_materialized_views: true/enable_materialized_views: false/' ~/.ccm/test/node$i/conf/cassandra.yaml
                   sed -i 's/internode_compression: dc/internode_compression: none/' ~/.ccm/test/node$i/conf/cassandra.yaml
                   echo 'phi_convict_threshold: 16' >> ~/.ccm/test/node$i/conf/cassandra.yaml
+                  sed -i 's/# file_cache_size_in_mb: 512/file_cache_size_in_mb: 1/' ~/.ccm/test/node$i/conf/cassandra.yaml
                   if  echo "$CASSANDRA_VERSION" | grep -q "trunk"  ; then
                     sed -i 's/start_rpc: true//' ~/.ccm/test/node$i/conf/cassandra.yaml
                     echo '-Dcassandra.max_local_pause_in_ms=15000' >> ~/.ccm/test/node$i/conf/jvm-server.options
@@ -144,7 +147,9 @@ jobs:
               - ~/.ccm/repository
             key: v1-dependencies-{{ checksum "pom.xml" }}
         - run:
-            command: MAVEN_OPTS="-Xmx384m" mvn -B install
+            command: |
+                MAVEN_OPTS="-Xmx384m" mvn -B install
+                mvn -B surefire:test -Dtest=ReaperShiroIT
     c_2-1_memory:
       environment:
         CASSANDRA_VERSION: 2.1.20
@@ -590,32 +595,34 @@ workflows:
           requires:
             - build
             - c_3-11_upgrades
-      - c_4-0_memory:
-          requires:
-            - build
-      - c_4-0_h2:
-          requires:
-            - build
-            - c_4-0_memory
-      - c_4-0_one-reaper:
-          requires:
-            - build
-            - c_4-0_memory
-      - c_4-0_two-reapers:
-          requires:
-            - build
-            - c_4-0_memory
-            - c_4-0_one-reaper
-      - c_4-0_one-reaper__all_nodes_reachable:
-          requires:
-            - build
-            - c_4-0_memory
-      - c_4-0_two-reapers__all_nodes_reachable:
-          requires:
-            - build
-            - c_4-0_memory
-            - c_4-0_one-reaper__all_nodes_reachable
-# FIXME – the following requires more memory than free OSS CircleCI offers
+# 4.0 builds are ignored until new ccm version is released and available in pip
+#   see comment above as well under "Download dependencies"
+#      - c_4-0_memory:
+#          requires:
+#            - build
+#      - c_4-0_h2:
+#          requires:
+#            - build
+#            - c_4-0_memory
+#      - c_4-0_one-reaper:
+#          requires:
+#            - build
+#            - c_4-0_memory
+#      - c_4-0_two-reapers:
+#          requires:
+#            - build
+#            - c_4-0_memory
+#            - c_4-0_one-reaper
+#      - c_4-0_one-reaper__all_nodes_reachable:
+#          requires:
+#            - build
+#            - c_4-0_memory
+#      - c_4-0_two-reapers__all_nodes_reachable:
+#          requires:
+#            - build
+#            - c_4-0_memory
+#            - c_4-0_one-reaper__all_nodes_reachable
+# FIXME -- the following requires more memory than free OSS CircleCI offers
 #      - c_4-0_flapping-reapers__all_nodes_reachable:
 #          requires:
 #            - build

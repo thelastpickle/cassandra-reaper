@@ -145,6 +145,26 @@ td > button {
 	margin-right: .5em;
 }
 
+.font-bold {
+    font-weight: bold;
+}
+
+.cluster-info-button {
+    position: relative;
+    right: 30px;
+    top: -2px;
+}
+
+.forget-cluster-button {
+    position: relative;
+    top: 10px;
+}
+
+.repair-progress-bar {
+    position: relative;
+    top: 15px;
+}
+
 $font-size: 16px;
 $input-height: 2.5em; // at 16px, this an even 40px
 

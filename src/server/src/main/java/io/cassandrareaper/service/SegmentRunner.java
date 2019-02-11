@@ -1,6 +1,6 @@
 /*
  * Copyright 2015-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,6 +89,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private static final long METRICS_MAX_WAIT_MS = TimeUnit.MINUTES.toMillis(2);
 
   private final AppContext context;
+  private final RepairUnitService repairUnitService;
   private final UUID segmentId;
   private final Condition condition = new SimpleCondition();
   private final Collection<String> potentialCoordinators;
@@ -122,6 +123,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
     }
     this.context = context;
+    this.repairUnitService = RepairUnitService.create(context);
     this.segmentId = segmentId;
     this.potentialCoordinators = potentialCoordinators;
     this.timeoutMillis = timeoutMillis;
@@ -264,7 +266,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       try (Timer.Context cxt1 = context.metricRegistry.timer(metricNameForRepairing(segment)).time()) {
         Set<String> tablesToRepair;
         try {
-          tablesToRepair = getTablesToRepair(coordinator, repairUnit);
+          tablesToRepair = repairUnitService.getTablesToRepair(coordinator, cluster, repairUnit);
         } catch (IllegalStateException e) {
           String msg = "Invalid blacklist definition. It filtered all tables in the keyspace.";
           LOG.error(msg, e);
@@ -1152,40 +1154,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return context.storage instanceof IDistributedStorage
         ? ((IDistributedStorage) context.storage).countRunningReapers()
         : 1;
-  }
-
-  /**
-   * Applies blacklist filter on tables for the given repair unit.
-   *
-   * @param coordinator : a JMX proxy instance
-   * @param unit : the repair unit for the current run
-   * @return the list of tables to repair for the keyspace without the blacklisted ones
-   * @throws ReaperException, IllegalStateException
-   */
-  static Set<String> getTablesToRepair(JmxProxy coordinator, RepairUnit unit)
-      throws ReaperException, IllegalStateException {
-    Set<String> tables = unit.getColumnFamilies();
-
-    if (!unit.getBlacklistedTables().isEmpty() && unit.getColumnFamilies().isEmpty()) {
-      tables = coordinator
-              .getTableNamesForKeyspace(unit.getKeyspaceName())
-              .stream()
-              .filter(tableName -> !unit.getBlacklistedTables().contains(tableName))
-              .collect(Collectors.toSet());
-    }
-
-    if (!unit.getBlacklistedTables().isEmpty() && !unit.getColumnFamilies().isEmpty()) {
-      tables = unit.getColumnFamilies()
-              .stream()
-              .filter(tableName -> !unit.getBlacklistedTables().contains(tableName))
-              .collect(Collectors.toSet());
-    }
-
-    Preconditions.checkState(
-        !(!unit.getBlacklistedTables().isEmpty()
-            && tables.isEmpty())); // if we have a blacklist, we should have tables in the output.
-
-    return tables;
   }
 
   private class BusyHostsInitializer extends LazyInitializer<Set<String>> {

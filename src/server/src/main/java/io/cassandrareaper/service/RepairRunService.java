@@ -1,6 +1,6 @@
 /*
  * Copyright 2015-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.math.BigInteger;
@@ -364,7 +365,7 @@ public final class RepairRunService {
     JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
             cluster, context.config.getJmxConnectionTimeoutInSeconds());
 
-    knownTables = jmxProxy.getTableNamesForKeyspace(keyspace);
+    knownTables = jmxProxy.getTablesForKeyspace(keyspace).stream().map(Table::getName).collect(Collectors.toSet());
     if (knownTables.isEmpty()) {
       LOG.debug("no known tables for keyspace {} in cluster {}", keyspace, cluster.getName());
       throw new IllegalArgumentException("no column families found for keyspace");

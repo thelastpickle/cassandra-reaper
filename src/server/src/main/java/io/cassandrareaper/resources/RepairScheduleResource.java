@@ -110,6 +110,7 @@ public final class RepairScheduleResource {
               context,
               clusterName,
               keyspace,
+              tableNamesParam,
               owner,
               segmentCountPerNode,
               repairParallelism,
@@ -117,6 +118,7 @@ public final class RepairScheduleResource {
               incrementalRepairStr,
               nodesToRepairParam,
               datacentersToRepairParam,
+              blacklistedTableNamesParam,
               repairThreadCountParam,
               activeTimeParam,
               inactiveTimeParam);
