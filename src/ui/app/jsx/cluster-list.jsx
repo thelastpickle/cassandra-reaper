@@ -88,6 +88,10 @@ const Cluster = React.createClass({
       marginBottom: "0.25em"
     };
 
+    let yesStyle = {
+      display: "inline-block"
+    }
+
     let datacenters = "";
     let runningRepairs = 0;
 
@@ -96,10 +100,10 @@ const Cluster = React.createClass({
 
     if (this.state.clusterStatus.repair_runs) {
       runningRepairs = this.state.clusterStatus.repair_runs.reduce(function(previousValue, repairRun){
-                              return previousValue + ((repairRun.state =~ 'RUNNING') ? 1: 0);
+                              return previousValue + ((repairRun.state.startsWith('RUNNING')) ? 1: 0);
                             }, 0);
 
-      repairProgress = this.state.clusterStatus.repair_runs.filter(repairRun => repairRun.state =~ 'RUNNING').map(repairRun =>
+      repairProgress = this.state.clusterStatus.repair_runs.filter(repairRun => repairRun.state.startsWith('RUNNING')).map(repairRun =>
                       <ProgressBar now={(repairRun.segments_repaired*100)/repairRun.total_segments} active bsStyle="success" 
                                    style={progressStyle} 
                                    label={repairRun.keyspace_name}
@@ -136,12 +140,19 @@ const Cluster = React.createClass({
       }
     }
 
+    const deleteClusterClick = (
+      <Popover id="takeCluster" title="Confirm?">
+        <strong>Click yes to confirm </strong>
+        <button type="button" className="btn btn-xs btn-danger" onClick={this._onDelete} style={yesStyle}>Yes</button>
+      </Popover>
+    );
+
     return (
       <div className="panel panel-default" style={clusterDisplayStyle}>
         <div className="panel-body">
           <div className="row">
             <div className="col-lg-2"><a href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name} <span className="badge">{humanFileSize(totalLoad,1024)}</span></h4></a><div>Running repairs: {runningRepairsBadge}<br/>{repairProgress}</div>
-              <button type="button" className="btn btn-xs btn-danger" onClick={this._onDelete}>Forget cluster</button>
+              <OverlayTrigger trigger="focus" placement="bottom" overlay={deleteClusterClick}><button type="button" className="btn btn-danger">Forget Cluster</button></OverlayTrigger>
             </div>
             <div className="col-lg-10">
               <div className="row" style={rowDivStyle}>
