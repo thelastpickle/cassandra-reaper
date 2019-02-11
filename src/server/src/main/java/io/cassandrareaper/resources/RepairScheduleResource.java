@@ -119,8 +119,7 @@ public final class RepairScheduleResource {
               datacentersToRepairParam,
               repairThreadCountParam,
               activeTimeParam,
-              inactiveTimeParam
-      );
+              inactiveTimeParam);
 
       if (null != possibleFailResponse) {
         return possibleFailResponse;
@@ -199,6 +198,7 @@ public final class RepairScheduleResource {
       if (activeTimeParam.isPresent() && inactiveTimeParam.isPresent()) {
         activeTime = activeTimeParam.get();
         inactiveTime = inactiveTimeParam.get();
+        LOG.debug("activeTime - inactiveTime: {} - {}", activeTime, inactiveTime);
       } else {
         activeTime = "";
         inactiveTime = "";

@@ -50,6 +50,9 @@ import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
+import org.joda.time.LocalTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -418,92 +421,69 @@ final class RepairRunner implements Runnable {
     final UUID unitId;
     final double intensity;
     final RepairParallelism validationParallelism;
-    DateTime activeTime;
-    DateTime inactiveTime;
-    boolean checkActiveTime = false;
+    LocalTime activeTime;
+    LocalTime inactiveTime;
     {
       RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
       unitId = repairRun.getRepairUnitId();
       intensity = repairRun.getIntensity();
       validationParallelism = repairRun.getRepairParallelism();
+
+      int amountDone = context.storage.getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
+      repairProgress = (float) amountDone / repairRun.getSegmentCount();
+
       String activeTimeStr = "";
       String inactiveTimeStr = "";
-      if (segment.getActiveTime() == "" && segment.getInactiveTime() == "") {
+      if (segment.getActiveTime().equals("") && segment.getInactiveTime().equals("")) {
         activeTimeStr = "0:0";
         inactiveTimeStr = "0:0";
       } else {
         activeTimeStr = segment.getActiveTime();
         inactiveTimeStr = segment.getInactiveTime();
       }
-      int[] activeTimeArray = Arrays.stream(activeTimeStr.split(":")).mapToInt(Integer::parseInt).toArray();
-      int[] inactiveTimeArray = Arrays.stream(inactiveTimeStr.split(":")).mapToInt(Integer::parseInt).toArray();
-      activeTime = new DateTime().withHourOfDay(activeTimeArray[0])
-              .withMinuteOfHour(activeTimeArray[1]).withMillisOfSecond(0);
-      inactiveTime = new DateTime().withHourOfDay(inactiveTimeArray[0])
-              .withMinuteOfHour(inactiveTimeArray[1]).withMillisOfSecond(0);
+      if (!activeTimeStr.equals(inactiveTimeStr)) {
+        DateTimeFormatter formatter = DateTimeFormat.forPattern("H:m");
+        activeTime = formatter.parseLocalTime(activeTimeStr);
+        inactiveTime = formatter.parseLocalTime(inactiveTimeStr);
 
-      if (! activeTimeStr.equals(inactiveTimeStr)) {
-        checkActiveTime = true;
-        if (activeTime.isAfter(inactiveTime)) {
-          if (activeTime.isBeforeNow()) {
-            inactiveTime = inactiveTime.plusDays(1);
+        if (! isNowActive(activeTime, inactiveTime)) {
+
+          LOG.info("out of active time frame, should wait until next ActiveTime: " + activeTime.toString());
+
+          if (!repairRun.getRunState().equals("RUNNING_TF_PAUSED")) {
+            context.storage.updateRepairRun(
+                    repairRun
+                            .with()
+                            .runState(RepairRun.RunState.RUNNING_TF_PAUSED)
+                            .lastEvent(String.format("Paused until next activeTime"))
+                            .build(repairRunId));
           }
-        } else {
-          if (inactiveTime.isBeforeNow()) {
-            activeTime = activeTime.plusDays(1);
+          currentlyRunningSegments.set(rangeIndex, null);
+          return true;
+
+        } else if (segmentsDone > 0 && fullDuration != null) {
+          DateTime realInactiveTime = inactiveTime.toDateTimeToday();
+          if (realInactiveTime.isBeforeNow()) {
+            realInactiveTime = realInactiveTime.plusDays(1);
           }
-        }
-        LOG.info("ActiveTime: " + activeTime.toString());
-        LOG.info("InactiveTime: " + inactiveTime.toString());
-      }
-
-      int amountDone = context.storage.getSegmentAmountForRepairRunWithState(repairRunId, RepairSegment.State.DONE);
-      repairProgress = (float) amountDone / repairRun.getSegmentCount();
-
-      if (checkActiveTime) {
-        boolean shouldSleepUntilNextActive = false;
-
-        if ( ( inactiveTime.isBeforeNow() && activeTime.isAfterNow() )
-            || ( inactiveTime.getDayOfMonth() == activeTime.getDayOfMonth() && activeTime.isBefore(inactiveTime) )
-              && ( ( inactiveTime.isAfterNow() && activeTime.isAfterNow() )
-                  || ( inactiveTime.isBeforeNow() && activeTime.isBeforeNow() ) ) ) {
-
-          LOG.info("out of active time frame, should wait until next ActiveTime: " +activeTime.toString());
-          shouldSleepUntilNextActive = true;
-
-        } else if ( segmentsDone > 0 && fullDuration != null ) {
-
-          Duration untilInactiveTimeDuration = new Duration(DateTime.now(), inactiveTime);
+          Duration untilInactiveTimeDuration = new Duration(DateTime.now(), realInactiveTime);
           Duration averageSegmentDuration = new Duration(fullDuration.dividedBy((long) segmentsDone));
           Duration durationDifference = new Duration(untilInactiveTimeDuration.minus(averageSegmentDuration));
 
           if (durationDifference.isShorterThan(new Duration(0))) {
             LOG.info("not enough time to run next segment before inactiveTime, should wait");
-            shouldSleepUntilNextActive = true;
+            currentlyRunningSegments.set(rangeIndex, null);
+            return true;
           }
         }
-
-        if (shouldSleepUntilNextActive) {
-          if (activeTime.isBeforeNow()) {
-            activeTime = activeTime.plusDays(1);
-          }
-          Duration untilActiveTimeDuration = new Duration(DateTime.now(), activeTime.plusMillis(100));
-          long sleepMilis = untilActiveTimeDuration.getMillis();
-          LOG.info("Sleeping {} ms until next activeTime {}",sleepMilis, activeTime.toString());
-          context.storage.updateRepairRun(
-              repairRun
-              .with()
-              .runState(RepairRun.RunState.RUNNING_TF_PAUSED)
-              .lastEvent(String.format("Paused until next activeTime"))
-              .build(repairRunId));
-          Thread.sleep(sleepMilis);
-          context.storage.updateRepairRun(
-              repairRun
-              .with()
-              .runState(RepairRun.RunState.RUNNING)
-              .lastEvent(String.format("Resumed run after activeTime passed"))
-              .build(repairRunId));
-        }
+      }
+      if (!repairRun.getRunState().equals("RUNNING")) {
+        context.storage.updateRepairRun(
+            repairRun
+            .with()
+            .runState(RepairRun.RunState.RUNNING)
+            .lastEvent(String.format("Resumed run after activeTime passed"))
+            .build(repairRunId));
       }
     }
     RepairUnit repairUnit = context.storage.getRepairUnit(unitId);
@@ -623,7 +603,6 @@ final class RepairRunner implements Runnable {
 
     // Don't do rescheduling here, not to spawn uncontrolled amount of threads
     if (segment.isPresent()) {
-      Duration lastSegmentDuration;
       RepairSegment.State state = segment.get().getState();
       LOG.debug("In repair run #{}, triggerRepair on segment {} ended with state {}", repairRunId, segmentId, state);
       switch (state) {
@@ -633,7 +612,7 @@ final class RepairRunner implements Runnable {
 
         case DONE:
           // Successful repair
-          lastSegmentDuration = new Duration( segment.get().getStartTime(), segment.get().getEndTime() );
+          Duration lastSegmentDuration = new Duration( segment.get().getStartTime(), segment.get().getEndTime() );
           if (fullDuration == null) {
             fullDuration = new Duration(lastSegmentDuration);
           } else {
@@ -687,4 +666,16 @@ final class RepairRunner implements Runnable {
     return MetricRegistry.name(RepairRunner.class, metric, cleanClusterName, cleanRepairRunId);
   }
 
+  public boolean isNowActive( LocalTime activeLocalTime, LocalTime inactiveLocalTime) {
+    LocalTime now = LocalTime.now();
+    if (activeLocalTime.isBefore(now) && inactiveLocalTime.isAfter(now)) {
+      // active < now && inactive > now
+      return true;
+    } else if (activeLocalTime.isAfter(now) && inactiveLocalTime.isBefore(now)) {
+      // active > now && inactive < now
+      return false;
+    } else {
+      return activeLocalTime.isAfter(inactiveLocalTime);
+    }
+  }
 }

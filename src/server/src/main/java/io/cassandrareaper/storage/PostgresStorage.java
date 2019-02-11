@@ -307,8 +307,7 @@ public final class PostgresStorage implements IStorage {
               params.blacklistedTables,
               params.repairThreadCount,
               params.activeTime,
-              params.inactiveTime
-      );
+              params.inactiveTime);
     }
     return Optional.ofNullable(result);
   }

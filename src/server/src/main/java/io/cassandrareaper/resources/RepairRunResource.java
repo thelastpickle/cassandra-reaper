@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -205,6 +204,7 @@ public final class RepairRunResource {
       if (activeTimeParam.isPresent() && inactiveTimeParam.isPresent()) {
         activeTime = activeTimeParam.get();
         inactiveTime = inactiveTimeParam.get();
+        LOG.debug("activeTime - inactiveTime : {} - {}", activeTime, inactiveTime);
       } else {
         activeTime = "";
         inactiveTime = "";
@@ -222,7 +222,6 @@ public final class RepairRunResource {
               .repairThreadCount(repairThreadCountParam.orElse(context.config.getRepairThreadCount()))
               .activeTime(activeTime)
               .inactiveTime(inactiveTime);
-
 
       RepairUnit theRepairUnit = repairUnitService.getOrCreateRepairUnit(cluster, builder);
 
@@ -851,18 +850,11 @@ public final class RepairRunResource {
   }
 
   private static void parseTimeFormat(String input) throws ValidationException {
-    try {
-      if (input != "") {
-        Pattern pattern;
-        Matcher matcher;
-
-        pattern = Pattern.compile("([01]?[0-9]|2[0-3]):[0-5][0-9]");
-        if (!pattern.matcher(input).matches()) {
-          throw new ValidationException("\"in/active time\" should be in HH:MM format " + input);
-        }
+    if (!input.equals("")) {
+      Pattern pattern = Pattern.compile("([01]?[0-9]|2[0-3]):[0-5][0-9]");
+      if (!pattern.matcher(input).matches()) {
+        throw new ValidationException("\"in/active time\" should be in HH:MM format " + input);
       }
-    } catch (IllegalArgumentException ex) {
-      throw new ValidationException("invalid \"in/active time\" argument: " + input, ex);
     }
   }
 }

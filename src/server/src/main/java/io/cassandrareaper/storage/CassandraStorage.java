@@ -513,8 +513,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             newRepairRun.getSegmentCount(),
             newRepairRun.getRepairParallelism().toString(),
             newRepairRun.getActiveTime(),
-            newRepairRun.getInactiveTime())
-    );
+            newRepairRun.getInactiveTime()));
 
     int nbRanges = 0;
     for (RepairSegment.Builder builder : newSegments) {
@@ -739,8 +738,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             repairUnit.getBlacklistedTables(),
             repairUnit.getRepairThreadCount(),
             repairUnit.getActiveTime(),
-            repairUnit.getInactiveTime())
-    );
+            repairUnit.getInactiveTime()));
 
     repairUnits.put(repairUnit.getId(), repairUnit);
     return repairUnit;
@@ -1123,7 +1121,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                 newRepairSchedule.getSegmentCountPerNode(),
                 newRepairSchedule.getActiveTime(),
                 newRepairSchedule.getInactiveTime())));
-
 
     futures.add(
         session.executeAsync(

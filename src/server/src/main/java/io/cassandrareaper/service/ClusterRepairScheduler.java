@@ -113,8 +113,7 @@ public final class ClusterRepairScheduler {
         .clusterName(cluster.getName())
         .keyspaceName(keyspace)
         .incrementalRepair(incrementalRepair)
-        .repairThreadCount(context.config.getRepairThreadCount()
-        );
+        .repairThreadCount(context.config.getRepairThreadCount());
 
     RepairSchedule repairSchedule = repairScheduleService.storeNewRepairSchedule(
             cluster,

@@ -249,8 +249,6 @@ public final class RepairRunnerTest {
     final double INTENSITY = 0.5f;
     final int REPAIR_THREAD_COUNT = 1;
     final IStorage storage = new MemoryStorage();
-    final String ACTIVE_TIME = "";
-    final String INACTIVE_TIME = "";
 
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
@@ -265,8 +263,8 @@ public final class RepairRunnerTest {
             .datacenters(DATACENTERS)
             .blacklistedTables(BLACKLISTED_TABLES)
             .repairThreadCount(REPAIR_THREAD_COUNT)
-            .activeTime(ACTIVE_TIME)
-            .inactiveTime(INACTIVE_TIME));
+            .activeTime("")
+            .inactiveTime(""));
 
     RepairRun run = storage.addRepairRun(
             RepairRun.builder(CLUSTER_NAME, cf.getId())
