@@ -29,7 +29,7 @@ If JMX authentication is required and all clusters share the same credentials, t
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/usage/authentication/</guid>
-      <description>Web UI Authentication Authentication is activated in Reaper by default. It relies on Apache Shiro, which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box. The default authentication uses the dummy username and password as found in the default shiro.ini. It is expected you override this in a production environment.
+      <description>Authentication Authentication is activated in Reaper by default. It relies on Apache Shiro, which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box. The default authentication uses the dummy username and password as found in the default shiro.ini. It is expected you override this in a production environment.
 This default Shiro authentication configuration is referenced via the following block in the Reaper yaml file :</description>
     </item>
     

@@ -17,8 +17,8 @@
       
       <guid>http://cassandra-reaper.io/docs/api/</guid>
       <description>Rest API Source code for all the REST resources can be found from package io.cassandrareaper.resources.
-Ping Resource  GET /ping  Expected query parameters: None Simple ping resource that can be used to check whether the reaper is running.   Cluster Resource  GET /cluster
- Expected query parameters:  seedHost: Limit the returned cluster list based on the given seed host. (Optional)  Returns a list of registered cluster names in the service.</description>
+Login Resource  POST /login  Expected form parameters:
+ username: User to login with as defined in Shiro settings (default user is admin) password: Password to authenticate with through Shiro (default password of user admin is: admin) rememberMe: Boolean to have the Web UI remember the username  Endpoint for logging in to Reaper   Shiro JWT Provider  GET /jwt  Expected query parameters: None Returns a JWT to use in all REST calls when authentication is turned on in Reaper.</description>
     </item>
     
     <item>

@@ -9,6 +9,26 @@ weight = 75
 
 Source code for all the REST resources can be found from package io.cassandrareaper.resources.
 
+## Login Resource
+
+* **POST     /login**
+  * Expected form parameters:  
+  		* *username*: User to login with as defined in Shiro settings (default user is **admin**)
+  		* *password*: Password to authenticate with through Shiro (default password of user *admin* is: **admin**)
+  		* *rememberMe*: Boolean to have the Web UI remember the username
+  * Endpoint for logging in to Reaper
+
+## Shiro JWT Provider
+ 
+* **GET     /jwt**
+  * Expected query parameters: *None*
+  * Returns a JWT to use in all REST calls when authentication is turned on in Reaper. 
+The token must be passed in the `Authorization` HTTP header in the following form:
+```
+Authorization: Bearer [JWT value]
+```  
+This operation expects that a call was previously made to `/login` and that the retrieved session id is passed in the cookies when requesting a JWT.
+
 ## Ping Resource
 
 * **GET     /ping**

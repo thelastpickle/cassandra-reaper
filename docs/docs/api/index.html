@@ -274,7 +274,7 @@
         
         <li><a href="/docs/usage/multi_dc/"> Operating with a Multi DC Cluster </a> </li>
         
-        <li><a href="/docs/usage/authentication/"> Activating Web UI Authentication </a> </li>
+        <li><a href="/docs/usage/authentication/"> Activating Authentication </a> </li>
         
     </ul>
     
@@ -308,6 +308,39 @@
 <h1 id="rest-api">Rest API</h1>
 
 <p>Source code for all the REST resources can be found from package io.cassandrareaper.resources.</p>
+
+<h2 id="login-resource">Login Resource</h2>
+
+<ul>
+<li><strong>POST     /login</strong>
+
+<ul>
+<li>Expected form parameters:<br />
+
+<ul>
+<li><em>username</em>: User to login with as defined in Shiro settings (default user is <strong>admin</strong>)</li>
+<li><em>password</em>: Password to authenticate with through Shiro (default password of user <em>admin</em> is: <strong>admin</strong>)</li>
+<li><em>rememberMe</em>: Boolean to have the Web UI remember the username</li>
+</ul></li>
+<li>Endpoint for logging in to Reaper</li>
+</ul></li>
+</ul>
+
+<h2 id="shiro-jwt-provider">Shiro JWT Provider</h2>
+
+<ul>
+<li><strong>GET     /jwt</strong>
+
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Returns a JWT to use in all REST calls when authentication is turned on in Reaper.
+The token must be passed in the <code>Authorization</code> HTTP header in the following form:
+<code>
+Authorization: Bearer [JWT value]
+</code><br />
+This operation expects that a call was previously made to <code>/login</code> and that the retrieved session id is passed in the cookies when requesting a JWT.</li>
+</ul></li>
+</ul>
 
 <h2 id="ping-resource">Ping Resource</h2>
 
