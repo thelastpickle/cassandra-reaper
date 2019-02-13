@@ -436,6 +436,18 @@ repair again within the same repair run process.</p>
 
 <p><br/></p>
 
+<h3 id="blacklisttwcstables"><code>blacklistTwcsTables</code></h3>
+
+<p>Type: <em>Boolean</em></p>
+
+<p>Default: <em>false</em></p>
+
+<p>Disables repairs of any tables that use either the <code>TimeWindowCompactionStrategy</code> or <code>DateTieredCompactionStrategy</code>. This automatic blacklisting is not stored in schedules or repairs. It is applied when repairs are triggered and visible in the UI for running repairs. Not storing which tables are TWCS/DTCS ensures changes to a table&rsquo;s compaction strategy are honored on every new repair.</p>
+
+<p><em>Note</em>: It is recommended to enable this option as repairing these tables, when they contain TTL&rsquo;d data, causes overlaps between partitions across the configured time windows the sstables reside in. This leads to an increased disk usage as the older sstables are unable to be expired despite only containing TTL&rsquo;s data. Repairing DTCS tables has additional issues and is generally not recommended.</p>
+
+<p><br/></p>
+
 <h3 id="jmxauth"><code>jmxAuth</code></h3>
 
 <p>Optional setting to allow Reaper to establish JMX connections to Cassandra clusters using password based JMX authentication.</p>

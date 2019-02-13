@@ -305,40 +305,29 @@
                         <div>
                           
 
-<h1 id="activating-web-ui-authentication">Activating Web UI Authentication</h1>
+<h1 id="web-ui-authentication">Web UI Authentication</h1>
 
-<p>Authentication can be activated in Reaper for the web UI only. It relies on <a href="https://shiro.apache.org/">Apache Shiro</a>, which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box.</p>
+<p>Authentication is activated in Reaper by default. It relies on <a href="https://shiro.apache.org/">Apache Shiro</a>, which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box. The default authentication uses the dummy username and password as found in the default <a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/server/src/main/resources/shiro.ini">shiro.ini</a>. It is expected you override this in a production environment.</p>
 
-<p>To activate authentication, add the following block to your Reaper yaml file :</p>
+<p>This default Shiro authentication configuration is referenced via the  following block in the Reaper yaml file :</p>
 
 <pre><code class="language-ini">accessControl:
   sessionTimeout: PT10M
   shiro:
-    iniConfigs: [&quot;file:/path/to/shiro.ini&quot;]
+    iniConfigs: [&quot;classpath:shiro.ini&quot;]
 </code></pre>
 
 <h2 id="with-clear-passwords">With clear passwords</h2>
 
-<p>Create a <code>shiro.ini</code> file and adapt it from the following sample :</p>
+<p>Copy the default <code>shiro.ini</code> file and adapt it overriding the &ldquo;users&rdquo; section :</p>
 
-<pre><code class="language-ini">[main]
-authc = org.apache.shiro.web.filter.authc.PassThruAuthenticationFilter
-authc.loginUrl = /webui/login.html
+<pre><code class="language-ini">…
 
 [users]
 user1 = password1
 user2 = password2
 
-[urls]
-# Allow anonynous access to login page (and dependencies), but no other pages
-/webui/ = authc
-/webui = authc
-/webui/login.html = anon
-/webui/*.html* = authc
-/webui/*.js* = anon
-/ping = anon
-/login = anon
-/** = anon
+…
 </code></pre>
 
 <h2 id="with-encrypted-passwords">With encrypted passwords</h2>
@@ -354,17 +343,7 @@ iniRealm.credentialsMatcher = $sha256Matcher
 [users]
 john = 807A09440428C0A8AEF58BD3ECE32938B0D76E638119E47619756F5C2C20FF3A
 
-
-[urls]
-# Allow anonynous access to login page (and dependencies), but no other pages
-/webui/ = authc
-/webui = authc
-/webui/login.html = anon
-/webui/*.html* = authc
-/webui/*.js* = anon
-/ping = anon
-/login = anon
-/** = anon
+…
 </code></pre>
 
 <p>To generate a password, you case use for example :</p>
@@ -388,9 +367,27 @@ print(hex_dig)
 a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e
 </code></pre>
 
-<p>Then start Reaper.</p>
+<h2 id="with-ldap-accounts">With LDAP accounts</h2>
 
-<p>Both the REST API and the <code>/webui/login.html</code> pages will be accessible anonymously, but all other pages will require to be authenticated.</p>
+<p>Based on <a href="https://shiro.apache.org/static/1.2.4/apidocs/org/apache/shiro/realm/ldap/JndiLdapContextFactory.html">Shiro&rsquo;s LDAP realm usage</a>.</p>
+
+<p>An example configuration for LDAP authentication exists (commented out) in the default shiro.ini :</p>
+
+<pre><code>
+# Example LDAP realm, see https://shiro.apache.org/static/1.2.4/apidocs/org/apache/shiro/realm/ldap/JndiLdapContextFactory.html
+ldapRealm = org.apache.shiro.realm.ldap.JndiLdapRealm
+ldapRealm.userDnTemplate = uid={0},ou=users,dc=cassandra-reaper,dc=io
+ldapRealm.contextFactory.url = ldap://ldapHost:389
+;ldapRealm.contextFactory.authenticationMechanism = DIGEST-MD5
+;ldapRealm.contextFactory.systemUsername = cn=Manager, dc=example, dc=com
+;ldapRealm.contextFactory.systemPassword = secret
+;ldapRealm.contextFactory.environment[java.naming.security.credentials] = ldap_password
+
+</code></pre>
+
+<h2 id="accessing-reaper-via-the-command-line-spreaper">Accessing Reaper via the command line <code>spreaper</code></h2>
+
+<p>The RESTful endpoints to Reaper can also be authenticated using JWT (Java Web Token). A token can be generated from the <code>/jwt</code> url.</p>
 
                         </div>
 
