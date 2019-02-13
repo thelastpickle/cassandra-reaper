@@ -1,12 +1,12 @@
 +++
 [menu.docs]
-name = "Activating Web UI Authentication"
+name = "Activating Authentication"
 weight = 100
 identifier = "auth"
 parent = "usage"
 +++
 
-# Web UI Authentication
+# Authentication
 
 Authentication is activated in Reaper by default. It relies on [Apache Shiro](https://shiro.apache.org/), which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box. The default authentication uses the dummy username and password as found in the default [shiro.ini](https://github.com/thelastpickle/cassandra-reaper/blob/master/src/server/src/main/resources/shiro.ini). It is expected you override this in a production environment.
 
@@ -18,6 +18,13 @@ accessControl:
   shiro:
     iniConfigs: ["classpath:shiro.ini"]
 ```
+
+## Default settings
+
+As of Reaper 1.4.0, authentication is enabled by default and credentials are:
+  
+* Username: **admin**
+* Password: **admin** 
 
 ## With clear passwords
 
@@ -91,4 +98,23 @@ ldapRealm.contextFactory.url = ldap://ldapHost:389
 
 ## Accessing Reaper via the command line `spreaper`
 
-The RESTful endpoints to Reaper can also be authenticated using JWT (Java Web Token). A token can be generated from the `/jwt` url.
+In order to interact with Reaper through `spreaper` when Shiro authentication is activated, you will first need to login as follows:  
+
+```
+$ ./spreaper login admin
+Password: *****
+# Logging in...
+You are now authenticated to Reaper.
+# JWT saved
+
+```
+
+The JWT will be saved in `~/.reaper/jwt` and automatically used by Reaper for any other call.
+Pre-existing tokens can be passed to spreaper using `--jwt <token>` with any call.
+
+## Accessing Reaper via the REST API
+
+The RESTful endpoints to Reaper can also be authenticated using JWT (Java Web Token).
+
+A token can be generated from the `/jwt` url by passing the Session ID cookie retrieved from the `/login` endpoint.
+Logging in through `/login` is described in the [REST Api page](/docs/api/).
