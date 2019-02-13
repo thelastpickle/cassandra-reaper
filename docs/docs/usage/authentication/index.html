@@ -274,7 +274,7 @@
         
         <li><a href="/docs/usage/multi_dc/"> Operating with a Multi DC Cluster </a> </li>
         
-        <li><a href="/docs/usage/authentication/"> Activating Web UI Authentication </a> </li>
+        <li><a href="/docs/usage/authentication/"> Activating Authentication </a> </li>
         
     </ul>
     
@@ -305,7 +305,7 @@
                         <div>
                           
 
-<h1 id="web-ui-authentication">Web UI Authentication</h1>
+<h1 id="authentication">Authentication</h1>
 
 <p>Authentication is activated in Reaper by default. It relies on <a href="https://shiro.apache.org/">Apache Shiro</a>, which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box. The default authentication uses the dummy username and password as found in the default <a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/server/src/main/resources/shiro.ini">shiro.ini</a>. It is expected you override this in a production environment.</p>
 
@@ -316,6 +316,15 @@
   shiro:
     iniConfigs: [&quot;classpath:shiro.ini&quot;]
 </code></pre>
+
+<h2 id="default-settings">Default settings</h2>
+
+<p>As of Reaper 1.4.0, authentication is enabled by default and credentials are:</p>
+
+<ul>
+<li>Username: <strong>admin</strong></li>
+<li>Password: <strong>admin</strong></li>
+</ul>
 
 <h2 id="with-clear-passwords">With clear passwords</h2>
 
@@ -387,7 +396,25 @@ ldapRealm.contextFactory.url = ldap://ldapHost:389
 
 <h2 id="accessing-reaper-via-the-command-line-spreaper">Accessing Reaper via the command line <code>spreaper</code></h2>
 
-<p>The RESTful endpoints to Reaper can also be authenticated using JWT (Java Web Token). A token can be generated from the <code>/jwt</code> url.</p>
+<p>In order to interact with Reaper through <code>spreaper</code> when Shiro authentication is activated, you will first need to login as follows:</p>
+
+<pre><code>$ ./spreaper login admin
+Password: *****
+# Logging in...
+You are now authenticated to Reaper.
+# JWT saved
+
+</code></pre>
+
+<p>The JWT will be saved in <code>~/.reaper/jwt</code> and automatically used by Reaper for any other call.
+Pre-existing tokens can be passed to spreaper using <code>--jwt &lt;token&gt;</code> with any call.</p>
+
+<h2 id="accessing-reaper-via-the-rest-api">Accessing Reaper via the REST API</h2>
+
+<p>The RESTful endpoints to Reaper can also be authenticated using JWT (Java Web Token).</p>
+
+<p>A token can be generated from the <code>/jwt</code> url by passing the Session ID cookie retrieved from the <code>/login</code> endpoint.
+Logging in through <code>/login</code> is described in the <a href="/docs/api/">REST Api page</a>.</p>
 
                         </div>
 
