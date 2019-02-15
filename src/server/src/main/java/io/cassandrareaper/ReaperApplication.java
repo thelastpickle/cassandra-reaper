@@ -67,6 +67,7 @@ import io.dropwizard.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.MetricsServlet;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.flywaydb.core.Flyway;
@@ -332,7 +333,13 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         || "database".equalsIgnoreCase(config.getStorageType())) {
       // create DBI instance
       final DBIFactory factory = new DBIFactory();
-
+      if (StringUtils.isEmpty(config.getDataSourceFactory().getDriverClass())
+          && "postgres".equalsIgnoreCase(config.getStorageType())) {
+        config.getDataSourceFactory().setDriverClass("org.postgresql.Driver");
+      } else if (StringUtils.isEmpty(config.getDataSourceFactory().getDriverClass())
+          && "h2".equalsIgnoreCase(config.getStorageType())) {
+        config.getDataSourceFactory().setDriverClass("org.h2.Driver");
+      }
       // instanciate store
       storage = new PostgresStorage(factory.build(environment, config.getDataSourceFactory(), "postgresql"));
       initDatabase(config);
