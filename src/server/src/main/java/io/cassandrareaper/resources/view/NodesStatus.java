@@ -153,7 +153,8 @@ public final class NodesStatus {
           tokens.orElse(NOT_AVAILABLE),
           load.orElse(0.0));
 
-      if (!status.orElse(NOT_AVAILABLE).toLowerCase().contains("left")) {
+      if (!status.orElse(NOT_AVAILABLE).toLowerCase().contains("left")
+          && !status.orElse(NOT_AVAILABLE).toLowerCase().contains("removed")) {
         // Only add nodes that haven't left the cluster (they could still appear in Gossip state for a while)
         endpoints.add(endpoint.orElse(NOT_AVAILABLE));
         endpointStates.add(endpointState);
