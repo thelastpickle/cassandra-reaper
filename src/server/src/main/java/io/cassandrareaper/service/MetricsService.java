@@ -25,6 +25,7 @@ import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
+import io.cassandrareaper.jmx.ClusterFacade;
 
 import java.util.List;
 import java.util.Map;
@@ -45,29 +46,31 @@ public final class MetricsService {
        "org.apache.cassandra.metrics:type=DroppedMessage,*"};
 
   private final AppContext context;
+  private final ClusterFacade clusterFacade;
 
-  private MetricsService(AppContext context) {
+  private MetricsService(AppContext context, ClusterFacade clusterFacade) {
     this.context = context;
+    this.clusterFacade = clusterFacade;
   }
 
-  public static MetricsService create(AppContext context) {
-    return new MetricsService(context);
+  public static MetricsService create(AppContext context, ClusterFacade clusterFacade) {
+    return new MetricsService(context, clusterFacade);
   }
 
   public List<ThreadPoolStat> getTpStats(Node host) throws ReaperException {
-    return context.clusterProxy.getTpStats(host);
+    return clusterFacade.getTpStats(host);
   }
 
   public List<DroppedMessages> getDroppedMessages(Node host) throws ReaperException {
-    return context.clusterProxy.getDroppedMessages(host);
+    return clusterFacade.getDroppedMessages(host);
   }
 
   public List<MetricsHistogram> getClientRequestLatencies(Node host) throws ReaperException {
-    return context.clusterProxy.getClientRequestLatencies(host);
+    return clusterFacade.getClientRequestLatencies(host);
   }
 
   public Map<String, List<JmxStat>> collectMetrics(Node node) throws ReaperException {
-    return context.clusterProxy.collectMetrics(node, COLLECTED_METRICS);
+    return clusterFacade.collectMetrics(node, COLLECTED_METRICS);
   }
 
   public List<GenericMetric> convertToGenericMetrics(Map<String, List<JmxStat>> jmxStats, Node node) {

@@ -23,6 +23,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.ClusterProperties;
 import io.cassandrareaper.core.NodeMetrics;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.HostConnectionCounters;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
@@ -152,6 +153,7 @@ public final class HeartTest {
 
     context.repairManager = RepairManager.create(
         context,
+        ClusterFacade.create(context),
         Executors.newScheduledThreadPool(1),
         REPAIR_TIMEOUT_S,
         TimeUnit.SECONDS,
@@ -183,6 +185,7 @@ public final class HeartTest {
 
     context.repairManager = RepairManager.create(
         context,
+        ClusterFacade.create(context),
         Executors.newScheduledThreadPool(1),
         REPAIR_TIMEOUT_S,
         TimeUnit.SECONDS,
@@ -222,6 +225,7 @@ public final class HeartTest {
 
     context.repairManager = RepairManager.create(
         context,
+        ClusterFacade.create(context),
         Executors.newScheduledThreadPool(1),
         REPAIR_TIMEOUT_S,
         TimeUnit.SECONDS,
@@ -280,6 +284,7 @@ public final class HeartTest {
 
     context.repairManager = RepairManager.create(
         context,
+        ClusterFacade.create(context),
         Executors.newScheduledThreadPool(1),
         REPAIR_TIMEOUT_S,
         TimeUnit.SECONDS,
@@ -339,6 +344,7 @@ public final class HeartTest {
 
     context.repairManager = RepairManager.create(
         context,
+        ClusterFacade.create(context),
         Executors.newScheduledThreadPool(1),
         REPAIR_TIMEOUT_S,
         TimeUnit.SECONDS,

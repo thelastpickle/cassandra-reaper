@@ -18,6 +18,7 @@
 package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.service.RingRange;
 
 import java.math.BigInteger;
@@ -79,7 +80,7 @@ public interface JmxProxy extends NotificationListener {
 
   Map<List<String>, List<String>> getRangeToEndpointMap(String keyspace) throws ReaperException;
 
-  Set<String> getTableNamesForKeyspace(String keyspace) throws ReaperException;
+  Set<Table> getTablesForKeyspace(String keyspace) throws ReaperException;
 
   /**
    * @return list of tokens in the cluster

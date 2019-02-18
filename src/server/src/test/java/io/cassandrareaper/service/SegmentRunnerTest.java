@@ -29,7 +29,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
-import io.cassandrareaper.jmx.ClusterProxy;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
@@ -183,13 +183,13 @@ public final class SegmentRunnerTest {
             return jmx;
           }
         };
-    context.clusterProxy = ClusterProxy.create(context);
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
         context,
+        ClusterFacade.create(context),
         segmentId,
         Collections.singleton(""),
         100,
@@ -335,13 +335,13 @@ public final class SegmentRunnerTest {
             return jmx;
           }
         };
-    context.clusterProxy = ClusterProxy.create(context);
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
         context,
+        ClusterFacade.create(context),
         segmentId,
         Collections.singleton(""),
         5000,
@@ -477,13 +477,13 @@ public final class SegmentRunnerTest {
             return jmx;
           }
         };
-    context.clusterProxy = ClusterProxy.create(context);
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
         context,
+        ClusterFacade.create(context),
         segmentId,
         Collections.singleton(""),
         5000,
@@ -618,13 +618,13 @@ public final class SegmentRunnerTest {
             return jmx;
           }
         };
-    context.clusterProxy = ClusterProxy.create(context);
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
             context,
+            ClusterFacade.create(context),
             segmentId,
             Collections.singleton(""),
             5000,
@@ -760,13 +760,13 @@ public final class SegmentRunnerTest {
             return jmx;
           }
         };
-    context.clusterProxy = ClusterProxy.create(context);
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
             context,
+            ClusterFacade.create(context),
             segmentId,
             Collections.singleton(""),
             5000,
@@ -902,13 +902,13 @@ public final class SegmentRunnerTest {
             return jmx;
           }
         };
-    context.clusterProxy = ClusterProxy.create(context);
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
             context,
+            ClusterFacade.create(context),
             segmentId,
             Collections.singleton(""),
             5000,
@@ -1045,13 +1045,13 @@ public final class SegmentRunnerTest {
             return jmx;
           }
         };
-    context.clusterProxy = ClusterProxy.create(context);
     RepairRunner rr = mock(RepairRunner.class);
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     SegmentRunner sr = new SegmentRunner(
             context,
+            ClusterFacade.create(context),
             segmentId,
             Collections.singleton(""),
             5000,
@@ -1110,12 +1110,20 @@ public final class SegmentRunnerTest {
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(jmxConnectionFactory.connect(any())).thenReturn(mock(JmxProxy.class));
     context.jmxConnectionFactory = jmxConnectionFactory;
-    context.clusterProxy = ClusterProxy.create(context);
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
-    SegmentRunner segmentRunner = new SegmentRunner(context,UUID.randomUUID(), Collections.emptyList(),
-            1000, 1.1,RepairParallelism.DATACENTER_AWARE,
-            "test", mock(RepairUnit.class), mock(RepairRunner.class));
+    SegmentRunner segmentRunner
+        = new SegmentRunner(
+            context,
+            ClusterFacade.create(context),
+            UUID.randomUUID(),
+            Collections.emptyList(),
+            1000,
+            1.1,
+            RepairParallelism.DATACENTER_AWARE,
+            "test",
+            mock(RepairUnit.class),
+            mock(RepairRunner.class));
 
     Pair<String, Optional<NodeMetrics>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc2").call();
     assertFalse(result.getRight().isPresent());
@@ -1140,13 +1148,21 @@ public final class SegmentRunnerTest {
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(jmxConnectionFactory.connect(any())).thenReturn(proxy);
     context.jmxConnectionFactory = jmxConnectionFactory;
-    context.clusterProxy = ClusterProxy.create(context);
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
 
-    SegmentRunner segmentRunner = new SegmentRunner(context,UUID.randomUUID(), Collections.emptyList(),
-          1000, 1.1,RepairParallelism.DATACENTER_AWARE,
-          "test", mock(RepairUnit.class), mock(RepairRunner.class));
+    SegmentRunner segmentRunner
+        = new SegmentRunner(
+            context,
+            ClusterFacade.create(context),
+            UUID.randomUUID(),
+            Collections.emptyList(),
+            1000,
+            1.1,
+            RepairParallelism.DATACENTER_AWARE,
+            "test",
+            mock(RepairUnit.class),
+            mock(RepairRunner.class));
     Pair<String, Optional<NodeMetrics>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc1").call();
     assertTrue(result.getRight().isPresent());
     NodeMetrics metrics = result.getRight().get();

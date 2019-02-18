@@ -21,6 +21,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.service.SnapshotService;
 
 import java.util.List;
@@ -57,7 +58,8 @@ public final class SnapshotResource {
     this.context = context;
     snapshotManager = SnapshotService.create(
         context,
-        environment.lifecycle().executorService("SnapshotService").minThreads(5).maxThreads(5).build());
+        environment.lifecycle().executorService("SnapshotService").minThreads(5).maxThreads(5).build(),
+        ClusterFacade.create(context));
   }
 
   /**

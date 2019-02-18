@@ -28,6 +28,7 @@ import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.RingRange;
@@ -54,25 +55,17 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author adejanovski
- *
- */
-/**
- * @author adejanovski
- *
- */
-public final class ClusterProxy {
-  private static final Logger LOG = LoggerFactory.getLogger(ClusterProxy.class);
+public final class ClusterFacade {
+  private static final Logger LOG = LoggerFactory.getLogger(ClusterFacade.class);
   private static final String LOCALHOST = "127.0.0.1";
   private final AppContext context;
 
-  private ClusterProxy(AppContext context) {
+  private ClusterFacade(AppContext context) {
     this.context = context;
   }
 
-  public static ClusterProxy create(AppContext context) {
-    return new ClusterProxy(context);
+  public static ClusterFacade create(AppContext context) {
+    return new ClusterFacade(context);
   }
 
   private JmxProxy connectAnyNode(Cluster cluster, Collection<String> endpoints) throws ReaperException {
@@ -263,7 +256,7 @@ public final class ClusterProxy {
   }
 
   /**
-   * Get a list of table names for a specific keyspace.
+   * Get a list of tables for a specific keyspace.
    * In EACH, LOCAL and ALL : connect directly to any provided node to get the information
    * In SIDECAR : Enforce connecting to the local node to get the information
    *
@@ -272,9 +265,9 @@ public final class ClusterProxy {
    * @return a list of table names
    * @throws ReaperException any runtime exception we catch
    */
-  public Set<String> getTableNamesForKeyspace(Cluster cluster, String keyspaceName) throws ReaperException {
+  public Set<Table> getTablesForKeyspace(Cluster cluster, String keyspaceName) throws ReaperException {
     JmxProxy jmxProxy = connectAnyNode(cluster, cluster.getSeedHosts());
-    return jmxProxy.getTableNamesForKeyspace(keyspaceName);
+    return jmxProxy.getTablesForKeyspace(keyspaceName);
   }
 
   /**

@@ -30,29 +30,28 @@ import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class ClusterProxyTest {
-
+public class ClusterFacadeTest {
 
   @Test
   public void nodeIsAccessibleThroughJmxAllTest() throws ReaperException {
     final AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.clusterProxy = ClusterProxy.create(context);
     context.localNodeAddress = "127.0.0.1";
     context.localDatacenter = "dc1";
     context.localClusterName = "Test";
     context.accessibleDatacenters = new HashSet<String>(Arrays.asList("dc1"));
 
     context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
-    assertTrue(context.clusterProxy.nodeIsAccessibleThroughJmx(context.localDatacenter, context.localNodeAddress));
-    assertTrue(context.clusterProxy.nodeIsAccessibleThroughJmx("dc2", "127.0.0.2"));
+    assertTrue(
+        ClusterFacade.create(context)
+            .nodeIsAccessibleThroughJmx(context.localDatacenter, context.localNodeAddress));
+    assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc2", "127.0.0.2"));
   }
 
   @Test
   public void nodeIsAccessibleThroughJmxLocalTest() throws ReaperException {
     final AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.clusterProxy = ClusterProxy.create(context);
     context.localNodeAddress = "127.0.0.1";
     context.localDatacenter = "dc1";
     context.localClusterName = "Test";
@@ -60,19 +59,19 @@ public class ClusterProxyTest {
 
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
     assertTrue(
-        context.clusterProxy.nodeIsAccessibleThroughJmx(
+        ClusterFacade.create(context).nodeIsAccessibleThroughJmx(
             context.localDatacenter, context.localNodeAddress));
     assertTrue(
-        context.clusterProxy.nodeIsAccessibleThroughJmx(
+        ClusterFacade.create(context).nodeIsAccessibleThroughJmx(
             "dc2", "127.0.0.2")); // it's in another DC but LOCAL allows attempting it
-    assertTrue(context.clusterProxy.nodeIsAccessibleThroughJmx("dc1", "127.0.0.2")); // Should be accessible, same DC
+    // Should be accessible, same DC
+    assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc1", "127.0.0.2"));
   }
 
   @Test
   public void nodeIsAccessibleThroughJmxEachTest() throws ReaperException {
     final AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.clusterProxy = ClusterProxy.create(context);
     context.localNodeAddress = "127.0.0.1";
     context.localDatacenter = "dc1";
     context.localClusterName = "Test";
@@ -80,11 +79,12 @@ public class ClusterProxyTest {
 
     context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
     assertTrue(
-        context.clusterProxy.nodeIsAccessibleThroughJmx(
+        ClusterFacade.create(context).nodeIsAccessibleThroughJmx(
             context.localDatacenter, context.localNodeAddress));
     assertFalse(
-        context.clusterProxy.nodeIsAccessibleThroughJmx(
+        ClusterFacade.create(context).nodeIsAccessibleThroughJmx(
             "dc2", "127.0.0.2")); // Should not be accessible as it's in another DC
-    assertTrue(context.clusterProxy.nodeIsAccessibleThroughJmx("dc1", "127.0.0.2")); // Should be accessible, same DC
+    // Should be accessible, same DC
+    assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc1", "127.0.0.2"));
   }
 }

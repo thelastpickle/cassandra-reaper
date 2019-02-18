@@ -24,6 +24,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.PurgeService;
 import io.cassandrareaper.service.RepairRunService;
@@ -329,7 +330,7 @@ public final class RepairRunResource {
 
     if (incrementalRepairStr.isPresent() && "true".equalsIgnoreCase(incrementalRepairStr.get())) {
       try {
-        String version = context.clusterProxy.getCassandraVersion(cluster.get());
+        String version = ClusterFacade.create(context).getCassandraVersion(cluster.get());
         if (null != version && version.startsWith("2.0")) {
           String msg = "Incremental repair does not work with Cassandra versions before 2.1";
           return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();

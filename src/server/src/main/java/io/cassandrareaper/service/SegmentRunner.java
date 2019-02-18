@@ -26,6 +26,7 @@ import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.RepairStatusHandler;
@@ -105,10 +106,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final UUID leaderElectionId;
   private final AtomicBoolean successOrFailedNotified = new AtomicBoolean(false);
   private final AtomicBoolean completeNotified = new AtomicBoolean(false);
+  private final ClusterFacade clusterFacade;
 
 
   SegmentRunner(
       AppContext context,
+      ClusterFacade clusterFacade,
       UUID segmentId,
       Collection<String> potentialCoordinators,
       long timeoutMillis,
@@ -124,6 +127,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
     }
     this.context = context;
+    this.clusterFacade = clusterFacade;
     this.repairUnitService = RepairUnitService.create(context);
     this.segmentId = segmentId;
     this.potentialCoordinators = potentialCoordinators;
@@ -229,7 +233,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     try (Timer.Context cxt = context.metricRegistry.timer(metricNameForRunRepair(segment)).time()) {
       Cluster cluster = context.storage.getCluster(clusterName).get();
       JmxProxy coordinator
-          = context.clusterProxy.connectAndAllowSidecar(cluster, potentialCoordinators);
+          = clusterFacade.connectAndAllowSidecar(cluster, potentialCoordinators);
 
       if (SEGMENT_RUNNERS.containsKey(segmentId)) {
         LOG.error("SegmentRunner already exists for segment with ID: {}", segmentId);
@@ -498,7 +502,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     try {
       // when hosts are coming up or going down, this method can throw an
       //  UndeclaredThrowableException
-      nodes = context.clusterProxy.tokenRangeToEndpoint(cluster, keyspace, segment.getTokenRange());
+      nodes = clusterFacade.tokenRangeToEndpoint(cluster, keyspace, segment.getTokenRange());
     } catch (RuntimeException e) {
       LOG.warn("SegmentRunner couldn't get token ranges from coordinator: ", e);
       String msg = "SegmentRunner couldn't get token ranges from coordinator";
@@ -609,7 +613,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return () -> {
       LOG.debug("getMetricsForHost {} / {} / {}", node, localDc, nodeDc);
 
-      if (!context.clusterProxy.nodeIsAccessibleThroughJmx(nodeDc, node)) {
+      if (!clusterFacade.nodeIsAccessibleThroughJmx(nodeDc, node)) {
         // If DatacenterAvailability is not ALL, we should assume jmx on remote dc is not reachable.
         return Pair.of(node, getRemoteNodeMetrics(node, nodeDc));
       } else {
@@ -1228,7 +1232,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       ongoingRepairs.forEach(
           (ongoingRepair) -> {
             busyHosts.addAll(
-                context.clusterProxy.tokenRangeToEndpoint(
+                clusterFacade.tokenRangeToEndpoint(
                     cluster, ongoingRepair.keyspaceName, ongoingRepair.tokenRange));
           });
       return busyHosts;

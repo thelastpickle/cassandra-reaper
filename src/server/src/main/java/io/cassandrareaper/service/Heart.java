@@ -25,6 +25,7 @@ import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.NodeMetrics;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
@@ -66,7 +67,7 @@ final class Heart implements AutoCloseable {
   private Heart(AppContext context, long maxBeatFrequency) {
     this.context = context;
     this.maxBeatFrequencyMillis = maxBeatFrequency;
-    this.metricsService = MetricsService.create(context);
+    this.metricsService = MetricsService.create(context, ClusterFacade.create(context));
   }
 
   static Heart create(AppContext context) {
@@ -209,7 +210,7 @@ final class Heart implements AutoCloseable {
       throws JsonProcessingException, MalformedObjectNameException, ReflectionException,
           ReaperException, InterruptedException {
     Node node = Node.builder().withClusterName(context.localClusterName).withHostname(context.localNodeAddress).build();
-    List<Compaction> activeCompactions = context.clusterProxy.listActiveCompactionsDirect(node);
+    List<Compaction> activeCompactions = ClusterFacade.create(context).listActiveCompactionsDirect(node);
 
     ((IDistributedStorage) context.storage)
         .storeCompactions(context.localClusterName, context.localNodeAddress, activeCompactions);

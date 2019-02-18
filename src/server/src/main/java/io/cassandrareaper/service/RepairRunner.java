@@ -24,6 +24,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.jmx.ClusterFacade;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,6 +57,7 @@ final class RepairRunner implements Runnable {
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunner.class);
 
   private final AppContext context;
+  private final ClusterFacade clusterFacade;
   private final UUID repairRunId;
   private final String clusterName;
   private final AtomicReferenceArray<UUID> currentlyRunningSegments;
@@ -67,9 +69,10 @@ final class RepairRunner implements Runnable {
   private float segmentsDone;
   private float segmentsTotal;
 
-  RepairRunner(AppContext context, UUID repairRunId) throws ReaperException {
+  RepairRunner(AppContext context, UUID repairRunId, ClusterFacade clusterFacade) throws ReaperException {
     LOG.debug("Creating RepairRunner for run with ID {}", repairRunId);
     this.context = context;
+    this.clusterFacade = clusterFacade;
     this.repairRunId = repairRunId;
     Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
@@ -82,8 +85,8 @@ final class RepairRunner implements Runnable {
     String keyspace = repairUnitOpt.getKeyspaceName();
     int parallelRepairs
         = getPossibleParallelRepairsCount(
-            context.clusterProxy.getRangeToEndpointMap(cluster.get(), keyspace),
-            context.clusterProxy.getEndpointToHostId(cluster.get()));
+            clusterFacade.getRangeToEndpointMap(cluster.get(), keyspace),
+            clusterFacade.getEndpointToHostId(cluster.get()));
 
     if (repairUnitOpt.getIncrementalRepair()) {
       // with incremental repair, can't have more parallel repairs than nodes
@@ -257,7 +260,11 @@ final class RepairRunner implements Runnable {
    * @throws ReaperException Thrown in case the cluster cannot be found in storage
    */
   private void updateClusterNodeList() throws ReaperException {
-    Set<String> liveNodes = context.clusterProxy.getLiveNodes(cluster.get()).stream().collect(Collectors.toSet());
+    Set<String> liveNodes
+        = clusterFacade
+            .getLiveNodes(cluster.get())
+            .stream()
+            .collect(Collectors.toSet());
     Optional<Cluster> cluster = context.storage.getCluster(clusterName);
     if (!cluster.isPresent()) {
       throw new ReaperException(
@@ -431,7 +438,7 @@ final class RepairRunner implements Runnable {
       try {
         potentialCoordinators = filterPotentialCoordinatorsByDatacenters(
                 repairUnit.getDatacenters(),
-                context.clusterProxy.tokenRangeToEndpoint(cluster.get(), keyspace, segment));
+                clusterFacade.tokenRangeToEndpoint(cluster.get(), keyspace, segment));
       } catch (RuntimeException e) {
         LOG.warn("Couldn't get token ranges from coordinator: #{}", e);
         return true;
@@ -465,6 +472,7 @@ final class RepairRunner implements Runnable {
     try {
       SegmentRunner segmentRunner = new SegmentRunner(
           context,
+          clusterFacade,
           segmentId,
           potentialCoordinators,
           context.repairManager.getRepairTimeoutMillis(),
@@ -521,7 +529,7 @@ final class RepairRunner implements Runnable {
   }
 
   private Pair<String, String> getNodeDatacenterPair(String node) throws ReaperException {
-    Pair<String, String> result = Pair.of(node, context.clusterProxy.getDatacenter(cluster.get(), node));
+    Pair<String, String> result = Pair.of(node, clusterFacade.getDatacenter(cluster.get(), node));
     LOG.debug("[getNodeDatacenterPair] node/datacenter association {}", result);
     return result;
   }

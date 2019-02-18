@@ -21,6 +21,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.service.CompactionService;
 import io.cassandrareaper.service.MetricsService;
 import io.cassandrareaper.service.StreamService;
@@ -55,7 +56,7 @@ public final class NodeStatsResource {
   public NodeStatsResource(AppContext context) {
     this.context = context;
     this.streamManager = StreamService.create(context);
-    this.metricsGrabber = MetricsService.create(context);
+    this.metricsGrabber = MetricsService.create(context, ClusterFacade.create(context));
     this.compactionService = CompactionService.create(context);
   }
 
@@ -200,7 +201,7 @@ public final class NodeStatsResource {
       Preconditions.checkState(clusterName != null && !clusterName.isEmpty(), "Cluster name must be set");
 
       Map<String, List<String>> tokens
-          = context.clusterProxy.getTokensByNode(context.storage.getCluster(clusterName).get());
+          = ClusterFacade.create(context).getTokensByNode(context.storage.getCluster(clusterName).get());
       return Response.ok().entity(tokens.get(host)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);

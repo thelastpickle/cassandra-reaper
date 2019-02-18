@@ -26,7 +26,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
-import io.cassandrareaper.jmx.ClusterProxy;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
@@ -95,7 +95,6 @@ public final class RepairRunnerTest {
     final int REPAIR_THREAD_COUNT = 1;
     final IStorage storage = new MemoryStorage();
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
-
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
             .clusterName(CLUSTER_NAME)
@@ -108,9 +107,7 @@ public final class RepairRunnerTest {
             .repairThreadCount(REPAIR_THREAD_COUNT));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
-            RepairRun.builder(CLUSTER_NAME, cf.getId())
-                .intensity(INTENSITY)
-                .segmentCount(1)
+            RepairRun.builder(CLUSTER_NAME, cf.getId()).intensity(INTENSITY).segmentCount(1)
                 .repairParallelism(RepairParallelism.PARALLEL),
             Collections.singleton(
                 RepairSegment.builder(
@@ -123,13 +120,19 @@ public final class RepairRunnerTest {
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
     final Semaphore mutex = new Semaphore(0);
-
-    context.repairManager = RepairManager
-        .create(context, Executors.newScheduledThreadPool(1), 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
-
+    ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(context));
+    Mockito.doReturn(Collections.singletonList("")).when(clusterFacadeSpy).tokenRangeToEndpoint(any(), any(), any());
+    context.repairManager
+        = RepairManager.create(
+            context,
+            clusterFacadeSpy,
+            Executors.newScheduledThreadPool(1),
+            500,
+            TimeUnit.MILLISECONDS,
+            1,
+            TimeUnit.MILLISECONDS);
     context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           final AtomicInteger repairAttempts = new AtomicInteger(1);
-
           @Override
           protected JmxProxy connectImpl(Node host) throws ReaperException {
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
@@ -213,10 +216,7 @@ public final class RepairRunnerTest {
             return jmx;
           }
         };
-    ClusterProxy clusterProxy = ClusterProxy.create(context);
-    ClusterProxy clusterProxySpy = Mockito.spy(clusterProxy);
-    Mockito.doReturn(Collections.singletonList("")).when(clusterProxySpy).tokenRangeToEndpoint(any(), any(), any());
-    context.clusterProxy = clusterProxySpy;
+
     context.repairManager.startRepairRun(run);
     await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
       try {
@@ -247,7 +247,6 @@ public final class RepairRunnerTest {
     final IStorage storage = new MemoryStorage();
     storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
-
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
             .clusterName(CLUSTER_NAME)
@@ -258,19 +257,15 @@ public final class RepairRunnerTest {
             .datacenters(DATACENTERS)
             .blacklistedTables(BLACKLISTED_TABLES)
             .repairThreadCount(REPAIR_THREAD_COUNT));
-
     RepairRun run = storage.addRepairRun(
-            RepairRun.builder(CLUSTER_NAME, cf.getId())
-                .intensity(INTENSITY)
-                .segmentCount(1)
-                .repairParallelism(RepairParallelism.PARALLEL),
+            RepairRun.builder(CLUSTER_NAME, cf.getId()).intensity(INTENSITY).segmentCount(1)
+            .repairParallelism(RepairParallelism.PARALLEL),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ZERO, BigInteger.ONE))
                         .build(),
                     cf.getId())));
-
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
@@ -278,8 +273,17 @@ public final class RepairRunnerTest {
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
     final Semaphore mutex = new Semaphore(0);
-    context.repairManager = RepairManager
-        .create(context, Executors.newScheduledThreadPool(1), 500, TimeUnit.MILLISECONDS, 1, TimeUnit.MILLISECONDS);
+    ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(context));
+    Mockito.doReturn(Collections.singletonList("")).when(clusterFacadeSpy).tokenRangeToEndpoint(any(), any(), any());
+    context.repairManager
+        = RepairManager.create(
+            context,
+            clusterFacadeSpy,
+            Executors.newScheduledThreadPool(1),
+            500,
+            TimeUnit.MILLISECONDS,
+            1,
+            TimeUnit.MILLISECONDS);
     context.jmxConnectionFactory = new JmxConnectionFactory(context) {
           final AtomicInteger repairAttempts = new AtomicInteger(1);
           @Override
@@ -365,10 +369,6 @@ public final class RepairRunnerTest {
             return jmx;
           }
         };
-    ClusterProxy clusterProxy = ClusterProxy.create(context);
-    ClusterProxy clusterProxySpy = Mockito.spy(clusterProxy);
-    Mockito.doReturn(Collections.singletonList("")).when(clusterProxySpy).tokenRangeToEndpoint(any(), any(), any());
-    context.clusterProxy = clusterProxySpy;
     context.repairManager.startRepairRun(run);
     await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
       try {
@@ -401,9 +401,11 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-
+    ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(context));
+    Mockito.doReturn(Collections.singletonList("")).when(clusterFacadeSpy).tokenRangeToEndpoint(any(), any(), any());
     context.repairManager = RepairManager.create(
         context,
+        clusterFacadeSpy,
         Executors.newScheduledThreadPool(1),
         500,
         TimeUnit.MILLISECONDS,
@@ -515,10 +517,6 @@ public final class RepairRunnerTest {
             return jmx;
           }
         };
-    ClusterProxy clusterProxy = ClusterProxy.create(context);
-    ClusterProxy clusterProxySpy = Mockito.spy(clusterProxy);
-    Mockito.doReturn(Collections.singletonList("")).when(clusterProxySpy).tokenRangeToEndpoint(any(), any(), any());
-    context.clusterProxy = clusterProxySpy;
 
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
     context.repairManager.resumeRunningRepairRuns();

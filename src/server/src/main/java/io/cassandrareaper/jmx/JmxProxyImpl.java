@@ -19,6 +19,7 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Table;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;

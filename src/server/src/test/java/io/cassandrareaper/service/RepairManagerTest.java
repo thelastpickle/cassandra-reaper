@@ -25,6 +25,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
@@ -78,6 +79,7 @@ public final class RepairManagerTest {
 
     RepairManager repairManager = RepairManager.create(
         context,
+        ClusterFacade.create(context),
         Executors.newScheduledThreadPool(1),
         500,
         TimeUnit.MILLISECONDS,
@@ -156,6 +158,7 @@ public final class RepairManagerTest {
 
     RepairManager repairManager = RepairManager.create(
         context,
+        ClusterFacade.create(context),
         Executors.newScheduledThreadPool(1),
         500,
         TimeUnit.MILLISECONDS,
@@ -234,6 +237,7 @@ public final class RepairManagerTest {
 
     RepairManager repairManager = RepairManager.create(
         context,
+        ClusterFacade.create(context),
         Executors.newScheduledThreadPool(1),
         500,
         TimeUnit.MILLISECONDS,
@@ -309,6 +313,7 @@ public final class RepairManagerTest {
 
     RepairManager repairManager = RepairManager.create(
         context,
+        ClusterFacade.create(context),
         Executors.newScheduledThreadPool(1),
         500,
         TimeUnit.MILLISECONDS,
@@ -367,6 +372,7 @@ public final class RepairManagerTest {
 
     context.repairManager = RepairManager.create(
         context,
+        ClusterFacade.create(context),
         Executors.newScheduledThreadPool(1),
         500,
         TimeUnit.MILLISECONDS,

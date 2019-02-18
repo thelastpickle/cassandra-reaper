@@ -23,6 +23,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.core.Snapshot.Builder;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.SnapshotProxy;
 
@@ -57,16 +58,18 @@ public final class SnapshotService {
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotService.class);
 
   private final AppContext context;
+  private final ClusterFacade clusterFacade;
   private final ExecutorService executor;
   private final Cache<String, Snapshot> cache = CacheBuilder.newBuilder().weakValues().maximumSize(1000).build();
 
-  private SnapshotService(AppContext context, ExecutorService executor) {
+  private SnapshotService(AppContext context, ExecutorService executor, ClusterFacade clusterFacade) {
     this.context = context;
+    this.clusterFacade = clusterFacade;
     this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
   }
 
-  public static SnapshotService create(AppContext context, ExecutorService executor) {
-    return new SnapshotService(context, executor);
+  public static SnapshotService create(AppContext context, ExecutorService executor, ClusterFacade clusterFacade) {
+    return new SnapshotService(context, executor, clusterFacade);
   }
 
   public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspaces) throws ReaperException {
@@ -112,7 +115,7 @@ public final class SnapshotService {
 
       Preconditions.checkArgument(cluster.isPresent());
 
-      List<String> liveNodes = context.clusterProxy.getLiveNodes(cluster.get());
+      List<String> liveNodes = clusterFacade.getLiveNodes(cluster.get());
       List<Callable<Pair<Node, String>>> snapshotTasks = liveNodes
               .stream()
               .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
@@ -170,7 +173,7 @@ public final class SnapshotService {
 
       Preconditions.checkArgument(cluster.isPresent());
 
-      List<String> liveNodes = context.clusterProxy.getLiveNodes(cluster.get());
+      List<String> liveNodes = clusterFacade.getLiveNodes(cluster.get());
       List<Callable<List<Snapshot>>> listSnapshotTasks = liveNodes
               .stream()
               .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
@@ -240,7 +243,7 @@ public final class SnapshotService {
     try {
       Optional<Cluster> cluster = context.storage.getCluster(clusterName);
       Preconditions.checkArgument(cluster.isPresent());
-      List<String> liveNodes = context.clusterProxy.getLiveNodes(cluster.get());
+      List<String> liveNodes = clusterFacade.getLiveNodes(cluster.get());
       List<Callable<Node>> clearSnapshotTasks = liveNodes
               .stream()
               .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())

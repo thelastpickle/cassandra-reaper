@@ -23,6 +23,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
@@ -59,6 +60,7 @@ public final class RepairManager implements AutoCloseable {
   private final Lock repairRunnersLock = new ReentrantLock();
 
   private final AppContext context;
+  private final ClusterFacade clusterFacade;
   private final Heart heart;
   private final ListeningScheduledExecutorService executor;
   private final long repairTimeoutMillis;
@@ -66,6 +68,7 @@ public final class RepairManager implements AutoCloseable {
 
   private RepairManager(
       AppContext context,
+      ClusterFacade clusterFacade,
       ScheduledExecutorService executor,
       long repairTimeout,
       TimeUnit repairTimeoutTimeUnit,
@@ -73,6 +76,7 @@ public final class RepairManager implements AutoCloseable {
       TimeUnit retryDelayTimeUnit)  {
 
     this.context = context;
+    this.clusterFacade = clusterFacade;
     this.heart = Heart.create(context);
     this.repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
     this.retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
@@ -83,13 +87,21 @@ public final class RepairManager implements AutoCloseable {
 
   public static RepairManager create(
       AppContext context,
+      ClusterFacade clusterFacade,
       ScheduledExecutorService executor,
       long repairTimeout,
       TimeUnit repairTimeoutTimeUnit,
       long retryDelay,
       TimeUnit retryDelayTimeUnit) {
 
-    return new RepairManager(context, executor, repairTimeout, repairTimeoutTimeUnit, retryDelay, retryDelayTimeUnit);
+    return new RepairManager(
+        context,
+        clusterFacade,
+        executor,
+        repairTimeout,
+        repairTimeoutTimeUnit,
+        retryDelay,
+        retryDelayTimeUnit);
   }
 
   long getRepairTimeoutMillis() {
@@ -336,7 +348,7 @@ public final class RepairManager implements AutoCloseable {
 
       LOG.info("scheduling repair for repair run #{}", runId);
       try {
-        RepairRunner newRunner = new RepairRunner(context, runId);
+        RepairRunner newRunner = new RepairRunner(context, runId, clusterFacade);
         repairRunners.put(runId, newRunner);
         executor.submit(newRunner);
       } catch (ReaperException e) {

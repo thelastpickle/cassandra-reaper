@@ -24,6 +24,8 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.core.Table;
+import io.cassandrareaper.jmx.ClusterFacade;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -148,12 +150,13 @@ public final class RepairRunService {
     }
 
     try {
-      List<BigInteger> tokens = context.clusterProxy.getTokens(targetCluster);
+      ClusterFacade clusterFacade = ClusterFacade.create(context);
+      List<BigInteger> tokens = clusterFacade.getTokens(targetCluster);
       Map<List<String>, List<String>> rangeToEndpoint
-          = context.clusterProxy.getRangeToEndpointMap(targetCluster, repairUnit.getKeyspaceName());
+          = clusterFacade.getRangeToEndpointMap(targetCluster, repairUnit.getKeyspaceName());
       Map<String, List<RingRange>> endpointToRange = buildEndpointToRangeMap(rangeToEndpoint);
       Map<List<String>, List<RingRange>> replicasToRange = buildReplicasToRangeMap(rangeToEndpoint);
-      String cassandraVersion = context.clusterProxy.getCassandraVersion(targetCluster);
+      String cassandraVersion = clusterFacade.getCassandraVersion(targetCluster);
 
       int globalSegmentCount = segmentCount;
       if (globalSegmentCount == 0) {
@@ -304,7 +307,9 @@ public final class RepairRunService {
     Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
 
     try {
-      rangeToEndpoint = context.clusterProxy.getRangeToEndpointMap(targetCluster, repairUnit.getKeyspaceName());
+      rangeToEndpoint
+          = ClusterFacade.create(context)
+              .getRangeToEndpointMap(targetCluster, repairUnit.getKeyspaceName());
     } catch (ReaperException e) {
       LOG.error("couldn't connect to any host: {}, will try next one", e);
       throw new ReaperException(e);
@@ -326,7 +331,13 @@ public final class RepairRunService {
 
     Set<String> knownTables;
 
-    knownTables = context.clusterProxy.getTableNamesForKeyspace(cluster, keyspace);
+    knownTables
+        = ClusterFacade
+            .create(context)
+            .getTablesForKeyspace(cluster, keyspace)
+            .stream()
+            .map(Table::getName)
+            .collect(Collectors.toSet());
     if (knownTables.isEmpty()) {
       LOG.debug("no known tables for keyspace {} in cluster {}", keyspace, cluster.getName());
       throw new IllegalArgumentException("no column families found for keyspace");
@@ -350,7 +361,7 @@ public final class RepairRunService {
 
     Set<String> nodesInCluster;
 
-    nodesInCluster = context.clusterProxy.getEndpointToHostId(cluster).keySet();
+    nodesInCluster = ClusterFacade.create(context).getEndpointToHostId(cluster).keySet();
     if (nodesInCluster.isEmpty()) {
       LOG.debug("no nodes found in cluster {}", cluster.getName());
       throw new IllegalArgumentException("no nodes found in cluster");

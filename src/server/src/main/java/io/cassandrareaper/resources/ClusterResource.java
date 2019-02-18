@@ -21,6 +21,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.ClusterProperties;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.ClusterStatus;
 import io.cassandrareaper.resources.view.NodesStatus;
@@ -73,11 +74,13 @@ public final class ClusterResource {
   private final AppContext context;
   private final ExecutorService executor;
   private final ClusterRepairScheduler clusterRepairScheduler;
+  private final ClusterFacade clusterFacade;
 
   public ClusterResource(AppContext context, ExecutorService executor) {
     this.context = context;
     this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
     this.clusterRepairScheduler = new ClusterRepairScheduler(context);
+    clusterFacade = ClusterFacade.create(context);
   }
 
   @GET
@@ -274,9 +277,9 @@ public final class ClusterResource {
               ClusterProperties.builder()
                   .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT))
                   .build());
-      clusterName = Optional.of(context.clusterProxy.getClusterName(cluster, seedHosts));
-      partitioner = Optional.of(context.clusterProxy.getPartitioner(cluster, seedHosts));
-      liveNodes = Optional.of(context.clusterProxy.getLiveNodes(cluster, seedHosts));
+      clusterName = Optional.of(clusterFacade.getClusterName(cluster, seedHosts));
+      partitioner = Optional.of(clusterFacade.getPartitioner(cluster, seedHosts));
+      liveNodes = Optional.of(clusterFacade.getLiveNodes(cluster, seedHosts));
     } catch (ReaperException e) {
       LOG.error("failed to find cluster with seed hosts: {}", seedHosts, e);
     }
@@ -309,7 +312,7 @@ public final class ClusterResource {
   private Cluster updateClusterSeeds(Cluster cluster, String seedHosts) throws ReaperException {
     Set<String> newSeeds = parseSeedHosts(seedHosts);
     try {
-      Optional<List<String>> liveNodes = Optional.of(context.clusterProxy.getLiveNodes(cluster, newSeeds));
+      Optional<List<String>> liveNodes = Optional.of(clusterFacade.getLiveNodes(cluster, newSeeds));
       newSeeds = liveNodes.get().stream().collect(Collectors.toSet());
       if (!cluster.getSeedHosts().equals(newSeeds)) {
         cluster
@@ -380,7 +383,7 @@ public final class ClusterResource {
                 .build());
     return () -> {
       try {
-        return Optional.of(context.clusterProxy.getNodesStatus(cluster, seeds));
+        return Optional.of(clusterFacade.getNodesStatus(cluster, seeds));
       } catch (RuntimeException e) {
         LOG.debug("failed to get endpoints for cluster {} with seeds {}", clusterName, seeds, e);
         Thread.sleep((int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds() * 1000);

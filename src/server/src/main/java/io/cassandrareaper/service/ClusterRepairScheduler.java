@@ -22,6 +22,8 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.core.Table;
+import io.cassandrareaper.jmx.ClusterFacade;
 
 import java.util.Collection;
 import java.util.List;
@@ -29,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
@@ -128,7 +131,13 @@ public final class ClusterRepairScheduler {
 
   private boolean keyspaceHasNoTable(AppContext context, Cluster cluster, String keyspace) {
     try {
-      Set<String> tables = context.clusterProxy.getTableNamesForKeyspace(cluster, keyspace);
+      Set<String> tables
+          = ClusterFacade
+              .create(context)
+              .getTablesForKeyspace(cluster, keyspace)
+              .stream()
+              .map(Table::getName)
+              .collect(Collectors.toSet());
       return tables.isEmpty();
     } catch (ReaperException e) {
       throw Throwables.propagate(e);
@@ -173,7 +182,7 @@ public final class ClusterRepairScheduler {
     }
 
     private Set<String> keyspacesInCluster(AppContext context, Cluster cluster) throws ReaperException {
-      List<String> keyspaces = context.clusterProxy.getKeyspaces(cluster);
+      List<String> keyspaces = ClusterFacade.create(context).getKeyspaces(cluster);
       if (keyspaces.isEmpty()) {
         String message = format("No keyspace found in cluster %s", cluster.getName());
         LOG.debug(message);

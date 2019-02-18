@@ -25,7 +25,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
-import io.cassandrareaper.jmx.ClusterProxy;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.RepairRunStatus;
@@ -110,9 +110,12 @@ public final class RepairRunResourceTest {
     //SegmentRunner.SEGMENT_RUNNERS.clear();
 
     context = new AppContext();
-
+    ClusterFacade clusterFacadeMock = Mockito.mock(ClusterFacade.class);
+    //Mockito.doReturn(Collections.singletonList("")).when(clusterFacadeMock).tokenRangeToEndpoint(any(), any(), any());
+    Mockito.when(clusterFacadeMock.tokenRangeToEndpoint(any(), any(), any())).thenReturn(Collections.singletonList(""));
     context.repairManager = RepairManager.create(
         context,
+        clusterFacadeMock,
         Executors.newScheduledThreadPool(THREAD_CNT),
         REPAIR_TIMEOUT_S,
         TimeUnit.SECONDS,
@@ -161,10 +164,6 @@ public final class RepairRunResourceTest {
 
     when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection()))
         .thenReturn(proxy);
-    ClusterProxy clusterProxy = ClusterProxy.create(context);
-    ClusterProxy clusterProxySpy = Mockito.spy(clusterProxy);
-    Mockito.doReturn(Collections.singletonList("")).when(clusterProxySpy).tokenRangeToEndpoint(any(), any(), any());
-    context.clusterProxy = clusterProxySpy;
     RepairUnit.Builder repairUnitBuilder = RepairUnit.builder()
             .clusterName(CLUSTER_NAME)
             .keyspaceName(KEYSPACE)

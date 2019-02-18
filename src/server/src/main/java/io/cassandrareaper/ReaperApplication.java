@@ -19,7 +19,7 @@ package io.cassandrareaper;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
-import io.cassandrareaper.jmx.ClusterProxy;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxConnectionsInitializer;
 import io.cassandrareaper.resources.ClusterResource;
@@ -164,6 +164,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     context.repairManager = RepairManager.create(
         context,
+        ClusterFacade.create(context),
         environment.lifecycle().scheduledExecutorService("RepairRunner").threads(repairThreads).build(),
         config.getHangingRepairTimeoutMins(),
         TimeUnit.MINUTES,
@@ -204,8 +205,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       LOG.debug("using specified JMX credentials per cluster for authentication");
       context.jmxConnectionFactory.setJmxCredentials(jmxCredentials);
     }
-
-    context.clusterProxy = ClusterProxy.create(context);
 
     // Enable cross-origin requests for using external GUI applications.
     if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {
