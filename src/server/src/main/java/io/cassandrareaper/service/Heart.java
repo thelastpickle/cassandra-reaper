@@ -21,15 +21,12 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.Compaction;
-import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -38,13 +35,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.management.JMException;
-import javax.management.MalformedObjectNameException;
-import javax.management.ReflectionException;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
@@ -191,31 +185,6 @@ final class Heart implements AutoCloseable {
             .withHasRepairRunning(nodeProxy.isRepairRunning())
             .withActiveAnticompactions(0) // for future use
             .build());
-  }
-
-  private void grabAndStoreGenericMetrics()
-      throws ReaperException, InterruptedException, JMException {
-    Node node = Node.builder().withClusterName(context.localClusterName).withHostname(context.localNodeAddress).build();
-    List<GenericMetric> metrics
-        = this.metricsService.convertToGenericMetrics(this.metricsService.collectMetrics(node), node);
-
-    for (GenericMetric metric:metrics) {
-      ((IDistributedStorage)context.storage).storeMetric(metric);
-    }
-    LOG.info("Grabbing and storing metrics for {}", context.localNodeAddress);
-
-  }
-
-  private void grabAndStoreActiveCompactions()
-      throws JsonProcessingException, MalformedObjectNameException, ReflectionException,
-          ReaperException, InterruptedException {
-    Node node = Node.builder().withClusterName(context.localClusterName).withHostname(context.localNodeAddress).build();
-    List<Compaction> activeCompactions = ClusterFacade.create(context).listActiveCompactionsDirect(node);
-
-    ((IDistributedStorage) context.storage)
-        .storeCompactions(context.localClusterName, context.localNodeAddress, activeCompactions);
-
-    LOG.info("Grabbing and storing compactions for {}", context.localNodeAddress);
   }
 
   private static Timer.Context timer(AppContext context, String... names) {

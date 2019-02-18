@@ -32,16 +32,15 @@ import io.cassandrareaper.core.Table;
 import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.RingRange;
-import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -51,7 +50,6 @@ import javax.management.ReflectionException;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -394,11 +392,9 @@ public final class ClusterFacade {
     if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
       // We have direct JMX access to the node
       return listActiveCompactionsDirect(node);
-    } else {
-      // We don't have access to the node through JMX, so we'll get data from the database
-      LOG.info("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
-      return ((IDistributedStorage)context.storage).listCompactions(node.getCluster().getName(), node.getHostname());
     }
+
+    return Collections.emptyList();
   }
 
   /**
@@ -467,15 +463,9 @@ public final class ClusterFacade {
         MetricsProxy metricsProxy = MetricsProxy.create(connectNode(node));
         return convertToMetricsHistogram(
             MetricsProxy.convertToGenericMetrics(metricsProxy.collectLatencyMetrics(), node));
-      } else {
-        return convertToMetricsHistogram(((IDistributedStorage)context.storage)
-            .getMetrics(
-                node.getCluster().getName(),
-                Optional.of(node.getHostname()),
-                "org.apache.cassandra.metrics",
-                "ClientRequest",
-                DateTime.now().minusMinutes(1).getMillis()));
       }
+
+      return Collections.emptyList();
     } catch (JMException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", node, e);
       throw new ReaperException(e);
@@ -488,15 +478,9 @@ public final class ClusterFacade {
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
         MetricsProxy proxy = MetricsProxy.create(connectNode(node));
         return convertToDroppedMessages(MetricsProxy.convertToGenericMetrics(proxy.collectDroppedMessages(), node));
-      } else {
-        return convertToDroppedMessages(((IDistributedStorage)context.storage)
-            .getMetrics(
-                node.getCluster().getName(),
-                Optional.of(node.getHostname()),
-                "org.apache.cassandra.metrics",
-                "DroppedMessage",
-                DateTime.now().minusMinutes(1).getMillis()));
       }
+
+      return Collections.emptyList();
     } catch (JMException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", node, e);
       throw new ReaperException(e);
@@ -524,15 +508,9 @@ public final class ClusterFacade {
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
         MetricsProxy proxy = MetricsProxy.create(connectNode(node));
         return convertToThreadPoolStats(MetricsProxy.convertToGenericMetrics(proxy.collectTpStats(), node));
-      } else {
-        return convertToThreadPoolStats(((IDistributedStorage)context.storage)
-            .getMetrics(
-                node.getCluster().getName(),
-                Optional.of(node.getHostname()),
-                "org.apache.cassandra.metrics",
-                "ThreadPools",
-                DateTime.now().minusMinutes(1).getMillis()));
       }
+
+      return Collections.emptyList();
     } catch (JMException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", node, e);
       throw new ReaperException(e);
