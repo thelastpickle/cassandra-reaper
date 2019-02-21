@@ -1295,6 +1295,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private boolean hasLeadOnSegment(UUID leaderId) {
     ResultSet lwtResult = session.execute(
         renewLeadPrepStmt.bind(
+            LEAD_DURATION,
             AppContext.REAPER_INSTANCE_ID,
             AppContext.REAPER_INSTANCE_ADDRESS,
             leaderId,
