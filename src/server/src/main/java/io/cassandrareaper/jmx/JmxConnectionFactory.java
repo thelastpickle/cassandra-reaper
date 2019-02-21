@@ -55,11 +55,8 @@ public class JmxConnectionFactory {
   private EC2MultiRegionAddressTranslator addressTranslator;
 
   public JmxConnectionFactory(AppContext context) {
-    if (context.metricRegistry == null) {
-      this.metricRegistry = new MetricRegistry();
-    } else {
-      this.metricRegistry = context.metricRegistry;
-    }
+    this.metricRegistry
+        = context.metricRegistry == null ? new MetricRegistry() : context.metricRegistry;
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
     registerConnectionsGauge();
     this.context = context;

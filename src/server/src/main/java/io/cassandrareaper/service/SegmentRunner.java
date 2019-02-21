@@ -245,15 +245,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
       LazyInitializer<Set<String>> busyHosts = new BusyHostsInitializer(cluster);
 
-      // If we're using a distributed storage, we need to synchronize with other Reaper instances
-      // So we don't start too many segments at the same time
-      if (!lockSegmentRunners()) {
-        LOG.debug(
-            "Not allowed to run the segment for now as another Reaper holds the lock for repair run {}. "
-            + "Will try again later",
-            segment.getRunId());
-        return false;
-      }
       if (!canRepair(segment, keyspace, coordinator, cluster, busyHosts)) {
         LOG.info(
             "Cannot run segment {} for repair {} at the moment. Will try again later",
@@ -265,7 +256,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         } catch (InterruptedException e) {
           LOG.debug("Interrupted while sleeping after a segment was postponed... weird stuff...");
         }
-        releaseSegmentRunners();
         return false;
       }
 
@@ -294,7 +284,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                   .withEndTime(DateTime.now())
                   .withId(segmentId)
                   .build());
-          releaseSegmentRunners();
           return false;
         }
 
@@ -341,7 +330,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           }
         } finally {
           LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
-          releaseSegmentRunners();
         }
       }
     } catch (RuntimeException | ReaperException e) {
@@ -671,7 +659,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             && start + METRICS_MAX_WAIT_MS > System.currentTimeMillis()) {
 
           try {
-            renewLockSegmentRunners();
             Thread.sleep(METRICS_POLL_INTERVAL_MS);
           } catch (InterruptedException ignore) { }
           LOG.info("Trying to get metrics from remote DCs for {} in {} of {}", node, nodeDc, clusterName);
@@ -1119,56 +1106,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           repairSegment.getStartTime(),
           repairSegment.getEndTime());
       return 0;
-    }
-  }
-
-  private boolean lockSegmentRunners() {
-    if (this.repairUnit.getIncrementalRepair()) {
-      return true;
-    }
-
-    try (Timer.Context cx
-        = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "lockSegmentRunners")).time()) {
-
-      boolean result = context.storage instanceof IDistributedStorage
-          ? ((IDistributedStorage) context.storage).takeLead(repairRunner.getRepairRunId(), LOCK_DURATION)
-          : true;
-
-      if (!result) {
-        context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "lockSegmentRunners", "failed")).inc();
-      }
-      return result;
-    }
-  }
-
-  private boolean renewLockSegmentRunners() {
-    if (this.repairUnit.getIncrementalRepair()) {
-      return true;
-    }
-
-    try (Timer.Context cx
-        = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "renewLockSegmentRunners")).time()) {
-
-      boolean result = context.storage instanceof IDistributedStorage
-          ? ((IDistributedStorage) context.storage).renewLead(repairRunner.getRepairRunId(), LOCK_DURATION)
-          : true;
-
-      if (!result) {
-        context
-            .metricRegistry
-            .counter(MetricRegistry.name(SegmentRunner.class, "renewLockSegmentRunners", "failed"))
-            .inc();
-      }
-      return result;
-    }
-  }
-
-  private void releaseSegmentRunners() {
-    try (Timer.Context cx
-        = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "releaseSegmentRunners")).time()) {
-      if (context.storage instanceof IDistributedStorage) {
-        ((IDistributedStorage) context.storage).releaseLead(repairRunner.getRepairRunId());
-      }
     }
   }
 

@@ -51,9 +51,6 @@ public final class AppContext {
   public JmxConnectionFactory jmxConnectionFactory;
   public ReaperApplicationConfiguration config;
   public MetricRegistry metricRegistry = new MetricRegistry();
-  public String localNodeAddress;
-  public String localClusterName;
-  public String localDatacenter;
   public Set<String> accessibleDatacenters = Sets.newHashSet();
 
   private static String initialiseInstanceAddress() {

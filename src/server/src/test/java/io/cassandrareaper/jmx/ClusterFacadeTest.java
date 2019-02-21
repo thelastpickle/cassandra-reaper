@@ -36,15 +36,12 @@ public class ClusterFacadeTest {
   public void nodeIsAccessibleThroughJmxAllTest() throws ReaperException {
     final AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.localNodeAddress = "127.0.0.1";
-    context.localDatacenter = "dc1";
-    context.localClusterName = "Test";
     context.accessibleDatacenters = new HashSet<String>(Arrays.asList("dc1"));
 
     context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
     assertTrue(
         ClusterFacade.create(context)
-            .nodeIsAccessibleThroughJmx(context.localDatacenter, context.localNodeAddress));
+            .nodeIsAccessibleThroughJmx("dc1", "127.0.0.1"));
     assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc2", "127.0.0.2"));
   }
 
@@ -52,15 +49,9 @@ public class ClusterFacadeTest {
   public void nodeIsAccessibleThroughJmxLocalTest() throws ReaperException {
     final AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.localNodeAddress = "127.0.0.1";
-    context.localDatacenter = "dc1";
-    context.localClusterName = "Test";
     context.accessibleDatacenters = new HashSet<String>(Arrays.asList("dc1"));
 
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
-    assertTrue(
-        ClusterFacade.create(context).nodeIsAccessibleThroughJmx(
-            context.localDatacenter, context.localNodeAddress));
     assertTrue(
         ClusterFacade.create(context).nodeIsAccessibleThroughJmx(
             "dc2", "127.0.0.2")); // it's in another DC but LOCAL allows attempting it
@@ -72,15 +63,9 @@ public class ClusterFacadeTest {
   public void nodeIsAccessibleThroughJmxEachTest() throws ReaperException {
     final AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.localNodeAddress = "127.0.0.1";
-    context.localDatacenter = "dc1";
-    context.localClusterName = "Test";
     context.accessibleDatacenters = new HashSet<String>(Arrays.asList("dc1"));
 
     context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
-    assertTrue(
-        ClusterFacade.create(context).nodeIsAccessibleThroughJmx(
-            context.localDatacenter, context.localNodeAddress));
     assertFalse(
         ClusterFacade.create(context).nodeIsAccessibleThroughJmx(
             "dc2", "127.0.0.2")); // Should not be accessible as it's in another DC
