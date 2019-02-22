@@ -40,7 +40,9 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.InstrumentedExecutorService;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
@@ -62,14 +64,20 @@ public final class SnapshotService {
   private final ExecutorService executor;
   private final Cache<String, Snapshot> cache = CacheBuilder.newBuilder().weakValues().maximumSize(1000).build();
 
-  private SnapshotService(AppContext context, ExecutorService executor, ClusterFacade clusterFacade) {
+  private SnapshotService(AppContext context, ExecutorService executor, Supplier<ClusterFacade> clusterFacadeSupplier) {
     this.context = context;
-    this.clusterFacade = clusterFacade;
+    this.clusterFacade = clusterFacadeSupplier.get();
     this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
   }
 
-  public static SnapshotService create(AppContext context, ExecutorService executor, ClusterFacade clusterFacade) {
-    return new SnapshotService(context, executor, clusterFacade);
+  @VisibleForTesting
+  static SnapshotService create(
+      AppContext context, ExecutorService executor, Supplier<ClusterFacade> clusterFacadeSupplier) {
+    return new SnapshotService(context, executor, clusterFacadeSupplier);
+  }
+
+  public static SnapshotService create(AppContext context, ExecutorService executor) {
+    return new SnapshotService(context, executor, () -> ClusterFacade.create(context));
   }
 
   public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspaces) throws ReaperException {

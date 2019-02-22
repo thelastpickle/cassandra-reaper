@@ -509,19 +509,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
     LOCAL,
     /* Each datacenter requires at minimum one reaper instance that has jmx access to all nodes in that datacenter */
     EACH;
-
-    /**
-     * Check if the current datacenter availability mode is to have collocation between Reaper and a DC/node.
-     * @return true if we're in a collocated mode, false otherwise
-     */
-    public boolean isInCollocatedMode() {
-      switch (this) {
-        case EACH:
-          return true;
-        default:
-          return false;
-      }
-    }
   }
 
   public static final class AccessControlConfiguration {

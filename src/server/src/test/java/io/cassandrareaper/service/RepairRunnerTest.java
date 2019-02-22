@@ -37,6 +37,7 @@ import io.cassandrareaper.storage.MemoryStorage;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,12 +50,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.progress.ProgressEventType;
+import org.assertj.core.util.Maps;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.Before;
@@ -125,7 +126,7 @@ public final class RepairRunnerTest {
     context.repairManager
         = RepairManager.create(
             context,
-            clusterFacadeSpy,
+            () -> clusterFacadeSpy,
             Executors.newScheduledThreadPool(1),
             500,
             TimeUnit.MILLISECONDS,
@@ -278,7 +279,7 @@ public final class RepairRunnerTest {
     context.repairManager
         = RepairManager.create(
             context,
-            clusterFacadeSpy,
+            () -> clusterFacadeSpy,
             Executors.newScheduledThreadPool(1),
             500,
             TimeUnit.MILLISECONDS,
@@ -391,21 +392,23 @@ public final class RepairRunnerTest {
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
     final Set<String> NODES = Sets.newHashSet("127.0.0.1");
+    final Map<String, String> NODES_MAP = Maps.newHashMap("node1", "127.0.0.1");
     final Set<String> DATACENTERS = Collections.emptySet();
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
     final long TIME_RUN = 41L;
     final double INTENSITY = 0.5f;
     final int REPAIR_THREAD_COUNT = 1;
+    final List<BigInteger> TOKENS = Lists.newArrayList(
+        BigInteger.valueOf(0L),
+        BigInteger.valueOf(100L),
+        BigInteger.valueOf(200L));
 
     final IStorage storage = new MemoryStorage();
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(context));
-    Mockito.doReturn(Collections.singletonList("")).when(clusterFacadeSpy).tokenRangeToEndpoint(any(), any(), any());
     context.repairManager = RepairManager.create(
         context,
-        clusterFacadeSpy,
         Executors.newScheduledThreadPool(1),
         500,
         TimeUnit.MILLISECONDS,
@@ -436,7 +439,7 @@ public final class RepairRunnerTest {
             Lists.newArrayList(
                 RepairSegment.builder(
                         Segment.builder()
-                            .withTokenRange(new RingRange(BigInteger.ZERO, BigInteger.ONE))
+                            .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100")))
                             .build(),
                         cf)
                     .withState(RepairSegment.State.RUNNING)
@@ -444,7 +447,7 @@ public final class RepairRunnerTest {
                     .withCoordinatorHost("reaper"),
                 RepairSegment.builder(
                     Segment.builder()
-                        .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withTokenRange(new RingRange(new BigInteger("100"), new BigInteger("200")))
                         .build(),
                     cf)));
 
@@ -457,7 +460,9 @@ public final class RepairRunnerTest {
             JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
             when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
             when(jmx.isConnectionAlive()).thenReturn(true);
-            when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
+            when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
+            when(jmx.getEndpointToHostId()).thenReturn(NODES_MAP);
+            when(jmx.getTokens()).thenReturn(TOKENS);
             EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
             when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
             try {
@@ -625,15 +630,23 @@ public final class RepairRunnerTest {
   }
 
   public static Map<List<String>, List<String>> threeNodeCluster() {
-    Map<List<String>, List<String>> map = Maps.newHashMap();
+    Map<List<String>, List<String>> map = new HashMap<List<String>, List<String>>();
     map = addRangeToMap(map, "0", "50", "a1", "a2", "a3");
     map = addRangeToMap(map, "50", "100", "a2", "a3", "a1");
     map = addRangeToMap(map, "100", "0", "a3", "a1", "a2");
     return map;
   }
 
+  public static Map<List<String>, List<String>> threeNodeClusterWithIps() {
+    Map<List<String>, List<String>> map = new HashMap<List<String>, List<String>>();
+    map = addRangeToMap(map, "0", "100", "127.0.0.1", "127.0.0.2", "127.0.0.3");
+    map = addRangeToMap(map, "100", "200", "127.0.0.2", "127.0.0.3", "127.0.0.1");
+    map = addRangeToMap(map, "200", "0", "127.0.0.3", "127.0.0.1", "127.0.0.2");
+    return map;
+  }
+
   public static Map<List<String>, List<String>> sixNodeCluster() {
-    Map<List<String>, List<String>> map = Maps.newLinkedHashMap();
+    Map<List<String>, List<String>> map = new HashMap<List<String>, List<String>>();
     map = addRangeToMap(map, "0", "50", "a1", "a2", "a3");
     map = addRangeToMap(map, "50", "100", "a2", "a3", "a4");
     map = addRangeToMap(map, "100", "150", "a3", "a4", "a5");
@@ -644,7 +657,7 @@ public final class RepairRunnerTest {
   }
 
   public static Map<String, String> threeNodeClusterEndpoint() {
-    Map<String, String> map = Maps.newHashMap();
+    Map<String, String> map = new HashMap<String, String>();
     map.put("host1", "hostId1");
     map.put("host2", "hostId2");
     map.put("host3", "hostId3");
@@ -652,7 +665,7 @@ public final class RepairRunnerTest {
   }
 
   public static Map<String, String> sixNodeClusterEndpoint() {
-    Map<String, String> map = Maps.newHashMap();
+    Map<String, String> map = new HashMap<String, String>();
     map.put("host1", "hostId1");
     map.put("host2", "hostId2");
     map.put("host3", "hostId3");

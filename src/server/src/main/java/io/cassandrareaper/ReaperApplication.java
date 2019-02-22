@@ -19,7 +19,6 @@ package io.cassandrareaper;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
-import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxConnectionsInitializer;
 import io.cassandrareaper.resources.ClusterResource;
@@ -164,7 +163,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     context.repairManager = RepairManager.create(
         context,
-        ClusterFacade.create(context),
         environment.lifecycle().scheduledExecutorService("RepairRunner").threads(repairThreads).build(),
         config.getHangingRepairTimeoutMins(),
         TimeUnit.MINUTES,

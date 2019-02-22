@@ -42,7 +42,9 @@ import java.util.stream.Collectors;
 import com.codahale.metrics.InstrumentedScheduledExecutorService;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
@@ -68,7 +70,7 @@ public final class RepairManager implements AutoCloseable {
 
   private RepairManager(
       AppContext context,
-      ClusterFacade clusterFacade,
+      Supplier<ClusterFacade> clusterFacadeSupplier,
       ScheduledExecutorService executor,
       long repairTimeout,
       TimeUnit repairTimeoutTimeUnit,
@@ -76,7 +78,7 @@ public final class RepairManager implements AutoCloseable {
       TimeUnit retryDelayTimeUnit)  {
 
     this.context = context;
-    this.clusterFacade = clusterFacade;
+    this.clusterFacade = clusterFacadeSupplier.get();
     this.heart = Heart.create(context);
     this.repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
     this.retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
@@ -85,9 +87,10 @@ public final class RepairManager implements AutoCloseable {
         new InstrumentedScheduledExecutorService(executor, context.metricRegistry));
   }
 
-  public static RepairManager create(
+  @VisibleForTesting
+  static RepairManager create(
       AppContext context,
-      ClusterFacade clusterFacade,
+      Supplier<ClusterFacade> clusterFacadeSupplier,
       ScheduledExecutorService executor,
       long repairTimeout,
       TimeUnit repairTimeoutTimeUnit,
@@ -96,7 +99,25 @@ public final class RepairManager implements AutoCloseable {
 
     return new RepairManager(
         context,
-        clusterFacade,
+        clusterFacadeSupplier,
+        executor,
+        repairTimeout,
+        repairTimeoutTimeUnit,
+        retryDelay,
+        retryDelayTimeUnit);
+  }
+
+  public static RepairManager create(
+      AppContext context,
+      ScheduledExecutorService executor,
+      long repairTimeout,
+      TimeUnit repairTimeoutTimeUnit,
+      long retryDelay,
+      TimeUnit retryDelayTimeUnit) {
+
+    return create(
+        context,
+        () -> ClusterFacade.create(context),
         executor,
         repairTimeout,
         repairTimeoutTimeUnit,
@@ -348,7 +369,7 @@ public final class RepairManager implements AutoCloseable {
 
       LOG.info("scheduling repair for repair run #{}", runId);
       try {
-        RepairRunner newRunner = new RepairRunner(context, runId, clusterFacade);
+        RepairRunner newRunner = RepairRunner.create(context, runId);
         repairRunners.put(runId, newRunner);
         executor.submit(newRunner);
       } catch (ReaperException e) {

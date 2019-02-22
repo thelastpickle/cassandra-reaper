@@ -260,137 +260,132 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private void prepareStatements() throws ReaperException {
     final String timeUdf = 0 < VersionNumber.parse("2.2").compareTo(version) ? "dateOf" : "toTimestamp";
-    try {
-      insertClusterPrepStmt
-          = session
-              .prepare(
-                  "INSERT INTO cluster(name, partitioner, seed_hosts, properties) values(?, ?, ?, ?)")
-              .setConsistencyLevel(ConsistencyLevel.QUORUM);
-      getClusterPrepStmt = session
-          .prepare("SELECT * FROM cluster WHERE name = ?")
-          .setConsistencyLevel(ConsistencyLevel.QUORUM)
-          .setRetryPolicy(DowngradingConsistencyRetryPolicy.INSTANCE);
-      deleteClusterPrepStmt = session.prepare("DELETE FROM cluster WHERE name = ?");
-      insertRepairRunPrepStmt = session
-          .prepare(
-              "INSERT INTO repair_run(id, cluster_name, repair_unit_id, cause, owner, state, creation_time, "
-                  + "start_time, end_time, pause_time, intensity, last_event, segment_count, repair_parallelism) "
-                  + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-          .setConsistencyLevel(ConsistencyLevel.QUORUM);
-      insertRepairRunClusterIndexPrepStmt
-          = session.prepare("INSERT INTO repair_run_by_cluster(cluster_name, id) values(?, ?)");
-      insertRepairRunUnitIndexPrepStmt
-          = session.prepare("INSERT INTO repair_run_by_unit(repair_unit_id, id) values(?, ?)");
-      getRepairRunPrepStmt = session
-          .prepare(
-              "SELECT id,cluster_name,repair_unit_id,cause,owner,state,creation_time,start_time,end_time,"
-                  + "pause_time,intensity,last_event,segment_count,repair_parallelism "
-                  + "FROM repair_run WHERE id = ? LIMIT 1")
-          .setConsistencyLevel(ConsistencyLevel.QUORUM);
-      getRepairRunForClusterPrepStmt = session.prepare("SELECT * FROM repair_run_by_cluster WHERE cluster_name = ?");
-      getRepairRunForUnitPrepStmt = session.prepare("SELECT * FROM repair_run_by_unit WHERE repair_unit_id = ?");
-      deleteRepairRunPrepStmt = session.prepare("DELETE FROM repair_run WHERE id = ?");
-      deleteRepairRunByClusterPrepStmt
-          = session.prepare("DELETE FROM repair_run_by_cluster WHERE id = ? and cluster_name = ?");
-      deleteRepairRunByUnitPrepStmt = session.prepare("DELETE FROM repair_run_by_unit "
-          + "WHERE id = ? and repair_unit_id= ?");
-      insertRepairUnitPrepStmt = session
-          .prepare(
-              "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
-                  + "incremental_repair, nodes, \"datacenters\", blacklisted_tables, repair_thread_count) "
-                  + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
-          .setConsistencyLevel(ConsistencyLevel.QUORUM);
-      getRepairUnitPrepStmt = session
-          .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
-          .setConsistencyLevel(ConsistencyLevel.QUORUM);
-      deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
-      insertRepairSegmentPrepStmt = session
-          .prepare(
-              "INSERT INTO repair_run"
-                  + "(id,segment_id,repair_unit_id,start_token,end_token,segment_state,fail_count, token_ranges)"
-                  + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
-          .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-      insertRepairSegmentIncrementalPrepStmt = session
-          .prepare(
-              "INSERT INTO repair_run"
-                  + "(id,segment_id,repair_unit_id,start_token,end_token,segment_state,coordinator_host,fail_count)"
-                  + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
-          .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-      updateRepairSegmentPrepStmt = session
-          .prepare(
-              "INSERT INTO repair_run"
-                  + "(id,segment_id,segment_state,coordinator_host,segment_start_time,fail_count)"
-                  + " VALUES(?, ?, ?, ?, ?, ?)")
-          .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-      insertRepairSegmentEndTimePrepStmt = session
-          .prepare("INSERT INTO repair_run(id, segment_id, segment_end_time) VALUES(?, ?, ?)")
-          .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-      getRepairSegmentPrepStmt = session
-              .prepare(
-                  "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
-                      + "segment_start_time,segment_end_time,fail_count, token_ranges"
-                      + " FROM repair_run WHERE id = ? and segment_id = ?")
-              .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-      getRepairSegmentsByRunIdPrepStmt = session.prepare(
-          "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
-              + "segment_end_time,fail_count, token_ranges FROM repair_run WHERE id = ?");
-      getRepairSegmentCountByRunIdPrepStmt = session.prepare("SELECT count(*) FROM repair_run WHERE id = ?");
-      insertRepairSchedulePrepStmt
-          = session
-              .prepare(
-                  "INSERT INTO repair_schedule_v1(id, repair_unit_id, state,"
-                      + "days_between, next_activation, run_history, "
-                      + "segment_count, repair_parallelism, intensity, "
-                      + "creation_time, owner, pause_time, segment_count_per_node) "
-                      + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-              .setConsistencyLevel(ConsistencyLevel.QUORUM);
-      getRepairSchedulePrepStmt
-          = session
-              .prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?")
-              .setConsistencyLevel(ConsistencyLevel.QUORUM);
-      insertRepairScheduleByClusterAndKsPrepStmt = session.prepare(
-          "INSERT INTO repair_schedule_by_cluster_and_keyspace(cluster_name, keyspace_name, repair_schedule_id)"
-              + " VALUES(?, ?, ?)");
-      getRepairScheduleByClusterAndKsPrepStmt = session.prepare(
-          "SELECT repair_schedule_id FROM repair_schedule_by_cluster_and_keyspace "
-              + "WHERE cluster_name = ? and keyspace_name = ?");
-      deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule_v1 WHERE id = ?");
-      deleteRepairScheduleByClusterAndKsPrepStmt = session.prepare(
-          "DELETE FROM repair_schedule_by_cluster_and_keyspace "
-              + "WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
-      prepareLeaderElectionStatements(timeUdf);
-      getRunningReapersCountPrepStmt = session.prepare(SELECT_RUNNING_REAPERS);
-      saveHeartbeatPrepStmt = session
-          .prepare(
-              "INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat)"
-                  + " VALUES(?,?," + timeUdf + "(now()))")
-          .setIdempotent(false);
+    insertClusterPrepStmt
+        = session
+            .prepare(
+                "INSERT INTO cluster(name, partitioner, seed_hosts, properties) values(?, ?, ?, ?)")
+            .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    getClusterPrepStmt = session
+        .prepare("SELECT * FROM cluster WHERE name = ?")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM)
+        .setRetryPolicy(DowngradingConsistencyRetryPolicy.INSTANCE);
+    deleteClusterPrepStmt = session.prepare("DELETE FROM cluster WHERE name = ?");
+    insertRepairRunPrepStmt = session
+        .prepare(
+            "INSERT INTO repair_run(id, cluster_name, repair_unit_id, cause, owner, state, creation_time, "
+                + "start_time, end_time, pause_time, intensity, last_event, segment_count, repair_parallelism) "
+                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    insertRepairRunClusterIndexPrepStmt
+        = session.prepare("INSERT INTO repair_run_by_cluster(cluster_name, id) values(?, ?)");
+    insertRepairRunUnitIndexPrepStmt
+        = session.prepare("INSERT INTO repair_run_by_unit(repair_unit_id, id) values(?, ?)");
+    getRepairRunPrepStmt = session
+        .prepare(
+            "SELECT id,cluster_name,repair_unit_id,cause,owner,state,creation_time,start_time,end_time,"
+                + "pause_time,intensity,last_event,segment_count,repair_parallelism "
+                + "FROM repair_run WHERE id = ? LIMIT 1")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    getRepairRunForClusterPrepStmt = session.prepare("SELECT * FROM repair_run_by_cluster WHERE cluster_name = ?");
+    getRepairRunForUnitPrepStmt = session.prepare("SELECT * FROM repair_run_by_unit WHERE repair_unit_id = ?");
+    deleteRepairRunPrepStmt = session.prepare("DELETE FROM repair_run WHERE id = ?");
+    deleteRepairRunByClusterPrepStmt
+        = session.prepare("DELETE FROM repair_run_by_cluster WHERE id = ? and cluster_name = ?");
+    deleteRepairRunByUnitPrepStmt = session.prepare("DELETE FROM repair_run_by_unit "
+        + "WHERE id = ? and repair_unit_id= ?");
+    insertRepairUnitPrepStmt = session
+        .prepare(
+            "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
+                + "incremental_repair, nodes, \"datacenters\", blacklisted_tables, repair_thread_count) "
+                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    getRepairUnitPrepStmt = session
+        .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    deleteRepairUnitPrepStmt = session.prepare("DELETE FROM repair_unit_v1 WHERE id = ?");
+    insertRepairSegmentPrepStmt = session
+        .prepare(
+            "INSERT INTO repair_run"
+                + "(id,segment_id,repair_unit_id,start_token,end_token,segment_state,fail_count, token_ranges)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    insertRepairSegmentIncrementalPrepStmt = session
+        .prepare(
+            "INSERT INTO repair_run"
+                + "(id,segment_id,repair_unit_id,start_token,end_token,segment_state,coordinator_host,fail_count)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    updateRepairSegmentPrepStmt = session
+        .prepare(
+            "INSERT INTO repair_run"
+                + "(id,segment_id,segment_state,coordinator_host,segment_start_time,fail_count)"
+                + " VALUES(?, ?, ?, ?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    insertRepairSegmentEndTimePrepStmt = session
+        .prepare("INSERT INTO repair_run(id, segment_id, segment_end_time) VALUES(?, ?, ?)")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    getRepairSegmentPrepStmt = session
+            .prepare(
+                "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
+                    + "segment_start_time,segment_end_time,fail_count, token_ranges"
+                    + " FROM repair_run WHERE id = ? and segment_id = ?")
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    getRepairSegmentsByRunIdPrepStmt = session.prepare(
+        "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
+            + "segment_end_time,fail_count, token_ranges FROM repair_run WHERE id = ?");
+    getRepairSegmentCountByRunIdPrepStmt = session.prepare("SELECT count(*) FROM repair_run WHERE id = ?");
+    insertRepairSchedulePrepStmt
+        = session
+            .prepare(
+                "INSERT INTO repair_schedule_v1(id, repair_unit_id, state,"
+                    + "days_between, next_activation, run_history, "
+                    + "segment_count, repair_parallelism, intensity, "
+                    + "creation_time, owner, pause_time, segment_count_per_node) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    getRepairSchedulePrepStmt
+        = session
+            .prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?")
+            .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    insertRepairScheduleByClusterAndKsPrepStmt = session.prepare(
+        "INSERT INTO repair_schedule_by_cluster_and_keyspace(cluster_name, keyspace_name, repair_schedule_id)"
+            + " VALUES(?, ?, ?)");
+    getRepairScheduleByClusterAndKsPrepStmt = session.prepare(
+        "SELECT repair_schedule_id FROM repair_schedule_by_cluster_and_keyspace "
+            + "WHERE cluster_name = ? and keyspace_name = ?");
+    deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule_v1 WHERE id = ?");
+    deleteRepairScheduleByClusterAndKsPrepStmt = session.prepare(
+        "DELETE FROM repair_schedule_by_cluster_and_keyspace "
+            + "WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
+    prepareLeaderElectionStatements(timeUdf);
+    getRunningReapersCountPrepStmt = session.prepare(SELECT_RUNNING_REAPERS);
+    saveHeartbeatPrepStmt = session
+        .prepare(
+            "INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat)"
+                + " VALUES(?,?," + timeUdf + "(now()))")
+        .setIdempotent(false);
 
-      getSnapshotPrepStmt = session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
-      deleteSnapshotPrepStmt = session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
-      saveSnapshotPrepStmt = session.prepare(
-              "INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
-                  + " VALUES(?,?,?,?,?)");
+    getSnapshotPrepStmt = session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
+    deleteSnapshotPrepStmt = session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
+    saveSnapshotPrepStmt = session.prepare(
+            "INSERT INTO snapshot (cluster, snapshot_name, owner, cause, creation_time)"
+                + " VALUES(?,?,?,?,?)");
 
-      if (0 >= VersionNumber.parse("3.0").compareTo(version)) {
-        try {
-          getRepairSegmentsByRunIdAndStatePrepStmt = session.prepare(
-              "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
-                  + "segment_start_time,segment_end_time,fail_count, token_ranges FROM repair_run "
-                  + "WHERE id = ? AND segment_state = ? ALLOW FILTERING");
-          getRepairSegmentCountByRunIdAndStatePrepStmt = session.prepare(
-              "SELECT count(segment_id) FROM repair_run WHERE id = ? AND segment_state = ? ALLOW FILTERING");
-        } catch (InvalidQueryException ex) {
-          throw new AssertionError(
-              "Failure preparing `SELECT… FROM repair_run WHERE… ALLOW FILTERING` should only happen on Cassandra-2",
-              ex);
-        }
+    if (0 >= VersionNumber.parse("3.0").compareTo(version)) {
+      try {
+        getRepairSegmentsByRunIdAndStatePrepStmt = session.prepare(
+            "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
+                + "segment_start_time,segment_end_time,fail_count, token_ranges FROM repair_run "
+                + "WHERE id = ? AND segment_state = ? ALLOW FILTERING");
+        getRepairSegmentCountByRunIdAndStatePrepStmt = session.prepare(
+            "SELECT count(segment_id) FROM repair_run WHERE id = ? AND segment_state = ? ALLOW FILTERING");
+      } catch (InvalidQueryException ex) {
+        throw new AssertionError(
+            "Failure preparing `SELECT… FROM repair_run WHERE… ALLOW FILTERING` should only happen on Cassandra-2",
+            ex);
       }
-      prepareMetricStatements();
-    } catch (RuntimeException e) {
-      LOG.error("Failed preparing Cassandra statements", e);
-      throw new ReaperException(e);
     }
+    prepareMetricStatements();
   }
 
   private void prepareLeaderElectionStatements(final String timeUdf) {

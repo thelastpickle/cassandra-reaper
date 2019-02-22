@@ -29,7 +29,6 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
-import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
@@ -187,9 +186,8 @@ public final class SegmentRunnerTest {
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
         context,
-        ClusterFacade.create(context),
         segmentId,
         Collections.singleton(""),
         100,
@@ -339,9 +337,8 @@ public final class SegmentRunnerTest {
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
         context,
-        ClusterFacade.create(context),
         segmentId,
         Collections.singleton(""),
         5000,
@@ -481,9 +478,8 @@ public final class SegmentRunnerTest {
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
         context,
-        ClusterFacade.create(context),
         segmentId,
         Collections.singleton(""),
         5000,
@@ -622,9 +618,8 @@ public final class SegmentRunnerTest {
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
             context,
-            ClusterFacade.create(context),
             segmentId,
             Collections.singleton(""),
             5000,
@@ -764,9 +759,8 @@ public final class SegmentRunnerTest {
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
             context,
-            ClusterFacade.create(context),
             segmentId,
             Collections.singleton(""),
             5000,
@@ -906,9 +900,8 @@ public final class SegmentRunnerTest {
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
             context,
-            ClusterFacade.create(context),
             segmentId,
             Collections.singleton(""),
             5000,
@@ -1049,9 +1042,8 @@ public final class SegmentRunnerTest {
     RepairUnit ru = mock(RepairUnit.class);
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
-    SegmentRunner sr = new SegmentRunner(
+    SegmentRunner sr = SegmentRunner.create(
             context,
-            ClusterFacade.create(context),
             segmentId,
             Collections.singleton(""),
             5000,
@@ -1113,9 +1105,8 @@ public final class SegmentRunnerTest {
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
     SegmentRunner segmentRunner
-        = new SegmentRunner(
+        = SegmentRunner.create(
             context,
-            ClusterFacade.create(context),
             UUID.randomUUID(),
             Collections.emptyList(),
             1000,
@@ -1152,9 +1143,8 @@ public final class SegmentRunnerTest {
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
 
     SegmentRunner segmentRunner
-        = new SegmentRunner(
+        = SegmentRunner.create(
             context,
-            ClusterFacade.create(context),
             UUID.randomUUID(),
             Collections.emptyList(),
             1000,

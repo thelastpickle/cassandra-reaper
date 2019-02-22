@@ -67,7 +67,7 @@ public final class SnapshotServiceTest {
     when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     Pair<Node,String> result = SnapshotService
-        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, ClusterFacade.create(cxt))
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
         .takeSnapshot("Test", Node.builder().withClusterName("test").withHostname("127.0.0.1").build());
 
     Assertions.assertThat(result.getLeft().getCluster().getName()).isEqualTo("test");
@@ -91,7 +91,7 @@ public final class SnapshotServiceTest {
     Node host = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
 
     Pair<Node,String> result = SnapshotService
-        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, ClusterFacade.create(cxt))
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
         .takeSnapshot("Test", host, "keyspace1", "keyspace2");
 
     Assertions.assertThat(result.getLeft().getCluster().getName()).isEqualTo("test");
@@ -115,7 +115,7 @@ public final class SnapshotServiceTest {
     when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     List<Snapshot> result = SnapshotService
-        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, ClusterFacade.create(cxt))
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
         .listSnapshots(Node.builder().withClusterName("Test").withHostname("127.0.0.1").build());
 
     Assertions.assertThat(result).isEmpty();
@@ -135,7 +135,7 @@ public final class SnapshotServiceTest {
     when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(proxy);
 
     SnapshotService
-        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, ClusterFacade.create(cxt))
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
         .clearSnapshot("test", Node.builder().withClusterName("Test").withHostname("127.0.0.1").build());
 
     verify(storageMBean, times(1)).clearSnapshot("test");
@@ -164,7 +164,7 @@ public final class SnapshotServiceTest {
     when(cxt.storage.getCluster(anyString())).thenReturn(Optional.of(cluster));
 
     SnapshotService
-        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, clusterFacadeSpy)
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, () -> clusterFacadeSpy)
         .clearSnapshotClusterWide("snapshot", "testCluster");
 
     verify(storageMBean, times(2)).clearSnapshot("snapshot");
@@ -194,7 +194,7 @@ public final class SnapshotServiceTest {
     when(cxt.storage.getCluster(anyString())).thenReturn(Optional.of(cluster));
 
     List<Pair<Node,String>> result = SnapshotService
-        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, clusterFacadeSpy)
+        .create(cxt, SNAPSHOT_MANAGER_EXECUTOR, () -> clusterFacadeSpy)
         .takeSnapshotClusterWide("snapshot", "testCluster", "testOwner", "testCause");
 
     Assertions.assertThat(result.size()).isEqualTo(3);

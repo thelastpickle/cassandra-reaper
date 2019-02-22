@@ -25,7 +25,6 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
-import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.RepairRunStatus;
@@ -107,15 +106,9 @@ public final class RepairRunResourceTest {
 
   @Before
   public void setUp() throws Exception {
-    //SegmentRunner.SEGMENT_RUNNERS.clear();
-
     context = new AppContext();
-    ClusterFacade clusterFacadeMock = Mockito.mock(ClusterFacade.class);
-    //Mockito.doReturn(Collections.singletonList("")).when(clusterFacadeMock).tokenRangeToEndpoint(any(), any(), any());
-    Mockito.when(clusterFacadeMock.tokenRangeToEndpoint(any(), any(), any())).thenReturn(Collections.singletonList(""));
     context.repairManager = RepairManager.create(
         context,
-        clusterFacadeMock,
         Executors.newScheduledThreadPool(THREAD_CNT),
         REPAIR_TIMEOUT_S,
         TimeUnit.SECONDS,
@@ -143,7 +136,7 @@ public final class RepairRunResourceTest {
     when(proxy.getEndpointToHostId()).thenReturn(NODES_MAP);
     when(proxy.getTokens()).thenReturn(TOKENS);
     when(proxy.isConnectionAlive()).thenReturn(Boolean.TRUE);
-    when(proxy.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
+    when(proxy.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
     when(proxy.triggerRepair(
             any(BigInteger.class),
             any(BigInteger.class),
@@ -245,9 +238,9 @@ public final class RepairRunResourceTest {
     assertNull(run.getEndTime());
     assertEquals(2, unit.getRepairThreadCount());
 
-    // tokens [0, 100, 200], 6 requested segments per node and 6 nodes causes generating 38 RepairSegments
+    // tokens [0, 100, 200], 6 requested segments per node and 3 nodes causes generating 20 RepairSegments
     assertEquals(
-        38,
+        20,
         context.storage.getSegmentAmountForRepairRunWithState(
             run.getId(), RepairSegment.State.NOT_STARTED));
 

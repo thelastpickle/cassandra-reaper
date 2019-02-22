@@ -57,7 +57,9 @@ import javax.management.JMException;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.sun.management.UnixOperatingSystemMXBean;
@@ -109,9 +111,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final ClusterFacade clusterFacade;
 
 
-  SegmentRunner(
+  private SegmentRunner(
       AppContext context,
-      ClusterFacade clusterFacade,
+      Supplier<ClusterFacade> clusterFacadeSupplier,
       UUID segmentId,
       Collection<String> potentialCoordinators,
       long timeoutMillis,
@@ -127,7 +129,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
     }
     this.context = context;
-    this.clusterFacade = clusterFacade;
+    this.clusterFacade = clusterFacadeSupplier.get();
     this.repairUnitService = RepairUnitService.create(context);
     this.segmentId = segmentId;
     this.potentialCoordinators = potentialCoordinators;
@@ -139,6 +141,54 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     this.repairRunner = repairRunner;
     this.segmentFailed = new AtomicBoolean(false);
     this.leaderElectionId = repairUnit.getIncrementalRepair() ? repairRunner.getRepairRunId() : segmentId;
+  }
+
+  @VisibleForTesting
+  static SegmentRunner create(
+      AppContext context,
+      Supplier<ClusterFacade> clusterFacadeSupplier,
+      UUID segmentId,
+      Collection<String> potentialCoordinators,
+      long timeoutMillis,
+      double intensity,
+      RepairParallelism validationParallelism,
+      String clusterName,
+      RepairUnit repairUnit,
+      RepairRunner repairRunner) throws ReaperException {
+    return new SegmentRunner(
+        context,
+        clusterFacadeSupplier,
+        segmentId,
+        potentialCoordinators,
+        timeoutMillis,
+        intensity,
+        validationParallelism,
+        clusterName,
+        repairUnit,
+        repairRunner);
+  }
+
+  public static SegmentRunner create(
+      AppContext context,
+      UUID segmentId,
+      Collection<String> potentialCoordinators,
+      long timeoutMillis,
+      double intensity,
+      RepairParallelism validationParallelism,
+      String clusterName,
+      RepairUnit repairUnit,
+      RepairRunner repairRunner) throws ReaperException {
+    return new SegmentRunner(
+        context,
+        () -> ClusterFacade.create(context),
+        segmentId,
+        potentialCoordinators,
+        timeoutMillis,
+        intensity,
+        validationParallelism,
+        clusterName,
+        repairUnit,
+        repairRunner);
   }
 
   @Override
@@ -643,7 +693,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       result = storage.getNodeMetrics(repairRunner.getRepairRunId(), node);
 
       if (!result.isPresent()
-          && context.config.getDatacenterAvailability().isInCollocatedMode()) {
+          && DatacenterAvailability.EACH == context.config.getDatacenterAvailability()) {
         // Sending a request for metrics to the other reaper instances through the Cassandra backend
         storeNodeMetrics(
             NodeMetrics.builder()
