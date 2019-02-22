@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -43,13 +45,18 @@ public final class MetricsService {
   private final AppContext context;
   private final ClusterFacade clusterFacade;
 
-  private MetricsService(AppContext context, ClusterFacade clusterFacade) {
+  private MetricsService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier) {
     this.context = context;
-    this.clusterFacade = clusterFacade;
+    this.clusterFacade = clusterFacadeSupplier.get();
   }
 
-  public static MetricsService create(AppContext context, ClusterFacade clusterFacade) {
-    return new MetricsService(context, clusterFacade);
+  @VisibleForTesting
+  static MetricsService create(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier) {
+    return new MetricsService(context, clusterFacadeSupplier);
+  }
+
+  public static MetricsService create(AppContext context) {
+    return new MetricsService(context, () -> ClusterFacade.create(context));
   }
 
   public List<ThreadPoolStat> getTpStats(Node host) throws ReaperException {

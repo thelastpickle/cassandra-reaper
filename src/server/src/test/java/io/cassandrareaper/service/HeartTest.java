@@ -30,6 +30,7 @@ import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.MemoryStorage;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
@@ -315,6 +316,7 @@ public final class HeartTest {
     JmxProxy nodeProxy = Mockito.mock(JmxProxy.class);
 
     Mockito.when(context.jmxConnectionFactory.connect(any())).thenReturn(nodeProxy);
+    Mockito.when(context.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(nodeProxy);
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
@@ -324,7 +326,7 @@ public final class HeartTest {
 
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).getNodeMetrics(any());
-    Mockito.verify(context.jmxConnectionFactory, Mockito.times(2)).connect(any());
+    Mockito.verify(context.jmxConnectionFactory, Mockito.times(2)).connectAny(any(Collection.class));
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).storeNodeMetrics(any(), any());
   }
 
@@ -373,6 +375,7 @@ public final class HeartTest {
 
     JmxProxy nodeProxy = Mockito.mock(JmxProxy.class);
     Mockito.when(context.jmxConnectionFactory.connect(any())).thenReturn(nodeProxy);
+    Mockito.when(context.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(nodeProxy);
 
     Mockito.when(nodeProxy.getPendingCompactions())
         .then(a -> {
@@ -393,7 +396,7 @@ public final class HeartTest {
 
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).saveHeartbeat();
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).getNodeMetrics(any());
-    Mockito.verify(context.jmxConnectionFactory, Mockito.times(2)).connect(any());
+    Mockito.verify(context.jmxConnectionFactory, Mockito.times(2)).connectAny(any(Collection.class));
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).storeNodeMetrics(any(), any());
   }
 }

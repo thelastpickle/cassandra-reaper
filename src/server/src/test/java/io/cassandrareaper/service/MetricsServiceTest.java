@@ -71,16 +71,12 @@ public class MetricsServiceTest {
     when(serverConn.queryNames(Mockito.any(ObjectName.class), Mockito.isNull())).thenReturn(Collections.emptySet());
 
     Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
-    MetricsService.create(cxt, clusterFacade).getTpStats(node);
+    MetricsService.create(cxt, () -> clusterFacade).getTpStats(node);
     Mockito.verify(clusterFacade, Mockito.times(1)).getTpStats(Mockito.any());
   }
 
   @Test
   public void testConvertToThreadPoolStats() {
-    AppContext context = new AppContext();
-    ClusterFacade clusterFacade = ClusterFacade.create(context);
-    final MetricsService metricsGrabber = MetricsService.create(context, clusterFacade);
-
     List<JmxStat> statList = Lists.newArrayList();
     statList.add(
         JmxStat.builder()
@@ -128,8 +124,9 @@ public class MetricsServiceTest {
     Map<String, List<JmxStat>> jmxStats = Maps.newHashMap();
     jmxStats.put("ReadStage", statList);
     Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
+    AppContext context = new AppContext();
     List<ThreadPoolStat> threadPoolStats
-        = clusterFacade.convertToThreadPoolStats(
+        = ClusterFacade.create(context).convertToThreadPoolStats(
             MetricsProxy.convertToGenericMetrics(jmxStats, node));
     ThreadPoolStat tpstat = threadPoolStats.get(0);
 
@@ -161,7 +158,7 @@ public class MetricsServiceTest {
     when(serverConn.queryNames(Mockito.any(ObjectName.class), Mockito.isNull())).thenReturn(Collections.emptySet());
 
     Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
-    MetricsService.create(cxt, clusterFacade).getDroppedMessages(node);
+    MetricsService.create(cxt, () -> clusterFacade).getDroppedMessages(node);
     Mockito.verify(clusterFacade, Mockito.times(1)).getDroppedMessages(Mockito.any());
   }
 
@@ -169,7 +166,7 @@ public class MetricsServiceTest {
   public void testConvertToDroppedMessages() {
     AppContext context = new AppContext();
     ClusterFacade clusterFacade = ClusterFacade.create(context);
-    final MetricsService metricsGrabber = MetricsService.create(context, clusterFacade);
+    final MetricsService metricsGrabber = MetricsService.create(context, () -> clusterFacade);
 
     List<JmxStat> statList = Lists.newArrayList();
     statList.add(
@@ -244,7 +241,7 @@ public class MetricsServiceTest {
     when(serverConn.queryNames(Mockito.any(ObjectName.class), Mockito.isNull())).thenReturn(Collections.emptySet());
 
     Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
-    MetricsService.create(cxt, clusterFacadeMock).getClientRequestLatencies(node);
+    MetricsService.create(cxt, () -> clusterFacadeMock).getClientRequestLatencies(node);
     Mockito.verify(clusterFacadeMock, Mockito.times(1)).getClientRequestLatencies(Mockito.any());
   }
 }

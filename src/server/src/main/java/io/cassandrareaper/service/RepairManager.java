@@ -19,7 +19,6 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
@@ -279,17 +278,14 @@ public final class RepairManager implements AutoCloseable {
         segment = context.storage.getRepairSegment(repairRun.getId(), segment.getId()).get();
         if (RepairSegment.State.RUNNING == segment.getState()) {
           try {
-            Node node
-                = Node.builder()
-                    .withCluster(context.storage.getCluster(repairRun.getClusterName()).get())
-                    .withHostname(segment.getCoordinatorHost())
-                    .build();
-
             JmxProxy jmxProxy
-                = context.jmxConnectionFactory.connect(node);
+                = ClusterFacade.create(context)
+                    .connectAny(
+                        context.storage.getCluster(repairRun.getClusterName()).get(),
+                        Arrays.asList(segment.getCoordinatorHost()));
 
             SegmentRunner.abort(context, segment, jmxProxy);
-          } catch (ReaperException | NumberFormatException | InterruptedException e) {
+          } catch (ReaperException | NumberFormatException e) {
             String msg = "Tried to abort repair on segment {} marked as RUNNING, but the "
                 + "host was down (so abortion won't be needed). Postponing the segment.";
 

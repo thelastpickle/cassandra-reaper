@@ -41,6 +41,7 @@ import io.cassandrareaper.storage.MemoryStorage;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
@@ -1138,6 +1139,7 @@ public final class SegmentRunnerTest {
 
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(jmxConnectionFactory.connect(any())).thenReturn(proxy);
+    when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
     context.jmxConnectionFactory = jmxConnectionFactory;
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);

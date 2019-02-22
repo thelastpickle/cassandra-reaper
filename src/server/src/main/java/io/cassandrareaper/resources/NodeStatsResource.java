@@ -56,7 +56,7 @@ public final class NodeStatsResource {
   public NodeStatsResource(AppContext context) {
     this.context = context;
     this.streamManager = StreamService.create(context);
-    this.metricsGrabber = MetricsService.create(context, ClusterFacade.create(context));
+    this.metricsGrabber = MetricsService.create(context);
     this.compactionService = CompactionService.create(context);
   }
 

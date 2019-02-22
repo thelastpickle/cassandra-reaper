@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
@@ -118,10 +119,12 @@ public class JmxConnectionFactory {
     }
   }
 
+  @VisibleForTesting
   public JmxProxy connect(Node node) throws ReaperException, InterruptedException {
     return connectImpl(node);
   }
 
+  @VisibleForTesting
   public final JmxProxy connectAny(Collection<Node> nodes) throws ReaperException {
 
     Preconditions.checkArgument(
@@ -148,6 +151,7 @@ public class JmxConnectionFactory {
     throw new ReaperException("no host could be reached through JMX");
   }
 
+  @VisibleForTesting
   public JmxProxy connectAny(Cluster cluster) throws ReaperException {
     Set<Node> nodes = cluster
             .getSeedHosts()

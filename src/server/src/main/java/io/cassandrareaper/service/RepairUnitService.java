@@ -111,8 +111,8 @@ public final class RepairUnitService {
   public Set<String> findBlacklistedCompactionStrategyTables(Cluster cluster, String keyspace) {
     if (context.config.getBlacklistTwcsTables()) {
       try {
-        return context.jmxConnectionFactory.connectAny(cluster)
-            .getTablesForKeyspace(keyspace)
+        return ClusterFacade.create(context)
+            .getTablesForKeyspace(cluster, keyspace)
             .stream()
             .filter(RepairUnitService::isBlackListedCompactionStrategy)
             .map(Table::getName)

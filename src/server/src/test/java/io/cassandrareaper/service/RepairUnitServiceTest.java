@@ -29,6 +29,7 @@ import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import com.datastax.driver.core.utils.UUIDs;
@@ -71,6 +72,8 @@ public final class RepairUnitServiceTest {
 
     when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
+        .thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
             .thenReturn(Sets.newHashSet(
@@ -95,6 +98,8 @@ public final class RepairUnitServiceTest {
 
     when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
+        .thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
             .thenReturn(Sets.newHashSet(
@@ -117,6 +122,8 @@ public final class RepairUnitServiceTest {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
 
     when(context.jmxConnectionFactory.connectAny(cluster))
+        .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
         .thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
@@ -142,6 +149,8 @@ public final class RepairUnitServiceTest {
 
     when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
+        .thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
             .thenReturn(Sets.newHashSet(
@@ -165,6 +174,8 @@ public final class RepairUnitServiceTest {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
 
     when(context.jmxConnectionFactory.connectAny(cluster))
+        .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
         .thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
@@ -191,6 +202,8 @@ public final class RepairUnitServiceTest {
 
     when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
+        .thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
             .thenReturn(Sets.newHashSet(
@@ -216,6 +229,8 @@ public final class RepairUnitServiceTest {
 
     when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
+        .thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
             .thenReturn(Sets.newHashSet(
@@ -239,6 +254,8 @@ public final class RepairUnitServiceTest {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
 
     when(context.jmxConnectionFactory.connectAny(cluster))
+        .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
         .thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))

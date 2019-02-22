@@ -21,12 +21,12 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -54,14 +54,12 @@ final class Heart implements AutoCloseable {
   private final AtomicLong lastBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
   private final ForkJoinPool forkJoinPool = new ForkJoinPool(64);
   private final AppContext context;
-  private final MetricsService metricsService;
   private final long maxBeatFrequencyMillis;
   private final AtomicBoolean updatingNodeMetrics = new AtomicBoolean(false);
 
   private Heart(AppContext context, long maxBeatFrequency) {
     this.context = context;
     this.maxBeatFrequencyMillis = maxBeatFrequency;
-    this.metricsService = MetricsService.create(context, ClusterFacade.create(context));
   }
 
   static Heart create(AppContext context) {
@@ -171,9 +169,9 @@ final class Heart implements AutoCloseable {
   private void grabAndStoreNodeMetrics(IDistributedStorage storage, UUID runId, NodeMetrics req)
       throws ReaperException, InterruptedException, JMException {
     JmxProxy nodeProxy
-        = context.jmxConnectionFactory.connect(
-           Node.builder().withCluster(context.storage.getCluster(req.getCluster()).get())
-           .withHostname(req.getNode()).build());
+        = ClusterFacade.create(context)
+            .connectAny(
+                context.storage.getCluster(req.getCluster()).get(), Arrays.asList(req.getNode()));
 
     storage.storeNodeMetrics(
         runId,

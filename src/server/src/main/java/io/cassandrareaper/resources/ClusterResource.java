@@ -149,9 +149,7 @@ public final class ClusterResource {
     Optional<Cluster> cluster = context.storage.getCluster(clusterName);
     if (cluster.isPresent()) {
       try {
-        JmxProxy jmxProxy = context.jmxConnectionFactory.connectAny(
-                cluster.get());
-        tablesByKeyspace = jmxProxy.listTablesByKeyspace();
+        tablesByKeyspace = ClusterFacade.create(context).listTablesByKeyspace(cluster.get());
       } catch (RuntimeException e) {
         LOG.error("Couldn't retrieve the list of tables for cluster {}", clusterName, e);
         return Response.status(400).entity(e).build();
