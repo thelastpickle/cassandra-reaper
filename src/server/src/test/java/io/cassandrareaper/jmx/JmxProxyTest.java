@@ -20,6 +20,7 @@ package io.cassandrareaper.jmx;
 import io.cassandrareaper.ReaperException;
 
 import java.util.Optional;
+import java.util.Random;
 
 import javax.management.MBeanServerConnection;
 
@@ -35,7 +36,9 @@ import static org.junit.Assert.assertEquals;
 public final class JmxProxyTest {
 
   public static JmxProxy mockJmxProxyImpl() {
-    return Mockito.mock(JmxProxyImpl.class);
+    JmxProxyImpl impl = Mockito.mock(JmxProxyImpl.class);
+    Mockito.when(impl.getUntranslatedHost()).thenReturn("test-host-" + new Random().nextInt());
+    return impl;
   }
 
   public static void mockGetMBeanServerConnection(JmxProxy proxy, MBeanServerConnection serverConnection) {

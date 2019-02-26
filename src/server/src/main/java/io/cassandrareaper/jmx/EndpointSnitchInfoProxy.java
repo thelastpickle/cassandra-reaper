@@ -18,14 +18,18 @@
 package io.cassandrareaper.jmx;
 
 
-
-import java.net.UnknownHostException;
+import java.util.concurrent.ExecutionException;
 
 import com.google.common.base.Preconditions;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 
 
 public final class EndpointSnitchInfoProxy {
+
+  // `EndpointSnitchInfoMBean().getDatacenter(host)` is static info regardless of what node is answering
+  private static final Cache<String, String> DATACENTERS_BY_HOST = CacheBuilder.newBuilder().build();
 
   private final JmxProxyImpl proxy;
 
@@ -45,8 +49,8 @@ public final class EndpointSnitchInfoProxy {
 
   public String getDataCenter(String host) {
     try {
-      return proxy.getEndpointSnitchInfoMBean().getDatacenter(host);
-    } catch (UnknownHostException ex) {
+      return DATACENTERS_BY_HOST.get(host, () -> proxy.getEndpointSnitchInfoMBean().getDatacenter(host));
+    } catch (ExecutionException ex) {
       throw new IllegalArgumentException(ex);
     }
   }
