@@ -1,5 +1,10 @@
 ## Change Log
 
+### 1.4.1 (2019/02/15 13:49 +00:00)
+- [7f46e20](https://github.com/thelastpickle/cassandra-reaper/commit/7f46e2054005cf7da16bda214d404db179df42cc) Add newline at the end of shiro.ini to fix REAPER_AUTH_USER (@viossat)
+- [b7d6593](https://github.com/thelastpickle/cassandra-reaper/commit/b7d65934862b6a17de9af3bccc1e34ab66780f3d) In NodesStatus when parsing gossipinfo status, also exclude those nodes that have been "removed", as well as those that are "left". (@michaelsembwever)
+- [0a2c11f](https://github.com/thelastpickle/cassandra-reaper/commit/0a2c11fceff0ee515000d2e502220d276d6573e1) Fix for #613 when driver class is missing from config (@adejanovski)
+
 ### 1.4.0 (2019/02/11 11:10 +00:00)
 - [3504dd5](https://github.com/thelastpickle/cassandra-reaper/commit/3504dd53d3fac4ccf2a4e8313d2bdda16ab27323) ninja-fix to f5431fb: docker variable shiro file is by default blank (for internal classpath shiro file provided) (@michaelsembwever)
 - [f5431fb](https://github.com/thelastpickle/cassandra-reaper/commit/f5431fb45bace8e065033754ce9de86f44091434) Update Docker variables to work with the latest (and embedded) shiro configuration. (@michaelsembwever)
