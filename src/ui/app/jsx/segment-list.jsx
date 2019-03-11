@@ -133,7 +133,7 @@ const SegmentList = React.createClass({
         }
 
       if(this.state.segments !== null) {
-          runningSegments = this.state.segments.filter(segment => segment.state === 'RUNNING');
+          runningSegments = this.state.segments.filter(segment => segment.state === 'RUNNING' || segment.state === 'STARTED');
           rowsRunning = runningSegments.sort(compareByStartDate).map(segment =>
               <tbody key={segment.id+'-rows'}>
               <Segment segment={segment} key={segment.id+'-head'} urlPrefix={this.state.urlPrefix} refreshSegments={this._refreshSegments} notify={this._toast}/>
@@ -368,7 +368,7 @@ const Segment = React.createClass({
                 <td>{this.props.segment.failCount}</td>
                 <td><Button bsStyle='primary'>{this.props.segment.state}</Button></td>
             </tr>
-        } else if (this.props.segment.state === 'RUNNING') {
+        } else if (this.props.segment.state === 'RUNNING' || this.props.segment.state === 'STARTED') {
             return  <tr>
                 <td>{this.props.segment.id}</td>
                 <td>{this.props.segment.tokenRange.baseRange.start}</td>
