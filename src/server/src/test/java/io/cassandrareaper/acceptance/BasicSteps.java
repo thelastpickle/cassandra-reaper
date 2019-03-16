@@ -87,11 +87,12 @@ public final class BasicSteps {
 
   public static synchronized void addReaperRunner(ReaperTestJettyRunner runner) {
 
+    String csCls = CassandraStorage.class.getName();
     if (!CLIENTS.isEmpty()) {
-      Preconditions.checkState(runner.runnerInstance.context.storage instanceof CassandraStorage);
+      Preconditions.checkState(csCls.equals(runner.runnerInstance.getContextStorageClassname()));
 
       RUNNERS.stream()
-          .forEach(r -> Preconditions.checkState(r.runnerInstance.context.storage instanceof CassandraStorage));
+          .forEach(r -> Preconditions.checkState(csCls.equals(runner.runnerInstance.getContextStorageClassname())));
     }
     RUNNERS.add(runner);
     CLIENTS.add(runner.getClient());
