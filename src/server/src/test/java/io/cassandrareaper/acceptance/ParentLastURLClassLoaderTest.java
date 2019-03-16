@@ -17,7 +17,7 @@
 
 package io.cassandrareaper.acceptance;
 
-import io.cassandrareaper.acceptance.ReaperTestJettyRunner.ParentLastURLClassLoader.ChildURLClassLoader;
+import io.cassandrareaper.acceptance.ReaperTestJettyRunner.ParentLastURLClassLoader;
 
 import java.io.IOException;
 import java.net.URL;
@@ -33,9 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public final class ChildURLClassLoaderTest {
+public final class ParentLastURLClassLoaderTest {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ChildURLClassLoaderTest.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ParentLastURLClassLoaderTest.class);
 
   @Test
   public void test_versions_classloader() throws Exception {
@@ -47,10 +47,7 @@ public final class ChildURLClassLoaderTest {
         if (!version.isEmpty()) {
           URL url = Paths.get("test-jars", String.format("cassandra-reaper-%s.jar", version)).toUri().toURL();
           LOG.info("Testing classloading with " + url);
-
-          ChildURLClassLoader childClassLoader
-              = new ChildURLClassLoader(url, Thread.currentThread().getContextClassLoader());
-
+          ParentLastURLClassLoader childClassLoader = new ParentLastURLClassLoader(url);
           Class<?> cls = childClassLoader.loadClass(ReaperTestJettyRunner.REAPER_APPLICATION_FQN);
           Assertions.assertThat(cls).isNotNull();
           list(url.getFile());

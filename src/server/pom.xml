@@ -38,13 +38,9 @@
         <!-- anything added here must first be added as a artifact in build/plugins/plugins@maven-dependency-plugin -->
         <cucumber.versions-to-test>  Examples:
     | version   |
-    |           |
+    |    1.4.1  |
     |    1.3.0  |
     |    1.2.2  |
-    |    1.1.0  |
-    |    1.0.2  |
-    |    1.0.1  |
-    |    1.0.0  |
         </cucumber.versions-to-test>
         <!-- The following is used when upgrade tests are disabled. -->
         <cucumber.no-versions-to-test>  Examples:
@@ -105,6 +101,12 @@
             <groupId>org.coursera</groupId>
             <artifactId>dropwizard-metrics-datadog</artifactId>
             <version>1.1.13</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>systems.composable</groupId>
@@ -134,6 +136,10 @@
                    <groupId>com.google.guava</groupId>
                    <artifactId>guava</artifactId>
                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-all</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -211,6 +217,12 @@
             <groupId>org.glassfish.hk2</groupId>
             <artifactId>hk2-api</artifactId>
             <version>2.5.0-b61</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.inject</groupId>
+                    <artifactId>javax.inject</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!--test scope -->
@@ -596,6 +608,8 @@
                     <cucumber.versions-to-test>${cucumber.upgrade-versions}</cucumber.versions-to-test>
                     <io.cassandrareaper.service.SchedulingManager.period_seconds>1</io.cassandrareaper.service.SchedulingManager.period_seconds>
                   </systemPropertyVariables>
+                  <!-- noverify is needed for ReaperTestJettyRunner.ParentLastURLClassLoader.ChildURLClassLoader.findClass(..) -->
+                  <argLine>-noverify</argLine>
               </configuration>
             </plugin>
             <plugin>
@@ -611,24 +625,10 @@
                         <!-- all reaper versions to test against must be listed here -->
                         <artifactItems>
                             <artifactItem>
-                                <groupId>io.cassandrareaper</groupId>
-                                <artifactId>cassandra-reaper</artifactId>
-                                <version>1.0.0</version>
-                            </artifactItem>
-                            <artifactItem>
-                                <groupId>io.cassandrareaper</groupId>
-                                <artifactId>cassandra-reaper</artifactId>
-                                <version>1.0.1</version>
-                            </artifactItem>
-                            <artifactItem>
-                                <groupId>io.cassandrareaper</groupId>
-                                <artifactId>cassandra-reaper</artifactId>
-                                <version>1.0.2</version>
-                            </artifactItem>
-                            <artifactItem>
-                                <groupId>io.cassandrareaper</groupId>
-                                <artifactId>cassandra-reaper</artifactId>
-                                <version>1.1.0</version>
+                              <groupId>io.dropwizard</groupId>
+                              <artifactId>dropwizard-testing</artifactId>
+                              <version>${dropwizard.version}</version>
+                              <destFileName>dropwizard-testing.jar</destFileName>
                             </artifactItem>
                             <artifactItem>
                                 <groupId>io.cassandrareaper</groupId>
@@ -639,6 +639,11 @@
                                 <groupId>io.cassandrareaper</groupId>
                                 <artifactId>cassandra-reaper</artifactId>
                                 <version>1.3.0</version>
+                            </artifactItem>
+                            <artifactItem>
+                                <groupId>io.cassandrareaper</groupId>
+                                <artifactId>cassandra-reaper</artifactId>
+                                <version>1.4.1</version>
                             </artifactItem>
                         </artifactItems>
                         <outputDirectory>${project.build.directory}/test-jars</outputDirectory>
