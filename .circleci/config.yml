@@ -43,10 +43,12 @@ aliases:
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
 
-        - run: 
+        - run:
             name: Download dependencies
             command: |
               mvn -B dependency:go-offline
+              ccm create test_1_2 --no-switch -v 1.2.19
+              ccm create test_2_0 --no-switch -v 2.0.17
               ccm create test_2_1 --no-switch -v 2.1.20
               ccm create test_2_2 --no-switch -v 2.2.13
               ccm create test_3_0 --no-switch -v 3.0.17
@@ -89,6 +91,7 @@ aliases:
                   fi
                   sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="136m"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
                   sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="112M"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+                  sed -i 's/LOCAL_JMX=yes/LOCAL_JMX=no/' ~/.ccm/test/node$i/conf/cassandra-env.sh
                   sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' ~/.ccm/test/node$i/conf/cassandra.yaml
                   sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' ~/.ccm/test/node$i/conf/cassandra.yaml
                   sed -i 's/concurrent_reads: 32/concurrent_reads: 4/' ~/.ccm/test/node$i/conf/cassandra.yaml
@@ -150,6 +153,30 @@ jobs:
             command: |
                 MAVEN_OPTS="-Xmx384m" mvn -B install
                 mvn -B surefire:test -Dtest=ReaperShiroIT
+    c_1-2_memory:
+      environment:
+        CASSANDRA_VERSION: 1.2.19
+        CUCUMBER_OPTIONS: "-t ~@cassandra_2_1_onwards"
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperIT -Pskip-tests-needing-all-nodes-reachable
+      <<: *default_job
+    c_1-2_h2:
+      environment:
+        CASSANDRA_VERSION: 1.2.19
+        CUCUMBER_OPTIONS: "-t ~@cassandra_2_1_onwards"
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperH2IT -Pskip-tests-needing-all-nodes-reachable
+      <<: *default_job
+    c_2-0_memory:
+      environment:
+        CASSANDRA_VERSION: 2.0.17
+        CUCUMBER_OPTIONS: "-t ~@cassandra_2_1_onwards"
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperIT -Pskip-tests-needing-all-nodes-reachable
+      <<: *default_job
+    c_2-0_h2:
+      environment:
+        CASSANDRA_VERSION: 2.0.17
+        CUCUMBER_OPTIONS: "-t ~@cassandra_2_1_onwards"
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperH2IT -Pskip-tests-needing-all-nodes-reachable
+      <<: *default_job
     c_2-1_memory:
       environment:
         CASSANDRA_VERSION: 2.1.20
@@ -415,6 +442,20 @@ workflows:
   build_and_test:
     jobs:
       - build
+      - c_1-2_memory:
+          requires:
+            - build
+      - c_1-2_h2:
+          requires:
+            - build
+            - c_1-2_memory
+      - c_2-0_memory:
+          requires:
+            - build
+      - c_2-0_h2:
+          requires:
+            - build
+            - c_2-0_memory
       - c_2-1_memory:
           requires:
             - build

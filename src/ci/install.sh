@@ -33,6 +33,7 @@ case "${TEST_TYPE}" in
         # use "2:0" to ensure the first datacenter name is "dc1" instead of "datacenter1", so to be compatible with CircleCI tests
         ccm populate --vnodes -n 2:0 > /dev/null
         for i in `seq 1 2` ; do
+          sed -i 's/LOCAL_JMX=yes/LOCAL_JMX=no/' ~/.ccm/test/node$i/conf/cassandra-env.sh
           sed -i 's/etc\/cassandra\/jmxremote.password/home\/travis\/.local\/jmxremote.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
           sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
           sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="200M"/' ~/.ccm/test/node$i/conf/cassandra-env.sh

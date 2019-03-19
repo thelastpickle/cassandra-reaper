@@ -84,6 +84,7 @@ Feature: Using Reaper
   ${cucumber.upgrade-versions}
 
   @all_nodes_reachable
+  @cassandra_2_1_onwards
   Scenario Outline: Adding a scheduled full repair and a scheduled incremental repair for the same keyspace
     Given that reaper <version> is running
     And that we are going to use "127.0.0.1@test" as cluster seed host
@@ -133,7 +134,7 @@ Feature: Using Reaper
     And reaper has 0 repairs for the last added cluster
     When a new repair is added for the last added cluster and keyspace "booya" with the table "booya2" blacklisted
     And the last added repair has table "booya2" in the blacklist
-    And the last added repair has table "booya_twcs" in the blacklist
+    And the last added repair has twcs table "booya_twcs" in the blacklist
     When reaper is upgraded to latest
     And the last added repair has table "booya2" in the blacklist
     And deleting the last added cluster fails
@@ -169,6 +170,7 @@ Feature: Using Reaper
  ${cucumber.upgrade-versions}
 
   @all_nodes_reachable
+  @cassandra_2_1_onwards
   Scenario Outline: Create a cluster and an incremental repair run and delete them
     Given that reaper <version> is running
     And that we are going to use "127.0.0.1@test" as cluster seed host
@@ -190,6 +192,7 @@ Feature: Using Reaper
   ${cucumber.upgrade-versions}
 
   @all_nodes_reachable
+  @cassandra_2_1_onwards
   Scenario Outline: Create a cluster and one incremental repair run and one full repair run
     Given that reaper <version> is running
     And that we are going to use "127.0.0.1@test" as cluster seed host
@@ -212,6 +215,7 @@ Feature: Using Reaper
   ${cucumber.upgrade-versions}
 
   @all_nodes_reachable
+  @cassandra_2_1_onwards
   Scenario Outline: Create a cluster, create a cluster wide snapshot and delete it
     Given that reaper <version> is running
     And that we are going to use "127.0.0.1@test" as cluster seed host
@@ -231,6 +235,7 @@ Feature: Using Reaper
 
 
   @all_nodes_reachable
+  @cassandra_2_1_onwards
   Scenario Outline: Create a cluster, create a snapshot on a single host and delete it
     Given that reaper <version> is running
     And that we are going to use "127.0.0.1@test" as cluster seed host

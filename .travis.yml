@@ -45,6 +45,7 @@ jobs:
   - env: TEST_TYPE=docker
   # 4.0 builds are ignored until new ccm version is released and available in pip
   #  when fixed, uncomment in .circleci/config.yaml too
+  - env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk
   - env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=1 GRIM_MAX=1
   - env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=2 GRIM_MAX=2
   - env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=2 GRIM_MAX=4
@@ -52,8 +53,26 @@ jobs:
   - env: TEST_TYPE=upgrade CASSANDRA_VERSION=git:trunk CO="-t ~@all_nodes_reachable"
   include:
     - stage: Integration Tests
-      name: Memory, H2 and Postgresql
+      name: Memory, H2 and Postgresql reaping Cassandra 1.2.19
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=1.2.19 CUCUMBER_OPTIONS="--tags ~@cassandra_2_1_onwards"
+    - stage: Integration Tests
+      name: Memory, H2 and Postgresql reaping Cassandra 2.0.17
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.0.17 CUCUMBER_OPTIONS="--tags ~@cassandra_2_1_onwards"
+    - stage: Integration Tests
+      name: Memory, H2 and Postgresql reaping Cassandra 2.1.20
       env: TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20
+    - stage: Integration Tests
+      name: Memory, H2 and Postgresql reaping Cassandra 2.2.13
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=2.2.13
+    - stage: Integration Tests
+      name: Memory, H2 and Postgresql reaping Cassandra 3.0.17
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.0.17
+    - stage: Integration Tests
+      name: Memory, H2 and Postgresql reaping Cassandra 3.11.4
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=3.11.4
+    - stage: Integration Tests
+      name: Memory, H2 and Postgresql reaping Cassandra 4.0
+      env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk
     - stage: Integration Tests
       name: Cassandra 2.1.20
       env: TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20 GRIM_MIN=1 GRIM_MAX=1
@@ -70,7 +89,7 @@ jobs:
       name: Cassandra 4.0
       env: TEST_TYPE=ccm CASSANDRA_VERSION=git:trunk GRIM_MIN=1 GRIM_MAX=1
     - stage: Distributed Reaper Integration Tests
-      name: Two Reapers on  Cassandra 2.1.20
+      name: Two Reapers on Cassandra 2.1.20
       env: TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20 GRIM_MIN=2 GRIM_MAX=2
     - stage: Distributed Reaper Integration Tests
       name: Two Reapers on Cassandra 2.2.13
