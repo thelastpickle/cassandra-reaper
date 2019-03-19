@@ -25,7 +25,7 @@ public final class Table {
    * Default compaction strategy, used when the strategy cannot be retrieved from JMX. The
    * information is only available since Cassandra 2.1
    */
-  private static final String DEFAULT_COMPACTION_STRATEGY = "SizeTieredCompactionStrategy";
+  private static final String DEFAULT_COMPACTION_STRATEGY = "UNKNOWN";
 
   private final String name;
   private final String compactionStrategy;
