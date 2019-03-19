@@ -140,7 +140,7 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   /**
-   * @see JmxProxy#connect(Optional, String, int, String, String, EC2MultiRegionAddressTranslator)
+   * @see #connect(String, int, String, String, EC2MultiRegionAddressTranslator, int, MetricRegistry)
    */
   static JmxProxy connect(
       String host,
@@ -537,8 +537,7 @@ final class JmxProxyImpl implements JmxProxy {
 
     Preconditions.checkNotNull(ssProxy, "Looks like the proxy is not connected");
     String cassandraVersion = getCassandraVersion();
-    boolean canUseDatacenterAware = false;
-    canUseDatacenterAware = versionCompare(cassandraVersion, "2.0.12") >= 0;
+    final boolean canUseDatacenterAware = versionCompare(cassandraVersion, "2.0.12") >= 0;
 
     String msg = String.format(
         "Triggering repair of range (%s,%s] for keyspace \"%s\" on "
