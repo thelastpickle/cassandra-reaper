@@ -340,8 +340,10 @@ final class JmxProxyImpl implements JmxProxy {
 
   @Override
   public Set<Table> getTablesForKeyspace(String keyspace) throws ReaperException {
-    Set<Table> tables = new HashSet<>();
-    Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> proxies;
+    final boolean canUseCompactionStrategy = versionCompare(getCassandraVersion(), "2.1") >= 0;
+
+    final Set<Table> tables = new HashSet<>();
+    final Iterator<Map.Entry<String, ColumnFamilyStoreMBean>> proxies;
     try {
       proxies = ColumnFamilyStoreMBeanIterator.getColumnFamilyStoreMBeanProxies(mbeanServer);
     } catch (IOException | MalformedObjectNameException e) {
@@ -352,10 +354,15 @@ final class JmxProxyImpl implements JmxProxy {
       String keyspaceName = proxyEntry.getKey();
       if (keyspace.equalsIgnoreCase(keyspaceName)) {
         ColumnFamilyStoreMBean columnFamilyMBean = proxyEntry.getValue();
-        tables.add(Table.builder()
-                .withName(columnFamilyMBean.getColumnFamilyName())
-                .withCompactionStrategy(columnFamilyMBean.getCompactionParameters().get("class"))
-                .build());
+
+        Table.Builder tableBuilder = Table.builder()
+              .withName(columnFamilyMBean.getColumnFamilyName());
+
+        if (canUseCompactionStrategy) {
+          tableBuilder.withCompactionStrategy(columnFamilyMBean.getCompactionParameters().get("class"));
+        }
+
+        tables.add(tableBuilder.build());
       }
     }
     return tables;
