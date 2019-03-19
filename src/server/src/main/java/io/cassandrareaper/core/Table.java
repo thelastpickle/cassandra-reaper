@@ -21,12 +21,22 @@ import com.google.common.base.Preconditions;
 
 public final class Table {
 
+  /**
+   * Default compaction strategy, used when the strategy cannot be retrieved from JMX. The
+   * information is only available since Cassandra 2.1
+   */
+  private static final String DEFAULT_COMPACTION_STRATEGY = "UNKNOWN";
+
   private final String name;
   private final String compactionStrategy;
 
   private Table(Builder builder) {
     this.name = builder.name;
-    this.compactionStrategy = builder.compactionStrategy;
+    if (builder.compactionStrategy != null) {
+      this.compactionStrategy = builder.compactionStrategy;
+    } else {
+      this.compactionStrategy = DEFAULT_COMPACTION_STRATEGY;
+    }
   }
 
   public String getName() {
@@ -41,6 +51,7 @@ public final class Table {
     return new Builder();
   }
 
+  @Override
   public String toString() {
     return String.format("{name=%s, compactionStrategy=%s}", name, compactionStrategy);
   }
@@ -69,7 +80,6 @@ public final class Table {
 
     public Table build() {
       Preconditions.checkNotNull(name, "`.withName(..)` must be called before `.build()`");
-      Preconditions.checkNotNull(compactionStrategy, "`.withCompactionStrategy(..)` must be called before `.build()`");
       return new Table(this);
     }
   }
