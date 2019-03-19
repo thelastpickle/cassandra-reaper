@@ -49,6 +49,7 @@ import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
 import com.datastax.driver.core.VersionNumber;
+import com.datastax.driver.core.exceptions.AlreadyExistsException;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -934,6 +935,8 @@ public final class BasicSteps {
   @And("^the last added repair has twcs table \"([^\"]*)\" in the blacklist$")
   public void the_last_added_repair_has_twcs_table_in_the_blacklist(String twcsTable) throws Throwable {
     synchronized (BasicSteps.class) {
+      final VersionNumber lowestNodeVersion = getCassandraVersion();
+
       RUNNERS
           .parallelStream()
           .forEach(
@@ -944,14 +947,15 @@ public final class BasicSteps {
                 String responseData = response.readEntity(String.class);
                 assertEquals(responseData, Response.Status.OK.getStatusCode(), response.getStatus());
                 List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
-                if (reaperVersion.isPresent()
-                    && 0 < VersionNumber.parse("1.4.0").compareTo(VersionNumber.parse(reaperVersion.get()))) {
+                if ((reaperVersion.isPresent()
+                    && 0 < VersionNumber.parse("1.4.0").compareTo(VersionNumber.parse(reaperVersion.get())))
+                    || VersionNumber.parse("2.0").compareTo(lowestNodeVersion) > 0) {
 
                   Assertions
                       .assertThat(runs.get(0).getBlacklistedTables().contains(twcsTable))
                       .isFalse();
                 } else {
-                  // auto TWCS blacklisting was only added in Reaper 1.4.0
+                  // auto TWCS blacklisting was only added in Reaper 1.4.0, and requires Cassandra >= 2.0
                   Assertions
                       .assertThat(runs.get(0).getBlacklistedTables().contains(twcsTable))
                       .isTrue();
@@ -1636,8 +1640,17 @@ public final class BasicSteps {
 
   private static void createKeyspace(String keyspaceName) {
     try (Cluster cluster = buildCluster(); Session tmpSession = cluster.connect()) {
-      tmpSession.execute("CREATE KEYSPACE IF NOT EXISTS " + keyspaceName
-          + " WITH replication = {" + buildNetworkTopologyStrategyString(cluster) + "}");
+      VersionNumber lowestNodeVersion = getCassandraVersion(tmpSession);
+
+      try {
+        if (null == tmpSession.getCluster().getMetadata().getKeyspace(keyspaceName)) {
+          tmpSession.execute(
+              "CREATE KEYSPACE "
+                  + (VersionNumber.parse("2.0").compareTo(lowestNodeVersion) <= 0 ? "IF NOT EXISTS " : "")
+                  + keyspaceName
+                + " WITH replication = {" + buildNetworkTopologyStrategyString(cluster) + "}");
+        }
+      } catch (AlreadyExistsException ignore) { }
     }
   }
 
@@ -1662,23 +1675,35 @@ public final class BasicSteps {
         .build();
   }
 
+  private static VersionNumber getCassandraVersion() {
+    try (Cluster cluster = buildCluster(); Session tmpSession = cluster.connect()) {
+      return getCassandraVersion(tmpSession);
+    }
+  }
+
+  private static VersionNumber getCassandraVersion(Session tmpSession) {
+
+    return tmpSession
+            .getCluster()
+            .getMetadata()
+            .getAllHosts()
+            .stream()
+            .map(host -> host.getCassandraVersion())
+            .min(VersionNumber::compareTo)
+            .get();
+  }
+
   private static void createTable(String keyspaceName, String tableName) {
     try (Cluster cluster = buildCluster(); Session tmpSession = cluster.connect()) {
+      VersionNumber lowestNodeVersion = getCassandraVersion(tmpSession);
+
       String createTableStmt
-          = "CREATE TABLE IF NOT EXISTS "
+          = "CREATE TABLE "
+              + (VersionNumber.parse("2.0").compareTo(lowestNodeVersion) <= 0 ? "IF NOT EXISTS " : "")
               + keyspaceName
               + "."
               + tableName
               + "(id int PRIMARY KEY, value text)";
-      VersionNumber lowestNodeVersion
-          = tmpSession
-              .getCluster()
-              .getMetadata()
-              .getAllHosts()
-              .stream()
-              .map(host -> host.getCassandraVersion())
-              .min(VersionNumber::compareTo)
-              .get();
 
       if (tableName.endsWith("twcs")) {
         if (((VersionNumber.parse("3.0.8").compareTo(lowestNodeVersion) <= 0
@@ -1689,13 +1714,16 @@ public final class BasicSteps {
               += " WITH compaction = {'class':'TimeWindowCompactionStrategy',"
                   + "'compaction_window_size': '1', "
                   + "'compaction_window_unit': 'MINUTES'}";
-        } else {
-          createTableStmt
-            += " WITH compaction = {'class':'DateTieredCompactionStrategy'}";
+        } else if (VersionNumber.parse("2.0").compareTo(lowestNodeVersion) <= 0) {
+          createTableStmt += " WITH compaction = {'class':'DateTieredCompactionStrategy'}";
         }
       }
 
-      tmpSession.execute(createTableStmt);
+      try {
+        if (null == tmpSession.getCluster().getMetadata().getKeyspace(keyspaceName).getTable(tableName)) {
+          tmpSession.execute(createTableStmt);
+        }
+      } catch (AlreadyExistsException ignore) { }
 
       for (int i = 0; i < 100; i++) {
         tmpSession.execute(

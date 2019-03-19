@@ -29,10 +29,7 @@ jmxConnectionTimeoutInSeconds: 300
 datacenterAvailability: LOCAL
 
 logging:
-  level: INFO
-  loggers:
-    io.cassandrareaper: DEBUG
-    com.datastax.driver: WARN
+  level: WARN
   appenders:
     - type: console
 

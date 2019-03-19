@@ -28,9 +28,7 @@ jmxConnectionTimeoutInSeconds: 300
 datacenterAvailability: LOCAL
 
 logging:
-  level: INFO
-  loggers:
-    io.cassandrareaper: DEBUG
+  level: WARN
   appenders:
     - type: console
 
