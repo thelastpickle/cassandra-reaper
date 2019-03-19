@@ -90,6 +90,32 @@ public final class RepairUnitServiceTest {
   }
 
   @Test
+  public void getTablesToRepairDefaultCompactionStrategyTable() throws ReaperException {
+    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+
+    when(context.jmxConnectionFactory.connectAny(cluster))
+          .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
+          .thenReturn(proxy);
+
+    when(proxy.getTablesForKeyspace(Mockito.anyString()))
+          .thenReturn(Sets.newHashSet(
+                Table.builder().withName("table1").build(),
+                Table.builder().withName("table2").build(),
+                Table.builder().withName("table3").build()));
+
+    RepairUnit unit = RepairUnit.builder()
+          .clusterName(cluster.getName())
+          .keyspaceName("test")
+          .blacklistedTables(Sets.newHashSet("table1"))
+          .incrementalRepair(false)
+          .repairThreadCount(4)
+          .build(UUIDs.timeBased());
+
+    assertEquals(Sets.newHashSet("table2", "table3"), service.getTablesToRepair(proxy, cluster, unit));
+  }
+
+  @Test
   public void getTablesToRepairRemoveOneTableWithTwcsTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
 
