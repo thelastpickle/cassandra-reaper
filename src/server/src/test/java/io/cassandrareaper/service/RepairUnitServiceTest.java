@@ -29,6 +29,7 @@ import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import com.datastax.driver.core.utils.UUIDs;
@@ -93,9 +94,9 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairDefaultCompactionStrategyTable() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
 
-    when(context.jmxConnectionFactory.connectAny(cluster))
+    when(context.jmxConnectionFactory.connectAny(cluster, context.config.getJmxConnectionTimeoutInSeconds()))
           .thenReturn(proxy);
-    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class), Mockito.anyInt()))
           .thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
