@@ -17,14 +17,14 @@
 
 package io.cassandrareaper.core;
 
-import java.util.Collection;
+import io.cassandrareaper.storage.postgresql.LongCollectionSqlType;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 
@@ -242,22 +242,6 @@ public final class RepairSchedule {
       Preconditions.checkState(null != intensity, "intensity(..) must be called before build(..)");
       Preconditions.checkState(null != segmentCountPerNode, "segmentCountPerNode(..) must be called before build(..)");
       return new RepairSchedule(this, id);
-    }
-  }
-
-  /**
-   * This is required to be able to map in generic manner into Postgres array types through JDBI.
-   */
-  public static final class LongCollectionSqlType {
-
-    private final Collection<Long> collection;
-
-    public LongCollectionSqlType(Collection<Long> collection) {
-      this.collection = collection;
-    }
-
-    public Collection<Long> getValue() {
-      return null == collection ? collection : Lists.newArrayList();
     }
   }
 }
