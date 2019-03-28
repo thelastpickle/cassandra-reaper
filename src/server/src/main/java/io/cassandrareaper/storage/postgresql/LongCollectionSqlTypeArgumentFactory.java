@@ -17,7 +17,7 @@
 
 package io.cassandrareaper.storage.postgresql;
 
-import io.cassandrareaper.storage.postgresql.LongCollectionSqlType;
+import io.cassandrareaper.core.RepairSchedule.LongCollectionSqlType;
 
 import java.sql.Array;
 import java.sql.PreparedStatement;

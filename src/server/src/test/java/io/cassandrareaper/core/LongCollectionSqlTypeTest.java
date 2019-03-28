@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2017-2018 The Last Pickle Ltd
+ * Copyright 2019-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper.storage.postgresql;
+package io.cassandrareaper.core;
 
-import java.util.Collection;
+import io.cassandrareaper.core.RepairSchedule.LongCollectionSqlType;
 
-import com.google.common.collect.Lists;
+import java.util.Arrays;
+import java.util.List;
 
-/**
- * This is required to be able to map in generic manner into Postgres array
- * types through JDBI.
- */
-public final class LongCollectionSqlType {
+import org.junit.Test;
 
-  private final Collection<Long> collection;
+import static org.junit.Assert.assertEquals;
 
-  public LongCollectionSqlType(Collection<Long> collection) {
-    this.collection = collection;
-  }
+public final class LongCollectionSqlTypeTest {
 
-  public Collection<Long> getValue() {
-    return null != collection ? collection : Lists.newArrayList();
+  @Test
+  public void testGetValue() {
+    List<Long> list = Arrays.asList(1L, 2L, 3L, 4L, 5L);
+    LongCollectionSqlType collection = new LongCollectionSqlType(list);
+    assertEquals(list, collection.getValue());
   }
 }
