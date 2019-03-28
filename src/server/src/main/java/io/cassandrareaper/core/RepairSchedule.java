@@ -257,7 +257,7 @@ public final class RepairSchedule {
     }
 
     public Collection<Long> getValue() {
-      return null == collection ? collection : Lists.newArrayList();
+      return null != collection ? collection : Lists.newArrayList();
     }
   }
 }
