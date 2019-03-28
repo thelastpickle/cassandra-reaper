@@ -37,8 +37,7 @@ public final class RepairSchedule {
   private final int daysBetween;
   private final DateTime nextActivation;
   private final ImmutableList<UUID> runHistory;
-  @Deprecated
-  private final int segmentCount;
+  @Deprecated private final int segmentCount;
   private final RepairParallelism repairParallelism;
   private final double intensity;
   private final DateTime creationTime;
@@ -95,8 +94,7 @@ public final class RepairSchedule {
   }
 
   /**
-   * Required for JDBI mapping into database. Generic collection type would be
-   * hard to map into Postgres array types.
+   * Required for JDBI mapping into database. Generic collection type would be hard to map into Postgres array types.
    */
   public LongCollectionSqlType getRunHistorySql() {
     List<Long> list = runHistory.stream().map(UUID::getMostSignificantBits).collect(Collectors.toList());
@@ -141,7 +139,9 @@ public final class RepairSchedule {
   }
 
   public enum State {
-    ACTIVE, PAUSED, DELETED
+    ACTIVE,
+    PAUSED,
+    DELETED
   }
 
   public static final class Builder {
@@ -151,8 +151,7 @@ public final class RepairSchedule {
     private Integer daysBetween;
     private DateTime nextActivation;
     private ImmutableList<UUID> runHistory = ImmutableList.<UUID>of();
-    @Deprecated
-    private int segmentCount = 0;
+    @Deprecated private int segmentCount = 0;
     private RepairParallelism repairParallelism;
     private Double intensity;
     private DateTime creationTime = DateTime.now();
@@ -247,8 +246,7 @@ public final class RepairSchedule {
   }
 
   /**
-   * This is required to be able to map in generic manner into Postgres array
-   * types through JDBI.
+   * This is required to be able to map in generic manner into Postgres array types through JDBI.
    */
   public static final class LongCollectionSqlType {
 
