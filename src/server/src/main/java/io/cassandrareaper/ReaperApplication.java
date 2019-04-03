@@ -169,12 +169,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         config.getRepairManagerSchedulingIntervalSeconds(),
         TimeUnit.SECONDS);
 
-    if (context.storage == null) {
-      LOG.info("initializing storage of type: {}", config.getStorageType());
-      context.storage = initializeStorage(config, environment);
-    } else {
-      LOG.info("storage already given in context, not initializing a new one");
-    }
+    tryInitializeStorage(config, environment);
 
     if (context.jmxConnectionFactory == null) {
       LOG.info("no JMX connection factory given in context, creating default");
@@ -286,6 +281,29 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.warn("Reaper is ready to get things done!");
   }
 
+  private void tryInitializeStorage(ReaperApplicationConfiguration config, Environment environment)
+      throws ReaperException, InterruptedException {
+    if (context.storage == null) {
+      LOG.info("initializing storage of type: {}", config.getStorageType());
+      int storageFailures = 0;
+      while (true) {
+        try {
+          context.storage = initializeStorage(config, environment);
+          break;
+        } catch (RuntimeException e) {
+          LOG.error("Storage is not ready yet, trying again to connect shortly...", e);
+          storageFailures++;
+          if (storageFailures > 60) {
+            LOG.error("Too many failures when trying to connect storage. Exiting :'(");
+            System.exit(1);
+          }
+          Thread.sleep(10000);
+        }
+      }
+    } else {
+      LOG.info("storage already given in context, not initializing a new one");
+    }
+  }
 
   private void scheduleRepairManager(ScheduledExecutorService scheduler) {
     scheduler.scheduleWithFixedDelay(
