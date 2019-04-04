@@ -79,6 +79,9 @@ public final class ClusterRepairSchedulerTest {
 
   @Test
   public void schedulesRepairForAllKeyspacesInAllClusters() throws Exception {
+    // https://github.com/thelastpickle/cassandra-reaper/issues/298
+    context.config.getAutoScheduling().setExcludedKeyspaces(null);
+
     context.storage.addCluster(CLUSTER);
     when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1", "keyspace3"));
     when(jmxProxy.getTablesForKeyspace("keyspace1")).thenReturn(
