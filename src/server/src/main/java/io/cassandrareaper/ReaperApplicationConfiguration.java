@@ -478,7 +478,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
     }
 
     public void setExcludedKeyspaces(List<String> excludedKeyspaces) {
-      this.excludedKeyspaces = excludedKeyspaces;
+      this.excludedKeyspaces = null != excludedKeyspaces ? excludedKeyspaces : Collections.emptyList();
     }
 
     public List<String> getExcludedKeyspaces() {
