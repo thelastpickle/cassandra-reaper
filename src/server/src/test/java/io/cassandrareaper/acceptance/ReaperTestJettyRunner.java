@@ -101,7 +101,8 @@ public final class ReaperTestJettyRunner {
         Object methodFilter = Proxy.newProxyInstance(
             appClass.getClassLoader(),
             new Class[] {methodFilterCls},
-            (Object proxy, Method method, Object[] args) -> "newApplication".equals(method.getName()));
+            (Object proxy, Method method, Object[] args)
+                -> "newApplication".equals(method.getName()) || "initialize".equals(method.getName()));
 
         factoryCls.getDeclaredMethod("setFilter", methodFilterCls).invoke(factory, methodFilter);
         Class configOverrideCls = appClass.getClassLoader().loadClass("io.dropwizard.testing.ConfigOverride");
@@ -110,11 +111,33 @@ public final class ReaperTestJettyRunner {
         Array.set(cfgs, 0, config.invoke(null, "server.adminConnectors[0].port", "" + getAnyAvailablePort()));
         Array.set(cfgs, 1, config.invoke(null, "server.applicationConnectors[0].port", "" + getAnyAvailablePort()));
         Class methodHandlerCls = appClass.getClassLoader().loadClass("javassist.util.proxy.MethodHandler");
+        Class dfCls = appClass.getClassLoader().loadClass("com.fasterxml.jackson.databind.DeserializationFeature");
+        Object failOnUnknownProperty = dfCls.getEnumConstants()[4];
 
         Object methodHandler = Proxy.newProxyInstance(
             appClass.getClassLoader(),
             new Class[] {methodHandlerCls},
-            (Object proxy, Method method, Object[] args) -> application);
+            (Object proxy, Method method, Object[] args) -> {
+              switch (method.getName()) {
+                  case "newApplication":
+                    return application;
+                  case "initialize":
+                    // call the following to avoid failing on new config yaml settings
+                    //bootstrap.getObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+                    Object bootstrap = args[0];
+                    Object objMapper = bootstrap.getClass().getMethod("getObjectMapper").invoke(bootstrap);
+                    assert "FAIL_ON_UNKNOWN_PROPERTIES".equals(dfCls.getMethod("name").invoke(failOnUnknownProperty));
+
+                    objMapper.getClass()
+                        .getMethod("configure", dfCls, Boolean.TYPE)
+                        .invoke(objMapper, failOnUnknownProperty, false);
+
+                    method.invoke(application, args);
+                    return null;
+                  default:
+                    throw new AssertionError("unexpected method " + method.getName() + " got through methodFilter");
+              }
+            });
 
         support = factoryCls
             .getDeclaredMethod("create", Class[].class, Object[].class, methodHandlerCls)
