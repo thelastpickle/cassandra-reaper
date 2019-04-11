@@ -215,6 +215,7 @@ Feature: Using Reaper
   ${cucumber.upgrade-versions}
 
   @all_nodes_reachable
+  @cassandra_2_1_onwards
   Scenario Outline: Create a cluster, create a cluster wide snapshot and delete it
     Given that reaper <version> is running
     And that we are going to use "127.0.0.1@test" as cluster seed host
@@ -234,6 +235,7 @@ Feature: Using Reaper
 
 
   @all_nodes_reachable
+  @cassandra_2_1_onwards
   Scenario Outline: Create a cluster, create a snapshot on a single host and delete it
     Given that reaper <version> is running
     And that we are going to use "127.0.0.1@test" as cluster seed host
