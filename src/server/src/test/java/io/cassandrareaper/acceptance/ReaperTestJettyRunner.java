@@ -143,15 +143,8 @@ public final class ReaperTestJettyRunner {
 
     static Class getApplicationClass(Optional<String> version) {
       try {
-        if (version.isPresent()) {
-          ClassLoader loader = new ParentLastURLClassLoader(Paths.get(
-                  "test-jars",
-                  String.format("cassandra-reaper-%s.jar", version.get())).toUri().toURL());
-
-          return loader.loadClass(REAPER_APPLICATION_FQN);
-        }
         return Class.forName(REAPER_APPLICATION_FQN);
-      } catch (MalformedURLException | ClassNotFoundException ex) {
+      } catch (ClassNotFoundException ex) {
         throw new AssertionError(ex);
       }
     }

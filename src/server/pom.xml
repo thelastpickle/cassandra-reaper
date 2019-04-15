@@ -608,19 +608,6 @@
                     <cucumber.versions-to-test>${cucumber.upgrade-versions}</cucumber.versions-to-test>
                     <io.cassandrareaper.service.SchedulingManager.period_seconds>1</io.cassandrareaper.service.SchedulingManager.period_seconds>
                   </systemPropertyVariables>
-                  <!-- noverify is needed for ReaperTestJettyRunner.ParentLastURLClassLoader.ChildURLClassLoader.findClass(..) -->
-                  <argLine>-noverify</argLine>
-                  <classpathDependencyExcludes>
-                    <classpathDependencyExclude>org.glassfish.jersey.ext:jersey-metainf-services</classpathDependencyExclude>
-                    <classpathDependencyExclude>org.glassfish.jersey.ext:jersey-bean-validation</classpathDependencyExclude>
-                    <classpathDependencyExclude>org.glassfish.jersey.media:jersey-media-jaxb</classpathDependencyExclude>
-                    <classpathDependencyExclude>org.glassfish.jersey.media:jersey-media-json-jackson</classpathDependencyExclude>
-                    <!-- <classpathDependencyExclude>org.glassfish.jersey.core:jersey-common</classpathDependencyExclude> -->
-                    <!-- <classpathDependencyExclude>org.glassfish.jersey.core:jersey-server</classpathDependencyExclude> -->
-                    <!-- <classpathDependencyExclude>org.glassfish.jersey.containers:jersey-container-servlet</classpathDependencyExclude> -->
-                    <!-- <classpathDependencyExclude>com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider</classpathDependencyExclude> -->
-                    <!-- <classpathDependencyScopeExclude>test</classpathDependencyScopeExclude> -->
-                  </classpathDependencyExcludes>
               </configuration>
             </plugin>
             <plugin>
