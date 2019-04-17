@@ -178,7 +178,6 @@
               <excludes>
                 <exclude>**/target/**</exclude>
                 <exclude>docs/**</exclude>
-                <exclude>src/ci/docker/**</exclude>
                 <exclude>src/docs/themes/**</exclude>
                 <exclude>src/docs/data/**</exclude>
                 <exclude>src/docs/layouts/**</exclude>
