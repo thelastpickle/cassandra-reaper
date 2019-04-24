@@ -46,6 +46,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 
 /**
  * Implements the StorageAPI using transient Java classes.
@@ -225,7 +226,11 @@ public final class MemoryStorage implements IStorage {
       if (getSegmentAmountForRepairRunWithState(id, RepairSegment.State.RUNNING) == 0) {
         deleteRepairUnit(deletedRun.getRepairUnitId());
         deleteRepairSegmentsForRun(id);
-        deletedRun = deletedRun.with().runState(RepairRun.RunState.DELETED).build(id);
+
+        deletedRun = deletedRun.with()
+            .runState(RepairRun.RunState.DELETED)
+            .endTime(DateTime.now())
+            .build(id);
       }
     }
     return Optional.ofNullable(deletedRun);

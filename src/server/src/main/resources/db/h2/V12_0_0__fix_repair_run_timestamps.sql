@@ -13,11 +13,30 @@
 --  See the License for the specific language governing permissions and
 --  limitations under the License.
 --
+-- Fix timestamp inconsistencies in the repair_run table
 --
--- Support for custom cluster properties
---
 
-ALTER TABLE cluster 
-ADD properties TEXT;
+UPDATE repair_run
+SET start_time = NULL
+WHERE start_time is NOT NULL
+AND state =  'NOT_STARTED';
 
+UPDATE repair_run
+SET end_time = NULL
+WHERE end_time IS NOT NULL
+AND state NOT IN ('ERROR', 'DONE', 'ABORTED', 'PAUSED');
 
+UPDATE repair_run
+SET end_time = start_time
+WHERE end_time IS NULL
+AND state IN ('ERROR', 'DONE', 'ABORTED', 'PAUSED');
+
+UPDATE repair_run
+SET start_time = end_time
+WHERE start_time is NULL
+AND end_time IS NOT NULL;
+
+UPDATE repair_run
+SET pause_time = start_time
+WHERE pause_time IS NULL
+AND state = 'PAUSED';

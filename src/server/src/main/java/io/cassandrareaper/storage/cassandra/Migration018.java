@@ -1,6 +1,6 @@
 /*
- * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2019 The Last Pickle Ltd
+ *
+ * Copyright 2019-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,15 @@ package io.cassandrareaper.storage.cassandra;
 
 import com.datastax.driver.core.Session;
 
-public final class Migration011 {
+public final class Migration018 {
 
-  private Migration011() {
+  private Migration018() {
   }
 
   /**
-   * fix segment start and end times in the repair_run table.
-   *  delegates to FixRepairSegmentTimestamps as that does everything already.
+   * fix repair start, pause and end times in the repair_run table.
    */
   public static void migrate(Session session) {
-    FixRepairSegmentTimestamps.migrate(session);
+    FixRepairRunTimestamps.migrate(session);
   }
 }

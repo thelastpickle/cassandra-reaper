@@ -20,9 +20,9 @@ package io.cassandrareaper.storage.cassandra;
 
 import com.datastax.driver.core.Session;
 
-public final class Migration011 {
+public final class Migration008 {
 
-  private Migration011() {
+  private Migration008() {
   }
 
   /**

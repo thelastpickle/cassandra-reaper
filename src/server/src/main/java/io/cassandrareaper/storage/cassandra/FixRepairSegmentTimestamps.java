@@ -1,6 +1,6 @@
 /*
  * Copyright 2017-2017 Spotify AB
- * Copyright 2017-2018 The Last Pickle Ltd
+ * Copyright 2017-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,11 +32,11 @@ import com.datastax.driver.core.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class Migration009 {
+public final class FixRepairSegmentTimestamps {
 
-  private static final Logger LOG = LoggerFactory.getLogger(Migration009.class);
+  private static final Logger LOG = LoggerFactory.getLogger(FixRepairSegmentTimestamps.class);
 
-  private Migration009() {
+  private FixRepairSegmentTimestamps() {
   }
 
   /**

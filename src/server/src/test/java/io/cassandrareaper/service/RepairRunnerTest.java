@@ -1,6 +1,6 @@
 /*
  * Copyright 2015-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -519,7 +519,10 @@ public final class RepairRunnerTest {
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
     context.repairManager.resumeRunningRepairRuns();
     assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
-    storage.updateRepairRun(run.with().runState(RepairRun.RunState.RUNNING).build(RUN_ID));
+
+    storage.updateRepairRun(
+        run.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(RUN_ID));
+
     context.repairManager.resumeRunningRepairRuns();
     Thread.sleep(1000);
     assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());

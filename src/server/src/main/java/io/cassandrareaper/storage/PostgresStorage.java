@@ -54,6 +54,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.exceptions.DBIException;
@@ -227,7 +228,10 @@ public final class PostgresStorage implements IStorage {
         if (segmentsRunning == 0) {
           pg.deleteRepairSegmentsForRun(UuidUtil.toSequenceId(runToDelete.getId()));
           pg.deleteRepairRun(UuidUtil.toSequenceId(id));
-          result = runToDelete.with().runState(RepairRun.RunState.DELETED).build(id);
+          result = runToDelete.with()
+              .runState(RepairRun.RunState.DELETED)
+              .endTime(DateTime.now())
+              .build(id);
         } else {
           LOG.warn("not deleting RepairRun \"{}\" as it has segments running: {}", id, segmentsRunning);
         }
