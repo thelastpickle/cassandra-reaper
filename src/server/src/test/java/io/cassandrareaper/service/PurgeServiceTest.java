@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2018 The Last Pickle Ltd
+ * Copyright 2018-2019 The Last Pickle Ltd
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -153,7 +153,7 @@ public final class PurgeServiceTest {
               .intensity(0.9)
               .segmentCount(10)
               .repairParallelism(RepairParallelism.DATACENTER_AWARE)
-              .endTime(startTime.plusSeconds(1))
+              .pauseTime(startTime.plusSeconds(1))
               .runState(RunState.PAUSED)
               .build(UUIDs.timeBased()));
     }

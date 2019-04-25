@@ -1,6 +1,6 @@
 /*
  * Copyright 2016-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,14 +37,15 @@ import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairParameters;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.cassandra.DateTimeCodec;
+import io.cassandrareaper.storage.cassandra.FixRepairSegmentTimestamps;
 import io.cassandrareaper.storage.cassandra.Migration003;
-import io.cassandrareaper.storage.cassandra.Migration009;
 import io.cassandrareaper.storage.cassandra.Migration016;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -234,11 +235,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               "Database migration can not happen with other reaper instances running. Found ",
               StringUtils.join(otherRunningReapers));
         }
-
         if (currentVersion > 3 && currentVersion < 9) {
           // only applicable after `003_switch_to_uuids.cql`
-          // Migration009 needs to happen before `migration.migrate()` in case it fails and needs re-trying
-          Migration009.migrate(session);
+          // FixRepairSegmentTimestamps must happen before `migration.migrate()` in case it fails and needs re-trying
+          FixRepairSegmentTimestamps.migrate(session);
         }
         MigrationTask migration = new MigrationTask(database, migrationRepo);
         migration.migrate();
@@ -1200,6 +1200,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private RepairRun buildRepairRunFromRow(Row repairRunResult, UUID id) {
     LOG.trace("buildRepairRunFromRow {} / {}", id, repairRunResult);
+
+    Date startTime = repairRunResult.getTimestamp("start_time");
+    Date pauseTime = repairRunResult.getTimestamp("pause_time");
+    Date endTime = repairRunResult.getTimestamp("end_time");
+
     return RepairRun.builder(repairRunResult.getString("cluster_name"), repairRunResult.getUUID("repair_unit_id"))
         .creationTime(new DateTime(repairRunResult.getTimestamp("creation_time")))
         .intensity(repairRunResult.getDouble("intensity"))
@@ -1207,11 +1212,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .repairParallelism(RepairParallelism.fromName(repairRunResult.getString("repair_parallelism")))
         .cause(repairRunResult.getString("cause"))
         .owner(repairRunResult.getString("owner"))
-        .endTime(new DateTime(repairRunResult.getTimestamp("end_time")))
+        .startTime(null != startTime ? new DateTime(startTime) : null)
+        .pauseTime(null != pauseTime ? new DateTime(pauseTime) : null)
+        .endTime(null != endTime ? new DateTime(endTime) : null)
         .lastEvent(repairRunResult.getString("last_event"))
-        .pauseTime(new DateTime(repairRunResult.getTimestamp("pause_time")))
         .runState(RunState.valueOf(repairRunResult.getString("state")))
-        .startTime(new DateTime(repairRunResult.getTimestamp("start_time")))
         .build(id);
   }
 

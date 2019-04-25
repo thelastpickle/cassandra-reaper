@@ -1,6 +1,6 @@
 /*
  * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,6 +223,9 @@ public final class RepairRun implements Comparable<RepairRun> {
 
     public Builder runState(RunState runState) {
       this.runState = runState;
+      if (RunState.PAUSED != runState) {
+        pauseTime = null;
+      }
       return this;
     }
 
@@ -280,6 +283,31 @@ public final class RepairRun implements Comparable<RepairRun> {
       Preconditions.checkState(null != repairParallelism, "repairParallelism(..) must be called before build(..)");
       Preconditions.checkState(null != intensity, "intensity(..) must be called before build(..)");
       Preconditions.checkState(null != segmentCount, "segmentCount(..) must be called before build(..)");
+
+      Preconditions.checkState(
+          RunState.NOT_STARTED == runState || null != startTime,
+          "startTime only valid when runState is not NOT_STARTED. %s %s", runState, startTime);
+
+      Preconditions.checkState(
+          RunState.NOT_STARTED != runState || null == startTime,
+          "startTime must be null when runState is NOT_STARTED. %s %s", runState, startTime);
+
+      Preconditions.checkState(
+          RunState.PAUSED == runState || null == pauseTime,
+          "pausedTime only valid when runState is PAUSED. %s %s", runState, pauseTime);
+
+      Preconditions.checkState(
+          RunState.PAUSED != runState || null != pauseTime,
+          "pausedTime must be set when runState is PAUSED. %s %s", runState, pauseTime);
+
+      Preconditions.checkState(
+          runState.isTerminated() || null == endTime,
+          "endTime only valid when runState is terminated. %s %s", runState, endTime);
+
+      Preconditions.checkState(
+          !runState.isTerminated() || null != endTime,
+          "endTime must be set when runState is terminated. %s %s", runState, endTime);
+
       return new RepairRun(this, id);
     }
   }

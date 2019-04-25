@@ -1,6 +1,6 @@
 /*
  * Copyright 2015-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2016-2019 The Last Pickle Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,8 +149,8 @@ public final class RepairRunStatusTest {
             10, // segmentsRepaired
             100, // totalSegments
             RepairRun.RunState.ABORTED, // state
-            new DateTime().now().minusMinutes(1).minusSeconds(30), // startTime
-            null, // endTime
+            DateTime.now().minusMinutes(1).minusSeconds(30), // startTime
+            DateTime.now(), // endTime
             "test", // cause
             "alex", // owner
             "", // lastEvent
