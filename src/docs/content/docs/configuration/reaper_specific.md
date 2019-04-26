@@ -215,16 +215,6 @@ Optional mapping of custom JMX ports to use for individual hosts. The used defau
 
 <br/>
 
-### `localJmxMode`
-
-Type: *Boolean*
-
-Default: *false*
-
-Activates the mode where JMX is only accessible from localhost. If set to true, one Reaper instance must be running on each Cassandra node.
-
-<br/>
-
 ### `logging`
 
 Settings to configure Reaper logging.
