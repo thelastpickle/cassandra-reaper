@@ -11,7 +11,7 @@ You can change tag to whatever you wish.
 # Running docker container and binding all ports to localhost
 
 To run created docker with all ports bond to localhost invoke the following:
-`docker run -ti --rm --network host softsky/cassandra-reaper`
+`docker run -ti --rm -p 7100:7100 -p 7200:7200 -p 7300:7300 -p 7400:7400 -p 44175:44175 -p 127.0.0.1:9042:9042 -p 127.0.0.2:9042:9042 -p 127.0.0.3:9042:9042 -p 127.0.0.4:9042:9042 -p 127.0.0.1:7000:7000 -p 127.0.0.2:7000:7000 -p 127.0.0.3:7000:7000 -p 127.0.0.4:7000:7000 softsky/cassandra-reaper`
 
 By default CASSANDRA_VERSION=2.1.20 is set
 
