@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.management.JMException;
@@ -52,6 +53,8 @@ import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -59,6 +62,10 @@ import org.slf4j.LoggerFactory;
 
 public final class ClusterFacade {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterFacade.class);
+
+  private static final Cache<Pair<Cluster,String>,String> CLUSTER_VERSIONS
+      = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
+
   private final AppContext context;
 
   private ClusterFacade(AppContext context) {
@@ -221,8 +228,16 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we catch
    */
   public String getCassandraVersion(Cluster cluster, Collection<String> endpoints) throws ReaperException {
+    for (String endpoint : endpoints) {
+      String version = CLUSTER_VERSIONS.getIfPresent(Pair.of(cluster, endpoint));
+      if (null != version) {
+        return version;
+      }
+    }
     JmxProxy jmxProxy = connectAnyNode(cluster, endpoints);
-    return jmxProxy.getCassandraVersion();
+    String version = jmxProxy.getCassandraVersion();
+    CLUSTER_VERSIONS.put(Pair.of(cluster, jmxProxy.getHost()), version);
+    return version;
   }
 
   /**

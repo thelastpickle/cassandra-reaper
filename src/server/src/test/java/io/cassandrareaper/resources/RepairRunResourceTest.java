@@ -128,6 +128,7 @@ public final class RepairRunResourceTest {
 
     proxy = mock(JmxProxy.class);
     when(proxy.getClusterName()).thenReturn(CLUSTER_NAME);
+    when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(proxy.getPartitioner()).thenReturn(PARTITIONER);
     when(proxy.getTablesForKeyspace(KEYSPACE))
         .thenReturn(TABLES.stream()

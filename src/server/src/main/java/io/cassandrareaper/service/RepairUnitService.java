@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.datastax.driver.core.VersionNumber;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -109,20 +110,27 @@ public final class RepairUnitService {
   }
 
   public Set<String> findBlacklistedCompactionStrategyTables(Cluster cluster, String keyspace) {
-    if (context.config.getBlacklistTwcsTables()) {
-      try {
+    try {
+      if (context.config.getBlacklistTwcsTables()
+          && versionCompare(ClusterFacade.create(context).getCassandraVersion(cluster), "2.1") >= 0) {
+
         return ClusterFacade.create(context)
             .getTablesForKeyspace(cluster, keyspace)
             .stream()
             .filter(RepairUnitService::isBlackListedCompactionStrategy)
             .map(Table::getName)
             .collect(Collectors.toSet());
-
-      } catch (ReaperException e) {
-        LOG.error("unknown table list to cluster {} keyspace", cluster.getName(), keyspace, e);
       }
+    } catch (ReaperException e) {
+      LOG.error("unknown table list to cluster {} keyspace", cluster.getName(), keyspace, e);
     }
     return Collections.emptySet();
+  }
+
+  private static Integer versionCompare(String str1, String str2) {
+    VersionNumber version1 = VersionNumber.parse(str1);
+    VersionNumber version2 = VersionNumber.parse(str2);
+    return version1.compareTo(version2);
   }
 
   private static boolean isBlackListedCompactionStrategy(Table table) {

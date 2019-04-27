@@ -69,6 +69,7 @@ public final class RepairUnitServiceTest {
   @Test
   public void getTablesToRepairRemoveOneTableTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    when(proxy.getCassandraVersion()).thenReturn("3.11.4");
 
     when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
@@ -95,6 +96,7 @@ public final class RepairUnitServiceTest {
   @Test
   public void getTablesToRepairDefaultCompactionStrategyTable() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    when(proxy.getCassandraVersion()).thenReturn("3.11.4");
 
     when(context.jmxConnectionFactory.connectAny(cluster))
           .thenReturn(proxy);
@@ -121,6 +123,7 @@ public final class RepairUnitServiceTest {
   @Test
   public void getTablesToRepairRemoveOneTableWithTwcsTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    when(proxy.getCassandraVersion()).thenReturn("3.11.4");
 
     when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
@@ -146,6 +149,7 @@ public final class RepairUnitServiceTest {
   @Test
   public void getTablesToRepairRemoveTwoTablesTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    when(proxy.getCassandraVersion()).thenReturn("3.11.4");
 
     when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
@@ -172,6 +176,7 @@ public final class RepairUnitServiceTest {
   @Test
   public void getTablesToRepairRemoveTwoTablesOneWithTwcsTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    when(proxy.getCassandraVersion()).thenReturn("3.11.4");
 
     when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
@@ -198,6 +203,7 @@ public final class RepairUnitServiceTest {
   @Test
   public void getTablesToRepairRemoveOneTableFromListTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    when(proxy.getCassandraVersion()).thenReturn("3.11.4");
 
     when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
@@ -225,6 +231,7 @@ public final class RepairUnitServiceTest {
   @Test
   public void getTablesToRepairRemoveOneTableFromListOneWithTwcsTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    when(proxy.getCassandraVersion()).thenReturn("3.11.4");
 
     when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
@@ -252,6 +259,7 @@ public final class RepairUnitServiceTest {
   @Test(expected = IllegalStateException.class)
   public void getTablesToRepairRemoveAllFailingTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    when(proxy.getCassandraVersion()).thenReturn("3.11.4");
 
     when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
@@ -278,6 +286,7 @@ public final class RepairUnitServiceTest {
   @Test(expected = IllegalStateException.class)
   public void getTablesToRepairRemoveAllFromListFailingTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
+    when(proxy.getCassandraVersion()).thenReturn("3.11.4");
 
     when(context.jmxConnectionFactory.connectAny(cluster))
         .thenReturn(proxy);
