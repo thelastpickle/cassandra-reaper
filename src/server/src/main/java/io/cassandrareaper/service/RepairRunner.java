@@ -303,25 +303,32 @@ final class RepairRunner implements Runnable {
   private void endRepairRun() {
     LOG.info("Repairs for repair run #{} done", repairRunId);
     synchronized (this) {
-      RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
-      DateTime repairRunCompleted = DateTime.now();
-      context.storage.updateRepairRun(
-          repairRun
-              .with()
-              .runState(RepairRun.RunState.DONE)
-              .endTime(repairRunCompleted)
-              .lastEvent("All done")
-              .build(repairRun.getId()));
-      killAndCleanupRunner();
+      // if the segment has been removed ignore. should only happen in tests on backends that delete repair segments.
+      Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+      if (repairRun.isPresent()) {
+        DateTime repairRunCompleted = DateTime.now();
 
-      context.metricRegistry.remove(metricNameForMillisSinceLastRepairPerKeyspace);
-      context.metricRegistry.remove(metricNameForMillisSinceLastRepair);
-      context.metricRegistry.register(
-          metricNameForMillisSinceLastRepairPerKeyspace,
-          (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
-      context.metricRegistry.register(
-          metricNameForMillisSinceLastRepair,
-          (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
+        context.storage.updateRepairRun(
+            repairRun.get()
+                .with()
+                .runState(RepairRun.RunState.DONE)
+                .endTime(repairRunCompleted)
+                .lastEvent("All done")
+                .build(repairRun.get().getId()));
+
+        killAndCleanupRunner();
+
+        context.metricRegistry.remove(metricNameForMillisSinceLastRepairPerKeyspace);
+        context.metricRegistry.remove(metricNameForMillisSinceLastRepair);
+
+        context.metricRegistry.register(
+            metricNameForMillisSinceLastRepairPerKeyspace,
+            (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
+
+        context.metricRegistry.register(
+            metricNameForMillisSinceLastRepair,
+            (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
+      }
     }
   }
 
@@ -476,9 +483,14 @@ final class RepairRunner implements Runnable {
       }
     } else {
       // Add random sleep time to avoid one Reaper instance locking all others during multi DC incremental repairs
-      Thread.sleep(ThreadLocalRandom.current().nextInt(0, 10 + 1) * 1000);
-      potentialCoordinators
-          = Arrays.asList(context.storage.getRepairSegment(repairRunId, segmentId).get().getCoordinatorHost());
+      Thread.sleep(ThreadLocalRandom.current().nextInt(10, 100) * 100);
+      Optional<RepairSegment> rs = context.storage.getRepairSegment(repairRunId, segmentId);
+      if (rs.isPresent()) {
+        potentialCoordinators = Arrays.asList(rs.get().getCoordinatorHost());
+      } else {
+        // the segment has been removed. should only happen in tests on backends that delete repair segments.
+        return false;
+      }
     }
 
     try {
@@ -579,13 +591,15 @@ final class RepairRunner implements Runnable {
 
   void updateLastEvent(String newEvent) {
     synchronized (this) {
-      RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
-      if (repairRun.getRunState().isTerminated()) {
+      Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+      // absent if deleted. should only happen in tests on backends that delete repair segments.
+      if (!repairRun.isPresent() || repairRun.get().getRunState().isTerminated()) {
         LOG.warn(
             "Will not update lastEvent of run that has already terminated. The message was: " + "\"{}\"",
             newEvent);
       } else {
-        context.storage.updateRepairRun(repairRun.with().lastEvent(newEvent).build(repairRunId));
+        context.storage.updateRepairRun(repairRun.get().with().lastEvent(newEvent).build(repairRunId));
+        LOG.info(newEvent);
       }
     }
   }

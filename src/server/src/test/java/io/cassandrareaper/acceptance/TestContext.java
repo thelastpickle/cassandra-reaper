@@ -17,10 +17,15 @@
 
 package io.cassandrareaper.acceptance;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import com.google.common.collect.Lists;
 
 /**
  * Helper class for holding acceptance test scenario state.
@@ -33,16 +38,18 @@ public final class TestContext {
   public static String TEST_CLUSTER;
   public static UUID FINISHED_SEGMENT;
 
-  /* Used for targeting an object accessed in last test step. */
-  public static UUID LAST_MODIFIED_ID;
-
   /* Testing cluster seed host mapped to cluster name. */
   public static Map<String, String> TEST_CLUSTER_SEED_HOSTS = new HashMap<>();
 
   /* Testing cluster name mapped to keyspace name mapped to tables list. */
   public static Map<String, Map<String, Set<String>>> TEST_CLUSTER_INFO = new HashMap<>();
 
-  private TestContext() {}
+  /* Used for targeting an object accessed in last test step. */
+  private final List<UUID> currentSchedules = Lists.newCopyOnWriteArrayList();
+  private final List<UUID> currentRepairs = Lists.newCopyOnWriteArrayList();
+  private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
+  TestContext() {}
 
   /**
    * Adds testing cluster information for testing purposes.
@@ -59,4 +66,52 @@ public final class TestContext {
     TEST_CLUSTER_SEED_HOSTS.put(seedHost, clusterName);
   }
 
+  void addCurrentScheduleId(UUID id) {
+    lock.writeLock().lock();
+    try {
+      if (currentSchedules.isEmpty() || !getCurrentScheduleId().equals(id)) {
+        currentSchedules.add(id);
+      }
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  void addCurrentRepairId(UUID id) {
+    lock.writeLock().lock();
+    try {
+      if (currentRepairs.isEmpty() || !getCurrentRepairId().equals(id)) {
+        currentRepairs.add(id);
+      }
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  UUID getCurrentScheduleId() {
+    lock.readLock().lock();
+    try {
+      return currentSchedules.get(currentSchedules.size() - 1);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  UUID getCurrentRepairId() {
+    lock.readLock().lock();
+    try {
+      return currentRepairs.get(currentRepairs.size() - 1);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  List<UUID> getCurrentRepairIds() {
+    lock.readLock().lock();
+    try {
+      return Collections.unmodifiableList(currentRepairs);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
 }

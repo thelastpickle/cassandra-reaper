@@ -500,16 +500,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
     try {
       Map<String, String> dcByNode = getDCsByNodeForRepairSegment(coordinator, cluster, segment, keyspace);
-      boolean repairRunningOnNodes = isRepairRunningOnNodes(segment, dcByNode, keyspace, cluster);
-      if (repairRunningOnNodes || !nodesReadyForNewRepair(coordinator, segment, dcByNode, busyHosts)) {
-        String msg = "Postponed due to a"
-                + (repairRunningOnNodes ? "nother running segment" : " busy/unavailable replica node");
 
-        LOG.info("SegmentRunner declined to repair segment {}. {}", segmentId, msg);
-        repairRunner.updateLastEvent(msg);
-        return false;
-      }
-      return true;
+      return !isRepairRunningOnNodes(segment, dcByNode, keyspace, cluster)
+          && nodesReadyForNewRepair(coordinator, segment, dcByNode, busyHosts);
+
     } catch (RuntimeException e) {
       LOG.warn("SegmentRunner couldn't get token ranges from coordinator: ", e);
       String msg = "SegmentRunner couldn't get token ranges from coordinator";
@@ -638,20 +632,18 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           NodeMetrics metrics = result.get();
           int pendingCompactions = metrics.getPendingCompactions();
           if (pendingCompactions > context.config.getMaxPendingCompactions()) {
-            LOG.info(
-                "declined to repair segment {} because of too many pending compactions (> {}) on host \"{}\"",
-                segmentId, context.config.getMaxPendingCompactions(), metrics.getNode());
+            String msg = String.format(
+                "postponed repair segment %s because of too many pending compactions (%s > %s) on host %s",
+                segmentId, pendingCompactions, context.config.getMaxPendingCompactions(), metrics.getNode());
 
-            String msg = String.format("Postponed due to pending compactions (%d)", pendingCompactions);
             repairRunner.updateLastEvent(msg);
             return false;
           }
           if (metrics.hasRepairRunning()) {
-            LOG.info(
-                "declined to repair segment {} because one of the hosts ({}) was already involved in a repair",
+            String msg = String.format(
+                "postponed repair segment %s because one of the hosts (%s) was already involved in a repair",
                 segmentId, metrics.getNode());
 
-            String msg = "Postponed due to affected hosts already doing repairs";
             repairRunner.updateLastEvent(msg);
             handlePotentialStuckRepairs(busyHosts, metrics.getNode());
             return false;
@@ -674,12 +666,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       LOG.info("Ok to repair segment '{}' on repair run with id '{}'", segment.getId(), segment.getRunId());
       return true;
     } else {
-      LOG.info(
-          "Not ok to repair segment '{}' on repair run with id '{}' because we couldn't get {}hosts metrics on {}",
+      String msg = String.format(
+          "Postponed repair segment %s on repair run with id %s because we couldn't get %shosts metrics on %s",
           segment.getId(),
           segment.getRunId(),
           (requireAllHostMetrics ? "" : "datacenter "),
           StringUtils.join(unreachableNodes, ' '));
+
+      repairRunner.updateLastEvent(msg);
       return false;
     }
   }
@@ -706,7 +700,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     for (RepairSegment seg : segments) {
       // incremental repairs only one segment is allowed at once (one segment == the full primary range of one node)
       if (repairUnit.getIncrementalRepair() || hasReplicaInNodes(cluster, keyspace, seg, nodes)) {
-        LOG.info("segment '{}' is running on host '{}'", seg.getId(), seg.getCoordinatorHost());
+
+        String msg = String.format(
+            "postponed repair segment %s because segment %s is running on host %s",
+            segment.getId(), seg.getId(), seg.getCoordinatorHost());
+
+        repairRunner.updateLastEvent(msg);
         return true;
       }
     }

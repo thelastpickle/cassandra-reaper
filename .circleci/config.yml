@@ -53,9 +53,6 @@ aliases:
               ccm create test_2_2 --no-switch -v 2.2.13
               ccm create test_3_0 --no-switch -v 3.0.17
               ccm create test_3_11 --no-switch -v 3.11.3
-              # 4.0 builds are ignored until new ccm version is released and available in pip
-              #   see comment below under "workflows"
-              #ccm create test_trunk --no-switch -v git:trunk
 
         - save_cache:
             paths:
@@ -78,18 +75,17 @@ aliases:
                 ccm create test -v $CASSANDRA_VERSION
                 ccm populate --vnodes -n $NODES_PER_DC:$NODES_PER_DC
                 for i in `seq 1 $(($NODES_PER_DC *2))` ; do
-                  if [ "$i" -le "$NODES_PER_DC" ] ; then
-                    sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+                  if [ "$i" -gt "$NODES_PER_DC" ] && [ echo "$JOB_COMMAND" | grep -q "Pskip-tests-needing-all-nodes-reachable" ] ; then
+                    # scenarios that are not tagged with @all_nodes_reachable will be tested with an unreachable DC2
+                    sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.blank.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
                   else
-                    if  echo "$JOB_COMMAND" | grep -q "Pskip-tests-needing-all-nodes-reachable"  ; then
-                      # scenarios that are not tagged with @all_nodes_reachable can be tested against an unreachable DC2
-                      sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.blank.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
-                    else
-                      # @all_nodes_reachable scenarios need all datacenters+nodes reachable
-                      sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
-                    fi
+                    sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
                   fi
-                  sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="136m"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+                  if echo "$CASSANDRA_VERSION" | grep -q "trunk" ; then
+                    sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="200m"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+                  else
+                    sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="136m"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+                  fi
                   sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="112M"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
                   sed -i 's/LOCAL_JMX=yes/LOCAL_JMX=no/' ~/.ccm/test/node$i/conf/cassandra-env.sh
                   sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' ~/.ccm/test/node$i/conf/cassandra.yaml
@@ -190,7 +186,7 @@ jobs:
     c_2-1_one-reaper:
       environment:
         CASSANDRA_VERSION: 2.1.20
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable
       <<: *default_job
     c_2-1_two-reapers:
       environment:
@@ -200,7 +196,7 @@ jobs:
     c_2-1_flapping-reapers:
       environment:
         CASSANDRA_VERSION: 2.1.20
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx400m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_2-1_one-reaper__all_nodes_reachable:
       environment:
@@ -242,7 +238,7 @@ jobs:
     c_2-2_one-reaper:
       environment:
         CASSANDRA_VERSION: 2.2.13
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable
       <<: *default_job
     c_2-2_two-reapers:
       environment:
@@ -252,7 +248,7 @@ jobs:
     c_2-2_flapping-reapers:
       environment:
         CASSANDRA_VERSION: 2.2.13
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx400m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_2-2_one-reaper__all_nodes_reachable:
       environment:
@@ -294,7 +290,7 @@ jobs:
     c_3-0_one-reaper:
       environment:
         CASSANDRA_VERSION: 3.0.17
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable
       <<: *default_job
     c_3-0_two-reapers:
       environment:
@@ -304,7 +300,7 @@ jobs:
     c_3-0_flapping-reapers:
       environment:
         CASSANDRA_VERSION: 3.0.17
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx400m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_3-0_one-reaper__all_nodes_reachable:
       environment:
@@ -346,7 +342,7 @@ jobs:
     c_3-11_one-reaper:
       environment:
         CASSANDRA_VERSION: 3.11.3
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable
       <<: *default_job
     c_3-11_two-reapers:
       environment:
@@ -356,7 +352,7 @@ jobs:
     c_3-11_flapping-reapers:
       environment:
         CASSANDRA_VERSION: 3.11.3
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx400m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_3-11_one-reaper__all_nodes_reachable:
       environment:
@@ -387,55 +383,65 @@ jobs:
       <<: *default_job
     c_4-0_memory:
       environment:
-        CASSANDRA_VERSION: git:trunk
+        CASSANDRA_VERSION: github:apache/trunk
+        NODES_PER_DC: 1
         JOB_COMMAND: mvn surefire:test -B -DsurefireArgLine="-Xmx256m" -Dtest=ReaperIT -Pskip-tests-needing-all-nodes-reachable
       <<: *default_job
     c_4-0_h2:
       environment:
-        CASSANDRA_VERSION: git:trunk
+        CASSANDRA_VERSION: github:apache/trunk
+        NODES_PER_DC: 1
         JOB_COMMAND: mvn surefire:test -B -DsurefireArgLine="-Xmx256m" -Dtest=ReaperH2IT -Pskip-tests-needing-all-nodes-reachable
       <<: *default_job
     c_4-0_one-reaper:
       environment:
-        CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable
+        CASSANDRA_VERSION: github:apache/trunk
+        NODES_PER_DC: 1
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable
       <<: *default_job
     c_4-0_two-reapers:
       environment:
-        CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+        CASSANDRA_VERSION: github:apache/trunk
+        NODES_PER_DC: 1
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
     c_4-0_flapping-reapers:
       environment:
-        CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx398m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        CASSANDRA_VERSION: github:apache/trunk
+        NODES_PER_DC: 1
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx400m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_4-0_one-reaper__all_nodes_reachable:
       environment:
-        CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable
+        CASSANDRA_VERSION: github:apache/trunk
+        NODES_PER_DC: 1
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable
       <<: *default_job
     c_4-0_two-reapers__all_nodes_reachable:
       environment:
-        CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+        CASSANDRA_VERSION: github:apache/trunk
+        NODES_PER_DC: 1
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
       <<: *default_job
     c_4-0_flapping-reapers__all_nodes_reachable:
       environment:
-        CASSANDRA_VERSION: git:trunk
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx398m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        CASSANDRA_VERSION: github:apache/trunk
+        NODES_PER_DC: 1
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_4-0_upgrades:
       environment:
-        CASSANDRA_VERSION: git:trunk
+        CASSANDRA_VERSION: github:apache/trunk
+        NODES_PER_DC: 1
         CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable"
-        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx256m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
       <<: *default_job
     c_4-0_upgrades__all_nodes_reachable:
       environment:
-        CASSANDRA_VERSION: git:trunk
+        CASSANDRA_VERSION: github:apache/trunk
+        NODES_PER_DC: 1
         CUCUMBER_OPTIONS: "-t @all_nodes_reachable"
-        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+        JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx256m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
       <<: *default_job
 workflows:
   version: 2
@@ -640,47 +646,45 @@ workflows:
 #          requires:
 #            - build
 #            - c_3-11_upgrades
-# 4.0 builds are ignored until new ccm version is released and available in pip
-#   see comment above as well under "Download dependencies"
-#      - c_4-0_memory:
-#          requires:
-#            - build
-#      - c_4-0_h2:
-#          requires:
-#            - build
-#            - c_4-0_memory
-#      - c_4-0_one-reaper:
-#          requires:
-#            - build
-#            - c_4-0_memory
-#      - c_4-0_two-reapers:
-#          requires:
-#            - build
-#            - c_4-0_memory
-#            - c_4-0_one-reaper
-#      - c_4-0_one-reaper__all_nodes_reachable:
-#          requires:
-#            - build
-#            - c_4-0_memory
-#      - c_4-0_two-reapers__all_nodes_reachable:
-#          requires:
-#            - build
-#            - c_4-0_memory
-#            - c_4-0_one-reaper__all_nodes_reachable
+      - c_4-0_memory:
+          requires:
+            - build
+      - c_4-0_h2:
+          requires:
+            - build
+            - c_4-0_memory
+      - c_4-0_one-reaper:
+          requires:
+            - build
+            - c_4-0_memory
+      - c_4-0_two-reapers:
+          requires:
+            - build
+            - c_4-0_memory
+            - c_4-0_one-reaper
+      - c_4-0_one-reaper__all_nodes_reachable:
+          requires:
+            - build
+            - c_4-0_memory
+      - c_4-0_two-reapers__all_nodes_reachable:
+          requires:
+            - build
+            - c_4-0_memory
+            - c_4-0_one-reaper__all_nodes_reachable
 # FIXME -- the following requires more memory than free OSS CircleCI offers
-#      - c_4-0_flapping-reapers__all_nodes_reachable:
-#          requires:
-#            - build
-#            - c_4-0_memory
-#            - c_4-0_one-reaper__all_nodes_reachable
-#            - c_4-0_two-reapers__all_nodes_reachable
-#      - c_4-0_flapping-reapers:
-#          requires:
-#            - build
-#            - c_4-0_memory
-#            - c_4-0_one-reaper
-#            - c_4-0_two-reapers
-#            - c_4-0_flapping-reapers__all_nodes_reachable
+      - c_4-0_flapping-reapers__all_nodes_reachable:
+          requires:
+            - build
+            - c_4-0_memory
+            - c_4-0_one-reaper__all_nodes_reachable
+            - c_4-0_two-reapers__all_nodes_reachable
+      - c_4-0_flapping-reapers:
+          requires:
+            - build
+            - c_4-0_memory
+            - c_4-0_one-reaper
+            - c_4-0_two-reapers
+# Upgrade Integration Tests are broken due to classloading issues around org.glassfish.jersey.internal.spi.AutoDiscoverable
 #      - c_4-0_upgrades:
 #          requires:
 #            - build
