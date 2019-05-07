@@ -498,18 +498,20 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       Cluster cluster,
       LazyInitializer<Set<String>> busyHosts) {
 
-    try {
-      Map<String, String> dcByNode = getDCsByNodeForRepairSegment(coordinator, cluster, segment, keyspace);
+    if (RepairSegment.State.NOT_STARTED == segment.getState()) {
+      try {
+        Map<String, String> dcByNode = getDCsByNodeForRepairSegment(coordinator, cluster, segment, keyspace);
 
-      return !isRepairRunningOnNodes(segment, dcByNode, keyspace, cluster)
-          && nodesReadyForNewRepair(coordinator, segment, dcByNode, busyHosts);
+        return !isRepairRunningOnNodes(segment, dcByNode, keyspace, cluster)
+            && nodesReadyForNewRepair(coordinator, segment, dcByNode, busyHosts);
 
-    } catch (RuntimeException e) {
-      LOG.warn("SegmentRunner couldn't get token ranges from coordinator: ", e);
-      String msg = "SegmentRunner couldn't get token ranges from coordinator";
-      repairRunner.updateLastEvent(msg);
-      return false;
+      } catch (RuntimeException e) {
+        LOG.warn("SegmentRunner couldn't get token ranges from coordinator: ", e);
+        String msg = "SegmentRunner couldn't get token ranges from coordinator";
+        repairRunner.updateLastEvent(msg);
+      }
     }
+    return false;
   }
 
   static boolean okToRepairSegment(
