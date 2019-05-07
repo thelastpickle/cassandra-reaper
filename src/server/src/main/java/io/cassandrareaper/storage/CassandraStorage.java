@@ -22,7 +22,6 @@ import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.ClusterProperties;
-import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
@@ -58,7 +57,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
-import javax.management.openmbean.CompositeData;
 
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.CodecRegistry;
@@ -82,7 +80,6 @@ import com.datastax.driver.core.policies.DowngradingConsistencyRetryPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
 import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
@@ -461,24 +458,21 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             .prepare(
                 "INSERT INTO node_metrics_v2 (cluster, metric_domain, metric_type, time_bucket, "
                     + "host, metric_scope, metric_name, ts, metric_attribute, value) "
-                    + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-            .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
+                    + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     getMetricsForHostPrepStmt
         = session
             .prepare(
                 "SELECT cluster, metric_domain, metric_type, time_bucket, host, "
                     + "metric_scope, metric_name, ts, metric_attribute, value "
                     + "FROM node_metrics_v2 "
-                    + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ? and host = ?")
-            .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
+                    + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ? and host = ?");
     getMetricsForClusterPrepStmt
       = session
             .prepare(
                 "SELECT cluster, metric_domain, metric_type, time_bucket, host, "
                     + "metric_scope, metric_name, ts, metric_attribute, value "
                     + "FROM node_metrics_v2 "
-                    + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ?")
-            .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
+                    + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ?");
   }
 
   private void prepareOperationsStatements() {
@@ -1705,64 +1699,25 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public void storeCompactions(String clusterName, String host, List<Compaction> activeCompactions)
-      throws JsonProcessingException {
+  public void storeOperations(String clusterName, OpType operationType, String host, String operationsJson) {
     session.executeAsync(
         insertOperationsPrepStmt.bind(
             clusterName,
-            OP_COMPACTION,
+            operationType.getName(),
             DateTime.now().toString(HOURLY_FORMATTER),
             host,
             DateTime.now().toDate(),
-            objectMapper.writeValueAsString(activeCompactions)));
+            operationsJson));
   }
 
   @Override
-  public List<Compaction> listCompactions(String clusterName, String host)
-      throws IOException {
-    // cluster = ? AND type = ? and time_bucket = ? and host = ?
-    ResultSet compactions
+  public String listOperations(String clusterName, OpType operationType, String host) {
+    ResultSet operations
         = session.execute(
             listOperationsForNodePrepStmt.bind(
-                clusterName, OP_COMPACTION, DateTime.now().toString(HOURLY_FORMATTER), host));
-    return compactions.isExhausted()
-        ? Collections.emptyList()
-        : parseJson(compactions.one().getString("data"), new TypeReference<List<Compaction>>(){});
-  }
-
-  @Override
-  public void storeStreams(String clusterName, String host, Set<CompositeData> activeStreams)
-      throws JsonProcessingException {
-    session.executeAsync(
-        insertOperationsPrepStmt.bind(
-            clusterName,
-            OP_STREAMING,
-            DateTime.now().toString(HOURLY_FORMATTER),
-            host,
-            DateTime.now().toDate(),
-            objectMapper.writeValueAsString(activeStreams)));
-  }
-
-  @Override
-  public Set<CompositeData> listStreamingOperations(String clusterName, String host)
-      throws IOException {
-    // cluster = ? AND type = ? and time_bucket = ? and host = ?
-    ResultSet streams
-        = session.execute(
-            listOperationsForNodePrepStmt.bind(
-                clusterName, OP_STREAMING, DateTime.now().toString(HOURLY_FORMATTER), host));
-    return streams.isExhausted()
-        ? Collections.emptySet()
-        : parseJson(streams.one().getString("data"), new TypeReference<Set<CompositeData>>(){});
-  }
-
-
-  private static <T> T parseJson(String json, TypeReference<T> ref) {
-    try {
-      return new ObjectMapper().readValue(json, ref);
-    } catch (IOException e) {
-      LOG.error("error parsing json", e);
-      throw new RuntimeException(e);
-    }
+                clusterName, operationType.getName(), DateTime.now().toString(HOURLY_FORMATTER), host));
+    return operations.isExhausted()
+        ? "[]"
+        : operations.one().getString("data");
   }
 }

@@ -28,6 +28,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.storage.IDistributedStorage;
+import io.cassandrareaper.storage.OpType;
 
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
@@ -58,6 +60,7 @@ public final class MetricsService {
 
   private final AppContext context;
   private final ClusterFacade clusterFacade;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   private MetricsService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier) {
     this.context = context;
@@ -129,7 +132,11 @@ public final class MetricsService {
     List<Compaction> activeCompactions = ClusterFacade.create(context).listActiveCompactionsDirect(node);
 
     ((IDistributedStorage) context.storage)
-        .storeCompactions(context.localClusterName, context.localNodeAddress, activeCompactions);
+        .storeOperations(
+            context.localClusterName,
+            OpType.OP_COMPACTION,
+            context.localNodeAddress,
+            objectMapper.writeValueAsString(activeCompactions));
 
     LOG.debug("Grabbing and storing compactions for {}", context.localNodeAddress);
   }
@@ -141,7 +148,10 @@ public final class MetricsService {
     Set<CompositeData> activeStreams = ClusterFacade.create(context).listStreamsDirect(node);
 
     ((IDistributedStorage) context.storage)
-        .storeStreams(context.localClusterName, context.localNodeAddress, activeStreams);
+        .storeOperations(
+            context.localClusterName,
+            OpType.OP_STREAMING,context.localNodeAddress,
+            objectMapper.writeValueAsString(activeStreams));
 
     LOG.debug("Grabbing and storing streams for {}", context.localNodeAddress);
   }

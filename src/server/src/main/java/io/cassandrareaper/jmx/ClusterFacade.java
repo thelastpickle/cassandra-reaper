@@ -34,6 +34,7 @@ import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.IDistributedStorage;
+import io.cassandrareaper.storage.OpType;
 
 import java.io.IOError;
 import java.io.IOException;
@@ -54,6 +55,8 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
@@ -469,7 +472,7 @@ public final class ClusterFacade {
    */
   public List<Compaction> listActiveCompactions(Node node)
       throws MalformedObjectNameException, ReflectionException, ReaperException,
-          InterruptedException, IOException {
+          InterruptedException {
     String nodeDc = getDatacenter(node);
     if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
       // We have direct JMX access to the node
@@ -477,7 +480,10 @@ public final class ClusterFacade {
     } else {
       // We don't have access to the node through JMX, so we'll get data from the database
       LOG.info("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
-      return ((IDistributedStorage)context.storage).listCompactions(node.getCluster().getName(), node.getHostname());
+      String compactionsJson
+          = ((IDistributedStorage)context.storage).listOperations(
+              node.getCluster().getName(), OpType.OP_COMPACTION, node.getHostname());
+      return parseJson(compactionsJson, new TypeReference<List<Compaction>>(){});
     }
   }
 
@@ -768,8 +774,7 @@ public final class ClusterFacade {
    * @throws IOException errors in parsing JSON encoded compaction objects
    */
   public Set<CompositeData> listActiveStreams(Node node)
-      throws ReaperException,
-          InterruptedException, IOException {
+      throws ReaperException, InterruptedException {
     String nodeDc = getDatacenter(node);
     if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
       // We have direct JMX access to the node
@@ -777,8 +782,9 @@ public final class ClusterFacade {
     } else {
       // We don't have access to the node through JMX, so we'll get data from the database
       LOG.info("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
-      return ((IDistributedStorage) context.storage)
-          .listStreamingOperations(node.getCluster().getName(), node.getHostname());
+      String streamsJson = ((IDistributedStorage) context.storage)
+          .listOperations(node.getCluster().getName(), OpType.OP_STREAMING ,node.getHostname());
+      return parseJson(streamsJson, new TypeReference<Set<CompositeData>>(){});
     }
   }
 
@@ -792,5 +798,14 @@ public final class ClusterFacade {
   public Set<CompositeData> listStreamsDirect(Node node) throws ReaperException {
     JmxProxy jmxProxy = connectAndAllowSidecar(node.getCluster(), Arrays.asList(node.getHostname()));
     return StreamsProxy.create(jmxProxy).listStreams();
+  }
+
+  private static <T> T parseJson(String json, TypeReference<T> ref) {
+    try {
+      return new ObjectMapper().readValue(json, ref);
+    } catch (IOException e) {
+      LOG.error("error parsing json", e);
+      throw new RuntimeException(e);
+    }
   }
 }

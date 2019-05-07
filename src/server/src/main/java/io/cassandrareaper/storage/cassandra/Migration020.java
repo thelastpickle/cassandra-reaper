@@ -49,33 +49,33 @@ public final class Migration020 {
         || VersionNumber.parse("3.8").compareTo(lowestNodeVersion) <= 0) {
       try {
         if (!isUsingTwcs(session, keyspace)) {
-          LOG.warn("Altering {} to use TWCS...", METRICS_V1_TABLE);
+          LOG.info("Altering {} to use TWCS...", METRICS_V1_TABLE);
           session.execute(
                   "ALTER TABLE " + METRICS_V1_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
                       + "'unchecked_tombstone_compaction': 'true', "
                       + "'compaction_window_size': '2', "
                       + "'compaction_window_unit': 'MINUTES'}");
 
-          LOG.warn("Altering {} to use TWCS...", METRICS_V2_TABLE);
+          LOG.info("Altering {} to use TWCS...", METRICS_V2_TABLE);
           session.execute(
                   "ALTER TABLE " + METRICS_V2_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
                       + "'unchecked_tombstone_compaction': 'true', "
                       + "'compaction_window_size': '1', "
                       + "'compaction_window_unit': 'DAYS'}");
 
-          LOG.warn("{} was successfully altered to use TWCS.", METRICS_V2_TABLE);
+          LOG.info("{} was successfully altered to use TWCS.", METRICS_V2_TABLE);
 
-          LOG.warn("Altering {} to use TWCS...", OPERATIONS_TABLE);
+          LOG.info("Altering {} to use TWCS...", OPERATIONS_TABLE);
           session.execute(
                   "ALTER TABLE " + OPERATIONS_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
                       + "'unchecked_tombstone_compaction': 'true', "
                       + "'compaction_window_size': '1', "
                       + "'compaction_window_unit': 'DAYS'}");
 
-          LOG.warn("{} was successfully altered to use TWCS.", OPERATIONS_TABLE);
+          LOG.info("{} was successfully altered to use TWCS.", OPERATIONS_TABLE);
         }
       } catch (RuntimeException e) {
-        LOG.error("Failed altering metrics tables", e);
+        LOG.error("Failed altering metrics tables to TWCS", e);
       }
     }
 

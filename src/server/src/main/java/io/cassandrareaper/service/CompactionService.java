@@ -23,7 +23,6 @@ import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.jmx.ClusterFacade;
 
-import java.io.IOException;
 import java.util.List;
 
 import javax.management.JMException;
@@ -49,7 +48,7 @@ public final class CompactionService {
   public List<Compaction> listActiveCompactions(Node host) throws ReaperException {
     try {
       return ClusterFacade.create(context).listActiveCompactions(host);
-    } catch (JMException | RuntimeException | InterruptedException | IOException e) {
+    } catch (JMException | RuntimeException | InterruptedException e) {
       LOG.error("Failed listing compactions for host {}", host, e);
       throw new ReaperException(e);
     }

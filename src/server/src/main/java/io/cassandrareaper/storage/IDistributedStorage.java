@@ -17,22 +17,15 @@
 
 package io.cassandrareaper.storage;
 
-import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.service.RingRange;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
-
-import javax.management.openmbean.CompositeData;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 
 /**
@@ -86,6 +79,10 @@ public interface IDistributedStorage {
 
   void storeMetric(GenericMetric metric);
 
+  void storeOperations(String clusterName, OpType operationType, String host, String operationsJson);
+
+  String listOperations(String clusterName, OpType operationType, String host);
+  /*
   void storeCompactions(String clusterName, String host, List<Compaction> activeCompactions)
       throws JsonProcessingException;
 
@@ -97,5 +94,6 @@ public interface IDistributedStorage {
 
   Set<CompositeData> listStreamingOperations(String clusterName, String host)
       throws JsonProcessingException, IOException;
+  */
 
 }
