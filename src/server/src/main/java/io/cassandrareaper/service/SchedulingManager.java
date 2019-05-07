@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -60,7 +61,7 @@ public final class SchedulingManager extends TimerTask {
 
     timer.schedule(
         this,
-        1000L,
+        ThreadLocalRandom.current().nextLong(1000, 2000),
         1000L * Integer.getInteger(SchedulingManager.class.getName() + ".period_seconds", 60));
   }
 
@@ -178,15 +179,28 @@ public final class SchedulingManager extends TimerTask {
               // boolean result = context.storage
               //        .deleteRepairRunFromRepairSchedule(schedule.getId(), newRepairRun.getId());
             } else if (schedule.getRunHistory().size() < latestSchedule.getRunHistory().size()) {
+              // newRepairRun is identified as a duplicate (for this schedule and activation time)
               UUID latestRepairRun = latestSchedule.getRunHistory().get(latestSchedule.getRunHistory().size() - 1);
+
               LOG.info(
                   "schedule {} has already added a new repair run {}",
                   schedule.getId(),
                   latestRepairRun);
-              // newRepairRun is identified as a duplicate (for this schedule and activation time)
-              // so take the actual last repair run, and try start it. it's ok if already running.
+
+              // mark the newly created repair run as an error
+              context.storage.updateRepairRun(
+                  newRepairRun.with()
+                      .startTime(null != newRepairRun.getStartTime() ? newRepairRun.getStartTime() : DateTime.now())
+                      .endTime(DateTime.now())
+                      .runState(RepairRun.RunState.ERROR)
+                      .lastEvent("duplicate of " + latestRepairRun)
+                      .build(newRepairRun.getId()));
+
+              // take the identified last repair run, and try start it. it's ok if already running.
               newRepairRun = context.storage.getRepairRun(latestRepairRun).get();
-              context.repairManager.startRepairRun(newRepairRun);
+              if (RepairRun.RunState.NOT_STARTED == newRepairRun.getRunState()) {
+                context.repairManager.startRepairRun(newRepairRun);
+              }
             } else {
               LOG.warn(
                   "schedule {} has been altered by someone else. not running repair",
