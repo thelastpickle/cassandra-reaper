@@ -119,7 +119,7 @@ jobs:
       env: TEST_TYPE=sidecar CASSANDRA_VERSION=3.11.3 GRIM_MIN=1 GRIM_MAX=1
     - stage: Sidecar Integration Tests
       name: Sidecar on Cassandra 4.0
-      env: TEST_TYPE=sidecar CASSANDRA_VERSION=git:trunk GRIM_MIN=1 GRIM_MAX=1
+      env: TEST_TYPE=sidecar CASSANDRA_VERSION=git:trunk GRIM_MIN=1 GRIM_MAX=1 CO="-t @sidecar"
     - stage: Flapping Distributed Reaper Integration Tests
       name: Four Flapping Reaper on Cassandra 2.1.20
       env: TEST_TYPE=ccm CASSANDRA_VERSION=2.1.20 GRIM_MIN=2 GRIM_MAX=4
