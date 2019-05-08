@@ -379,16 +379,17 @@ public final class RepairRunResource {
       }
 
       final RepairRun.RunState newState = parseRunState(stateStr.get());
-      if (isUnitAlreadyRepairing(repairRun.get())) {
-        String errMsg = "repair unit already has run " + repairRun.get().getRepairUnitId() + " in RUNNING state";
-        LOG.error(errMsg);
-        return Response.status(Status.CONFLICT).entity(errMsg).build();
-      }
-
       final RunState oldState = repairRun.get().getRunState();
       if (oldState == newState) {
         String msg = "given \"state\" " + stateStr + " is same as the current run state";
         return Response.noContent().entity(msg).location(buildRepairRunUri(uriInfo, repairRun.get())).build();
+      }
+      if ((isStarting(oldState, newState) || isResuming(oldState, newState) || isRetrying(oldState, newState))
+          && isUnitAlreadyRepairing(repairRun.get())) {
+
+        String errMsg = "repair unit already has run " + repairRun.get().getRepairUnitId() + " in RUNNING state";
+        LOG.error(errMsg);
+        return Response.status(Status.CONFLICT).entity(errMsg).build();
       }
 
       if (isStarting(oldState, newState)) {

@@ -118,7 +118,7 @@ Feature: Using Reaper
     Then reaper has 1 started or done repairs for the last added cluster
     When the last added repair is stopped
     Then reseting one segment sets its state to not started
-    And the last added repair run is deleted
+    And all added repair runs are deleted for the last added cluster
     And deleting the last added cluster fails
     When all added schedules are deleted for the last added cluster
     And the last added cluster is deleted
@@ -142,7 +142,7 @@ Feature: Using Reaper
     And we wait for at least 1 segments to be repaired
     Then reaper has 1 started or done repairs for the last added cluster
     When the last added repair is stopped
-    And the last added repair run is deleted
+    And all added repair runs are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
   ${cucumber.upgrade-versions}
@@ -164,7 +164,7 @@ Feature: Using Reaper
     And we wait for at least 1 segments to be repaired
     Then reaper has 1 started or done repairs for the last added cluster
     When the last added repair is stopped
-    And the last added repair run is deleted
+    And all added repair runs are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
  ${cucumber.upgrade-versions}
@@ -186,7 +186,7 @@ Feature: Using Reaper
     When reaper is upgraded to latest
     Then reaper has 1 started or done repairs for the last added cluster
     When the last added repair is stopped
-    And the last added repair run is deleted
+    And all added repair runs are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
   ${cucumber.upgrade-versions}
