@@ -169,18 +169,20 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   @Override
   public void run() {
+    boolean ran = false;
     if (takeLead()) {
       try {
-        if (runRepair()) {
-          long delay = intensityBasedDelayMillis(intensity);
-          try {
-            Thread.sleep(delay);
-          } catch (InterruptedException e) {
-            LOG.warn("Slept shorter than intended delay.");
-          }
-        }
+        ran = runRepair();
       } finally {
         releaseLead();
+      }
+    }
+    if (ran) {
+      long delay = intensityBasedDelayMillis(intensity);
+      try {
+        Thread.sleep(delay);
+      } catch (InterruptedException e) {
+        LOG.warn("Slept shorter than intended delay.");
       }
     }
   }
