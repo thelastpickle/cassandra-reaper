@@ -24,12 +24,12 @@ AND state = 'NOT_STARTED';
 UPDATE repair_run
 SET end_time = CAST(NULL as TIMESTAMP WITH TIME ZONE)
 WHERE end_time IS NOT NULL
-AND state NOT IN ('ERROR', 'DONE', 'ABORTED', 'PAUSED');
+AND state NOT IN ('ERROR', 'DONE', 'ABORTED', 'DELETED');
 
 UPDATE repair_run
 SET end_time = start_time
 WHERE end_time IS NULL
-AND state IN ('ERROR', 'DONE', 'ABORTED', 'PAUSED');
+AND state IN ('ERROR', 'DONE', 'ABORTED', 'DELETED');
 
 UPDATE repair_run
 SET start_time = end_time

@@ -17,11 +17,6 @@
 --
 
 UPDATE repair_run
-SET start_time = NULL
-WHERE start_time is NOT NULL
-AND state =  'NOT_STARTED';
-
-UPDATE repair_run
 SET end_time = NULL
 WHERE end_time IS NOT NULL
 AND state NOT IN ('ERROR', 'DONE', 'ABORTED', 'DELETED');
@@ -32,11 +27,6 @@ WHERE end_time IS NULL
 AND state IN ('ERROR', 'DONE', 'ABORTED', 'DELETED');
 
 UPDATE repair_run
-SET start_time = end_time
-WHERE start_time is NULL
-AND end_time IS NOT NULL;
-
-UPDATE repair_run
-SET pause_time = start_time
-WHERE pause_time IS NULL
-AND state = 'PAUSED';
+SET pause_time = CAST(NULL as TIMESTAMP WITH TIME ZONE)
+WHERE pause_time IS NOT NULL
+AND state <> 'PAUSED';
