@@ -200,7 +200,8 @@ export const repairs = Rx.Observable.merge(
     updateRepairIntensityResult
   ).map(s =>
     s.flatMap(t => Rx.Observable.fromPromise($.ajax({
-        url: `${URL_PREFIX}/repair_run`
+        url: `${URL_PREFIX}/repair_run`,
+        data: { cluster: s.currentCluster }
       }).promise())
     ).map(arr=>arr.reverse())
 );
