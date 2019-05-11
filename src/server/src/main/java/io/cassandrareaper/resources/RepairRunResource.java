@@ -580,7 +580,7 @@ public final class RepairRunResource {
   /**
    * @return Aborts a running segment.
    */
-  @GET
+  @POST
   @Path("/{id}/segments/abort/{segment_id}")
   public Response getRepairRunSegments(
       @PathParam("id") UUID repairRunId, @PathParam("segment_id") UUID segmentId) {
@@ -769,7 +769,7 @@ public final class RepairRunResource {
     return Response.status(Response.Status.NOT_FOUND).entity("Repair run %s" + runId + " not found").build();
   }
 
-  @GET
+  @POST
   @Path("/purge")
   public Response purgeRepairRuns() throws ReaperException {
     int purgedRepairs = PurgeService.create(context).purgeDatabase();

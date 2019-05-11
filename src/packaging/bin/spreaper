@@ -839,7 +839,7 @@ class ReaperCLI(object):
             extra_arguments=_arguments_for_abort_segment
         )
         printq("# Aborting a segment with run id: {0} and segment id {1}".format(args.run_id, args.segment_id))
-        reaper.get("repair_run/{0}/segments/abort/{1}".format(args.run_id, args.segment_id))
+        reaper.post("repair_run/{0}/segments/abort/{1}".format(args.run_id, args.segment_id))
         printq("# Segment '{0}' aborted".format(args.segment_id))
 
     def start_schedule(self):

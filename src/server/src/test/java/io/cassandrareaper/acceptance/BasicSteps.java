@@ -1381,7 +1381,7 @@ public final class BasicSteps {
                 await().with().pollInterval(1, SECONDS).atMost(2, MINUTES).until(
                     () -> {
                       Response abort = runner.callReaper(
-                              "GET", // TODO – this should be a POST
+                              "POST",
                               "/repair_run/"
                                   + testContext.getCurrentRepairId()
                                   + "/segments/abort/"

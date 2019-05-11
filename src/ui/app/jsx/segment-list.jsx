@@ -345,7 +345,7 @@ const Segment = React.createClass({
         this.props.notify("Aborting segment " + this.props.segment.id, "warning", this.props.segment.id);
         $.ajax({
             url: this.props.urlPrefix + '/repair_run/' + encodeURIComponent(this.props.segment.runId) + '/segments/abort/' + encodeURIComponent(this.props.segment.id),
-            method: 'GET',
+            method: 'POST',
             component: this,
             success: function(data) {
                 this.component.props.notify("Successfully aborted segment " + this.component.props.segment.id, "success", this.component.props.segment.id)

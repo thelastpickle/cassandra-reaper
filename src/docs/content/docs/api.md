@@ -96,7 +96,7 @@ This operation expects that a call was previously made to `/login` and that the 
   * Returns the list of segments of the repair run.
   
   
-* **GET     /repair_run/{id}/segments/abort/{segment_id}**
+* **POST     /repair_run/{id}/segments/abort/{segment_id}**
   * Expected query parameters: *None*
   * Aborts a running segment and puts it back in NOT_STARTED state. The segment will be processed again later during the lifetime of the repair run.
   
