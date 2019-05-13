@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-webpack-dev-server --host 0.0.0.0 --port 8000 --content-base build/ -d
+./node_modules/.bin/webpack-dev-server --host 0.0.0.0 --port 8000 --content-base build/ -d

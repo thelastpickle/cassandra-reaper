@@ -35,7 +35,9 @@ const repairScreen = React.createClass({
     updateStatusSubject: React.PropTypes.object.isRequired,
     updateIntensitySubject: React.PropTypes.object.isRequired,
     repairs: React.PropTypes.object.isRequired,
-    statusObservableTimer: React.PropTypes.object.isRequired
+    statusObservableTimer: React.PropTypes.object.isRequired,
+    repairRunResult: React.PropTypes.object.isRequired,
+    repairRunSubject: React.PropTypes.object.isRequired
   },
 
   getInitialState: function() {
@@ -48,9 +50,9 @@ const repairScreen = React.createClass({
 
   render: function() {
 
-  const navStyle = {
-    marginBottom: 0
-  };
+    const navStyle = {
+      marginBottom: 0
+    };
 
     return (
     <div id="wrapper">
@@ -90,7 +92,9 @@ const repairScreen = React.createClass({
                               updateStatusSubject={this.props.updateStatusSubject}
                               updateIntensitySubject={this.props.updateIntensitySubject}
                               currentCluster={this.state.currentCluster}
-                              changeCurrentCluster={this.changeCurrentCluster}> </RepairList>
+                              changeCurrentCluster={this.changeCurrentCluster}
+                              repairRunSubject={this.props.repairRunSubject}
+                              repairRunResult={this.props.repairRunResult}> </RepairList>
                 </div>
             </div>
 

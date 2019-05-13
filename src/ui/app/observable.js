@@ -156,7 +156,7 @@ export const addRepairSubject = new Rx.Subject();
 export const deleteRepairSubject = new Rx.Subject();
 export const updateRepairStatusSubject = new Rx.Subject();
 export const updateRepairIntensitySubject = new Rx.Subject();
-
+export const repairRunSubject = new Rx.Subject();
 
 export const addRepairResult = addRepairSubject.map(repair => {
   console.info("Starting repair for cluster: " + repair.clusterName);
@@ -191,9 +191,16 @@ export const updateRepairIntensityResult = updateRepairIntensitySubject.map(repa
   }).promise());
 }).share();
 
+export const repairRunResult = repairRunSubject.map(repair => {
+  const params = $.param(repair);
+  return Rx.Observable.fromPromise($.ajax({
+    url: `${URL_PREFIX}/repair_run?${params}`,
+    method: 'GET'
+  }).promise());
+}).share();
 
 export const repairs = Rx.Observable.merge(
-    Rx.Observable.timer(0, POLLING_INTERVAL).map(t => Rx.Observable.just({})),
+    repairRunResult,
     addRepairResult,
     deleteRepairResult,
     updateRepairStatusResult,

@@ -30,7 +30,8 @@ import {
   clusterNames, deleteSubject, deleteResult, updateStatusSubject,
   addClusterSubject, addClusterResult, deleteClusterSubject,
   deleteClusterResult, updateRepairIntensitySubject,
-  logoutSubject, logoutResult
+  logoutSubject, logoutResult,
+  repairRunResult, repairRunSubject
 } from "observable";
 
 jQuery(document).ready(function($){
@@ -55,6 +56,8 @@ jQuery(document).ready(function($){
     deleteResult: deleteRepairResult,
     updateStatusSubject: updateRepairStatusSubject,
     updateIntensitySubject: updateRepairIntensitySubject,
+    repairRunResult: repairRunResult,
+    repairRunSubject: repairRunSubject,
     statusObservableTimer}),
     document.getElementById('wrapper')
   );
