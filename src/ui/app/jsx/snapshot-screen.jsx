@@ -163,11 +163,9 @@ const SnapshotScreen = React.createClass({
 
     return (
         <div>
-        <!-- Navigation -->
         <NotificationSystem ref="notificationSystem" />
         <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
             <NavBar></NavBar>
-            <!-- /.navbar-header -->
 
             <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster}
               logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>
@@ -181,10 +179,7 @@ const SnapshotScreen = React.createClass({
                 <div className="col-lg-12">
                     <h1 className="page-header">Snapshots</h1>
                 </div>
-                <!-- /.col-lg-12 -->
             </div>
-            <!-- /.row -->
-
             <div className="col-lg-12">
                   <SnapshotForm clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster}  changeCurrentCluster={this.changeCurrentCluster}
                                 listSnapshots={this._listSnapshots}
@@ -201,7 +196,6 @@ const SnapshotScreen = React.createClass({
                 </div>
             </div>
         </div>
-        <!-- /#page-wrapper -->
         </div>
     );
   }

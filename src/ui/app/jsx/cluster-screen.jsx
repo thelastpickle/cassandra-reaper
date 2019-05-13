@@ -69,10 +69,8 @@ const ClusterScreen = React.createClass({
 
   return (
         <div>
-            <!-- Navigation -->
         <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
             <NavBar></NavBar>
-            <!-- /.navbar-header -->
 
             <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} 
                 loginSubject={this.props.loginSubject} loginResult={this.props.loginResult}
@@ -87,12 +85,9 @@ const ClusterScreen = React.createClass({
                 <div className="col-lg-12">
                     <h1 className="page-header">Cluster</h1>
                 </div>
-                <!-- /.col-lg-12 -->
             </div>
-            <!-- /.row -->
             {content}
         </div>
-        <!-- /#page-wrapper -->
         </div>
     );
   }
