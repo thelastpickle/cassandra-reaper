@@ -19,6 +19,7 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Compaction;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
@@ -30,9 +31,11 @@ import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.OpType;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.management.JMException;
@@ -45,6 +48,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,18 +65,37 @@ public final class MetricsService {
   private final AppContext context;
   private final ClusterFacade clusterFacade;
   private final ObjectMapper objectMapper = new ObjectMapper();
+  private String localClusterName;
+  private String localDatacenter;
 
-  private MetricsService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier) {
+  private MetricsService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier)
+      throws ReaperException, InterruptedException {
     this.context = context;
     this.clusterFacade = clusterFacadeSupplier.get();
+    if (context.config.isInSidecarMode()) {
+      Node host
+          = Node.builder()
+            .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1"))
+            .withClusterName("bogus")
+            .build();
+      localClusterName = Cluster.toSymbolicName(clusterFacade.getClusterName(host));
+      localDatacenter
+          = clusterFacade.getDatacenter(
+              new Cluster(
+                  localClusterName,
+                  Optional.empty(),
+                  Sets.newHashSet(Arrays.asList(context.config.getEnforcedLocalNode().orElse("127.0.0.1")))),
+              context.config.getEnforcedLocalNode().orElse("127.0.0.1"));
+    }
   }
 
   @VisibleForTesting
-  static MetricsService create(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier) {
+  static MetricsService create(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier)
+      throws ReaperException, InterruptedException {
     return new MetricsService(context, clusterFacadeSupplier);
   }
 
-  public static MetricsService create(AppContext context) {
+  public static MetricsService create(AppContext context) throws ReaperException, InterruptedException {
     return new MetricsService(context, () -> ClusterFacade.create(context));
   }
 
@@ -113,7 +136,7 @@ public final class MetricsService {
 
   void grabAndStoreGenericMetrics()
       throws ReaperException, InterruptedException, JMException {
-    Node node = Node.builder().withClusterName(context.localClusterName).withHostname(context.localNodeAddress).build();
+    Node node = Node.builder().withClusterName(localClusterName).withHostname(context.getLocalNodeAddress()).build();
     List<GenericMetric> metrics
         = convertToGenericMetrics(
             ClusterFacade.create(context).collectMetrics(node, COLLECTED_METRICS), node);
@@ -121,39 +144,39 @@ public final class MetricsService {
     for (GenericMetric metric:metrics) {
       ((IDistributedStorage)context.storage).storeMetric(metric);
     }
-    LOG.debug("Grabbing and storing metrics for {}", context.localNodeAddress);
+    LOG.debug("Grabbing and storing metrics for {}", context.getLocalNodeAddress());
 
   }
 
   void grabAndStoreActiveCompactions()
       throws JsonProcessingException, MalformedObjectNameException, ReflectionException,
           ReaperException, InterruptedException {
-    Node node = Node.builder().withClusterName(context.localClusterName).withHostname(context.localNodeAddress).build();
+    Node node = Node.builder().withClusterName(localClusterName).withHostname(context.getLocalNodeAddress()).build();
     List<Compaction> activeCompactions = ClusterFacade.create(context).listActiveCompactionsDirect(node);
 
     ((IDistributedStorage) context.storage)
         .storeOperations(
-            context.localClusterName,
+            localClusterName,
             OpType.OP_COMPACTION,
-            context.localNodeAddress,
+            context.getLocalNodeAddress(),
             objectMapper.writeValueAsString(activeCompactions));
 
-    LOG.debug("Grabbing and storing compactions for {}", context.localNodeAddress);
+    LOG.debug("Grabbing and storing compactions for {}", context.getLocalNodeAddress());
   }
 
   void grabAndStoreActiveStreams()
       throws JsonProcessingException, MalformedObjectNameException, ReflectionException,
           ReaperException, InterruptedException {
-    Node node = Node.builder().withClusterName(context.localClusterName).withHostname(context.localNodeAddress).build();
+    Node node = Node.builder().withClusterName(localClusterName).withHostname(context.getLocalNodeAddress()).build();
     Set<CompositeData> activeStreams = ClusterFacade.create(context).listStreamsDirect(node);
 
     ((IDistributedStorage) context.storage)
         .storeOperations(
-            context.localClusterName,
-            OpType.OP_STREAMING,context.localNodeAddress,
+            localClusterName,
+            OpType.OP_STREAMING,context.getLocalNodeAddress(),
             objectMapper.writeValueAsString(activeStreams));
 
-    LOG.debug("Grabbing and storing streams for {}", context.localNodeAddress);
+    LOG.debug("Grabbing and storing streams for {}", context.getLocalNodeAddress());
   }
 
 }

@@ -107,6 +107,7 @@ public final class RepairRunResourceTest {
   @Before
   public void setUp() throws Exception {
     context = new AppContext();
+    context.config = new ReaperApplicationConfiguration();
     context.repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(THREAD_CNT),

@@ -53,8 +53,9 @@ public final class HeartTest {
   private static final int RETRY_DELAY_S = 10;
 
   @Test
-  public void testBeat_nullStorage() {
+  public void testBeat_nullStorage() throws ReaperException, InterruptedException {
     AppContext context = new AppContext();
+    context.config = new ReaperApplicationConfiguration();
     try (Heart heart = Heart.create(context)) {
       heart.beat();
       Assertions.assertThat(heart.isCurrentlyUpdatingNodeMetrics().get()).isFalse();
@@ -62,8 +63,9 @@ public final class HeartTest {
   }
 
   @Test
-  public void testBeat_memoryStorage() {
+  public void testBeat_memoryStorage() throws ReaperException, InterruptedException {
     AppContext context = new AppContext();
+    context.config = new ReaperApplicationConfiguration();
     context.storage = new MemoryStorage();
     try (Heart heart = Heart.create(context)) {
       heart.beat();
@@ -127,7 +129,7 @@ public final class HeartTest {
   }
 
   @Test
-  public void testBeat_distributedStorage_eachDatacenterAvailability() throws InterruptedException {
+  public void testBeat_distributedStorage_eachDatacenterAvailability() throws InterruptedException, ReaperException {
 
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
@@ -145,7 +147,8 @@ public final class HeartTest {
   }
 
   @Test
-  public void testBeat_distributedStorage_eachDatacenterAvailability_repairs() throws InterruptedException {
+  public void testBeat_distributedStorage_eachDatacenterAvailability_repairs()
+      throws InterruptedException, ReaperException {
 
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();

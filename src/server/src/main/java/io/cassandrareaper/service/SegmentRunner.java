@@ -392,27 +392,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return true;
   }
 
-  private void updateNodeMetrics(JmxProxy coordinator) {
-    try {
-      if (context.config.isInSidecarMode()) {
-        ((IDistributedStorage)context.storage).storeNodeMetrics(
-            repairRunner.getRepairRunId(),
-            NodeMetrics.builder()
-                .withNode(context.localNodeAddress)
-                .withCluster(context.localClusterName)
-                .withDatacenter(context.localDatacenter)
-                .withPendingCompactions(coordinator.getPendingCompactions())
-                .withHasRepairRunning(true)
-                .withActiveAnticompactions(0) // for future use
-                .build());
-      }
-    } catch (RuntimeException | JMException expected) {
-      // Since repair has already started, we'll skip over that exception and just log it.
-      LOG.debug("Failed storing node metrics after repair started", expected);
-    }
-
-  }
-
   private void processTriggeredSegment(final RepairSegment segment, final JmxProxy coordinator, int repairNo) {
 
     repairRunner.updateLastEvent(

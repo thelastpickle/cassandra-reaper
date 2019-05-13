@@ -19,7 +19,6 @@ package io.cassandrareaper;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
-import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
@@ -44,10 +43,8 @@ import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorage;
 import io.cassandrareaper.storage.PostgresStorage;
 
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -61,7 +58,6 @@ import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
@@ -167,14 +163,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     int repairThreads = config.getRepairRunThreadCount();
     LOG.info("initializing runner thread pool with {} threads", repairThreads);
 
-    context.repairManager = RepairManager.create(
-        context,
-        environment.lifecycle().scheduledExecutorService("RepairRunner").threads(repairThreads).build(),
-        config.getHangingRepairTimeoutMins(),
-        TimeUnit.MINUTES,
-        config.getRepairManagerSchedulingIntervalSeconds(),
-        TimeUnit.SECONDS);
-
     tryInitializeStorage(config, environment);
 
     if (context.jmxConnectionFactory == null) {
@@ -203,6 +191,14 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       LOG.debug("using specified JMX credentials per cluster for authentication");
       context.jmxConnectionFactory.setJmxCredentials(jmxCredentials);
     }
+
+    context.repairManager = RepairManager.create(
+        context,
+        environment.lifecycle().scheduledExecutorService("RepairRunner").threads(repairThreads).build(),
+        config.getHangingRepairTimeoutMins(),
+        TimeUnit.MINUTES,
+        config.getRepairManagerSchedulingIntervalSeconds(),
+        TimeUnit.SECONDS);
 
     // Enable cross-origin requests for using external GUI applications.
     if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {
@@ -335,14 +331,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
                 .config
                 .getEnforcedLocalNode()
                 .orElse(clusterFacade.getLocalEndpoint(host));
-        context.localClusterName = Cluster.toSymbolicName(clusterFacade.getClusterName(host));
-        context.localDatacenter
-            = clusterFacade.getDatacenter(
-                new Cluster(
-                    context.localClusterName,
-                    Optional.empty(),
-                    Sets.newHashSet(Arrays.asList(context.localNodeAddress))),
-                context.localNodeAddress);
         LOG.info("Sidecar mode. Local node is : {}", context.localNodeAddress);
       } catch (RuntimeException | InterruptedException | ReaperException e) {
         LOG.error("Failed connecting to the local node in sidecar mode {}", host, e);

@@ -73,7 +73,7 @@ public final class RepairManager implements AutoCloseable {
       long repairTimeout,
       TimeUnit repairTimeoutTimeUnit,
       long retryDelay,
-      TimeUnit retryDelayTimeUnit)  {
+      TimeUnit retryDelayTimeUnit) throws ReaperException, InterruptedException  {
 
     this.context = context;
     this.clusterFacade = clusterFacade;
@@ -93,7 +93,7 @@ public final class RepairManager implements AutoCloseable {
       long repairTimeout,
       TimeUnit repairTimeoutTimeUnit,
       long retryDelay,
-      TimeUnit retryDelayTimeUnit) {
+      TimeUnit retryDelayTimeUnit) throws ReaperException, InterruptedException {
 
     return new RepairManager(
         context,
@@ -111,7 +111,7 @@ public final class RepairManager implements AutoCloseable {
       long repairTimeout,
       TimeUnit repairTimeoutTimeUnit,
       long retryDelay,
-      TimeUnit retryDelayTimeUnit) {
+      TimeUnit retryDelayTimeUnit) throws ReaperException, InterruptedException {
 
     return create(
         context,

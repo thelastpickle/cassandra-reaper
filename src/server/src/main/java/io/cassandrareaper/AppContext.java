@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,9 +50,7 @@ public final class AppContext {
   public JmxConnectionFactory jmxConnectionFactory;
   public ReaperApplicationConfiguration config;
   public MetricRegistry metricRegistry = new MetricRegistry();
-  public String localNodeAddress;
-  public String localClusterName;
-  public String localDatacenter;
+  volatile String localNodeAddress = null;
 
   private static String initialiseInstanceAddress() {
     String reaperInstanceAddress;
@@ -62,5 +61,10 @@ public final class AppContext {
       reaperInstanceAddress = DEFAULT_INSTANCE_ADDRESS;
     }
     return reaperInstanceAddress;
+  }
+
+  public String getLocalNodeAddress() {
+    Preconditions.checkState(config.isInSidecarMode());
+    return localNodeAddress;
   }
 }

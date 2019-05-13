@@ -67,18 +67,18 @@ final class Heart implements AutoCloseable {
   private final long maxBeatFrequencyMillis;
   private final AtomicBoolean updatingNodeMetrics = new AtomicBoolean(false);
 
-  private Heart(AppContext context, long maxBeatFrequency) {
+  private Heart(AppContext context, long maxBeatFrequency) throws ReaperException, InterruptedException {
     this.context = context;
     this.maxBeatFrequencyMillis = maxBeatFrequency;
     this.metricsService = MetricsService.create(context);
   }
 
-  static Heart create(AppContext context) {
+  static Heart create(AppContext context) throws ReaperException, InterruptedException {
     return new Heart(context, DEFAULT_MAX_FREQUENCY);
   }
 
   @VisibleForTesting
-  static Heart create(AppContext context, long maxBeatFrequencyMillis) {
+  static Heart create(AppContext context, long maxBeatFrequencyMillis) throws ReaperException, InterruptedException {
     return new Heart(context, maxBeatFrequencyMillis);
   }
 
@@ -184,7 +184,7 @@ final class Heart implements AutoCloseable {
    */
   private boolean canAnswerToNodeMetricsRequest(NodeMetrics metric) {
     return (context.config.getDatacenterAvailability() == DatacenterAvailability.SIDECAR
-            && metric.getNode().equals(context.localNodeAddress))
+            && metric.getNode().equals(context.getLocalNodeAddress()))
         || (context.config.getDatacenterAvailability() != DatacenterAvailability.ALL
         && context.config.getDatacenterAvailability() != DatacenterAvailability.SIDECAR)
         && metric.isRequested();

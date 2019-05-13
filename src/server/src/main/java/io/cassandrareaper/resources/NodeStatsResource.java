@@ -53,7 +53,7 @@ public final class NodeStatsResource {
   private final MetricsService metricsGrabber;
   private final CompactionService compactionService;
 
-  public NodeStatsResource(AppContext context) {
+  public NodeStatsResource(AppContext context) throws ReaperException, InterruptedException {
     this.context = context;
     this.streamManager = StreamService.create(context);
     this.metricsGrabber = MetricsService.create(context);
