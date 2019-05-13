@@ -271,11 +271,11 @@ const repairList = React.createClass({
       obs.subscribeOnNext(names => this.setState({clusterNames: names}))
     );
 
-    this._repairsSubscription = this.props.repairs.subscribeOnNext(obs =>
+    this._repairsSubscription = this.props.repairs.subscribeOnNext();
+
+    this._repairRunSubscription = this.props.repairRunResult.subscribeOnNext(obs =>
       obs.subscribeOnNext(repairs => {
-        const sortedRepairs = Array.from(repairs);
-        sortedRepairs.sort((a, b) => a.id - b.id);
-        this.setState({repairs: sortedRepairs});
+        this.setState({repairs: repairs});
       })
     );
 
@@ -283,10 +283,19 @@ const repairList = React.createClass({
     this.updateWindowDimensions();
   },
 
+  componentDidMount: function() {
+   var intervalId = setInterval(this._handleTimer, 2000);
+  },
+
   componentWillUnmount: function() {
-    this._repairsSubscription.dispose();
     this._clustersSubscription.dispose();
+    this._repairsSubscription.dispose();
+    this._repairRunSubscription.dispose();
     window.removeEventListener('resize', this.updateWindowDimensions);
+  },
+
+  _handleTimer: function() {
+     this.props.repairRunSubject.onNext({ clusterName: this.state.currentCluster });
   },
 
   updateWindowDimensions: function() {
