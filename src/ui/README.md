@@ -15,23 +15,28 @@ Instruction to rebuild and embed the UI in Reaper can be found in the root [READ
 
 #### Development
 
-Getting started to work with the source code is easy.
+Getting started to work with the source code is easy. You will need to install
 
-Requirements:
-* [node](https://nodejs.org/) (v0.12+ recommended)
-* [bower](http://bower.io/)
+* [node](https://nodejs.org/) (v7.7.0+ recommended)
+* [bower](http://bower.io/) (1.8.0+ recommended)
 
 Then run:
 
-* `npm install`
-* `bower install`
+```bash
+# Assume we are in the reaper project parent directory
+$ cd src/ui/
+$ `npm install`
+$ `bower install`
+```
 
 The dev-server can be started as follows:
 
-`npm run start`
+```bash
+$ npm run start
+```
 
-Afterwards you should be able to access the server under the following url:
-http://localhost:8000/webpack-dev-server/
+Afterwards you should be able to access the server under the following url: [http://localhost:8000/webpack-dev-server/](http://localhost:8000/webpack-dev-server/)
+
 
 Make sure to enable cross-origin requests to the reaper server by starting it with the `-DenableCrossOrigin` jvm parameter.  
 Enabling cross-origin requests is not necessary when the UI is embedded in the Reaper server.  
@@ -52,6 +57,8 @@ Tooling:
 
 ##### Building a new release
 
-`npm run minimize`
+```bash
+$ npm run minimize
+```
 
 The content of the `build` directory will correspond to what will be embedded in the Reaper server.

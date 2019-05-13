@@ -171,7 +171,6 @@ const Cluster = React.createClass({
           </div>
         </div>
 
-        <!-- Cluster Information -->
         <div className="modal fade" id="clusterInfoModal">
           <Modal.Dialog>
             <Modal.Header>

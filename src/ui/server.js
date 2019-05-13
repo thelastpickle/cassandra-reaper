@@ -29,5 +29,6 @@ new WebpackDevServer(webpack(config), {
   if (err) {
     console.log(err);
   }
-  console.log('Listening at localhost:8000');
+  console.log('Listening at: localhost:8000');
+  console.log('Web App URL:  http://localhost:8000/webpack-dev-server/')
 });

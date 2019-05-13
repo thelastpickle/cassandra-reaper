@@ -56,10 +56,8 @@ const repairScreen = React.createClass({
 
     return (
     <div id="wrapper">
-                <!-- Navigation -->
         <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
             <NavBar></NavBar>
-            <!-- /.navbar-header -->
 
             <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster}
               logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>
@@ -73,9 +71,7 @@ const repairScreen = React.createClass({
                 <div className="col-lg-12">
                     <h1 className="page-header">Repair</h1>
                 </div>
-                <!-- /.col-lg-12 -->
             </div>
-            <!-- /.row -->
 
             <div className="row">
                 <div className="col-lg-12">
@@ -99,7 +95,6 @@ const repairScreen = React.createClass({
             </div>
 
         </div>
-        <!-- /#page-wrapper -->
     </div>
     );
   }

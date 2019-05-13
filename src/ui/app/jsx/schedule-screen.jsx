@@ -53,10 +53,8 @@ const ScheduleScreen = React.createClass({
 
     return (
     <div id="wrapper">
-        <!-- Navigation -->
         <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
             <NavBar></NavBar>
-            <!-- /.navbar-header -->
 
             <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster}
               logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>
@@ -66,15 +64,12 @@ const ScheduleScreen = React.createClass({
             <div className="row">
                 <ServerStatus statusObservableTimer={this.props.statusObservableTimer}></ServerStatus>
             </div>
-            <!-- /.row -->
 
             <div className="row">
                 <div className="col-lg-12">
                     <h1 className="page-header">Schedules</h1>
                 </div>
-                <!-- /.col-lg-12 -->
             </div>
-            <!-- /.row -->
 
       <div className="row">
                 <div className="col-lg-12">
@@ -95,7 +90,6 @@ const ScheduleScreen = React.createClass({
             </div>
 
         </div>
-        <!-- /#page-wrapper -->
     </div>
     );
   }

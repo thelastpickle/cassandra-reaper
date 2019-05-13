@@ -57,7 +57,11 @@ module.exports = {
     filename: '[name].js'
   },
   resolve: {
-    root: [ path.join(__dirname, 'app'), path.join(__dirname, 'bower_components') ],
+    modules: [
+        path.join(__dirname, 'app'),
+        path.join(__dirname, 'bower_components'),
+        path.join(__dirname, "node_modules")
+    ],
     alias: {
       "jquery": "jquery/dist/jquery",
       "bootstrap.css": "bootstrap/dist/css/bootstrap.min.css",
@@ -69,11 +73,11 @@ module.exports = {
       "rxjs": 'rxjs/dist/rx.all',
       "moment": 'moment/moment.js'
     },
-    extensions: ['', '.js', '.jsx']
+    extensions: ['.js', '.jsx']
   },
   devtool: "eval",
   resolveLoader: {
-    root:  path.join(__dirname, "node_modules")
+    modules: [path.join(__dirname, "node_modules")]
   },
   plugins: [
     new HtmlWebpackPlugin({
@@ -136,21 +140,63 @@ module.exports = {
       "windows.jQuery": "jquery"
     }),
     new webpack.HotModuleReplacementPlugin(),
-    new webpack.NoErrorsPlugin(),
-    new webpack.optimize.CommonsChunkPlugin(/* chunkName= */"deps", /* filename= */"deps.js")
+    new webpack.NoEmitOnErrorsPlugin(),
   ],
+  optimization: {
+    splitChunks: {
+      cacheGroups: {
+        deps: {
+          filename: "deps.js"
+        }
+      }
+    }
+  },
   module: {
-    loaders: [
+    rules:[
       {
-        test: /\.jsx?$/,
-        loaders: ['react-hot', 'babel?modules=amd&optional=runtime'],
-        include: path.join(__dirname, 'app')
+        test: /\.(js|jsx)$/,
+        exclude: /(node_modules|bower_components)/,
+        use: [
+          { loader: "react-hot-loader"},
+          {
+            loader:"babel-loader",
+            options: {
+              presets: ["env", "react"]
+            }
+          }
+        ]
       },
       { test: /\.css$/, loader: "style-loader!css-loader" },
-      { test: /\.scss$/, loaders: ["style","css","resolve-url","sass?sourceMap"]},
+      {
+        test: /\.scss$/,
+        use: [
+          { loader: "style-loader"},
+          { loader: "css-loader" },
+          { loader: "resolve-url-loader" },
+          { loader: "sass-loader?sourceMap" }
+        ]
+      },
       // loaders for font-awesome
-      { test: /\.woff(2)?(\?v=[0-9]\.[0-9]\.[0-9])?$/, loader: "url-loader?limit=10000&minetype=application/font-woff" },
-      { test: /\.(gif|ttf|eot|svg?)(\?v=[0-9]\.[0-9]\.[0-9])?$/, loader: 'url-loader?name=[name].[ext]'  }
+      {
+        test: /\.(woff|woff2)(\?v=\d+\.\d+\.\d+)?$/,
+        use: {
+          loader: "url-loader",
+          options:{
+            mimetype: "application/font-woff",
+            name: "./fonts/[name].[ext]",
+            publicPath: "../"
+          }
+        }
+      },
+      {
+        test: /\.(gif|ttf|eot|svg?)(\?v=\d+\.\d+\.\d+)?$/,
+        use: {
+          loader: "url-loader",
+          options: {
+            name: "[name].[ext]"
+          }
+        }
+      }
     ]
   }
 };
