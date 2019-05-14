@@ -1,5 +1,13 @@
 ## Change Log
 
+### 1.4.2 (2019/05/07 06:31 +00:00)
+- [5cdd573](https://github.com/thelastpickle/cassandra-reaper/commit/5cdd57330db562e061d325abf54b0f59c120c7b2) Fix RepairRun timestamps, honouring different run states. (@michaelsembwever)
+- [c0b4600](https://github.com/thelastpickle/cassandra-reaper/commit/c0b460002dd2f5173323d68979f7368e3cbe3c4c) Auto scheduler encounters null pointer exception #298 (@michaelsembwever)
+- [cf34fbb](https://github.com/thelastpickle/cassandra-reaper/commit/cf34fbb1ac7d3043119ee6920ab0a148fccbc402) Fix LongCollectionSqlType.getValue() (@mmonemali)
+- [7bf92be](https://github.com/thelastpickle/cassandra-reaper/commit/7bf92be033a01dedebb175f4059531d5e45958a5) ninja-fix to RepairUnitServiceTest (@michaelsembwever)
+- [b075113](https://github.com/thelastpickle/cassandra-reaper/commit/b0751133728ab39d1b03a3abe02f6aa0d3ab486a) ColumnFamilyStoreMBean.getCompactionParameters() is only available since Cassandra 2.1 (@rborer)
+- [f39b55a](https://github.com/thelastpickle/cassandra-reaper/commit/f39b55a72593aa5c83f5e4a8c51d07876e7fa612) fix version. only the tag, and one sha, should ever share a version number. (@michaelsembwever)
+
 ### 1.4.1 (2019/02/15 13:49 +00:00)
 - [7f46e20](https://github.com/thelastpickle/cassandra-reaper/commit/7f46e2054005cf7da16bda214d404db179df42cc) Add newline at the end of shiro.ini to fix REAPER_AUTH_USER (@viossat)
 - [b7d6593](https://github.com/thelastpickle/cassandra-reaper/commit/b7d65934862b6a17de9af3bccc1e34ab66780f3d) In NodesStatus when parsing gossipinfo status, also exclude those nodes that have been "removed", as well as those that are "left". (@michaelsembwever)
