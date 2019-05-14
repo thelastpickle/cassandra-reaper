@@ -70,7 +70,9 @@ const repairForm = React.createClass({
 
   _getClusterStatus: function() {
     let clusterName = this.state.clusterName;
-    $.ajax({
+
+    if (clusterName !== null) {
+      $.ajax({
           url: this.state.urlPrefix + '/cluster/' + encodeURIComponent(clusterName),
           method: 'GET',
           component: this,
@@ -79,15 +81,16 @@ const repairForm = React.createClass({
             this.component._getSuggestions();
           }
       });
-    $.ajax({
-      url: this.state.urlPrefix + '/cluster/' + encodeURIComponent(clusterName) + '/tables',
-      method: 'GET',
-      component: this,
-      complete: function(data) {
-        this.component.setState({clusterTables: $.parseJSON(data.responseText)});
-        this.component._getKeyspaceSuggestions();
-      }
-    });
+        $.ajax({
+        url: this.state.urlPrefix + '/cluster/' + encodeURIComponent(clusterName) + '/tables',
+        method: 'GET',
+        component: this,
+        complete: function(data) {
+          this.component.setState({clusterTables: $.parseJSON(data.responseText)});
+          this.component._getKeyspaceSuggestions();
+        }
+      });
+    }
   },
 
   _getSuggestions: function() {
@@ -133,7 +136,6 @@ const repairForm = React.createClass({
   _handleChange: function(e) {
     var v = e.target.value;
     var n = e.target.id.substring(3); // strip in_ prefix
-    console.log(n + " = " + v)
 
     // update state
     const state = this.state;
@@ -149,8 +151,7 @@ const repairForm = React.createClass({
   },
 
   _checkValidity: function() {
-    console.log("Keyspaces : " + this.state.keyspaceList.length);
-    const valid = this.state.keyspaceList.length > 0 && this.state.clusterName && this.state.owner 
+    const valid = this.state.keyspaceList.length > 0 && this.state.clusterName && this.state.owner
                                       && ((this.state.datacenterList.length>0 && this.state.nodeList.length==0)
                                       || (this.state.datacenterList.length==0 && this.state.nodeList.length > 0) || (this.state.datacenterList.length==0  && this.state.nodeList==0) );
     this.setState({submitEnabled: valid});
