@@ -67,18 +67,18 @@ final class Heart implements AutoCloseable {
   private final long maxBeatFrequencyMillis;
   private final AtomicBoolean updatingNodeMetrics = new AtomicBoolean(false);
 
-  private Heart(AppContext context, long maxBeatFrequency) throws ReaperException, InterruptedException {
+  private Heart(AppContext context, long maxBeatFrequency) throws ReaperException {
     this.context = context;
     this.maxBeatFrequencyMillis = maxBeatFrequency;
     this.metricsService = MetricsService.create(context);
   }
 
-  static Heart create(AppContext context) throws ReaperException, InterruptedException {
+  static Heart create(AppContext context) throws ReaperException {
     return new Heart(context, DEFAULT_MAX_FREQUENCY);
   }
 
   @VisibleForTesting
-  static Heart create(AppContext context, long maxBeatFrequencyMillis) throws ReaperException, InterruptedException {
+  static Heart create(AppContext context, long maxBeatFrequencyMillis) throws ReaperException {
     return new Heart(context, maxBeatFrequencyMillis);
   }
 

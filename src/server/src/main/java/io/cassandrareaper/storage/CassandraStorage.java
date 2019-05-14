@@ -1013,7 +1013,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Optional<RepairSegment> getNextFreeSegmentForRanges(
-      UUID runId, Optional<RingRange> parallelRange, List<RingRange> ranges) {
+      UUID runId,
+      Optional<RingRange> parallelRange,
+      List<RingRange> ranges) {
     List<RepairSegment> segments
         = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);

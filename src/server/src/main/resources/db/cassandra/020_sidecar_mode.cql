@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS node_metrics_v2 (
 ) WITH CLUSTERING ORDER BY (host ASC, metric_scope ASC, metric_name ASC, ts DESC, metric_attribute ASC)
     AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4', 'unchecked_tombstone_compaction': 'true'}
     AND default_time_to_live = 864000
-    AND gc_grace_seconds = 10800;
+    AND gc_grace_seconds = 300;
 
 CREATE TABLE IF NOT EXISTS node_operations (
     cluster text, 

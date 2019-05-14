@@ -158,7 +158,7 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we catch in the process
    * @throws InterruptedException if the JMX connection gets interrupted
    */
-  public String getClusterName(Node node) throws ReaperException, InterruptedException {
+  public String getClusterName(Node node) throws ReaperException {
     JmxProxy jmxProxy = connectAndAllowSidecar(node.getCluster(), Arrays.asList(node.getHostname()));
     return jmxProxy.getClusterName();
   }
@@ -385,27 +385,21 @@ public final class ClusterFacade {
   public List<RingRange> getRangesForLocalEndpoint(Cluster cluster, String keyspace) throws ReaperException {
     Preconditions.checkArgument(context.config.isInSidecarMode(), "This method is only allowed in sidecar mode");
     List<RingRange> localRanges = Lists.newArrayList();
-    try {
-      Map<List<String>, List<String>> ranges = getRangeToEndpointMap(cluster, keyspace);
-      JmxProxy jmxProxy = connectAndAllowSidecar(cluster, Arrays.asList(LOCALHOST));
-      String localEndpoint = jmxProxy.getLocalEndpoint();
-      // Filtering ranges for which the local node is a replica
-      // For local mode
-      ranges
-          .entrySet()
-          .stream()
-          .forEach(entry -> {
-            if (entry.getValue().contains(localEndpoint)) {
-              localRanges.add(
-                  new RingRange(new BigInteger(entry.getKey().get(0)), new BigInteger(entry.getKey().get(1))));
-            }
-          });
-
-      return localRanges;
-    } catch (RuntimeException e) {
-      LOG.error(e.getMessage());
-      throw new ReaperException(e.getMessage(), e);
-    }
+    Map<List<String>, List<String>> ranges = getRangeToEndpointMap(cluster, keyspace);
+    JmxProxy jmxProxy = connectAndAllowSidecar(cluster, Arrays.asList(LOCALHOST));
+    String localEndpoint = jmxProxy.getLocalEndpoint();
+    // Filtering ranges for which the local node is a replica
+    // For local mode
+    ranges
+        .entrySet()
+        .stream()
+        .forEach(entry -> {
+          if (entry.getValue().contains(localEndpoint)) {
+            localRanges.add(
+                new RingRange(new BigInteger(entry.getKey().get(0)), new BigInteger(entry.getKey().get(1))));
+          }
+        });
+    return localRanges;
   }
 
   /**

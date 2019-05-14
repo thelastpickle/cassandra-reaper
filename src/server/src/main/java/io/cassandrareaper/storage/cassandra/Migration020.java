@@ -61,7 +61,7 @@ public final class Migration020 {
                   "ALTER TABLE " + METRICS_V2_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
                       + "'unchecked_tombstone_compaction': 'true', "
                       + "'compaction_window_size': '1', "
-                      + "'compaction_window_unit': 'DAYS'}");
+                      + "'compaction_window_unit': 'HOURS'}");
 
           LOG.info("{} was successfully altered to use TWCS.", METRICS_V2_TABLE);
 
@@ -70,7 +70,7 @@ public final class Migration020 {
                   "ALTER TABLE " + OPERATIONS_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
                       + "'unchecked_tombstone_compaction': 'true', "
                       + "'compaction_window_size': '1', "
-                      + "'compaction_window_unit': 'DAYS'}");
+                      + "'compaction_window_unit': 'HOURS'}");
 
           LOG.info("{} was successfully altered to use TWCS.", OPERATIONS_TABLE);
         }

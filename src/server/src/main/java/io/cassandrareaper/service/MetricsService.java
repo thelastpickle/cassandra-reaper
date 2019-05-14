@@ -69,7 +69,7 @@ public final class MetricsService {
   private String localDatacenter;
 
   private MetricsService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier)
-      throws ReaperException, InterruptedException {
+      throws ReaperException {
     this.context = context;
     this.clusterFacade = clusterFacadeSupplier.get();
     if (context.config.isInSidecarMode()) {
@@ -91,11 +91,11 @@ public final class MetricsService {
 
   @VisibleForTesting
   static MetricsService create(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier)
-      throws ReaperException, InterruptedException {
+      throws ReaperException {
     return new MetricsService(context, clusterFacadeSupplier);
   }
 
-  public static MetricsService create(AppContext context) throws ReaperException, InterruptedException {
+  public static MetricsService create(AppContext context) throws ReaperException {
     return new MetricsService(context, () -> ClusterFacade.create(context));
   }
 
