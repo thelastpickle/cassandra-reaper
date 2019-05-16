@@ -37,8 +37,6 @@ import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairParameters;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.cassandra.DateTimeCodec;
-import io.cassandrareaper.storage.cassandra.FixRepairSegmentTimestamps;
-import io.cassandrareaper.storage.cassandra.Migration003;
 import io.cassandrareaper.storage.cassandra.Migration016;
 
 import java.io.IOException;
@@ -216,15 +214,14 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       Session session,
       String keyspace) throws ReaperException {
 
-    try {
-      cassandra.getMetadata().getAllHosts().forEach((host) -> {
-        Preconditions.checkState(
-                0 >= VersionNumber.parse("2.1").compareTo(host.getCassandraVersion()),
-                "All Cassandra nodes in Reaper's backend storage must be running version 2.1+");
-      });
+    cassandra.getMetadata().getAllHosts().forEach((host) -> {
+      Preconditions.checkState(
+              0 >= VersionNumber.parse("2.1").compareTo(host.getCassandraVersion()),
+              "All Cassandra nodes in Reaper's backend storage must be running version 2.1+");
+    });
 
-      // initialize/upgrade db schema
-      Database database = new Database(cassandra, keyspace);
+    // initialize/upgrade db schema
+    try (Database database = new Database(cassandra, keyspace)) {
       int currentVersion = database.getVersion();
       MigrationRepository migrationRepo = new MigrationRepository("db/cassandra");
       if (currentVersion < migrationRepo.getLatestVersion()) {
@@ -242,18 +239,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               "Database migration can not happen with other reaper instances running. Found ",
               StringUtils.join(otherRunningReapers));
         }
-        if (currentVersion > 3 && currentVersion < 9) {
-          // only applicable after `003_switch_to_uuids.cql`
-          // FixRepairSegmentTimestamps must happen before `migration.migrate()` in case it fails and needs re-trying
-          FixRepairSegmentTimestamps.migrate(session);
-        }
-        MigrationTask migration = new MigrationTask(database, migrationRepo);
-        migration.migrate();
-        Migration003.migrate(session);
 
-        if (currentVersion <= 15) {
-          Migration016.migrate(session, keyspace);
-        }
+        migrate(database.getVersion(), migrationRepo, session);
+        // some migration steps depend on the Cassandra version, so must be rerun every startup
+        Migration016.migrate(session, keyspace);
+      } else {
+        LOG.info(
+            String.format("Keyspace %s already at schema version %d", session.getLoggedKeyspace(), currentVersion));
       }
     } catch (RuntimeException e) {
       LOG.error("Failed performing Cassandra schema migrations", e);
@@ -261,7 +253,39 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     }
   }
 
-  private void prepareStatements() throws ReaperException {
+  private static void migrate(int dbVersion, MigrationRepository repository, Session session) {
+    Preconditions.checkState(dbVersion < repository.getLatestVersion());
+
+    for (int i = dbVersion + 1 ; i <= repository.getLatestVersion(); ++i) {
+      final int nextVersion = i;
+      // perform the migrations one at a time, so the MigrationXXX classes can be executed alongside the scripts
+      MigrationRepository migrationRepo = new MigrationRepository("db/cassandra") {
+        @Override
+        public int getLatestVersion() {
+          return nextVersion;
+        }
+
+        @Override
+        public List getMigrationsSinceVersion(int version) {
+          return Collections.singletonList((Object)super.getMigrationsSinceVersion(nextVersion - 1).get(0));
+        }
+      };
+
+      try (Database database = new Database(session.getCluster(), session.getLoggedKeyspace())) {
+        MigrationTask migration = new MigrationTask(database, migrationRepo);
+        migration.migrate();
+        // after the script execute any MigrationXXX class that exists with the same version number
+        Class.forName("io.cassandrareaper.storage.cassandra.Migration" + String.format("%03d", nextVersion))
+            .getDeclaredMethod("migrate", Session.class)
+            .invoke(null, session);
+
+        LOG.info("executed Migration" + String.format("%03d", nextVersion));
+      } catch (ReflectiveOperationException ignore) { }
+      LOG.info(String.format("Migrated keyspace %s to version %d", session.getLoggedKeyspace(), nextVersion));
+    }
+  }
+
+  private void prepareStatements() {
     final String timeUdf = 0 < VersionNumber.parse("2.2").compareTo(version) ? "dateOf" : "toTimestamp";
     insertClusterPrepStmt
         = session
