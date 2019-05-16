@@ -43,7 +43,7 @@ public final class FixRepairRunTimestamps {
    * fix timestamps in the repair_run table
    */
   public static void migrate(Session session) {
-    LOG.warn("Correctng timestamps in the repair_run table. This may take some minutes…");
+    LOG.warn("Correcting timestamps in the repair_run table. This may take some minutes…");
 
     Statement getRepairRunPrepStmt
         = new SimpleStatement("SELECT id,state,start_time,pause_time,end_time FROM repair_run")
@@ -58,7 +58,7 @@ public final class FixRepairRunTimestamps {
     for (Row row : resultSet) {
       resultSet.fetchMoreResults();
       boolean update = false;
-      RepairRun.RunState state = RepairRun.RunState.values()[row.getInt("state")];
+      RepairRun.RunState state = RepairRun.RunState.valueOf(row.getString("state"));
 
       // startTime must be null if repairRun is NOT_STARTED
       Date startTime = row.getTimestamp("start_time");
