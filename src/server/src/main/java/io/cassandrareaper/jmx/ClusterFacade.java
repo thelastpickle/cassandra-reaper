@@ -67,14 +67,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author adejanovski
- *
- */
-/**
- * @author adejanovski
- *
- */
+
 public final class ClusterFacade {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterFacade.class);
   private static final Cache<Pair<Cluster,String>,String> CLUSTER_VERSIONS
