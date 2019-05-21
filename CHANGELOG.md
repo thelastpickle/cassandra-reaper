@@ -1,5 +1,12 @@
 ## Change Log
 
+### 1.4.3 (2019/05/21 00:43 +00:00)
+
+- [91f6f51](https://github.com/thelastpickle/cassandra-reaper/commit/91f6f5167675e25268ba862bdc13c6625fe1dca7) Automatically run every Cassandra Migration class when upgrading (@michaelsembwever)
+- [2b82937](https://github.com/thelastpickle/cassandra-reaper/commit/2b829379081f0d97af57aadb54e6f4dd61edde86) Change UI run_repair API call to be more performant (@ossarga)
+- [544de58](https://github.com/thelastpickle/cassandra-reaper/commit/544de58872ebc2a45151299a14415f4f47157164) In SegmentRunner immediately release the segment lead once the segment repair is done. The intensity pause can happen afterwards. (@michaelsembwever)
+- [c6e1098](https://github.com/thelastpickle/cassandra-reaper/commit/c6e1098b22a89bd75975b192af0d9959274e1fd6) Fix (set to null) endTime in any repairRuns that are in PAUSED state (@michaelsembwever)
+
 ### 1.4.2 (2019/05/07 06:31 +00:00)
 - [5cdd573](https://github.com/thelastpickle/cassandra-reaper/commit/5cdd57330db562e061d325abf54b0f59c120c7b2) Fix RepairRun timestamps, honouring different run states. (@michaelsembwever)
 - [c0b4600](https://github.com/thelastpickle/cassandra-reaper/commit/c0b460002dd2f5173323d68979f7368e3cbe3c4c) Auto scheduler encounters null pointer exception #298 (@michaelsembwever)
