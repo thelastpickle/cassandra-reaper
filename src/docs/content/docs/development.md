@@ -35,6 +35,7 @@ git push origin 1.4 master --atomic
 ```
 
 For more information on the value of forward merging, and the principles of "merge down, copy up" and the "tofu scale: firm above, soft below", see
+
  - https://www.perforce.com/perforce/conferences/us/2005/presentations/Wingerd.pdf
  - https://www.youtube.com/watch?v=AJ-CpGsCpM0
 

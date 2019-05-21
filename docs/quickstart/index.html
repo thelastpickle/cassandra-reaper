@@ -57,7 +57,7 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs/metrics/graphite//" />
+  <meta property="og:url" content="/quickstart//" />
   <meta property="og:image" content="" />
 
 </head>
@@ -158,183 +158,16 @@
 
 
         <div id="content">
-
             
 
             <div class="container">
+
                 <div class="row">
-                    <div class="col-md-3">
-                        <ul class="sidebar-menu">
-    
-    
-    
 
-    <li class="sub-menu">
-    <a href="/docs/download/" class="">
-        
-        <span>Downloads</span>
-        <span class="menu-arrow arrow_carrot-right"></span>
-    </a>
-    <ul class="sub">
-        
-        <li><a href="/docs/download/install/"> Install and Run </a> </li>
-        
-        <li><a href="/docs/download/building/"> Building from Source </a> </li>
-        
-        <li><a href="/docs/download/docker/"> Docker </a> </li>
-        
-    </ul>
-    
-    </li>
-    
-    
-    <li>
-        <a href="/docs/concepts/">
-            
-            <span>Core Concepts</span>
-        </a>
-        
-    </li>
-    
-    
+                    <div class="col-md-12">
 
-    <li class="sub-menu">
-    <a href="/docs/backends/" class="">
-        
-        <span>Backends</span>
-        <span class="menu-arrow arrow_carrot-right"></span>
-    </a>
-    <ul class="sub">
-        
-        <li><a href="/docs/backends/memory/"> In Memory </a> </li>
-        
-        <li><a href="/docs/backends/h2/"> H2 </a> </li>
-        
-        <li><a href="/docs/backends/postgres/"> Postgres </a> </li>
-        
-        <li><a href="/docs/backends/cassandra/"> Cassandra </a> </li>
-        
-    </ul>
-    
-    </li>
-    
-    
-
-    <li class="sub-menu">
-    <a href="/docs/configuration/" class="">
-        
-        <span>Configuration Reference</span>
-        <span class="menu-arrow arrow_carrot-right"></span>
-    </a>
-    <ul class="sub">
-        
-        <li><a href="/docs/configuration/reaper_specific/"> Reaper Specific Settings </a> </li>
-        
-        <li><a href="/docs/configuration/backend_specific/"> Backend Specific Settings </a> </li>
-        
-        <li><a href="/docs/configuration/docker_vars/"> Docker Variables </a> </li>
-        
-    </ul>
-    
-    </li>
-    
-    
-
-    <li class="sub-menu">
-    <a href="/docs/metrics/" class="">
-        
-        <span>Metrics</span>
-        <span class="menu-arrow arrow_carrot-right"></span>
-    </a>
-    <ul class="sub">
-        
-        <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
-        
-    </ul>
-    
-    </li>
-    
-    
-
-    <li class="sub-menu">
-    <a href="/docs/usage/" class="">
-        
-        <span>Using Reaper</span>
-        <span class="menu-arrow arrow_carrot-right"></span>
-    </a>
-    <ul class="sub">
-        
-        <li><a href="/docs/usage/add_cluster/"> Adding a Cluster </a> </li>
-        
-        <li><a href="/docs/usage/health/"> Checking a Cluster&#39;s Health </a> </li>
-        
-        <li><a href="/docs/usage/single/"> Running a Cluster Repair </a> </li>
-        
-        <li><a href="/docs/usage/schedule/"> Scheduling a Cluster Repair </a> </li>
-        
-        <li><a href="/docs/usage/multi_dc/"> Operating with a Multi DC Cluster </a> </li>
-        
-        <li><a href="/docs/usage/authentication/"> Activating Authentication </a> </li>
-        
-    </ul>
-    
-    </li>
-    
-    
-    <li>
-        <a href="/docs/api/">
-            
-            <span>Rest API</span>
-        </a>
-        
-    </li>
-    
-    
-    <li>
-        <a href="/docs/community/">
-            
-            <span>Community</span>
-        </a>
-        
-    </li>
-    
-    
-    <li>
-        <a href="/docs/development/">
-            
-            <span>Development</span>
-        </a>
-        
-    </li>
-    
-</ul>
-                    </div>
-
-                    <div class="col-md-9">
                         <div>
                           
-
-<h2 id="graphite-reporter">Graphite Reporter</h2>
-
-<p>Reaper can be configured to periodically report metrics to a Graphite host. This can be done using the following properties in the Reaper configuration YAML file.</p>
-
-<pre><code class="language-yaml">Metrics:
-  frequency: 1 minute
-  reporters:
-    - type: graphite
-      host: &lt;host_address&gt;
-      port: &lt;port_number&gt;
-      prefix: &lt;prefix&gt;
-</code></pre>
-
-<p>Where:</p>
-
-<ul>
-<li><code>host_address</code> is hostname of the Graphite server to report to.</li>
-<li><code>port_number</code> is port of the Graphite server to report to.</li>
-<li><code>prefix</code> is prefix for Metric key names that are reported to the Graphite server. Typically this will be the hostname sending the metrics to the Graphite server.</li>
-</ul>
-
                         </div>
 
                     </div>

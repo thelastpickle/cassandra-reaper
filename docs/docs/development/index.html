@@ -57,7 +57,7 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs/metrics/graphite//" />
+  <meta property="og:url" content="/docs/development//" />
   <meta property="og:image" content="" />
 
 </head>
@@ -314,25 +314,57 @@
                         <div>
                           
 
-<h2 id="graphite-reporter">Graphite Reporter</h2>
+<h1 id="forward-merging">Forward Merging</h1>
 
-<p>Reaper can be configured to periodically report metrics to a Graphite host. This can be done using the following properties in the Reaper configuration YAML file.</p>
+<p>Reaper practices forward merging commits.</p>
 
-<pre><code class="language-yaml">Metrics:
-  frequency: 1 minute
-  reporters:
-    - type: graphite
-      host: &lt;host_address&gt;
-      port: &lt;port_number&gt;
-      prefix: &lt;prefix&gt;
+<p>Fixes and improvements required to release branches are first committed to those branches. These changes are merged forward onto master afterwards.</p>
+
+<p>An example where a bugfix developed and approved for the release branch 1.4 is to be merged;</p>
+
+<pre><code># first rebase the work one last time off the latest 1.4 branch
+git checkout bob/1.4_bugfix
+git rebase 1.4
+git push
+
+# switch to the 1.4 branch and fast-forward merge in the fix
+git checkout 1.4
+git merge bob/1.4_bugfix # take note of the sha of the fast-forward merge commit that just happened
+
+# switch to master
+git checkout master
+# create the empty merge commit
+git merge 1.4 -s ours
+# cherry-pick the change using the sha noted above, and make any manual adjustments required against the master branch
+git cherry-pick -n &lt;sha&gt;
+# commit amend the forward ported changes into the merge commit
+git commit -a --amend
+
+# push both 1.4 and master branches at the same time
+git push origin 1.4 master --atomic
 </code></pre>
 
-<p>Where:</p>
+<p>For more information on the value of forward merging, and the principles of &ldquo;merge down, copy up&rdquo; and the &ldquo;tofu scale: firm above, soft below&rdquo;, see</p>
 
 <ul>
-<li><code>host_address</code> is hostname of the Graphite server to report to.</li>
-<li><code>port_number</code> is port of the Graphite server to report to.</li>
-<li><code>prefix</code> is prefix for Metric key names that are reported to the Graphite server. Typically this will be the hostname sending the metrics to the Graphite server.</li>
+<li><a href="https://www.perforce.com/perforce/conferences/us/2005/presentations/Wingerd.pdf">https://www.perforce.com/perforce/conferences/us/2005/presentations/Wingerd.pdf</a></li>
+<li><a href="https://www.youtube.com/watch?v=AJ-CpGsCpM0">https://www.youtube.com/watch?v=AJ-CpGsCpM0</a></li>
+</ul>
+
+<h1 id="cutting-releases">Cutting Releases</h1>
+
+<p>Cutting a release involves the following steps.</p>
+
+<ul>
+<li>Check with the community if the codebase is ready for the release, this includes checking any outstanding issues or pull requests in progress.</li>
+<li>For a major release, create the release branch off master. Release branches follow the naming: <code>1.0</code>, <code>1.1</code>, <code>1.2</code>, <code>1.3</code>, etc.</li>
+<li>Check that the release branch has green build status on both Travis and CircleCI.</li>
+<li>Update <code>CHANGELOG.md</code> using [github-change|<a href="https://github.com/lalitkapoor/github-changes">https://github.com/lalitkapoor/github-changes</a>] and the following command (editing and removing non-pertinent commits): <code>github-changes -o thelastpickle -r cassandra-reaper --use-commit-body -k 5aef4bf7c2d9d0799f3c86e7aa1db512073b50d8 -f changelog.tmp -b &lt;sha-of-release&gt; -v</code></li>
+<li>Create the release tag using the maven-release-plugin and the following command: <code>mvn release:prepare -Dtag=&lt;release-version-number&gt;</code></li>
+<li>Do not run <code>mvn release:perform</code>, as Travis will do the build and deployment of the released version tag.</li>
+<li>Monitor the Travis build for the released version tag, ensuring the build succeeds through to the deployment task. This is the last task in the job.</li>
+<li>On the GitHub release page, edit the description to include the changelog from above for the latest version.</li>
+<li>Forward port (without carrying the changes) the release to master. Use the following commands: <code>git checkout master; git merge &lt;release-branch&gt; -s ours; git push</code></li>
 </ul>
 
                         </div>
