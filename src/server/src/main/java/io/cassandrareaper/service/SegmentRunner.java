@@ -86,7 +86,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private static final Pattern REPAIR_UUID_PATTERN
       = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
-  private static final long SLEEP_TIME_AFTER_POSTPONE_IN_MS = 10000;
+  private static final long SLEEP_TIME_AFTER_POSTPONE_IN_MS
+      = Integer.getInteger(SegmentRunner.class.getName() + ".sleep_time_after_postpone_in_ms", 10000);
+
   private static final ExecutorService METRICS_GRABBER_EXECUTOR = Executors.newFixedThreadPool(10);
   private static final long METRICS_POLL_INTERVAL_MS = TimeUnit.SECONDS.toMillis(5);
   private static final long METRICS_MAX_WAIT_MS = TimeUnit.MINUTES.toMillis(2);
@@ -276,27 +278,13 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
       LazyInitializer<Set<String>> busyHosts = new BusyHostsInitializer(cluster);
 
-      // If we're using a distributed storage, we need to synchronize with other Reaper instances
-      // So we don't start too many segments at the same time
-      if (!lockSegmentRunners()) {
-        LOG.debug(
-            "Not allowed to run the segment for now as another Reaper holds the lock for repair run {}. "
-            + "Will try again later",
-            segment.getRunId());
-        return false;
-      }
       if (!canRepair(segment, keyspace, coordinator, cluster, busyHosts)) {
         LOG.info(
-            "Cannot run segment {} for repair {} at the moment. Will try again later",
-            segmentId,
-            segment.getRunId());
-        SEGMENT_RUNNERS.remove(segment.getId());
+            "Cannot run segment {} for repair {} at the moment. Will try again later", segmentId, segment.getRunId());
+
         try {
           Thread.sleep(SLEEP_TIME_AFTER_POSTPONE_IN_MS);
-        } catch (InterruptedException e) {
-          LOG.debug("Interrupted while sleeping after a segment was postponed... weird stuff...");
-        }
-        releaseSegmentRunners();
+        } catch (InterruptedException ignore) { }
         return false;
       }
 
@@ -304,6 +292,32 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         try {
           LOG.debug("Enter synchronized section with segment ID {}", segmentId);
           synchronized (condition) {
+            if (!lockSegmentRunners()) {
+              // XXX – not expected to happen, STARTED run state should be "good" (opportunistic) enough
+              LOG.warn(
+                  "Cannot run segment {} as another Reaper holds the lock on repair run {}. Will try again later",
+                  segmentId,
+                  segment.getRunId());
+
+              return false;
+            }
+
+
+            // ~double-locking-idiom, only applies to non-incremental and distributed storage
+            if (!repairUnit.getIncrementalRepair() && context.storage instanceof IDistributedStorage) {
+              Map<String, String> dcByNode = getDCsByNodeForRepairSegment(coordinator, cluster, segment, keyspace);
+              if (isRepairRunningOnNodes(segment, dcByNode, keyspace, cluster)) {
+                LOG.warn(
+                    "Post-lock, cannot run segment {} for repair {} at the moment. Will try again later",
+                    segmentId,
+                    segment.getRunId());
+
+                try {
+                  Thread.sleep(SLEEP_TIME_AFTER_POSTPONE_IN_MS);
+                } catch (InterruptedException ignore) { }
+                return false;
+              }
+            }
 
             segment = segment
                     .with()
