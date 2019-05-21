@@ -14,13 +14,12 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.cassandrareaper</groupId>
     <artifactId>cassandra-reaper-pom</artifactId>
-    <version>1.4.3-SNAPSHOT</version>
+    <version>1.4.3</version>
     <packaging>pom</packaging>
 
     <name>Cassandra Reaper project</name>
@@ -38,7 +37,7 @@
       <url>https://github.com/thelastpickle/cassandra-reaper</url>
       <connection>scm:git:git@github.com:thelastpickle/cassandra-reaper.git</connection>
       <developerConnection>scm:git:git@github.com:thelastpickle/cassandra-reaper.git</developerConnection>
-      <tag>HEAD</tag>
+      <tag>1.4.3</tag>
     </scm>
     <issueManagement>
       <system>Github</system>
@@ -143,9 +142,9 @@
                    <requireMavenVersion>
                       <version>[${maven.version.minimum},)</version>
                    </requireMavenVersion>
-                   <banDuplicatePomDependencyVersions/>
-                   <reactorModuleConvergence/>
-                   <requirePluginVersions/>
+                   <banDuplicatePomDependencyVersions />
+                   <reactorModuleConvergence />
+                   <requirePluginVersions />
                   </rules>
                 </configuration>
               </execution>
@@ -327,7 +326,7 @@
         <build.jdk.minimum>1.8.0-151</build.jdk.minimum>
         <!-- travis of July 2018 was still using maven-3.5.2 but our Docker image for building packages ships with 3.3.8 -->
         <maven.version.minimum>3.3.8</maven.version.minimum>
-        <surefireArgLine></surefireArgLine>
+        <surefireArgLine />
 
         <!--
         Properties that influence various parts of the NetBeans IDE, especially code formatting and the like.
