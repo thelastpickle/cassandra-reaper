@@ -359,7 +359,7 @@ git push origin 1.4 master --atomic
 <li>Check with the community if the codebase is ready for the release, this includes checking any outstanding issues or pull requests in progress.</li>
 <li>For a major release, create the release branch off master. Release branches follow the naming: <code>1.0</code>, <code>1.1</code>, <code>1.2</code>, <code>1.3</code>, etc.</li>
 <li>Check that the release branch has green build status on both Travis and CircleCI.</li>
-<li>Update <code>CHANGELOG.md</code> using [github-change|<a href="https://github.com/lalitkapoor/github-changes">https://github.com/lalitkapoor/github-changes</a>] and the following command (editing and removing non-pertinent commits): <code>github-changes -o thelastpickle -r cassandra-reaper --use-commit-body -k 5aef4bf7c2d9d0799f3c86e7aa1db512073b50d8 -f changelog.tmp -b &lt;sha-of-release&gt; -v</code></li>
+<li>Update <code>CHANGELOG.md</code> using <a href="https://github.com/lalitkapoor/github-changes">github-change</a> and the following command (editing and removing non-pertinent commits): <code>github-changes -o thelastpickle -r cassandra-reaper --use-commit-body -k 5aef4bf7c2d9d0799f3c86e7aa1db512073b50d8 -f changelog.tmp -b &lt;sha-of-release&gt; -v</code></li>
 <li>Create the release tag using the maven-release-plugin and the following command: <code>mvn release:prepare -Dtag=&lt;release-version-number&gt;</code></li>
 <li>Do not run <code>mvn release:perform</code>, as Travis will do the build and deployment of the released version tag.</li>
 <li>Monitor the Travis build for the released version tag, ensuring the build succeeds through to the deployment task. This is the last task in the job.</li>
