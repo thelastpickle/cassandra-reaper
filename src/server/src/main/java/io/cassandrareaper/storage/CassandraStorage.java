@@ -87,6 +87,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -1349,18 +1350,44 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Collection<NodeMetrics> getNodeMetrics(UUID runId) {
+    List<ResultSetFuture> futures = Lists.newArrayList();
+    long minuteBefore = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - 60_000);
     long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
-
-    return session.execute(getNodeMetricsPrepStmt.bind(minute, runId)).all().stream()
-        .map((row) -> createNodeMetrics(row))
-        .collect(Collectors.toSet());
+    futures.add(session.executeAsync(getNodeMetricsPrepStmt.bind(minuteBefore, runId)));
+    futures.add(session.executeAsync(getNodeMetricsPrepStmt.bind(minute, runId)));
+    ListenableFuture<List<ResultSet>> results = Futures.successfulAsList(futures);
+    try {
+      Set<NodeMetrics> metrics = results.get()
+               .stream()
+               .map(result -> result.all())
+               .flatMap(Collection::stream)
+               .map(row -> createNodeMetrics(row))
+               .collect(Collectors.toSet());
+      return metrics;
+    } catch (InterruptedException | ExecutionException e) {
+      LOG.warn("Failed collecting metrics requests for run {}", runId, e);
+      return Collections.emptySet();
+    }
   }
 
   @Override
   public Optional<NodeMetrics> getNodeMetrics(UUID runId, String node) {
+    List<ResultSetFuture> futures = Lists.newArrayList();
+    long minuteBefore = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - 60_000);
     long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
-    Row row = session.execute(getNodeMetricsByNodePrepStmt.bind(minute, runId, node)).one();
-    return null != row ? Optional.of(createNodeMetrics(row)) : Optional.empty();
+    futures.add(session.executeAsync(getNodeMetricsByNodePrepStmt.bind(minute, runId, node)));
+    futures.add(session.executeAsync(getNodeMetricsByNodePrepStmt.bind(minuteBefore, runId, node)));
+    ListenableFuture<List<ResultSet>> results = Futures.successfulAsList(futures);
+    try {
+      for (ResultSet result:results.get()) {
+        for (Row row:result) {
+          return Optional.of(createNodeMetrics(row));
+        }
+      }
+    } catch (InterruptedException | ExecutionException e) {
+      LOG.warn("Failed grabbing metrics for node {}. Will try again later.", node, e);
+    }
+    return Optional.empty();
   }
 
   @Override
