@@ -170,11 +170,6 @@ public final class RepairRunStatus {
                 new Duration(startTime.toInstant(), currentTime.toInstant()).getMillis(),
                 true,
                 false);
-      } else if (state == RepairRun.RunState.ABORTED) {
-        duration = DurationFormatUtils.formatDurationWords(
-                new Duration(startTime.toInstant(), pauseTime.toInstant()).getMillis(),
-                true,
-                false);
       } else if (endTime != null) {
         duration = DurationFormatUtils.formatDurationWords(
                 new Duration(startTime.toInstant(), endTime.toInstant()).getMillis(), true, false);

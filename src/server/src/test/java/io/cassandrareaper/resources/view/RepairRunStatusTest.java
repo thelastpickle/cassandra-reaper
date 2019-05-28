@@ -164,6 +164,6 @@ public final class RepairRunStatusTest {
             Collections.EMPTY_LIST, // blacklist
             1); // repair thread count
 
-    assertEquals("30 seconds", repairStatus.getDuration());
+    assertEquals("1 minute 30 seconds", repairStatus.getDuration());
   }
 }
