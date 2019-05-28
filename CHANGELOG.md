@@ -1,5 +1,9 @@
 ## Change Log
 
+### 1.4.4 (2019/05/28 09:21 +00:00)
+
+- [47322c1](https://github.com/thelastpickle/cassandra-reaper/commit/47322c1436f868318a1823df65574c7d4acf1d4d) Fix for NPE when a segment is aborted (@adejanovski)
+
 ### 1.4.3 (2019/05/21 00:43 +00:00)
 
 - [91f6f51](https://github.com/thelastpickle/cassandra-reaper/commit/91f6f5167675e25268ba862bdc13c6625fe1dca7) Automatically run every Cassandra Migration class when upgrading (@michaelsembwever)
