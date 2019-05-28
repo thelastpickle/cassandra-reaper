@@ -47,7 +47,7 @@ Cutting a release involves the following steps.
 - Check with the community if the codebase is ready for the release, this includes checking any outstanding issues or pull requests in progress.
 - For a major release, create the release branch off master. Release branches follow the naming: `1.0`, `1.1`, `1.2`, `1.3`, etc.
 - Check that the release branch has green build status on both Travis and CircleCI.
-- Update `CHANGELOG.md` using [github-change](https://github.com/lalitkapoor/github-changes) and the following command (editing and removing non-pertinent commits): `github-changes -o thelastpickle -r cassandra-reaper --use-commit-body -k 5aef4bf7c2d9d0799f3c86e7aa1db512073b50d8 -f changelog.tmp -b <sha-of-release> -v`
+- Update `CHANGELOG.md` using [github-change](https://github.com/lalitkapoor/github-changes) and the following command (editing and removing non-pertinent commits): `github-changes -o thelastpickle -r cassandra-reaper --use-commit-body -a -f changelog.tmp -b <sha-of-release> -v`
 - Create the release tag using the maven-release-plugin and the following command: `mvn release:prepare -Dtag=<release-version-number>`
 - Do not run `mvn release:perform`, as Travis will do the build and deployment of the released version tag.
 - Monitor the Travis build for the released version tag, ensuring the build succeeds through to the deployment task. This is the last task in the job.
