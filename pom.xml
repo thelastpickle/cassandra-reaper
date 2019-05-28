@@ -19,7 +19,7 @@
 
     <groupId>io.cassandrareaper</groupId>
     <artifactId>cassandra-reaper-pom</artifactId>
-    <version>1.4.4-SNAPSHOT</version>
+    <version>1.4.4</version>
     <packaging>pom</packaging>
 
     <name>Cassandra Reaper project</name>
@@ -37,7 +37,7 @@
       <url>https://github.com/thelastpickle/cassandra-reaper</url>
       <connection>scm:git:git@github.com:thelastpickle/cassandra-reaper.git</connection>
       <developerConnection>scm:git:git@github.com:thelastpickle/cassandra-reaper.git</developerConnection>
-      <tag>HEAD</tag>
+      <tag>1.4.4</tag>
     </scm>
     <issueManagement>
       <system>Github</system>
