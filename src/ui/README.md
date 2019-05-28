@@ -25,8 +25,8 @@ Then run:
 ```bash
 # Assume we are in the reaper project parent directory
 $ cd src/ui/
-$ `npm install`
-$ `bower install`
+$ npm install
+$ bower install
 ```
 
 The dev-server can be started as follows:
