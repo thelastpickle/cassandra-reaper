@@ -64,7 +64,7 @@ const clusterForm = React.createClass({
     }
 
     const form = <div className="row">
-        <div className="col-lg-12">
+        <div className="col-xl-3 col-md-6 mb-4">
 
           <div className="form-inline">
             <div className="form-group">

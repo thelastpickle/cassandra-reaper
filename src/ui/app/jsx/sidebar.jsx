@@ -59,28 +59,34 @@ const sidebar = React.createClass({
     }
 
     return (
-      <div className="navbar-default sidebar" style={sideBarStyle} role="navigation">
-          <div className="sidebar-nav navbar-collapse">
-              <ul className="nav" id="side-menu">
-                  <li>
-                      <a href={'index.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-sitemap fa-fw"></i> Clusters</a>
-                  </li>
-                  <li className="active">
-                      <a href={'schedules.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-calendar fa-fw"></i> Schedules</a>
-                  </li>
-                  <li>
-                      <a href={'repair.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-wrench fa-fw"></i> Repairs</a>
-                  </li>
-                  <li>
-                      <a href={'snapshot.html?currentCluster=' + this.props.currentCluster}><i className="fa fa-camera fa-fw"></i> Snapshots</a>
-                  </li>
-                  <li>
-                      <a href="#" onClick={this._onLogout}><i className="fa fa-sign-out fa-fw"></i> Logout</a>
-                  </li>
-              </ul>
-              {logoutError}
-          </div>
-      </div>
+      <ul className="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+        <li className="nav-item active">
+          <a className="nav-link" href={'index.html?currentCluster=' + this.props.currentCluster}>
+            <i className="fa fa-sitemap fa-fw"></i>
+            <span>Clusters</span></a>
+        </li>
+        <li className="nav-item active">
+          <a className="nav-link" href={'schedules.html?currentCluster=' + this.props.currentCluster}>
+            <i className="fa fa-calendar fa-fw"></i>
+            <span>Schedules</span></a>
+        </li>
+        <li className="nav-item active">
+          <a className="nav-link" href={'repair.html?currentCluster=' + this.props.currentCluster}>
+            <i className="fa fa-wrench fa-fw"></i>
+            <span>Repairs</span></a>
+        </li>
+        <li className="nav-item active">
+          <a className="nav-link" href={'snapshot.html?currentCluster=' + this.props.currentCluster}>
+            <i className="fa fa-camera fa-fw"></i>
+            <span>Snapshots</span></a>
+        </li>
+        <li className="nav-item active">
+          <a className="nav-link" href="#" onClick={this._onLogout}>
+            <i className="fa fa-sign-out fa-fw"></i>
+            <span>Logout</span></a>
+        </li>
+        {logoutError}
+      </ul>
     );
   }
 });

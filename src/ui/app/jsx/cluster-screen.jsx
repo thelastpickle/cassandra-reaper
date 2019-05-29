@@ -57,8 +57,10 @@ const ClusterScreen = React.createClass({
 
   let content = 
     <div>
+        <div className="row">
         <div className="col-lg-12">
             <ClusterForm clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} addClusterSubject={this.props.addClusterSubject} addClusterResult={this.props.addClusterResult} > </ClusterForm>
+            </div>
         </div>
         <div className="row">
             <div className="col-lg-12">
@@ -68,25 +70,25 @@ const ClusterScreen = React.createClass({
     </div> 
 
   return (
-        <div>
-        <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
-            <NavBar></NavBar>
-
-            <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} 
+        <div id="wrapper">
+             <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} 
                 loginSubject={this.props.loginSubject} loginResult={this.props.loginResult}
                 logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>
-        </nav>
+        
 
-        <div id="page-wrapper">
-            <div className="row">
+        <div id="content-wrapper" className="d-flex flex-column">
+        <div id="content">
+        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+
+            <div className="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100">
                 <ServerStatus statusObservableTimer={this.props.statusObservableTimer}></ServerStatus>
             </div>
-            <div className="row">
-                <div className="col-lg-12">
+            <div className="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100">
                     <h1 className="page-header">Cluster</h1>
-                </div>
             </div>
+        </nav>
             {content}
+        </div>
         </div>
         </div>
     );

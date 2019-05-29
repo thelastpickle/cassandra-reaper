@@ -51,6 +51,6 @@ jQuery(document).ready(function($){
       loginRequiredSubject: loginRequiredSubject, loginRequiredResult: loginRequiredResult,
       deleteSubject: deleteClusterSubject,
       deleteResult: deleteClusterResult, statusObservableTimer}),
-    document.getElementById('wrapper')
+    document.getElementById('page-top')
   );
 });

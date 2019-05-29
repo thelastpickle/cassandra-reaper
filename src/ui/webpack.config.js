@@ -19,7 +19,9 @@ var webpack = require('webpack');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 
 var _commonDeps = [
-  "bootstrap.css", "sb-admin-2.css", "timeline.css", "font-awesome.css", "metisMenu.css", "style.scss",
+  "bootstrap.css", "sb-admin-2.css", 
+  //"timeline.css", 
+  "font-awesome.css", "metisMenu.css", "style.scss",
   "jquery", "react", "bootstrap", "metisMenu", "sb-admin-2", "rxjs"
 ];
 
@@ -65,11 +67,11 @@ module.exports = {
     alias: {
       "jquery": "jquery/dist/jquery",
       "bootstrap.css": "bootstrap/dist/css/bootstrap.min.css",
-      "sb-admin-2.css": "startbootstrap-sb-admin-2/dist/css/sb-admin-2.css",
-      "timeline.css": "startbootstrap-sb-admin-2/dist/css/timeline.css",
+      "sb-admin-2.css": "startbootstrap-sb-admin-2/css/sb-admin-2.css",
+      //"timeline.css": "startbootstrap-sb-admin-2/dist/css/timeline.css",
       "font-awesome.css": "font-awesome/css/font-awesome.min.css",
       "metisMenu.css": "metisMenu/dist/metisMenu.min.css",
-      "sb-admin-2": "startbootstrap-sb-admin-2/dist/js/sb-admin-2.js",
+      "sb-admin-2": "startbootstrap-sb-admin-2/js/sb-admin-2.js",
       "rxjs": 'rxjs/dist/rx.all',
       "moment": 'moment/moment.js'
     },
