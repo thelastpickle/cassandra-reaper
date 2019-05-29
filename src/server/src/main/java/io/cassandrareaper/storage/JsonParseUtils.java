@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.storage;
 
-import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -27,6 +26,8 @@ import java.util.Optional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,32 +36,27 @@ public final class JsonParseUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(JsonParseUtils.class);
 
+  private static final ObjectReader READER = new ObjectMapper().readerFor(new TypeReference<List<RingRange>>() {});
+  private static final ObjectWriter WRITER = new ObjectMapper().writer();
+
   private JsonParseUtils() {
     throw new IllegalStateException("Utility class");
   }
 
-  private static <T> T parseJson(String json, TypeReference<T> ref) {
+  public static List<RingRange> parseRingRangeList(Optional<String> json) {
     try {
-      return new ObjectMapper().readValue(json, ref);
+      return json.isPresent() ? READER.readValue(json.get()) : Lists.newArrayList();
     } catch (IOException e) {
       LOG.error("error parsing json", e);
-      throw new RuntimeException(e);
+      throw new IllegalArgumentException(e);
     }
   }
 
-  public static List<RingRange> parseRingRangeList(Optional<String> json) {
-    if (json.isPresent()) {
-      return parseJson(json.get(), new TypeReference<List<RingRange>>() {});
-    }
-
-    return Lists.newArrayList();
-  }
-
-  public static String writeTokenRangesTxt(List<RingRange> tokenRanges) throws ReaperException {
+  public static String writeTokenRangesTxt(List<RingRange> tokenRanges) {
     try {
-      return new ObjectMapper().writeValueAsString(tokenRanges);
+      return WRITER.writeValueAsString(tokenRanges);
     } catch (JsonProcessingException e) {
-      throw new ReaperException(e);
+      throw new IllegalArgumentException(e);
     }
   }
 }
