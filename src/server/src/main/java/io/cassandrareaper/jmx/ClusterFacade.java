@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -64,6 +65,9 @@ public final class ClusterFacade {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterFacade.class);
 
   private static final Cache<Pair<Cluster,String>,String> CLUSTER_VERSIONS
+      = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
+
+  private static final Cache<Pair<Cluster,String>,Set<Table>> TABLES_IN_KEYSPACE
       = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
 
   private final AppContext context;
@@ -281,8 +285,17 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we catch
    */
   public Set<Table> getTablesForKeyspace(Cluster cluster, String keyspaceName) throws ReaperException {
-    JmxProxy jmxProxy = connectAnyNode(cluster, cluster.getSeedHosts());
-    return jmxProxy.getTablesForKeyspace(keyspaceName);
+    try {
+      return TABLES_IN_KEYSPACE.get(Pair.of(cluster, keyspaceName), () -> {
+        return getTablesForKeyspaceImpl(cluster, keyspaceName);
+      });
+    } catch (ExecutionException ex) {
+      throw new ReaperException(ex);
+    }
+  }
+
+  private Set<Table> getTablesForKeyspaceImpl(Cluster cluster, String keyspaceName) throws ReaperException {
+    return connectAnyNode(cluster, cluster.getSeedHosts()).getTablesForKeyspace(keyspaceName);
   }
 
   /**
