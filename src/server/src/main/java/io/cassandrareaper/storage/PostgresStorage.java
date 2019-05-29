@@ -251,9 +251,8 @@ public final class PostgresStorage implements IStorage {
   }
 
   @Override
-  public RepairRun addRepairRun(
-      RepairRun.Builder newRepairRun, Collection<RepairSegment.Builder> newSegments)
-      throws ReaperException {
+  public RepairRun addRepairRun(RepairRun.Builder newRepairRun, Collection<RepairSegment.Builder> newSegments) {
+
     RepairRun result;
     try (Handle h = jdbi.open()) {
       long insertedId = getPostgresStorage(h).insertRepairRun(newRepairRun.build(null));
@@ -314,8 +313,7 @@ public final class PostgresStorage implements IStorage {
     return Optional.ofNullable(result);
   }
 
-  private void addRepairSegments(Collection<RepairSegment.Builder> newSegments, UUID runId)
-      throws ReaperException {
+  private void addRepairSegments(Collection<RepairSegment.Builder> newSegments, UUID runId) {
     List<PostgresRepairSegment> insertableSegments = new ArrayList<>();
     for (RepairSegment.Builder segment : newSegments) {
       insertableSegments.add(

@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.storage.postgresql;
 
-import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairSegment.State;
 import io.cassandrareaper.core.Segment;
@@ -40,7 +39,7 @@ public class PostgresRepairSegment {
   private final DateTime endTime;
   private final String tokenRangesTxt;
 
-  public PostgresRepairSegment(RepairSegment original) throws ReaperException {
+  public PostgresRepairSegment(RepairSegment original) {
     runId = original.getRunId();
     id = original.getId();
     repairUnitId = original.getRepairUnitId();

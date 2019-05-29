@@ -59,8 +59,7 @@ public interface IStorage {
    */
   Optional<Cluster> deleteCluster(String clusterName);
 
-  RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments)
-      throws ReaperException;
+  RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments);
 
   boolean updateRepairRun(RepairRun repairRun);
 
