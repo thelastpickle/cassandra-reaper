@@ -64,11 +64,23 @@ import org.slf4j.LoggerFactory;
 public final class ClusterFacade {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterFacade.class);
 
+  private static final long CLUSTER_VERSIONS_TTL_SECONDS
+      = Long.getLong(ClusterFacade.class.getPackage().getName() + ".cluster_versions_ttl_seconds", 60);
+
+  private static final long TABLES_IN_KEYSPACE_TTL_SECONDS
+      = Long.getLong(ClusterFacade.class.getPackage().getName() + ".tables_in_keyspace_ttl_seconds", 60);
+
+  private static final long TOKEN_RANGES_IN_KEYSPACE_TTL_SECONDS
+      = Long.getLong(ClusterFacade.class.getPackage().getName() + ".token_ranges_in_keyspace_ttl_seconds", 60);
+
   private static final Cache<Pair<Cluster,String>,String> CLUSTER_VERSIONS
-      = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
+      = CacheBuilder.newBuilder().expireAfterWrite(CLUSTER_VERSIONS_TTL_SECONDS, TimeUnit.SECONDS).build();
 
   private static final Cache<Pair<Cluster,String>,Set<Table>> TABLES_IN_KEYSPACE
-      = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build();
+      = CacheBuilder.newBuilder().expireAfterWrite(TABLES_IN_KEYSPACE_TTL_SECONDS, TimeUnit.SECONDS).build();
+
+  private static final Cache<Pair<Cluster,String>,Map<List<String>, List<String>>> TOKEN_RANGES_IN_KEYSPACE
+      = CacheBuilder.newBuilder().expireAfterWrite(TOKEN_RANGES_IN_KEYSPACE_TTL_SECONDS, TimeUnit.SECONDS).build();
 
   private final AppContext context;
 
@@ -268,10 +280,24 @@ public final class ClusterFacade {
    * @return a map of token ranges with endpoints as items
    * @throws ReaperException any runtime exception we catch
    */
-  public Map<List<String>, List<String>> getRangeToEndpointMap(Cluster cluster, String keyspaceName)
-      throws ReaperException {
-    JmxProxy jmxProxy = connectAnyNode(cluster, cluster.getSeedHosts());
-    return jmxProxy.getRangeToEndpointMap(keyspaceName);
+  public Map<List<String>, List<String>> getRangeToEndpointMap(
+      Cluster cluster,
+      String keyspace) throws ReaperException {
+
+    try {
+      return TOKEN_RANGES_IN_KEYSPACE.get(Pair.of(cluster, keyspace), () -> {
+        return getRangeToEndpointMapImpl(cluster, keyspace);
+      });
+    } catch (ExecutionException ex) {
+      throw new ReaperException(ex);
+    }
+  }
+
+  private Map<List<String>, List<String>> getRangeToEndpointMapImpl(
+      Cluster cluster,
+      String keyspace) throws ReaperException {
+
+    return connectAnyNode(cluster, cluster.getSeedHosts()).getRangeToEndpointMap(keyspace);
   }
 
   /**
