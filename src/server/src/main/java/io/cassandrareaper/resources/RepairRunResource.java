@@ -245,7 +245,7 @@ public final class RepairRunResource {
               intensity);
 
       return Response.created(buildRepairRunUri(uriInfo, newRepairRun))
-          .entity(new RepairRunStatus(newRepairRun, addAnyTwcsBlacklistedTables(theRepairUnit), 0))
+          .entity(new RepairRunStatus(newRepairRun, theRepairUnit, 0))
           .build();
 
     } catch (ReaperException e) {
@@ -625,7 +625,7 @@ public final class RepairRunResource {
   private RepairRunStatus getRepairRunStatus(RepairRun repairRun) {
     RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
     int segmentsRepaired = getSegmentAmountForRepairRun(repairRun.getId());
-    return new RepairRunStatus(repairRun, addAnyTwcsBlacklistedTables(repairUnit), segmentsRepaired);
+    return new RepairRunStatus(repairRun, repairUnit, segmentsRepaired);
   }
 
   /**
@@ -698,7 +698,7 @@ public final class RepairRunResource {
       if (!run.getRunState().equals(RepairRun.RunState.DONE)) {
         segmentsRepaired = getSegmentAmountForRepairRun(run.getId());
       }
-      runStatuses.add(new RepairRunStatus(run, addAnyTwcsBlacklistedTables(runsUnit), segmentsRepaired));
+      runStatuses.add(new RepairRunStatus(run, runsUnit, segmentsRepaired));
     }
 
     return runStatuses;
@@ -774,23 +774,6 @@ public final class RepairRunResource {
   public Response purgeRepairRuns() throws ReaperException {
     int purgedRepairs = PurgeService.create(context).purgeDatabase();
     return Response.ok().entity(purgedRepairs).build();
-  }
-
-  private RepairUnit addAnyTwcsBlacklistedTables(RepairUnit unit) {
-    if (unit.getColumnFamilies().isEmpty()) {
-      // modify the RepairUnit to show in the UI any twcs blacklisted tables
-      try {
-        Cluster cluster = context.storage.getCluster(unit.getClusterName()).get();
-
-        Set<String> twcsTables = Sets.newHashSet(
-            repairUnitService.findBlacklistedCompactionStrategyTables(cluster, unit.getKeyspaceName()));
-
-        return unit.with().blacklistedTables(Sets.union(unit.getBlacklistedTables(), twcsTables)).build(unit.getId());
-      } catch (ReaperException e) {
-        LOG.error(e.getMessage(), e);
-      }
-    }
-    return unit;
   }
 
   private static void checkRepairParallelismString(String repairParallelism) throws ReaperException {

@@ -28,6 +28,7 @@ import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairParameters;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -67,18 +68,18 @@ public interface IStoragePostgreSql {
   //
   String SQL_REPAIR_RUN_ALL_FIELDS_NO_ID = "cluster_name, repair_unit_id, cause, owner, state, creation_time, "
       + "start_time, end_time, pause_time, intensity, last_event, "
-      + "segment_count, repair_parallelism";
+      + "segment_count, repair_parallelism, tables";
   String SQL_REPAIR_RUN_ALL_FIELDS = "repair_run.id, " + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID;
   String SQL_INSERT_REPAIR_RUN = "INSERT INTO repair_run ("
       + SQL_REPAIR_RUN_ALL_FIELDS_NO_ID
       + ") VALUES "
       + "(:clusterName, :repairUnitId, :cause, :owner, :runState, :creationTime, "
       + ":startTime, :endTime, :pauseTime, :intensity, :lastEvent, :segmentCount, "
-      + ":repairParallelism)";
+      + ":repairParallelism, :tables)";
   String SQL_UPDATE_REPAIR_RUN = "UPDATE repair_run SET cause = :cause, owner = :owner, state = :runState, "
       + "start_time = :startTime, end_time = :endTime, pause_time = :pauseTime, "
       + "intensity = :intensity, last_event = :lastEvent, segment_count = :segmentCount, "
-      + "repair_parallelism = :repairParallelism WHERE id = :id";
+      + "repair_parallelism = :repairParallelism, tables = :tables WHERE id = :id";
   String SQL_GET_REPAIR_RUN = "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS + " FROM repair_run WHERE id = :id";
   String SQL_GET_REPAIR_RUNS_FOR_CLUSTER = "SELECT " + SQL_REPAIR_RUN_ALL_FIELDS
       + " FROM repair_run WHERE cluster_name = :clusterName ORDER BY id desc LIMIT :limit";
@@ -132,7 +133,7 @@ public interface IStoragePostgreSql {
   String SQL_GET_REPAIR_SEGMENTS_FOR_RUN_WITH_STATE = "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS
       + " FROM repair_segment WHERE " + "run_id = :runId AND state = :state";
   String SQL_GET_RUNNING_REPAIRS_FOR_CLUSTER
-      = "SELECT start_token, end_token, token_ranges, keyspace_name, column_families, repair_parallelism "
+      = "SELECT start_token, end_token, token_ranges, keyspace_name, column_families, repair_parallelism, tables "
           + "FROM repair_segment "
           + "JOIN repair_run ON run_id = repair_run.id "
           + "JOIN repair_unit ON repair_run.repair_unit_id = repair_unit.id "
@@ -210,7 +211,7 @@ public interface IStoragePostgreSql {
           + "(SELECT COUNT(*) FROM repair_segment WHERE run_id = repair_run.id) AS segments_total, "
           + "repair_run.state, repair_run.start_time, "
           + "repair_run.end_time, cause, owner, last_event, creation_time, "
-          + "pause_time, intensity, repair_parallelism, incremental_repair, repair_thread_count "
+          + "pause_time, intensity, repair_parallelism, tables, incremental_repair, repair_thread_count "
           + "FROM repair_run "
           + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
           + "WHERE repair_unit.cluster_name = :clusterName "
@@ -235,6 +236,17 @@ public interface IStoragePostgreSql {
   String SQL_GET_SNAPSHOT = "SELECT cluster, snapshot_name, owner, cause, creation_time "
           + " FROM snapshot WHERE cluster = :clusterName AND snapshot_name = :snapshotName";
 
+
+  static String[] parseStringArray(Object obj) {
+    String[] values = null;
+    if (obj instanceof String[]) {
+      values = (String[]) obj;
+    } else if (obj instanceof Object[]) {
+      Object[] ocf = (Object[]) obj;
+      values = Arrays.copyOf(ocf, ocf.length, String[].class);
+    }
+    return values;
+  }
 
   @SqlQuery("SELECT CURRENT_TIMESTAMP")
   String getCurrentDate();

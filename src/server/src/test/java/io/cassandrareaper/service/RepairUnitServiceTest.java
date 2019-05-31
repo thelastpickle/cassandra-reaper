@@ -90,7 +90,7 @@ public final class RepairUnitServiceTest {
         .repairThreadCount(4)
         .build(UUIDs.timeBased());
 
-    assertEquals(Sets.newHashSet("table2", "table3"), service.getTablesToRepair(proxy, cluster, unit));
+    assertEquals(Sets.newHashSet("table2", "table3"), service.getTablesToRepair(cluster, unit));
   }
 
   @Test
@@ -117,7 +117,7 @@ public final class RepairUnitServiceTest {
           .repairThreadCount(4)
           .build(UUIDs.timeBased());
 
-    assertEquals(Sets.newHashSet("table2", "table3"), service.getTablesToRepair(proxy, cluster, unit));
+    assertEquals(Sets.newHashSet("table2", "table3"), service.getTablesToRepair(cluster, unit));
   }
 
   @Test
@@ -143,7 +143,7 @@ public final class RepairUnitServiceTest {
         .repairThreadCount(4)
         .build(UUIDs.timeBased());
 
-    assertEquals(Sets.newHashSet("table2", "table3"), service.getTablesToRepair(proxy, cluster, unit));
+    assertEquals(Sets.newHashSet("table2", "table3"), service.getTablesToRepair(cluster, unit));
   }
 
   @Test
@@ -170,7 +170,7 @@ public final class RepairUnitServiceTest {
         .repairThreadCount(4)
         .build(UUIDs.timeBased());
 
-    assertEquals(Sets.newHashSet("table2"), service.getTablesToRepair(proxy, cluster, unit));
+    assertEquals(Sets.newHashSet("table2"), service.getTablesToRepair(cluster, unit));
   }
 
   @Test
@@ -197,7 +197,7 @@ public final class RepairUnitServiceTest {
         .repairThreadCount(4)
         .build(UUIDs.timeBased());
 
-    assertEquals(Sets.newHashSet("table2"), service.getTablesToRepair(proxy, cluster, unit));
+    assertEquals(Sets.newHashSet("table2"), service.getTablesToRepair(cluster, unit));
   }
 
   @Test
@@ -225,7 +225,7 @@ public final class RepairUnitServiceTest {
         .repairThreadCount(4)
         .build(UUIDs.timeBased());
 
-    assertEquals(Sets.newHashSet("table2"), service.getTablesToRepair(proxy, cluster, unit));
+    assertEquals(Sets.newHashSet("table2"), service.getTablesToRepair(cluster, unit));
   }
 
   @Test
@@ -253,7 +253,7 @@ public final class RepairUnitServiceTest {
         .repairThreadCount(4)
         .build(UUIDs.timeBased());
 
-    assertEquals(Sets.newHashSet("table2"), service.getTablesToRepair(proxy, cluster, unit));
+    assertEquals(Sets.newHashSet("table2"), service.getTablesToRepair(cluster, unit));
   }
 
   @Test(expected = IllegalStateException.class)
@@ -280,7 +280,7 @@ public final class RepairUnitServiceTest {
         .repairThreadCount(4)
         .build(UUIDs.timeBased());
 
-    service.getTablesToRepair(proxy, cluster, unit);
+    service.getTablesToRepair(cluster, unit);
   }
 
   @Test(expected = IllegalStateException.class)
@@ -309,6 +309,6 @@ public final class RepairUnitServiceTest {
         .repairThreadCount(4)
         .build(UUIDs.timeBased());
 
-    service.getTablesToRepair(proxy, cluster, unit);
+    service.getTablesToRepair(cluster, unit);
   }
 }

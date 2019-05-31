@@ -95,8 +95,6 @@ import org.cognitor.cassandra.migration.Database;
 import org.cognitor.cassandra.migration.MigrationRepository;
 import org.cognitor.cassandra.migration.MigrationTask;
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
@@ -111,11 +109,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
   private static final String SELECT_RUNNING_REAPERS = "SELECT reaper_instance_id FROM running_reapers";
-  private static final DateTimeFormatter HOURLY_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHH");
 
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
 
-  private static AtomicBoolean firstInstantiation = new AtomicBoolean(true);
+  private static final AtomicBoolean UNINITIALISED = new AtomicBoolean(true);
 
   private final com.datastax.driver.core.Cluster cassandra;
   private final Session session;
@@ -185,7 +182,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     // https://docs.datastax.com/en/developer/java-driver/3.5/manual/metrics/#metrics-4-compatibility
     cassandraFactory.setJmxEnabled(false);
-    if (!CassandraStorage.firstInstantiation.compareAndSet(true, false)) {
+    if (!CassandraStorage.UNINITIALISED.compareAndSet(true, false)) {
       // If there's been a past connection attempt, metrics are already registered
       cassandraFactory.setMetricsEnabled(false);
     }
@@ -300,8 +297,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     insertRepairRunPrepStmt = session
         .prepare(
             "INSERT INTO repair_run(id, cluster_name, repair_unit_id, cause, owner, state, creation_time, "
-                + "start_time, end_time, pause_time, intensity, last_event, segment_count, repair_parallelism) "
-                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                + "start_time, end_time, pause_time, intensity, last_event, segment_count, repair_parallelism,tables) "
+                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     insertRepairRunClusterIndexPrepStmt
         = session.prepare("INSERT INTO repair_run_by_cluster(cluster_name, id) values(?, ?)");
@@ -310,7 +307,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     getRepairRunPrepStmt = session
         .prepare(
             "SELECT id,cluster_name,repair_unit_id,cause,owner,state,creation_time,start_time,end_time,"
-                + "pause_time,intensity,last_event,segment_count,repair_parallelism "
+                + "pause_time,intensity,last_event,segment_count,repair_parallelism,tables "
                 + "FROM repair_run WHERE id = ? LIMIT 1")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     getRepairRunForClusterPrepStmt = session.prepare("SELECT * FROM repair_run_by_cluster WHERE cluster_name = ?");
@@ -565,7 +562,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             newRepairRun.getIntensity(),
             newRepairRun.getLastEvent(),
             newRepairRun.getSegmentCount(),
-            newRepairRun.getRepairParallelism().toString()));
+            newRepairRun.getRepairParallelism().toString(),
+            newRepairRun.getTables()));
 
     int nbRanges = 0;
     for (RepairSegment.Builder builder : newSegments) {
@@ -650,7 +648,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               repairRun.getIntensity(),
               repairRun.getLastEvent(),
               repairRun.getSegmentCount(),
-            repairRun.getRepairParallelism().toString()));
+              repairRun.getRepairParallelism().toString(),
+              repairRun.getTables()));
     return true;
   }
 
@@ -1248,6 +1247,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .endTime(null != endTime ? new DateTime(endTime) : null)
         .lastEvent(repairRunResult.getString("last_event"))
         .runState(RunState.valueOf(repairRunResult.getString("state")))
+        .tables(repairRunResult.getSet("tables", String.class))
         .build(id);
   }
 

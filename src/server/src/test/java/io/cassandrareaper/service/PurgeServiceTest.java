@@ -29,9 +29,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
@@ -49,6 +51,7 @@ public final class PurgeServiceTest {
 
   private static final Logger LOG = LoggerFactory.getLogger(PurgeServiceTest.class);
   private static final String CLUSTER_NAME = "test";
+  private static final Set<String> TABLES = ImmutableSet.of("table1");
 
   @Test
   public void testPurgeByDate() throws InterruptedException, ReaperException {
@@ -75,6 +78,7 @@ public final class PurgeServiceTest {
               .intensity(0.9)
               .segmentCount(10)
               .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+              .tables(TABLES)
               .endTime(startTime.plusSeconds(1))
               .runState(RunState.DONE)
               .build(UUIDs.timeBased()));
@@ -114,6 +118,7 @@ public final class PurgeServiceTest {
               .intensity(0.9)
               .segmentCount(10)
               .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+              .tables(TABLES)
               .endTime(startTime.plusSeconds(1))
               .runState(RunState.DONE)
               .build(UUIDs.timeBased()));
@@ -153,6 +158,7 @@ public final class PurgeServiceTest {
               .intensity(0.9)
               .segmentCount(10)
               .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+              .tables(TABLES)
               .pauseTime(startTime.plusSeconds(1))
               .runState(RunState.PAUSED)
               .build(UUIDs.timeBased()));

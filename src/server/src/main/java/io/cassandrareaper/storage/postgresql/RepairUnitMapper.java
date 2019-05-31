@@ -21,7 +21,6 @@ import io.cassandrareaper.core.RepairUnit;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
 
 import com.google.common.collect.Sets;
 import org.skife.jdbi.v2.StatementContext;
@@ -32,19 +31,19 @@ public final class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
   @Override
   public RepairUnit map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
 
-    String[] columnFamilies = parseStringArray(rs.getArray("column_families").getArray());
+    String[] columnFamilies = IStoragePostgreSql.parseStringArray(rs.getArray("column_families").getArray());
 
     String[] nodes = rs.getArray("nodes") == null
             ? new String[] {}
-            : parseStringArray(rs.getArray("nodes").getArray());
+            : IStoragePostgreSql.parseStringArray(rs.getArray("nodes").getArray());
 
     String[] datacenters = rs.getArray("datacenters") == null
             ? new String[] {}
-            : parseStringArray(rs.getArray("datacenters").getArray());
+            : IStoragePostgreSql.parseStringArray(rs.getArray("datacenters").getArray());
 
     String[] blacklistedTables = rs.getArray("blacklisted_tables") == null
             ? new String[] {}
-            : parseStringArray(rs.getArray("blacklisted_tables").getArray());
+            : IStoragePostgreSql.parseStringArray(rs.getArray("blacklisted_tables").getArray());
 
     RepairUnit.Builder builder = RepairUnit.builder()
             .clusterName(rs.getString("cluster_name"))
@@ -57,17 +56,5 @@ public final class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
             .repairThreadCount(rs.getInt("repair_thread_count"));
 
     return builder.build(UuidUtil.fromSequenceId(rs.getLong("id")));
-  }
-
-  private String[] parseStringArray(Object obj) {
-    String[] values = null;
-    if (obj instanceof String[]) {
-      values = (String[]) obj;
-    } else if (obj instanceof Object[]) {
-      Object[] ocf = (Object[]) obj;
-      values = Arrays.copyOf(ocf, ocf.length, String[].class);
-    }
-
-    return values;
   }
 }

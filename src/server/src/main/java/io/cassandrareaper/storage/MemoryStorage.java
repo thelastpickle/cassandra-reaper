@@ -461,7 +461,7 @@ public final class MemoryStorage implements IStorage {
                 run.getId(),
                 clusterName,
                 unit.getKeyspaceName(),
-                unit.getColumnFamilies(),
+                run.getTables(),
                 segmentsRepaired,
                 totalSegments,
                 run.getRunState(),

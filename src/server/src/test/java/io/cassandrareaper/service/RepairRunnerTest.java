@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
@@ -77,6 +78,7 @@ import static org.mockito.Mockito.when;
 public final class RepairRunnerTest {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunnerTest.class);
+  private static final Set<String> TABLES = ImmutableSet.of("table1");
 
   @Before
   public void setUp() throws Exception {
@@ -109,13 +111,14 @@ public final class RepairRunnerTest {
             .repairThreadCount(REPAIR_THREAD_COUNT));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
-            RepairRun.builder(CLUSTER_NAME, cf.getId()).intensity(INTENSITY).segmentCount(1)
-                .repairParallelism(RepairParallelism.PARALLEL),
+            RepairRun.builder(CLUSTER_NAME, cf.getId())
+                .intensity(INTENSITY)
+                .segmentCount(1)
+                .repairParallelism(RepairParallelism.PARALLEL)
+                .tables(TABLES),
             Collections.singleton(
                 RepairSegment.builder(
-                    Segment.builder()
-                        .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100")))
-                        .build(),
+                    Segment.builder().withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100"))).build(),
                     cf.getId())));
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
@@ -141,9 +144,7 @@ public final class RepairRunnerTest {
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
-              assertEquals(
-                  RepairSegment.State.STARTED,
-                  storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+              assertEquals(RepairSegment.State.STARTED, storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
               final int repairNumber = repairAttempts.getAndIncrement();
               switch (repairNumber) {
                 case 1:
@@ -199,8 +200,7 @@ public final class RepairRunnerTest {
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connectAny(any(), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
-    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
-        .thenReturn(Lists.newArrayList(NODES));
+    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
 
@@ -259,8 +259,10 @@ public final class RepairRunnerTest {
             .blacklistedTables(BLACKLISTED_TABLES)
             .repairThreadCount(REPAIR_THREAD_COUNT));
     RepairRun run = storage.addRepairRun(
-            RepairRun.builder(CLUSTER_NAME, cf.getId()).intensity(INTENSITY).segmentCount(1)
-            .repairParallelism(RepairParallelism.PARALLEL),
+            RepairRun.builder(CLUSTER_NAME, cf.getId())
+                .intensity(INTENSITY).segmentCount(1)
+                .repairParallelism(RepairParallelism.PARALLEL)
+                .tables(TABLES),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder().withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100"))).build(),
@@ -418,7 +420,8 @@ public final class RepairRunnerTest {
             RepairRun.builder(CLUSTER_NAME, cf)
                 .intensity(INTENSITY)
                 .segmentCount(1)
-                .repairParallelism(RepairParallelism.PARALLEL),
+                .repairParallelism(RepairParallelism.PARALLEL)
+                .tables(TABLES),
             Lists.newArrayList(
                 RepairSegment.builder(
                         Segment.builder()

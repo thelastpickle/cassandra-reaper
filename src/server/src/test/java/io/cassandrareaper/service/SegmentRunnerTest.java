@@ -46,6 +46,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -53,6 +54,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
@@ -81,6 +83,9 @@ import static org.mockito.Mockito.when;
 public final class SegmentRunnerTest {
   // TODO: Clean up tests. There's a lot of code duplication across these tests.
 
+  private static final Set<String> TABLES = ImmutableSet.of("table1");
+  private static final Set<String> COORDS = Collections.singleton("");
+
   @Before
   public void setUp() throws Exception {
     SegmentRunner.SEGMENT_RUNNERS.clear();
@@ -104,7 +109,11 @@ public final class SegmentRunnerTest {
                 .repairThreadCount(1));
 
     RepairRun run = context.storage.addRepairRun(
-            RepairRun.builder("reaper", cf.getId()) .intensity(0.5) .segmentCount(1) .repairParallelism(PARALLEL),
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(PARALLEL)
+                .tables(TABLES),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
@@ -184,8 +193,8 @@ public final class SegmentRunnerTest {
 
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
-    SegmentRunner sr = SegmentRunner.create(
-        context, clusterFacade, segmentId, Collections.singleton(""), 100, 0.5, PARALLEL, "reaper", ru, rr);
+    SegmentRunner sr = SegmentRunner
+        .create(context, clusterFacade, segmentId, COORDS, 100, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
 
     sr.run();
 
@@ -210,7 +219,11 @@ public final class SegmentRunnerTest {
                 .repairThreadCount(1));
 
     RepairRun run = storage.addRepairRun(
-            RepairRun.builder("reaper", cf.getId()).intensity(0.5).segmentCount(1).repairParallelism(PARALLEL),
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(PARALLEL)
+                .tables(TABLES),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
@@ -324,8 +337,8 @@ public final class SegmentRunnerTest {
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(cf.getNodes()));
 
-    SegmentRunner sr = SegmentRunner.create(
-        context, clusterFacade, segmentId, Collections.singleton(""), 5000, 0.5, PARALLEL, "reaper", ru, rr);
+    SegmentRunner sr = SegmentRunner
+        .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
 
     sr.run();
 
@@ -350,7 +363,11 @@ public final class SegmentRunnerTest {
                 .repairThreadCount(1));
 
     RepairRun run = storage.addRepairRun(
-            RepairRun.builder("reaper", cf.getId()).intensity(0.5).segmentCount(1).repairParallelism(PARALLEL),
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(PARALLEL)
+                .tables(TABLES),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
@@ -454,8 +471,8 @@ public final class SegmentRunnerTest {
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(cf.getNodes()));
 
-    SegmentRunner sr = SegmentRunner.create(
-        context, clusterFacade, segmentId, Collections.singleton(""), 5000, 0.5, PARALLEL, "reaper", ru, rr);
+    SegmentRunner sr = SegmentRunner
+        .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
 
     sr.run();
 
@@ -481,7 +498,11 @@ public final class SegmentRunnerTest {
                 .repairThreadCount(1));
 
     RepairRun run = storage.addRepairRun(
-            RepairRun.builder("reaper", cf.getId()).intensity(0.5).segmentCount(1).repairParallelism(PARALLEL),
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(PARALLEL)
+                .tables(TABLES),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
@@ -580,8 +601,8 @@ public final class SegmentRunnerTest {
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(cf.getNodes()));
 
-    SegmentRunner sr = SegmentRunner.create(
-            context, clusterFacade, segmentId, Collections.singleton(""), 5000, 0.5, PARALLEL, "reaper", ru, rr);
+    SegmentRunner sr = SegmentRunner
+        .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
 
     sr.run();
 
@@ -608,7 +629,11 @@ public final class SegmentRunnerTest {
                 .repairThreadCount(1));
 
     RepairRun run = storage.addRepairRun(
-            RepairRun.builder("reaper", cf.getId()).intensity(0.5).segmentCount(1).repairParallelism(PARALLEL),
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(PARALLEL)
+                .tables(TABLES),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
@@ -707,8 +732,8 @@ public final class SegmentRunnerTest {
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(cf.getNodes()));
 
-    SegmentRunner sr = SegmentRunner.create(
-            context, clusterFacade, segmentId, Collections.singleton(""), 5000, 0.5, PARALLEL, "reaper", ru, rr);
+    SegmentRunner sr = SegmentRunner
+        .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
 
     sr.run();
 
@@ -736,7 +761,11 @@ public final class SegmentRunnerTest {
                 .repairThreadCount(1));
 
     RepairRun run = storage.addRepairRun(
-            RepairRun.builder("reaper", cf.getId()).intensity(0.5).segmentCount(1).repairParallelism(PARALLEL),
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(PARALLEL)
+                .tables(TABLES),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
@@ -835,8 +864,8 @@ public final class SegmentRunnerTest {
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(cf.getNodes()));
 
-    SegmentRunner sr = SegmentRunner.create(
-            context, clusterFacade, segmentId, Collections.singleton(""), 5000, 0.5, PARALLEL, "reaper", ru, rr);
+    SegmentRunner sr = SegmentRunner
+        .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
 
     sr.run();
 
@@ -865,7 +894,11 @@ public final class SegmentRunnerTest {
                 .repairThreadCount(1));
 
     RepairRun run = storage.addRepairRun(
-            RepairRun.builder("reaper", cf.getId()).intensity(0.5).segmentCount(1).repairParallelism(PARALLEL),
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(PARALLEL)
+                .tables(TABLES),
             Collections.singleton(
                 RepairSegment.builder(
                     Segment.builder()
@@ -964,8 +997,8 @@ public final class SegmentRunnerTest {
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(cf.getNodes()));
 
-    SegmentRunner sr = SegmentRunner.create(
-            context, clusterFacade, segmentId, Collections.singleton(""), 5000, 0.5, PARALLEL, "reaper", ru, rr);
+    SegmentRunner sr = SegmentRunner
+        .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
 
     sr.run();
 
@@ -1034,6 +1067,7 @@ public final class SegmentRunnerTest {
             DATACENTER_AWARE,
             "test",
             mock(RepairUnit.class),
+            TABLES,
             mock(RepairRunner.class));
 
     Pair<String, Callable<Optional<NodeMetrics>>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc2");
@@ -1082,6 +1116,7 @@ public final class SegmentRunnerTest {
             DATACENTER_AWARE,
             "test",
             mock(RepairUnit.class),
+            TABLES,
             mock(RepairRunner.class));
 
     Pair<String, Callable<Optional<NodeMetrics>>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc1");

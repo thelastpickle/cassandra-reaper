@@ -53,6 +53,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.StringUtils;
+import org.assertj.core.api.Assertions;
 import org.assertj.core.util.Maps;
 import org.joda.time.DateTimeUtils;
 import org.junit.Before;
@@ -301,12 +302,10 @@ public final class RepairRunResourceTest {
     assertTrue(response.getEntity().toString(), response.getEntity() instanceof RepairRunStatus);
     RepairRunStatus repairRunStatus = (RepairRunStatus) response.getEntity();
 
-    assertTrue("Blacklisted should contain 'table1'", repairRunStatus.getBlacklistedTables().contains("table1"));
-    assertTrue("Blacklisted should contain 'table2'", repairRunStatus.getBlacklistedTables().contains("table2"));
-    assertFalse("Blacklisted shouldn't contain 'table3'", repairRunStatus.getBlacklistedTables().contains("table3"));
-    assertFalse("ColumnFamilies shouldn't contain 'table1'", repairRunStatus.getColumnFamilies().contains("table1"));
-    assertFalse("ColumnFamilies shouldn't contain 'table2'", repairRunStatus.getColumnFamilies().contains("table2"));
-    assertFalse("ColumnFamilies shouldn't contain 'table3'", repairRunStatus.getColumnFamilies().contains("table3"));
+    Assertions.assertThat(repairRunStatus.getBlacklistedTables()).isEmpty();
+    assertFalse("Tables shouldn't contain 'table1'", repairRunStatus.getColumnFamilies().contains("table1"));
+    assertFalse("Tables shouldn't contain 'table2'", repairRunStatus.getColumnFamilies().contains("table2"));
+    assertTrue("Tables shouldn't contain 'table3'", repairRunStatus.getColumnFamilies().contains("table3"));
   }
 
   @Test

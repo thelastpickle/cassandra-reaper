@@ -24,7 +24,6 @@ import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.jmx.JmxProxy;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -79,50 +78,43 @@ public final class RepairUnitService {
    * @param proxy : a JMX proxy instance
    * @param unit : the repair unit for the current run
    * @return the list of tables to repair for the keyspace without the blacklisted ones
-   * @throws ReaperException, IllegalStateException
    */
-  Set<String> getTablesToRepair(JmxProxy proxy, Cluster cluster, RepairUnit repairUnit)
-      throws ReaperException, IllegalStateException {
-
+  Set<String> getTablesToRepair(Cluster cluster, RepairUnit repairUnit) throws ReaperException {
     String keyspace = repairUnit.getKeyspaceName();
-    Set<String> tables;
+    Set<String> result;
 
     if (repairUnit.getColumnFamilies().isEmpty()) {
-      Set<String> twcsBlacklisted = findBlacklistedCompactionStrategyTables(cluster, keyspace);
+      Set<Table> tables = ClusterFacade.create(context).getTablesForKeyspace(cluster, keyspace);
+      Set<String> twcsBlacklisted = findBlacklistedCompactionStrategyTables(cluster, tables);
 
-      tables = proxy.getTablesForKeyspace(keyspace).stream()
+      result = tables.stream()
           .map(Table::getName)
           .filter(tableName -> !repairUnit.getBlacklistedTables().contains(tableName))
           .filter(tableName -> !twcsBlacklisted.contains(tableName))
           .collect(Collectors.toSet());
     } else {
       // if tables have been specified then don't apply the twcsBlacklisting
-      tables = repairUnit.getColumnFamilies().stream()
+      result = repairUnit.getColumnFamilies().stream()
             .filter(tableName -> !repairUnit.getBlacklistedTables().contains(tableName))
             .collect(Collectors.toSet());
     }
 
     Preconditions.checkState(
-        repairUnit.getBlacklistedTables().isEmpty() || !tables.isEmpty(),
+        repairUnit.getBlacklistedTables().isEmpty() || !result.isEmpty(),
         "Invalid blacklist definition. It filtered out all tables in the keyspace.");
 
-    return tables;
+    return result;
   }
 
-  public Set<String> findBlacklistedCompactionStrategyTables(Cluster cluster, String keyspace) {
-    try {
-      if (context.config.getBlacklistTwcsTables()
-          && versionCompare(ClusterFacade.create(context).getCassandraVersion(cluster), "2.1") >= 0) {
+  public Set<String> findBlacklistedCompactionStrategyTables(Cluster clstr, Set<Table> tables) throws ReaperException {
+    if (context.config.getBlacklistTwcsTables()
+        && versionCompare(ClusterFacade.create(context).getCassandraVersion(clstr), "2.1") >= 0) {
 
-        return ClusterFacade.create(context)
-            .getTablesForKeyspace(cluster, keyspace)
-            .stream()
-            .filter(RepairUnitService::isBlackListedCompactionStrategy)
-            .map(Table::getName)
-            .collect(Collectors.toSet());
-      }
-    } catch (ReaperException e) {
-      LOG.error("unknown table list to cluster {} keyspace", cluster.getName(), keyspace, e);
+      return tables
+          .stream()
+          .filter(RepairUnitService::isBlackListedCompactionStrategy)
+          .map(Table::getName)
+          .collect(Collectors.toSet());
     }
     return Collections.emptySet();
   }

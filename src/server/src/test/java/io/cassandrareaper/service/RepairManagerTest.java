@@ -37,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.fest.assertions.api.Assertions;
@@ -49,6 +50,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public final class RepairManagerTest {
+
+  private static final Set<String> TABLES = ImmutableSet.of("table1");
 
   /**
    * Verifies that when a RUNNING segment exists that has no leader it will get aborted. Will happen
@@ -101,6 +104,7 @@ public final class RepairManagerTest {
             .intensity(intensity)
             .segmentCount(1)
             .repairParallelism(RepairParallelism.PARALLEL)
+            .tables(TABLES)
             .build(UUIDs.timeBased());
 
     final RepairSegment segment = RepairSegment.builder(
@@ -179,6 +183,7 @@ public final class RepairManagerTest {
             .intensity(intensity)
             .segmentCount(1)
             .repairParallelism(RepairParallelism.PARALLEL)
+            .tables(TABLES)
             .build(UUIDs.timeBased());
 
     final RepairSegment segment = RepairSegment.builder(
@@ -257,6 +262,7 @@ public final class RepairManagerTest {
             .intensity(intensity)
             .segmentCount(1)
             .repairParallelism(RepairParallelism.PARALLEL)
+            .tables(TABLES)
             .build(UUIDs.timeBased());
 
     final RepairSegment segment = RepairSegment.builder(
@@ -332,6 +338,7 @@ public final class RepairManagerTest {
             .intensity(intensity)
             .segmentCount(1)
             .repairParallelism(RepairParallelism.PARALLEL)
+            .tables(TABLES)
             .build(UUIDs.timeBased());
 
     final RepairSegment segment = RepairSegment.builder(
@@ -396,6 +403,7 @@ public final class RepairManagerTest {
             .intensity(intensity)
             .segmentCount(1)
             .repairParallelism(RepairParallelism.PARALLEL)
+            .tables(TABLES)
             .build(UUIDs.timeBased());
 
     when(context.storage.updateRepairRun(any())).thenReturn(true);

@@ -434,11 +434,12 @@ final class RepairRunner implements Runnable {
   private boolean repairSegment(final int rangeIndex, final UUID segmentId, Segment segment)
       throws InterruptedException, ReaperException {
 
+    final RepairRun repairRun;
     final UUID unitId;
     final double intensity;
     final RepairParallelism validationParallelism;
     {
-      RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
+      repairRun = context.storage.getRepairRun(repairRunId).get();
       unitId = repairRun.getRepairUnitId();
       intensity = repairRun.getIntensity();
       validationParallelism = repairRun.getRepairParallelism();
@@ -469,14 +470,14 @@ final class RepairRunner implements Runnable {
             segment.toString());
         // This segment has a faulty token range. Abort the entire repair run.
         synchronized (this) {
-          RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
           context.storage.updateRepairRun(
-              repairRun
+              context.storage.getRepairRun(repairRunId).get()
                   .with()
                   .runState(RepairRun.RunState.ERROR)
                   .lastEvent(String.format("No coordinators for range %s", segment))
                   .endTime(DateTime.now())
                   .build(repairRunId));
+
           killAndCleanupRunner();
         }
         return false;
@@ -504,6 +505,7 @@ final class RepairRunner implements Runnable {
           validationParallelism,
           clusterName,
           repairUnit,
+          repairRun.getTables(),
           this);
 
       ListenableFuture<?> segmentResult = context.repairManager.submitSegment(segmentRunner);

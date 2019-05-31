@@ -23,10 +23,8 @@ import io.cassandrareaper.resources.view.RepairRunStatus;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.StatementContext;
@@ -41,8 +39,9 @@ public final class RepairRunStatusMapper implements ResultSetMapper<RepairRunSta
     String clusterName = rs.getString("cluster_name");
     String keyspaceName = rs.getString("keyspace_name");
 
-    Collection<String> columnFamilies
-        = ImmutableSet.copyOf(getStringArray(rs.getArray("column_families").getArray()));
+    String[] columnFamilies = rs.getArray("tables") == null
+            ? new String[] {}
+            : IStoragePostgreSql.parseStringArray(rs.getArray("tables").getArray());
 
     int segmentsRepaired = rs.getInt("segments_repaired");
     int totalSegments = rs.getInt("segments_total");
@@ -62,16 +61,16 @@ public final class RepairRunStatusMapper implements ResultSetMapper<RepairRunSta
     Collection<String> nodes = ImmutableSet.copyOf(
             rs.getArray("nodes") == null
                 ? new String[] {}
-                : getStringArray(rs.getArray("nodes").getArray()));
+                : IStoragePostgreSql.parseStringArray(rs.getArray("nodes").getArray()));
 
     Collection<String> datacenters = ImmutableSet.copyOf(
-            getStringArray(
+            IStoragePostgreSql.parseStringArray(
                 rs.getArray("datacenters") == null
                     ? new String[] {}
                     : rs.getArray("datacenters").getArray()));
 
     Collection<String> blacklistedTables = ImmutableSet.copyOf(
-            getStringArray(
+            IStoragePostgreSql.parseStringArray(
                 rs.getArray("blacklisted_tables") == null
                     ? new String[] {}
                     : rs.getArray("blacklisted_tables").getArray()));
@@ -82,7 +81,7 @@ public final class RepairRunStatusMapper implements ResultSetMapper<RepairRunSta
         UuidUtil.fromSequenceId(runId),
         clusterName,
         keyspaceName,
-        columnFamilies,
+        ImmutableSet.copyOf(columnFamilies),
         segmentsRepaired,
         totalSegments,
         state,
@@ -100,14 +99,5 @@ public final class RepairRunStatusMapper implements ResultSetMapper<RepairRunSta
         datacenters,
         blacklistedTables,
         repairThreadCount);
-  }
-
-  private String[] getStringArray(Object array) {
-    String[] stringArray = new String[((Object[]) array).length];
-    return Lists.newArrayList(((Object[]) array))
-        .stream()
-        .map(element -> (String) element)
-        .collect(Collectors.toList())
-        .toArray(stringArray);
   }
 }

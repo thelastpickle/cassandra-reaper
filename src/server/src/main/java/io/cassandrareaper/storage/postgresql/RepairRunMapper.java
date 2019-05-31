@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.StatementContext;
@@ -45,11 +46,16 @@ public final class RepairRunMapper implements ResultSetMapper<RepairRun> {
     RepairParallelism repairParallelism = RepairParallelism.fromName(
         rs.getString("repair_parallelism").toLowerCase().replace("datacenter_aware", "dc_parallel"));
 
+    String[] tables = rs.getArray("tables") == null
+            ? new String[] {}
+            : IStoragePostgreSql.parseStringArray(rs.getArray("tables").getArray());
+
     return RepairRun.builder(rs.getString("cluster_name"), UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")))
         .creationTime(getDateTimeOrNull(rs, "creation_time"))
         .intensity(rs.getDouble("intensity"))
         .segmentCount(rs.getInt("segment_count"))
         .repairParallelism(repairParallelism)
+        .tables(ImmutableSet.copyOf(tables))
         .runState(runState)
         .owner(rs.getString("owner"))
         .cause(rs.getString("cause"))

@@ -60,9 +60,11 @@ public final class RepairRunService {
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunService.class);
 
   private final AppContext context;
+  private final RepairUnitService repairUnitService;
 
   private RepairRunService(AppContext context) {
     this.context = context;
+    this.repairUnitService = RepairUnitService.create(context);
   }
 
   public static RepairRunService create(AppContext context) {
@@ -105,7 +107,8 @@ public final class RepairRunService {
         .segmentCount(segments)
         .repairParallelism(repairParallelism)
         .cause(cause.orElse("no cause specified"))
-        .owner(owner);
+        .owner(owner)
+        .tables(repairUnitService.getTablesToRepair(cluster, repairUnit));
 
     // the last preparation step is to generate actual repair segments
     List<RepairSegment.Builder> segmentBuilders = repairUnit.getIncrementalRepair()

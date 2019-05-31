@@ -1002,13 +1002,13 @@ public final class BasicSteps {
                     || VersionNumber.parse("2.1").compareTo(lowestNodeVersion) > 0) {
 
                   Assertions
-                      .assertThat(runs.get(0).getBlacklistedTables().contains(twcsTable))
-                      .isFalse();
+                      .assertThat(runs.get(0).getColumnFamilies().contains(twcsTable))
+                      .isTrue();
                 } else {
                   // auto TWCS blacklisting was only added in Reaper 1.4.0, and requires Cassandra >= 2.1
                   Assertions
-                      .assertThat(runs.get(0).getBlacklistedTables().contains(twcsTable))
-                      .isTrue();
+                      .assertThat(runs.get(0).getColumnFamilies().contains(twcsTable))
+                      .isFalse();
                 }
               });
     }

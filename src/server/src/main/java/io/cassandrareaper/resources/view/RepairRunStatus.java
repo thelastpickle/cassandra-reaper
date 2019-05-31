@@ -201,7 +201,7 @@ public final class RepairRunStatus {
         repairRun.getId(),
         repairRun.getClusterName(),
         repairUnit.getKeyspaceName(),
-        repairUnit.getColumnFamilies(),
+        repairRun.getTables(),
         segmentsRepaired,
         repairRun.getSegmentCount(),
         repairRun.getRunState(),

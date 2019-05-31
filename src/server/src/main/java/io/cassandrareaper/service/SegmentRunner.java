@@ -22,7 +22,6 @@ import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.NodeMetrics;
-import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.ClusterFacade;
@@ -92,7 +91,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private static final long METRICS_MAX_WAIT_MS = TimeUnit.MINUTES.toMillis(2);
 
   private final AppContext context;
-  private final RepairUnitService repairUnitService;
   private final UUID segmentId;
   private final Condition condition = new SimpleCondition();
   private final Collection<String> potentialCoordinators;
@@ -108,6 +106,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final AtomicBoolean successOrFailedNotified = new AtomicBoolean(false);
   private final AtomicBoolean completeNotified = new AtomicBoolean(false);
   private final ClusterFacade clusterFacade;
+  private final Set<String> tablesToRepair;
 
 
   private SegmentRunner(
@@ -120,6 +119,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       RepairParallelism validationParallelism,
       String clusterName,
       RepairUnit repairUnit,
+      Set<String> tablesToRepair,
       RepairRunner repairRunner)
       throws ReaperException {
 
@@ -129,7 +129,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
     this.context = context;
     this.clusterFacade = clusterFacade;
-    this.repairUnitService = RepairUnitService.create(context);
     this.segmentId = segmentId;
     this.potentialCoordinators = potentialCoordinators;
     this.timeoutMillis = timeoutMillis;
@@ -140,6 +139,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     this.repairRunner = repairRunner;
     this.segmentFailed = new AtomicBoolean(false);
     this.leaderElectionId = repairUnit.getIncrementalRepair() ? repairRunner.getRepairRunId() : segmentId;
+    this.tablesToRepair = tablesToRepair;
   }
 
   public static SegmentRunner create(
@@ -152,6 +152,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       RepairParallelism validationParallelism,
       String clusterName,
       RepairUnit repairUnit,
+      Set<String> tablesToRepair,
       RepairRunner repairRunner) throws ReaperException {
 
     return new SegmentRunner(
@@ -164,6 +165,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         validationParallelism,
         clusterName,
         repairUnit,
+        tablesToRepair,
         repairRunner);
   }
 
@@ -265,36 +267,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       if (SEGMENT_RUNNERS.containsKey(segmentId)) {
         LOG.error("SegmentRunner already exists for segment with ID: {}", segmentId);
         throw new ReaperException("SegmentRunner already exists for segment with ID: " + segmentId);
-      }
-
-      Set<String> tablesToRepair;
-      try {
-        tablesToRepair = repairUnitService.getTablesToRepair(coordinator, cluster, repairUnit);
-      } catch (IllegalStateException e) {
-        String msg = "Invalid blacklist definition. It filtered all tables in the keyspace.";
-        LOG.error(msg, e);
-        RepairRun repairRun = context.storage.getRepairRun(segment.getRunId()).get();
-
-        context.storage.updateRepairRun(
-            repairRun
-                .with()
-                .runState(RepairRun.RunState.ERROR)
-                .lastEvent(String.format(msg))
-                .endTime(DateTime.now())
-                .build(segment.getRunId()));
-
-        repairRunner.killAndCleanupRunner();
-
-        context.storage.updateRepairSegment(
-            segment
-                .with()
-                .withState(RepairSegment.State.DONE)
-                .withStartTime(DateTime.now())
-                .withEndTime(DateTime.now())
-                .withId(segmentId)
-                .build());
-
-        return false;
       }
 
       String keyspace = repairUnit.getKeyspaceName();

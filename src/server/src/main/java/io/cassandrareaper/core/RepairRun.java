@@ -17,7 +17,9 @@
 
 package io.cassandrareaper.core;
 
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import com.google.common.base.Preconditions;
@@ -45,6 +47,7 @@ public final class RepairRun implements Comparable<RepairRun> {
   private final String lastEvent;
   private final int segmentCount;
   private final RepairParallelism repairParallelism;
+  private final Set<String> tables;
 
   private RepairRun(Builder builder, UUID id) {
     this.id = id;
@@ -61,6 +64,7 @@ public final class RepairRun implements Comparable<RepairRun> {
     this.lastEvent = builder.lastEvent;
     this.segmentCount = builder.segmentCount;
     this.repairParallelism = builder.repairParallelism;
+    this.tables = builder.tables;
   }
 
   public static Builder builder(String clusterName, UUID repairUnitId) {
@@ -121,6 +125,10 @@ public final class RepairRun implements Comparable<RepairRun> {
 
   public RepairParallelism getRepairParallelism() {
     return repairParallelism;
+  }
+
+  public Set<String> getTables() {
+    return tables;
   }
 
   public Builder with() {
@@ -199,6 +207,7 @@ public final class RepairRun implements Comparable<RepairRun> {
     private String lastEvent = "no events";
     private Integer segmentCount;
     private RepairParallelism repairParallelism;
+    private Set<String> tables;
 
     private Builder(String clusterName, UUID repairUnitId) {
       this.clusterName = clusterName;
@@ -219,6 +228,7 @@ public final class RepairRun implements Comparable<RepairRun> {
       lastEvent = original.lastEvent;
       segmentCount = original.segmentCount;
       repairParallelism = original.repairParallelism;
+      tables = original.tables;
     }
 
     public Builder runState(RunState runState) {
@@ -279,10 +289,16 @@ public final class RepairRun implements Comparable<RepairRun> {
       return this;
     }
 
+    public Builder tables(Set<String> tables) {
+      this.tables = Collections.unmodifiableSet(tables);
+      return this;
+    }
+
     public RepairRun build(UUID id) {
       Preconditions.checkState(null != repairParallelism, "repairParallelism(..) must be called before build(..)");
       Preconditions.checkState(null != intensity, "intensity(..) must be called before build(..)");
       Preconditions.checkState(null != segmentCount, "segmentCount(..) must be called before build(..)");
+      Preconditions.checkState(null != tables, "tables(..) must be called before build(..)");
 
       Preconditions.checkState(
           RunState.NOT_STARTED == runState || null != startTime,
