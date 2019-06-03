@@ -35,12 +35,14 @@ import org.slf4j.LoggerFactory;
  * Single class to hold all application global interfacing objects, and app global options.
  */
 public final class AppContext {
+  
+  private static final Logger LOG = LoggerFactory.getLogger(AppContext.class);
+
+  private static final String DEFAULT_INSTANCE_ADDRESS = "127.0.0.1";
 
   public static final UUID REAPER_INSTANCE_ID = UUID.randomUUID();
   public static final String REAPER_INSTANCE_ADDRESS = initialiseInstanceAddress();
 
-  private static final String DEFAULT_INSTANCE_ADDRESS = "127.0.0.1";
-  private static final Logger LOG = LoggerFactory.getLogger(AppContext.class);
 
   public final AtomicBoolean isRunning = new AtomicBoolean(true);
   public IStorage storage;
