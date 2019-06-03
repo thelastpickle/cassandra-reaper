@@ -37,10 +37,7 @@ import org.slf4j.LoggerFactory;
 public final class AppContext {
 
   public static final UUID REAPER_INSTANCE_ID = UUID.randomUUID();
-  public static final String REAPER_INSTANCE_ADDRESS = initialiseInstanceAddress();
-
-  private static final String DEFAULT_INSTANCE_ADDRESS = "127.0.0.1";
-  private static final Logger LOG = LoggerFactory.getLogger(AppContext.class);
+  public static final String REAPER_INSTANCE_ADDRESS = Private.initialiseInstanceAddress();
 
   public final AtomicBoolean isRunning = new AtomicBoolean(true);
   public IStorage storage;
@@ -50,14 +47,18 @@ public final class AppContext {
   public ReaperApplicationConfiguration config;
   public MetricRegistry metricRegistry = new MetricRegistry();
 
-  private static String initialiseInstanceAddress() {
-    String reaperInstanceAddress;
-    try {
-      reaperInstanceAddress = InetAddress.getLocalHost().getHostAddress();
-    } catch (UnknownHostException e) {
-      LOG.warn("Cannot get instance address", e);
-      reaperInstanceAddress = DEFAULT_INSTANCE_ADDRESS;
+
+  private static class Private {
+    private static final Logger LOG = LoggerFactory.getLogger(AppContext.class);
+    private static final String DEFAULT_INSTANCE_ADDRESS = "127.0.0.1";
+
+    private static String initialiseInstanceAddress() {
+      try {
+        return  InetAddress.getLocalHost().getHostAddress();
+      } catch (UnknownHostException e) {
+        LOG.warn("Cannot get instance address", e);
+      }
+      return DEFAULT_INSTANCE_ADDRESS;
     }
-    return reaperInstanceAddress;
   }
 }
