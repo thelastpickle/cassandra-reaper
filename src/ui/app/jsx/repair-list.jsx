@@ -16,7 +16,7 @@
 
 import React from "react";
 import moment from "moment";
-import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
+import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender, CFsCountListRender} from "jsx/mixin";
 import ProgressBar from 'react-bootstrap/lib/ProgressBar';
 import Button from 'react-bootstrap/lib/Button';
 import Modal from 'react-bootstrap/lib/Modal';
@@ -81,7 +81,7 @@ const TableRow = React.createClass({
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.state}</td>
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.cluster_name}</td>
         <td data-toggle="collapse" data-target={rowID}>{this.props.row.keyspace_name}</td>
-        <td data-toggle="collapse" data-target={rowID}><CFsListRender list={this.props.row.column_families} /></td>
+        <td data-toggle="collapse" data-target={rowID}><CFsCountListRender list={this.props.row.column_families} /></td>
         <td data-toggle="collapse" data-target={rowID}>
           <div className="progress">
           {repairProgress}
@@ -437,7 +437,7 @@ const repairList = React.createClass({
                               <th>State</th>
                               <th>Cluster</th>
                               <th>Keyspace</th>
-                              <th>CFs</th>
+                              <th>Tables</th>
                               <th>Repaired</th>
                               <th></th>
                           </tr>
@@ -466,7 +466,7 @@ const repairList = React.createClass({
                               <th>State</th>
                               <th>Cluster</th>
                               <th>Keyspace</th>
-                              <th>CFs</th>
+                              <th>Tables</th>
                               <th>Repaired</th>
                               <th></th>
                           </tr>

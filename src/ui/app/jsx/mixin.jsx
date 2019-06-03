@@ -15,6 +15,9 @@
 //  limitations under the License.
 
 import React from "react";
+import Button from 'react-bootstrap/lib/Button';
+import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger';
+import Tooltip from 'react-bootstrap/lib/Tooltip';
 
 export const RowDeleteMixin = {
 
@@ -109,6 +112,31 @@ export const CFsListRender = React.createClass({
             </div>
         )
     }
+});
+
+export const CFsCountListRender = React.createClass({
+  render: function() {
+      return (
+          <div className="ReactTags__tags">
+            <div className="ReactTags__selected">
+              <OverlayTrigger
+                key={this.props.id}
+                placement="top"
+                overlay={
+                  <Tooltip id={`tooltip-bottom`}>
+                    {this.props.list.sort().map(function(table){
+                      return <div>{table}</div>;
+                    })
+                    }
+                  </Tooltip>
+                }
+              >
+                <Button variant="secondary" className="btn btn-xs">{this.props.list.length>0?this.props.list.length:"All"} table{this.props.list.length==1?"":"s"}</Button>
+              </OverlayTrigger>
+            </div>
+          </div>
+      )
+  }
 });
 
 export const humanFileSize = function(bytes, si) {
