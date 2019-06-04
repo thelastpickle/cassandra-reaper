@@ -202,10 +202,10 @@
             <version>2.25.1</version>
         </dependency>
         <dependency>
-            <!-- required to solve dropwizard 1.1.7 & jersery-client 2.25.1 dependency issues -->
+            <!-- required to solve dropwizard 1.1.7 & jersery-client 2.28 dependency issues -->
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-server</artifactId>
-            <version>2.25.1</version>
+            <version>2.28</version>
         </dependency>
         <dependency>
             <!-- required by jersey -->
