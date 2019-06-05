@@ -434,7 +434,7 @@ final class RepairRunner implements Runnable {
   private boolean repairSegment(final int rangeIndex, final UUID segmentId, Segment segment)
       throws InterruptedException, ReaperException {
 
-    final RepairRun repairRun;
+    RepairRun repairRun;
     final UUID unitId;
     final double intensity;
     final RepairParallelism validationParallelism;
@@ -449,6 +449,7 @@ final class RepairRunner implements Runnable {
     }
 
     RepairUnit repairUnit = context.storage.getRepairUnit(unitId);
+    repairRun = fixMissingRepairRunTables(repairRun, repairUnit);
     String keyspace = repairUnit.getKeyspaceName();
     LOG.debug("preparing to repair segment {} on run with id {}", segmentId, repairRunId);
 
@@ -622,5 +623,18 @@ final class RepairRunner implements Runnable {
     String cleanClusterName = clusterName.replaceAll("[^A-Za-z0-9]", "");
     String cleanRepairRunId = repairRunId.toString().replaceAll("-", "");
     return MetricRegistry.name(RepairRunner.class, metric, cleanClusterName, cleanRepairRunId);
+  }
+
+  private RepairRun fixMissingRepairRunTables(RepairRun repairRun, RepairUnit repairUnit) throws ReaperException {
+    if (repairRun.getTables().isEmpty()) {
+      RepairRun newRepairRun = repairRun
+          .with()
+          .tables(RepairUnitService.create(context).getTablesToRepair(cluster.get(), repairUnit))
+          .build(repairRun.getId());
+
+      context.storage.updateRepairRun(newRepairRun);
+      return newRepairRun;
+    }
+    return repairRun;
   }
 }
