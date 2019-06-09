@@ -668,7 +668,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         nbRanges = 0;
       }
     }
-    assert getRepairUnit(newRepairRun.getRepairUnitId()).getIncrementalRepair() == isIncremental.booleanValue();
+    assert getRepairUnit(newRepairRun.getRepairUnitId()).getIncrementalRepair() == isIncremental;
 
     futures.add(session.executeAsync(repairRunBatch));
     futures.add(

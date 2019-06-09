@@ -152,7 +152,7 @@ public final class RepairManager implements AutoCloseable {
     }
   }
 
-  private void abortAllRunningSegmentsWithNoLeader(Collection<RepairRun> runningRepairRuns) throws ReaperException {
+  private void abortAllRunningSegmentsWithNoLeader(Collection<RepairRun> runningRepairRuns) {
     runningRepairRuns
         .forEach((repairRun) -> {
           Collection<RepairSegment> runningSegments

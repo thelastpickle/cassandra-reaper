@@ -401,7 +401,7 @@ public final class ClusterResource {
   public Optional<NodesStatus> getNodesStatus(Optional<Cluster> cluster) {
     if (cluster.isPresent() && null != cluster.get().getSeedHosts()) {
       List<Callable<Optional<NodesStatus>>> endpointStateTasks = Lists.newArrayList();
-      List<String> seedHosts = new ArrayList<String>(cluster.get().getSeedHosts());
+      List<String> seedHosts = new ArrayList<>(cluster.get().getSeedHosts());
       Collections.shuffle(seedHosts);
       int index = 0;
       for (String host:seedHosts) {

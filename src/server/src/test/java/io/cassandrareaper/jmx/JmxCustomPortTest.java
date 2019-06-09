@@ -65,7 +65,7 @@ public class JmxCustomPortTest {
         = new Cluster(
             "test",
             Optional.of("murmur3partitioner"),
-            new LinkedHashSet<String>(Arrays.asList("127.0.0.1", "127.0.0.2")),
+            new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2")),
             ClusterProperties.builder().withJmxPort(7188).build());
 
     context.jmxConnectionFactory.connectAny(cluster);
@@ -75,7 +75,7 @@ public class JmxCustomPortTest {
         = new Cluster(
             "test",
             Optional.of("murmur3partitioner"),
-            new LinkedHashSet<String>(Arrays.asList("127.0.0.1", "127.0.0.2")),
+            new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2")),
             ClusterProperties.builder().withJmxPort(7198).build());
 
     context.jmxConnectionFactory.connect(

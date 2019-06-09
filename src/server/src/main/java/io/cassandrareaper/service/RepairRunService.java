@@ -200,8 +200,7 @@ public final class RepairRunService {
   static List<Segment> filterSegmentsByNodes(
       List<Segment> segments,
       RepairUnit repairUnit,
-      Map<String, List<RingRange>> endpointToRange)
-      throws ReaperException {
+      Map<String, List<RingRange>> endpointToRange) {
 
     if (repairUnit.getNodes().isEmpty()) {
       return segments;
@@ -383,10 +382,7 @@ public final class RepairRunService {
     return nodesToRepair;
   }
 
-  public static Set<String> getDatacentersToRepairBasedOnParam(
-      Cluster cluster,
-      Optional<String> datacenters) throws ReaperException {
-
+  public static Set<String> getDatacentersToRepairBasedOnParam(Cluster cluster, Optional<String> datacenters) {
     Set<String> datacentersToRepair = Collections.emptySet();
     if (datacenters.isPresent() && !datacenters.get().isEmpty()) {
       datacentersToRepair = Sets.newHashSet(COMMA_SEPARATED_LIST_SPLITTER.split(datacenters.get()));

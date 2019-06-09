@@ -455,8 +455,7 @@ public final class RepairRunResource {
   public Response oldModifyRunState(
       @Context UriInfo uriInfo,
       @PathParam("id") UUID repairRunId,
-      @QueryParam("state") Optional<String> stateStr)
-      throws ReaperException {
+      @QueryParam("state") Optional<String> stateStr) {
 
     try {
       if (!stateStr.isPresent()) {
@@ -653,7 +652,6 @@ public final class RepairRunResource {
       @QueryParam("keyspace_name") Optional<String> keyspace) {
 
     try {
-      final List<RepairRunStatus> runStatuses = Lists.newArrayList();
       final Set desiredStates = splitStateParam(state);
       if (desiredStates == null) {
         return Response.status(Response.Status.BAD_REQUEST).build();
@@ -666,9 +664,10 @@ public final class RepairRunResource {
         clusters = context.storage.getClusters();
       }
 
-
+      List<RepairRunStatus> runStatuses = Lists.newArrayList();
       for (final Cluster clstr : clusters) {
         Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(clstr.getName(), Optional.empty());
+
         runStatuses.addAll(
             (List<RepairRunStatus>) getRunStatuses(runs, desiredStates)
                 .stream()
@@ -684,10 +683,7 @@ public final class RepairRunResource {
     }
   }
 
-  private List<RepairRunStatus> getRunStatuses(
-      Collection<RepairRun> runs,
-      Set<String> desiredStates) throws ReaperException {
-
+  private List<RepairRunStatus> getRunStatuses(Collection<RepairRun> runs, Set<String> desiredStates) {
     final List<RepairRunStatus> runStatuses = Lists.newArrayList();
     for (final RepairRun run : runs) {
       if (!desiredStates.isEmpty() && !desiredStates.contains(run.getRunState().name())) {

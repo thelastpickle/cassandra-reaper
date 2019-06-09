@@ -800,7 +800,7 @@ final class JmxProxyImpl implements JmxProxy {
             .get(repairNo)
             .handle(repairNo, Optional.empty(), Optional.of(progress), message, this);
       }
-    } catch (RuntimeException e) {
+    } catch (NumberFormatException e) {
       LOG.error("Error while processing JMX notification", e);
     }
   }

@@ -188,9 +188,7 @@ final class RepairRunner implements Runnable {
         Math.max(1, hostsInRing.keySet().size() / ranges.values().iterator().next().size()));
   }
 
-  static List<RingRange> getParallelRanges(int parallelRepairs, List<RingRange> segments)
-      throws ReaperException {
-
+  static List<RingRange> getParallelRanges(int parallelRepairs, List<RingRange> segments) throws ReaperException {
     if (parallelRepairs == 0) {
       String msg = "Can't repair anything with 0 threads";
       LOG.error(msg);
@@ -545,6 +543,7 @@ final class RepairRunner implements Runnable {
   private List<String> filterPotentialCoordinatorsByDatacenters(
       Collection<String> datacenters,
       List<String> potentialCoordinators) throws ReaperException {
+
     List<Pair<String, String>> coordinatorsWithDc = Lists.newArrayList();
     for (String coordinator:potentialCoordinators) {
       coordinatorsWithDc.add(getNodeDatacenterPair(coordinator));

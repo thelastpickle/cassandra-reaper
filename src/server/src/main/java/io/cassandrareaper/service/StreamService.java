@@ -100,22 +100,14 @@ public final class StreamService {
         result.add(streamState);
       } catch (AssertionError e) {
         // if that fails, try the older version
-        try {
-          StreamState olderStreamState = parseStreamStatePre2_1(compositeData);
-          result.add(olderStreamState);
-          continue;
-        } catch (ReaperException re) {
-          LOG.warn("Parsing StreamState message for v 2.0.17 failed");
-        }
-        throw new ReaperException("Could not parse composite data");
+        StreamState olderStreamState = parseStreamStatePre2_1(compositeData);
+        result.add(olderStreamState);
       }
-
     }
-
     return result;
   }
 
-  private StreamState parseStreamStatePre2_1(CompositeData compositeData) throws ReaperException {
+  private StreamState parseStreamStatePre2_1(CompositeData compositeData) {
     UUID planId = UUID.fromString((String)compositeData.get("planId"));
     String description = (String) compositeData.get("description");
 
