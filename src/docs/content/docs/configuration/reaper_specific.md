@@ -79,7 +79,7 @@ Type: *String*
 
 Default: *ALL*
 
-Indicates to Reaper its deployment in relation to cluster data center network locality. The value must be either **ALL**, **LOCAL**, or **EACH**. Note that this setting controls the behavior for metrics collection.
+Indicates to Reaper its deployment in relation to cluster data center network locality. The value must be either **ALL**, **LOCAL**, **EACH** or **SIDECAR**. Note that this setting controls the behavior for metrics collection.
 
 For security reasons, it is possible that Reaper will have access limited to nodes in a single datacenter via JMX (multi region clusters for example). In this case, it is possible to deploy an operate an instance of Reaper in each datacenter where each instance only has access via JMX (with or without authentication) to the nodes in its local datacenter. Where multiple instances of Reaper are in operation in this configuration, only the Apache Cassandra storage option can be used with Reaper. All other storage options are unsuitable in this case. This is because Reaper instances will rely on lightweight transactions to get leadership on segments before processing them. In addition, Reaper will check the number of pending compactions and actively running repairs on all replicas prior to processing a segment.
 
@@ -90,6 +90,12 @@ For security reasons, it is possible that Reaper will have access limited to nod
 **EACH** - requires a minimum of one Reaper instance operating in each datacenter. Each Reaper instance is required to have access via JMX to all nodes only in its local datacenter. When operating in this mode, Reaper can only use Apache Cassandra as its storage. In addition, metrics from nodes in remote datacenters must be collected through the Cassandra storage backend. If any metric is unavailable, the segment will be postponed for later processing.
 
 Further information can be found in the [Operating with a Multi DC Cluster](../../usage/multi_dc) section.
+
+**SIDECAR** - requires one reaper instance for each node in the cluster.
+Each Reaper instance is required to have access via JMX to the local node.
+When operating in this mode, Reaper must be configured to use the [Cassandra Backend](../../backends/cassandra).
+
+Further information can be found in the [Sidecar Mode](../../usage/sidecar_mode) section.
 
 <br/>
 
@@ -149,12 +155,12 @@ Disables repairs of any tables that use either the `TimeWindowCompactionStrategy
 
 ### `jmxAuth`
 
-Optional setting to allow Reaper to establish JMX connections to Cassandra clusters using password based JMX authentication. 
+Optional setting to allow Reaper to establish JMX connections to Cassandra clusters using password based JMX authentication.
 
     jmxAuth:
       username: cassandra
       password: cassandra
-      
+
       #### `username`
 
 #### `username`
@@ -173,8 +179,8 @@ Cassandra JMX password.
 
 ### `jmxCredentials`
 
-_**Since 1.1.0**_  
-Optional setting to allow Reaper to establish JMX connections to Cassandra clusters with specific credentials per cluster. 
+_**Since 1.1.0**_
+Optional setting to allow Reaper to establish JMX connections to Cassandra clusters with specific credentials per cluster.
 
     jmxCredentials:
       clusterProduction1:
@@ -184,10 +190,10 @@ Optional setting to allow Reaper to establish JMX connections to Cassandra clust
         username: user2
         password: password2
 
-This setting can be used in conjunction with the `jmxAuth` to override the credentials for specific clusters only.  
-The cluster name must match the one defined in the cassandra.yaml file (in the example above, `clusterProduction1` and `clusterProduction2`).  
+This setting can be used in conjunction with the `jmxAuth` to override the credentials for specific clusters only.
+The cluster name must match the one defined in the cassandra.yaml file (in the example above, `clusterProduction1` and `clusterProduction2`).
 
-Adding a new cluster with specific credentials requires to add the seed node in the following format : `host@cluster`  
+Adding a new cluster with specific credentials requires to add the seed node in the following format : `host@cluster`
 To match the example above, it could be something like : `10.0.10.5@clusterProduction1`
 
 
@@ -410,5 +416,4 @@ Type: *Integer*
 
 Since Cassandra 2.2, repairs are multithreaded in order to process several token ranges concurrently and speed up the process.
 This setting allows to set a default for automatic repair schedules.
-No more than four threads are allowed by Cassandra.  
-
+No more than four threads are allowed by Cassandra.
