@@ -1551,31 +1551,31 @@ public final class BasicSteps {
     synchronized (BasicSteps.class) {
       // XXX – this assertion does not work in upgrade tests. unknown reason.
       if (!reaperVersion.isPresent()) {
-        final AtomicBoolean collected = new AtomicBoolean(false);
+        // any collected dropped messages via any reaper satifies this test
+        AtomicBoolean collected = new AtomicBoolean(false);
 
         RUNNERS.parallelStream().forEach(runner -> {
-          await().with().atMost(2, SECONDS).until(() -> {
+
+          await().with().pollInterval(1, SECONDS).atMost(2, MINUTES).until(() -> {
+
             Response response = runner.callReaper(
                     "GET",
                     "/node/tpstats/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
                     EMPTY_PARAMS);
 
-            if (Response.Status.OK.getStatusCode() != response.getStatus()) {
-              return false;
+            if (Response.Status.OK.getStatusCode() == response.getStatus()) {
+              String responseData = response.readEntity(String.class);
+              List<ThreadPoolStat> tpstats = SimpleReaperClient.parseTpStatJSON(responseData);
+              long readStageTotal = tpstats.stream().filter(tpstat -> tpstat.getName().equals("ReadStage")).count();
+
+              long readStageCompleted = tpstats.stream()
+                  .filter(tpstat -> tpstat.getName().equals("ReadStage"))
+                  .filter(tpstat -> tpstat.getCurrentlyBlockedTasks() == 0)
+                  .filter(tpstat -> tpstat.getCompletedTasks() > 0)
+                  .count();
+
+              collected.compareAndSet(false, 1 == readStageTotal && 1 == readStageCompleted);
             }
-            String responseData = response.readEntity(String.class);
-            List<ThreadPoolStat> tpstats = SimpleReaperClient.parseTpStatJSON(responseData);
-            long readStageTotal = tpstats.stream().filter(tpstat -> tpstat.getName().equals("ReadStage")).count();
-
-            long readStageCompleted = tpstats.stream()
-                .filter(tpstat -> tpstat.getName().equals("ReadStage"))
-                .filter(tpstat -> tpstat.getCurrentlyBlockedTasks() == 0)
-                .filter(tpstat -> tpstat.getCompletedTasks() > 0)
-                .count();
-
-            assertTrue("readStageTotal: " + readStageTotal, 1 >= readStageTotal);
-            assertTrue("readStageCompleted " + readStageCompleted, 1 >= readStageCompleted);
-            collected.compareAndSet(false, 1 == readStageTotal && 1 == readStageCompleted);
             return collected.get();
           });
         });
@@ -1588,30 +1588,33 @@ public final class BasicSteps {
     synchronized (BasicSteps.class) {
       // XXX – this assertion does not work in upgrade tests. unknown reason.
       if (!reaperVersion.isPresent()) {
-        final AtomicBoolean collected = new AtomicBoolean(false);
+        // any collected dropped messages via any reaper satifies this test
+        AtomicBoolean collected = new AtomicBoolean(false);
 
         RUNNERS.parallelStream().forEach(runner -> {
-          await().with().atMost(2, SECONDS).until(() -> {
+
+          await().with().pollInterval(1, SECONDS).atMost(2, MINUTES).until(() -> {
+
             Response response = runner.callReaper(
                     "GET",
                     "/node/dropped/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
                     EMPTY_PARAMS);
 
-            if (Response.Status.OK.getStatusCode() != response.getStatus()) {
-              return false;
+            if (Response.Status.OK.getStatusCode() == response.getStatus()) {
+              String responseData = response.readEntity(String.class);
+              List<DroppedMessages> tpstats = SimpleReaperClient.parseDroppedMessagesJSON(responseData);
+
+              long readDroppedTotal = tpstats.stream()
+                  .filter(tpstat -> "READ".equals(tpstat.getName()) || "READ_REQ".equals(tpstat.getName()))
+                  .count();
+
+              long readDroppedCount = tpstats.stream()
+                  .filter(tpstat -> "READ".equals(tpstat.getName()) || "READ_REQ".equals(tpstat.getName()) )
+                  .filter(tpstat -> tpstat.getCount() >= 0)
+                  .count();
+
+              collected.compareAndSet(false, 1 == readDroppedTotal && 1 == readDroppedCount);
             }
-            String responseData = response.readEntity(String.class);
-            List<DroppedMessages> tpstats = SimpleReaperClient.parseDroppedMessagesJSON(responseData);
-            long readDroppedTotal = tpstats.stream().filter(tpstat -> tpstat.getName().equals("READ")).count();
-
-            long readDroppedCount = tpstats.stream()
-                .filter(tpstat -> tpstat.getName().equals("READ"))
-                .filter(tpstat -> tpstat.getCount() >= 0)
-                .count();
-
-            assertTrue("readDroppedTotal: " + readDroppedTotal, 1 >= readDroppedTotal);
-            assertTrue("readDroppedCount " + readDroppedCount, 1 >= readDroppedCount);
-            collected.compareAndSet(false, 1 == readDroppedTotal && 1 == readDroppedCount);
             return collected.get();
           });
         });
@@ -1627,7 +1630,7 @@ public final class BasicSteps {
         final AtomicBoolean collected = new AtomicBoolean(false);
 
         RUNNERS.parallelStream().forEach(runner -> {
-          await().with().atMost(2, SECONDS).until(() -> {
+          await().with().pollInterval(1, SECONDS).atMost(2, MINUTES).until(() -> {
             Response response = runner.callReaper(
                 "GET",
                 "/node/clientRequestLatencies/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
