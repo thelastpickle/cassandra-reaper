@@ -543,13 +543,19 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       }
       return nodeDc.equals(localDc)
           ? Optional.empty()
-          : getRemoteNodeMetrics(node, nodeDc);
+          : maybeGetRemoteNodeMetrics(node, nodeDc);
     });
+  }
+
+  private Optional<NodeMetrics> maybeGetRemoteNodeMetrics(String node, String nodeDc) {
+    Preconditions.checkState(context.storage instanceof IDistributedStorage);
+    return ((IDistributedStorage)context.storage).countRunningReapers() == 1
+        ? Optional.empty()
+        : getRemoteNodeMetrics(node, nodeDc);
   }
 
   private Optional<NodeMetrics> getRemoteNodeMetrics(String node, String nodeDc) {
     Preconditions.checkState(DatacenterAvailability.ALL != context.config.getDatacenterAvailability());
-    Preconditions.checkState(context.storage instanceof IDistributedStorage);
     IDistributedStorage storage = ((IDistributedStorage) context.storage);
     Optional<NodeMetrics> result = storage.getNodeMetrics(repairRunner.getRepairRunId(), node);
     if (!result.isPresent()) {

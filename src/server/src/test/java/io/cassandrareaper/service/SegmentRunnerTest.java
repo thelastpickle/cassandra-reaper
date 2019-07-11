@@ -1047,6 +1047,7 @@ public final class SegmentRunnerTest {
     context.storage = Mockito.mock(CassandraStorage.class);
     when(((IDistributedStorage) context.storage).getNodeMetrics(any(), any()))
         .thenReturn(Optional.empty());
+    Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = mock(JmxProxy.class);
     when(jmxConnectionFactory.connect(any())).thenReturn(jmx);
@@ -1073,6 +1074,9 @@ public final class SegmentRunnerTest {
     Pair<String, Callable<Optional<NodeMetrics>>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc2");
     assertFalse(result.getRight().call().isPresent());
     verify(jmxConnectionFactory, times(0)).connect(any());
+    // Verify that we didn't call any method that is used in getRemoteNodeMetrics()
+    verify((CassandraStorage)context.storage, times(0)).storeNodeMetrics(any(), any());
+    verify((CassandraStorage)context.storage, times(0)).getNodeMetrics(any(), any());
   }
 
   @Test
