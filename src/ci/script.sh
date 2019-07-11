@@ -41,15 +41,15 @@ case "${TEST_TYPE}" in
         sleep 30
         ccm status
 
-        mvn -B install
-
         if [ "x${GRIM_MIN}" = "x" ]
         then
+            mvn -B package
             mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperShiroIT
             mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperIT
             mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperH2IT
             mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperPostgresIT
         else
+            mvn -B package -DskipTests
             mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
         fi
         ;;
@@ -59,9 +59,8 @@ case "${TEST_TYPE}" in
         sleep 30
         ccm status
 
-        mvn -B install
-
-        mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX} -Dcucumber.options="-t @sidecar"
+        mvn -B package -DskipTests
+        mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraSidecarIT -Dcucumber.options="-t @sidecar"
         ;;
     "upgrade")
         mvn --version -B
@@ -69,7 +68,7 @@ case "${TEST_TYPE}" in
         sleep 30
         ccm status
 
-        mvn install -B -DskipTests -Pintegration-upgrade-tests
+        mvn package -B -DskipTests -Pintegration-upgrade-tests
         MAVEN_OPTS="-Xmx384m" mvn -B surefire:test -Dtest=ReaperCassandraIT -Dcucumber.options="${CO}"
         ;;
     "docker")

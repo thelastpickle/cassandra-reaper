@@ -53,6 +53,8 @@ public class ReaperCassandraSidecarIT implements Upgradable {
     = {
       "reaper-cassandra-sidecar1-at.yaml",
       "reaper-cassandra-sidecar2-at.yaml",
+      "reaper-cassandra-sidecar3-at.yaml",
+      "reaper-cassandra-sidecar4-at.yaml",
     };
   private static final Random RAND = new Random(System.nanoTime());
   private static Thread GRIM_REAPER;
@@ -66,10 +68,12 @@ public class ReaperCassandraSidecarIT implements Upgradable {
         TestContext.TEST_CLUSTER_SEED_HOSTS.size());
 
     BasicSteps.setup(new ReaperCassandraSidecarIT());
+    int reaperInstances = Integer.getInteger("grim.reaper.min", 2);
 
     initSchema();
-    createReaperTestJettyRunner(Optional.empty());
-    createReaperTestJettyRunner(Optional.empty());
+    for (int i = 0;i < reaperInstances;i++) {
+      createReaperTestJettyRunner(Optional.empty());
+    }
   }
 
   @Override

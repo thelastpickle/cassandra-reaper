@@ -162,6 +162,7 @@ public final class BasicSteps {
   @Given("^cluster seed host \"([^\"]*)\" points to cluster with name \"([^\"]*)\"$")
   public void cluster_seed_host_points_to_cluster_with_name(String seedHost, String clusterName) throws Throwable {
     synchronized (BasicSteps.class) {
+      TestContext.SEED_HOST = seedHost + '@' + clusterName;
       TestContext.addSeedHostToClusterMapping(seedHost, clusterName);
     }
   }
@@ -177,14 +178,6 @@ public final class BasicSteps {
       createKeyspace(keyspace);
       tables.stream().forEach(tableName -> createTable(keyspace, tableName));
       TestContext.addClusterInfo(clusterName, keyspace, tables);
-    }
-  }
-
-  @Given("^that we are going to use \"([^\"]*)\" as cluster seed host$")
-  public void that_we_are_going_to_use_as_cluster_seed_host(String seedHost) throws Throwable {
-    synchronized (BasicSteps.class) {
-      assert seedHost.contains("@");
-      TestContext.SEED_HOST = seedHost;
     }
   }
 
@@ -1550,26 +1543,30 @@ public final class BasicSteps {
         lastResponse.readEntity(String.class).contains("<title>Not a real login page</title>"));
   }
 
-  @And("^we can collect the tpstats from the seed node$")
+  @And("^we can collect the tpstats from a seed node$")
   public void we_can_collect_the_tpstats_from_the_seed_node() throws Throwable {
     synchronized (BasicSteps.class) {
       // XXX – this assertion does not work in upgrade tests. unknown reason.
       if (!reaperVersion.isPresent()) {
-        // any collected dropped messages via any reaper satifies this test
+        // any collected tpstats via any reaper satifies this test
         AtomicBoolean collected = new AtomicBoolean(false);
+        List<String> seeds = ImmutableList.copyOf(TestContext.TEST_CLUSTER_SEED_HOSTS.keySet());
 
         RUNNERS.parallelStream().forEach(runner -> {
-
           await().with().pollInterval(1, SECONDS).atMost(2, MINUTES).until(() -> {
+            String seed = seeds.get(RAND.nextInt(seeds.size()));
 
             Response response = runner.callReaper(
                     "GET",
-                    "/node/tpstats/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+                    "/node/tpstats/" + TestContext.TEST_CLUSTER + "/" + seed,
                     EMPTY_PARAMS);
 
             if (Response.Status.OK.getStatusCode() == response.getStatus()) {
               String responseData = response.readEntity(String.class);
               List<ThreadPoolStat> tpstats = SimpleReaperClient.parseTpStatJSON(responseData);
+              if (tpstats.isEmpty()) {
+                LOG.error("Got empty response from {}", seed);
+              }
               long readStageTotal = tpstats.stream().filter(tpstat -> tpstat.getName().equals("ReadStage")).count();
 
               long readStageCompleted = tpstats.stream()
@@ -1587,34 +1584,38 @@ public final class BasicSteps {
     }
   }
 
-  @And("^we can collect the dropped messages stats from the seed node$")
+  @And("^we can collect the dropped messages stats from a seed node$")
   public void we_can_collect_the_dropped_messages_stats_from_the_seed_node() throws Throwable {
     synchronized (BasicSteps.class) {
       // XXX – this assertion does not work in upgrade tests. unknown reason.
       if (!reaperVersion.isPresent()) {
         // any collected dropped messages via any reaper satifies this test
         AtomicBoolean collected = new AtomicBoolean(false);
+        List<String> seeds = ImmutableList.copyOf(TestContext.TEST_CLUSTER_SEED_HOSTS.keySet());
 
         RUNNERS.parallelStream().forEach(runner -> {
-
           await().with().pollInterval(1, SECONDS).atMost(2, MINUTES).until(() -> {
+            String seed = seeds.get(RAND.nextInt(seeds.size()));
 
             Response response = runner.callReaper(
                     "GET",
-                    "/node/dropped/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+                    "/node/dropped/" + TestContext.TEST_CLUSTER + "/" + seed,
                     EMPTY_PARAMS);
 
             if (Response.Status.OK.getStatusCode() == response.getStatus()) {
               String responseData = response.readEntity(String.class);
-              List<DroppedMessages> tpstats = SimpleReaperClient.parseDroppedMessagesJSON(responseData);
+              List<DroppedMessages> dropped = SimpleReaperClient.parseDroppedMessagesJSON(responseData);
+              if (dropped.isEmpty()) {
+                LOG.error("Got empty response from {}", seed);
+              }
 
-              long readDroppedTotal = tpstats.stream()
-                  .filter(tpstat -> "READ".equals(tpstat.getName()) || "READ_REQ".equals(tpstat.getName()))
+              long readDroppedTotal = dropped.stream()
+                  .filter(drop -> "READ".equals(drop.getName()) || "READ_REQ".equals(drop.getName()))
                   .count();
 
-              long readDroppedCount = tpstats.stream()
-                  .filter(tpstat -> "READ".equals(tpstat.getName()) || "READ_REQ".equals(tpstat.getName()) )
-                  .filter(tpstat -> tpstat.getCount() >= 0)
+              long readDroppedCount = dropped.stream()
+                  .filter(drop -> "READ".equals(drop.getName()) || "READ_REQ".equals(drop.getName()) )
+                  .filter(drop -> drop.getCount() >= 0)
                   .count();
 
               collected.compareAndSet(false, 1 == readDroppedTotal && 1 == readDroppedCount);
@@ -1626,18 +1627,21 @@ public final class BasicSteps {
     }
   }
 
-  @And("^we can collect the client request metrics from the seed node$")
+  @And("^we can collect the client request metrics from a seed node$")
   public void we_can_collect_the_client_request_metrics_from_the_seed_node() throws Throwable {
     synchronized (BasicSteps.class) {
       // XXX – this assertion does not work in upgrade tests. unknown reason.
       if (!reaperVersion.isPresent()) {
         final AtomicBoolean collected = new AtomicBoolean(false);
+        List<String> seeds = ImmutableList.copyOf(TestContext.TEST_CLUSTER_SEED_HOSTS.keySet());
 
         RUNNERS.parallelStream().forEach(runner -> {
           await().with().pollInterval(1, SECONDS).atMost(2, MINUTES).until(() -> {
+            String seed = seeds.get(RAND.nextInt(seeds.size()));
+
             Response response = runner.callReaper(
                 "GET",
-                "/node/clientRequestLatencies/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+                "/node/clientRequestLatencies/" + TestContext.TEST_CLUSTER + "/" + seed,
                 EMPTY_PARAMS);
 
             if (Response.Status.OK.getStatusCode() != response.getStatus()) {
@@ -1645,6 +1649,9 @@ public final class BasicSteps {
             }
             String responseData = response.readEntity(String.class);
             List<MetricsHistogram> metrics = SimpleReaperClient.parseClientRequestMetricsJSON(responseData);
+            if (metrics.isEmpty()) {
+              LOG.error("Got empty response from {}", seed);
+            }
             long writeMetrics = metrics.stream().filter(metric -> metric.getName().startsWith("Write")).count();
             collected.compareAndSet(false, 1 <= writeMetrics);
             return collected.get();

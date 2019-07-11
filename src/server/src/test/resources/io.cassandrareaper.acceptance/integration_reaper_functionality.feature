@@ -16,7 +16,7 @@
 Feature: Using Reaper
 
   Background:
-    Given cluster seed host "127.0.0.1@test" points to cluster with name "test"
+    Given cluster seed host "127.0.0.1" points to cluster with name "test"
     And cluster "test" has keyspace "booya" with tables "booya1, booya2"
     And cluster "test" has keyspace "booya" with tables "booya_twcs"
     And cluster "test" has keyspace "test_keyspace" with tables "test_table1, test_table2"
@@ -26,7 +26,6 @@ Feature: Using Reaper
   @sidecar
   Scenario Outline: Registering a cluster
     Given that reaper <version> is running
-    And that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage
@@ -39,15 +38,15 @@ Feature: Using Reaper
   @sidecar
   Scenario Outline: Create a cluster and a scheduled repair run and delete them
     Given that reaper <version> is running
-    And that we are going to use "127.0.0.1@test" as cluster seed host
+    And cluster seed host "127.0.0.2" points to cluster with name "test"
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage
     And the seed node has vnodes
     And reaper has 0 scheduled repairs for the last added cluster
-    And we can collect the tpstats from the seed node
-    And we can collect the dropped messages stats from the seed node
-    And we can collect the client request metrics from the seed node
+    And we can collect the tpstats from a seed node
+    And we can collect the dropped messages stats from a seed node
+    And we can collect the client request metrics from a seed node
     When a new daily "full" repair schedule is added for the last added cluster and keyspace "booya"
     Then reaper has 1 scheduled repairs for the last added cluster
     When reaper is upgraded to latest
@@ -61,7 +60,6 @@ Feature: Using Reaper
   @sidecar
   Scenario Outline: Registering multiple scheduled repairs
     Given that reaper <version> is running
-    And that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage
@@ -90,7 +88,6 @@ Feature: Using Reaper
   @cassandra_2_1_onwards
   Scenario Outline: Adding a scheduled full repair and a scheduled incremental repair for the same keyspace
     Given that reaper <version> is running
-    And that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage
@@ -109,7 +106,6 @@ Feature: Using Reaper
   @sidecar
   Scenario Outline: Create a cluster and a scheduled repair run with repair run history and delete them
     Given that reaper <version> is running
-    And that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage
@@ -132,7 +128,6 @@ Feature: Using Reaper
   @sidecar
   Scenario Outline: Create a cluster and a repair run and delete them
     Given that reaper <version> is running
-    And that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage
@@ -155,7 +150,6 @@ Feature: Using Reaper
   # this has a problem in the upgrade integration tests, ref: 88d4d5c
   Scenario Outline: Create a cluster and a repair run with auto twcs blacklist and delete them
     Given that reaper <version> is running
-    And that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage
@@ -179,7 +173,6 @@ Feature: Using Reaper
   @cassandra_2_1_onwards
   Scenario Outline: Create a cluster and an incremental repair run and delete them
     Given that reaper <version> is running
-    And that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage
@@ -202,7 +195,6 @@ Feature: Using Reaper
   @cassandra_2_1_onwards
   Scenario Outline: Create a cluster and one incremental repair run and one full repair run
     Given that reaper <version> is running
-    And that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage
@@ -225,7 +217,6 @@ Feature: Using Reaper
   @cassandra_2_1_onwards
   Scenario Outline: Create a cluster, create a cluster wide snapshot and delete it
     Given that reaper <version> is running
-    And that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage
@@ -245,7 +236,6 @@ Feature: Using Reaper
   @cassandra_2_1_onwards
   Scenario Outline: Create a cluster, create a snapshot on a single host and delete it
     Given that reaper <version> is running
-    And that we are going to use "127.0.0.1@test" as cluster seed host
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage

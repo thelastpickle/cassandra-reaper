@@ -73,11 +73,11 @@ public final class NodeStatsResource {
       @PathParam("host") String host) {
 
     try {
-      Node node
-          = Node.builder()
+      Node node = Node.builder()
               .withCluster(context.storage.getCluster(clusterName).get())
               .withHostname(host)
               .build();
+
       return Response.ok().entity(metricsGrabber.getTpStats(node)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -98,11 +98,11 @@ public final class NodeStatsResource {
       @PathParam("host") String host) {
 
     try {
-      Node node
-          = Node.builder()
+      Node node = Node.builder()
               .withCluster(context.storage.getCluster(clusterName).get())
               .withHostname(host)
               .build();
+
       return Response.ok().entity(metricsGrabber.getDroppedMessages(node)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -123,11 +123,11 @@ public final class NodeStatsResource {
       @PathParam("host") String host) {
 
     try {
-      Node node
-          = Node.builder()
+      Node node = Node.builder()
               .withCluster(context.storage.getCluster(clusterName).get())
               .withHostname(host)
               .build();
+
       return Response.ok().entity(metricsGrabber.getClientRequestLatencies(node)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -142,20 +142,21 @@ public final class NodeStatsResource {
    */
   @GET
   @Path("/streams/{clusterName}/{host}")
-  public Response getStreams(@PathParam("clusterName") String clusterName,
-                             @PathParam("host") String host
-  ) {
+  public Response getStreams(
+      @PathParam("clusterName") String clusterName,
+      @PathParam("host") String host) {
+
     try {
-      Node node
-          = Node.builder()
+      Node node = Node.builder()
               .withCluster(context.storage.getCluster(clusterName).get())
               .withHostname(host)
               .build();
+
       List<StreamSession> streams = streamManager.listStreams(node);
       return Response.ok().entity(streams).build();
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
-      return Response.status(500).entity(e.getMessage()).build();
+      return Response.serverError().entity(e.getMessage()).build();
     }
   }
 
@@ -172,11 +173,11 @@ public final class NodeStatsResource {
       @PathParam("host") String host) {
 
     try {
-      Node node
-          = Node.builder()
+      Node node = Node.builder()
               .withCluster(context.storage.getCluster(clusterName).get())
               .withHostname(host)
               .build();
+
       return Response.ok().entity(compactionService.listActiveCompactions(node)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -194,14 +195,14 @@ public final class NodeStatsResource {
   public Response listTokens(
       @Context UriInfo uriInfo,
       @PathParam("clusterName") String clusterName,
-      @PathParam("host") String host)
-      throws InterruptedException {
+      @PathParam("host") String host) {
 
     try {
       Preconditions.checkState(clusterName != null && !clusterName.isEmpty(), "Cluster name must be set");
 
       Map<String, List<String>> tokens
           = ClusterFacade.create(context).getTokensByNode(context.storage.getCluster(clusterName).get());
+
       return Response.ok().entity(tokens.get(host)).build();
     } catch (RuntimeException | ReaperException e) {
       LOG.error(e.getMessage(), e);

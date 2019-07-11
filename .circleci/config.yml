@@ -65,21 +65,30 @@ aliases:
             command: |
                 set -x
                 mkdir -p ~/.local
-                cp src/ci/jmxremote.password ~/.local/jmxremote.password
-                touch ~/.local/jmxremote.blank.password
-                chmod 400 ~/.local/jmxremote*.password
-                cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
-                sudo chmod 777 /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
-                echo "cassandra     readwrite" >> /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
-                cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+                if [[ ${JOB_COMMAND} != *"ReaperCassandraSidecarIT"* ]];then
+                  # jmx password should only be set if we're not in sidecar mode
+                  cp src/ci/jmxremote.password ~/.local/jmxremote.password
+                  touch ~/.local/jmxremote.blank.password
+                  chmod 400 ~/.local/jmxremote*.password
+                  cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+                  sudo chmod 777 /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+                  echo "cassandra     readwrite" >> /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+                  cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+                fi
                 ccm create test -v $CASSANDRA_VERSION
                 ccm populate --vnodes -n $NODES_PER_DC:$NODES_PER_DC
                 for i in `seq 1 $(($NODES_PER_DC *2))` ; do
-                  if [ "$i" -gt "$NODES_PER_DC" ] && [ echo "$JOB_COMMAND" | grep -q "Pskip-tests-needing-all-nodes-reachable" ] ; then
-                    # scenarios that are not tagged with @all_nodes_reachable will be tested with an unreachable DC2
-                    sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.blank.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+                  if [[ ${JOB_COMMAND} != *"ReaperCassandraSidecarIT"* ]];then
+                    # jmx password should only be set if we're not in sidecar mode
+                    sed -i 's/LOCAL_JMX=yes/LOCAL_JMX=no/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+                    if [ "$i" -gt "$NODES_PER_DC" ] && [ echo "$JOB_COMMAND" | grep -q "Pskip-tests-needing-all-nodes-reachable" ] ; then
+                      # scenarios that are not tagged with @all_nodes_reachable will be tested with an unreachable DC2
+                      sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.blank.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+                    else
+                      sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+                    fi
                   else
-                    sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+                    sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' ~/.ccm/test/node$i/conf/cassandra-env.sh
                   fi
                   if echo "$CASSANDRA_VERSION" | grep -q "trunk" ; then
                     sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="200m"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
@@ -87,7 +96,6 @@ aliases:
                     sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="136m"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
                   fi
                   sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="112M"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
-                  sed -i 's/LOCAL_JMX=yes/LOCAL_JMX=no/' ~/.ccm/test/node$i/conf/cassandra-env.sh
                   sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' ~/.ccm/test/node$i/conf/cassandra.yaml
                   sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' ~/.ccm/test/node$i/conf/cassandra.yaml
                   sed -i 's/concurrent_reads: 32/concurrent_reads: 4/' ~/.ccm/test/node$i/conf/cassandra.yaml
@@ -213,6 +221,12 @@ jobs:
         CASSANDRA_VERSION: 2.1.20
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
+    c_2-1_sidecar:
+      environment:
+        CASSANDRA_VERSION: 2.1.20
+        CUCUMBER_OPTIONS: "-t @sidecar"
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
+      <<: *default_job
     c_2-1_upgrades:
       environment:
         CASSANDRA_VERSION: 2.1.20
@@ -264,6 +278,12 @@ jobs:
       environment:
         CASSANDRA_VERSION: 2.2.13
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_2-2_sidecar:
+      environment:
+        CASSANDRA_VERSION: 2.2.13
+        CUCUMBER_OPTIONS: "-t @sidecar"
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
       <<: *default_job
     c_2-2_upgrades:
       environment:
@@ -317,6 +337,12 @@ jobs:
         CASSANDRA_VERSION: 3.0.17
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
+    c_3-0_sidecar:
+      environment:
+        CASSANDRA_VERSION: 3.0.17
+        CUCUMBER_OPTIONS: "-t @sidecar"
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
+      <<: *default_job
     c_3-0_upgrades:
       environment:
         CASSANDRA_VERSION: 3.0.17
@@ -368,6 +394,12 @@ jobs:
       environment:
         CASSANDRA_VERSION: 3.11.3
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_3-11_sidecar:
+      environment:
+        CASSANDRA_VERSION: 3.11.3
+        CUCUMBER_OPTIONS: "-t @sidecar"
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
       <<: *default_job
     c_3-11_upgrades:
       environment:
@@ -428,6 +460,13 @@ jobs:
         CASSANDRA_VERSION: github:apache/trunk
         NODES_PER_DC: 1
         JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT -Ponly-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+      <<: *default_job
+    c_4-0_sidecar:
+      environment:
+        CASSANDRA_VERSION: github:apache/trunk
+        NODES_PER_DC: 1
+        CUCUMBER_OPTIONS: "-t @sidecar"
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=2
       <<: *default_job
     c_4-0_upgrades:
       environment:
@@ -499,6 +538,11 @@ workflows:
             - c_2-1_memory
             - c_2-1_one-reaper__all_nodes_reachable
             - c_2-1_two-reapers__all_nodes_reachable
+      - c_2-1_sidecar:
+          requires:
+            - build
+            - c_2-1_memory
+            - c_2-1_one-reaper
 # Upgrade Integration Tests are broken due to classloading issues around org.glassfish.jersey.internal.spi.AutoDiscoverable
 #      - c_2-1_upgrades:
 #          requires:
@@ -545,6 +589,11 @@ workflows:
             - c_2-2_memory
             - c_2-2_one-reaper__all_nodes_reachable
             - c_2-2_two-reapers__all_nodes_reachable
+      - c_2-2_sidecar:
+          requires:
+            - build
+            - c_2-2_memory
+            - c_2-2_one-reaper
 # Upgrade Integration Tests are broken due to classloading issues around org.glassfish.jersey.internal.spi.AutoDiscoverable
 #      - c_2-2_upgrades:
 #          requires:
@@ -591,6 +640,11 @@ workflows:
             - c_3-0_memory
             - c_3-0_one-reaper__all_nodes_reachable
             - c_3-0_two-reapers__all_nodes_reachable
+      - c_3-0_sidecar:
+          requires:
+            - build
+            - c_3-0_memory
+            - c_3-0_one-reaper
 # Upgrade Integration Tests are broken due to classloading issues around org.glassfish.jersey.internal.spi.AutoDiscoverable
 #      - c_3-0_upgrades:
 #          requires:
@@ -637,6 +691,11 @@ workflows:
             - c_3-11_memory
             - c_3-11_one-reaper__all_nodes_reachable
             - c_3-11_two-reapers__all_nodes_reachable
+      - c_3-11_sidecar:
+          requires:
+            - build
+            - c_3-11_memory
+            - c_3-11_one-reaper
 # Upgrade Integration Tests are broken due to classloading issues around org.glassfish.jersey.internal.spi.AutoDiscoverable
 #      - c_3-11_upgrades:
 #          requires:
@@ -671,6 +730,11 @@ workflows:
             - build
             - c_4-0_memory
             - c_4-0_one-reaper__all_nodes_reachable
+      - c_4-0_sidecar:
+          requires:
+            - build
+            - c_4-0_memory
+            - c_4-0_one-reaper
 # FIXME -- the following requires more memory than free OSS CircleCI offers
       - c_4-0_flapping-reapers__all_nodes_reachable:
           requires:
