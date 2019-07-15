@@ -1,5 +1,6 @@
 #!/bin/bash
 # Copyright (c) 2014-2015 Spotify AB
+# Copyright 2019-2019 The Last Pickle Ltd
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,7 +14,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-REAPER_JAR=$(ls -1 server/target/cassandra-reaper-*.jar)
+REAPER_JAR=$(find . -path "*server/target/cassandra-reaper-*[0-9rT].jar")
 
 if [ $REAPER_JAR ]; then
     echo "Using reaper in target"
@@ -22,7 +23,7 @@ fi
 
 if [ -z "$CLASS_PATH" ]; then
   echo "Looking for reaper in /usr/share/cassandra-reaper/"
-  CLASS_PATH="/usr/share/cassandra-reaper/*:/usr/local/share/cassandra-reaper/*"
+  CLASS_PATH="$(find /usr/local/share -path 'cassandra-reaper/cassandra-reaper-*[0-9rT].jar'):$(find /usr/share -path 'cassandra-reaper/cassandra-reaper-*[0-9rT].jar')"
 fi
 
 if [ $# -eq 0 ]; then
