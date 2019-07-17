@@ -84,9 +84,7 @@ public final class ClusterResource {
   }
 
   @GET
-  public Response getClusterList(@QueryParam("seedHost") Optional<String> seedHost)
-      throws ReaperException {
-
+  public Response getClusterList(@QueryParam("seedHost") Optional<String> seedHost) throws ReaperException {
     LOG.debug("get cluster list called");
     Collection<Cluster> clusters = context.storage.getClusters();
     List<String> clusterNames = new ArrayList<>();
@@ -142,8 +140,7 @@ public final class ClusterResource {
 
   @GET
   @Path("/{cluster_name}/tables")
-  public Response getClusterTables(@PathParam("cluster_name") String clusterName)
-      throws ReaperException {
+  public Response getClusterTables(@PathParam("cluster_name") String clusterName) throws ReaperException {
     Map<String, List<String>> tablesByKeyspace = Maps.newHashMap();
 
     Optional<Cluster> cluster = context.storage.getCluster(clusterName);
@@ -267,14 +264,12 @@ public final class ClusterResource {
     String parsedClusterName = parseClusterNameFromSeedHost(seedHost).orElse("");
 
     try {
-      Cluster cluster
-          = new Cluster(
+      Cluster cluster = new Cluster(
               parsedClusterName,
               Optional.empty(),
               Sets.newHashSet(seedHost),
-              ClusterProperties.builder()
-                  .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT))
-                  .build());
+              ClusterProperties.builder().withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT)) .build());
+
       clusterName = Optional.of(clusterFacade.getClusterName(cluster, seedHosts));
       partitioner = Optional.of(clusterFacade.getPartitioner(cluster, seedHosts));
       liveNodes = Optional.of(clusterFacade.getLiveNodes(cluster, seedHosts));
@@ -293,9 +288,7 @@ public final class ClusterResource {
             clusterName.get(),
             partitioner,
             seedHosts,
-            ClusterProperties.builder()
-                .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT))
-                .build())
+            ClusterProperties.builder().withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT)).build())
         : null;
   }
 
@@ -313,9 +306,7 @@ public final class ClusterResource {
       Optional<List<String>> liveNodes = Optional.of(clusterFacade.getLiveNodes(cluster, newSeeds));
       newSeeds = liveNodes.get().stream().collect(Collectors.toSet());
       if (!cluster.getSeedHosts().equals(newSeeds)) {
-        cluster
-            = new Cluster(
-                cluster.getName(), cluster.getPartitioner(), newSeeds, cluster.getProperties());
+        cluster = new Cluster(cluster.getName(), cluster.getPartitioner(), newSeeds, cluster.getProperties());
         context.storage.updateCluster(cluster);
       }
       return cluster;
@@ -370,15 +361,16 @@ public final class ClusterResource {
    *     the seedHost node
    */
   private Callable<Optional<NodesStatus>> getEndpointState(
-      List<String> seeds, String clusterName, Optional<Integer> jmxPort) {
-    final Cluster cluster
-        = new Cluster(
+      List<String> seeds,
+      String clusterName,
+      Optional<Integer> jmxPort) {
+
+    final Cluster cluster = new Cluster(
             clusterName,
             Optional.empty(),
             Sets.newConcurrentHashSet(seeds),
-            ClusterProperties.builder()
-                .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT))
-                .build());
+            ClusterProperties.builder().withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT)).build());
+
     return () -> {
       try {
         return Optional.of(clusterFacade.getNodesStatus(cluster, seeds));
@@ -404,14 +396,16 @@ public final class ClusterResource {
       List<String> seedHosts = new ArrayList<>(cluster.get().getSeedHosts());
       Collections.shuffle(seedHosts);
       int index = 0;
-      for (String host:seedHosts) {
+      for (String host : seedHosts) {
         if (index >= 3) {
           break;
         }
+
         Callable<Optional<NodesStatus>> endpointStateTask = getEndpointState(
             Arrays.asList(host),
             cluster.get().getName(),
             Optional.ofNullable(cluster.get().getProperties().getJmxPort()));
+
         endpointStateTasks.add(endpointStateTask);
         index++;
       }
@@ -461,7 +455,6 @@ public final class ClusterResource {
         return Optional.of(hosts.get(0).split("@")[1]);
       }
     }
-
     return Optional.empty();
   }
 }

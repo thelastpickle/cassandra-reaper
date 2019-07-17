@@ -326,9 +326,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
               .withClusterName("bogus")
               .build();
       try {
-        context.localNodeAddress
-            = context
-                .config
+        context.localNodeAddress = context.config
                 .getEnforcedLocalNode()
                 .orElse(clusterFacade.getLocalEndpoint(host));
         LOG.info("Sidecar mode. Local node is : {}", context.localNodeAddress);

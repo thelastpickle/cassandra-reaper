@@ -230,9 +230,7 @@ public final class ClusterFacade {
   public NodesStatus getNodesStatus(Cluster cluster, Collection<String> endpoints) throws ReaperException {
     JmxProxy jmxProxy = connectAnyNode(cluster, enforceLocalNodeForSidecar(endpoints));
     FailureDetectorProxy proxy = FailureDetectorProxy.create(jmxProxy);
-
-    return new NodesStatus(
-        jmxProxy.getHost(), proxy.getAllEndpointsState(), proxy.getSimpleStates());
+    return new NodesStatus(jmxProxy.getHost(), proxy.getAllEndpointsState(), proxy.getSimpleStates());
   }
 
   /**
