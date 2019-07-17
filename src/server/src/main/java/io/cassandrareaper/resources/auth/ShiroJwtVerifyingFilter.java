@@ -17,9 +17,9 @@
 
 package io.cassandrareaper.resources.auth;
 
+import java.util.Optional;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import io.jsonwebtoken.Claims;
@@ -27,7 +27,11 @@ import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.lang.Strings;
+import org.apache.shiro.subject.SimplePrincipalCollection;
+import org.apache.shiro.subject.Subject;
 import org.apache.shiro.web.filter.AccessControlFilter;
+import org.apache.shiro.web.subject.WebSubject;
+import org.apache.shiro.web.util.WebUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,30 +43,43 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
 
   @Override
   protected boolean isAccessAllowed(ServletRequest req, ServletResponse res, Object mappedValue) throws Exception {
-    if (null != getSubject(req, res).getPrincipal()
-        && (getSubject(req, res).isRemembered() || getSubject(req, res).isAuthenticated())) {
-      return true;
-    }
-    HttpServletRequest httpRequest = (HttpServletRequest) req;
-    String jwt = httpRequest.getHeader("Authorization");
+    Subject nonJwt = getSubject(req, res);
+
+    return null != nonJwt.getPrincipal() && (nonJwt.isRemembered() || nonJwt.isAuthenticated())
+      ? true
+      : getJwtUser(req).isPresent();
+  }
+
+  static Subject getJwtSubject(Subject nonJwt, ServletRequest req, ServletResponse res) {
+    return null != nonJwt.getPrincipal() && (nonJwt.isRemembered() || nonJwt.isAuthenticated())
+      ? nonJwt
+      : new WebSubject.Builder(req, res)
+          .principals(new SimplePrincipalCollection(getJwtUser(req).get(), "jwtRealm"))
+          .buildSubject();
+  }
+
+  @Override
+  protected boolean onAccessDenied(ServletRequest req, ServletResponse res) throws Exception {
+    WebUtils.toHttp(res).setStatus(HttpServletResponse.SC_FORBIDDEN);
+    WebUtils.toHttp(res).setHeader("Content-Type", "text/plain");
+    WebUtils.toHttp(res).getOutputStream().print("Forbidden access. Please login to access this page.");
+    WebUtils.toHttp(res).flushBuffer();
+    return false;
+  }
+
+  private static Optional<String> getJwtUser(ServletRequest req) {
+    String jwt = WebUtils.toHttp(req).getHeader("Authorization");
     if (null != jwt && jwt.startsWith("Bearer ")) {
       try {
         jwt = jwt.substring(jwt.indexOf(' ') + 1);
         Jws<Claims> claims = Jwts.parser().setSigningKey(ShiroJwtProvider.SIGNING_KEY).parseClaimsJws(jwt);
         String user = claims.getBody().getSubject();
-        return Strings.hasText(user);
+        return Strings.hasText(user) ? Optional.of(user) : Optional.empty();
       } catch (JwtException | IllegalArgumentException e) {
-        LOG.error("Failed validating JWT {} from {}", jwt, httpRequest.getRemoteAddr());
+        LOG.error("Failed validating JWT {} from {}", jwt, WebUtils.toHttp(req).getRemoteAddr());
         LOG.debug("exception", e);
       }
     }
-    return false;
-  }
-
-  @Override
-  protected boolean onAccessDenied(ServletRequest req, ServletResponse res) throws Exception {
-    HttpServletResponse response = (HttpServletResponse) res;
-    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-    return false;
+    return Optional.empty();
   }
 }

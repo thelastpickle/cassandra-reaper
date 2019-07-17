@@ -38,6 +38,6 @@ fi
 
 if [ ! -z "${REAPER_AUTH_USER}" ]; then
 cat <<EOT2 >> /etc/shiro.ini
-${REAPER_AUTH_USER} = ${REAPER_AUTH_PASSWORD}
+${REAPER_AUTH_USER} = ${REAPER_AUTH_PASSWORD}, operator
 EOT2
 fi
