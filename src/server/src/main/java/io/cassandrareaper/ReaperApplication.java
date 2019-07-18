@@ -397,7 +397,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     if ("memory".equalsIgnoreCase(config.getStorageType())) {
       storage = new MemoryStorage();
     } else if ("cassandra".equalsIgnoreCase(config.getStorageType())) {
-      storage = new CassandraStorage(config, environment);
+      storage = new CassandraStorage(context.reaperInstanceId, config, environment);
     } else if ("postgres".equalsIgnoreCase(config.getStorageType())
         || "h2".equalsIgnoreCase(config.getStorageType())
         || "database".equalsIgnoreCase(config.getStorageType())) {

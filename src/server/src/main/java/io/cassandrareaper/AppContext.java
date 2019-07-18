@@ -37,9 +37,9 @@ import org.slf4j.LoggerFactory;
  */
 public final class AppContext {
 
-  public static final UUID REAPER_INSTANCE_ID = UUID.randomUUID();
   public static final String REAPER_INSTANCE_ADDRESS = Private.initialiseInstanceAddress();
 
+  public final UUID reaperInstanceId = UUID.randomUUID();
   public final AtomicBoolean isRunning = new AtomicBoolean(true);
   public IStorage storage;
   public RepairManager repairManager;

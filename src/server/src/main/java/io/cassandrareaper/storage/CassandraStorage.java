@@ -127,6 +127,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private final Session session;
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final VersionNumber version;
+  private final UUID reaperInstanceId;
 
   private final LoadingCache<UUID, RepairUnit> repairUnits = CacheBuilder.newBuilder()
       .build(new CacheLoader<UUID, RepairUnit>() {
@@ -188,7 +189,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement insertOperationsPrepStmt;
   private PreparedStatement listOperationsForNodePrepStmt;
 
-  public CassandraStorage(ReaperApplicationConfiguration config, Environment environment) throws ReaperException {
+  public CassandraStorage(
+      UUID reaperInstanceId,
+      ReaperApplicationConfiguration config,
+      Environment environment) throws ReaperException {
+
+    this.reaperInstanceId = reaperInstanceId;
     CassandraFactory cassandraFactory = config.getCassandraFactory();
     overrideQueryOptions(cassandraFactory);
     overrideRetryPolicy(cassandraFactory);
@@ -1336,7 +1342,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public boolean takeLead(UUID leaderId, int ttl) {
     LOG.debug("Trying to take lead on segment {}", leaderId);
     ResultSet lwtResult = session.execute(
-        takeLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS, ttl));
+        takeLeadPrepStmt.bind(leaderId, reaperInstanceId, AppContext.REAPER_INSTANCE_ADDRESS, ttl));
 
     if (lwtResult.wasApplied()) {
       LOG.debug("Took lead on segment {}", leaderId);
@@ -1358,10 +1364,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     ResultSet lwtResult = session.execute(
         renewLeadPrepStmt.bind(
             ttl,
-            AppContext.REAPER_INSTANCE_ID,
+            reaperInstanceId,
             AppContext.REAPER_INSTANCE_ADDRESS,
             leaderId,
-            AppContext.REAPER_INSTANCE_ID));
+            reaperInstanceId));
 
     if (lwtResult.wasApplied()) {
       LOG.debug("Renewed lead on segment {}", leaderId);
@@ -1384,8 +1390,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public void releaseLead(UUID leaderId) {
     Preconditions.checkNotNull(leaderId);
-    ResultSet lwtResult = session.execute(releaseLeadPrepStmt.bind(leaderId, AppContext.REAPER_INSTANCE_ID));
-    LOG.info("Trying to release lead on segment {} for instance {}", leaderId, AppContext.REAPER_INSTANCE_ID);
+    ResultSet lwtResult = session.execute(releaseLeadPrepStmt.bind(leaderId, reaperInstanceId));
+    LOG.info("Trying to release lead on segment {} for instance {}", leaderId, reaperInstanceId);
     if (lwtResult.wasApplied()) {
       LOG.info("Released lead on segment {}", leaderId);
     } else {
@@ -1405,10 +1411,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     ResultSet lwtResult = session.execute(
         renewLeadPrepStmt.bind(
             LEAD_DURATION,
-            AppContext.REAPER_INSTANCE_ID,
+            reaperInstanceId,
             AppContext.REAPER_INSTANCE_ADDRESS,
             leaderId,
-            AppContext.REAPER_INSTANCE_ID));
+            reaperInstanceId));
 
     return lwtResult.wasApplied();
   }
@@ -1507,7 +1513,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public void saveHeartbeat() {
     session.executeAsync(
-        saveHeartbeatPrepStmt.bind(AppContext.REAPER_INSTANCE_ID, AppContext.REAPER_INSTANCE_ADDRESS));
+        saveHeartbeatPrepStmt.bind(reaperInstanceId, AppContext.REAPER_INSTANCE_ADDRESS));
   }
 
 
