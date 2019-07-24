@@ -32,9 +32,11 @@ import java.net.URLClassLoader;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.ws.rs.core.Response;
 
+import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 
 /**
@@ -79,6 +81,8 @@ public final class ReaperTestJettyRunner {
   }
 
   static final class ReaperJettyTestSupport {
+
+    private static final Set<Integer> USED_PORTS = Sets.newConcurrentHashSet();
 
     final Class<?> supportCls;
     final /*DropwizardTestSupport<ReaperApplicationConfiguration>*/Object support;
@@ -250,10 +254,8 @@ public final class ReaperTestJettyRunner {
     }
 
     private static int getAnyAvailablePort() {
-      // this method doesn't actually reserve the ports
-      // so subsequent calls may well return the same number
       try (ServerSocket s = new ServerSocket(0)) {
-        return s.getLocalPort();
+        return USED_PORTS.add(s.getLocalPort()) ? s.getLocalPort() : getAnyAvailablePort();
       } catch (IOException ex) {
         throw new IllegalStateException("no available ports", ex);
       }
