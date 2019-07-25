@@ -289,10 +289,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       }
 
       try (Timer.Context cxt1 = context.metricRegistry.timer(metricNameForRepairing(segment)).time()) {
+        boolean segmentsLocked = false;
         try {
           LOG.debug("Enter synchronized section with segment ID {}", segmentId);
           synchronized (condition) {
-            if (!lockSegmentRunners()) {
+            if (!(segmentsLocked = lockSegmentRunners())) {
               // XXX – not expected to happen, STARTED run state should be "good" (opportunistic) enough
               LOG.warn(
                   "Cannot run segment {} as another Reaper holds the lock on repair run {}. Will try again later",
@@ -301,7 +302,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
               return false;
             }
-
 
             // ~double-locking-idiom, only applies to non-incremental and distributed storage
             if (!repairUnit.getIncrementalRepair() && context.storage instanceof IDistributedStorage) {
@@ -343,6 +343,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
             if (0 != repairNo) {
               releaseSegmentRunners();
+              segmentsLocked = false;
               processTriggeredSegment(segment, coordinator, repairNo);
             } else {
               LOG.info("Nothing to repair for segment {} in keyspace {}", segmentId, keyspace);
@@ -360,7 +361,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           }
         } finally {
           LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
-          releaseSegmentRunners();
+          if (segmentsLocked) {
+            releaseSegmentRunners();
+          }
         }
       }
     } catch (RuntimeException | ReaperException e) {

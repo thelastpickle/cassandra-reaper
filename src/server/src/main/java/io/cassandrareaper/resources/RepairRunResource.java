@@ -582,16 +582,22 @@ public final class RepairRunResource {
    */
   @POST
   @Path("/{id}/segments/abort/{segment_id}")
-  public Response getRepairRunSegments(
-      @PathParam("id") UUID repairRunId, @PathParam("segment_id") UUID segmentId) {
-
+  public Response abortRepairRunSegment(@PathParam("id") UUID repairRunId, @PathParam("segment_id") UUID segmentId) {
     LOG.debug("abort segment called with: run id = {} and segment id = {}", repairRunId, segmentId);
     final Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     if (repairRun.isPresent()) {
+
       if (RepairRun.RunState.RUNNING == repairRun.get().getRunState()
           || RepairRun.RunState.PAUSED == repairRun.get().getRunState()) {
-        RepairSegment segment = context.repairManager.abortSegment(repairRunId, segmentId);
-        return Response.ok().entity(segment).build();
+
+        try {
+          RepairSegment segment = context.repairManager.abortSegment(repairRunId, segmentId);
+          return Response.ok().entity(segment).build();
+        } catch (ReaperException ex) {
+          return Response.status(Response.Status.CONFLICT)
+              .entity("Cannot abort segment " + ex.getLocalizedMessage())
+              .build();
+        }
       } else {
         return Response.status(Response.Status.CONFLICT)
             .entity("Cannot abort segment on repair run with status " + repairRun.get().getRunState())

@@ -191,7 +191,7 @@ public final class RepairManager implements AutoCloseable {
             Collection<RepairSegment> runningSegments
                 = context.storage.getSegmentsWithState(pausedRepairRun.getId(), RepairSegment.State.RUNNING);
 
-            abortSegments(runningSegments, pausedRepairRun, false, false);
+            abortSegments(runningSegments, pausedRepairRun);
           });
     } finally {
       repairRunnersLock.unlock();
@@ -234,63 +234,63 @@ public final class RepairManager implements AutoCloseable {
             .collect(Collectors.toSet());
 
         LOG.debug("No leader on the following segments : {}", orphanedSegments);
-        abortSegments(orphanedSegments, repairRun, false, true);
+        abortSegments(orphanedSegments, repairRun);
       }
     } finally {
       repairRunnersLock.unlock();
     }
   }
 
-  public RepairSegment abortSegment(UUID repairRunId, UUID segmentId) {
-    RepairSegment segment = context.storage.getRepairSegment(repairRunId, segmentId).get();
-    RepairRun repairRun = context.storage.getRepairRun(repairRunId).get();
-    if (context.storage instanceof IDistributedStorage) {
-      ((IDistributedStorage) context.storage).forceReleaseLead(segmentId);
-      ((IDistributedStorage) context.storage).takeLead(segmentId);
+  public RepairSegment abortSegment(UUID runId, UUID segmentId) throws ReaperException {
+    RepairSegment segment = context.storage.getRepairSegment(runId, segmentId).get();
+    try {
+      if (null == segment.getCoordinatorHost() || RepairSegment.State.DONE == segment.getState()) {
+        RepairUnit repairUnit = context.storage.getRepairUnit(segment.getRepairUnitId());
+        UUID leaderElectionId = repairUnit.getIncrementalRepair() ? runId : segmentId;
+        boolean tookLead;
+        if (tookLead = takeLead(context, leaderElectionId) || renewLead(context, leaderElectionId)) {
+          try {
+            SegmentRunner.postponeSegment(context, segment);
+          } finally {
+            if (tookLead) {
+              releaseLead(context, leaderElectionId);
+            }
+          }
+        }
+      } else {
+        abortSegments(Arrays.asList(segment), context.storage.getRepairRun(runId).get());
+      }
+      return context.storage.getRepairSegment(runId, segmentId).get();
+    } catch (AssertionError error) {
+      throw new ReaperException("lead is already taken on " + runId + ":" + segmentId, new Exception(error));
     }
-    if (null == segment.getCoordinatorHost() || RepairSegment.State.DONE == segment.getState()) {
-      SegmentRunner.postponeSegment(context, segment);
-    } else {
-      abortSegments(Arrays.asList(segment), repairRun, true, false);
-    }
-
-    return context.storage.getRepairSegment(repairRunId, segmentId).get();
   }
 
   void abortSegments(Collection<RepairSegment> runningSegments, RepairRun repairRun) {
-    abortSegments(runningSegments, repairRun, false, false);
-  }
-
-  public void abortSegments(
-      Collection<RepairSegment> runningSegments,
-      RepairRun repairRun,
-      boolean forced,
-      boolean postponeWithoutAborting) {
-
     RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
-
     for (RepairSegment segment : runningSegments) {
       LOG.debug("Trying to abort stuck segment {} in repair run {}", segment.getId(), repairRun.getId());
       UUID leaderElectionId = repairUnit.getIncrementalRepair() ? repairRun.getId() : segment.getId();
-      if (forced || takeLead(context, leaderElectionId) || renewLead(context, leaderElectionId)) {
-        // refresh segment once we're inside leader-election
-        segment = context.storage.getRepairSegment(repairRun.getId(), segment.getId()).get();
-        if (RepairSegment.State.RUNNING == segment.getState()) {
-          try {
+      boolean tookLead;
+      if (tookLead = takeLead(context, leaderElectionId) || renewLead(context, leaderElectionId)) {
+        try {
+          // refresh segment once we're inside leader-election
+          segment = context.storage.getRepairSegment(repairRun.getId(), segment.getId()).get();
+          if (RepairSegment.State.RUNNING == segment.getState()) {
             JmxProxy jmxProxy = ClusterFacade.create(context).connect(
-                        context.storage.getCluster(repairRun.getClusterName()),
-                        Arrays.asList(segment.getCoordinatorHost()));
+                      context.storage.getCluster(repairRun.getClusterName()),
+                      Arrays.asList(segment.getCoordinatorHost()));
 
             SegmentRunner.abort(context, segment, jmxProxy);
-          } catch (ReaperException | NumberFormatException e) {
-            String msg = "Tried to abort repair on segment {} marked as RUNNING, but the "
-                + "host was down (so abortion won't be needed). Postponing the segment.";
+          }
+        } catch (ReaperException | NumberFormatException e) {
+          String msg = "Tried to abort repair on segment {} marked as RUNNING, but the "
+              + "host was down (so abortion won't be needed). Postponing the segment.";
 
-            LOG.debug(msg, segment.getId(), e);
-            SegmentRunner.postponeSegment(context, segment);
-          } finally {
-            // if someone else does hold the lease, ie renewLead(..) was true,
-            // then their writes to repair_run table and any call to releaseLead(..) will throw an exception
+          LOG.debug(msg, segment.getId(), e);
+          SegmentRunner.postponeSegment(context, segment);
+        } finally {
+          if (tookLead) {
             releaseLead(context, leaderElectionId);
           }
         }
