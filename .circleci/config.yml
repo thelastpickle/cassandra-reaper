@@ -204,7 +204,7 @@ jobs:
     c_2-1_flapping-reapers:
       environment:
         CASSANDRA_VERSION: 2.1.20
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx400m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx434m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_2-1_one-reaper__all_nodes_reachable:
       environment:
@@ -225,7 +225,7 @@ jobs:
       environment:
         CASSANDRA_VERSION: 2.1.20
         CUCUMBER_OPTIONS: "-t @sidecar"
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx416m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
       <<: *default_job
     c_2-1_upgrades:
       environment:
@@ -262,7 +262,7 @@ jobs:
     c_2-2_flapping-reapers:
       environment:
         CASSANDRA_VERSION: 2.2.13
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx400m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx434m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_2-2_one-reaper__all_nodes_reachable:
       environment:
@@ -283,7 +283,7 @@ jobs:
       environment:
         CASSANDRA_VERSION: 2.2.13
         CUCUMBER_OPTIONS: "-t @sidecar"
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx416m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
       <<: *default_job
     c_2-2_upgrades:
       environment:
@@ -320,7 +320,7 @@ jobs:
     c_3-0_flapping-reapers:
       environment:
         CASSANDRA_VERSION: 3.0.17
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx400m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx434m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_3-0_one-reaper__all_nodes_reachable:
       environment:
@@ -341,7 +341,7 @@ jobs:
       environment:
         CASSANDRA_VERSION: 3.0.17
         CUCUMBER_OPTIONS: "-t @sidecar"
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx416m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
       <<: *default_job
     c_3-0_upgrades:
       environment:
@@ -378,7 +378,7 @@ jobs:
     c_3-11_flapping-reapers:
       environment:
         CASSANDRA_VERSION: 3.11.3
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx400m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx434m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_3-11_one-reaper__all_nodes_reachable:
       environment:
@@ -399,7 +399,7 @@ jobs:
       environment:
         CASSANDRA_VERSION: 3.11.3
         CUCUMBER_OPTIONS: "-t @sidecar"
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx416m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
       <<: *default_job
     c_3-11_upgrades:
       environment:
@@ -441,7 +441,7 @@ jobs:
       environment:
         CASSANDRA_VERSION: github:apache/trunk
         NODES_PER_DC: 1
-        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx400m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+        JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx434m" -Dtest=ReaperCassandraIT -Pskip-tests-needing-all-nodes-reachable -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
       <<: *default_job
     c_4-0_one-reaper__all_nodes_reachable:
       environment:
