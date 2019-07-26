@@ -61,6 +61,7 @@ import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Duration;
 import org.awaitility.core.ConditionTimeoutException;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -80,6 +81,7 @@ public final class BasicSteps {
 
   private static final Logger LOG = LoggerFactory.getLogger(BasicSteps.class);
   private static final Optional<Map<String, String>> EMPTY_PARAMS = Optional.empty();
+  private static final Duration POLL_INTERVAL = Duration.TWO_SECONDS;
 
   private static final List<ReaperTestJettyRunner> RUNNERS = new CopyOnWriteArrayList<>();
   private static final List<SimpleReaperClient> CLIENTS = new CopyOnWriteArrayList<>();
@@ -338,7 +340,7 @@ public final class BasicSteps {
         testContext.addCurrentScheduleId(schedule.getId());
       } else {
         // if the original request to create the schedule failed then we have to wait til we can find it
-        await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
           try {
             List<RepairScheduleStatus> schedules = runner.getClient().getRepairSchedulesForCluster(clusterName);
             Assertions.assertThat(schedules).withFailMessage(StringUtils.join(schedules, " , ")).hasSize(1);
@@ -391,7 +393,7 @@ public final class BasicSteps {
         testContext.addCurrentScheduleId(schedule.getId());
       } else {
         // if the original request to create the schedule failed then we have to wait til we can find it
-        await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
           try {
             List<RepairScheduleStatus> schedules
                 = runner.getClient().getRepairSchedulesForCluster(TestContext.TEST_CLUSTER);
@@ -450,7 +452,7 @@ public final class BasicSteps {
         testContext.addCurrentScheduleId(schedule.getId());
       } else {
         // if the original request to create the schedule failed then we have to wait til we can find it
-        await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
           try {
             List<RepairScheduleStatus> schedules
                 = runner.getClient().getRepairSchedulesForCluster(TestContext.TEST_CLUSTER);
@@ -474,7 +476,7 @@ public final class BasicSteps {
       final Set<UUID> runningRepairs = Sets.newConcurrentHashSet();
       RUNNERS.parallelStream().forEach(runner -> {
         LOG.info("waiting for a scheduled repair run to start for cluster: {}", clusterName);
-        await().with().pollInterval(1, SECONDS).atMost(2, MINUTES).until(() -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(2, MINUTES).until(() -> {
 
           Response resp = runner.callReaper("GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
           String responseData = resp.readEntity(String.class);
@@ -579,7 +581,7 @@ public final class BasicSteps {
 
     synchronized (BasicSteps.class) {
       CLIENTS.parallelStream().forEach(client -> {
-        await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
           try {
             List<RepairScheduleStatus> schedules = client.getRepairSchedulesForCluster(clusterName);
 
@@ -602,7 +604,7 @@ public final class BasicSteps {
   public void reaper_has_scheduled_repairs_for_the_last_added_cluster(int expectedSchedules) throws Throwable {
     synchronized (BasicSteps.class) {
       CLIENTS.parallelStream().forEach(client -> {
-        await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
           try {
             List<RepairScheduleStatus> schedules = client.getRepairSchedulesForCluster(TestContext.TEST_CLUSTER);
 
@@ -646,7 +648,7 @@ public final class BasicSteps {
           Response.Status.ACCEPTED,
           Response.Status.NOT_FOUND);
 
-      await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+      await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
         try {
           callAndExpect(
               "DELETE",
@@ -690,7 +692,7 @@ public final class BasicSteps {
           Response.Status.ACCEPTED,
           Response.Status.NOT_FOUND);
 
-      await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+      await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
         try {
           callAndExpect(
               "DELETE",
@@ -750,7 +752,7 @@ public final class BasicSteps {
             Response.Status.ACCEPTED,
             Response.Status.NOT_FOUND);
 
-        await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
           try {
             callAndExpect(
                 "DELETE",
@@ -783,7 +785,7 @@ public final class BasicSteps {
   @And("^deleting the last added cluster fails$")
   public void deleting_the_last_added_cluster_fails() throws Throwable {
     synchronized (BasicSteps.class) {
-      await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+      await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
         try {
           callAndExpect(
               "DELETE",
@@ -811,7 +813,7 @@ public final class BasicSteps {
           Response.Status.ACCEPTED,
           Response.Status.NOT_FOUND);
 
-      await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+      await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
         try {
           callAndExpect(
               "GET",
@@ -839,7 +841,7 @@ public final class BasicSteps {
           Response.Status.ACCEPTED,
           Response.Status.NOT_FOUND);
 
-      await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+      await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
         try {
           callAndExpect(
               "GET",
@@ -1162,7 +1164,7 @@ public final class BasicSteps {
             Response.Status.NOT_FOUND,
             Response.Status.CONFLICT);
 
-        await().with().pollInterval(1, SECONDS).atMost(1, MINUTES).until(() -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
           try {
             callAndExpect(
                 "DELETE",
@@ -1299,7 +1301,7 @@ public final class BasicSteps {
       RUNNERS.parallelStream().forEach(runner -> {
         final AtomicReference<RepairRunStatus> run = new AtomicReference<>();
         try {
-          await().with().pollInterval(5, SECONDS).atMost(5, MINUTES).until(() -> {
+          await().with().pollInterval(POLL_INTERVAL.multiply(2)).atMost(5, MINUTES).until(() -> {
             try {
               Response response = runner
                   .callReaper("GET", "/repair_run/" + testContext.getCurrentRepairId(), EMPTY_PARAMS);
@@ -1373,7 +1375,7 @@ public final class BasicSteps {
       });
 
       RUNNERS.parallelStream().forEach(runner -> {
-        await().with().pollInterval(1, SECONDS).atMost(2, MINUTES).until(
+        await().with().pollInterval(POLL_INTERVAL).atMost(2, MINUTES).until(
             () -> {
               Response abort = runner.callReaper(
                       "POST",
@@ -1539,7 +1541,7 @@ public final class BasicSteps {
         List<String> seeds = ImmutableList.copyOf(TestContext.TEST_CLUSTER_SEED_HOSTS.keySet());
 
         RUNNERS.parallelStream().forEach(runner -> {
-          await().with().pollInterval(1, SECONDS).atMost(2, MINUTES).until(() -> {
+          await().with().pollInterval(POLL_INTERVAL).atMost(2, MINUTES).until(() -> {
             String seed = seeds.get(RAND.nextInt(seeds.size()));
 
             Response response = runner.callReaper(
@@ -1580,7 +1582,7 @@ public final class BasicSteps {
         List<String> seeds = ImmutableList.copyOf(TestContext.TEST_CLUSTER_SEED_HOSTS.keySet());
 
         RUNNERS.parallelStream().forEach(runner -> {
-          await().with().pollInterval(1, SECONDS).atMost(2, MINUTES).until(() -> {
+          await().with().pollInterval(POLL_INTERVAL).atMost(2, MINUTES).until(() -> {
             String seed = seeds.get(RAND.nextInt(seeds.size()));
 
             Response response = runner.callReaper(
@@ -1622,7 +1624,7 @@ public final class BasicSteps {
         List<String> seeds = ImmutableList.copyOf(TestContext.TEST_CLUSTER_SEED_HOSTS.keySet());
 
         RUNNERS.parallelStream().forEach(runner -> {
-          await().with().pollInterval(1, SECONDS).atMost(2, MINUTES).until(() -> {
+          await().with().pollInterval(POLL_INTERVAL).atMost(2, MINUTES).until(() -> {
             String seed = seeds.get(RAND.nextInt(seeds.size()));
 
             Response response = runner.callReaper(
