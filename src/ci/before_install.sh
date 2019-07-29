@@ -17,6 +17,7 @@ echo "Starting Before Install step..."
 
 set -xe
 
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6B05F25D762E3157
 sudo apt-get update
 sudo apt-get install libjna-java > /dev/null
 sudo apt-get install python-support > /dev/null
