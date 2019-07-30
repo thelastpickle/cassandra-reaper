@@ -28,7 +28,6 @@ import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
 
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -53,11 +52,6 @@ final class Heart implements AutoCloseable {
   private static final AtomicBoolean GAUGES_REGISTERED = new AtomicBoolean(false);
   private static final Logger LOG = LoggerFactory.getLogger(Heart.class);
   private static final long DEFAULT_MAX_FREQUENCY = TimeUnit.SECONDS.toMillis(30);
-  private static final String[] COLLECTED_METRICS
-    = {"org.apache.cassandra.metrics:type=ThreadPools,path=request,*",
-       "org.apache.cassandra.metrics:type=ThreadPools,path=internal,*",
-       "org.apache.cassandra.metrics:type=ClientRequest,*",
-       "org.apache.cassandra.metrics:type=DroppedMessage,*"};
 
   private final AtomicLong lastBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
   private final ForkJoinPool forkJoinPool = new ForkJoinPool(64);
@@ -188,10 +182,9 @@ final class Heart implements AutoCloseable {
 
   private void grabAndStoreNodeMetrics(IStorage storage, UUID runId, NodeMetrics req)
       throws ReaperException, InterruptedException, JMException {
-    Optional<Cluster> cluster = storage.getCluster(req.getCluster());
-    Preconditions.checkArgument(cluster.isPresent(), "The cluster should be present in storage.");
-    JmxProxy nodeProxy
-        = ClusterFacade.create(context).connectAndAllowSidecar(cluster.get(), Arrays.asList(req.getNode()));
+
+    Cluster cluster = storage.getCluster(req.getCluster());
+    JmxProxy nodeProxy = ClusterFacade.create(context).connect(cluster, Arrays.asList(req.getNode()));
 
     ((IDistributedStorage) storage).storeNodeMetrics(
         runId,

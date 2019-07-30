@@ -72,7 +72,6 @@ public final class MetricsService {
 
       Node host = Node.builder()
             .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1"))
-            .withClusterName("bogus")
             .build();
 
       localClusterName = Cluster.toSymbolicName(clusterFacade.getClusterName(host));
@@ -108,7 +107,7 @@ public final class MetricsService {
     for (Entry<String, List<JmxStat>> jmxStatEntry:jmxStats.entrySet()) {
       for (JmxStat jmxStat:jmxStatEntry.getValue()) {
         GenericMetric metric = GenericMetric.builder()
-            .withClusterName(node.getCluster().getName())
+            .withClusterName(node.getClusterName())
             .withHost(node.getHostname())
             .withMetricDomain(jmxStat.getDomain())
             .withMetricType(jmxStat.getType())
@@ -130,7 +129,7 @@ public final class MetricsService {
         context.config.isInSidecarMode(),
         "grabAndStoreGenericMetrics() can only be called in sidecar");
 
-    Node node = Node.builder().withClusterName(localClusterName).withHostname(context.getLocalNodeAddress()).build();
+    Node node = Node.builder().withHostname(context.getLocalNodeAddress()).build();
 
     List<GenericMetric> metrics
         = convertToGenericMetrics(ClusterFacade.create(context).collectMetrics(node, COLLECTED_METRICS), node);
@@ -147,7 +146,7 @@ public final class MetricsService {
         context.config.isInSidecarMode(),
         "grabAndStoreActiveCompactions() can only be called in sidecar");
 
-    Node node = Node.builder().withClusterName(localClusterName).withHostname(context.getLocalNodeAddress()).build();
+    Node node = Node.builder().withHostname(context.getLocalNodeAddress()).build();
     List<Compaction> activeCompactions = ClusterFacade.create(context).listActiveCompactionsDirect(node);
 
     ((IDistributedStorage) context.storage)
@@ -165,7 +164,7 @@ public final class MetricsService {
         context.config.isInSidecarMode(),
         "grabAndStoreActiveStreams() can only be called in sidecar");
 
-    Node node = Node.builder().withClusterName(localClusterName).withHostname(context.getLocalNodeAddress()).build();
+    Node node = Node.builder().withHostname(context.getLocalNodeAddress()).build();
     Set<CompositeData> activeStreams = ClusterFacade.create(context).listStreamsDirect(node);
 
     ((IDistributedStorage) context.storage)

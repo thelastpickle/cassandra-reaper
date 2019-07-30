@@ -320,17 +320,12 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   private void maybeInitializeSidecarMode() throws ReaperException {
     if (context.config.isInSidecarMode()) {
       ClusterFacade clusterFacade = ClusterFacade.create(context);
-      Node host
-          = Node.builder()
-              .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1"))
-              .withClusterName("bogus")
-              .build();
+      Node host = Node.builder().withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1")).build();
       try {
-        context.localNodeAddress
-            = context
-                .config
+        context.localNodeAddress = context.config
                 .getEnforcedLocalNode()
                 .orElse(clusterFacade.getLocalEndpoint(host));
+
         LOG.info("Sidecar mode. Local node is : {}", context.localNodeAddress);
       } catch (RuntimeException | InterruptedException | ReaperException e) {
         LOG.error("Failed connecting to the local node in sidecar mode {}", host, e);
@@ -479,8 +474,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
           .forEach(cluster -> jmxConnectionsIntializer.on(cluster));
 
       LOG.info("Initialized JMX seed list for all clusters.");
-    } catch (RuntimeException | ReaperException e) {
-      LOG.error("Failed initializing JMX seed list", e);
     }
   }
 }

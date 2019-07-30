@@ -37,6 +37,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.eclipse.jetty.http.HttpStatus;
@@ -78,7 +79,7 @@ public final class ClusterResourceTest {
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
     assertEquals(1, mocks.context.storage.getClusters().size());
 
-    Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME).get();
+    Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
     assertNotNull("Did not find expected cluster", cluster);
     assertEquals(0, mocks.context.storage.getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
     assertEquals(CLUSTER_NAME, cluster.getName());
@@ -91,19 +92,24 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
     when(mocks.jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
-    Cluster cluster = new Cluster(CLUSTER_NAME, Optional.of(PARTITIONER), Sets.newHashSet(SEED_HOST));
+    Cluster cluster = Cluster.builder()
+        .withName(CLUSTER_NAME)
+        .withPartitioner(PARTITIONER)
+        .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .build();
+
     mocks.context.storage.addCluster(cluster);
 
     ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
-    Response response
-        = clusterResource.addOrUpdateCluster(
-            mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
+
+    Response response = clusterResource
+        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
 
     assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
     assertEquals(1, mocks.context.storage.getClusters().size());
 
-    cluster = mocks.context.storage.getCluster(CLUSTER_NAME).get();
+    cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
     assertNotNull("Did not find expected cluster", cluster);
     assertEquals(0, mocks.context.storage.getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
     assertEquals(CLUSTER_NAME, cluster.getName());
@@ -116,12 +122,17 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
     when(mocks.jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
-    Cluster cluster = new Cluster(CLUSTER_NAME, Optional.of(PARTITIONER), Sets.newHashSet(SEED_HOST));
+    Cluster cluster = Cluster.builder()
+        .withName(CLUSTER_NAME)
+        .withPartitioner(PARTITIONER)
+        .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .build();
+
     mocks.context.storage.addCluster(cluster);
 
     ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
-    Response response
-        = clusterResource.addOrUpdateCluster(
+
+    Response response = clusterResource.addOrUpdateCluster(
             mocks.uriInfo,
             CLUSTER_NAME,
             Optional.of(SEED_HOST),
@@ -131,7 +142,7 @@ public final class ClusterResourceTest {
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
     assertEquals(1, mocks.context.storage.getClusters().size());
 
-    cluster = mocks.context.storage.getCluster(CLUSTER_NAME).get();
+    cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
     assertNotNull("Did not find expected cluster", cluster);
     assertEquals(0, mocks.context.storage.getRepairRunsForCluster(cluster.getName(), Optional.of(1)).size());
     assertEquals(CLUSTER_NAME, cluster.getName());
@@ -154,7 +165,12 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
     when(mocks.jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
-    Cluster cluster = new Cluster(I_DO_EXIST, Optional.of(PARTITIONER), Sets.newHashSet(SEED_HOST));
+    Cluster cluster = Cluster.builder()
+        .withName(I_DO_EXIST)
+        .withPartitioner(PARTITIONER)
+        .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .build();
+
     mocks.context.storage.addCluster(cluster);
 
     ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
@@ -167,28 +183,26 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
 
     ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
-    clusterResource.addOrUpdateCluster(
-        mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
+    clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
     doReturn(Arrays.asList(SEED_HOST + 1)).when(mocks.jmxProxy).getLiveNodes();
 
-    Response response
-        = clusterResource.addOrUpdateCluster(
-            mocks.uriInfo, Optional.of(SEED_HOST + 1), Optional.of(Cluster.DEFAULT_JMX_PORT));
+    Response response = clusterResource
+        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST + 1), Optional.of(Cluster.DEFAULT_JMX_PORT));
 
     assertEquals(HttpStatus.OK_200, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + CLUSTER_NAME));
     assertEquals(1, mocks.context.storage.getClusters().size());
 
-    Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME).get();
+    Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
     assertEquals(1, cluster.getSeedHosts().size());
     assertEquals(SEED_HOST + 1, cluster.getSeedHosts().iterator().next());
 
-    response
-        = clusterResource.addOrUpdateCluster(
+    response = clusterResource.addOrUpdateCluster(
             mocks.uriInfo,
             CLUSTER_NAME,
             Optional.of(SEED_HOST + 1),
             Optional.of(Cluster.DEFAULT_JMX_PORT));
+
     assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
   }
@@ -198,12 +212,10 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
 
     ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
-    clusterResource.addOrUpdateCluster(
-        mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
+    clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
     doReturn(Arrays.asList(SEED_HOST + 1)).when(mocks.jmxProxy).getLiveNodes();
 
-    Response response
-        = clusterResource.addOrUpdateCluster(
+    Response response = clusterResource.addOrUpdateCluster(
             mocks.uriInfo,
             CLUSTER_NAME,
             Optional.of(SEED_HOST + 1),
@@ -213,17 +225,17 @@ public final class ClusterResourceTest {
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + CLUSTER_NAME));
     assertEquals(1, mocks.context.storage.getClusters().size());
 
-    Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME).get();
+    Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
     assertEquals(1, cluster.getSeedHosts().size());
     assertEquals(SEED_HOST + 1, cluster.getSeedHosts().iterator().next());
 
-    response
-        = clusterResource.addOrUpdateCluster(
+    response = clusterResource.addOrUpdateCluster(
             mocks.uriInfo,
             CLUSTER_NAME,
             Optional.of(SEED_HOST + 1),
             Optional.of(Cluster.DEFAULT_JMX_PORT));
     assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
   }
 
@@ -231,11 +243,10 @@ public final class ClusterResourceTest {
   public void addingAClusterAutomaticallySetupSchedulingRepairsWhenEnabled() throws Exception {
     final MockObjects mocks = initMocks();
     when(mocks.jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
-
     when(mocks.jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1"));
+
     when(mocks.jmxProxy.getTablesForKeyspace("keyspace1"))
-        .thenReturn(Sets.newHashSet(
-            Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
+        .thenReturn(Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
 
     mocks.context.config = TestRepairConfiguration.defaultConfigBuilder()
         .withAutoScheduling(
@@ -246,9 +257,9 @@ public final class ClusterResourceTest {
         .build();
 
     ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
-    Response response
-        = clusterResource.addOrUpdateCluster(
-            mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
+
+    Response response = clusterResource
+        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
 
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
     assertEquals(1, mocks.context.storage.getAllRepairSchedules().size());
@@ -296,11 +307,8 @@ public final class ClusterResourceTest {
 
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
 
-    when(context.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class)))
-        .thenReturn(jmxProxy);
-
-    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection()))
-        .thenReturn(jmxProxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class))).thenReturn(jmxProxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(jmxProxy);
 
     return new MockObjects(context, uriInfo, jmxProxy);
   }

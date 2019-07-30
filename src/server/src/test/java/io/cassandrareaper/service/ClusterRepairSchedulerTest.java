@@ -30,8 +30,8 @@ import io.cassandrareaper.storage.MemoryStorage;
 
 import java.time.Duration;
 import java.util.Collection;
-import java.util.Collections;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -59,7 +59,12 @@ public final class ClusterRepairSchedulerTest {
 
   @Before
   public void setup() throws ReaperException {
-    cluster = new Cluster(RandomStringUtils.randomAlphabetic(12), null, Collections.singleton("127.0.0.1"));
+
+    cluster = Cluster.builder()
+        .withName(RandomStringUtils.randomAlphabetic(12))
+        .withSeedHosts(ImmutableSet.of("127.0.0.1"))
+        .build();
+
     context = new AppContext();
     context.storage = new MemoryStorage();
 

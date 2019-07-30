@@ -17,33 +17,46 @@
 
 package io.cassandrareaper.core;
 
-import java.util.Collections;
 import java.util.Optional;
+
+import com.google.common.base.Preconditions;
 
 public final class Node {
 
-  private final Cluster cluster;
+  private final Optional<Cluster> cluster;
   private final String hostname;
 
   private Node(Builder builder) {
-    this.cluster = builder.cluster;
+    this.cluster = Optional.ofNullable(builder.cluster);
     this.hostname = builder.hostname;
   }
 
-  public Cluster getCluster() {
-    return cluster;
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public Builder with() {
+    Builder builder = builder().withHostname(hostname);
+    if (cluster.isPresent()) {
+      builder = builder.withCluster(cluster.get());
+    }
+    return builder;
+  }
+
+  public String getClusterName() {
+    return cluster.isPresent() ? cluster.get().getName() : "";
   }
 
   public String getHostname() {
     return hostname;
   }
 
-  public String toString() {
-    return hostname + "@" + cluster.getName();
+  public int getJmxPort() {
+    return cluster.isPresent() ? cluster.get().getJmxPort() : Cluster.DEFAULT_JMX_PORT;
   }
 
-  public static Builder builder() {
-    return new Builder();
+  public String toString() {
+    return hostname + (cluster.isPresent() ? "@" + cluster.get().getName() : "");
   }
 
   public static final class Builder {
@@ -53,21 +66,19 @@ public final class Node {
     private Builder() {}
 
     public Builder withCluster(Cluster cluster) {
+      Preconditions.checkNotNull(cluster);
       this.cluster = cluster;
       return this;
     }
 
-    public Builder withClusterName(String clusterName) {
-      this.cluster = new Cluster(clusterName, Optional.empty(), Collections.emptySet());
-      return this;
-    }
-
     public Builder withHostname(String hostname) {
+      Preconditions.checkNotNull(hostname);
       this.hostname = hostname;
       return this;
     }
 
     public Node build() {
+      Preconditions.checkNotNull(hostname);
       return new Node(this);
     }
   }

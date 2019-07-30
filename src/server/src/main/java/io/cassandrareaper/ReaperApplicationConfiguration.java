@@ -235,7 +235,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   public boolean isEnableCrossOrigin() {
-    return this.enableCrossOrigin != null && ("true").equalsIgnoreCase(this.enableCrossOrigin);
+    return this.enableCrossOrigin != null && "true".equalsIgnoreCase(this.enableCrossOrigin);
   }
 
   public void setStorageType(String storageType) {

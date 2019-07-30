@@ -49,6 +49,7 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -118,7 +119,13 @@ public final class RepairRunResourceTest {
         TimeUnit.SECONDS);
 
     context.storage = new MemoryStorage();
-    Cluster cluster = new Cluster(CLUSTER_NAME, Optional.of(PARTITIONER), Sets.newHashSet(SEED_HOST));
+
+    Cluster cluster = Cluster.builder()
+        .withName(CLUSTER_NAME)
+        .withPartitioner(PARTITIONER)
+        .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .build();
+
     context.storage.addCluster(cluster);
 
     context.config = new ReaperApplicationConfiguration();

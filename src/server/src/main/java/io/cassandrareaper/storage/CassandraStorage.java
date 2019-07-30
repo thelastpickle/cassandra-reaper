@@ -108,8 +108,6 @@ import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 public final class CassandraStorage implements IStorage, IDistributedStorage {
 
-  private static final String OP_COMPACTION = "compaction";
-  private static final String OP_STREAMING = "streaming";
   private static final int LEAD_DURATION = 600;
   /* Simple stmts */
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
@@ -500,81 +498,82 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Collection<Cluster> getClusters() throws ReaperException {
+  public Collection<Cluster> getClusters() {
     Collection<Cluster> clusters = Lists.<Cluster>newArrayList();
-    Statement stmt = new SimpleStatement(SELECT_CLUSTER);
-    stmt.setIdempotent(Boolean.TRUE);
-    ResultSet clusterResults = session.execute(stmt);
-    for (Row cluster : clusterResults) {
+    for (Row row : session.execute(new SimpleStatement(SELECT_CLUSTER).setIdempotent(Boolean.TRUE))) {
       try {
-        ClusterProperties properties
-            = cluster.getString("properties") != null
-                ? objectMapper.readValue(cluster.getString("properties"), ClusterProperties.class)
+        ClusterProperties properties = null != row.getString("properties")
+                ? objectMapper.readValue(row.getString("properties"), ClusterProperties.class)
                 : ClusterProperties.builder().withJmxPort(Cluster.DEFAULT_JMX_PORT).build();
 
-        clusters.add(
-            new Cluster(
-                cluster.getString("name"),
-                Optional.ofNullable(cluster.getString("partitioner")),
-                cluster.getSet("seed_hosts", String.class),
-                properties));
-      } catch (IOException e) {
-        LOG.error("Failed parsing cluster information from the database entry", e);
-        throw new ReaperException(e);
+        Cluster.Builder builder = Cluster.builder()
+              .withName(row.getString("name"))
+              .withSeedHosts(row.getSet("seed_hosts", String.class))
+              .withJmxPort(properties.getJmxPort());
+
+        if (null != row.getString("partitioner")) {
+          builder = builder.withPartitioner(row.getString("partitioner"));
+        }
+
+        clusters.add(builder.build());
+      } catch (IOException ex) {
+        LOG.error("Failed parsing cluster {}", row.getString("name"), ex);
       }
     }
-
     return clusters;
   }
 
   @Override
-  public boolean addCluster(Cluster cluster) throws ReaperException {
+  public boolean addCluster(Cluster cluster) {
+    Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
     try {
-      Preconditions.checkState(cluster.getPartitioner().isPresent(),
-          "Cannot store a cluster that has no partitioner.");
       session.execute(
           insertClusterPrepStmt.bind(
               cluster.getName(),
               cluster.getPartitioner().get(),
               cluster.getSeedHosts(),
               objectMapper.writeValueAsString(cluster.getProperties())));
-    } catch (JsonProcessingException e) {
+    } catch (IOException e) {
       LOG.error("Failed serializing cluster information for database write", e);
-      throw new ReaperException(e);
+      throw new IllegalStateException(e);
     }
     return true;
   }
 
   @Override
-  public boolean updateCluster(Cluster newCluster) throws ReaperException {
+  public boolean updateCluster(Cluster newCluster) {
     return addCluster(newCluster);
   }
 
   @Override
-  public Optional<Cluster> getCluster(String clusterName) throws ReaperException {
+  public Cluster getCluster(String clusterName) {
+    // XXX multiple clusters can re-use the same name
     Row row = session.execute(getClusterPrepStmt.bind(clusterName)).one();
-
-    try {
-      ClusterProperties properties
-          = row != null && row.getString("properties") != null
+    if (null != row) {
+      try {
+        ClusterProperties properties = null != row.getString("properties")
               ? objectMapper.readValue(row.getString("properties"), ClusterProperties.class)
               : ClusterProperties.builder().withJmxPort(Cluster.DEFAULT_JMX_PORT).build();
-      return row != null
-          ? Optional.ofNullable(
-              new Cluster(
-                  row.getString("name"),
-                  Optional.ofNullable(row.getString("partitioner")),
-                  row.getSet("seed_hosts", String.class),
-                  properties))
-          : Optional.empty();
-    } catch (RuntimeException | IOException e) {
-      LOG.error("Failed parsing cluster information from the database entry", e);
-      throw new ReaperException(e);
+
+        Cluster.Builder builder = Cluster.builder()
+              .withName(row.getString("name"))
+              .withSeedHosts(row.getSet("seed_hosts", String.class))
+              .withJmxPort(properties.getJmxPort());
+
+        if (null != row.getString("partitioner")) {
+          builder = builder.withPartitioner(row.getString("partitioner"));
+        }
+        return builder.build();
+      } catch (IOException e) {
+        LOG.error("Failed parsing cluster information from the database entry", e);
+        throw new IllegalStateException(e);
+      }
     }
+    throw new IllegalArgumentException("no such cluster: " + clusterName);
   }
 
   @Override
-  public Optional<Cluster> deleteCluster(String clusterName) {
+  public Cluster deleteCluster(String clusterName) {
     assert getRepairSchedulesForCluster(clusterName).isEmpty()
         : StringUtils.join(getRepairSchedulesForCluster(clusterName));
 
@@ -591,8 +590,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         session.executeAsync(deleteRepairUnitPrepStmt.bind(id));
       }
     }
+    Cluster cluster = getCluster(clusterName);
     session.executeAsync(deleteClusterPrepStmt.bind(clusterName));
-    return Optional.ofNullable(new Cluster(clusterName, null, null));
+    return cluster;
   }
 
   @Override

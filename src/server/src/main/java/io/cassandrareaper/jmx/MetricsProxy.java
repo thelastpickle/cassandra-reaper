@@ -219,7 +219,7 @@ public final class MetricsProxy {
     for (Entry<String, List<JmxStat>> jmxStatEntry:jmxStats.entrySet()) {
       for (JmxStat jmxStat:jmxStatEntry.getValue()) {
         GenericMetric metric = GenericMetric.builder()
-            .withClusterName(node.getCluster().getName())
+            .withClusterName(node.getClusterName())
             .withHost(node.getHostname())
             .withMetricDomain(jmxStat.getDomain())
             .withMetricType(jmxStat.getType())

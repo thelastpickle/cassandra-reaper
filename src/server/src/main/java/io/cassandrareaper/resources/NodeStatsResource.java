@@ -74,7 +74,7 @@ public final class NodeStatsResource {
 
     try {
       Node node = Node.builder()
-              .withCluster(context.storage.getCluster(clusterName).get())
+              .withCluster(context.storage.getCluster(clusterName))
               .withHostname(host)
               .build();
 
@@ -99,7 +99,7 @@ public final class NodeStatsResource {
 
     try {
       Node node = Node.builder()
-              .withCluster(context.storage.getCluster(clusterName).get())
+              .withCluster(context.storage.getCluster(clusterName))
               .withHostname(host)
               .build();
 
@@ -124,7 +124,7 @@ public final class NodeStatsResource {
 
     try {
       Node node = Node.builder()
-              .withCluster(context.storage.getCluster(clusterName).get())
+              .withCluster(context.storage.getCluster(clusterName))
               .withHostname(host)
               .build();
 
@@ -148,7 +148,7 @@ public final class NodeStatsResource {
 
     try {
       Node node = Node.builder()
-              .withCluster(context.storage.getCluster(clusterName).get())
+              .withCluster(context.storage.getCluster(clusterName))
               .withHostname(host)
               .build();
 
@@ -174,7 +174,7 @@ public final class NodeStatsResource {
 
     try {
       Node node = Node.builder()
-              .withCluster(context.storage.getCluster(clusterName).get())
+              .withCluster(context.storage.getCluster(clusterName))
               .withHostname(host)
               .build();
 
@@ -201,7 +201,7 @@ public final class NodeStatsResource {
       Preconditions.checkState(clusterName != null && !clusterName.isEmpty(), "Cluster name must be set");
 
       Map<String, List<String>> tokens
-          = ClusterFacade.create(context).getTokensByNode(context.storage.getCluster(clusterName).get());
+          = ClusterFacade.create(context).getTokensByNode(context.storage.getCluster(clusterName));
 
       return Response.ok().entity(tokens.get(host)).build();
     } catch (RuntimeException | ReaperException e) {

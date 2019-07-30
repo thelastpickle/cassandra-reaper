@@ -26,11 +26,9 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.PostgresStorage;
 
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -64,17 +62,16 @@ public class JmxConnectionsInitializerTest {
     context.config.setDatacenterAvailability(DatacenterAvailability.EACH);
     context.storage = mock(CassandraStorage.class);
 
-    Cluster cluster = new Cluster(
-            "test",
-            Optional.of("murmur3partitioner"),
-            new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2")));
+    Cluster cluster = Cluster.builder()
+            .withName("test")
+            .withPartitioner("murmur3partitioner")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2"))
+            .build();
 
     JmxConnectionsInitializer initializer = JmxConnectionsInitializer.create(context);
     initializer.on(cluster);
 
     assertEquals(2, connectionAttempts.get());
-
-
   }
 
   /*
@@ -102,10 +99,11 @@ public class JmxConnectionsInitializerTest {
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
     context.storage = mock(CassandraStorage.class);
 
-    Cluster cluster = new Cluster(
-            "test",
-            Optional.of("murmur3partitioner"),
-            new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")));
+    Cluster cluster = Cluster.builder()
+            .withName("test")
+            .withPartitioner("murmur3partitioner")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2", "127.0.0.3"))
+            .build();
 
     JmxConnectionsInitializer initializer = JmxConnectionsInitializer.create(context);
     initializer.on(cluster);
@@ -138,10 +136,11 @@ public class JmxConnectionsInitializerTest {
     context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
     context.storage = mock(CassandraStorage.class);
 
-    Cluster cluster = new Cluster(
-            "test",
-            Optional.of("murmur3partitioner"),
-            new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")));
+    Cluster cluster = Cluster.builder()
+            .withName("test")
+            .withPartitioner("murmur3partitioner")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2", "127.0.0.3"))
+            .build();
 
     JmxConnectionsInitializer initializer = JmxConnectionsInitializer.create(context);
     initializer.on(cluster);
@@ -174,10 +173,11 @@ public class JmxConnectionsInitializerTest {
     context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
     context.storage = mock(PostgresStorage.class);
 
-    Cluster cluster = new Cluster(
-            "test",
-            Optional.of("murmur3partitioner"),
-            new LinkedHashSet<>(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")));
+    Cluster cluster = Cluster.builder()
+            .withName("test")
+            .withPartitioner("murmur3partitioner")
+            .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2", "127.0.0.3"))
+            .build();
 
     JmxConnectionsInitializer initializer = JmxConnectionsInitializer.create(context);
     initializer.on(cluster);

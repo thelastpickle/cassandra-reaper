@@ -277,10 +277,8 @@ public final class RepairManager implements AutoCloseable {
         segment = context.storage.getRepairSegment(repairRun.getId(), segment.getId()).get();
         if (RepairSegment.State.RUNNING == segment.getState()) {
           try {
-            JmxProxy jmxProxy
-                = ClusterFacade.create(context)
-                    .connectAndAllowSidecar(
-                        context.storage.getCluster(repairRun.getClusterName()).get(),
+            JmxProxy jmxProxy = ClusterFacade.create(context).connect(
+                        context.storage.getCluster(repairRun.getClusterName()),
                         Arrays.asList(segment.getCoordinatorHost()));
 
             SegmentRunner.abort(context, segment, jmxProxy);

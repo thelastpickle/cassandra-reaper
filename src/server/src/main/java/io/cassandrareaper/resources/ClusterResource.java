@@ -20,7 +20,6 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.ClusterProperties;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.ClusterStatus;
@@ -33,7 +32,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -41,7 +39,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.DELETE;
@@ -58,9 +58,11 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import com.codahale.metrics.InstrumentedExecutorService;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +82,7 @@ public final class ClusterResource {
     this.context = context;
     this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
     this.clusterRepairScheduler = new ClusterRepairScheduler(context);
-    clusterFacade = ClusterFacade.create(context);
+    this.clusterFacade = ClusterFacade.create(context);
   }
 
   @GET
@@ -103,19 +105,11 @@ public final class ClusterResource {
   @GET
   @Path("/{cluster_name}")
   public Response getCluster(
-      @PathParam("cluster_name") String clusterName, @QueryParam("limit") Optional<Integer> limit)
-      throws ReaperException {
+      @PathParam("cluster_name") String clusterName,
+      @QueryParam("limit") Optional<Integer> limit) throws ReaperException {
 
     LOG.debug("get cluster called with cluster_name: {}", clusterName);
-    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
-
-    if (!cluster.isPresent()) {
-      return Response.status(Response.Status.NOT_FOUND)
-          .entity("cluster with name \"" + clusterName + "\" not found")
-          .build();
-
-    } else {
-
+    try {
       String jmxUsername = "";
       boolean jmxPasswordIsSet = false;
 
@@ -125,35 +119,32 @@ public final class ClusterResource {
         jmxPasswordIsSet = !StringUtils.isEmpty(
             context.jmxConnectionFactory.getJmxCredentialsForCluster(clusterName).get().getPassword());
       }
+      Cluster cluster = context.storage.getCluster(clusterName);
 
       ClusterStatus clusterStatus = new ClusterStatus(
-            cluster.get(),
+            cluster,
             jmxUsername,
             jmxPasswordIsSet,
-            context.storage.getClusterRunStatuses(cluster.get().getName(), limit.orElse(Integer.MAX_VALUE)),
-            context.storage.getClusterScheduleStatuses(cluster.get().getName()),
-            getNodesStatus(cluster).orElse(null));
+            context.storage.getClusterRunStatuses(cluster.getName(), limit.orElse(Integer.MAX_VALUE)),
+            context.storage.getClusterScheduleStatuses(cluster.getName()),
+            getNodesStatus(cluster));
 
       return Response.ok().entity(clusterStatus).build();
+    } catch (IllegalArgumentException ex) {
+      return Response.status(404).entity("cluster with name \"" + clusterName + "\" not found").build();
     }
   }
 
   @GET
   @Path("/{cluster_name}/tables")
   public Response getClusterTables(@PathParam("cluster_name") String clusterName) throws ReaperException {
-    Map<String, List<String>> tablesByKeyspace = Maps.newHashMap();
-
-    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
-    if (cluster.isPresent()) {
-      try {
-        tablesByKeyspace = ClusterFacade.create(context).listTablesByKeyspace(cluster.get());
-      } catch (RuntimeException e) {
-        LOG.error("Couldn't retrieve the list of tables for cluster {}", clusterName, e);
-        return Response.status(400).entity(e).build();
-      }
+    try {
+      return Response.ok()
+          .entity(ClusterFacade.create(context).listTablesByKeyspace(context.storage.getCluster(clusterName)))
+          .build();
+    } catch (IllegalArgumentException ex) {
+      return Response.status(404).entity(ex).build();
     }
-
-    return Response.ok().entity(tablesByKeyspace).build();
   }
 
   @POST
@@ -192,104 +183,100 @@ public final class ClusterResource {
       return Response.status(Response.Status.BAD_REQUEST).entity("query parameter \"seedHost\" required").build();
     }
 
-    try {
-      Cluster cluster = findClusterWithSeedHost(seedHost.get(), jmxPort);
-      if (null == cluster) {
+    final Cluster cluster = findClusterWithSeedHost(seedHost.get(), jmxPort);
+    if (null == cluster) {
+      return Response
+          .status(Response.Status.BAD_REQUEST)
+          .entity(String.format("no cluster %s with seed host %s", clusterName.orElse(""), seedHost.get()))
+          .build();
+    }
+    if (clusterName.isPresent() && !cluster.getName().equals(clusterName.get())) {
+      String msg = String.format(
+          "POST/PUT on cluster resource %s called with seedHost %s belonging to different cluster %s",
+          clusterName.get(),
+          seedHost.get(),
+          cluster.getName());
 
-        String msg = String
-            .format("failed to find cluster %s with seed host %s", clusterName.orElse(""), seedHost.get());
+      LOG.info(msg);
+      return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
+    }
 
-        return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
-      }
-      if (clusterName.isPresent() && !cluster.getName().equals(clusterName.get())) {
+    Supplier<Stream<Cluster>> matchingClusters
+        = () -> context.storage.getClusters().stream().filter(c -> c.getName().equalsIgnoreCase(cluster.getName()));
 
-        String msg = String.format(
-            "POST/PUT on cluster resource %s called with seedHost %s belonging to different cluster %s",
-            clusterName.get(),
-            seedHost.get(),
-            cluster.getName());
+    Preconditions.checkState(
+        1 >= matchingClusters.get().count(),
+        "Multiple clusters with same name %s are registered",
+        cluster.getName());
 
-        LOG.info(msg);
-        return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
-      }
-      Optional<Cluster> existingCluster = context.storage.getCluster(cluster.getName());
-      URI location = uriInfo.getBaseUriBuilder().path("cluster").path(cluster.getName()).build();
-      if (existingCluster.isPresent()) {
-        LOG.debug("Attempting updating nodelist for cluster {}", existingCluster.get().getName());
-
+    Optional<Cluster> existingCluster = matchingClusters.get().findAny();
+    URI location = uriInfo.getBaseUriBuilder().path("cluster").path(cluster.getName()).build();
+    if (existingCluster.isPresent()) {
+      LOG.debug("Attempting updating nodelist for cluster {}", existingCluster.get().getName());
+      try {
         // the cluster is already managed by reaper. if nothing is changed return 204. then if updated return 200.
-        cluster = updateClusterSeeds(existingCluster.get(), seedHost.get());
-        if (cluster.getSeedHosts().equals(existingCluster.get().getSeedHosts())) {
+        Cluster updatedCluster = updateClusterSeeds(existingCluster.get(), seedHost.get());
+        if (updatedCluster.getSeedHosts().equals(existingCluster.get().getSeedHosts())) {
           LOG.debug("Nodelist of cluster {} is already up to date.", existingCluster.get().getName());
           return Response.noContent().location(location).build();
         } else {
           LOG.info("Nodelist of cluster {} updated", existingCluster.get().getName());
           return Response.ok().location(location).build();
         }
+      } catch (ReaperException ex) {
+        LOG.error("fail:", ex);
+        return Response.serverError().entity(ex.getMessage()).build();
+      }
+    } else {
+      LOG.info("creating new cluster based on given seed host: {}", cluster.getName());
+      context.storage.addCluster(cluster);
 
-      } else {
-        LOG.info("creating new cluster based on given seed host: {}", cluster.getName());
-        context.storage.addCluster(cluster);
+      if (context.config.hasAutoSchedulingEnabled()) {
+        try {
+          clusterRepairScheduler.scheduleRepairs(cluster);
+        } catch (ReaperException e) {
+          String msg = String.format(
+              "failed to automatically schedule repairs for cluster %s with seed host %s",
+              clusterName.orElse(""),
+              seedHost.get());
 
-        if (context.config.hasAutoSchedulingEnabled()) {
-          try {
-            clusterRepairScheduler.scheduleRepairs(cluster);
-          } catch (ReaperException e) {
-            String msg = String.format(
-                "failed to automatically schedule repairs for cluster %s with seed host %s",
-                clusterName.orElse(""),
-                seedHost.get());
-
-            LOG.error(msg, e);
-            return Response.serverError().entity(msg).build();
-          }
+          LOG.error(msg, e);
+          return Response.serverError().entity(msg).build();
         }
       }
-      return Response.created(location).build();
-
-    } catch (ReaperException e) {
-      String msg = String.format("update cluster failed, %s with seed host %s", clusterName.orElse(""), seedHost.get());
-      LOG.error(msg, e);
-      return Response.serverError().entity(msg).build();
     }
+    return Response.created(location).build();
   }
 
-  @Nullable // if cluster can't be found
+  @Nullable // if cluster can't be found over jmx
   private Cluster findClusterWithSeedHost(String seedHost, Optional<Integer> jmxPort) {
-    Optional<String> clusterName = Optional.empty();
-    Optional<String> partitioner = Optional.empty();
-    Optional<List<String>> liveNodes = Optional.empty();
-
     Set<String> seedHosts = parseSeedHosts(seedHost);
-    String parsedClusterName = parseClusterNameFromSeedHost(seedHost).orElse("");
-
     try {
-      Cluster cluster = new Cluster(
-              parsedClusterName,
-              Optional.empty(),
-              Sets.newHashSet(seedHost),
-              ClusterProperties.builder().withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT)) .build());
+      Cluster cluster = Cluster.builder()
+          .withName(parseClusterNameFromSeedHost(seedHost).orElse(""))
+          .withSeedHosts(ImmutableSet.of(seedHost))
+          .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT))
+          .build();
 
-      clusterName = Optional.of(clusterFacade.getClusterName(cluster, seedHosts));
-      partitioner = Optional.of(clusterFacade.getPartitioner(cluster, seedHosts));
-      liveNodes = Optional.of(clusterFacade.getLiveNodes(cluster, seedHosts));
+      String clusterName = clusterFacade.getClusterName(cluster, seedHosts);
+      String partitioner = clusterFacade.getPartitioner(cluster, seedHosts);
+      List<String> liveNodes = clusterFacade.getLiveNodes(cluster, seedHosts);
+
+      if (context.config.getEnableDynamicSeedList() && !liveNodes.isEmpty()) {
+        seedHosts = ImmutableSet.copyOf(liveNodes);
+      }
+      LOG.debug("Seeds {}", seedHosts);
+
+      return Cluster.builder()
+              .withName(clusterName)
+              .withPartitioner(partitioner)
+              .withSeedHosts(seedHosts)
+              .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT))
+              .build();
     } catch (ReaperException e) {
       LOG.error("failed to find cluster with seed hosts: {}", seedHosts, e);
     }
-
-    if (clusterName.isPresent()) {
-      if (context.config.getEnableDynamicSeedList() && liveNodes.isPresent()) {
-        seedHosts = !liveNodes.get().isEmpty() ? liveNodes.get().stream().collect(Collectors.toSet()) : seedHosts;
-      }
-      LOG.debug("Seeds {}", seedHosts);
-    }
-    return clusterName.isPresent()
-        ? new Cluster(
-            clusterName.get(),
-            partitioner,
-            seedHosts,
-            ClusterProperties.builder().withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT)).build())
-        : null;
+    return null;
   }
 
   /**
@@ -303,17 +290,22 @@ public final class ClusterResource {
   private Cluster updateClusterSeeds(Cluster cluster, String seedHosts) throws ReaperException {
     Set<String> newSeeds = parseSeedHosts(seedHosts);
     try {
-      Optional<List<String>> liveNodes = Optional.of(clusterFacade.getLiveNodes(cluster, newSeeds));
-      newSeeds = liveNodes.get().stream().collect(Collectors.toSet());
-      if (!cluster.getSeedHosts().equals(newSeeds)) {
-        cluster = new Cluster(cluster.getName(), cluster.getPartitioner(), newSeeds, cluster.getProperties());
+      Set<String> previousNodes = ImmutableSet.copyOf(clusterFacade.getLiveNodes(cluster));
+      Set<String> liveNodes = ImmutableSet.copyOf(clusterFacade.getLiveNodes(cluster, newSeeds));
+
+      Preconditions.checkArgument(
+          !Collections.disjoint(previousNodes, liveNodes),
+          "Trying to update a different cluster using the same name: %s. No nodes overlap between %s and %s",
+          cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(liveNodes, ','));
+
+      if (!cluster.getSeedHosts().equals(liveNodes)) {
+        cluster = cluster.with().withSeedHosts(liveNodes).build();
         context.storage.updateCluster(cluster);
       }
       return cluster;
     } catch (ReaperException e) {
-      throw new ReaperException(
-          String.format("failed to update cluster %s with new seed hosts %s", cluster.getName(), seedHosts),
-          e);
+      String err = String.format("failed to update cluster %s from new seed hosts %s", cluster.getName(), seedHosts);
+      throw new ReaperException(err, e);
     }
   }
 
@@ -328,28 +320,26 @@ public final class ClusterResource {
    */
   @DELETE
   @Path("/{cluster_name}")
-  public Response deleteCluster(@PathParam("cluster_name") String clusterName)
-      throws ReaperException {
-
+  public Response deleteCluster(@PathParam("cluster_name") String clusterName) throws ReaperException {
     LOG.info("delete cluster {}", clusterName);
-    Optional<Cluster> clusterToDelete = context.storage.getCluster(clusterName);
-    if (!clusterToDelete.isPresent()) {
+    try {
+      if (!context.storage.getRepairSchedulesForCluster(clusterName).isEmpty()) {
+        return Response.status(Response.Status.CONFLICT)
+            .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair schedules")
+            .build();
+      }
+      if (!context.storage.getRepairRunsForCluster(clusterName, Optional.empty()).isEmpty()) {
+        return Response.status(Response.Status.CONFLICT)
+            .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair runs")
+            .build();
+      }
+      context.storage.deleteCluster(clusterName);
+      return Response.accepted().build();
+    } catch (IllegalArgumentException ex) {
       return Response.status(Response.Status.NOT_FOUND)
           .entity("cluster \"" + clusterName + "\" not found")
           .build();
     }
-    if (!context.storage.getRepairSchedulesForCluster(clusterName).isEmpty()) {
-      return Response.status(Response.Status.CONFLICT)
-          .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair schedules")
-          .build();
-    }
-    if (!context.storage.getRepairRunsForCluster(clusterName, Optional.empty()).isEmpty()) {
-      return Response.status(Response.Status.CONFLICT)
-          .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair runs")
-          .build();
-    }
-    context.storage.deleteCluster(clusterName);
-    return Response.accepted().build();
   }
 
   /**
@@ -360,24 +350,16 @@ public final class ClusterResource {
    * @return An optional NodesStatus object with the status of each node in the cluster as seen from
    *     the seedHost node
    */
-  private Callable<Optional<NodesStatus>> getEndpointState(
-      List<String> seeds,
-      String clusterName,
-      Optional<Integer> jmxPort) {
-
-    final Cluster cluster = new Cluster(
-            clusterName,
-            Optional.empty(),
-            Sets.newConcurrentHashSet(seeds),
-            ClusterProperties.builder().withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT)).build());
+  private Callable<NodesStatus> getEndpointState(Set<String> seeds, String clusterName, int jmxPort) {
+    Cluster cluster = Cluster.builder().withName(clusterName).withSeedHosts(seeds).withJmxPort(jmxPort).build();
 
     return () -> {
       try {
-        return Optional.of(clusterFacade.getNodesStatus(cluster, seeds));
+        return clusterFacade.getNodesStatus(cluster, seeds);
       } catch (RuntimeException e) {
         LOG.debug("failed to get endpoints for cluster {} with seeds {}", clusterName, seeds, e);
         Thread.sleep((int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds() * 1000);
-        return Optional.empty();
+        return new NodesStatus(Collections.EMPTY_LIST);
       }
     };
   }
@@ -390,37 +372,29 @@ public final class ClusterResource {
    *
    * @return An optional NodesStatus object with all nodes statuses
    */
-  public Optional<NodesStatus> getNodesStatus(Optional<Cluster> cluster) {
-    if (cluster.isPresent() && null != cluster.get().getSeedHosts()) {
-      List<Callable<Optional<NodesStatus>>> endpointStateTasks = Lists.newArrayList();
-      List<String> seedHosts = new ArrayList<>(cluster.get().getSeedHosts());
-      Collections.shuffle(seedHosts);
-      int index = 0;
-      for (String host : seedHosts) {
-        if (index >= 3) {
-          break;
-        }
-
-        Callable<Optional<NodesStatus>> endpointStateTask = getEndpointState(
-            Arrays.asList(host),
-            cluster.get().getName(),
-            Optional.ofNullable(cluster.get().getProperties().getJmxPort()));
-
-        endpointStateTasks.add(endpointStateTask);
-        index++;
+  private NodesStatus getNodesStatus(Cluster cluster) {
+    List<Callable<NodesStatus>> endpointStateTasks = Lists.newArrayList();
+    List<String> seedHosts = new ArrayList<>(cluster.getSeedHosts());
+    Collections.shuffle(seedHosts);
+    int index = 0;
+    for (String host : seedHosts) {
+      if (index >= 3) {
+        break;
       }
-
-      try {
-        return executor.invokeAny(
-            endpointStateTasks,
-            (int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds(),
-            TimeUnit.SECONDS);
-
-      } catch (InterruptedException | ExecutionException | TimeoutException e) {
-        LOG.debug("failed grabbing nodes status", e);
-      }
+      endpointStateTasks.add(getEndpointState(Collections.singleton(host), cluster.getName(), cluster.getJmxPort()));
+      index++;
     }
-    return Optional.empty();
+
+    try {
+      return executor.invokeAny(
+          endpointStateTasks,
+          (int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds(),
+          TimeUnit.SECONDS);
+
+    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+      LOG.debug("failed grabbing nodes status", e);
+    }
+    return new NodesStatus(Collections.EMPTY_LIST);
   }
 
   /*
@@ -439,7 +413,7 @@ public final class ClusterResource {
    * with the cluster name attached, after a @ character.
    */
   static String parseSeedHost(String seedHost) {
-    return seedHost.split("@")[0];
+    return Iterables.get(Splitter.on('@').split(seedHost), 0);
   }
 
   /*
@@ -452,7 +426,7 @@ public final class ClusterResource {
     if (seedHost.contains("@")) {
       List<String> hosts = Arrays.stream(seedHost.split(",")).map(String::trim).collect(Collectors.toList());
       if (!hosts.isEmpty()) {
-        return Optional.of(hosts.get(0).split("@")[1]);
+        return Optional.of(Iterables.get(Splitter.on('@').split(hosts.get(0)), 1));
       }
     }
     return Optional.empty();

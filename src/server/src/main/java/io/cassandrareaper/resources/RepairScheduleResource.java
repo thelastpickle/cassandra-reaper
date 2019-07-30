@@ -143,7 +143,12 @@ public final class RepairScheduleResource {
             .build();
       }
 
-      Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get())).get();
+      Cluster cluster ;
+      try {
+        cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
+      } catch (IllegalArgumentException ex) {
+        return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
+      }
       Set<String> tableNames;
       try {
         tableNames = repairRunService.getTableNamesBasedOnParam(cluster, keyspace.get(), tableNamesParam);

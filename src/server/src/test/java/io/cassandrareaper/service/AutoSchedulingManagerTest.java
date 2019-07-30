@@ -24,8 +24,7 @@ import io.cassandrareaper.service.AutoSchedulingManager;
 import io.cassandrareaper.service.ClusterRepairScheduler;
 import io.cassandrareaper.storage.MemoryStorage;
 
-import java.util.Collections;
-
+import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,8 +34,12 @@ import static org.mockito.Mockito.verify;
 
 public final class AutoSchedulingManagerTest {
 
-  private static final Cluster CLUSTER_1 = new Cluster("cluster1", null, Collections.singleton(null));
-  private static final Cluster CLUSTER_2 = new Cluster("cluster2", null, Collections.singleton(null));
+  private static final Cluster CLUSTER_1
+      = Cluster.builder().withName("cluster1").withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
+
+  private static final Cluster CLUSTER_2
+      = Cluster.builder().withName("cluster2").withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
+
   private AppContext context;
   private AutoSchedulingManager repairAutoSchedulingManager;
   private ClusterRepairScheduler clusterRepairScheduler;

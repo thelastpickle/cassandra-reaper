@@ -24,10 +24,9 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -56,10 +55,14 @@ public final class ClusterMapper implements ResultSetMapper<Cluster> {
       throw new SQLException(e); // Ugly but the interface won't let us throw anything else...
     }
 
-    return new Cluster(
-        rs.getString("name"),
-        Optional.ofNullable(rs.getString("partitioner")),
-        Sets.newHashSet(seedHosts),
-        clusterProperties);
+    Cluster.Builder builder = Cluster.builder()
+        .withName(rs.getString("name"))
+        .withSeedHosts(ImmutableSet.copyOf(seedHosts))
+        .withJmxPort(clusterProperties.getJmxPort());
+
+    if (null != rs.getString("partitioner")) {
+      builder = builder.withPartitioner(rs.getString("partitioner"));
+    }
+    return builder.build();
   }
 }

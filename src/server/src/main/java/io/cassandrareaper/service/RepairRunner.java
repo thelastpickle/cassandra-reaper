@@ -41,8 +41,8 @@ import java.util.stream.Collectors;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -65,7 +65,7 @@ final class RepairRunner implements Runnable {
   private final List<RingRange> parallelRanges;
   private final String metricNameForMillisSinceLastRepairPerKeyspace;
   private final String metricNameForMillisSinceLastRepair;
-  private final Optional<Cluster> cluster;
+  private final Cluster cluster;
   private float repairProgress;
   private float segmentsDone;
   private float segmentsTotal;
@@ -82,17 +82,14 @@ final class RepairRunner implements Runnable {
     this.repairRunId = repairRunId;
     Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
-    cluster = context.storage.getCluster(repairRun.get().getClusterName());
-    assert cluster.isPresent() : "No Cluster with name " + repairRun.get().getClusterName() + " found from storage";
+    this.cluster = context.storage.getCluster(repairRun.get().getClusterName());
     RepairUnit repairUnitOpt = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
-    this.clusterName = cluster.get().getName();
-
-    Preconditions.checkArgument(cluster.isPresent(), "Cluster couldn't be found in storage");
+    this.clusterName = cluster.getName();
     String keyspace = repairUnitOpt.getKeyspaceName();
-    int parallelRepairs
-        = getPossibleParallelRepairsCount(
-            clusterFacade.getRangeToEndpointMap(cluster.get(), keyspace),
-            clusterFacade.getEndpointToHostId(cluster.get()));
+
+    int parallelRepairs = getPossibleParallelRepairsCount(
+            clusterFacade.getRangeToEndpointMap(cluster, keyspace),
+            clusterFacade.getEndpointToHostId(cluster));
 
     if (repairUnitOpt.getIncrementalRepair()) {
       // with incremental repair, can't have more parallel repairs than nodes
@@ -113,7 +110,7 @@ final class RepairRunner implements Runnable {
                     repairSegments, segment -> segment.getTokenRange().getBaseRange())));
 
     localEndpointRanges = context.config.isInSidecarMode()
-        ? clusterFacade.getRangesForLocalEndpoint(cluster.get(), repairUnitOpt.getKeyspaceName())
+        ? clusterFacade.getRangesForLocalEndpoint(cluster, repairUnitOpt.getKeyspaceName())
         : Collections.emptyList();
 
     String repairUnitClusterName = repairUnitOpt.getClusterName();
@@ -276,31 +273,12 @@ final class RepairRunner implements Runnable {
    * @throws ReaperException Thrown in case the cluster cannot be found in storage
    */
   private void updateClusterNodeList() throws ReaperException {
-    Set<String> liveNodes
-        = clusterFacade
-            .getLiveNodes(cluster.get())
-            .stream()
-            .collect(Collectors.toSet());
-    Optional<Cluster> cluster = context.storage.getCluster(clusterName);
-    if (!cluster.isPresent()) {
-      throw new ReaperException(
-          "Cluster "
-              + clusterName
-              + " couldn't be found in storage. This shouldn't be happening (╯°□°)╯︵ ┻━┻");
-    }
-
-    if (!cluster.get().getSeedHosts().equals(liveNodes) && !liveNodes.isEmpty()) {
+    Set<String> liveNodes  = ImmutableSet.copyOf(clusterFacade.getLiveNodes(cluster));
+    Cluster cluster = context.storage.getCluster(clusterName);
+    if (!cluster.getSeedHosts().equals(liveNodes) && !liveNodes.isEmpty()) {
       // Updating storage only if the seed lists has changed
-      LOG.info(
-          "Updating the seed list for cluster {} as topology changed since the last repair.",
-          clusterName);
-      Cluster newCluster
-          = new Cluster(
-              cluster.get().getName(),
-              cluster.get().getPartitioner(),
-              liveNodes,
-              cluster.get().getProperties());
-      context.storage.updateCluster(newCluster);
+      LOG.info("Updating the seed list for cluster {} as topology changed since the last repair.", clusterName);
+      context.storage.updateCluster(cluster.with().withSeedHosts(liveNodes).build());
     }
   }
 
@@ -467,7 +445,7 @@ final class RepairRunner implements Runnable {
       try {
         potentialCoordinators = filterPotentialCoordinatorsByDatacenters(
                 repairUnit.getDatacenters(),
-                clusterFacade.tokenRangeToEndpoint(cluster.get(), keyspace, segment));
+                clusterFacade.tokenRangeToEndpoint(cluster, keyspace, segment));
       } catch (RuntimeException e) {
         LOG.warn("Couldn't get token ranges from coordinator: #{}", e);
         return true;
@@ -565,7 +543,7 @@ final class RepairRunner implements Runnable {
   }
 
   private Pair<String, String> getNodeDatacenterPair(String node) throws ReaperException {
-    Pair<String, String> result = Pair.of(node, clusterFacade.getDatacenter(cluster.get(), node));
+    Pair<String, String> result = Pair.of(node, clusterFacade.getDatacenter(cluster, node));
     LOG.debug("[getNodeDatacenterPair] node/datacenter association {}", result);
     return result;
   }
@@ -638,7 +616,7 @@ final class RepairRunner implements Runnable {
     if (repairRun.getTables().isEmpty()) {
       RepairRun newRepairRun = repairRun
           .with()
-          .tables(RepairUnitService.create(context).getTablesToRepair(cluster.get(), repairUnit))
+          .tables(RepairUnitService.create(context).getTablesToRepair(cluster, repairUnit))
           .build(repairRun.getId());
 
       context.storage.updateRepairRun(newRepairRun);
