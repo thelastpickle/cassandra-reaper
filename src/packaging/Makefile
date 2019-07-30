@@ -13,12 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Using mvn:
-VERSION := `mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version -f ../../pom.xml | grep -v '\['`
-
-# Using python:
-# VERSION := `python -c "import xml.etree.ElementTree as ET; print(ET.parse(open('pom.xml')).getroot().find('{http://maven.apache.org/POM/4.0.0}version').text)"`
-
 package:
 	mvn -B clean package  -f ../../pom.xml -DskipTests
 
