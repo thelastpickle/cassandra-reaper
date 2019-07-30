@@ -18,7 +18,8 @@ echo "Starting Before Deploy step..."
 set -xe
 mkdir -p src/packages
 
-if [ "${TRAVIS_BRANCH}" = "master" -a ! -d "cassandra-reaper-master" ]
+#if [ "${TRAVIS_BRANCH}" = "master" -a ! -d "cassandra-reaper-master" ]
+if [ "master" = "master" ]
 then
     VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
     DATE=$(date +"%Y%m%d")
@@ -41,7 +42,7 @@ then
     sudo apt-get install ruby ruby-dev build-essential rpm -y
     gem install --no-ri --no-rdoc fpm
     cd src/packaging
-    make all
+    make all ${VERSION}
     sudo mv reaper_*_amd64.deb ../packages/
     sudo mv reaper-*.x86_64.rpm ../packages/
     cd ../..
@@ -77,7 +78,7 @@ then
     sudo apt-get install ruby ruby-dev build-essential rpm -y
     gem install --no-ri --no-rdoc fpm
     cd src/packaging
-    make all
+    make all ${VERSION}
     sudo mv reaper_*_amd64.deb ../packages/
     sudo mv reaper-*.x86_64.rpm ../packages/
     cd ../..

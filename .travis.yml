@@ -33,15 +33,20 @@ env:
   - secure: RJiIFdDUrk9p/zK1YbmOa3chnlOJGtYeLmUP/7NGHElqAT2Gf2dEZb1/4yLGKyPtRaGsb7YDP+4CwExSMdX+sdxOWSrj1ejLkRlU8bz/gM+m+0CX8ygrS8AXcFte/5gU1TQQ9Vu1UBiIoP4I4rXeVceJg7W/GA9U8Gf37v1VgbKpOfNsQ2ojjLZjVSom9htfAukECnDNpCMe97khjmk8/Tq53Dk5W/WXSyI0C8tiwWYAyItCRR2CBQ1XTRVosRthtle/09xwiuFQkCF4u8j0s2scu5hFe9zO/xa3Gm+YyxEJooYCI0SdJwfU5oqCC5ZoZpu8oss2QcNAf3jS6Dl6hIUQOlosqo//a5fez42RrBYjmfNDnVlhGdrFJkhdt3zluj20tJ+Dgec8gNOn6nY8FPAimKTo2BGTiaBI0HAKOdF1kbAWTWPjpJUAz9UvltP+x2ikOZV0n8tZ3RdrT7lsip+EG9OBbPIkFWrzk2tw5swdaDvc8AgzoTK0freOqEKx2A2VbG0bvUn2N9tflk8Glc8Fe86TfeloEWOSx5VUg+w2ubKuPBoxYE/G/5hX9x7Bm1M8r54vCVCvLGeRPhqDwx89ddWMpIHBb9jZi2zZ0GDb+0u013wz4fiEYxQETw0Uk2zKoIZVfSllVXezDEeR3KrxpUgDbYjQLz8qN9kc70c=
   - secure: "XMbKIFr2v18e6g4777Mohi1bLxJSlu7vaC63T/9d7aV/X5oWQXDead/seJWj2yt6oGhitWR4e2imBJnXoz7nWYE+bkOrJ4UyYBESiMDN7SXo2fYK7bj7Z07hbwmsI+98+eJshFNE821bVrCmzTs6TgpU5yRMrcbxyAzi7DYOPzDPASo5K1xTLfkeUt/MbpFDTi+M/8YnHcH4UmMk095POR2AnyVT8ixAn+7mgU/v2nPgsERPdNydfSFFpiByvsyzvYGQuosdmfKvJ4fxvkPWO77KpgbJRBQ/bPgOuqFDDY8N1oA5Ndf4nGH84fVT97XjNSOCVHchJjqVg1gOm5eOH4SVi660CMy4OdD1IkDl2IMqcFCydLfCsvsknd3LN0F/QLbeV9TPUjAnlK2rKekzH9Bwa/UKSJGVaFhddzDO7h59NPxOZ05HErpWnU1Vw1IhHoGmRjpPr0jUjY/zIGaDhUoFAhq2BdqSSdTVMl4bBfudTt7N7+G7Osfq0Z7IYyOS6Z3uwIDPS9hGSUYXygYOhYVQ/BSKInJ4UgUTICxmmYtMSHzfeypteiKFhQMzv94DILj+cfUNIZQw6kkzkDCa0DluL4d4DcvIyHgGqSan3WeZd1kj6qwiJoDm2bcKRrEd9rPIVFX2vdNq1lQFQtmoY1JeNcyQPVG3CZRBm0UsjYQ="
 stages:
-  - Integration Tests
-  - Sidecar Integration Tests
-  - Distributed Reaper Integration Tests
-  - Flapping Distributed Reaper Integration Tests
-  - name: Upgrade Integration Tests
-    #if: branch = master OR env(TRAVIS_TAG) IS present
-  - Docker
-  - name: Deploy
+  - name: Integration Tests
     if: branch = master OR tag IS present
+  - name: Sidecar Integration Tests
+    if: branch = master OR tag IS present
+  - name: Distributed Reaper Integration Tests
+    if: branch = master OR tag IS present
+  - name: Flapping Distributed Reaper Integration Tests
+    if: branch = master OR tag IS present
+  - name: Upgrade Integration Tests
+    if: branch = master OR env(TRAVIS_TAG) IS present
+  - name: Docker
+    if: branch = master OR tag IS present
+  - name: Deploy
+   #if: branch = master OR tag IS present
 jobs:
   fast_finish: true
   allow_failures:
