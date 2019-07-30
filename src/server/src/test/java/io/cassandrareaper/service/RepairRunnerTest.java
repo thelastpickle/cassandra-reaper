@@ -99,7 +99,9 @@ public final class RepairRunnerTest {
     final double INTENSITY = 0.5f;
     final int REPAIR_THREAD_COUNT = 1;
     final IStorage storage = new MemoryStorage();
-    storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
+
+    storage.addCluster(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
+
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
             .clusterName(CLUSTER_NAME)
@@ -199,7 +201,7 @@ public final class RepairRunnerTest {
               return repairNumber;
             });
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
@@ -247,7 +249,7 @@ public final class RepairRunnerTest {
     final double INTENSITY = 0.5f;
     final int REPAIR_THREAD_COUNT = 1;
     final IStorage storage = new MemoryStorage();
-    storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
+    storage.addCluster(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
@@ -344,7 +346,7 @@ public final class RepairRunnerTest {
               return repairNumber;
             });
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(NODES));
@@ -401,7 +403,7 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    storage.addCluster(new Cluster(CLUSTER_NAME, null, Collections.<String>singleton("127.0.0.1")));
+    storage.addCluster(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
     UUID cf = storage.addRepairUnit(
         RepairUnit.builder()
@@ -456,7 +458,7 @@ public final class RepairRunnerTest {
     }
     JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(NODES));

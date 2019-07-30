@@ -39,9 +39,9 @@ import io.cassandrareaper.storage.OpType;
 import java.io.IOError;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -101,22 +101,6 @@ public final class ClusterFacade {
     return new ClusterFacade(context);
   }
 
-  private JmxProxy connectAnyNode(Cluster cluster, Collection<String> endpoints) throws ReaperException {
-    return context.jmxConnectionFactory.connectAny(
-        endpoints
-            .stream()
-            .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
-            .collect(Collectors.toList()));
-  }
-
-  private JmxProxy connectNode(Node node) throws ReaperException, InterruptedException {
-    if (context.config.isInSidecarMode()) {
-      return connectAndAllowSidecar(node.getCluster(), Arrays.asList(node.getHostname()));
-    } else {
-      return context.jmxConnectionFactory.connect(node);
-    }
-  }
-
   /**
    * Pre-heats JMX connections to all provided endpoints.
    * In EACH, LOCAL and ALL : connect directly to any available node
@@ -129,21 +113,7 @@ public final class ClusterFacade {
    */
   public JmxProxy preHeatJmxConnections(Cluster cluster, Collection<String> endpoints) throws ReaperException {
     Preconditions.checkArgument(!context.config.isInSidecarMode());
-    return connectAnyNode(cluster, endpoints);
-  }
-
-  /**
-   * Connect to any of the provided endpoints and allow enforcing to localhost for sidecar mode.
-   * In EACH, LOCAL and ALL : connect directly to any available node
-   * In SIDECAR : We skip that code path as we don’t need to pre-heat connections
-   *
-   * @param cluster the cluster to connect to
-   * @param endpoints the list of endpoints to connect to
-   * @return a JmxProxy object
-   * @throws ReaperException any runtime exception we catch
-   */
-  public JmxProxy connectAndAllowSidecar(Cluster cluster, Collection<String> endpoints) throws ReaperException {
-    return connectAnyNode(cluster, enforceLocalNodeForSidecar(endpoints));
+    return connectImpl(cluster, endpoints);
   }
 
   /**
@@ -151,14 +121,13 @@ public final class ClusterFacade {
    * In EACH, LOCAL and ALL : connect directly to any available node to get the information
    * In SIDECAR : Enforce connecting to the local node to get the information
    *
-   * @param cluster the cluster to connect to
+   * @param cluster the cluster object contains additional connection info like jmx port and jmx credentials
    * @param endpoints the list of endpoints to connect to
    * @return the cluster name
    * @throws ReaperException any runtime exception we catch
    */
   public String getClusterName(Cluster cluster, Collection<String> endpoints) throws ReaperException {
-    JmxProxy jmxProxy = connectAnyNode(cluster, enforceLocalNodeForSidecar(endpoints));
-    return jmxProxy.getClusterName();
+    return connect(cluster, endpoints).getClusterName();
   }
 
   /**
@@ -170,8 +139,7 @@ public final class ClusterFacade {
    * @throws InterruptedException if the JMX connection gets interrupted
    */
   public String getClusterName(Node node) throws ReaperException {
-    JmxProxy jmxProxy = connectAndAllowSidecar(node.getCluster(), Arrays.asList(node.getHostname()));
-    return jmxProxy.getClusterName();
+    return connect(node).getClusterName();
   }
 
   /**
@@ -179,14 +147,13 @@ public final class ClusterFacade {
    * In EACH, LOCAL and ALL : connect directly to any available node to get the information
    * In SIDECAR : Enforce connecting to the local node to get the information
    *
-   * @param cluster the cluster to connect to
+   * @param cluster the cluster object contains additional connection info like jmx port and jmx credentials
    * @param endpoints the list of endpoints to connect to
    * @return the partitioner in use on the cluster
    * @throws ReaperException any runtime exception we catch
    */
   public String getPartitioner(Cluster cluster, Collection<String> endpoints) throws ReaperException {
-    JmxProxy jmxProxy = connectAnyNode(cluster, enforceLocalNodeForSidecar(endpoints));
-    return jmxProxy.getPartitioner();
+    return connect(cluster, endpoints).getPartitioner();
   }
 
   /**
@@ -213,8 +180,7 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we catch
    */
   public List<String> getLiveNodes(Cluster cluster, Collection<String> endpoints) throws ReaperException {
-    JmxProxy jmxProxy = connectAnyNode(cluster, enforceLocalNodeForSidecar(endpoints));
-    return jmxProxy.getLiveNodes();
+    return connect(cluster, endpoints).getLiveNodes();
   }
 
   /**
@@ -228,7 +194,7 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we catch
    */
   public NodesStatus getNodesStatus(Cluster cluster, Collection<String> endpoints) throws ReaperException {
-    JmxProxy jmxProxy = connectAnyNode(cluster, enforceLocalNodeForSidecar(endpoints));
+    JmxProxy jmxProxy = connect(cluster, endpoints);
     FailureDetectorProxy proxy = FailureDetectorProxy.create(jmxProxy);
     return new NodesStatus(jmxProxy.getHost(), proxy.getAllEndpointsState(), proxy.getSimpleStates());
   }
@@ -263,7 +229,7 @@ public final class ClusterFacade {
         return version;
       }
     }
-    JmxProxy jmxProxy = connectAnyNode(cluster, enforceLocalNodeForSidecar(endpoints));
+    JmxProxy jmxProxy = connect(cluster, endpoints);
     String version = jmxProxy.getCassandraVersion();
     CLUSTER_VERSIONS.put(Pair.of(cluster, jmxProxy.getHost()), version);
     return version;
@@ -279,8 +245,7 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we catch
    */
   public List<BigInteger> getTokens(Cluster cluster) throws ReaperException {
-    JmxProxy jmxProxy = connectAnyNode(cluster, enforceLocalNodeForSidecar(cluster.getSeedHosts()));
-    return jmxProxy.getTokens();
+    return connect(cluster).getTokens();
   }
 
   /**
@@ -298,19 +263,12 @@ public final class ClusterFacade {
       String keyspace) throws ReaperException {
 
     try {
-      return TOKEN_RANGES_IN_KEYSPACE.get(Pair.of(cluster, keyspace), () -> {
-        return getRangeToEndpointMapImpl(cluster, keyspace);
-      });
+      return TOKEN_RANGES_IN_KEYSPACE.get(
+          Pair.of(cluster, keyspace),
+          () -> getRangeToEndpointMapImpl(cluster, keyspace));
     } catch (ExecutionException ex) {
       throw new ReaperException(ex);
     }
-  }
-
-  private Map<List<String>, List<String>> getRangeToEndpointMapImpl(
-      Cluster cluster,
-      String keyspace) throws ReaperException {
-
-    return connectAndAllowSidecar(cluster, cluster.getSeedHosts()).getRangeToEndpointMap(keyspace);
   }
 
   /**
@@ -325,16 +283,13 @@ public final class ClusterFacade {
    */
   public Set<Table> getTablesForKeyspace(Cluster cluster, String keyspaceName) throws ReaperException {
     try {
-      return TABLES_IN_KEYSPACE.get(Pair.of(cluster, keyspaceName), () -> {
-        return getTablesForKeyspaceImpl(cluster, keyspaceName);
-      });
+      return TABLES_IN_KEYSPACE.get(
+          Pair.of(cluster, keyspaceName),
+          () -> getTablesForKeyspaceImpl(cluster, keyspaceName));
+
     } catch (ExecutionException ex) {
       throw new ReaperException(ex);
     }
-  }
-
-  private Set<Table> getTablesForKeyspaceImpl(Cluster cluster, String keyspaceName) throws ReaperException {
-    return connectAndAllowSidecar(cluster, cluster.getSeedHosts()).getTablesForKeyspace(keyspaceName);
   }
 
   /**
@@ -347,8 +302,7 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we catch
    */
   public Map<String, List<String>> listTablesByKeyspace(Cluster cluster) throws ReaperException {
-    JmxProxy jmxProxy = connectAnyNode(cluster, enforceLocalNodeForSidecar(cluster.getSeedHosts()));
-    return jmxProxy.listTablesByKeyspace();
+    return connect(cluster).listTablesByKeyspace();
   }
 
   /**
@@ -359,8 +313,7 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception
    */
   public List<String> getKeyspaces(Cluster cluster) throws ReaperException {
-    JmxProxy jmxProxy = connectAnyNode(cluster, enforceLocalNodeForSidecar(cluster.getSeedHosts()));
-    return jmxProxy.getKeyspaces();
+    return connect(cluster).getKeyspaces();
   }
 
   /**
@@ -373,8 +326,7 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we catch
    */
   public Map<String, String> getEndpointToHostId(Cluster cluster) throws ReaperException {
-    JmxProxy jmxProxy = connectAnyNode(cluster, enforceLocalNodeForSidecar(cluster.getSeedHosts()));
-    return jmxProxy.getEndpointToHostId();
+    return connect(cluster).getEndpointToHostId();
   }
 
   /**
@@ -418,8 +370,7 @@ public final class ClusterFacade {
     Preconditions.checkArgument(context.config.isInSidecarMode(), "This method is only allowed in sidecar mode");
     List<RingRange> localRanges = Lists.newArrayList();
     Map<List<String>, List<String>> ranges = getRangeToEndpointMap(cluster, keyspace);
-    JmxProxy jmxProxy = connectAndAllowSidecar(cluster, Arrays.asList(LOCALHOST));
-    String localEndpoint = jmxProxy.getLocalEndpoint();
+    String localEndpoint = connect(cluster, Arrays.asList(LOCALHOST)).getLocalEndpoint();
     // Filtering ranges for which the local node is a replica
     // For local mode
     ranges
@@ -443,8 +394,7 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we catch in the process
    */
   public String getDatacenter(Cluster cluster, String endpoint) throws ReaperException {
-    JmxProxy jmxProxy = connectAndAllowSidecar(cluster, cluster.getSeedHosts());
-    return EndpointSnitchInfoProxy.create(jmxProxy).getDataCenter(endpoint);
+    return EndpointSnitchInfoProxy.create(connect(cluster)).getDataCenter(endpoint);
   }
 
   /**
@@ -456,8 +406,7 @@ public final class ClusterFacade {
    * @throws InterruptedException in case the JMX connection gets interrupted
    */
   public String getDatacenter(Node node) throws ReaperException, InterruptedException {
-    JmxProxy jmxProxy = connectNode(node);
-    return EndpointSnitchInfoProxy.create(jmxProxy).getDataCenter();
+    return EndpointSnitchInfoProxy.create(connect(node)).getDataCenter();
   }
 
   /**
@@ -469,8 +418,7 @@ public final class ClusterFacade {
    * @throws InterruptedException if the JMX connection gets interrupted
    */
   public String getLocalEndpoint(Node node) throws ReaperException, InterruptedException {
-    JmxProxy jmxProxy = connectNode(node);
-    return jmxProxy.getLocalEndpoint();
+    return connect(node).getLocalEndpoint();
   }
 
   /**
@@ -481,8 +429,7 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we catch in the process
    */
   public Map<String, List<String>> getTokensByNode(Cluster cluster) throws ReaperException {
-    JmxProxy jmxProxy = connectAndAllowSidecar(cluster, cluster.getSeedHosts());
-    return StorageServiceProxy.create(jmxProxy).getTokensByNode();
+    return StorageServiceProxy.create(connect(cluster)).getTokensByNode();
   }
 
   /**
@@ -497,8 +444,8 @@ public final class ClusterFacade {
    * @throws IOException errors in parsing JSON encoded compaction objects
    */
   public List<Compaction> listActiveCompactions(Node node)
-      throws MalformedObjectNameException, ReflectionException, ReaperException,
-          InterruptedException {
+      throws MalformedObjectNameException, ReflectionException, ReaperException, InterruptedException {
+
     String nodeDc = getDatacenter(node);
     if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
       // We have direct JMX access to the node
@@ -506,9 +453,10 @@ public final class ClusterFacade {
     } else {
       // We don't have access to the node through JMX, so we'll get data from the database
       LOG.info("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
-      String compactionsJson
-          = ((IDistributedStorage)context.storage).listOperations(
-              node.getCluster().getName(), OpType.OP_COMPACTION, node.getHostname());
+
+      String compactionsJson = ((IDistributedStorage)context.storage)
+          .listOperations(node.getClusterName(), OpType.OP_COMPACTION, node.getHostname());
+
       return parseJson(compactionsJson, new TypeReference<List<Compaction>>(){});
     }
   }
@@ -524,24 +472,9 @@ public final class ClusterFacade {
    * @throws InterruptedException in case the JMX connection gets interrupted
    */
   public List<Compaction> listActiveCompactionsDirect(Node node)
-      throws ReaperException, MalformedObjectNameException,
-          ReflectionException {
-    JmxProxy jmxProxy = connectAndAllowSidecar(node.getCluster(), Arrays.asList(node.getHostname()));
-    return CompactionProxy.create(jmxProxy, context.metricRegistry).listActiveCompactions();
-  }
+      throws ReaperException, MalformedObjectNameException, ReflectionException {
 
-  /**
-   * Replaces the list of endpoints with LOCALHOST if we're in sidecar mode.
-   *
-   * @param endpoints the list of nodes to connect to
-   * @return a list of endpoints possibly replaced by LOCALHOST only
-   */
-  private List<String> enforceLocalNodeForSidecar(Collection<String> endpoints) {
-    List<String> actualEndpoints = new ArrayList<String>(endpoints);
-    if (context.config.isInSidecarMode()) {
-      actualEndpoints = Arrays.asList(context.config.getEnforcedLocalNode().orElse(LOCALHOST));
-    }
-    return actualEndpoints;
+    return CompactionProxy.create(connect(node), context.metricRegistry).listActiveCompactions();
   }
 
   /**
@@ -571,9 +504,7 @@ public final class ClusterFacade {
    */
   public Map<String, List<JmxStat>> collectMetrics(Node node, String[] collectedMetrics) throws ReaperException {
     try {
-      JmxProxy jmxProxy = connectAndAllowSidecar(node.getCluster(), Arrays.asList(node.getHostname()));
-      MetricsProxy proxy = MetricsProxy.create(jmxProxy);
-      return proxy.collectMetrics(collectedMetrics);
+      return MetricsProxy.create(connect(node)).collectMetrics(collectedMetrics);
     } catch (JMException | IOException e) {
       LOG.error("Failed collecting metrics for host {}", node, e);
       throw new ReaperException(e);
@@ -592,13 +523,13 @@ public final class ClusterFacade {
     try {
       String nodeDc = getDatacenter(node);
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
-        MetricsProxy metricsProxy = MetricsProxy.create(connectNode(node));
+        MetricsProxy metricsProxy = MetricsProxy.create(connect(node));
         return convertToMetricsHistogram(
             MetricsProxy.convertToGenericMetrics(metricsProxy.collectLatencyMetrics(), node));
       } else {
         return convertToMetricsHistogram(((IDistributedStorage)context.storage)
             .getMetrics(
-                node.getCluster().getName(),
+                node.getClusterName(),
                 Optional.of(node.getHostname()),
                 "org.apache.cassandra.metrics",
                 "ClientRequest",
@@ -621,12 +552,12 @@ public final class ClusterFacade {
     try {
       String nodeDc = getDatacenter(node);
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
-        MetricsProxy proxy = MetricsProxy.create(connectNode(node));
+        MetricsProxy proxy = MetricsProxy.create(connect(node));
         return convertToDroppedMessages(MetricsProxy.convertToGenericMetrics(proxy.collectDroppedMessages(), node));
       } else {
         return convertToDroppedMessages(((IDistributedStorage)context.storage)
             .getMetrics(
-                node.getCluster().getName(),
+                node.getClusterName(),
                 Optional.of(node.getHostname()),
                 "org.apache.cassandra.metrics",
                 "DroppedMessage",
@@ -664,12 +595,12 @@ public final class ClusterFacade {
     try {
       String nodeDc = getDatacenter(node);
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
-        MetricsProxy proxy = MetricsProxy.create(connectNode(node));
+        MetricsProxy proxy = MetricsProxy.create(connect(node));
         return convertToThreadPoolStats(MetricsProxy.convertToGenericMetrics(proxy.collectTpStats(), node));
       } else {
         return convertToThreadPoolStats(((IDistributedStorage)context.storage)
             .getMetrics(
-                node.getCluster().getName(),
+                node.getClusterName(),
                 Optional.of(node.getHostname()),
                 "org.apache.cassandra.metrics",
                 "ThreadPools",
@@ -734,16 +665,9 @@ public final class ClusterFacade {
    * @throws ReaperException  any runtime exception we can catch in the process
    */
   public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspaces) throws ReaperException {
-    try {
-      Preconditions.checkArgument(!context.config.isInSidecarMode(), "Snapshots aren't yet supported in sidecar mode");
-      JmxProxy jmx = connectNode(host);
-      SnapshotProxy snapshotProxy = SnapshotProxy.create(jmx);
-      LOG.info("Taking snapshot for node {} and keyspace {}", host, keyspaces);
-      return Pair.of(host, snapshotProxy.takeSnapshot(snapshotName, keyspaces));
-    } catch (InterruptedException e) {
-      LOG.error("Interrupted taking snapshot for host {} and keyspaces {}", host, keyspaces, e);
-      throw new ReaperException(e);
-    }
+    Preconditions.checkArgument(!context.config.isInSidecarMode(), "Snapshots aren't yet supported in sidecar mode");
+    LOG.info("Taking snapshot for node {} and keyspace {}", host, keyspaces);
+    return Pair.of(host, SnapshotProxy.create(connect(host)).takeSnapshot(snapshotName, keyspaces));
   }
 
   /**
@@ -755,17 +679,10 @@ public final class ClusterFacade {
    */
   public List<Snapshot> listSnapshots(Node host) throws ReaperException {
     try {
-      JmxProxy jmx = connectNode(host);
-      SnapshotProxy snapshotProxy = SnapshotProxy.create(jmx);
-
-      return snapshotProxy.listSnapshots();
-
+      return SnapshotProxy.create(connect(host)).listSnapshots();
     } catch (UnsupportedOperationException unsupported) {
       LOG.debug("Listing snapshot is unsupported with Cassandra 2.0 and prior");
       throw unsupported;
-    } catch (InterruptedException e) {
-      LOG.error("Interrupted listing snapshots for host {}", host, e);
-      throw new ReaperException(e);
     }
   }
 
@@ -778,15 +695,10 @@ public final class ClusterFacade {
    */
   public void clearSnapshot(String snapshotName, Node host) throws ReaperException {
     try {
-      JmxProxy jmx = connectNode(host);
-      SnapshotProxy snapshotProxy = SnapshotProxy.create(jmx);
-      snapshotProxy.clearSnapshot(snapshotName);
+      SnapshotProxy.create(connect(host)).clearSnapshot(snapshotName);
     } catch (IOError e) {
       // StorageService.clearSnapshot(..) throws a FSWriteError when snapshot already deleted
       LOG.info("already cleared snapshot " + snapshotName, e);
-    } catch (InterruptedException e) {
-      LOG.error("Interrupted clearing snapshot {} for host {}", snapshotName, host, e);
-      throw new ReaperException(e);
     }
   }
 
@@ -808,8 +720,10 @@ public final class ClusterFacade {
     } else {
       // We don't have access to the node through JMX, so we'll get data from the database
       LOG.info("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
+
       String streamsJson = ((IDistributedStorage) context.storage)
-          .listOperations(node.getCluster().getName(), OpType.OP_STREAMING ,node.getHostname());
+          .listOperations(node.getClusterName(), OpType.OP_STREAMING ,node.getHostname());
+
       return parseJson(streamsJson, new TypeReference<Set<CompositeData>>(){});
     }
   }
@@ -822,8 +736,18 @@ public final class ClusterFacade {
    * @throws ReaperException any runtime exception we can catch in the process
    */
   public Set<CompositeData> listStreamsDirect(Node node) throws ReaperException {
-    JmxProxy jmxProxy = connectAndAllowSidecar(node.getCluster(), Arrays.asList(node.getHostname()));
-    return StreamsProxy.create(jmxProxy).listStreams();
+    return StreamsProxy.create(connect(node)).listStreams();
+  }
+
+  private Set<Table> getTablesForKeyspaceImpl(Cluster cluster, String keyspaceName) throws ReaperException {
+    return connect(cluster).getTablesForKeyspace(keyspaceName);
+  }
+
+  private Map<List<String>, List<String>> getRangeToEndpointMapImpl(
+      Cluster cluster,
+      String keyspace) throws ReaperException {
+
+    return connect(cluster).getRangeToEndpointMap(keyspace);
   }
 
   private static <T> T parseJson(String json, TypeReference<T> ref) {
@@ -834,4 +758,60 @@ public final class ClusterFacade {
       throw new RuntimeException(e);
     }
   }
+
+  ////  public connection methods ////
+
+  /**
+   * Connect to any of the provided endpoints and allow enforcing to localhost for sidecar mode.
+   * In EACH, LOCAL and ALL : connect directly to any available node
+   * In SIDECAR : We skip that code path as we don’t need to pre-heat connections
+   *
+   * @param cluster the cluster to connect to
+   * @param endpoints the list of endpoints to connect to
+   * @return a JmxProxy object
+   * @throws ReaperException any runtime exception we catch
+   */
+  public JmxProxy connect(Cluster cluster) throws ReaperException {
+    return connectImpl(cluster, enforceLocalNodeForSidecar(cluster.getSeedHosts()));
+  }
+
+  public JmxProxy connect(Cluster cluster, Collection<String> endpoints) throws ReaperException {
+    return connectImpl(cluster, enforceLocalNodeForSidecar(endpoints));
+  }
+
+  public JmxProxy connect(Node node) throws ReaperException {
+    return connectImpl(node, enforceLocalNodeForSidecar(Collections.singletonList(node.getHostname())));
+  }
+
+  public JmxProxy connect(Node node, Collection<String> endpoints) throws ReaperException {
+    return connectImpl(node, enforceLocalNodeForSidecar(endpoints));
+  }
+
+  ////  private connection methods ////
+
+  // cluster object contains additional connection info like jmx port and jmx credentials
+  private JmxProxy connectImpl(Cluster cluster, Collection<String> endpoints) throws ReaperException {
+    return context.jmxConnectionFactory.connectAny(
+        endpoints
+            .stream()
+            .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
+            .collect(Collectors.toList()));
+  }
+
+  // node object contains additional connection info like jmx port and jmx credentials
+  private JmxProxy connectImpl(Node node, Collection<String> endpoints) throws ReaperException {
+    return context.jmxConnectionFactory.connectAny(
+        endpoints
+            .stream()
+            .map(host -> node.with().withHostname(host).build())
+            .collect(Collectors.toList()));
+  }
+
+  private Collection<String> enforceLocalNodeForSidecar(Collection<String> endpoints) {
+    // Replaces the list of endpoints with LOCALHOST if we're in sidecar mode.
+    return context.config.isInSidecarMode()
+        ? Arrays.asList(context.config.getEnforcedLocalNode().orElse(LOCALHOST))
+        : endpoints;
+  }
+
 }

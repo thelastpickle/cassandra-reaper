@@ -25,25 +25,38 @@ import com.google.common.base.Preconditions;
 public final class Cluster {
 
   public static final int DEFAULT_JMX_PORT = 7199;
+
   private final String name;
   private final Optional<String> partitioner; // Full name of the partitioner class
   private final Set<String> seedHosts;
   private final ClusterProperties properties;
 
-  public Cluster(String name, Optional<String> partitioner, Set<String> seedHosts) {
-    this(
-        name,
-        partitioner,
-        seedHosts,
-        ClusterProperties.builder().withJmxPort(DEFAULT_JMX_PORT).build());
-  }
+  private Cluster(
+      String name,
+      Optional<String> partitioner,
+      Set<String> seedHosts,
+      ClusterProperties properties) {
 
-  public Cluster(
-      String name, Optional<String> partitioner, Set<String> seedHosts, ClusterProperties properties) {
     this.name = toSymbolicName(name);
     this.partitioner = partitioner;
     this.seedHosts = seedHosts;
     this.properties = properties;
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public Builder with() {
+    Builder builder = new Builder()
+        .withName(name)
+        .withSeedHosts(seedHosts)
+        .withJmxPort(getJmxPort());
+
+    if (partitioner.isPresent()) {
+      builder = builder.withPartitioner(partitioner.get());
+    }
+    return builder;
   }
 
   public static String toSymbolicName(String name) {
@@ -63,7 +76,51 @@ public final class Cluster {
     return seedHosts;
   }
 
+  public int getJmxPort() {
+    return properties.getJmxPort();
+  }
+
   public ClusterProperties getProperties() {
     return properties;
+  }
+
+  public static final class Builder {
+
+    private String name;
+    private String partitioner;
+    private Set<String> seedHosts;
+    private final ClusterProperties.Builder properties = ClusterProperties.builder().withJmxPort(DEFAULT_JMX_PORT);
+
+    private Builder() {
+    }
+
+    public Builder withName(String name) {
+      Preconditions.checkState(null == this.name);
+      this.name = name;
+      return this;
+    }
+
+    public Builder withPartitioner(String partitioner) {
+      Preconditions.checkState(null == this.partitioner);
+      this.partitioner = partitioner;
+      return this;
+    }
+
+    public Builder withSeedHosts(Set<String> seedHosts) {
+      this.seedHosts = seedHosts;
+      return this;
+    }
+
+    public Builder withJmxPort(int jmxPort) {
+      this.properties.withJmxPort(jmxPort);
+      return this;
+    }
+
+    public Cluster build() {
+      Preconditions.checkNotNull(name);
+      Preconditions.checkNotNull(seedHosts);
+
+      return new Cluster(name, Optional.ofNullable(partitioner), seedHosts, properties.build());
+    }
   }
 }

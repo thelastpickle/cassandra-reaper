@@ -74,7 +74,7 @@ public final class RepairManagerTest {
     // use CassandraStorage so we get both IStorage and IDistributedStorage
     final IStorage storage = mock(CassandraStorage.class);
 
-    storage.addCluster(new Cluster(clusterName, null, Collections.<String>singleton("127.0.0.1")));
+    storage.addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
     AppContext context = new AppContext();
     context.storage = storage;
@@ -154,7 +154,7 @@ public final class RepairManagerTest {
     // use CassandraStorage so we get both IStorage and IDistributedStorage
     final IStorage storage = mock(CassandraStorage.class);
 
-    storage.addCluster(new Cluster(clusterName, null, Collections.<String>singleton("127.0.0.1")));
+    storage.addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
     AppContext context = new AppContext();
     context.storage = storage;
@@ -235,7 +235,7 @@ public final class RepairManagerTest {
 
     final IStorage storage = mock(IStorage.class);
 
-    storage.addCluster(new Cluster(clusterName, null, Collections.<String>singleton("127.0.0.1")));
+    storage.addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
@@ -313,7 +313,7 @@ public final class RepairManagerTest {
 
     final IStorage storage = mock(IStorage.class);
 
-    storage.addCluster(new Cluster(clusterName, null, Collections.<String>singleton("127.0.0.1")));
+    storage.addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
     AppContext context = new AppContext();
     context.storage = storage;
@@ -376,7 +376,9 @@ public final class RepairManagerTest {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.storage = mock(IStorage.class);
-    context.storage.addCluster(new Cluster(clusterName, null, Collections.<String>singleton("127.0.0.1")));
+
+    context.storage
+        .addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
 
     context.repairManager = RepairManager.create(
         context,

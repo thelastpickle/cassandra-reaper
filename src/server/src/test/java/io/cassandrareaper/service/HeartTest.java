@@ -21,7 +21,6 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.ClusterProperties;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.jmx.HostConnectionCounters;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
@@ -29,17 +28,15 @@ import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.MemoryStorage;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.management.JMException;
 
+import com.google.common.collect.ImmutableSet;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.Test;
@@ -211,7 +208,7 @@ public final class HeartTest {
 
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).getNodeMetrics(any());
-    Mockito.verify(context.jmxConnectionFactory, Mockito.times(0)).connect(any());
+    Mockito.verify(context.jmxConnectionFactory, Mockito.times(0)).connectAny(any(Collection.class));
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(0)).storeNodeMetrics(any(), any());
   }
 
@@ -250,16 +247,10 @@ public final class HeartTest {
 
     JmxProxy nodeProxy = Mockito.mock(JmxProxy.class);
 
-    Mockito.when(
-            context.jmxConnectionFactory.connect(any()))
-        .thenReturn(nodeProxy);
+    Mockito.when(context.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(nodeProxy);
 
     HostConnectionCounters hostConnectionCounters = Mockito.mock(HostConnectionCounters.class);
     Mockito.when(context.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(hostConnectionCounters);
-
-    Mockito.when(
-            context.jmxConnectionFactory.connect(any()))
-        .thenThrow(InterruptedException.class);
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
@@ -269,7 +260,7 @@ public final class HeartTest {
 
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(2)).getNodeMetrics(any());
-    Mockito.verify(context.jmxConnectionFactory, Mockito.times(0)).connect(any());
+    Mockito.verify(context.jmxConnectionFactory, Mockito.times(0)).connectAny(any(Collection.class));
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(0)).storeNodeMetrics(any(), any());
   }
 
@@ -309,16 +300,14 @@ public final class HeartTest {
 
     Mockito.when(((CassandraStorage) context.storage).getCluster(any()))
         .thenReturn(
-            Optional.of(
-                new Cluster(
-                    "cluster1",
-                    Optional.empty(),
-                    new HashSet<String>(Arrays.asList("test")),
-                    ClusterProperties.builder().withJmxPort(7199).build())));
+          Cluster.builder()
+              .withName("cluster1")
+              .withSeedHosts(ImmutableSet.of("test"))
+              .withJmxPort(7199)
+              .build());
 
     JmxProxy nodeProxy = Mockito.mock(JmxProxy.class);
 
-    Mockito.when(context.jmxConnectionFactory.connect(any())).thenReturn(nodeProxy);
     Mockito.when(context.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(nodeProxy);
 
     try (Heart heart = Heart.create(context)) {
@@ -369,15 +358,13 @@ public final class HeartTest {
 
     Mockito.when(((CassandraStorage) context.storage).getCluster(any()))
         .thenReturn(
-            Optional.of(
-                new Cluster(
-                    "cluster1",
-                    Optional.empty(),
-                    new HashSet<String>(Arrays.asList("test")),
-                    ClusterProperties.builder().withJmxPort(7199).build())));
+          Cluster.builder()
+              .withName("cluster1")
+              .withSeedHosts(ImmutableSet.of("test"))
+              .withJmxPort(7199)
+              .build());
 
     JmxProxy nodeProxy = Mockito.mock(JmxProxy.class);
-    Mockito.when(context.jmxConnectionFactory.connect(any())).thenReturn(nodeProxy);
     Mockito.when(context.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(nodeProxy);
 
     Mockito.when(nodeProxy.getPendingCompactions())

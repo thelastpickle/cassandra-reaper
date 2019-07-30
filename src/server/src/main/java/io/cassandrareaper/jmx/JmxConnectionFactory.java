@@ -86,15 +86,15 @@ public class JmxConnectionFactory {
       host = host + ":" + jmxPorts.get(host);
       LOG.debug("Connecting to {} with specific port", host);
     } else {
-      host = host + ":" + node.getCluster().getProperties().getJmxPort();
+      host = host + ":" + node.getJmxPort();
       LOG.debug("Connecting to {} with custom port", host);
     }
 
     String username = null;
     String password = null;
-    if (getJmxCredentialsForCluster(node.getCluster().getName()).isPresent()) {
-      username = getJmxCredentialsForCluster(node.getCluster().getName()).get().getUsername();
-      password = getJmxCredentialsForCluster(node.getCluster().getName()).get().getPassword();
+    if (getJmxCredentialsForCluster(node.getClusterName()).isPresent()) {
+      username = getJmxCredentialsForCluster(node.getClusterName()).get().getUsername();
+      password = getJmxCredentialsForCluster(node.getClusterName()).get().getPassword();
     }
 
     try {
@@ -119,11 +119,6 @@ public class JmxConnectionFactory {
       }
       throw ex;
     }
-  }
-
-  @VisibleForTesting
-  public JmxProxy connect(Node node) throws ReaperException, InterruptedException {
-    return connectImpl(node);
   }
 
   @VisibleForTesting

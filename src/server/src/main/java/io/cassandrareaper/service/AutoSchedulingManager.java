@@ -69,18 +69,13 @@ public final class AutoSchedulingManager extends TimerTask {
   @Override
   public void run() {
     LOG.debug("Checking cluster keyspaces to identify which ones require repair schedules...");
-    Collection<Cluster> clusters;
-    try {
-      clusters = context.storage.getClusters();
-      for (Cluster cluster : clusters) {
-        try {
-          clusterRepairScheduler.scheduleRepairs(cluster);
-        } catch (ReaperException | RuntimeException e) {
-          LOG.error("Error while scheduling repairs for cluster {}", cluster, e);
-        }
+    Collection<Cluster> clusters = context.storage.getClusters();
+    for (Cluster cluster : clusters) {
+      try {
+        clusterRepairScheduler.scheduleRepairs(cluster);
+      } catch (ReaperException | RuntimeException e) {
+        LOG.error("Error while scheduling repairs for cluster {}", cluster, e);
       }
-    } catch (ReaperException e1) {
-      LOG.error("Error while listing cluster to autoschedule repairs", e1);
     }
   }
 }

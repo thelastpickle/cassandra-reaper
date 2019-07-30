@@ -22,7 +22,6 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.ClusterProperties;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
@@ -30,7 +29,6 @@ import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
 
 import java.util.Collection;
-import java.util.Optional;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Sets;
@@ -51,11 +49,12 @@ public final class RepairUnitServiceTest {
   private AppContext context;
   private RepairUnitService service;
 
-  private final Cluster cluster = new Cluster(
-      "reaper",
-      Optional.of("murmur3"),
-      Sets.newHashSet("127.0.0.1"),
-      ClusterProperties.builder().withJmxPort(7199).build());
+  private final Cluster cluster = Cluster.builder()
+      .withName("reaper")
+      .withPartitioner("murmur3")
+      .withSeedHosts(Sets.newHashSet("127.0.0.1"))
+      .withJmxPort(7199)
+      .build();
 
   @Before
   public void setUp() throws Exception {

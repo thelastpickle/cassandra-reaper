@@ -22,7 +22,6 @@ import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.ClusterProperties;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
@@ -41,10 +40,8 @@ import io.cassandrareaper.storage.MemoryStorage;
 
 import java.math.BigInteger;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -121,9 +118,12 @@ public final class SegmentRunnerTest {
                         .build(),
                     cf.getId())));
 
-    context.storage.addCluster(
-        new Cluster(cf.getClusterName(), Optional.of("murmur3"), cf.getNodes(),
-            ClusterProperties.builder().withJmxPort(7199).build()));
+    context.storage.addCluster(Cluster.builder()
+        .withName(cf.getClusterName())
+        .withPartitioner("murmur3")
+        .withSeedHosts(cf.getNodes())
+        .withJmxPort(7199)
+        .build());
 
     final UUID runId = run.getId();
     final UUID segmentId = context.storage.getNextFreeSegmentInRange(run.getId(),
@@ -185,7 +185,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -231,8 +231,12 @@ public final class SegmentRunnerTest {
                         .build(),
                     cf.getId())));
 
-    storage.addCluster(new Cluster(cf.getClusterName(), Optional.of("murmur3"), cf.getNodes(),
-            ClusterProperties.builder().withJmxPort(7199).build()));
+    storage.addCluster(Cluster.builder()
+        .withName(cf.getClusterName())
+        .withPartitioner("murmur3")
+        .withSeedHosts(cf.getNodes())
+        .withJmxPort(7199)
+        .build());
 
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
@@ -331,7 +335,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -375,8 +379,12 @@ public final class SegmentRunnerTest {
                         .build(),
                     cf.getId())));
 
-    storage.addCluster(new Cluster(cf.getClusterName(), Optional.of("murmur3"), cf.getNodes(),
-            ClusterProperties.builder().withJmxPort(7199).build()));
+    storage.addCluster(Cluster.builder()
+        .withName(cf.getClusterName())
+        .withPartitioner("murmur3")
+        .withSeedHosts(cf.getNodes())
+        .withJmxPort(7199)
+        .build());
 
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
@@ -465,7 +473,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -510,8 +518,12 @@ public final class SegmentRunnerTest {
                         .build(),
                     cf.getId())));
 
-    storage.addCluster(new Cluster(cf.getClusterName(), Optional.of("murmur3"), cf.getNodes(),
-            ClusterProperties.builder().withJmxPort(7199).build()));
+    storage.addCluster(Cluster.builder()
+        .withName(cf.getClusterName())
+        .withPartitioner("murmur3")
+        .withSeedHosts(cf.getNodes())
+        .withJmxPort(7199)
+        .build());
 
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
@@ -595,7 +607,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -641,8 +653,12 @@ public final class SegmentRunnerTest {
                         .build(),
                     cf.getId())));
 
-    storage.addCluster(new Cluster(cf.getClusterName(), Optional.of("murmur3"), cf.getNodes(),
-            ClusterProperties.builder().withJmxPort(7199).build()));
+    storage.addCluster(Cluster.builder()
+        .withName(cf.getClusterName())
+        .withPartitioner("murmur3")
+        .withSeedHosts(cf.getNodes())
+        .withJmxPort(7199)
+        .build());
 
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
@@ -726,7 +742,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -773,8 +789,12 @@ public final class SegmentRunnerTest {
                         .build(),
                     cf.getId())));
 
-    storage.addCluster(new Cluster(cf.getClusterName(), Optional.of("murmur3"), cf.getNodes(),
-            ClusterProperties.builder().withJmxPort(7199).build()));
+    storage.addCluster(Cluster.builder()
+        .withName(cf.getClusterName())
+        .withPartitioner("murmur3")
+        .withSeedHosts(cf.getNodes())
+        .withJmxPort(7199)
+        .build());
 
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
@@ -858,7 +878,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -906,8 +926,12 @@ public final class SegmentRunnerTest {
                         .build(),
                     cf.getId())));
 
-    storage.addCluster(new Cluster(cf.getClusterName(), Optional.of("murmur3"), cf.getNodes(),
-            ClusterProperties.builder().withJmxPort(7199).build()));
+    storage.addCluster(Cluster.builder()
+        .withName(cf.getClusterName())
+        .withPartitioner("murmur3")
+        .withSeedHosts(cf.getNodes())
+        .withJmxPort(7199)
+        .build());
 
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
@@ -991,7 +1015,7 @@ public final class SegmentRunnerTest {
     when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
@@ -1050,13 +1074,13 @@ public final class SegmentRunnerTest {
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = mock(JmxProxy.class);
-    when(jmxConnectionFactory.connect(any())).thenReturn(jmx);
+    when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
     context.jmxConnectionFactory = jmxConnectionFactory;
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(jmx);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
 
     SegmentRunner segmentRunner = SegmentRunner.create(
             context,
@@ -1073,7 +1097,7 @@ public final class SegmentRunnerTest {
 
     Pair<String, Callable<Optional<NodeMetrics>>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc2");
     assertFalse(result.getRight().call().isPresent());
-    verify(jmxConnectionFactory, times(0)).connect(any());
+    verify(jmxConnectionFactory, times(0)).connectAny(any(Collection.class));
     // Verify that we didn't call any method that is used in getRemoteNodeMetrics()
     verify((CassandraStorage)context.storage, times(0)).storeNodeMetrics(any(), any());
     verify((CassandraStorage)context.storage, times(0)).getNodeMetrics(any(), any());
@@ -1085,9 +1109,12 @@ public final class SegmentRunnerTest {
     context.storage = Mockito.mock(CassandraStorage.class);
 
     Mockito.when(((CassandraStorage) context.storage).getCluster(any()))
-        .thenReturn(
-            Optional.of(new Cluster("test", Optional.of("murmur3"), new HashSet<String>(Arrays.asList("test")),
-                ClusterProperties.builder().withJmxPort(7199).build())));
+        .thenReturn(Cluster.builder()
+          .withName("test")
+          .withPartitioner("murmur3")
+          .withSeedHosts(ImmutableSet.of("test"))
+          .withJmxPort(7199)
+          .build());
 
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getClusterName()).thenReturn("test");
@@ -1099,7 +1126,6 @@ public final class SegmentRunnerTest {
     JmxProxyTest.mockGetEndpointSnitchInfoMBean(proxy, endpointSnitchInfoMBeanMock);
 
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(jmxConnectionFactory.connect(any())).thenReturn(proxy);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
     when(jmxConnectionFactory.getAccessibleDatacenters()).thenReturn(Sets.newHashSet("dc1"));
     context.jmxConnectionFactory = jmxConnectionFactory;
@@ -1107,7 +1133,7 @@ public final class SegmentRunnerTest {
     context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connectAndAllowSidecar(any(), any())).thenReturn(proxy);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(proxy);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
     SegmentRunner segmentRunner = SegmentRunner.create(

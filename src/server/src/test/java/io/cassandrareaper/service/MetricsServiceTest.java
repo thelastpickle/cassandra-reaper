@@ -31,6 +31,7 @@ import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.jmx.MetricsProxy;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +63,7 @@ public class MetricsServiceTest {
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(jmx);
+    when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
     MBeanServerConnection serverConn = mock(MBeanServerConnection.class);
     JmxProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
 
@@ -70,7 +71,7 @@ public class MetricsServiceTest {
     // to properly test MetricsProxy.collectMetrics(..) and MetricsService.convertToThreadPoolStats(..)
     when(serverConn.queryNames(Mockito.any(ObjectName.class), Mockito.isNull())).thenReturn(Collections.emptySet());
 
-    Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
+    Node node = Node.builder().withHostname("127.0.0.1").build();
     MetricsService.create(cxt, () -> clusterFacade).getTpStats(node);
     Mockito.verify(clusterFacade, Mockito.times(1)).getTpStats(Mockito.any());
   }
@@ -123,7 +124,7 @@ public class MetricsServiceTest {
 
     Map<String, List<JmxStat>> jmxStats = Maps.newHashMap();
     jmxStats.put("ReadStage", statList);
-    Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
+    Node node = Node.builder().withHostname("127.0.0.1").build();
     AppContext context = new AppContext();
     List<ThreadPoolStat> threadPoolStats
         = ClusterFacade.create(context).convertToThreadPoolStats(
@@ -149,7 +150,7 @@ public class MetricsServiceTest {
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(jmx);
+    when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
     MBeanServerConnection serverConn = mock(MBeanServerConnection.class);
     JmxProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
 
@@ -157,7 +158,7 @@ public class MetricsServiceTest {
     // to properly test MetricsProxy.collectMetrics(..) and MetricsService.convertToDroppedMessages(..)
     when(serverConn.queryNames(Mockito.any(ObjectName.class), Mockito.isNull())).thenReturn(Collections.emptySet());
 
-    Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
+    Node node = Node.builder().withHostname("127.0.0.1").build();
     MetricsService.create(cxt, () -> clusterFacade).getDroppedMessages(node);
     Mockito.verify(clusterFacade, Mockito.times(1)).getDroppedMessages(Mockito.any());
   }
@@ -209,7 +210,7 @@ public class MetricsServiceTest {
     Map<String, List<JmxStat>> jmxStats = Maps.newHashMap();
     jmxStats.put("READ", statList);
 
-    Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
+    Node node = Node.builder().withHostname("127.0.0.1").build();
     List<DroppedMessages> droppedMessages
         = clusterFacade.convertToDroppedMessages(
             MetricsProxy.convertToGenericMetrics(jmxStats, node));
@@ -233,7 +234,7 @@ public class MetricsServiceTest {
     cxt.config.setJmxConnectionTimeoutInSeconds(10);
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
-    when(cxt.jmxConnectionFactory.connect(Mockito.any(Node.class))).thenReturn(jmx);
+    when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
     MBeanServerConnection serverConn = mock(MBeanServerConnection.class);
     JmxProxyTest.mockGetMBeanServerConnection(jmx, serverConn);
 
@@ -241,7 +242,7 @@ public class MetricsServiceTest {
     // to properly test MetricsProxy.collectMetrics(..) and MetricsService.convertToMetricsHistogram(..)
     when(serverConn.queryNames(Mockito.any(ObjectName.class), Mockito.isNull())).thenReturn(Collections.emptySet());
 
-    Node node = Node.builder().withClusterName("test").withHostname("127.0.0.1").build();
+    Node node = Node.builder().withHostname("127.0.0.1").build();
     MetricsService.create(cxt, () -> clusterFacadeMock).getClientRequestLatencies(node);
     Mockito.verify(clusterFacadeMock, Mockito.times(1)).getClientRequestLatencies(Mockito.any());
   }

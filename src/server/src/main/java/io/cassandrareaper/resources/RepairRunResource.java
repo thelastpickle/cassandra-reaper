@@ -160,7 +160,7 @@ public final class RepairRunResource {
         segments = -1;
       }
 
-      final Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get())).get();
+      final Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
       Set<String> tableNames;
       try {
         tableNames = repairRunService.getTableNamesBasedOnParam(cluster, keyspace.get(), tableNamesParam);
@@ -310,36 +310,37 @@ public final class RepairRunResource {
     if (incrementalRepairStr.isPresent()
         && (!incrementalRepairStr.get().toUpperCase().contentEquals("TRUE")
         && !incrementalRepairStr.get().toUpperCase().contentEquals("FALSE"))) {
+
       return Response.status(Response.Status.BAD_REQUEST)
           .entity("invalid query parameter \"incrementalRepair\", expecting [True,False]")
           .build();
     }
-    final Optional<Cluster> cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
-    if (!cluster.isPresent()) {
-      return Response.status(Response.Status.NOT_FOUND)
-          .entity("No cluster found with name \"" + clusterName.get() + "\", did you register your cluster first?")
-          .build();
-    }
+    try {
+      Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
 
-    if (!datacentersStr.orElse("").isEmpty() && !nodesStr.orElse("").isEmpty()) {
-      return Response.status(Response.Status.BAD_REQUEST)
-          .entity(
-              "Parameters \"datacenters\" and \"nodes\" are mutually exclusive. Please fill just one between the two.")
-          .build();
-    }
-
-    if (incrementalRepairStr.isPresent() && "true".equalsIgnoreCase(incrementalRepairStr.get())) {
-      try {
-        String version = ClusterFacade.create(context).getCassandraVersion(cluster.get());
-        if (null != version && version.startsWith("2.0")) {
-          String msg = "Incremental repair does not work with Cassandra versions before 2.1";
-          return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
-        }
-      } catch (ReaperException e) {
-        String msg = String.format("find version of cluster %s failed", cluster.get().getName());
-        LOG.error(msg, e);
-        return Response.serverError().entity(msg).build();
+      if (!datacentersStr.orElse("").isEmpty() && !nodesStr.orElse("").isEmpty()) {
+        return Response.status(Response.Status.BAD_REQUEST)
+            .entity("Parameters \"datacenters\" and \"nodes\" are mutually exclusive.")
+            .build();
       }
+
+      if (incrementalRepairStr.isPresent() && "true".equalsIgnoreCase(incrementalRepairStr.get())) {
+        try {
+          String version = ClusterFacade.create(context).getCassandraVersion(cluster);
+          if (null != version && version.startsWith("2.0")) {
+            String msg = "Incremental repair does not work with Cassandra versions before 2.1";
+            return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
+          }
+        } catch (ReaperException e) {
+          String msg = String.format("find version of cluster %s failed", cluster.getName());
+          LOG.error(msg, e);
+          return Response.serverError().entity(msg).build();
+        }
+      }
+    } catch (IllegalArgumentException ex) {
+      return Response.status(Response.Status.NOT_FOUND)
+          .entity("No cluster found with name \"" + clusterName.get() + "\"")
+          .build();
     }
 
     if (tableNamesParam.isPresent() && blacklistedTableNamesParam.isPresent()) {
@@ -657,12 +658,9 @@ public final class RepairRunResource {
         return Response.status(Response.Status.BAD_REQUEST).build();
       }
 
-      Collection<Cluster> clusters;
-      if (cluster.isPresent()) {
-        clusters = Collections.singleton(context.storage.getCluster(cluster.get()).get());
-      } else {
-        clusters = context.storage.getClusters();
-      }
+      Collection<Cluster> clusters = cluster.isPresent()
+            ? Collections.singleton(context.storage.getCluster(cluster.get()))
+            : context.storage.getClusters();
 
       List<RepairRunStatus> runStatuses = Lists.newArrayList();
       for (final Cluster clstr : clusters) {
@@ -677,9 +675,8 @@ public final class RepairRunResource {
       }
 
       return Response.ok().entity(runStatuses).build();
-    } catch (ReaperException e) {
-      LOG.error("Failed listing cluster statuses", e);
-      return Response.serverError().entity("Failed listing cluster statuses").build();
+    } catch (IllegalArgumentException e) {
+      return Response.serverError().entity("Failed find cluster " + cluster.get()).build();
     }
   }
 

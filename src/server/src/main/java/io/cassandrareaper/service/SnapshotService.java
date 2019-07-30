@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 
 import com.codahale.metrics.InstrumentedExecutorService;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -96,7 +95,8 @@ public final class SnapshotService {
 
     try {
       List<Pair<Node, String>> snapshotResults = Lists.newArrayList();
-      Optional<Cluster> cluster = context.storage.getCluster(clusterName);
+      Cluster cluster = context.storage.getCluster(clusterName);
+
       Snapshot snapshot = Snapshot.builder()
               .withClusterName(clusterName)
               .withName(snapshotName)
@@ -106,16 +106,12 @@ public final class SnapshotService {
               .build();
 
       context.storage.saveSnapshot(snapshot);
+      LOG.info("Cluster : {} ; Cluster obj : {}", clusterName, cluster);
+      List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
 
-      LOG.info("Cluster : {}", clusterName);
-      LOG.info("Cluster obj : {}", cluster.get());
-
-      Preconditions.checkArgument(cluster.isPresent());
-
-      List<String> liveNodes = clusterFacade.getLiveNodes(cluster.get());
       List<Callable<Pair<Node, String>>> snapshotTasks = liveNodes
               .stream()
-              .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
+              .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
               .map(node -> takeSnapshotTask(snapshotName, node, keyspace))
               .collect(Collectors.toList());
 
@@ -156,14 +152,12 @@ public final class SnapshotService {
   public Map<String, Map<String, List<Snapshot>>> listSnapshotsClusterWide(String clusterName) throws ReaperException {
     try {
       // Map with the snapshot name as key and a map of <host,
-      Optional<Cluster> cluster = context.storage.getCluster(clusterName);
+      Cluster cluster = context.storage.getCluster(clusterName);
+      List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
 
-      Preconditions.checkArgument(cluster.isPresent());
-
-      List<String> liveNodes = clusterFacade.getLiveNodes(cluster.get());
       List<Callable<List<Snapshot>>> listSnapshotTasks = liveNodes
               .stream()
-              .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
+              .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
               .map(node -> listSnapshotTask(node))
               .collect(Collectors.toList());
 
@@ -218,12 +212,12 @@ public final class SnapshotService {
 
   public void clearSnapshotClusterWide(String snapshotName, String clusterName) throws ReaperException {
     try {
-      Optional<Cluster> cluster = context.storage.getCluster(clusterName);
-      Preconditions.checkArgument(cluster.isPresent());
-      List<String> liveNodes = clusterFacade.getLiveNodes(cluster.get());
+      Cluster cluster = context.storage.getCluster(clusterName);
+      List<String> liveNodes = clusterFacade.getLiveNodes(cluster);
+
       List<Callable<Node>> clearSnapshotTasks = liveNodes
               .stream()
-              .map(host -> Node.builder().withCluster(cluster.get()).withHostname(host).build())
+              .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
               .map(node -> clearSnapshotTask(snapshotName, node))
               .collect(Collectors.toList());
 

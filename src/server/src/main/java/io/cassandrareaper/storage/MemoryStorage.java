@@ -35,6 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -75,47 +76,58 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public boolean addCluster(Cluster cluster) {
-    Cluster existing = clusters.putIfAbsent(cluster.getName(), cluster);
+    assert addClusterAssertions(cluster);
+    Cluster existing = clusters.put(cluster.getName(), cluster);
     return existing == null;
   }
 
   @Override
   public boolean updateCluster(Cluster newCluster) {
-    if (!getCluster(newCluster.getName()).isPresent()) {
-      return false;
-    } else {
-      clusters.put(newCluster.getName(), newCluster);
-      return true;
-    }
+    addCluster(newCluster);
+    return true;
+  }
+
+
+  private boolean addClusterAssertions(Cluster cluster) {
+    // TODO – unit tests need to also always set the paritioner
+    //Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
+
+    try {
+      // assert we're not overwriting a cluster with the same name but different node list
+      Set<String> previousNodes = getCluster(cluster.getName()).getSeedHosts();
+      Set<String> addedNodes = cluster.getSeedHosts();
+
+      Preconditions.checkArgument(
+          !Collections.disjoint(previousNodes, addedNodes),
+          "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
+          cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
+    } catch (IllegalArgumentException ignore) { }
+    return true;
   }
 
   @Override
-  public Optional<Cluster> getCluster(String clusterName) {
-    return Optional.ofNullable(clusters.get(clusterName));
+  public Cluster getCluster(String clusterName) {
+    Preconditions.checkArgument(clusters.containsKey(clusterName), "no such cluster: %s", clusterName);
+    return clusters.get(clusterName);
   }
 
   @Override
-  public Optional<Cluster> deleteCluster(String clusterName) {
+  public Cluster deleteCluster(String clusterName) {
     assert getRepairSchedulesForCluster(clusterName).isEmpty()
         : StringUtils.join(getRepairSchedulesForCluster(clusterName));
 
     assert getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)).isEmpty()
         : StringUtils.join(getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)));
 
-    if (getRepairSchedulesForCluster(clusterName).isEmpty()
-        && getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)).isEmpty()) {
+    repairUnits.values().stream()
+        .filter((unit) -> unit.getClusterName().equals(clusterName))
+        .forEach((unit) -> {
+          assert getRepairRunsForUnit(unit.getId()).isEmpty() : StringUtils.join(getRepairRunsForUnit(unit.getId()));
+          repairUnits.remove(unit.getId());
+          repairUnitsByKey.remove(unit.with());
+        });
 
-      repairUnits.values().stream()
-          .filter((unit) -> unit.getClusterName().equals(clusterName))
-          .forEach((unit) -> {
-            assert getRepairRunsForUnit(unit.getId()).isEmpty() : StringUtils.join(getRepairRunsForUnit(unit.getId()));
-            repairUnits.remove(unit.getId());
-            repairUnitsByKey.remove(unit.with());
-          });
-
-      return Optional.ofNullable(clusters.remove(clusterName));
-    }
-    return Optional.empty();
+    return clusters.remove(clusterName);
   }
 
   @Override
@@ -447,57 +459,47 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Collection<RepairRunStatus> getClusterRunStatuses(String clusterName, int limit) {
-    Optional<Cluster> cluster = getCluster(clusterName);
-    if (!cluster.isPresent()) {
-      return Collections.emptyList();
-    } else {
-      List<RepairRunStatus> runStatuses = Lists.newArrayList();
-      for (RepairRun run : getRepairRunsForCluster(clusterName, Optional.of(limit))) {
-        RepairUnit unit = getRepairUnit(run.getRepairUnitId());
-        int segmentsRepaired = getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
-        int totalSegments = getSegmentAmountForRepairRun(run.getId());
-        runStatuses.add(
-            new RepairRunStatus(
-                run.getId(),
-                clusterName,
-                unit.getKeyspaceName(),
-                run.getTables(),
-                segmentsRepaired,
-                totalSegments,
-                run.getRunState(),
-                run.getStartTime(),
-                run.getEndTime(),
-                run.getCause(),
-                run.getOwner(),
-                run.getLastEvent(),
-                run.getCreationTime(),
-                run.getPauseTime(),
-                run.getIntensity(),
-                unit.getIncrementalRepair(),
-                run.getRepairParallelism(),
-                unit.getNodes(),
-                unit.getDatacenters(),
-                unit.getBlacklistedTables(),
-                unit.getRepairThreadCount()));
-      }
-      return runStatuses;
+    List<RepairRunStatus> runStatuses = Lists.newArrayList();
+    for (RepairRun run : getRepairRunsForCluster(clusterName, Optional.of(limit))) {
+      RepairUnit unit = getRepairUnit(run.getRepairUnitId());
+      int segmentsRepaired = getSegmentAmountForRepairRunWithState(run.getId(), RepairSegment.State.DONE);
+      int totalSegments = getSegmentAmountForRepairRun(run.getId());
+      runStatuses.add(
+          new RepairRunStatus(
+              run.getId(),
+              clusterName,
+              unit.getKeyspaceName(),
+              run.getTables(),
+              segmentsRepaired,
+              totalSegments,
+              run.getRunState(),
+              run.getStartTime(),
+              run.getEndTime(),
+              run.getCause(),
+              run.getOwner(),
+              run.getLastEvent(),
+              run.getCreationTime(),
+              run.getPauseTime(),
+              run.getIntensity(),
+              unit.getIncrementalRepair(),
+              run.getRepairParallelism(),
+              unit.getNodes(),
+              unit.getDatacenters(),
+              unit.getBlacklistedTables(),
+              unit.getRepairThreadCount()));
     }
+    return runStatuses;
   }
 
   @Override
   public Collection<RepairScheduleStatus> getClusterScheduleStatuses(String clusterName) {
-    Optional<Cluster> cluster = getCluster(clusterName);
-    if (!cluster.isPresent()) {
-      return Collections.emptyList();
-    } else {
-      List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
-      Collection<RepairSchedule> schedules = getRepairSchedulesForCluster(clusterName);
-      for (RepairSchedule schedule : schedules) {
-        RepairUnit unit = getRepairUnit(schedule.getRepairUnitId());
-        scheduleStatuses.add(new RepairScheduleStatus(schedule, unit));
-      }
-      return scheduleStatuses;
+    List<RepairScheduleStatus> scheduleStatuses = Lists.newArrayList();
+    Collection<RepairSchedule> schedules = getRepairSchedulesForCluster(clusterName);
+    for (RepairSchedule schedule : schedules) {
+      RepairUnit unit = getRepairUnit(schedule.getRepairUnitId());
+      scheduleStatuses.add(new RepairScheduleStatus(schedule, unit));
     }
+    return scheduleStatuses;
   }
 
   @Override

@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.storage;
 
-import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
@@ -45,6 +44,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
 
@@ -87,16 +87,19 @@ public final class PostgresStorage implements IStorage {
   }
 
   @Override
-  public Optional<Cluster> getCluster(String clusterName) {
-    Cluster result;
+  public Cluster getCluster(String clusterName) {
     try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getCluster(clusterName);
+      Cluster result = getPostgresStorage(h).getCluster(clusterName);
+      if (null != result) {
+        return result;
+      }
     }
-    return Optional.ofNullable(result);
+    throw new IllegalArgumentException("no such cluster: " + clusterName);
   }
 
   @Override
-  public Optional<Cluster> deleteCluster(String clusterName) {
+  public Cluster deleteCluster(String clusterName) {
+
     assert getRepairSchedulesForCluster(clusterName).isEmpty()
         : StringUtils.join(getRepairSchedulesForCluster(clusterName));
 
@@ -115,7 +118,7 @@ public final class PostgresStorage implements IStorage {
         }
       }
     }
-    return Optional.ofNullable(result);
+    return result;
   }
 
   @Override
@@ -139,7 +142,8 @@ public final class PostgresStorage implements IStorage {
   }
 
   @Override
-  public boolean addCluster(Cluster newCluster) throws ReaperException {
+  public boolean addCluster(Cluster newCluster) {
+    assert addAndUpdateClusterAssertions(newCluster);
     Cluster result = null;
     try (Handle h = jdbi.open()) {
       String properties = new ObjectMapper().writeValueAsString(newCluster.getProperties());
@@ -158,13 +162,14 @@ public final class PostgresStorage implements IStorage {
         result = newCluster; // no created id, as cluster name used for primary key
       }
     } catch (JsonProcessingException e) {
-      throw new ReaperException(e);
+      throw new IllegalStateException(e);
     }
     return result != null;
   }
 
   @Override
   public boolean updateCluster(Cluster cluster) {
+    assert addAndUpdateClusterAssertions(cluster);
     boolean result = false;
     try (Handle h = jdbi.open()) {
       int rowsAdded = getPostgresStorage(h).updateCluster(cluster);
@@ -175,6 +180,21 @@ public final class PostgresStorage implements IStorage {
       }
     }
     return result;
+  }
+
+  private boolean addAndUpdateClusterAssertions(Cluster cluster) {
+    Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
+    try {
+      // assert we're not overwriting a cluster with the same name but different node list
+      Set<String> previousNodes = getCluster(cluster.getName()).getSeedHosts();
+      Set<String> addedNodes = cluster.getSeedHosts();
+
+      Preconditions.checkArgument(
+          !Collections.disjoint(previousNodes, addedNodes),
+          "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
+          cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
+    } catch (IllegalArgumentException ignore) { }
+    return true;
   }
 
   @Override

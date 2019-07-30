@@ -265,9 +265,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     Thread.currentThread().setName(clusterName + ":" + segment.getRunId() + ":" + segmentId);
 
     try (Timer.Context cxt = context.metricRegistry.timer(metricNameForRunRepair(segment)).time()) {
-      Cluster cluster = context.storage.getCluster(clusterName).get();
-      JmxProxy coordinator
-          = clusterFacade.connectAndAllowSidecar(cluster, potentialCoordinators);
+      Cluster cluster = context.storage.getCluster(clusterName);
+      JmxProxy coordinator = clusterFacade.connect(cluster, potentialCoordinators);
 
       if (SEGMENT_RUNNERS.containsKey(segmentId)) {
         LOG.error("SegmentRunner already exists for segment with ID: {}", segmentId);
@@ -528,9 +527,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
     if (!busyHosts.get().contains(hostName) && context.storage instanceof IDistributedStorage) {
       try {
-        JmxProxy hostProxy
-            = clusterFacade.connectAndAllowSidecar(
-                context.storage.getCluster(clusterName).get(), Arrays.asList(hostName));
+        JmxProxy hostProxy = clusterFacade.connect(context.storage.getCluster(clusterName), Arrays.asList(hostName));
 
         // We double check that repair is still running there before actually cancelling repairs
         if (hostProxy.isRepairRunning()) {
@@ -554,12 +551,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
       if (clusterFacade.nodeIsAccessibleThroughJmx(nodeDc, node)) {
         try {
-          JmxProxy nodeProxy
-              = clusterFacade.connectAndAllowSidecar(
-                  context.storage.getCluster(clusterName).get(), Arrays.asList(node));
+          JmxProxy nodeProxy = clusterFacade.connect(context.storage.getCluster(clusterName), Arrays.asList(node));
 
-          NodeMetrics metrics
-              = NodeMetrics.builder()
+          NodeMetrics metrics = NodeMetrics.builder()
                   .withNode(node)
                   .withDatacenter(nodeDc)
                   .withCluster(nodeProxy.getClusterName())
@@ -1108,10 +1102,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     if (repairId != null) {
       for (String involvedNode : potentialCoordinators) {
         try {
-          JmxProxy jmx
-              = clusterFacade.connectAndAllowSidecar(
-                  context.storage.getCluster(clusterName).get(), Arrays.asList(involvedNode));
-
+          JmxProxy jmx = clusterFacade.connect(context.storage.getCluster(clusterName), Arrays.asList(involvedNode));
           // there is no way of telling if the snapshot was cleared or not :(
           SnapshotProxy.create(jmx).clearSnapshot(repairId, keyspace);
         } catch (ReaperException | NumberFormatException e) {
