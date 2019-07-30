@@ -205,7 +205,7 @@ jobs:
         dry-run: false
         skip_cleanup: true
         on:
-          branch: alex/fix-travis-deploy
+          branch: "alex/fix-travis-deploy"
       - provider: bintray
         file: src/ci/descriptor-maven-snapshot.json
         user: adejanovski
