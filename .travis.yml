@@ -202,10 +202,8 @@ jobs:
         file: src/ci/descriptor-tarball-beta.json
         user: adejanovski
         key: "$BINTRAY_API_KEY"
-        dry-run: false
+        dry-run: true
         skip_cleanup: true
-        on:
-          branch: "alex/fix-travis-deploy"
       - provider: bintray
         file: src/ci/descriptor-maven-snapshot.json
         user: adejanovski
