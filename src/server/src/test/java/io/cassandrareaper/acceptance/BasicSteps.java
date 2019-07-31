@@ -17,6 +17,7 @@
 
 package io.cassandrareaper.acceptance;
 
+import io.cassandrareaper.AppContext;
 import io.cassandrareaper.SimpleReaperClient;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.MetricsHistogram;
@@ -227,7 +228,10 @@ public final class BasicSteps {
         String responseData = response.readEntity(String.class);
         Assertions.assertThat(responseData).isNotBlank();
         List<String> clusterNames = SimpleReaperClient.parseClusterNameListJSON(responseData);
-        assertEquals(0, clusterNames.size());
+        if (!((AppContext) runner.runnerInstance.getContext()).config.isInSidecarMode()) {
+          // Sidecar self registers clusters
+          assertEquals(0, clusterNames.size());
+        }
       });
     }
   }
@@ -261,7 +265,8 @@ public final class BasicSteps {
         Assertions.assertThat(responseData).isNotBlank();
         Map<String, Object> cluster = SimpleReaperClient.parseClusterStatusJSON(responseData);
 
-        if (Response.Status.CREATED.getStatusCode() == responseStatus) {
+        if (Response.Status.CREATED.getStatusCode() == responseStatus
+            || ((AppContext) runner.runnerInstance.getContext()).config.isInSidecarMode()) {
           TestContext.TEST_CLUSTER = (String) cluster.get("name");
         }
       });

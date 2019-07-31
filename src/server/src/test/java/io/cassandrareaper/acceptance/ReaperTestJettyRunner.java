@@ -156,7 +156,7 @@ public final class ReaperTestJettyRunner {
       }
     }
 
-    private Object getContext() {
+    Object getContext() {
       try {
         Method method = supportCls.getMethod("getApplication");
         Object application = method.invoke(support);

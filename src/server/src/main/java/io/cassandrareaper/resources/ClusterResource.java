@@ -41,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -181,29 +180,29 @@ public final class ClusterResource {
       return Response.status(Response.Status.BAD_REQUEST).entity("query parameter \"seedHost\" required").build();
     }
 
-    final Cluster cluster = findClusterWithSeedHost(seedHost.get(), jmxPort);
-    if (null == cluster) {
+    final Optional<Cluster> cluster = findClusterWithSeedHost(seedHost.get(), jmxPort);
+    if (!cluster.isPresent()) {
       return Response
           .status(Response.Status.BAD_REQUEST)
           .entity(String.format("no cluster %s with seed host %s", clusterName.orElse(""), seedHost.get()))
           .build();
     }
-    if (clusterName.isPresent() && !cluster.getName().equals(clusterName.get())) {
+    if (clusterName.isPresent() && !cluster.get().getName().equals(clusterName.get())) {
       String msg = String.format(
           "POST/PUT on cluster resource %s called with seedHost %s belonging to different cluster %s",
           clusterName.get(),
           seedHost.get(),
-          cluster.getName());
+          cluster.get().getName());
 
       LOG.info(msg);
       return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
     }
 
     Optional<Cluster> existingCluster = context.storage.getClusters().stream()
-        .filter(c -> c.getName().equalsIgnoreCase(cluster.getName()))
+        .filter(c -> c.getName().equalsIgnoreCase(cluster.get().getName()))
         .findAny();
 
-    URI location = uriInfo.getBaseUriBuilder().path("cluster").path(cluster.getName()).build();
+    URI location = uriInfo.getBaseUriBuilder().path("cluster").path(cluster.get().getName()).build();
     if (existingCluster.isPresent()) {
       LOG.debug("Attempting updating nodelist for cluster {}", existingCluster.get().getName());
       try {
@@ -221,12 +220,12 @@ public final class ClusterResource {
         return Response.serverError().entity(ex.getMessage()).build();
       }
     } else {
-      LOG.info("creating new cluster based on given seed host: {}", cluster.getName());
-      context.storage.addCluster(cluster);
+      LOG.info("creating new cluster based on given seed host: {}", cluster.get().getName());
+      context.storage.addCluster(cluster.get());
 
       if (context.config.hasAutoSchedulingEnabled()) {
         try {
-          clusterRepairScheduler.scheduleRepairs(cluster);
+          clusterRepairScheduler.scheduleRepairs(cluster.get());
         } catch (ReaperException e) {
           String msg = String.format(
               "failed to automatically schedule repairs for cluster %s with seed host %s",
@@ -241,8 +240,7 @@ public final class ClusterResource {
     return Response.created(location).build();
   }
 
-  @Nullable // if cluster can't be found over jmx
-  private Cluster findClusterWithSeedHost(String seedHost, Optional<Integer> jmxPort) {
+  public Optional<Cluster> findClusterWithSeedHost(String seedHost, Optional<Integer> jmxPort) {
     Set<String> seedHosts = parseSeedHosts(seedHost);
     try {
       Cluster cluster = Cluster.builder()
@@ -260,16 +258,16 @@ public final class ClusterResource {
       }
       LOG.debug("Seeds {}", seedHosts);
 
-      return Cluster.builder()
+      return Optional.of(Cluster.builder()
               .withName(clusterName)
               .withPartitioner(partitioner)
               .withSeedHosts(seedHosts)
               .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT))
-              .build();
+              .build());
     } catch (ReaperException e) {
       LOG.error("failed to find cluster with seed hosts: {}", seedHosts, e);
     }
-    return null;
+    return Optional.empty();
   }
 
   /**
