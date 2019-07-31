@@ -19,6 +19,7 @@ package io.cassandrareaper;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
+import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
@@ -45,6 +46,7 @@ import io.cassandrareaper.storage.PostgresStorage;
 
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -254,7 +256,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     }
 
     initializeJmxSeedsForAllClusters();
-    maybeInitializeSidecarMode();
+    maybeInitializeSidecarMode(addClusterResource);
     LOG.info("resuming pending repair runs");
 
     Preconditions.checkState(
@@ -314,10 +316,11 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
   /**
    * If Reaper is in sidecar mode, grab the local host id and the associated broadcast address
+   * @param addClusterResource
    *
    * @throws ReaperException any caught runtime exception
    */
-  private void maybeInitializeSidecarMode() throws ReaperException {
+  private void maybeInitializeSidecarMode(ClusterResource addClusterResource) throws ReaperException {
     if (context.config.isInSidecarMode()) {
       ClusterFacade clusterFacade = ClusterFacade.create(context);
       Node host = Node.builder().withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1")).build();
@@ -327,11 +330,29 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
                 .orElse(clusterFacade.getLocalEndpoint(host));
 
         LOG.info("Sidecar mode. Local node is : {}", context.localNodeAddress);
+        selfRegisterClusterForSidecar(addClusterResource, context.config.getEnforcedLocalNode().orElse("127.0.0.1"));
       } catch (RuntimeException | InterruptedException | ReaperException e) {
         LOG.error("Failed connecting to the local node in sidecar mode {}", host, e);
         throw new ReaperException(e);
       }
     }
+  }
+
+  private boolean selfRegisterClusterForSidecar(ClusterResource addClusterResource, String seedHost)
+      throws ReaperException {
+    final Optional<Cluster> cluster = addClusterResource.findClusterWithSeedHost(seedHost, Optional.empty());
+    if (!cluster.isPresent()) {
+      return false;
+    }
+
+    if (context.storage.getClusters().stream().noneMatch(c -> c.getName().equals(cluster.get().getName()))) {
+      LOG.info("registering new cluster : {}", cluster.get().getName());
+
+      // it is ok for this be called in parallel by different sidecars on the same cluster,
+      // so long we're not split-brain
+      context.storage.addCluster(cluster.get());
+    }
+    return true;
   }
 
   private void scheduleRepairManager(ScheduledExecutorService scheduler) {
