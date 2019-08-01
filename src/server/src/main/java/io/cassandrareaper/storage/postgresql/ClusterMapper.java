@@ -58,6 +58,10 @@ public final class ClusterMapper implements ResultSetMapper<Cluster> {
     Cluster.Builder builder = Cluster.builder()
         .withName(rs.getString("name"))
         .withSeedHosts(ImmutableSet.copyOf(seedHosts))
+        .withState(null != rs.getString("state")
+            ? Cluster.State.valueOf(rs.getString("state"))
+            : Cluster.State.UNKNOWN)
+        .withLastContact(rs.getDate("last_contact").toLocalDate())
         .withJmxPort(clusterProperties.getJmxPort());
 
     if (null != rs.getString("partitioner")) {

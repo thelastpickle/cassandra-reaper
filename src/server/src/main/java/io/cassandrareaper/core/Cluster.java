@@ -17,29 +17,43 @@
 
 package io.cassandrareaper.core;
 
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
 
-public final class Cluster {
+public final class Cluster implements Comparable<Cluster> {
+
+  public enum State {
+    UNKNOWN,
+    ACTIVE,
+    UNREACHABLE,
+    DELETED
+  }
 
   public static final int DEFAULT_JMX_PORT = 7199;
 
   private final String name;
   private final Optional<String> partitioner; // Full name of the partitioner class
   private final Set<String> seedHosts;
+  private final State state;
+  private final LocalDate lastContact;
   private final ClusterProperties properties;
 
   private Cluster(
       String name,
       Optional<String> partitioner,
       Set<String> seedHosts,
+      State state,
+      LocalDate lastContact,
       ClusterProperties properties) {
 
     this.name = toSymbolicName(name);
     this.partitioner = partitioner;
     this.seedHosts = seedHosts;
+    this.state = state;
+    this.lastContact = lastContact;
     this.properties = properties;
   }
 
@@ -51,6 +65,8 @@ public final class Cluster {
     Builder builder = new Builder()
         .withName(name)
         .withSeedHosts(seedHosts)
+        .withState(state)
+        .withLastContact(lastContact)
         .withJmxPort(getJmxPort());
 
     if (partitioner.isPresent()) {
@@ -80,8 +96,23 @@ public final class Cluster {
     return properties.getJmxPort();
   }
 
+  public State getState() {
+    return state;
+  }
+
+  public LocalDate getLastContact() {
+    return lastContact;
+  }
+
   public ClusterProperties getProperties() {
     return properties;
+  }
+
+  @Override
+  public int compareTo(Cluster other) {
+    return this.getState() == other.getState()
+        ? this.getName().compareTo(other.getName())
+        : this.getState().compareTo(other.getState());
   }
 
   public static final class Builder {
@@ -89,6 +120,8 @@ public final class Cluster {
     private String name;
     private String partitioner;
     private Set<String> seedHosts;
+    private State state = State.UNKNOWN;
+    private LocalDate lastContact = LocalDate.MIN;
     private final ClusterProperties.Builder properties = ClusterProperties.builder().withJmxPort(DEFAULT_JMX_PORT);
 
     private Builder() {
@@ -111,6 +144,18 @@ public final class Cluster {
       return this;
     }
 
+    public Builder withState(State state) {
+      Preconditions.checkNotNull(state);
+      this.state = state;
+      return this;
+    }
+
+    public Builder withLastContact(LocalDate lastContact) {
+      Preconditions.checkNotNull(lastContact);
+      this.lastContact = lastContact;
+      return this;
+    }
+
     public Builder withJmxPort(int jmxPort) {
       this.properties.withJmxPort(jmxPort);
       return this;
@@ -120,7 +165,7 @@ public final class Cluster {
       Preconditions.checkNotNull(name);
       Preconditions.checkNotNull(seedHosts);
 
-      return new Cluster(name, Optional.ofNullable(partitioner), seedHosts, properties.build());
+      return new Cluster(name, Optional.ofNullable(partitioner), seedHosts, state, lastContact, properties.build());
     }
   }
 }

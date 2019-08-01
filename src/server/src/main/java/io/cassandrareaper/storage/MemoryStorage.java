@@ -35,6 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -75,13 +76,26 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public boolean addCluster(Cluster cluster) {
-    Cluster existing = clusters.putIfAbsent(cluster.getName(), cluster);
+    //Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
+
+    try {
+      // assert we're not overwriting a cluster with the same name but different node list
+      Set<String> previousNodes = getCluster(cluster.getName()).getSeedHosts();
+      Set<String> addedNodes = cluster.getSeedHosts();
+
+      Preconditions.checkArgument(
+          !Collections.disjoint(previousNodes, addedNodes),
+          "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
+          cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
+    } catch (IllegalArgumentException ignore) { }
+
+    Cluster existing = clusters.put(cluster.getName(), cluster);
     return existing == null;
   }
 
   @Override
-  public boolean updateCluster(Cluster newCluster) {
-    clusters.put(newCluster.getName(), newCluster);
+  public boolean updateCluster(Cluster cluster) {
+    addCluster(cluster);
     return true;
   }
 
@@ -93,21 +107,21 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Cluster deleteCluster(String clusterName) {
-    assert getRepairSchedulesForCluster(clusterName).isEmpty()
-        : StringUtils.join(getRepairSchedulesForCluster(clusterName));
 
-    assert getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)).isEmpty()
-        : StringUtils.join(getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)));
+    assert getRepairSchedulesForCluster(clusterName).stream()
+          .anyMatch(schedule -> RepairSchedule.State.ACTIVE == schedule.getState())
+        : "Cluster has active schedules " + StringUtils.join(getRepairSchedulesForCluster(clusterName));
 
-    repairUnits.values().stream()
-        .filter((unit) -> unit.getClusterName().equals(clusterName))
-        .forEach((unit) -> {
-          assert getRepairRunsForUnit(unit.getId()).isEmpty() : StringUtils.join(getRepairRunsForUnit(unit.getId()));
-          repairUnits.remove(unit.getId());
-          repairUnitsByKey.remove(unit.with());
-        });
+    assert getRepairRunsWithState(RepairRun.RunState.RUNNING).stream()
+          .anyMatch(run -> run.getClusterName().equals(clusterName))
+        : "Cluster has running repairs "
+          + StringUtils.join(
+              getRepairRunsWithState(RepairRun.RunState.RUNNING).stream()
+              .filter(run -> run.getClusterName().equals(clusterName)), ',');
 
-    return clusters.remove(clusterName);
+    Cluster cluster = getCluster(clusterName).with().withState(Cluster.State.DELETED).build();
+    updateCluster(cluster);
+    return cluster;
   }
 
   @Override

@@ -20,6 +20,8 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.RepairRun;
+import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.ClusterStatus;
@@ -27,6 +29,7 @@ import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.ClusterRepairScheduler;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -86,27 +89,26 @@ public final class ClusterResource {
   }
 
   @GET
-  public Response getClusterList(@QueryParam("seedHost") Optional<String> seedHost) throws ReaperException {
+  public Response getClusterList(@QueryParam("seedHost") Optional<String> seedHost) {
     LOG.debug("get cluster list called");
-    Collection<Cluster> clusters = context.storage.getClusters();
-    List<String> clusterNames = new ArrayList<>();
-    for (Cluster cluster : clusters) {
-      if (seedHost.isPresent()) {
-        if (cluster.getSeedHosts().contains(seedHost.get())) {
-          clusterNames.add(cluster.getName());
-        }
-      } else {
-        clusterNames.add(cluster.getName());
-      }
-    }
-    return Response.ok().entity(clusterNames).build();
+
+    Collection<String> clusters = context.storage.getClusters()
+        .stream()
+        .filter(c -> seedHost.isPresent()
+            ? c.getSeedHosts().contains(seedHost.get())
+            : Cluster.State.DELETED != c.getState())
+        .sorted()
+        .map(c -> c.getName())
+        .collect(Collectors.toList());
+
+    return Response.ok().entity(clusters).build();
   }
 
   @GET
   @Path("/{cluster_name}")
   public Response getCluster(
       @PathParam("cluster_name") String clusterName,
-      @QueryParam("limit") Optional<Integer> limit) throws ReaperException {
+      @QueryParam("limit") Optional<Integer> limit) {
 
     LOG.debug("get cluster called with cluster_name: {}", clusterName);
     try {
@@ -120,19 +122,20 @@ public final class ClusterResource {
             context.jmxConnectionFactory.getJmxCredentialsForCluster(clusterName).get().getPassword());
       }
       Cluster cluster = context.storage.getCluster(clusterName);
+      if (Cluster.State.DELETED != cluster.getState()) {
 
-      ClusterStatus clusterStatus = new ClusterStatus(
-            cluster,
-            jmxUsername,
-            jmxPasswordIsSet,
-            context.storage.getClusterRunStatuses(cluster.getName(), limit.orElse(Integer.MAX_VALUE)),
-            context.storage.getClusterScheduleStatuses(cluster.getName()),
-            getNodesStatus(cluster));
+        ClusterStatus clusterStatus = new ClusterStatus(
+              cluster,
+              jmxUsername,
+              jmxPasswordIsSet,
+              context.storage.getClusterRunStatuses(cluster.getName(), limit.orElse(Integer.MAX_VALUE)),
+              context.storage.getClusterScheduleStatuses(cluster.getName()),
+              getNodesStatus(cluster));
 
-      return Response.ok().entity(clusterStatus).build();
-    } catch (IllegalArgumentException ex) {
-      return Response.status(404).entity("cluster with name \"" + clusterName + "\" not found").build();
-    }
+        return Response.ok().entity(clusterStatus).build();
+      }
+    } catch (IllegalArgumentException ignore) { }
+    return Response.status(404).entity("cluster with name \"" + clusterName + "\" not found").build();
   }
 
   @GET
@@ -265,13 +268,15 @@ public final class ClusterResource {
       if (context.config.getEnableDynamicSeedList() && !liveNodes.isEmpty()) {
         seedHosts = ImmutableSet.copyOf(liveNodes);
       }
-      LOG.debug("Seeds {}", seedHosts);
+      LOG.debug("Cluster {}", seedHosts);
 
       return Cluster.builder()
               .withName(clusterName)
               .withPartitioner(partitioner)
               .withSeedHosts(seedHosts)
               .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT))
+              .withState(Cluster.State.ACTIVE)
+              .withLastContact(LocalDate.now())
               .build();
     } catch (ReaperException e) {
       LOG.error("failed to find cluster with seed hosts: {}", seedHosts, e);
@@ -299,7 +304,12 @@ public final class ClusterResource {
           cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(liveNodes, ','));
 
       if (!cluster.getSeedHosts().equals(liveNodes)) {
-        cluster = cluster.with().withSeedHosts(liveNodes).build();
+        cluster = cluster.with()
+              .withSeedHosts(liveNodes)
+              .withState(Cluster.State.ACTIVE)
+              .withLastContact(LocalDate.now())
+              .build();
+
         context.storage.updateCluster(cluster);
       }
       return cluster;
@@ -312,25 +322,37 @@ public final class ClusterResource {
   /**
    * Delete a Cluster object with given name.
    *
-   * <p>Cluster can be only deleted when it hasn't any RepairRun or RepairSchedule instances under
-   * it, i.e. you must delete all repair runs and schedules first.
-   *
-   * @param clusterName The name of the Cluster instance you are about to delete.
-   * @throws ReaperException any failure that could happen
+   * <p>Cluster can be only deleted when it hasn't any running RepairRuns or active RepairSchedule instances under
    */
   @DELETE
   @Path("/{cluster_name}")
-  public Response deleteCluster(@PathParam("cluster_name") String clusterName) throws ReaperException {
+  public Response deleteCluster(@PathParam("cluster_name") String clusterName) {
     LOG.info("delete cluster {}", clusterName);
+
     try {
-      if (!context.storage.getRepairSchedulesForCluster(clusterName).isEmpty()) {
+      Cluster cluster = context.storage.getCluster(clusterName);
+      if (Cluster.State.DELETED == cluster.getState()) {
+        return Response.noContent().build();
+      }
+      if (context.storage.getRepairSchedulesForCluster(clusterName).stream()
+          .anyMatch(schedule -> RepairSchedule.State.ACTIVE == schedule.getState())) {
+
         return Response.status(Response.Status.CONFLICT)
-            .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair schedules")
+            .entity("cluster \"" + clusterName + "\" cannot be deleted, it has active repair schedules: "
+                + StringUtils.join(
+                    context.storage.getRepairSchedulesForCluster(clusterName).stream()
+                    .filter(schedule -> RepairSchedule.State.ACTIVE == schedule.getState()), ','))
             .build();
       }
-      if (!context.storage.getRepairRunsForCluster(clusterName, Optional.empty()).isEmpty()) {
+
+      if (context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING).stream()
+          .anyMatch(run -> run.getClusterName().equals(clusterName))) {
+
         return Response.status(Response.Status.CONFLICT)
-            .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair runs")
+            .entity("cluster \"" + clusterName + "\" cannot be deleted, it has running repair runs: "
+                + StringUtils.join(
+                    context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING).stream()
+                    .filter(run -> run.getClusterName().equals(clusterName)), ','))
             .build();
       }
       context.storage.deleteCluster(clusterName);

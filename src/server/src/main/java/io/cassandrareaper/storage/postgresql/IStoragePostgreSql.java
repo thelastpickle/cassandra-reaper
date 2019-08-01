@@ -30,6 +30,7 @@ import io.cassandrareaper.service.RepairParameters;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -53,16 +54,15 @@ public interface IStoragePostgreSql {
 
   // Cluster
   //
-  String SQL_CLUSTER_ALL_FIELDS = "name, partitioner, seed_hosts, properties";
+  String SQL_CLUSTER_ALL_FIELDS = "name, partitioner, seed_hosts, properties, state, last_contact";
   String SQL_GET_ALL_CLUSTERS = "SELECT " + SQL_CLUSTER_ALL_FIELDS + " FROM cluster";
   String SQL_GET_CLUSTER = "SELECT " + SQL_CLUSTER_ALL_FIELDS + " FROM cluster WHERE name = :name";
   String SQL_INSERT_CLUSTER
       = "INSERT INTO cluster ("
           + SQL_CLUSTER_ALL_FIELDS
-          + ") VALUES (:name, :partitioner, :seedHosts, :properties)";
+          + ") VALUES (:name, :partitioner, :seedHosts, :properties, :state, :lastContact)";
   String SQL_UPDATE_CLUSTER = "UPDATE cluster SET partitioner = :partitioner, "
-      + "seed_hosts = :seedHosts WHERE name = :name";
-  String SQL_DELETE_CLUSTER = "DELETE FROM cluster WHERE name = :name";
+      + "seed_hosts = :seedHosts, state = :state, last_contact = :lastContact WHERE name = :name";
 
   // RepairRun
   //
@@ -265,15 +265,13 @@ public interface IStoragePostgreSql {
       @Bind("name") String name,
       @Bind("partitioner") String partitioner,
       @Bind("seedHosts") Set<String> seedHosts,
-      @Bind("properties") String properties);
+      @Bind("properties") String properties,
+      @Bind("state") String state,
+      @Bind("last_contact") Date lastContact);
 
   @SqlUpdate(SQL_UPDATE_CLUSTER)
   int updateCluster(
       @BindBean Cluster newCluster);
-
-  @SqlUpdate(SQL_DELETE_CLUSTER)
-  int deleteCluster(
-      @Bind("name") String clusterName);
 
   @SqlQuery(SQL_GET_REPAIR_RUN)
   @Mapper(RepairRunMapper.class)

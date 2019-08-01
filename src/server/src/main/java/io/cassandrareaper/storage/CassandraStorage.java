@@ -43,6 +43,7 @@ import io.cassandrareaper.storage.cassandra.Migration021;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -79,6 +80,7 @@ import com.datastax.driver.core.policies.DefaultRetryPolicy;
 import com.datastax.driver.core.policies.DowngradingConsistencyRetryPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
 import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.driver.extras.codecs.jdk8.LocalDateCodec;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
@@ -138,7 +140,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   /* prepared stmts */
   private PreparedStatement insertClusterPrepStmt;
   private PreparedStatement getClusterPrepStmt;
-  private PreparedStatement deleteClusterPrepStmt;
   private PreparedStatement insertRepairRunPrepStmt;
   private PreparedStatement insertRepairRunClusterIndexPrepStmt;
   private PreparedStatement insertRepairRunUnitIndexPrepStmt;
@@ -211,6 +212,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     }
     CodecRegistry codecRegistry = cassandra.getConfiguration().getCodecRegistry();
     codecRegistry.register(new DateTimeCodec());
+    codecRegistry.register(LocalDateCodec.instance);
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());
 
     initializeAndUpgradeSchema(cassandra, session, config.getCassandraFactory().getKeyspace());
@@ -304,16 +306,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private void prepareStatements() {
     final String timeUdf = 0 < VersionNumber.parse("2.2").compareTo(version) ? "dateOf" : "toTimestamp";
-    insertClusterPrepStmt
-        = session
+    insertClusterPrepStmt = session
             .prepare(
-                "INSERT INTO cluster(name, partitioner, seed_hosts, properties) values(?, ?, ?, ?)")
+                "INSERT INTO cluster(name, partitioner, seed_hosts, properties, state, last_contact)"
+                    + " values(?, ?, ?, ?, ?, ?)")
             .setConsistencyLevel(ConsistencyLevel.QUORUM);
     getClusterPrepStmt = session
         .prepare("SELECT * FROM cluster WHERE name = ?")
         .setConsistencyLevel(ConsistencyLevel.QUORUM)
         .setRetryPolicy(DowngradingConsistencyRetryPolicy.INSTANCE);
-    deleteClusterPrepStmt = session.prepare("DELETE FROM cluster WHERE name = ?");
     insertRepairRunPrepStmt = session
         .prepare(
             "INSERT INTO repair_run(id, cluster_name, repair_unit_id, cause, owner, state, creation_time, "
@@ -526,13 +527,27 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public boolean addCluster(Cluster cluster) {
     Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
+
+    try {
+      // assert we're not overwriting a cluster with the same name but different node list
+      Set<String> previousNodes = getCluster(cluster.getName()).getSeedHosts();
+      Set<String> addedNodes = cluster.getSeedHosts();
+
+      Preconditions.checkArgument(
+          !Collections.disjoint(previousNodes, addedNodes),
+          "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
+          cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
+    } catch (IllegalArgumentException ignore) { }
+
     try {
       session.execute(
           insertClusterPrepStmt.bind(
               cluster.getName(),
               cluster.getPartitioner().get(),
               cluster.getSeedHosts(),
-              objectMapper.writeValueAsString(cluster.getProperties())));
+              objectMapper.writeValueAsString(cluster.getProperties()),
+              cluster.getState().name(),
+              cluster.getLastContact()));
     } catch (IOException e) {
       LOG.error("Failed serializing cluster information for database write", e);
       throw new IllegalStateException(e);
@@ -547,7 +562,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Cluster getCluster(String clusterName) {
-    // XXX multiple clusters can re-use the same name
     Row row = session.execute(getClusterPrepStmt.bind(clusterName)).one();
     if (null != row) {
       try {
@@ -558,7 +572,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         Cluster.Builder builder = Cluster.builder()
               .withName(row.getString("name"))
               .withSeedHosts(row.getSet("seed_hosts", String.class))
-              .withJmxPort(properties.getJmxPort());
+              .withJmxPort(properties.getJmxPort())
+              .withState(null != row.getString("state")
+                  ? Cluster.State.valueOf(row.getString("state"))
+                  : Cluster.State.UNKNOWN)
+              .withLastContact(row.get("last_contact", LocalDate.class));
 
         if (null != row.getString("partitioner")) {
           builder = builder.withPartitioner(row.getString("partitioner"));
@@ -574,24 +592,20 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Cluster deleteCluster(String clusterName) {
-    assert getRepairSchedulesForCluster(clusterName).isEmpty()
-        : StringUtils.join(getRepairSchedulesForCluster(clusterName));
 
-    assert getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)).isEmpty()
-        : StringUtils.join(getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)));
+    assert getRepairSchedulesForCluster(clusterName).stream()
+          .noneMatch(schedule -> RepairSchedule.State.ACTIVE == schedule.getState())
+        : "Cluster has active schedules " + StringUtils.join(getRepairSchedulesForCluster(clusterName));
 
-    Statement stmt = new SimpleStatement(SELECT_REPAIR_UNIT);
-    stmt.setIdempotent(Boolean.TRUE);
-    ResultSet results = session.execute(stmt);
-    for (Row row : results) {
-      if (row.getString("cluster_name").equals(clusterName)) {
-        UUID id = row.getUUID("id");
-        assert getRepairRunsForUnit(id).isEmpty() : StringUtils.join(getRepairRunsForUnit(id));
-        session.executeAsync(deleteRepairUnitPrepStmt.bind(id));
-      }
-    }
-    Cluster cluster = getCluster(clusterName);
-    session.executeAsync(deleteClusterPrepStmt.bind(clusterName));
+    assert getRepairRunsWithState(RepairRun.RunState.RUNNING).stream()
+          .noneMatch(run -> run.getClusterName().equals(clusterName))
+        : "Cluster has running repairs "
+          + StringUtils.join(
+              getRepairRunsWithState(RepairRun.RunState.RUNNING).stream()
+              .filter(run -> run.getClusterName().equals(clusterName)), ',');
+
+    Cluster cluster = getCluster(clusterName).with().withState(Cluster.State.DELETED).build();
+    updateCluster(cluster);
     return cluster;
   }
 
@@ -773,7 +787,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Collection<RepairRun> getRepairRunsWithState(RunState runState) throws ReaperException {
+  public Collection<RepairRun> getRepairRunsWithState(RunState runState) {
     Set<RepairRun> repairRunsWithState = Sets.newHashSet();
 
     List<Collection<UUID>> repairRunIds = getClusters()
