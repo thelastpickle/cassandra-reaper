@@ -123,6 +123,7 @@ public final class SegmentRunnerTest {
         .withPartitioner("murmur3")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
+        .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();
@@ -236,6 +237,7 @@ public final class SegmentRunnerTest {
         .withPartitioner("murmur3")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
+        .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();
@@ -384,6 +386,7 @@ public final class SegmentRunnerTest {
         .withPartitioner("murmur3")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
+        .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();
@@ -523,6 +526,7 @@ public final class SegmentRunnerTest {
         .withPartitioner("murmur3")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
+        .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();
@@ -658,6 +662,7 @@ public final class SegmentRunnerTest {
         .withPartitioner("murmur3")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
+        .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();
@@ -794,6 +799,7 @@ public final class SegmentRunnerTest {
         .withPartitioner("murmur3")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
+        .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();
@@ -931,6 +937,7 @@ public final class SegmentRunnerTest {
         .withPartitioner("murmur3")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
+        .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();

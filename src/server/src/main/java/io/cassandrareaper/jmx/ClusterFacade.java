@@ -39,6 +39,7 @@ import io.cassandrareaper.storage.OpType;
 import java.io.IOError;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,6 +49,8 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -791,11 +794,19 @@ public final class ClusterFacade {
 
   // cluster object contains additional connection info like jmx port and jmx credentials
   private JmxProxy connectImpl(Cluster cluster, Collection<String> endpoints) throws ReaperException {
-    return context.jmxConnectionFactory.connectAny(
-        endpoints
-            .stream()
-            .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
-            .collect(Collectors.toList()));
+    try {
+      JmxProxy proxy = context.jmxConnectionFactory.connectAny(
+          endpoints
+              .stream()
+              .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
+              .collect(Collectors.toList()));
+
+      Async.markClusterActive(cluster, context);
+      return proxy;
+    } catch (ReaperException ex) {
+      Async.markClusterUnreachable(cluster, context);
+      throw ex;
+    }
   }
 
   // node object contains additional connection info like jmx port and jmx credentials
@@ -812,6 +823,31 @@ public final class ClusterFacade {
     return context.config.isInSidecarMode()
         ? Arrays.asList(context.config.getEnforcedLocalNode().orElse(LOCALHOST))
         : endpoints;
+  }
+
+  private static class Async {
+    private static final ExecutorService ASYNC = Executors.newSingleThreadExecutor();
+
+    private static boolean markClusterActive(Cluster cluster, AppContext context) {
+      // it's ok for this method to be executed in parallel, state converges.
+      if (Cluster.State.UNKNOWN != cluster.getState() && !LocalDate.now().equals(cluster.getLastContact())) {
+        Cluster.Builder builder = cluster.with().withState(Cluster.State.ACTIVE).withLastContact(LocalDate.now());
+        ASYNC.submit(() -> context.storage.updateCluster(builder.build()));
+        return true;
+      }
+      return false;
+    }
+
+    private static boolean markClusterUnreachable(Cluster cluster, AppContext context) {
+      // it's ok for this method to be executed in parallel, state converges.
+      if (Cluster.State.ACTIVE == cluster.getState()
+          && LocalDate.now().minusDays(context.config.getClusterTimeoutInDays()).isAfter(cluster.getLastContact())) {
+
+        ASYNC.submit(() -> context.storage.updateCluster(cluster.with().withState(Cluster.State.UNREACHABLE).build()));
+        return true;
+      }
+      return false;
+    }
   }
 
 }

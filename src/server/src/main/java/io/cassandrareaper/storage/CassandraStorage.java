@@ -303,10 +303,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private void prepareStatements() {
     final String timeUdf = 0 < VersionNumber.parse("2.2").compareTo(version) ? "dateOf" : "toTimestamp";
-    insertClusterPrepStmt
-        = session
+    insertClusterPrepStmt = session
             .prepare(
-                "INSERT INTO cluster(name, partitioner, seed_hosts, properties) values(?, ?, ?, ?)")
+                "INSERT INTO cluster(name, partitioner, seed_hosts, properties, state, last_contact)"
+                    + " values(?, ?, ?, ?, ?, ?)")
             .setConsistencyLevel(ConsistencyLevel.QUORUM);
     getClusterPrepStmt = session
         .prepare("SELECT * FROM cluster WHERE name = ?")
@@ -501,20 +501,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     Collection<Cluster> clusters = Lists.<Cluster>newArrayList();
     for (Row row : session.execute(new SimpleStatement(SELECT_CLUSTER).setIdempotent(Boolean.TRUE))) {
       try {
-        ClusterProperties properties = null != row.getString("properties")
-                ? objectMapper.readValue(row.getString("properties"), ClusterProperties.class)
-                : ClusterProperties.builder().withJmxPort(Cluster.DEFAULT_JMX_PORT).build();
-
-        Cluster.Builder builder = Cluster.builder()
-              .withName(row.getString("name"))
-              .withSeedHosts(row.getSet("seed_hosts", String.class))
-              .withJmxPort(properties.getJmxPort());
-
-        if (null != row.getString("partitioner")) {
-          builder = builder.withPartitioner(row.getString("partitioner"));
-        }
-
-        clusters.add(builder.build());
+        clusters.add(parseCluster(row));
       } catch (IOException ex) {
         LOG.error("Failed parsing cluster {}", row.getString("name"), ex);
       }
@@ -531,7 +518,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               cluster.getName(),
               cluster.getPartitioner().get(),
               cluster.getSeedHosts(),
-              objectMapper.writeValueAsString(cluster.getProperties())));
+              objectMapper.writeValueAsString(cluster.getProperties()),
+              cluster.getState().name(),
+              java.sql.Date.valueOf(cluster.getLastContact())));
     } catch (IOException e) {
       LOG.error("Failed serializing cluster information for database write", e);
       throw new IllegalStateException(e);
@@ -545,45 +534,62 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   private boolean addClusterAssertions(Cluster cluster) {
-    Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
-    try {
-      // assert we're not overwriting a cluster with the same name but different node list
-      Set<String> previousNodes = getCluster(cluster.getName()).getSeedHosts();
-      Set<String> addedNodes = cluster.getSeedHosts();
+    Preconditions.checkState(
+        Cluster.State.UNKNOWN != cluster.getState(),
+        "Cluster should not be persisted with UNKNOWN state");
 
-      Preconditions.checkArgument(
-          !Collections.disjoint(previousNodes, addedNodes),
-          "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
-          cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
-    } catch (IllegalArgumentException ignore) { }
+    Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
+    // assert we're not overwriting a cluster with the same name but different node list
+    Set<String> previousNodes;
+    try {
+      previousNodes = getCluster(cluster.getName()).getSeedHosts();
+    } catch (IllegalArgumentException ignore) {
+      // there is no previous cluster with same name
+      previousNodes = cluster.getSeedHosts();
+    }
+    Set<String> addedNodes = cluster.getSeedHosts();
+
+    Preconditions.checkArgument(
+        !Collections.disjoint(previousNodes, addedNodes),
+        "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
+        cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
+
     return true;
   }
 
   @Override
   public Cluster getCluster(String clusterName) {
-    // XXX multiple clusters can re-use the same name
     Row row = session.execute(getClusterPrepStmt.bind(clusterName)).one();
     if (null != row) {
       try {
-        ClusterProperties properties = null != row.getString("properties")
-              ? objectMapper.readValue(row.getString("properties"), ClusterProperties.class)
-              : ClusterProperties.builder().withJmxPort(Cluster.DEFAULT_JMX_PORT).build();
-
-        Cluster.Builder builder = Cluster.builder()
-              .withName(row.getString("name"))
-              .withSeedHosts(row.getSet("seed_hosts", String.class))
-              .withJmxPort(properties.getJmxPort());
-
-        if (null != row.getString("partitioner")) {
-          builder = builder.withPartitioner(row.getString("partitioner"));
-        }
-        return builder.build();
+        return parseCluster(row);
       } catch (IOException e) {
         LOG.error("Failed parsing cluster information from the database entry", e);
         throw new IllegalStateException(e);
       }
     }
     throw new IllegalArgumentException("no such cluster: " + clusterName);
+  }
+
+  private Cluster parseCluster(Row row) throws IOException {
+
+    ClusterProperties properties = null != row.getString("properties")
+          ? objectMapper.readValue(row.getString("properties"), ClusterProperties.class)
+          : ClusterProperties.builder().withJmxPort(Cluster.DEFAULT_JMX_PORT).build();
+
+    Cluster.Builder builder = Cluster.builder()
+          .withName(row.getString("name"))
+          .withSeedHosts(row.getSet("seed_hosts", String.class))
+          .withJmxPort(properties.getJmxPort())
+          .withState(null != row.getString("state")
+              ? Cluster.State.valueOf(row.getString("state"))
+              : Cluster.State.UNREACHABLE)
+          .withLastContact(new java.sql.Date(row.getTimestamp("last_contact").getTime()).toLocalDate());
+
+    if (null != row.getString("partitioner")) {
+      builder = builder.withPartitioner(row.getString("partitioner"));
+    }
+    return builder.build();
   }
 
   @Override
@@ -787,7 +793,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Collection<RepairRun> getRepairRunsWithState(RunState runState) throws ReaperException {
+  public Collection<RepairRun> getRepairRunsWithState(RunState runState) {
     Set<RepairRun> repairRunsWithState = Sets.newHashSet();
 
     List<Collection<UUID>> repairRunIds = getClusters()

@@ -34,11 +34,17 @@ import static org.mockito.Mockito.verify;
 
 public final class AutoSchedulingManagerTest {
 
-  private static final Cluster CLUSTER_1
-      = Cluster.builder().withName("cluster1").withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
+  private static final Cluster CLUSTER_1 = Cluster.builder()
+      .withName("cluster1")
+      .withSeedHosts(ImmutableSet.of("127.0.0.1"))
+      .withState(Cluster.State.ACTIVE)
+      .build();
 
-  private static final Cluster CLUSTER_2
-      = Cluster.builder().withName("cluster2").withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
+  private static final Cluster CLUSTER_2 = Cluster.builder()
+      .withName("cluster2")
+      .withSeedHosts(ImmutableSet.of("127.0.0.1"))
+      .withState(Cluster.State.ACTIVE)
+      .build();
 
   private AppContext context;
   private AutoSchedulingManager repairAutoSchedulingManager;

@@ -26,7 +26,6 @@ import io.cassandrareaper.core.RepairRun.RunState;
 import io.cassandrareaper.storage.IStorage;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -50,6 +49,7 @@ public final class PurgeServiceTest {
 
   private static final Logger LOG = LoggerFactory.getLogger(PurgeServiceTest.class);
   private static final String CLUSTER_NAME = "test";
+  private static final Set<String> SEEDS = ImmutableSet.of("127.0.0.1");
   private static final Set<String> TABLES = ImmutableSet.of("table1");
 
   @Test
@@ -61,8 +61,7 @@ public final class PurgeServiceTest {
     // Create storage mock
     context.storage = mock(IStorage.class);
 
-    List<Cluster> clusters
-        = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(Collections.EMPTY_SET).build());
+    List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
 
     when(context.storage.getClusters()).thenReturn(clusters);
 
@@ -103,8 +102,7 @@ public final class PurgeServiceTest {
     // Create storage mock
     context.storage = mock(IStorage.class);
 
-    List<Cluster> clusters
-        = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(Collections.EMPTY_SET).build());
+    List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
 
     when(context.storage.getClusters()).thenReturn(clusters);
 
@@ -145,8 +143,7 @@ public final class PurgeServiceTest {
     // Create storage mock
     context.storage = mock(IStorage.class);
 
-    List<Cluster> clusters
-        = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(Collections.EMPTY_SET).build());
+    List<Cluster> clusters = Arrays.asList(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(SEEDS).build());
 
     when(context.storage.getClusters()).thenReturn(clusters);
 

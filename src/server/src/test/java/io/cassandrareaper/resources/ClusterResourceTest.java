@@ -29,8 +29,10 @@ import io.cassandrareaper.storage.MemoryStorage;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.ws.rs.core.Response;
@@ -40,8 +42,8 @@ import javax.ws.rs.core.UriInfo;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.assertj.core.api.Assertions;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -62,21 +64,18 @@ public final class ClusterResourceTest {
   static final String I_DONT_EXIST = "i_dont_exist";
 
   private static final String STCS = "SizeTieredCompactionStrategy";
-
-  @Before
-  public void setUp() throws Exception {
-  }
+  private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
 
   @Test
   public void testAddCluster() throws Exception {
     final MockObjects mocks = initMocks();
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
-    Response response
-        = clusterResource.addOrUpdateCluster(
-            mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
+    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
 
-    assertEquals(HttpStatus.CREATED_201, response.getStatus());
+    Response response = clusterResource
+        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
+
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED_201);
     assertEquals(1, mocks.context.storage.getClusters().size());
 
     Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
@@ -96,16 +95,17 @@ public final class ClusterResourceTest {
         .withName(CLUSTER_NAME)
         .withPartitioner(PARTITIONER)
         .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .withState(Cluster.State.ACTIVE)
         .build();
 
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
+    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
 
     Response response = clusterResource
         .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
 
-    assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NO_CONTENT_204);
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
     assertEquals(1, mocks.context.storage.getClusters().size());
 
@@ -126,11 +126,12 @@ public final class ClusterResourceTest {
         .withName(CLUSTER_NAME)
         .withPartitioner(PARTITIONER)
         .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .withState(Cluster.State.ACTIVE)
         .build();
 
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
+    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
 
     Response response = clusterResource.addOrUpdateCluster(
             mocks.uriInfo,
@@ -138,7 +139,7 @@ public final class ClusterResourceTest {
             Optional.of(SEED_HOST),
             Optional.of(Cluster.DEFAULT_JMX_PORT));
 
-    assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NO_CONTENT_204);
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
     assertEquals(1, mocks.context.storage.getClusters().size());
 
@@ -155,9 +156,9 @@ public final class ClusterResourceTest {
     final MockObjects mocks = initMocks();
     when(mocks.jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
+    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
     Response response = clusterResource.getCluster(I_DONT_EXIST, Optional.<Integer>empty());
-    assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND_404);
   }
 
   @Test
@@ -169,13 +170,227 @@ public final class ClusterResourceTest {
         .withName(I_DO_EXIST)
         .withPartitioner(PARTITIONER)
         .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .withState(Cluster.State.ACTIVE)
         .build();
 
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
+    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
     Response response = clusterResource.getCluster(I_DO_EXIST, Optional.<Integer>empty());
-    assertEquals(HttpStatus.OK_200, response.getStatus());
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
+  }
+
+  @Test
+  public void testGetClusters_all() throws ReaperException {
+    final MockObjects mocks = initMocks();
+
+    Cluster cluster = Cluster.builder()
+        .withName(CLUSTER_NAME)
+        .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+
+    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    Response response = clusterResource.getClusterList(Optional.empty());
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
+    List<String> clusterNames = (List<String>) response.getEntity();
+    Assertions.assertThat(clusterNames).hasSize(1);
+    Assertions.assertThat(clusterNames).contains(CLUSTER_NAME);
+  }
+
+  @Test
+  public void testGetClusters_specified() throws ReaperException {
+    final MockObjects mocks = initMocks();
+
+    Cluster cluster = Cluster.builder()
+        .withName(CLUSTER_NAME)
+        .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+
+    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    Response response = clusterResource.getClusterList(Optional.of(SEED_HOST));
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
+    List<String> clusterNames = (List<String>) response.getEntity();
+    Assertions.assertThat(clusterNames).hasSize(1);
+    Assertions.assertThat(clusterNames).contains(CLUSTER_NAME);
+  }
+
+  @Test
+  public void testGetClusters_only_specified_first() throws ReaperException {
+    final MockObjects mocks = initMocks();
+
+    Cluster cluster = Cluster.builder()
+        .withName(CLUSTER_NAME)
+        .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+
+    cluster = Cluster.builder()
+        .withName("cluster2")
+        .withSeedHosts(ImmutableSet.of("host2"))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+
+    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    Response response = clusterResource.getClusterList(Optional.of(SEED_HOST));
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
+    List<String> clusterNames = (List<String>) response.getEntity();
+    Assertions.assertThat(clusterNames).hasSize(1);
+    Assertions.assertThat(clusterNames).contains(CLUSTER_NAME);
+  }
+
+  @Test
+  public void testGetClusters_only_specified_second() throws ReaperException {
+    final MockObjects mocks = initMocks();
+
+    Cluster cluster = Cluster.builder()
+        .withName(CLUSTER_NAME)
+        .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+
+    cluster = Cluster.builder()
+        .withName("cluster2")
+        .withSeedHosts(ImmutableSet.of("host2"))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+
+    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    Response response = clusterResource.getClusterList(Optional.of("host2"));
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
+    List<String> clusterNames = (List<String>) response.getEntity();
+    Assertions.assertThat(clusterNames).hasSize(1);
+    Assertions.assertThat(clusterNames).contains("cluster2");
+  }
+
+  @Test
+  public void testGetClusters_multiple() throws ReaperException {
+    final MockObjects mocks = initMocks();
+
+    Cluster cluster = Cluster.builder()
+        .withName(CLUSTER_NAME)
+        .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+
+    cluster = Cluster.builder()
+        .withName("cluster2")
+        .withSeedHosts(ImmutableSet.of("host2"))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+
+    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    Response response = clusterResource.getClusterList(Optional.empty());
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
+    List<String> clusterNames = (List<String>) response.getEntity();
+    Assertions.assertThat(clusterNames).hasSize(2);
+    Assertions.assertThat(clusterNames).contains(CLUSTER_NAME, "cluster2");
+  }
+
+  @Test
+  public void testGetClusters_multiple_ordered_by_name() throws ReaperException {
+    final MockObjects mocks = initMocks();
+
+    Cluster cluster = Cluster.builder()
+        .withName(CLUSTER_NAME)
+        .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+
+    cluster = Cluster.builder()
+        .withName("abc")
+        .withSeedHosts(ImmutableSet.of("host2"))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+
+    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    Response response = clusterResource.getClusterList(Optional.empty());
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
+    List<String> clusterNames = (List<String>) response.getEntity();
+    Assertions.assertThat(clusterNames).hasSize(2);
+    Assertions.assertThat(clusterNames).containsExactly("abc", CLUSTER_NAME);
+  }
+
+  @Test
+  public void testGetClusters_multiple_ordered_by_state() throws ReaperException {
+    final MockObjects mocks = initMocks();
+
+    Cluster cluster = Cluster.builder()
+        .withName(CLUSTER_NAME)
+        .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .withState(Cluster.State.UNREACHABLE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+
+    cluster = Cluster.builder()
+        .withName("cluster2")
+        .withSeedHosts(ImmutableSet.of("host2"))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+
+    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    Response response = clusterResource.getClusterList(Optional.empty());
+    Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
+    List<String> clusterNames = (List<String>) response.getEntity();
+    Assertions.assertThat(clusterNames).hasSize(2);
+    Assertions.assertThat(clusterNames).containsExactly("cluster2", CLUSTER_NAME);
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void testGetClusters_fail_persisting_unknown() throws ReaperException {
+    final MockObjects mocks = initMocks();
+
+    Cluster cluster = Cluster.builder()
+        .withName(CLUSTER_NAME)
+        .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testGetClusters_fail_persisting_two_clusters_same_name() throws ReaperException {
+    final MockObjects mocks = initMocks();
+
+    Cluster cluster = Cluster.builder()
+        .withName(CLUSTER_NAME)
+        .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
+
+    cluster = Cluster.builder()
+        .withName(CLUSTER_NAME)
+        .withSeedHosts(ImmutableSet.of("test_host_2"))
+        .withState(Cluster.State.ACTIVE)
+        .build();
+
+    mocks.context.storage.addCluster(cluster);
   }
 
   @Test
@@ -184,7 +399,7 @@ public final class ClusterResourceTest {
 
     ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
     clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
-    doReturn(Arrays.asList(SEED_HOST + 1)).when(mocks.jmxProxy).getLiveNodes();
+    doReturn(Arrays.asList(SEED_HOST + 1, SEED_HOST)).when(mocks.jmxProxy).getLiveNodes();
 
     Response response = clusterResource
         .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST + 1), Optional.of(Cluster.DEFAULT_JMX_PORT));
@@ -194,8 +409,8 @@ public final class ClusterResourceTest {
     assertEquals(1, mocks.context.storage.getClusters().size());
 
     Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
-    assertEquals(1, cluster.getSeedHosts().size());
-    assertEquals(SEED_HOST + 1, cluster.getSeedHosts().iterator().next());
+    Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);
+    Assertions.assertThat(cluster.getSeedHosts()).contains(SEED_HOST + 1);
 
     response = clusterResource.addOrUpdateCluster(
             mocks.uriInfo,
@@ -213,7 +428,7 @@ public final class ClusterResourceTest {
 
     ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
     clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
-    doReturn(Arrays.asList(SEED_HOST + 1)).when(mocks.jmxProxy).getLiveNodes();
+    doReturn(Arrays.asList(SEED_HOST + 1, SEED_HOST)).when(mocks.jmxProxy).getLiveNodes();
 
     Response response = clusterResource.addOrUpdateCluster(
             mocks.uriInfo,
@@ -226,8 +441,8 @@ public final class ClusterResourceTest {
     assertEquals(1, mocks.context.storage.getClusters().size());
 
     Cluster cluster = mocks.context.storage.getCluster(CLUSTER_NAME);
-    assertEquals(1, cluster.getSeedHosts().size());
-    assertEquals(SEED_HOST + 1, cluster.getSeedHosts().iterator().next());
+    Assertions.assertThat(cluster.getSeedHosts()).hasSize(2);
+    Assertions.assertThat(cluster.getSeedHosts()).contains(SEED_HOST + 1);
 
     response = clusterResource.addOrUpdateCluster(
             mocks.uriInfo,

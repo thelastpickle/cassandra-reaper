@@ -124,6 +124,7 @@ public final class RepairRunResourceTest {
         .withName(CLUSTER_NAME)
         .withPartitioner(PARTITIONER)
         .withSeedHosts(ImmutableSet.of(SEED_HOST))
+        .withState(Cluster.State.ACTIVE)
         .build();
 
     context.storage.addCluster(cluster);

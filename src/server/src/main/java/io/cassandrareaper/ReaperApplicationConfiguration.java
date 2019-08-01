@@ -117,6 +117,10 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Integer jmxConnectionTimeoutInSeconds;
 
   @JsonProperty
+  @DefaultValue("7")
+  private Integer clusterTimeoutInDays;
+
+  @JsonProperty
   private DatacenterAvailability datacenterAvailability;
 
   @JsonProperty private AccessControlConfiguration accessControl;
@@ -360,6 +364,15 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public int getJmxConnectionTimeoutInSeconds() {
     return jmxConnectionTimeoutInSeconds != null ? jmxConnectionTimeoutInSeconds : 20;
+  }
+
+  @JsonProperty
+  public void setClusterTimeoutInDays(int clusterTimeoutInDays) {
+    this.clusterTimeoutInDays = clusterTimeoutInDays;
+  }
+
+  public int getClusterTimeoutInDays() {
+    return clusterTimeoutInDays != null ? clusterTimeoutInDays : 7;
   }
 
   @JsonProperty

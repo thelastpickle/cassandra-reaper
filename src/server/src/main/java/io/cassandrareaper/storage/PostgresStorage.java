@@ -142,24 +142,24 @@ public final class PostgresStorage implements IStorage {
   }
 
   @Override
-  public boolean addCluster(Cluster newCluster) {
-    assert addAndUpdateClusterAssertions(newCluster);
+  public boolean addCluster(Cluster cluster) {
+    assert addAndUpdateClusterAssertions(cluster);
     Cluster result = null;
     try (Handle h = jdbi.open()) {
-      String properties = new ObjectMapper().writeValueAsString(newCluster.getProperties());
-      Preconditions.checkState(newCluster.getPartitioner().isPresent(),
-          "Cannot insert cluster with no partitioner.");
-      int rowsAdded
-          = getPostgresStorage(h)
-              .insertCluster(
-                  newCluster.getName(),
-                  newCluster.getPartitioner().get(),
-                  newCluster.getSeedHosts(),
-                  properties);
+      String properties = new ObjectMapper().writeValueAsString(cluster.getProperties());
+
+      int rowsAdded = getPostgresStorage(h).insertCluster(
+          cluster.getName(),
+          cluster.getPartitioner().get(),
+          cluster.getSeedHosts(),
+          properties,
+          cluster.getState().name(),
+          java.sql.Date.valueOf(cluster.getLastContact()));
+
       if (rowsAdded < 1) {
-        LOG.warn("failed inserting cluster with name: {}", newCluster.getName());
+        LOG.warn("failed inserting cluster with name: {}", cluster.getName());
       } else {
-        result = newCluster; // no created id, as cluster name used for primary key
+        result = cluster; // no created id, as cluster name used for primary key
       }
     } catch (JsonProcessingException e) {
       throw new IllegalStateException(e);
@@ -183,17 +183,26 @@ public final class PostgresStorage implements IStorage {
   }
 
   private boolean addAndUpdateClusterAssertions(Cluster cluster) {
-    Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
-    try {
-      // assert we're not overwriting a cluster with the same name but different node list
-      Set<String> previousNodes = getCluster(cluster.getName()).getSeedHosts();
-      Set<String> addedNodes = cluster.getSeedHosts();
+    Preconditions.checkState(
+        Cluster.State.UNKNOWN != cluster.getState(),
+        "Cluster should not be persisted with UNKNOWN state");
 
-      Preconditions.checkArgument(
-          !Collections.disjoint(previousNodes, addedNodes),
-          "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
-          cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
-    } catch (IllegalArgumentException ignore) { }
+    Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
+    // assert we're not overwriting a cluster with the same name but different node list
+    Set<String> previousNodes;
+    try {
+      previousNodes = getCluster(cluster.getName()).getSeedHosts();
+    } catch (IllegalArgumentException ignore) {
+      // there is no previous cluster with same name
+      previousNodes = cluster.getSeedHosts();
+    }
+    Set<String> addedNodes = cluster.getSeedHosts();
+
+    Preconditions.checkArgument(
+        !Collections.disjoint(previousNodes, addedNodes),
+        "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
+        cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
+
     return true;
   }
 

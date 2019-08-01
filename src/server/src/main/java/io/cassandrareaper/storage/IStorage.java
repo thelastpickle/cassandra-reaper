@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.storage;
 
-import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
@@ -70,7 +69,7 @@ public interface IStorage {
 
   Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId);
 
-  Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState) throws ReaperException;
+  Collection<RepairRun> getRepairRunsWithState(RepairRun.RunState runState);
 
   /**
    * Delete the RepairRun instance identified by the given id, and delete also all the related repair segments.

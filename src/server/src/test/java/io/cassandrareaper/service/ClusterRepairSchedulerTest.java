@@ -63,6 +63,7 @@ public final class ClusterRepairSchedulerTest {
     cluster = Cluster.builder()
         .withName(RandomStringUtils.randomAlphabetic(12))
         .withSeedHosts(ImmutableSet.of("127.0.0.1"))
+        .withState(Cluster.State.ACTIVE)
         .build();
 
     context = new AppContext();

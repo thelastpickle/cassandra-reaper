@@ -492,6 +492,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
           .storage
           .getClusters()
           .parallelStream()
+          .sorted()
           .forEach(cluster -> jmxConnectionsIntializer.on(cluster));
 
       LOG.info("Initialized JMX seed list for all clusters.");

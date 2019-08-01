@@ -89,19 +89,28 @@ public final class MemoryStorage implements IStorage {
 
 
   private boolean addClusterAssertions(Cluster cluster) {
+    Preconditions.checkState(
+        Cluster.State.UNKNOWN != cluster.getState(),
+        "Cluster should not be persisted with UNKNOWN state");
+
     // TODO – unit tests need to also always set the paritioner
     //Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
 
+    // assert we're not overwriting a cluster with the same name but different node list
+    Set<String> previousNodes;
     try {
-      // assert we're not overwriting a cluster with the same name but different node list
-      Set<String> previousNodes = getCluster(cluster.getName()).getSeedHosts();
-      Set<String> addedNodes = cluster.getSeedHosts();
+      previousNodes = getCluster(cluster.getName()).getSeedHosts();
+    } catch (IllegalArgumentException ignore) {
+      // there is no previous cluster with same name
+      previousNodes = cluster.getSeedHosts();
+    }
+    Set<String> addedNodes = cluster.getSeedHosts();
 
-      Preconditions.checkArgument(
-          !Collections.disjoint(previousNodes, addedNodes),
-          "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
-          cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
-    } catch (IllegalArgumentException ignore) { }
+    Preconditions.checkArgument(
+        !Collections.disjoint(previousNodes, addedNodes),
+        "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
+        cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
+
     return true;
   }
 

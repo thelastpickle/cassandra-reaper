@@ -58,6 +58,7 @@ import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.progress.ProgressEventType;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.util.Maps;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -82,6 +83,12 @@ public final class RepairRunnerTest {
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunnerTest.class);
   private static final Set<String> TABLES = ImmutableSet.of("table1");
 
+  private final Cluster cluster = Cluster.builder()
+            .withName("test_" + RandomStringUtils.randomAlphabetic(12))
+            .withSeedHosts(ImmutableSet.of("127.0.0.1"))
+            .withState(Cluster.State.ACTIVE)
+            .build();
+
   @Before
   public void setUp() throws Exception {
     SegmentRunner.SEGMENT_RUNNERS.clear();
@@ -89,7 +96,6 @@ public final class RepairRunnerTest {
 
   @Test
   public void testHangingRepair() throws InterruptedException, ReaperException {
-    final String CLUSTER_NAME = "reaper";
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
@@ -101,11 +107,11 @@ public final class RepairRunnerTest {
     final int REPAIR_THREAD_COUNT = 1;
     final IStorage storage = new MemoryStorage();
 
-    storage.addCluster(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
+    storage.addCluster(cluster);
 
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
-            .clusterName(CLUSTER_NAME)
+            .clusterName(cluster.getName())
             .keyspaceName(KS_NAME)
             .columnFamilies(CF_NAMES)
             .incrementalRepair(INCREMENTAL_REPAIR)
@@ -115,7 +121,7 @@ public final class RepairRunnerTest {
             .repairThreadCount(REPAIR_THREAD_COUNT));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairRun run = storage.addRepairRun(
-            RepairRun.builder(CLUSTER_NAME, cf.getId())
+            RepairRun.builder(cluster.getName(), cf.getId())
                 .intensity(INTENSITY)
                 .segmentCount(1)
                 .repairParallelism(RepairParallelism.PARALLEL)
@@ -132,7 +138,7 @@ public final class RepairRunnerTest {
     context.config = new ReaperApplicationConfiguration();
     final Semaphore mutex = new Semaphore(0);
     final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
-    when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
+    when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
     EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
@@ -239,7 +245,6 @@ public final class RepairRunnerTest {
 
   @Test
   public void testHangingRepairNewAPI() throws InterruptedException, ReaperException {
-    final String CLUSTER_NAME = "reaper";
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
@@ -250,11 +255,13 @@ public final class RepairRunnerTest {
     final double INTENSITY = 0.5f;
     final int REPAIR_THREAD_COUNT = 1;
     final IStorage storage = new MemoryStorage();
-    storage.addCluster(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
+
+    storage.addCluster(cluster);
+
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
-            .clusterName(CLUSTER_NAME)
+            .clusterName(cluster.getName())
             .keyspaceName(KS_NAME)
             .columnFamilies(CF_NAMES)
             .incrementalRepair(INCREMENTAL_REPAIR)
@@ -263,7 +270,7 @@ public final class RepairRunnerTest {
             .blacklistedTables(BLACKLISTED_TABLES)
             .repairThreadCount(REPAIR_THREAD_COUNT));
     RepairRun run = storage.addRepairRun(
-            RepairRun.builder(CLUSTER_NAME, cf.getId())
+            RepairRun.builder(cluster.getName(), cf.getId())
                 .intensity(INTENSITY).segmentCount(1)
                 .repairParallelism(RepairParallelism.PARALLEL)
                 .tables(TABLES),
@@ -279,7 +286,7 @@ public final class RepairRunnerTest {
     context.config = new ReaperApplicationConfiguration();
     final Semaphore mutex = new Semaphore(0);
     final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
-    when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
+    when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
     EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
@@ -385,7 +392,6 @@ public final class RepairRunnerTest {
 
   @Test
   public void testResumeRepair() throws InterruptedException, ReaperException {
-    final String CLUSTER_NAME = "reaper";
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
@@ -404,11 +410,12 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-    storage.addCluster(Cluster.builder().withName(CLUSTER_NAME).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
+
+    storage.addCluster(cluster);
 
     UUID cf = storage.addRepairUnit(
         RepairUnit.builder()
-            .clusterName(CLUSTER_NAME)
+            .clusterName(cluster.getName())
             .keyspaceName(KS_NAME)
             .columnFamilies(CF_NAMES)
             .incrementalRepair(INCREMENTAL_REPAIR)
@@ -421,7 +428,7 @@ public final class RepairRunnerTest {
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
 
     RepairRun run = storage.addRepairRun(
-            RepairRun.builder(CLUSTER_NAME, cf)
+            RepairRun.builder(cluster.getName(), cf)
                 .intensity(INTENSITY)
                 .segmentCount(1)
                 .repairParallelism(RepairParallelism.PARALLEL)
@@ -445,7 +452,7 @@ public final class RepairRunnerTest {
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
     final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
-    when(jmx.getClusterName()).thenReturn(CLUSTER_NAME);
+    when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
     when(jmx.getEndpointToHostId()).thenReturn(NODES_MAP);
