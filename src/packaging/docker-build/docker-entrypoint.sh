@@ -20,6 +20,8 @@ set -ex
 # build web UI
 # build Debian and RPM packages
 # copy built packages into a mounted volume
+cd ${WORKDIR}/cassandra-reaper
+export VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
 cd ${WORKDIR}/cassandra-reaper/src/packaging \
     && make all \
     && mv *.deb *.rpm ${WORKDIR}/packages \
