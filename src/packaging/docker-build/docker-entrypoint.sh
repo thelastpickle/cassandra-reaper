@@ -23,7 +23,7 @@ set -ex
 cd ${WORKDIR}/cassandra-reaper
 export VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
 cd ${WORKDIR}/cassandra-reaper/src/packaging \
-    && make all \
+    && make build-packages \
     && mv *.deb *.rpm ${WORKDIR}/packages \
     && cp ../server/target/cassandra-*.jar ${WORKDIR}/packages \
     && rm ${WORKDIR}/packages/cassandra*-sources.jar
