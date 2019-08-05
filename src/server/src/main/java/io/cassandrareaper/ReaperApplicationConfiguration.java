@@ -150,6 +150,10 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   private Optional<String> enforcedLocalDatacenter = Optional.empty();
 
+  @JsonProperty
+  @DefaultValue("false")
+  private Boolean enableConcurrentMigrations;
+
   public int getSegmentCount() {
     return segmentCount == null ? 0 : segmentCount;
   }
@@ -434,7 +438,13 @@ public final class ReaperApplicationConfiguration extends Configuration {
     this.enforcedLocalDatacenter = enforcedLocalDatacenter;
   }
 
+  public boolean getEnableConcurrentMigrations() {
+    return this.enableConcurrentMigrations == null ? false : this.enableConcurrentMigrations;
+  }
 
+  public void setEnableConcurrentMigrations(boolean enableConcurrentMigrations) {
+    this.enableConcurrentMigrations = enableConcurrentMigrations;
+  }
 
   public static final class JmxCredentials {
 

@@ -29,6 +29,7 @@ datacenterAvailability: SIDECAR
 enforcedLocalNode: 127.0.0.2
 enforcedLocalClusterName: test
 enforcedLocalDatacenter: dc1
+enableConcurrentMigrations: true
 
 logging:
   level: WARN
