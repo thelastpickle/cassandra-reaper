@@ -80,18 +80,4 @@ public interface IDistributedStorage {
   void storeOperations(String clusterName, OpType operationType, String host, String operationsJson);
 
   String listOperations(String clusterName, OpType operationType, String host);
-  /*
-  void storeCompactions(String clusterName, String host, List<Compaction> activeCompactions)
-      throws JsonProcessingException;
-
-  List<Compaction> listCompactions(String clusterName, String host)
-      throws JsonProcessingException, IOException;
-
-  void storeStreams(String clusterName, String host, Set<CompositeData> activeStreams)
-      throws JsonProcessingException;
-
-  Set<CompositeData> listStreamingOperations(String clusterName, String host)
-      throws JsonProcessingException, IOException;
-  */
-
 }

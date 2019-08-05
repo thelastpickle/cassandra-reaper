@@ -40,6 +40,7 @@ import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.cassandra.DateTimeCodec;
 import io.cassandrareaper.storage.cassandra.Migration016;
 import io.cassandrareaper.storage.cassandra.Migration021;
+import io.cassandrareaper.storage.cassandra.SchemaMigrationLock;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -116,9 +117,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
   private static final String SELECT_RUNNING_REAPERS = "SELECT reaper_instance_id FROM running_reapers";
   private static final DateTimeFormatter HOURLY_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHH");
-
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
-
   private static final AtomicBoolean UNINITIALISED = new AtomicBoolean(true);
 
   private final com.datastax.driver.core.Cluster cassandra;
@@ -213,30 +212,30 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     codecRegistry.register(new DateTimeCodec());
     session = cassandra.connect(config.getCassandraFactory().getKeyspace());
 
-    initializeAndUpgradeSchema(cassandra, session, config.getCassandraFactory().getKeyspace());
-
     version = cassandra.getMetadata().getAllHosts()
         .stream()
         .map(h -> h.getCassandraVersion())
         .min(VersionNumber::compareTo)
         .get();
 
+    initializeAndUpgradeSchema(cassandra, session, config, version);
     prepareStatements();
   }
 
   private static void initializeAndUpgradeSchema(
       com.datastax.driver.core.Cluster cassandra,
       Session session,
-      String keyspace) throws ReaperException {
+      ReaperApplicationConfiguration config,
+      VersionNumber version) throws ReaperException {
 
-    cassandra.getMetadata().getAllHosts().forEach((host) -> {
-      Preconditions.checkState(
-              0 >= VersionNumber.parse("2.1").compareTo(host.getCassandraVersion()),
-              "All Cassandra nodes in Reaper's backend storage must be running version 2.1+");
-    });
+    Preconditions.checkState(
+            0 >= VersionNumber.parse("2.1").compareTo(version),
+            "All Cassandra nodes in Reaper's backend storage must be running version 2.1+");
 
-    // initialize/upgrade db schema
-    try (Database database = new Database(cassandra, keyspace)) {
+    try (
+        SchemaMigrationLock schemaMigrationLock = new SchemaMigrationLock(version, session, config);
+        Database database = new Database(cassandra, config.getCassandraFactory().getKeyspace())) {
+
       int currentVersion = database.getVersion();
       MigrationRepository migrationRepo = new MigrationRepository("db/cassandra");
       if (currentVersion < migrationRepo.getLatestVersion()) {
@@ -257,20 +256,20 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
         migrate(database.getVersion(), migrationRepo, session);
         // some migration steps depend on the Cassandra version, so must be rerun every startup
-        Migration016.migrate(session, keyspace);
+        Migration016.migrate(session, config.getCassandraFactory().getKeyspace());
         // Switch metrics table to TWCS if possible, this is intentionally executed every startup
-        Migration021.migrate(session, keyspace);
+        Migration021.migrate(session, config.getCassandraFactory().getKeyspace());
       } else {
         LOG.info(
             String.format("Keyspace %s already at schema version %d", session.getLoggedKeyspace(), currentVersion));
       }
-    } catch (RuntimeException e) {
-      LOG.error("Failed performing Cassandra schema migrations", e);
-      throw new ReaperException(e);
     }
   }
 
-  private static void migrate(int dbVersion, MigrationRepository repository, Session session) {
+  private static void migrate(
+      int dbVersion,
+      MigrationRepository repository,
+      Session session) {
     Preconditions.checkState(dbVersion < repository.getLatestVersion());
 
     for (int i = dbVersion + 1 ; i <= repository.getLatestVersion(); ++i) {
