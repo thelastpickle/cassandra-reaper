@@ -18,6 +18,7 @@
 package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
+import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairRun;
@@ -89,7 +90,8 @@ final class RepairRunner implements Runnable {
 
     int parallelRepairs = getPossibleParallelRepairsCount(
             clusterFacade.getRangeToEndpointMap(cluster, keyspace),
-            clusterFacade.getEndpointToHostId(cluster));
+            clusterFacade.getEndpointToHostId(cluster),
+            context.config.getDatacenterAvailability());
 
     if (repairUnitOpt.getIncrementalRepair()) {
       // with incremental repair, can't have more parallel repairs than nodes
@@ -167,12 +169,18 @@ final class RepairRunner implements Runnable {
 
   static int getPossibleParallelRepairsCount(
       Map<List<String>, List<String>> ranges,
-      Map<String, String> hostsInRing) throws ReaperException {
+      Map<String, String> hostsInRing,
+      DatacenterAvailability datacenterAvailability) throws ReaperException {
 
     if (ranges.isEmpty()) {
       String msg = "Repairing 0-sized cluster.";
       LOG.error(msg);
       throw new ReaperException(msg);
+    }
+
+    if (DatacenterAvailability.SIDECAR == datacenterAvailability) {
+      // only 1 segment can be repaired by each instance at once in sidecar mode
+      return 1;
     }
 
     LOG.debug(
