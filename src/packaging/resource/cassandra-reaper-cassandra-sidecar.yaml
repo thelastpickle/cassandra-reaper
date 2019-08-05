@@ -22,16 +22,18 @@ repairIntensity: 0.9
 scheduleDaysBetween: 7
 repairRunThreadCount: 15
 hangingRepairTimeoutMins: 30
-storageType: memory
+storageType: cassandra
 enableCrossOrigin: true
 incrementalRepair: false
 blacklistTwcsTables: true
 enableDynamicSeedList: true
 repairManagerSchedulingIntervalSeconds: 10
+activateQueryLogger: false
 jmxConnectionTimeoutInSeconds: 5
 useAddressTranslator: false
 # purgeRecordsAfterInDays: 30
 # numberOfRunsToKeepPerUnit: 10
+enableConcurrentMigrations: true
 
 # datacenterAvailability has three possible values: ALL | LOCAL | EACH | SIDECAR
 # the correct value to use depends on whether jmx ports to C* nodes in remote datacenters are accessible
@@ -42,19 +44,8 @@ useAddressTranslator: false
 # If jmx access is restricted to localhost, then configure to SIDECAR.
 #
 # The default is ALL
-datacenterAvailability: ALL
+datacenterAvailability: SIDECAR
 
-
-# any cassandra nodes on 127.0.0.x addresses we presume are ccm nodes
-jmxPorts:
-  127.0.0.1: 7100
-  127.0.0.2: 7200
-  127.0.0.3: 7300
-  127.0.0.4: 7400
-  127.0.0.5: 7500
-  127.0.0.6: 7600
-  127.0.0.7: 7700
-  127.0.0.8: 7800
 
 #jmxAuth:
 #  username: myUsername
@@ -63,6 +54,14 @@ jmxPorts:
 logging:
   level: INFO
   loggers:
+    com.datastax.driver.core.QueryLogger.NORMAL:
+      level: DEBUG
+      additive: false
+      appenders:
+        - type: file
+          currentLogFilename: /var/log/cassandra-reaper/query-logger.log
+          archivedLogFilenamePattern: query-logger-%d.log.gz
+          archivedFileCount: 2
     io.dropwizard: WARN
     org.eclipse.jetty: WARN
   appenders:
@@ -88,6 +87,18 @@ server:
   requestLog:
     appenders: []
 
+cassandra:
+  clusterName: "test"
+  contactPoints: ["127.0.0.1"]
+  keyspace: reaper_db
+  loadBalancingPolicy:
+    type: tokenAware
+    shuffleReplicas: true
+    subPolicy:
+      type: dcAwareRoundRobin
+      localDC:
+      usedHostsPerRemoteDC: 0
+      allowRemoteDCsForLocalConsistencyLevel: false
 autoScheduling:
   enabled: false
   initialDelayPeriod: PT15S
