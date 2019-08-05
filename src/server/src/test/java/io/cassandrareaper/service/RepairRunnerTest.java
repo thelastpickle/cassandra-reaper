@@ -19,6 +19,7 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
+import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
@@ -536,11 +537,13 @@ public final class RepairRunnerTest {
   public void getPossibleParallelRepairsTest() throws Exception {
     Map<List<String>, List<String>> map = RepairRunnerTest.threeNodeCluster();
     Map<String, String> endpointsThreeNodes = RepairRunnerTest.threeNodeClusterEndpoint();
-    assertEquals(1, RepairRunner.getPossibleParallelRepairsCount(map, endpointsThreeNodes));
+    assertEquals(1, RepairRunner.getPossibleParallelRepairsCount(map, endpointsThreeNodes, DatacenterAvailability.ALL));
 
     map = RepairRunnerTest.sixNodeCluster();
     Map<String, String> endpointsSixNodes = RepairRunnerTest.sixNodeClusterEndpoint();
-    assertEquals(2, RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes));
+    assertEquals(2, RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes, DatacenterAvailability.ALL));
+    assertEquals(1,
+        RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes, DatacenterAvailability.SIDECAR));
   }
 
   @Test
@@ -561,7 +564,7 @@ public final class RepairRunnerTest {
     Map<String, String> endpointsSixNodes = RepairRunnerTest.sixNodeClusterEndpoint();
 
     List<RingRange> ranges = RepairRunner.getParallelRanges(
-            RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes),
+            RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes, DatacenterAvailability.ALL),
             Lists.newArrayList(
                 Collections2.transform(segments, segment -> segment.getBaseRange())));
 
@@ -587,7 +590,7 @@ public final class RepairRunnerTest {
             32, tokens, Boolean.FALSE, RepairRunService.buildReplicasToRangeMap(map), "2.2.10");
 
     List<RingRange> ranges = RepairRunner.getParallelRanges(
-            RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes),
+            RepairRunner.getPossibleParallelRepairsCount(map, endpointsSixNodes, DatacenterAvailability.ALL),
             Lists.newArrayList(
                 Collections2.transform(segments, segment -> segment.getBaseRange())));
 
