@@ -44,6 +44,8 @@ rpm: prepare
 
 all: package deb rpm
 
+build-packages: deb rpm
+
 clean:
 	rm -Rf packages/*
 	rm -Rf build/*
