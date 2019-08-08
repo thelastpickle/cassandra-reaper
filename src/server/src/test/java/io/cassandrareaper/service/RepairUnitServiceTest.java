@@ -69,11 +69,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveOneTableTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-
-    when(context.jmxConnectionFactory.connectAny(cluster))
-        .thenReturn(proxy);
-    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
-        .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
             .thenReturn(Sets.newHashSet(
@@ -96,11 +92,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairDefaultCompactionStrategyTable() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-
-    when(context.jmxConnectionFactory.connectAny(cluster))
-          .thenReturn(proxy);
-    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
-          .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
           .thenReturn(Sets.newHashSet(
@@ -123,11 +115,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveOneTableWithTwcsTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-
-    when(context.jmxConnectionFactory.connectAny(cluster))
-        .thenReturn(proxy);
-    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
-        .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
             .thenReturn(Sets.newHashSet(
@@ -149,11 +137,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveTwoTablesTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-
-    when(context.jmxConnectionFactory.connectAny(cluster))
-        .thenReturn(proxy);
-    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
-        .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
             .thenReturn(Sets.newHashSet(
@@ -176,11 +160,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveTwoTablesOneWithTwcsTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-
-    when(context.jmxConnectionFactory.connectAny(cluster))
-        .thenReturn(proxy);
-    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
-        .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
             .thenReturn(Sets.newHashSet(
@@ -203,11 +183,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveOneTableFromListTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-
-    when(context.jmxConnectionFactory.connectAny(cluster))
-        .thenReturn(proxy);
-    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
-        .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
             .thenReturn(Sets.newHashSet(
@@ -231,11 +207,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveOneTableFromListOneWithTwcsTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-
-    when(context.jmxConnectionFactory.connectAny(cluster))
-        .thenReturn(proxy);
-    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
-        .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
             .thenReturn(Sets.newHashSet(
@@ -259,11 +231,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveAllFailingTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-
-    when(context.jmxConnectionFactory.connectAny(cluster))
-        .thenReturn(proxy);
-    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
-        .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
             .thenReturn(Sets.newHashSet(
@@ -286,11 +254,7 @@ public final class RepairUnitServiceTest {
   public void getTablesToRepairRemoveAllFromListFailingTest() throws ReaperException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
-
-    when(context.jmxConnectionFactory.connectAny(cluster))
-        .thenReturn(proxy);
-    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class)))
-        .thenReturn(proxy);
+    when(context.jmxConnectionFactory.connectAny(Mockito.any(Collection.class))).thenReturn(proxy);
 
     when(proxy.getTablesForKeyspace(Mockito.anyString()))
         .thenReturn(Sets.newHashSet(

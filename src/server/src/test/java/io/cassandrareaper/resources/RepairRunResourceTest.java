@@ -162,12 +162,8 @@ public final class RepairRunResourceTest {
         .thenReturn(1);
 
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(proxy);
 
-    when(context.jmxConnectionFactory.connectAny(cluster))
-        .thenReturn(proxy);
-
-    when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection()))
-        .thenReturn(proxy);
     RepairUnit.Builder repairUnitBuilder = RepairUnit.builder()
             .clusterName(CLUSTER_NAME)
             .keyspaceName(KEYSPACE)

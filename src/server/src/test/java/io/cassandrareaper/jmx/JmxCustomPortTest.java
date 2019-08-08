@@ -65,7 +65,9 @@ public final class JmxCustomPortTest {
             .withJmxPort(7188)
             .build();
 
-    context.jmxConnectionFactory.connectAny(cluster);
+    context.jmxConnectionFactory
+        .connectAny(Collections.singleton(Node.builder().withCluster(cluster).withHostname("127.0.0.1").build()));
+
     assertEquals(7188, port.get());
 
     Cluster cluster2 = Cluster.builder()

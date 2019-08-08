@@ -151,7 +151,6 @@ public final class SnapshotServiceTest {
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class))).thenReturn(proxy);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn(Arrays.asList("127.0.0.1", "127.0.0.2")).when(clusterFacadeSpy).getLiveNodes(any());
     Mockito.doReturn(Arrays.asList("127.0.0.1", "127.0.0.2"))
@@ -186,7 +185,6 @@ public final class SnapshotServiceTest {
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
-    when(cxt.jmxConnectionFactory.connectAny(Mockito.any(Cluster.class))).thenReturn(proxy);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
     Mockito.doReturn(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3")).when(clusterFacadeSpy).getLiveNodes(any());
     Mockito.doReturn(Arrays.asList("127.0.0.1", "127.0.0.2", "127.0.0.3"))

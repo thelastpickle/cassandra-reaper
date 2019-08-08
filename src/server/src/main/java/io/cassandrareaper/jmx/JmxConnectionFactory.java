@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
@@ -146,20 +145,6 @@ public class JmxConnectionFactory {
       }
     }
     throw new ReaperException("no host could be reached through JMX");
-  }
-
-  @VisibleForTesting
-  public JmxProxy connectAny(Cluster cluster) throws ReaperException {
-    Set<Node> nodes = cluster
-            .getSeedHosts()
-            .stream()
-            .map(host -> Node.builder().withCluster(cluster).withHostname(host).build())
-            .collect(Collectors.toSet());
-
-    if (nodes == null || nodes.isEmpty()) {
-      throw new ReaperException("no seeds in cluster with name: " + cluster.getName());
-    }
-    return connectAny(nodes);
   }
 
   public final void setJmxAuth(JmxCredentials jmxAuth) {
