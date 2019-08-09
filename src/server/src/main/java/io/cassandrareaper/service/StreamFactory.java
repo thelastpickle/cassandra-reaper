@@ -82,8 +82,17 @@ public final class StreamFactory {
   }
 
   private static Stream.TableProgress getTableProgressFromFile(ProgressInfo progressInfo) {
-    Descriptor descriptor = Descriptor.fromFilename(progressInfo.fileName);
-    String ksTable = String.format("%s.%s", descriptor.ksname, descriptor.cfname);
+    // the value of ProgressInfo.fileName is different depending on the direction of the stream
+    // when sending, the file name is an absolute path of a SSTable
+    // when receiving, it's just keyspace/table (probably because C* doesn't know the final file name yet)
+    String ksTable;
+    if (progressInfo.direction == ProgressInfo.Direction.OUT) {
+      Descriptor descriptor = Descriptor.fromFilename(progressInfo.fileName);
+      ksTable = String.format("%s.%s", descriptor.ksname, descriptor.cfname);
+    } else {
+      ksTable = progressInfo.fileName.replace('/', '.');
+    }
+
     long currentBytes = progressInfo.currentBytes;
     long totalBytes = progressInfo.totalBytes;
     return new Stream.TableProgress(ksTable, currentBytes, totalBytes);
