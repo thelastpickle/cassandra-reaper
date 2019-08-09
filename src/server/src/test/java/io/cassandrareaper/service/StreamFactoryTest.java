@@ -77,6 +77,44 @@ public final class StreamFactoryTest {
   }
 
   @Test
+  public void testCountProgressPerTableWhenReceiving() throws UnknownHostException {
+    UUID cfid = UUID.randomUUID();
+    int files = 1;
+    int totalSize = 1024;
+    StreamSummary streamSummary = new StreamSummary(cfid, files, totalSize);
+
+    InetAddress peer = InetAddress.getByName("127.0.0.1");
+    int index = 0;
+    InetAddress connecting = InetAddress.getByName("127.0.0.2");
+    ImmutableSet<StreamSummary> receivingSummaries = ImmutableSet.of(streamSummary);
+    ImmutableSet<StreamSummary> sendingSummaries = ImmutableSet.of();
+
+    SessionInfo sessionInfo
+        = new SessionInfo(peer, index, connecting, receivingSummaries, sendingSummaries, StreamSession.State.STREAMING);
+
+    // this is the important part - when receiving, the absolute path is not known
+    String file1 = "keyspace1/standard1";
+    sessionInfo.updateProgress(new ProgressInfo(peer, index, file1, ProgressInfo.Direction.IN, 512, 1024));
+
+    UUID planId = UUID.randomUUID();
+    ImmutableSet<SessionInfo> sessionInfos = ImmutableSet.of(sessionInfo);
+    StreamState streamState = new StreamState(planId, "descr", sessionInfos);
+
+    io.cassandrareaper.core.StreamSession streamSession
+        = StreamSessionFactory.fromStreamState(peer.toString(), streamState);
+
+    assertEquals(1, streamSession.getStreams().size());
+
+    List<Stream.TableProgress> progressSent = streamSession.getStreams().values().asList().get(0).getProgressReceived();
+    assertEquals(1, progressSent.size());
+
+    Stream.TableProgress tableProgress = progressSent.get(0);
+    assertEquals("keyspace1.standard1", tableProgress.getTable());
+    assertEquals(Long.valueOf(512), tableProgress.getCurrent());
+    assertEquals(Long.valueOf(1024), tableProgress.getTotal());
+  }
+
+  @Test
   public void testCountProgressPerTableWithMultipleTables() throws UnknownHostException {
     UUID cfid = UUID.randomUUID();
     int files = 3;
