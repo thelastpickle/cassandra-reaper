@@ -21,13 +21,20 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.StreamSession;
 
+import java.io.IOException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Resources;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -95,5 +102,14 @@ public class ClusterFacadeTest {
     assertFalse(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc2", "127.0.0.2"));
     // Should be accessible, same DC
     assertTrue(ClusterFacade.create(context).nodeIsAccessibleThroughJmx("dc1", "127.0.0.2"));
+  }
+
+  @Test
+  public void parseStreamSessionJsonTest() throws IOException {
+    URL url = Resources.getResource("metric-samples/stream-session.json");
+    String data = Resources.toString(url, Charsets.UTF_8);
+    List<StreamSession> list = ClusterFacade.parseStreamSessionJson(data);
+
+    assertEquals("6b9d35b0-bab6-11e9-8e34-4d2f1172e8bc", list.get(0).getPlanId());
   }
 }

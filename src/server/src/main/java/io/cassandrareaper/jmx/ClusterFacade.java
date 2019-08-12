@@ -29,6 +29,7 @@ import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Snapshot;
+import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.resources.view.NodesStatus;
@@ -57,7 +58,6 @@ import java.util.stream.Collectors;
 import javax.management.JMException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ReflectionException;
-import javax.management.openmbean.CompositeData;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -714,7 +714,7 @@ public final class ClusterFacade {
    * @throws InterruptedException in case the JMX connection gets interrupted
    * @throws IOException errors in parsing JSON encoded compaction objects
    */
-  public Set<CompositeData> listActiveStreams(Node node)
+  public List<StreamSession> listActiveStreams(Node node)
       throws ReaperException, InterruptedException {
     String nodeDc = getDatacenter(node);
     if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
@@ -725,9 +725,9 @@ public final class ClusterFacade {
       LOG.info("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
 
       String streamsJson = ((IDistributedStorage) context.storage)
-          .listOperations(node.getClusterName(), OpType.OP_STREAMING ,node.getHostname());
+          .listOperations(node.getClusterName(), OpType.OP_STREAMING, node.getHostname());
 
-      return parseJson(streamsJson, new TypeReference<Set<CompositeData>>(){});
+      return parseStreamSessionJson(streamsJson);
     }
   }
 
@@ -738,8 +738,8 @@ public final class ClusterFacade {
    * @return a list of CompositeData objects with streaming information
    * @throws ReaperException any runtime exception we can catch in the process
    */
-  public Set<CompositeData> listStreamsDirect(Node node) throws ReaperException {
-    return StreamsProxy.create(connect(node)).listStreams();
+  public List<StreamSession> listStreamsDirect(Node node) throws ReaperException {
+    return StreamsProxy.create(connect(node)).listStreams(node);
   }
 
   private Set<Table> getTablesForKeyspaceImpl(Cluster cluster, String keyspaceName) throws ReaperException {
@@ -751,6 +751,10 @@ public final class ClusterFacade {
       String keyspace) throws ReaperException {
 
     return connect(cluster).getRangeToEndpointMap(keyspace);
+  }
+
+  public static List<StreamSession> parseStreamSessionJson(String json) {
+    return parseJson(json, new TypeReference<List<StreamSession>>(){});
   }
 
   private static <T> T parseJson(String json, TypeReference<T> ref) {

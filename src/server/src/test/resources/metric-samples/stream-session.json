@@ -1,0 +1,28 @@
+[
+  {
+    "planId": "6b9d35b0-bab6-11e9-8e34-4d2f1172e8bc",
+    "streams": {
+      "127.0.0.2-OUT-127.0.0.1": {
+        "id": "127.0.0.2-OUT-127.0.0.1",
+        "host": "127.0.0.2",
+        "peer": "127.0.0.1",
+        "direction": "OUT",
+        "sizeToSend": 0,
+        "sizeToReceive": 241622030,
+        "sizeSent": 0,
+        "sizeReceived": 10448702,
+        "progressSent": [],
+        "progressReceived": [
+          {
+            "table": "tlp_stress.sensor_data",
+            "current": 10448702,
+            "total": 72648575
+          }
+        ],
+        "lastUpdated": 1565362831063,
+        "completed": false,
+        "success": true
+      }
+    }
+  }
+]

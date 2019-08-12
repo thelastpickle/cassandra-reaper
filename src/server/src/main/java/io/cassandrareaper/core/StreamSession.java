@@ -19,6 +19,7 @@ package io.cassandrareaper.core;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.collect.ImmutableMap;
 
@@ -29,6 +30,7 @@ import com.google.common.collect.ImmutableMap;
  * <p>Streaming session is identified by an UUID. A streaming session includes a collection of bi-directional data
  * exchanges between two nodes.
  */
+@JsonDeserialize(builder = StreamSession.Builder.class)
 public final class StreamSession {
 
   /**

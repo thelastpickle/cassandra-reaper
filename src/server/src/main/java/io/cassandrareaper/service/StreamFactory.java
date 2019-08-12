@@ -95,7 +95,12 @@ public final class StreamFactory {
 
     long currentBytes = progressInfo.currentBytes;
     long totalBytes = progressInfo.totalBytes;
-    return new Stream.TableProgress(ksTable, currentBytes, totalBytes);
+
+    return Stream.TableProgress.builder()
+        .withTable(ksTable)
+        .withCurrent(currentBytes)
+        .withTotal(totalBytes)
+        .build();
   }
 
   private static Stream.TableProgress sumTableProgress(String table,
@@ -109,7 +114,11 @@ public final class StreamFactory {
         .map(Stream.TableProgress::getTotal)
         .mapToLong(Long::longValue)
         .sum();
-    return new Stream.TableProgress(table, sumCurrent, sumTotal);
+    return Stream.TableProgress.builder()
+        .withTable(table)
+        .withCurrent(sumCurrent)
+        .withTotal(sumTotal)
+        .build();
   }
 
   public static Stream testStream(String id,

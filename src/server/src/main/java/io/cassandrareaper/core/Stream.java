@@ -19,6 +19,7 @@ package io.cassandrareaper.core;
 
 import java.util.List;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.collect.ImmutableList;
 
@@ -26,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 /**
  * This class describes the state of a file exchange between two Cassandra nodes.
  */
+@JsonDeserialize(builder = Stream.Builder.class)
 public final class Stream {
 
   /**
@@ -101,15 +103,16 @@ public final class Stream {
     BOTH
   }
 
+  @JsonDeserialize(builder = TableProgress.Builder.class)
   public static final class TableProgress {
     private final String table;
     private final Long current;
     private final Long total;
 
-    public TableProgress(String table, Long current, Long total) {
-      this.table = table;
-      this.current = current;
-      this.total = total;
+    private TableProgress(TableProgress.Builder builder) {
+      this.table = builder.table;
+      this.current = builder.current;
+      this.total = builder.total;
     }
 
     public String getTable() {
@@ -127,6 +130,35 @@ public final class Stream {
     @Override
     public String toString() {
       return String.format("TableProgress(table=%s,current=%d,total=%d", table, current, total);
+    }
+
+    public static TableProgress.Builder builder() {
+      return new TableProgress.Builder();
+    }
+
+    public static final class Builder {
+      private String table;
+      private Long current;
+      private Long total;
+
+      public TableProgress.Builder withTable(String table) {
+        this.table = table;
+        return this;
+      }
+
+      public TableProgress.Builder withCurrent(Long current) {
+        this.current = current;
+        return this;
+      }
+
+      public TableProgress.Builder withTotal(Long total) {
+        this.total = total;
+        return this;
+      }
+
+      public TableProgress build() {
+        return new TableProgress(this);
+      }
     }
 
   }

@@ -26,6 +26,7 @@ import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.storage.IDistributedStorage;
@@ -34,10 +35,8 @@ import io.cassandrareaper.storage.OpType;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.management.JMException;
-import javax.management.openmbean.CompositeData;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -165,7 +164,7 @@ public final class MetricsService {
         "grabAndStoreActiveStreams() can only be called in sidecar");
 
     Node node = Node.builder().withHostname(context.getLocalNodeAddress()).build();
-    Set<CompositeData> activeStreams = ClusterFacade.create(context).listStreamsDirect(node);
+    List<StreamSession> activeStreams = ClusterFacade.create(context).listStreamsDirect(node);
 
     ((IDistributedStorage) context.storage)
         .storeOperations(
