@@ -43,6 +43,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -128,7 +129,15 @@ public final class MetricsService {
         context.config.isInSidecarMode(),
         "grabAndStoreGenericMetrics() can only be called in sidecar");
 
-    Node node = Node.builder().withHostname(context.getLocalNodeAddress()).build();
+    Node node
+        = Node.builder()
+            .withHostname(context.getLocalNodeAddress())
+            .withCluster(
+                Cluster.builder()
+                    .withName(localClusterName)
+                    .withSeedHosts(ImmutableSet.of(context.getLocalNodeAddress()))
+                    .build())
+            .build();
 
     List<GenericMetric> metrics
         = convertToGenericMetrics(ClusterFacade.create(context).collectMetrics(node, COLLECTED_METRICS), node);
