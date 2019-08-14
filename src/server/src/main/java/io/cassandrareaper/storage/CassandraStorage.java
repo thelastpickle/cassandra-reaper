@@ -44,6 +44,7 @@ import io.cassandrareaper.storage.cassandra.SchemaMigrationLock;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -577,6 +578,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
           ? objectMapper.readValue(row.getString("properties"), ClusterProperties.class)
           : ClusterProperties.builder().withJmxPort(Cluster.DEFAULT_JMX_PORT).build();
 
+    LocalDate lastContact = row.getTimestamp("last_contact") == null
+        ? LocalDate.MIN
+        : new java.sql.Date(row.getTimestamp("last_contact").getTime()).toLocalDate();
+
     Cluster.Builder builder = Cluster.builder()
           .withName(row.getString("name"))
           .withSeedHosts(row.getSet("seed_hosts", String.class))
@@ -584,7 +589,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
           .withState(null != row.getString("state")
               ? Cluster.State.valueOf(row.getString("state"))
               : Cluster.State.UNREACHABLE)
-          .withLastContact(new java.sql.Date(row.getTimestamp("last_contact").getTime()).toLocalDate());
+          .withLastContact(lastContact);
 
     if (null != row.getString("partitioner")) {
       builder = builder.withPartitioner(row.getString("partitioner"));
