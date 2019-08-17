@@ -32,7 +32,6 @@ import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.postgresql.DiagEventSubscriptionMapper;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -92,6 +91,16 @@ public final class BasicSteps {
   private static final List<SimpleReaperClient> CLIENTS = new CopyOnWriteArrayList<>();
   private static final Random RAND = new Random(System.nanoTime());
   private static final AtomicReference<Upgradable> TEST_INSTANCE = new AtomicReference<>();
+
+  private static final Map<String,String> EVENT_TYPES = ImmutableMap.<String,String>builder()
+      .put("AuditEvent", "org.apache.cassandra.audit.AuditEvent")
+      .put("BootstrapEvent", "org.apache.cassandra.dht.BootstrapEvent")
+      .put("GossiperEvent", "org.apache.cassandra.gms.GossiperEvent")
+      .put("HintEvent", "org.apache.cassandra.hints.HintEvent")
+      .put("HintsServiceEvent", "org.apache.cassandra.hints.HintsServiceEvent")
+      .put("ReadRepairEvent", "org.apache.cassandra.reads.repair.ReadRepairEvent")
+      .put("SchemaEvent", "org.apache.cassandra.schema.SchemaEvent")
+      .build();
 
   private Optional<String> reaperVersion = Optional.empty();
   private Response lastResponse;
@@ -1778,51 +1787,98 @@ public final class BasicSteps {
 
   @When("^a get all subscriptions request is made$")
   public void aGetAllSubscriptionsRequestIsMade() throws Throwable {
-    callSubscription("GET", Optional.empty(), Optional.empty(), Response.Status.OK);
+    synchronized (BasicSteps.class) {
+      testContext.updateRetrievedEventSubscriptions(
+          callSubscription("GET", Optional.empty(), Optional.empty(), Response.Status.OK));
+    }
   }
 
   @When("^a get-subscriptions request is made for cluster \"([^\"]*)\"$")
   public void aGetSubscriptionsRequestIsMadeForCluster(String clusterName) throws Throwable {
-    HashMap<String, String> params = new HashMap<>();
-    params.put("clusterName", clusterName);
-    callSubscription("GET", Optional.of(params), Optional.empty(), Response.Status.OK);
-  }
+    synchronized (BasicSteps.class) {
+      HashMap<String, String> params = new HashMap<>();
+      params.put("clusterName", clusterName);
 
-  @When("^a subscription is created for cluster \"([^\"]*)\"$")
-  public void aSubscriptionIsCreatedForCluster(String clusterName) throws Throwable {
-    HashMap<String, String> params = new HashMap<>();
-    params.put("clusterName", clusterName);
-    callSubscription("POST", Optional.of(params), Optional.empty(), Response.Status.OK);
+      testContext.updateRetrievedEventSubscriptions(
+          callSubscription("GET", Optional.of(params), Optional.empty(), Response.Status.OK));
+    }
   }
 
   @When("^a get-subscription request is made for the last inserted ID$")
   public void aGetSubscriptionRequestIsMadeForTheLastInsertedID() throws Throwable {
-    Assertions.assertThat(TestContext.LAST_CREATED_EVENT_SUBSCRIPTIONS.size()).isGreaterThan(0);
+    synchronized (BasicSteps.class) {
+      DiagEventSubscription last = testContext.getCurrentEventSubscription();
 
-    DiagEventSubscription lastCreated
-        = TestContext.LAST_CREATED_EVENT_SUBSCRIPTIONS.get(TestContext.LAST_CREATED_EVENT_SUBSCRIPTIONS.size() - 1);
-
-    callSubscription(
-        "GET",
-        Optional.empty(),
-        Optional.ofNullable(lastCreated.getId().orElse(null)),
-        Response.Status.OK);
+      testContext.updateRetrievedEventSubscriptions(
+          callSubscription(
+              "GET",
+              Optional.empty(),
+              Optional.ofNullable(last.getId().orElse(null)),
+              Response.Status.OK));
+    }
   }
 
   @When("^the last created subscription is deleted$")
   public void theLastCreatedSubscriptionIsDeleted() throws Throwable {
     synchronized (BasicSteps.class) {
-      Assertions.assertThat(TestContext.LAST_CREATED_EVENT_SUBSCRIPTIONS.size()).isGreaterThan(0);
+      DiagEventSubscription last = testContext.removeCurrentEventSubscription();
 
-      DiagEventSubscription lastCreated
-          = TestContext.LAST_CREATED_EVENT_SUBSCRIPTIONS.get(TestContext.LAST_CREATED_EVENT_SUBSCRIPTIONS.size() - 1);
+      callAndExpect(
+          "DELETE",
+          "/diag_event/subscription/" + last.getId().get(),
+          Optional.empty(),
+          Optional.empty(),
+          Response.Status.ACCEPTED,
+          Response.Status.NOT_FOUND);
 
-      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
+        try {
+          callAndExpect(
+              "DELETE",
+              "/diag_event/subscription/" + last.getId().get(),
+              Optional.empty(),
+              Optional.empty(),
+              Response.Status.NOT_FOUND);
+        } catch (AssertionError ex) {
+          LOG.warn("DELETE /diag_event/subscription/" + last.getId().get() + " failed: " + ex.getMessage());
+          return false;
+        }
+        return true;
+      });
+    }
+  }
 
-      Response response
-          = runner.callReaper("DELETE", "/diag_event/subscription/" + lastCreated.getId(), Optional.empty());
+  @When("^all created subscriptions are deleted$")
+  public void allCreatedSubscriptionsAreDeleted() throws Throwable {
+    synchronized (BasicSteps.class) {
+      aGetAllSubscriptionsRequestIsMade();
+      testContext.getRetrievedEventSubscriptions()
+          .parallelStream()
+          .forEach((sub) -> {
 
-      Assertions.assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+            callAndExpect(
+                "DELETE",
+                "/diag_event/subscription/" + sub.getId().get(),
+                Optional.empty(),
+                Optional.empty(),
+                Response.Status.ACCEPTED,
+                Response.Status.NOT_FOUND);
+
+            await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
+              try {
+                callAndExpect(
+                    "DELETE",
+                    "/diag_event/subscription/" + sub.getId().get(),
+                    Optional.empty(),
+                    Optional.empty(),
+                    Response.Status.NOT_FOUND);
+              } catch (AssertionError ex) {
+                LOG.warn("DELETE /diag_event/subscription/" + sub.getId().get() + " failed: " + ex.getMessage());
+                return false;
+              }
+              return true;
+            });
+          });
     }
   }
 
@@ -1830,74 +1886,94 @@ public final class BasicSteps {
   public void theFollowingSubscriptionsExist(List<Map<String, String>> subscriptions) throws Throwable {
     synchronized (BasicSteps.class) {
       ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
-      ArrayList<DiagEventSubscription> allCreated = new ArrayList<>();
       for (Map<String, String> sub : subscriptions) {
+        // see org.apache.cassandra.diag.DiagnosticEventPersistence.java#L137
+        sub = Maps.newHashMap(sub);
+        for (Map.Entry<String,String> eventType : EVENT_TYPES.entrySet()) {
+          sub.put("events", sub.get("events").replace(eventType.getKey(), eventType.getValue()));
+        }
         Response response = runner.callReaper("POST", "/diag_event/subscription", Optional.of(sub));
+
+        Assertions
+            .assertThat(response.getStatus())
+            .isIn(Response.Status.CREATED.getStatusCode(), Response.Status.NO_CONTENT.getStatusCode());
+
+        // rest command requests should not response with bodies, follow the location to GET that
+        Assertions.assertThat(response.hasEntity()).isFalse();
+        // follow to new location (to GET resource)
+        response = runner.callReaper("GET", response.getLocation().toString(), Optional.empty());
         Assertions.assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
         Assertions.assertThat(response.hasEntity()).isTrue();
         String responseData = response.readEntity(String.class);
         DiagEventSubscription created = SimpleReaperClient.parseEventSubscriptionJSON(responseData);
         DiagEventSubscription provided = DiagEventSubscriptionMapper.fromParamMap(sub);
-        Assertions.assertThat(provided).isEqualTo(created.withId(null));
-        allCreated.add(created);
+        Assertions.assertThat(provided.withId(created.getId().get())).isEqualTo(created);
+        testContext.addCurrentEventSubscription(created);
       }
-      TestContext.LAST_CREATED_EVENT_SUBSCRIPTIONS = allCreated;
     }
   }
 
   @Then("^the returned list of subscriptions is empty$")
   public void reaperReturnsAnEmptyListOfSubscriptions() {
-    Assertions.assertThat(TestContext.LAST_RETRIEVED_EVENT_SUBSCRIPTIONS).isEmpty();
+    synchronized (BasicSteps.class) {
+      Assertions.assertThat(testContext.getRetrievedEventSubscriptions()).isEmpty();
+    }
   }
 
   @Then("^the returned list of subscriptions is:$")
   public void theReturnedListOfSubscriptionsIs(List<Map<String, String>> subscriptions) throws Throwable {
+    synchronized (BasicSteps.class) {
 
-    List<DiagEventSubscription> expected = subscriptions
-        .stream()
-        .map(DiagEventSubscriptionMapper::fromParamMap)
-        .collect(Collectors.toList());
+      List<DiagEventSubscription> expected = subscriptions
+          .stream()
+          .map((sub) -> {
+            // see org.apache.cassandra.diag.DiagnosticEventPersistence.java#L137
+            EVENT_TYPES.forEach((name, fqn) -> sub.get("events").replace(name, fqn));
+            return sub;
+          })
+          .map(DiagEventSubscriptionMapper::fromParamMap)
+          .collect(Collectors.toList());
 
-    Assertions.assertThat(TestContext.LAST_RETRIEVED_EVENT_SUBSCRIPTIONS.size()).isEqualTo(expected.size());
+      Assertions.assertThat(testContext.getRetrievedEventSubscriptions().size()).isEqualTo(expected.size());
 
-    List<DiagEventSubscription> lastRetrieved = TestContext.LAST_RETRIEVED_EVENT_SUBSCRIPTIONS
-        .stream()
-        .map(s -> s.withId(null))
-        .collect(Collectors.toList());
+      List<DiagEventSubscription> lastRetrieved = testContext.getRetrievedEventSubscriptions()
+          .stream()
+          .map(s ->
+              new DiagEventSubscription(
+                  Optional.empty(),
+                  s.getCluster(),
+                  Optional.of(s.getDescription()),
+                  s.getNodes(),
+                  s.getEvents(),
+                  s.getExportSse(),
+                  s.getExportFileLogger(),
+                  s.getExportHttpEndpoint()))
+          .collect(Collectors.toList());
 
-    for (DiagEventSubscription sub : expected) {
-      Assertions.assertThat(lastRetrieved).contains(sub);
+      for (DiagEventSubscription sub : expected) {
+        Assertions.assertThat(lastRetrieved).contains(sub);
+      }
     }
   }
 
-  private void callSubscription(
+  private List<DiagEventSubscription> callSubscription(
       String method,
       Optional<Map<String, String>> params,
       Optional<UUID> id,
       Response.Status... expectedStatuses) {
 
-    synchronized (BasicSteps.class) {
-      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
-      String path = "/diag_event/subscription";
-      if (id.isPresent()) {
-        path = path + "/" + id.get();
-      }
-      Response response = runner.callReaper(method, path, params);
+    ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+    String path = "/diag_event/subscription" + (id.isPresent() ? "/" + id.get() : "");
+    Response response = runner.callReaper(method, path, params);
 
-      Assertions
-              .assertThat(Arrays.stream(expectedStatuses).map(Response.Status::getStatusCode))
-              .contains(response.getStatus());
+    Assertions
+            .assertThat(Arrays.stream(expectedStatuses).map(Response.Status::getStatusCode))
+            .contains(response.getStatus());
 
-      String responseData = response.readEntity(String.class);
-      if (id.isPresent()) {
-        TestContext.LAST_RETRIEVED_EVENT_SUBSCRIPTIONS = new ArrayList<>();
+    String responseData = response.readEntity(String.class);
 
-        TestContext.LAST_RETRIEVED_EVENT_SUBSCRIPTIONS
-            .add(SimpleReaperClient.parseEventSubscriptionJSON(responseData));
-      } else {
-        TestContext.LAST_RETRIEVED_EVENT_SUBSCRIPTIONS
-            = SimpleReaperClient.parseEventSubscriptionsListJSON(responseData);
-      }
-    }
+    return id.isPresent()
+        ? ImmutableList.of(SimpleReaperClient.parseEventSubscriptionJSON(responseData))
+        : SimpleReaperClient.parseEventSubscriptionsListJSON(responseData);
   }
 }

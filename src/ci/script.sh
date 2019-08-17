@@ -60,7 +60,7 @@ case "${TEST_TYPE}" in
         ccm status
 
         mvn -B package -DskipTests
-        mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraSidecarIT -Dcucumber.options="-t @sidecar"
+        mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraSidecarIT
         ;;
     "upgrade")
         mvn --version -B
@@ -69,7 +69,7 @@ case "${TEST_TYPE}" in
         ccm status
 
         mvn package -B -DskipTests -Pintegration-upgrade-tests
-        MAVEN_OPTS="-Xmx384m" mvn -B surefire:test -Dtest=ReaperCassandraIT -Dcucumber.options="${CO}"
+        MAVEN_OPTS="-Xmx384m" mvn -B surefire:test -Dtest=ReaperCassandraIT
         ;;
     "docker")
         docker-compose -f ./src/packaging/docker-build/docker-compose.yml build

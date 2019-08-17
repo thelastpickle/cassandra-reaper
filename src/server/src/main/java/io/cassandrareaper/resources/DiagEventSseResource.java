@@ -22,6 +22,7 @@ import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.service.DiagEventSubscriptionService;
 
 import java.util.UUID;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
@@ -46,8 +47,8 @@ public final class DiagEventSseResource {
 
   private final DiagEventSubscriptionService diagEventService;
 
-  public DiagEventSseResource(AppContext context, HttpClient httpClient) {
-    this.diagEventService = DiagEventSubscriptionService.create(context, httpClient);
+  public DiagEventSseResource(AppContext context, HttpClient httpClient, ScheduledExecutorService executor) {
+    this.diagEventService = DiagEventSubscriptionService.create(context, httpClient, executor);
   }
 
   @GET
@@ -59,13 +60,7 @@ public final class DiagEventSseResource {
       @HeaderParam(SseFeature.LAST_EVENT_ID_HEADER) @DefaultValue("-1") int lastEventId) {
 
     LOG.debug("get subscription called with id: {}", id);
-
     DiagEventSubscription sub = diagEventService.getEventSubscription(UUID.fromString(id));
-    if (null == sub) { // @fixme change to catch
-      LOG.warn("Could not find diag event subscription with id {}", id);
-      return null;
-    }
-
     EventOutput eventOutput = new EventOutput();
     diagEventService.subscribe(sub, eventOutput, request.getRemoteAddr());
     return eventOutput;

@@ -64,7 +64,7 @@ const eventScreen = React.createClass({
       const source = new EventSource(`${URL_PREFIX}/diag_event/sse_listen/${subscription.id}`);
       const diagnosticEvents = this.props.diagnosticEvents;
       source.onmessage = function(event) {
-        if(event.data === "PING") {
+        if(event.name === "ping") {
           return;
         }
         const obj = $.parseJSON(event.data);

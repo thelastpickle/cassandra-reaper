@@ -243,6 +243,10 @@ public interface IStoragePostgreSql {
   String SQL_EVENT_SUBSCRIPTION_ALL_FIELDS = " id, cluster, description, include_nodes, events, "
           + "export_sse, export_file_logger, export_http_endpoint ";
 
+  String SQL_EVENT_SUBSCRIPTION_ALL_BUT_ID_FIELDS = "cluster, description, include_nodes, events, "
+          + "export_sse, export_file_logger, export_http_endpoint ";
+
+
   String SQL_GET_EVENT_SUBSCRIPTIONS_BY_CLUSTER
       = "SELECT " + SQL_EVENT_SUBSCRIPTION_ALL_FIELDS + " FROM diag_event_subscription WHERE cluster = :clusterName";
 
@@ -251,9 +255,10 @@ public interface IStoragePostgreSql {
 
   String SQL_GET_EVENT_SUBSCRIPTIONS = "SELECT * FROM diag_event_subscription";
 
-  String SQL_INSERT_EVENT_SUBSCRIPTION = "INSERT INTO diag_event_subscription (" + SQL_EVENT_SUBSCRIPTION_ALL_FIELDS
+  String SQL_INSERT_EVENT_SUBSCRIPTION = "INSERT INTO diag_event_subscription ("
+          + SQL_EVENT_SUBSCRIPTION_ALL_BUT_ID_FIELDS
           + ") VALUES ("
-          + "null, :cluster, :description, :includeNodes, :events, :exportSse, :exportFileLogger, :exportHttpEndpoint)";
+          + ":cluster, :description, :nodes, :events, :exportSse, :exportFileLogger, :exportHttpEndpoint)";
 
   String SQL_DELETE_EVENT_SUBSCRIPTION_BY_ID
       = "DELETE FROM diag_event_subscription WHERE id = :id";

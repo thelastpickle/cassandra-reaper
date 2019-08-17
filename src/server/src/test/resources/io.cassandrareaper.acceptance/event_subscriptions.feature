@@ -12,75 +12,111 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+@cassandra_4_0_onwards
 Feature: Manage diagnostic event subscriptions
 
   Scenario: Retrieving an empty subscriptions list
-    Given a reaper service is running
+    Given that reaper   is running
     When a get all subscriptions request is made
     Then the returned list of subscriptions is empty
 
   Scenario: Retrieving an empty subscriptions list by existing cluster name
-    Given a reaper service is running
-    When a get-subscriptions request is made for cluster "test_cluster"
+    Given that reaper   is running
+    When a get-subscriptions request is made for cluster "test"
     Then the returned list of subscriptions is empty
 
   Scenario: Retrieve subscription for non existing cluster name
-    Given a reaper service is running
+    Given that reaper   is running
+    When a get all subscriptions request is made
+    Then the returned list of subscriptions is empty
     And the following subscriptions are created:
-      | clusterName    | description  | includeNodes | events    | exportSse  | exportFileLogger   | exportHttpEndpoint |
-      | test_cluster_X | Test Cluster |              | A,B       | true       |                    |                    |
+      | clusterName | description  | nodes       | events                                        | exportSse | exportFileLogger | exportHttpEndpoint |
+      | test        | Test Cluster | 127.0.0.2   | AuditEvent,BootstrapEvent                     | true      |                  |                    |
     When a get-subscriptions request is made for cluster "test_cluster_non_existing"
     Then the returned list of subscriptions is empty
+    And all created subscriptions are deleted
 
   Scenario: Retrieve subscriptions for existing cluster name
-    Given a reaper service is running
+    Given that reaper   is running
+    When a get all subscriptions request is made
+    Then the returned list of subscriptions is empty
     And the following subscriptions are created:
-      | clusterName    | description  | includeNodes | events    | exportSse  | exportFileLogger   | exportHttpEndpoint |
-      | test_cluster   | Sub A        |              | A,B       | true       |                    |                    |
-      | test_cluster   | Sub B        |              | B         | false      | mylogger           |                    |
-      | test_cluster_2 |              | 127.0.0.100  | A,C,D     | true       |                    |                    |
-    When a get-subscriptions request is made for cluster "test_cluster"
+      | clusterName | description  | nodes       | events                                        | exportSse | exportFileLogger | exportHttpEndpoint |
+      | test        | Sub A        | 127.0.0.2   | AuditEvent,BootstrapEvent                     | true      |                  |                    |
+      | test        | Sub B        | 127.0.0.2   | BootstrapEvent                                | false     | mylogger         |                    |
+    When a get-subscriptions request is made for cluster "test"
     Then the returned list of subscriptions is:
-      | clusterName    | description  | includeNodes | events    | exportSse  | exportFileLogger   | exportHttpEndpoint |
-      | test_cluster   | Sub A        |              | A,B       | true       |                    |                    |
-      | test_cluster   | Sub B        |              | B         | false      | mylogger           |                    |
+      | clusterName | description  | nodes      | events                                        | exportSse | exportFileLogger | exportHttpEndpoint |
+      | test        | Sub A        | 127.0.0.2  | AuditEvent,BootstrapEvent                     | true      |                  |                    |
+      | test        | Sub B        | 127.0.0.2  | BootstrapEvent                                | false     | mylogger         |                    |
+    And all created subscriptions are deleted
 
   Scenario: Retrieve last inserted subscription by ID
-    Given a reaper service is running
+    Given that reaper   is running
+    When a get all subscriptions request is made
+    Then the returned list of subscriptions is empty
+    And the following subscriptions are created:
+      | clusterName | description  | nodes       | events                                        | exportSse | exportFileLogger | exportHttpEndpoint |
+      | test        | Sub A        | 127.0.0.2   | AuditEvent,BootstrapEvent                     | true      |                  |                    |
+      | test        | Sub B        | 127.0.0.2   | BootstrapEvent                                | false     | mylogger         |                    |
+      | test        |              | 127.0.0.100 | AuditEvent,GossiperEvent,HintEvent            | true      |                  |                    |
     When a get-subscription request is made for the last inserted ID
     Then the returned list of subscriptions is:
-      | clusterName    | description  | includeNodes | events    | exportSse  | exportFileLogger   | exportHttpEndpoint |
-      | test_cluster_2 |              | 127.0.0.100  | A,C,D     | true       |                    |                    |
+      | clusterName | description  | nodes       | events                                        | exportSse  | exportFileLogger   | exportHttpEndpoint |
+      | test        |              | 127.0.0.100 | AuditEvent,GossiperEvent,HintEvent            | true       |                    |                    |
+    And all created subscriptions are deleted
 
-  Scenario: Add duplicate subscriptions
-    Given a reaper service is running
+  Scenario: Add duplicate subscription
+    Given that reaper   is running
+    When a get all subscriptions request is made
+    Then the returned list of subscriptions is empty
     And the following subscriptions are created:
-      | clusterName    | description  | includeNodes | events    | exportSse  | exportFileLogger   | exportHttpEndpoint |
-      | test_cluster_3 | Sub Y        |              | Y,Z       | false      |                    | http://localhost/1 |
-      | test_cluster_3 | Sub Y        |              | Y,Z       | false      |                    |                    |
-    When a get-subscriptions request is made for cluster "test_cluster_3"
+      | clusterName | description  | nodes       | events                                        | exportSse | exportFileLogger | exportHttpEndpoint |
+      | test        | Sub Y        | 127.0.0.2   | HintsServiceEvent,SchemaEvent                 | false     |                  | http://localhost/1 |
+      | test        | Sub Y        | 127.0.0.2   | HintsServiceEvent,SchemaEvent                 | false     |                  |                    |
+    And a get-subscriptions request is made for cluster "test"
     Then the returned list of subscriptions is:
-      | clusterName    | description  | includeNodes | events    | exportSse  | exportFileLogger   | exportHttpEndpoint |
-      | test_cluster_3 | Sub Y        |              | Y,Z       | false      |                    | http://localhost/1 |
-      | test_cluster_3 | Sub Y        |              | Y,Z       | false      |                    | http://localhost/1 |
+      | clusterName | description  | nodes       | events                                        | exportSse | exportFileLogger | exportHttpEndpoint |
+      | test        | Sub Y        | 127.0.0.2   | HintsServiceEvent,SchemaEvent                 | false     |                  | http://localhost/1 |
+    And all created subscriptions are deleted
 
   Scenario: Add duplicate subscriptions
-    Given a reaper service is running
-    When the last created subscription is deleted
-    And a get-subscriptions request is made for cluster "test_cluster_3"
+    Given that reaper   is running
+    When a get all subscriptions request is made
+    Then the returned list of subscriptions is empty
+    And the following subscriptions are created:
+      | clusterName | description  | nodes       | events                                        | exportSse | exportFileLogger | exportHttpEndpoint |
+      | test        | Sub Y        | 127.0.0.2   | HintsServiceEvent,SchemaEvent                 | false     |                  | http://localhost/1 |
+      | test        | Sub Z        | 127.0.0.2   | AuditEvent,GossiperEvent,HintEvent            | false     |                  |                    |
+      | test        | Sub Y        | 127.0.0.2   | HintsServiceEvent,SchemaEvent                 | false     |                  | http://localhost/1 |
+    When a get-subscriptions request is made for cluster "test"
     Then the returned list of subscriptions is:
-      | clusterName    | description  | includeNodes | events    | exportSse  | exportFileLogger   | exportHttpEndpoint |
-      | test_cluster_3 | Sub Y        |              | Y,Z       | false      |                    | http://localhost/1 |
+      | clusterName | description  | nodes       | events                                        | exportSse | exportFileLogger | exportHttpEndpoint |
+      | test        | Sub Y        | 127.0.0.2   | HintsServiceEvent,SchemaEvent                 | false     |                  | http://localhost/1 |
+      | test        | Sub Z        | 127.0.0.2   | AuditEvent,GossiperEvent,HintEvent            | false     |                  |                    |
+    And all created subscriptions are deleted
 
   Scenario: Retrieve all subscriptions
-    Given a reaper service is running
+    Given that reaper   is running
+    When a get all subscriptions request is made
+    Then the returned list of subscriptions is empty
+    And the following subscriptions are created:
+      | clusterName | description  | nodes       | events                                        | exportSse | exportFileLogger | exportHttpEndpoint |
+      | test        | Test Cluster | 127.0.0.2   | AuditEvent,BootstrapEvent                     | true      |                  |                    |
+      | test        | Sub A        | 127.0.0.2   | AuditEvent,BootstrapEvent,HintEvent           | true      |                  |                    |
+      | test        | Sub B        | 127.0.0.2   | BootstrapEvent                                | false     | mylogger         |                    |
+      | test        |              | 127.0.0.100 | AuditEvent,GossiperEvent,HintEvent            | true      |                  |                    |
+      | test        | Sub Y        | 127.0.0.2   | HintsServiceEvent,SchemaEvent                 | false     |                  | http://localhost/1 |
+      | test        | Sub X        | 127.0.0.2   | HintsServiceEvent,SchemaEvent,ReadRepairEvent | false     |                  |                    |
+    When the last created subscription is deleted
     When a get all subscriptions request is made
     Then the returned list of subscriptions is:
-      | clusterName    | description  | includeNodes | events    | exportSse  | exportFileLogger   | exportHttpEndpoint |
-      | test_cluster_X | Test Cluster |              | A,B       | true       |                    |                    |
-      | test_cluster   | Sub A        |              | A,B       | true       |                    |                    |
-      | test_cluster   | Sub B        |              | B         | false      | mylogger           |                    |
-      | test_cluster_2 |              | 127.0.0.100  | A,C,D     | true       |                    |                    |
-      | test_cluster_3 | Sub Y        |              | Y,Z       | false      |                    | http://localhost/1 |
+      | clusterName | description  | nodes       | events                                        | exportSse | exportFileLogger | exportHttpEndpoint |
+      | test        | Test Cluster | 127.0.0.2   | AuditEvent,BootstrapEvent                     | true      |                  |                    |
+      | test        | Sub A        | 127.0.0.2   | AuditEvent,BootstrapEvent,HintEvent           | true      |                  |                    |
+      | test        | Sub B        | 127.0.0.2   | BootstrapEvent                                | false     | mylogger         |                    |
+      | test        |              | 127.0.0.100 | AuditEvent,GossiperEvent,HintEvent            | true      |                  |                    |
+      | test        | Sub Y        | 127.0.0.2   | HintsServiceEvent,SchemaEvent                 | false     |                  | http://localhost/1 |
+    And all created subscriptions are deleted
 
 

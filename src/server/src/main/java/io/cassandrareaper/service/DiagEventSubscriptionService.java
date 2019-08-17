@@ -38,9 +38,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -51,12 +51,11 @@ import javax.management.ReflectionException;
 import javax.management.remote.JMXConnectionNotification;
 import javax.ws.rs.core.MediaType;
 
-import com.codahale.metrics.InstrumentedExecutorService;
 import com.codahale.metrics.InstrumentedScheduledExecutorService;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import org.apache.http.HttpResponse;
@@ -76,41 +75,30 @@ public final class DiagEventSubscriptionService {
 
   private static final Logger LOG = LoggerFactory.getLogger(DiagEventSubscriptionService.class);
 
-  private static final Map<DiagEventSubscription, Broadcaster> BROADCASTER_BY_SUBSCRIPTION = new HashMap<>();
+  private static final Map<DiagEventSubscription, Broadcaster> BROADCASTERS = new HashMap<>();
   private static final Map<Node, DiagEventPoller> POLLERS_BY_NODE = new HashMap<>();
-  private static final int UPDATE_ENABLED_INTERVAL_SECS = 15;//60*15;
-  private static final int PING_CLIENTS_INTERVAL_SECS = 5;
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper(new JsonFactory());
+  private static final AtomicLong ID_COUNTER = new AtomicLong(0);
 
-  private final AtomicLong idCounter = new AtomicLong(0);
   private final Map<Node, NotificationListener> listenerByNode = new ConcurrentHashMap<>();
   private final AppContext context;
   private final HttpClient httpClient;
-  private final ExecutorService taskExecutor;
-  private final ScheduledExecutorService scheduledExecutor;
+  private final ScheduledExecutorService scheduler;
 
   private Set<DiagEventSubscription> subsAlwaysActive;
 
-  private DiagEventSubscriptionService(AppContext context, HttpClient httpClient) {
+  private DiagEventSubscriptionService(AppContext context, HttpClient httpClient, ScheduledExecutorService executor) {
     this.context = context;
     this.httpClient = httpClient;
+    this.scheduler = new InstrumentedScheduledExecutorService(executor, context.metricRegistry);
 
-    this.scheduledExecutor
-        = new InstrumentedScheduledExecutorService(Executors.newScheduledThreadPool(1), context.metricRegistry);
-
-    this.taskExecutor = new InstrumentedExecutorService(Executors.newWorkStealingPool(), context.metricRegistry);
-
-    scheduledExecutor.scheduleWithFixedDelay(
-            this::updateEnabledEvents, 5, UPDATE_ENABLED_INTERVAL_SECS, TimeUnit.SECONDS);
-
-    // ping registered clients to raise and error for already closed connections, which is the only way to notice
-    // if a client is still listening
-    scheduledExecutor.scheduleWithFixedDelay(
-            this::pingSseClients, PING_CLIENTS_INTERVAL_SECS, PING_CLIENTS_INTERVAL_SECS, TimeUnit.SECONDS);
+    scheduler.scheduleAtFixedRate(this::updateEnabledEvents, 5, 5, TimeUnit.SECONDS);
+    // ping registered clients to raise and error for already closed connections, only way to notice disconnections
+    scheduler.scheduleWithFixedDelay(this::pingSseClients, 5, 5, TimeUnit.SECONDS);
   }
 
-  public static DiagEventSubscriptionService create(AppContext context, HttpClient httpClient) {
-    return new DiagEventSubscriptionService(context, httpClient);
+  public static DiagEventSubscriptionService create(AppContext cxt, HttpClient client, ScheduledExecutorService exec) {
+    return new DiagEventSubscriptionService(cxt, client, exec);
   }
 
   public DiagEventSubscription getEventSubscription(UUID id) {
@@ -119,53 +107,52 @@ public final class DiagEventSubscriptionService {
 
   public void deleteEventSubscription(UUID id) {
     DiagEventSubscription sub = context.storage.getEventSubscription(id);
-    if (null != sub) {
-      if (context.storage.deleteEventSubscription(id)) {
-        updateEnabledEvents(new HashSet<>(sub.getIncludeNodes()));
+    if (context.storage.deleteEventSubscription(id)) {
+      if (null != sub) {
+        updateEnabledEvents(new HashSet<>(sub.getNodes()));
       }
     }
   }
 
   public DiagEventSubscription addEventSubscription(DiagEventSubscription subscription) {
+    assert context.storage.getEventSubscriptions(subscription.getCluster())
+        .stream()
+        .noneMatch((sub)
+            -> Objects.equals(sub.getNodes(), subscription.getNodes())
+              && Objects.equals(sub.getEvents(), subscription.getEvents()));
+
     return context.storage.addEventSubscription(subscription.withId(subscription.getId().orElse(UUID.randomUUID())));
   }
 
   public void subscribe(DiagEventSubscription sub, EventOutput eventOutput, String remoteAddr) {
-    Broadcaster broadcaster = BROADCASTER_BY_SUBSCRIPTION.computeIfAbsent(sub, (key) -> new Broadcaster());
+    Broadcaster broadcaster = BROADCASTERS.computeIfAbsent(sub, (key) -> new Broadcaster(sub));
     LOG.debug("Using SSE broadcaster for subscription {} and new client {}", sub.getId(), remoteAddr);
     broadcaster.add(eventOutput);
 
     // enable events for nodes in subscription (if needed)
-    updateEnabledEvents(new HashSet<>(sub.getIncludeNodes()));
+    updateEnabledEvents(new HashSet<>(sub.getNodes()));
   }
 
-  protected synchronized void updateEnabledEvents() {
+  private synchronized void updateEnabledEvents() {
     updateEnabledEvents(Collections.emptySet());
   }
 
-  protected synchronized void updateEnabledEvents(Set<String> filterByNode) {
+  private synchronized void updateEnabledEvents(Set<String> filterByNode) {
     LOG.debug("Checking current event subscriptions");
 
     // enable all events with active consumers and disable events for non-active consumers
     // we have two different kind of consumers: always active (loggers and http) and ad-hoc (live view)
     Collection<DiagEventSubscription> allSubs = context.storage.getEventSubscriptions();
 
-    Set<DiagEventSubscription> subsAlwaysActive = allSubs.stream()
+    this.subsAlwaysActive = allSubs.stream()
             .filter((sub) -> sub.getExportFileLogger() != null || sub.getExportHttpEndpoint() != null)
             .collect(Collectors.toSet());
 
-    Set<DiagEventSubscription> subsAdHoc = allSubs.stream()
-            .filter((sub) -> !subsAlwaysActive.contains(sub))
-            .collect(Collectors.toSet());
-
-    // cache for checking against incoming events
-    this.subsAlwaysActive = subsAlwaysActive;
-
     // determine which of the ad-hoc subscriptions have currently active SSE clients listening
-    Set<DiagEventSubscription> subsAdHocActive = subsAdHoc.stream().filter((sub) -> {
-      Broadcaster broadcaster = BROADCASTER_BY_SUBSCRIPTION.get(sub);
-      return broadcaster != null && broadcaster.isActive();
-    }).collect(Collectors.toSet());
+    Set<DiagEventSubscription> subsAdHocActive = allSubs.stream()
+        .filter((sub) -> !subsAlwaysActive.contains(sub))
+        .filter((sub) -> BROADCASTERS.containsKey(sub) && BROADCASTERS.get(sub).isActive())
+        .collect(Collectors.toSet());
 
     // create mapping for all subscriptions by node
     SetMultimap<Node, DiagEventSubscription> subscriptionsByNodeMulti
@@ -176,10 +163,10 @@ public final class DiagEventSubscriptionService {
 
       Cluster cluster = Cluster.builder()
           .withName(sub.getCluster())
-          .withSeedHosts(ImmutableSet.copyOf(sub.getIncludeNodes()))
+          .withSeedHosts(sub.getNodes())
           .build();
 
-      for (String host : sub.getIncludeNodes()) {
+      for (String host : sub.getNodes()) {
         if (filterByNode.isEmpty() || filterByNode.contains(host)) {
           Node node = Node.builder().withCluster(cluster).withHostname(host).build();
           subscriptionsByNodeMulti.put(node, sub);
@@ -193,95 +180,92 @@ public final class DiagEventSubscriptionService {
 
     Map<Node, Collection<DiagEventSubscription>> subscriptionsByNode = subscriptionsByNodeMulti.asMap();
     CountDownLatch nodesLatch = new CountDownLatch(subscriptionsByNode.size());
+    AtomicBoolean running = new AtomicBoolean(true);
     LOG.debug("Updating event subscriptions for {} nodes", subscriptionsByNode.size());
 
     for (Node node : subscriptionsByNode.keySet()) {
       LOG.debug("{}: {}", node, subscriptionsByNode.get(node));
 
-      taskExecutor.submit(() -> {
-        String threadName = Thread.currentThread().getName();
-        try {
-          Thread.currentThread().setName(node.getHostname());
-          LOG.debug("Starting to update event subscriptions for {}", node);
-
-          JmxProxy jmx;
+      scheduler.submit(() -> {
+        if (running.get()) {
+          String threadName = Thread.currentThread().getName();
           try {
-            jmx = context.jmxConnectionFactory.connectAny(Collections.singleton(node));
-          } catch (ReaperException e) {
-            LOG.error("Failed to acquire JMX connection", e);
-            return;
-          }
+            Thread.currentThread().setName(node.getHostname());
+            LOG.debug("Starting to update event subscriptions for {}", node);
+            JmxProxy jmx = context.jmxConnectionFactory.connectAny(Collections.singleton(node));
 
-          // create set of active and inactive events based on all subscriptions for this node
-          // active events are all events included in an active subscription
-          Collection<DiagEventSubscription> subscriptions = subscriptionsByNode.get(node);
-          Set<String> activeEvents = subscriptions.stream()
-                  .filter(isActiveSubscription)
-                  .flatMap((sub) -> sub.getEvents().stream())
-                  .collect(Collectors.toSet());
+            // create set of active and inactive events based on all subscriptions for this node
+            // active events are all events included in an active subscription
+            Collection<DiagEventSubscription> subscriptions = subscriptionsByNode.get(node);
 
-          // inactive events are all non-active events
-          Set<String> inactiveEvents = subscriptions.stream()
-                  .flatMap((sub) -> sub.getEvents().stream())
-                  .filter((event) -> !activeEvents.contains(event))
-                  .collect(Collectors.toSet());
+            Set<String> activeEvents = subscriptions.stream()
+                    .filter(isActiveSubscription)
+                    .flatMap((sub) -> sub.getEvents().stream())
+                    .collect(Collectors.toSet());
 
-          // if there are no active events for this node, disable them and stop polling
-          if (activeEvents.isEmpty()) {
-            LOG.debug("No active events subscriptions");
-            Set<String> possiblyEnabledEvents = new HashSet<>();
-            possiblyEnabledEvents.addAll(inactiveEvents);
-            // kill poller
-            DiagEventPoller poller = POLLERS_BY_NODE.remove(node);
-            if (poller != null) {
-              LOG.debug("Stopping existing event poller");
-              possiblyEnabledEvents.addAll(poller.getEnabledEvents());
-              poller.stop();
+            // inactive events are all non-active events
+            Set<String> inactiveEvents = subscriptions.stream()
+                    .flatMap((sub) -> sub.getEvents().stream())
+                    .filter((event) -> !activeEvents.contains(event))
+                    .collect(Collectors.toSet());
+
+            // if there are no active events for this node, disable them and stop polling
+            if (activeEvents.isEmpty()) {
+              LOG.debug("No active events subscriptions");
+              Set<String> possiblyEnabledEvents = new HashSet<>();
+              possiblyEnabledEvents.addAll(inactiveEvents);
+              // kill poller
+              DiagEventPoller poller = POLLERS_BY_NODE.remove(node);
+              if (poller != null) {
+                LOG.debug("Stopping existing event poller");
+                possiblyEnabledEvents.addAll(poller.getEnabledEvents());
+                poller.stop();
+              }
+              // unsubscribe from jmx notifications
+              unsubscribeNotifications(node, jmx);
+              // clear any possible remaining enabled events
+              if (!possiblyEnabledEvents.isEmpty()) {
+                enableEvents(node, possiblyEnabledEvents, false, jmx);
+              }
+              return;
             }
-            // unsubscribe from jmx notifications
-            unsubscribeNotifications(node, jmx);
-            // clear any possible remaining enabled events
-            if (!possiblyEnabledEvents.isEmpty()) {
-              enableEvents(node, possiblyEnabledEvents, false, jmx);
+
+            // if there are inactive events, just disable them
+            if (!inactiveEvents.isEmpty()) {
+              LOG.debug("Disabling events for inactive subscriptions");
+              enableEvents(node, inactiveEvents, false, jmx);
             }
-            return;
-          }
 
-          // if there are inactive events, just disable them
-          if (!inactiveEvents.isEmpty()) {
-            LOG.debug("Disabling events for inactive subscriptions");
-            enableEvents(node, inactiveEvents, false, jmx);
-          }
-
-          // active events need to be enabled and polled
-          if (!activeEvents.isEmpty()) {
-            LOG.debug("Enabling events for active subscriptions");
-            enableEvents(node, activeEvents, true, jmx);
-            DiagEventPoller poller = createPoller(node, jmx, activeEvents, true);
-            if (poller != null) {
+            // active events need to be enabled and polled
+            if (!activeEvents.isEmpty()) {
+              LOG.debug("Enabling events for active subscriptions");
+              enableEvents(node, activeEvents, true, jmx);
+              DiagEventPoller poller = createPoller(node, jmx, activeEvents, true);
               subscribeNotifications(node, jmx, poller);
             }
+          } catch (ReaperException e) {
+            LOG.warn("Failed to acquire JMX connection {}", e.getMessage());
+          } finally {
+            Thread.currentThread().setName(threadName);
+            nodesLatch.countDown();
+
+            LOG.debug(
+                "Finished handling event subscriptions for {} ({}/{})",
+                node, nodesLatch.getCount(), subscriptionsByNode.size());
           }
-
-        } finally {
-          Thread.currentThread().setName(threadName);
-          nodesLatch.countDown();
-
-          LOG.debug(
-              "Finished handling event subscriptions for {} ({}/{})",
-              node, nodesLatch.getCount(), subscriptionsByNode.size());
         }
       });
     }
 
     try {
-      if (!nodesLatch.await(30, TimeUnit.SECONDS)) {
-        LOG.warn("Timeout while handling event subscriptions for some nodes");
+      if (!nodesLatch.await(context.config.getJmxConnectionTimeoutInSeconds(), TimeUnit.SECONDS)) {
+        running.set(false);
+
+        LOG.warn(
+            "Timeout while handling ({}/{}) remaining event subscriptions for some nodes",
+            nodesLatch.getCount(), subscriptionsByNode.size());
       }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      LOG.warn(e.getMessage(), e);
-    }
+    } catch (InterruptedException ignore) { }
   }
 
   private void enableEvents(Node node, Set<String> events, boolean enabled, JmxProxy jmxProxy) {
@@ -307,51 +291,40 @@ public final class DiagEventSubscriptionService {
   }
 
   private DiagEventPoller createPoller(Node node, JmxProxy jmxProxy, Set<String> events, boolean enabled) {
-    try {
-      DiagEventPoller poller = POLLERS_BY_NODE
-          .computeIfAbsent(node, (key) -> new DiagEventPoller(key, jmxProxy, this::onEvent, scheduledExecutor));
+    DiagEventPoller poller = POLLERS_BY_NODE
+        .computeIfAbsent(node, (key) -> new DiagEventPoller(key, jmxProxy, this::onEvent, scheduler));
 
-      poller.setEnabledEvents(events);
-      if (enabled) {
-        poller.start();
-      } else {
-        poller.stop();
-      }
-      return poller;
-    } catch (RuntimeException e) {
-      LOG.error("Failed to create poller", e);
-      return null;
+    poller.setEnabledEvents(events);
+    if (enabled) {
+      poller.start();
+    } else {
+      poller.stop();
     }
+    return poller;
   }
 
   private void subscribeNotifications(Node node, JmxProxy jmxProxy, DiagEventPoller poller) {
-    LOG.debug("Subscribing to notifications on {} ({})", jmxProxy.getHost(), jmxProxy.getClusterName());
-    if (listenerByNode.containsKey(node)) {
-      LOG.debug("Notification listener already registered for {}", node);
-      return;
-    }
+    if (!listenerByNode.containsKey(node)) {
+      LOG.debug("Subscribing to notifications on {} ({})", jmxProxy.getHost(), jmxProxy.getClusterName());
 
-    NotificationListener listener = new NotificationListener(
-        node,
-        // reopen JMX connection by re-enabling all events for this node
-        (notification) -> updateEnabledEvents(Collections.singleton(node.getHostname())),
-        // forward incoming notifications (event summaries) to poller
-        poller::onSummary,
-        taskExecutor);
+      NotificationListener listener = new NotificationListener(
+          node,
+          // reopen JMX connection by re-enabling all events for this node
+          (notification) -> updateEnabledEvents(Collections.singleton(node.getHostname())),
+          // forward incoming notifications (event summaries) to poller
+          poller::onSummary,
+          scheduler);
 
-    if (null == listenerByNode.putIfAbsent(node, listener)) {
-      DiagnosticProxy.create(jmxProxy).subscribeNotifications(listener);
+      if (null == listenerByNode.putIfAbsent(node, listener)) {
+        DiagnosticProxy.create(jmxProxy).subscribeNotifications(listener);
+      }
     }
   }
-
 
   private void unsubscribeNotifications(Node node, JmxProxy jmxProxy) {
     LOG.debug("Unsubscribing from notifications on {} ({})", jmxProxy.getHost(), jmxProxy.getClusterName());
     NotificationListener listener = listenerByNode.remove(node);
-    if (listener == null) {
-      LOG.debug("Notification listener not found for {}", node);
-      return;
-    }
+    Preconditions.checkState(null != listener, "Notification listener not found for %s", node);
     DiagnosticProxy.create(jmxProxy).unsubscribeNotifications(listener);
   }
 
@@ -361,17 +334,14 @@ public final class DiagEventSubscriptionService {
     try {
       json = JSON_MAPPER.writeValueAsString(event);
     } catch (JsonProcessingException e) {
-      LOG.error("Failed to serialize diagnostic event as JSON", e);
-      return;
+      throw new IllegalStateException("Failed to serialize diagnostic event as JSON", e);
     }
 
-    //
     // always-active subscriptions
-    //
     for (DiagEventSubscription sub : subsAlwaysActive) {
       try {
         if (sub.getCluster().equals(event.getCluster())
-                && sub.getIncludeNodes().contains(event.getNode())
+                && sub.getNodes().contains(event.getNode())
                 && sub.getEvents().contains(event.getEventClass())) {
 
           if (sub.getExportFileLogger() != null) {
@@ -399,19 +369,17 @@ public final class DiagEventSubscriptionService {
       }
     }
 
-    //
     // ad-hoc subscriptions
-    //
     OutboundEvent out = new OutboundEvent.Builder()
-            .id(String.valueOf(idCounter.getAndIncrement()))
+            .id(String.valueOf(ID_COUNTER.getAndIncrement()))
             .mediaType(MediaType.APPLICATION_JSON_TYPE)
             .data(json).build();
 
-    // broadcast event to all clients wit matching event subscriptions (node and event type)
-    for (Map.Entry<DiagEventSubscription, Broadcaster> entry : BROADCASTER_BY_SUBSCRIPTION.entrySet()) {
+    // broadcast event to all clients with matching event subscriptions (node and event type)
+    for (Map.Entry<DiagEventSubscription, Broadcaster> entry : BROADCASTERS.entrySet()) {
       DiagEventSubscription sub = entry.getKey();
       if (sub.getCluster().equals(event.getCluster())
-              && sub.getIncludeNodes().contains(event.getNode())
+              && sub.getNodes().contains(event.getNode())
               && sub.getEvents().contains(event.getEventClass())) {
 
         LOG.debug(
@@ -424,13 +392,13 @@ public final class DiagEventSubscriptionService {
   }
 
   private void pingSseClients() {
-    OutboundEvent out = new OutboundEvent.Builder()
-            .id(String.valueOf(idCounter.getAndIncrement()))
+    OutboundEvent.Builder builder = new OutboundEvent.Builder()
+            .id(String.valueOf(ID_COUNTER.getAndIncrement()))
             .mediaType(MediaType.APPLICATION_JSON_TYPE)
-            .data("PING").build();
+            .name("ping");
 
-    for (Broadcaster broadcaster : BROADCASTER_BY_SUBSCRIPTION.values()) {
-      broadcaster.broadcast(out);
+    for (Broadcaster broadcaster : BROADCASTERS.values()) {
+      broadcaster.broadcast(builder.data(broadcaster.sub).build());
     }
   }
 
@@ -510,9 +478,15 @@ public final class DiagEventSubscriptionService {
     }
   }
 
-  private class Broadcaster extends SseBroadcaster {
+  private static final class Broadcaster extends SseBroadcaster {
 
     private final AtomicLong outputs = new AtomicLong();
+    private final DiagEventSubscription sub;
+
+    private Broadcaster(DiagEventSubscription sub) {
+      super();
+      this.sub = sub;
+    }
 
     @Override
     public void onException(ChunkedOutput<OutboundEvent> chunkedOutput, Exception exception) {
@@ -535,7 +509,7 @@ public final class DiagEventSubscriptionService {
       outputs.decrementAndGet();
     }
 
-    public boolean isActive() {
+    boolean isActive() {
       return outputs.get() > 0;
     }
   }

@@ -17,12 +17,13 @@
 
 package io.cassandrareaper.core;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
 
 public final class DiagEventSubscription {
 
@@ -35,11 +36,11 @@ public final class DiagEventSubscription {
   @JsonProperty
   private String description;
 
-  @JsonProperty("include_nodes")
-  private List<String> includeNodes;
+  @JsonProperty("nodes")
+  private Set<String> nodes;
 
   @JsonProperty
-  private List<String> events;
+  private Set<String> events;
 
   @JsonProperty("export_sse")
   private boolean exportSse;
@@ -60,16 +61,22 @@ public final class DiagEventSubscription {
       Optional<UUID> id,
       String cluster,
       Optional<String> description,
-      List<String> includeNodes,
-      List<String> events,
+      Set<String> nodes,
+      Set<String> events,
       boolean exportSse,
       String exportFileLogger,
       String exportHttpEndpoint) {
 
+    Preconditions.checkNotNull(cluster);
+    Preconditions.checkNotNull(nodes);
+    Preconditions.checkArgument(!nodes.isEmpty());
+    Preconditions.checkNotNull(events);
+    Preconditions.checkArgument(!events.isEmpty());
+
     this.id = id.orElse(null);
     this.cluster = cluster;
     this.description = description.orElse(null);
-    this.includeNodes = includeNodes;
+    this.nodes = nodes;
     this.events = events;
     this.exportSse = exportSse;
     this.exportFileLogger = exportFileLogger;
@@ -88,18 +95,20 @@ public final class DiagEventSubscription {
     return description;
   }
 
-  public List<String> getIncludeNodes() {
-    return includeNodes;
+  public Set<String> getNodes() {
+    return nodes;
   }
 
-  public List<String> getEvents() {
+  public Set<String> getEvents() {
     return events;
   }
 
+  // TODO make Optional
   public String getExportFileLogger() {
     return exportFileLogger;
   }
 
+  // TODO make Optional
   public String getExportHttpEndpoint() {
     return exportHttpEndpoint;
   }
@@ -113,7 +122,7 @@ public final class DiagEventSubscription {
         Optional.of(id),
         cluster,
         Optional.ofNullable(description),
-        includeNodes,
+        nodes,
         events,
         exportSse,
         exportFileLogger,
@@ -143,7 +152,7 @@ public final class DiagEventSubscription {
             + "id=" + id
             + ", cluster='" + cluster + '\''
             + ", description='" + description + '\''
-            + ", includeNodes=" + includeNodes
+            + ", nodes=" + nodes
             + ", events=" + events
             + ", exportSse=" + exportSse
             + ", exportFileLogger='" + exportFileLogger + '\''

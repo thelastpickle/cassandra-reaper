@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class DiagEventPoller {
+final class DiagEventPoller {
 
   private static final Logger LOG = LoggerFactory.getLogger(DiagEventPoller.class);
 
@@ -58,7 +58,7 @@ public final class DiagEventPoller {
   private final Consumer<DiagnosticEvent> eventConsumer;
   private final ScheduledExecutorService scheduledExecutor;
 
-  public DiagEventPoller(
+  DiagEventPoller(
       Node node,
       JmxProxy jmxProxy,
       Consumer<DiagnosticEvent> eventConsumer,
@@ -70,17 +70,17 @@ public final class DiagEventPoller {
     this.scheduledExecutor = scheduledExecutor;
   }
 
-  public void start() {
+  void start() {
     if (this.schedule == null || this.schedule.isDone()) {
       scheduledExecutor.scheduleAtFixedRate(this::pollSummary, 0, SUMMARY_POLL_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
   }
 
-  public void stop() {
+  void stop() {
     schedule.cancel(false);
   }
 
-  public void onSummary(Map<String, Comparable> summary) {
+  void onSummary(Map<String, Comparable> summary) {
     LOG.debug("Received event update summary");
     for (String summaryEntryKey : summary.keySet()) {
 
@@ -157,11 +157,11 @@ public final class DiagEventPoller {
     }
   }
 
-  public Collection<String> getEnabledEvents() {
+  Collection<String> getEnabledEvents() {
     return enabledEvents;
   }
 
-  public void setEnabledEvents(Collection<String> enabledEvents) {
+  void setEnabledEvents(Collection<String> enabledEvents) {
     this.enabledEvents = Collections.unmodifiableCollection(enabledEvents);
   }
 }

@@ -48,8 +48,8 @@ const TableRow = React.createClass({
     }
 
     var nodes = "";
-    if(this.props.row.include_nodes) {
-      nodes = this.props.row.include_nodes.join(", ");
+    if(this.props.row.nodes) {
+      nodes = this.props.row.nodes.join(", ");
     }
 
     var events = "";

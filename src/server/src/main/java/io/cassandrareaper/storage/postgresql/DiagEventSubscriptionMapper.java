@@ -23,11 +23,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
+import com.google.common.collect.ImmutableSet;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -40,8 +41,8 @@ public final class DiagEventSubscriptionMapper implements ResultSetMapper<DiagEv
     UUID id = UuidUtil.fromSequenceId(rs.getLong("id"));
     String cluster = rs.getString("cluster");
     String description = rs.getString("description");
-    List<String> includeNodes = parseStringArray(rs.getArray("include_nodes").getArray());
-    List<String> events = parseStringArray(rs.getArray("events").getArray());
+    Set<String> includeNodes = parseStringArray(rs.getArray("include_nodes").getArray());
+    Set<String> events = parseStringArray(rs.getArray("events").getArray());
     Boolean exportWebUi = rs.getBoolean("export_sse");
     String exportFileLogger = rs.getString("export_file_logger");
     String exportHttpEndpoint = rs.getString("export_http_endpoint");
@@ -57,13 +58,13 @@ public final class DiagEventSubscriptionMapper implements ResultSetMapper<DiagEv
         exportHttpEndpoint);
   }
 
-  private List<String> parseStringArray(Object obj) {
-    List<String> values = Collections.emptyList();
+  private Set<String> parseStringArray(Object obj) {
+    Set<String> values = Collections.emptySet();
     if (obj instanceof String[]) {
-      values = Arrays.asList((String[]) obj);
+      values = ImmutableSet.copyOf((String[]) obj);
     } else if (obj instanceof Object[]) {
       Object[] ocf = (Object[]) obj;
-      values = Arrays.asList(Arrays.copyOf(ocf, ocf.length, String[].class));
+      values = ImmutableSet.copyOf(Arrays.copyOf(ocf, ocf.length, String[].class));
     }
     return values;
   }
@@ -76,14 +77,14 @@ public final class DiagEventSubscriptionMapper implements ResultSetMapper<DiagEv
       id = UuidUtil.fromSequenceId(Long.valueOf(sid));
     }
 
-    List<String> includeNodes = Collections.emptyList();
-    if (map.containsKey("includeNodes")) {
-      includeNodes = Arrays.asList((map.get("includeNodes")).split(","));
+    Set<String> nodes = Collections.emptySet();
+    if (map.containsKey("nodes")) {
+      nodes = ImmutableSet.copyOf(map.get("nodes").split(","));
     }
 
-    List<String> events = Collections.emptyList();
+    Set<String> events = Collections.emptySet();
     if (map.containsKey("events")) {
-      events = Arrays.asList((map.get("events")).split(","));
+      events = ImmutableSet.copyOf(map.get("events").split(","));
     }
 
     boolean exportSse = false;
@@ -100,7 +101,7 @@ public final class DiagEventSubscriptionMapper implements ResultSetMapper<DiagEv
         Optional.ofNullable(id),
         clusterName,
         Optional.ofNullable(description),
-        includeNodes,
+        nodes,
         events,
         exportSse,
         exportFileLogger,

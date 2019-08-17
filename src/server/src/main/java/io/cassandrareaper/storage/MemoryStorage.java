@@ -533,14 +533,15 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions() {
-    return getEventSubscriptions(null);
+    return subscriptionsById.values();
   }
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
+    Preconditions.checkNotNull(clusterName);
     Collection<DiagEventSubscription> ret = new ArrayList<>();
     for (DiagEventSubscription sub : subscriptionsById.values()) {
-      if (clusterName == null || sub.getCluster().equals(clusterName)) {
+      if (sub.getCluster().equals(clusterName)) {
         ret.add(sub);
       }
     }

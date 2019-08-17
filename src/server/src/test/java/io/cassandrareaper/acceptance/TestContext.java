@@ -47,12 +47,11 @@ public final class TestContext {
   /* Testing cluster name mapped to keyspace name mapped to tables list. */
   public static Map<String, Map<String, Set<String>>> TEST_CLUSTER_INFO = new HashMap<>();
 
-  public static List<DiagEventSubscription> LAST_RETRIEVED_EVENT_SUBSCRIPTIONS = Collections.emptyList();
-  public static List<DiagEventSubscription> LAST_CREATED_EVENT_SUBSCRIPTIONS = Collections.emptyList();
-
   /* Used for targeting an object accessed in last test step. */
   private final List<UUID> currentSchedules = Lists.newCopyOnWriteArrayList();
   private final List<UUID> currentRepairs = Lists.newCopyOnWriteArrayList();
+  private final List<DiagEventSubscription> currentEventSubscriptions = Lists.newCopyOnWriteArrayList();
+  private final List<DiagEventSubscription> retrievedEventSubscriptions = Lists.newCopyOnWriteArrayList();
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
   TestContext() {}
@@ -94,6 +93,27 @@ public final class TestContext {
     }
   }
 
+  void addCurrentEventSubscription(DiagEventSubscription eventSubscription) {
+    lock.writeLock().lock();
+    try {
+      if (currentEventSubscriptions.isEmpty() || !getCurrentEventSubscription().equals(eventSubscription)) {
+        currentEventSubscriptions.add(eventSubscription);
+      }
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  void updateRetrievedEventSubscriptions(List<DiagEventSubscription> eventSubscriptions) {
+    lock.writeLock().lock();
+    try {
+      retrievedEventSubscriptions.clear();
+      retrievedEventSubscriptions.addAll(eventSubscriptions);
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
   UUID getCurrentScheduleId() {
     lock.readLock().lock();
     try {
@@ -112,10 +132,37 @@ public final class TestContext {
     }
   }
 
+  DiagEventSubscription getCurrentEventSubscription() {
+    lock.readLock().lock();
+    try {
+      return currentEventSubscriptions.get(currentEventSubscriptions.size() - 1);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  DiagEventSubscription removeCurrentEventSubscription() {
+    lock.readLock().lock();
+    try {
+      return currentEventSubscriptions.remove(currentEventSubscriptions.size() - 1);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
   List<UUID> getCurrentRepairIds() {
     lock.readLock().lock();
     try {
       return Collections.unmodifiableList(currentRepairs);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  List<DiagEventSubscription> getRetrievedEventSubscriptions() {
+    lock.readLock().lock();
+    try {
+      return Collections.unmodifiableList(retrievedEventSubscriptions);
     } finally {
       lock.readLock().unlock();
     }

@@ -426,7 +426,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     deleteDiagnosticEventPrepStmt = session.prepare("DELETE FROM diagnostic_event_subscription WHERE id = ?");
 
     saveDiagnosticEventPrepStmt = session.prepare("INSERT INTO diagnostic_event_subscription "
-        + "(id,cluster,description,include_nodes,events,export_sse,export_file_logger,export_http_endpoint)"
+        + "(id,cluster,description,nodes,events,export_sse,export_file_logger,export_http_endpoint)"
         + " VALUES(?,?,?,?,?,?,?,?)");
 
     if (0 >= VersionNumber.parse("3.0").compareTo(version)) {
@@ -1598,6 +1598,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Collection<DiagEventSubscription> getEventSubscriptions(String clusterName) {
+    Preconditions.checkNotNull(clusterName);
+
     return session.execute(getDiagnosticEventsPrepStmt.bind()).all().stream()
         .map((row) -> createDiagEventSubscription(row))
         .filter((subscription) -> clusterName.equals(subscription.getCluster()))
@@ -1618,8 +1620,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         Optional.of(row.getUUID("id")),
         row.getString("cluster"),
         Optional.of(row.getString("description")),
-        row.getList("include_nodes", String.class),
-        row.getList("events", String.class),
+        row.getSet("nodes", String.class),
+        row.getSet("events", String.class),
         row.getBool("export_sse"),
         row.getString("export_file_logger"),
         row.getString("export_http_endpoint"));
@@ -1633,7 +1635,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         subscription.getId().get(),
         subscription.getCluster(),
         subscription.getDescription(),
-        subscription.getIncludeNodes(),
+        subscription.getNodes(),
         subscription.getEvents(),
         subscription.getExportSse(),
         subscription.getExportFileLogger(),

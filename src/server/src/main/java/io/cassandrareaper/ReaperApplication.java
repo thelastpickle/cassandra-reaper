@@ -226,7 +226,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     final ClusterResource addClusterResource = new ClusterResource(
         context,
-        environment.lifecycle().executorService("SnapshotManager").minThreads(6).maxThreads(6).build());
+        environment.lifecycle().executorService("ClusterResource").minThreads(6).maxThreads(6).build());
 
     environment.jersey().register(addClusterResource);
     final RepairRunResource addRepairRunResource = new RepairRunResource(context);
@@ -240,9 +240,10 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     environment.jersey().register(nodeStatsResource);
 
     HttpClient httpClient = createHttpClient(config, environment);
-    final DiagEventSubscriptionResource eventsResource = new DiagEventSubscriptionResource(context, httpClient);
+    ScheduledExecutorService ses = environment.lifecycle().scheduledExecutorService("Diagnostics").threads(6).build();
+    final DiagEventSubscriptionResource eventsResource = new DiagEventSubscriptionResource(context, httpClient, ses);
     environment.jersey().register(eventsResource);
-    final DiagEventSseResource diagEvents = new DiagEventSseResource(context, httpClient);
+    final DiagEventSseResource diagEvents = new DiagEventSseResource(context, httpClient, ses);
     environment.jersey().register(diagEvents);
 
     if (config.isAccessControlEnabled()) {
