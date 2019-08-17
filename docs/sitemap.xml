@@ -43,6 +43,10 @@
   </url>
   
   <url>
+    <loc>http://cassandra-reaper.io/docs/configuration/authentication/</loc>
+  </url>
+  
+  <url>
     <loc>http://cassandra-reaper.io/docs/configuration/backend_specific/</loc>
   </url>
   
@@ -91,7 +95,7 @@
   </url>
   
   <url>
-    <loc>http://cassandra-reaper.io/docs/usage/authentication/</loc>
+    <loc>http://cassandra-reaper.io/docs/usage/cassandra-diagnostics/</loc>
   </url>
   
   <url>
@@ -99,7 +103,11 @@
   </url>
   
   <url>
-    <loc>http://cassandra-reaper.io/docs/usage/multi_dc/</loc>
+    <loc>http://cassandra-reaper.io/docs/usage/multi_dc_distributed/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/usage/multi_dc_non-distributed/</loc>
   </url>
   
   <url>
@@ -112,10 +120,12 @@
   
   <url>
     <loc>http://cassandra-reaper.io/faq/</loc>
+    <priority>0</priority>
   </url>
   
   <url>
     <loc>http://cassandra-reaper.io/quickstart/</loc>
+    <priority>0</priority>
   </url>
   
   <url>

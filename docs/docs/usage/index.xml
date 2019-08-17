@@ -25,12 +25,13 @@ If JMX authentication is required and all clusters share the same credentials, t
     
     <item>
       <title></title>
-      <link>http://cassandra-reaper.io/docs/usage/authentication/</link>
+      <link>http://cassandra-reaper.io/docs/usage/cassandra-diagnostics/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>http://cassandra-reaper.io/docs/usage/authentication/</guid>
-      <description>Authentication Authentication is activated in Reaper by default. It relies on Apache Shiro, which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box. The default authentication uses the dummy username and password as found in the default shiro.ini. It is expected you override this in a production environment.
-This default Shiro authentication configuration is referenced via the following block in the Reaper yaml file :</description>
+      <guid>http://cassandra-reaper.io/docs/usage/cassandra-diagnostics/</guid>
+      <description>Monitoring Cassandra Diagnostic Events Reaper has the ability to listen and display live Cassandra&amp;rsquo;s emitted Diagnostic Events.
+In Cassandra 4.0 internal system &amp;ldquo;diagnostic events&amp;rdquo; have become available, via the work done in CASSANDRA-12944. These allow to observe internal Cassandra events, for example in unit tests and with external tools. These diagnostic events provide operational monitoring and troubleshooting beyond logs and metrics.
+Enabling Diagnostic Events server-side in Apache Cassandra 4.0 Available from Apache Cassandra version 4.</description>
     </item>
     
     <item>
@@ -47,12 +48,21 @@ Node View Clicking on one of the nodes will open a dialog box containing details
     
     <item>
       <title></title>
-      <link>http://cassandra-reaper.io/docs/usage/multi_dc/</link>
+      <link>http://cassandra-reaper.io/docs/usage/multi_dc_distributed/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>http://cassandra-reaper.io/docs/usage/multi_dc/</guid>
-      <description>Operating with a Multi DC Cluster Reaper can operate a cluster which has a multi data centre deployment. The datacenterAvailability setting in the Reaper YAML file indicates to Reaper its deployment in relation to cluster data center network locality.
-Single Reaper instance with JMX accessible for all DCs In the case where the JMX port is accessible (with or without authentication) from the running Reaper instance for all nodes in all DCs, it is possible to have a single instance of Reaper handle the whole cluster by using the following setting in the configuration yaml file :</description>
+      <guid>http://cassandra-reaper.io/docs/usage/multi_dc_distributed/</guid>
+      <description>Operating Multiple DCs using Multiple Reaper Multiple Reaper instances can operate clusters which have multi datacenter deployment. Multiple Reaper instances, also known as Distributed mode, can only be used when using the Apache Cassandra backend. Using multiple Reaper instances allows improved availability and fault tolerance. It is more likely that a Reaper UI is available via one of the Reaper instances, and that scheduled repairs are executed by one of the running Reaper instances.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://cassandra-reaper.io/docs/usage/multi_dc_non-distributed/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/usage/multi_dc_non-distributed/</guid>
+      <description>Operating Multiple DCs with a Single Reaper Reaper can operate clusters which has a multi datacenter deployment. The datacenterAvailability setting in the Reaper YAML file indicates to Reaper its deployment in relation to cluster data center network locality.
+Single Reaper instance with JMX accessible for all DCs In the case where the JMX port is accessible (with or without authentication) from the running Reaper instance for all nodes in all DCs, it is possible to have a single instance of Reaper handle one or multiple clusters by using the following setting in the configuration yaml file :</description>
     </item>
     
     <item>

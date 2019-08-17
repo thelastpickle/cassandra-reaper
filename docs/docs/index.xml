@@ -18,7 +18,7 @@
       <guid>http://cassandra-reaper.io/docs/api/</guid>
       <description>Rest API Source code for all the REST resources can be found from package io.cassandrareaper.resources.
 Login Resource  POST /login  Expected form parameters:
- username: User to login with as defined in Shiro settings (default user is admin) password: Password to authenticate with through Shiro (default password of user admin is: admin) rememberMe: Boolean to have the Web UI remember the username  Endpoint for logging in to Reaper   Shiro JWT Provider  GET /jwt  Expected query parameters: None Returns a JWT to use in all REST calls when authentication is turned on in Reaper.</description>
+ username: User to login with as defined in Shiro settings (default user is admin) password: Password to authenticate with through Shiro (default password of user admin is: admin) rememberMe: Boolean to have the Web UI remember the username  Endpoint for logging in to Reaper   Shiro JWT Provider  GET /jwt</description>
     </item>
     
     <item>
