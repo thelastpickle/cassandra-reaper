@@ -1,9 +1,9 @@
 +++
 [menu.docs]
-name = "Activating Authentication"
-weight = 100
+name = "Shiro Authentication"
+weight = 60
 identifier = "auth"
-parent = "usage"
+parent = "configuration"
 +++
 
 # Authentication
