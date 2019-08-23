@@ -213,7 +213,7 @@ const Datacenter = React.createClass({
       marginLeft: "0",
       paddingLeft: "0",
       paddingRight: "1px",
-      width: (((dcSize/this.props.totalLoad)*100)) + "%"
+      width: Math.max(33,((dcSize/this.props.totalLoad)*100)) + "%"
     };
 
     let badgeStyle = {
