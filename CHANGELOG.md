@@ -1,5 +1,13 @@
 ## Change Log
 
+### 1.4.5 (2019/08/23 15:36 +00:00)
+- [8bcf6d3](https://github.com/thelastpickle/cassandra-reaper/commit/8bcf6d3df9ca3d05feabc2167d622976d5b833b8) Backport multiple DC UI fix to 1.4 (@michaelsembwever)
+- [3dcb5d5](https://github.com/thelastpickle/cassandra-reaper/commit/3dcb5d5021a5f3f153555edfed131e1f89cac4dd) Fix the find command to correctly identify the reaper jar on all systems while excluding source/javadoc jars (@adejanovski)
+- [1cb9075](https://github.com/thelastpickle/cassandra-reaper/commit/1cb9075bda3b7560b435690e980e360419e772fe) Add authorization to rest endpoints based on their verbs (http method), add "operator" (read+write) and "user" (read-only) roles, let the existing admin user be an operator and add a new user "user" with the "user" role. (@michaelsembwever)
+- [134c7a0](https://github.com/thelastpickle/cassandra-reaper/commit/134c7a0e7f861c909aeb2deefcb15ee66d9ad798) Don't include *-sources.jar into the classpath, and be a bit smarter in finding the jar file in a current project directory (regardless of the current folder in the project directory) (@michaelsembwever)
+- [534f5aa](https://github.com/thelastpickle/cassandra-reaper/commit/534f5aae0dde877910e8394653c8b81307441428) Fix initialisation ordering of AppContext (@treuherz)
+- [a934aea](https://github.com/thelastpickle/cassandra-reaper/commit/a934aea7a1db3ea978e8c6e96854a122f6d847d1) Improve performance of JsonParseUtils (@michaelsembwever)
+
 ### 1.4.4 (2019/05/28 09:21 +00:00)
 
 - [47322c1](https://github.com/thelastpickle/cassandra-reaper/commit/47322c1436f868318a1823df65574c7d4acf1d4d) Fix for NPE when a segment is aborted (@adejanovski)
