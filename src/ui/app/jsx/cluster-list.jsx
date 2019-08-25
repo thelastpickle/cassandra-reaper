@@ -142,25 +142,26 @@ const Cluster = React.createClass({
       <div className="panel panel-default" style={clusterDisplayStyle}>
         <div className="panel-body">
           <div className="row">
-            <div className="col-lg-2">
+            <div className="col-lg-auto">
               <div className="row">
+                <button
+                  type="button"
+                  className="pull-right cluster-info-button btn btn-md glyphicon glyphicon-info-sign"
+                  data-toggle="modal"
+                  data-target="#clusterInfoModal">
+                </button>
                 <div className="col-lg-8">
                   <a href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name}</h4></a>
-                </div>
-                <div className="col-lg-1">
-                  <button
-                    type="button"
-                    className="cluster-info-button btn btn-lg glyphicon glyphicon-info-sign"
-                    data-toggle="modal"
-                    data-target="#clusterInfoModal">
-                  </button>
                 </div>
               </div>
               <div className="font-bold">Total load: <span className="badge">{humanFileSize(totalLoad,1024)}</span></div>
               <div className="font-bold">Running repairs: {runningRepairsBadge}</div>
               <button type="button" className="forget-cluster-button btn btn-xs btn-danger" onClick={this._onDelete}>Forget cluster</button>
             </div>
-            <div className="col-lg-10">
+        &nbsp;
+          </div>
+          <div className="row">
+            <div className="col-lg-auto">
               <div className="row" style={rowDivStyle}>
                 {datacenters}
               </div>
@@ -213,7 +214,7 @@ const Datacenter = React.createClass({
       marginLeft: "0",
       paddingLeft: "0",
       paddingRight: "1px",
-      width: Math.max(33,((dcSize/this.props.totalLoad)*100)) + "%"
+      width: Math.max(100,((dcSize/this.props.totalLoad)*100)) + "%"
     };
 
     let badgeStyle = {
