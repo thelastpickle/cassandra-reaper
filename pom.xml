@@ -19,7 +19,7 @@
 
     <groupId>io.cassandrareaper</groupId>
     <artifactId>cassandra-reaper-pom</artifactId>
-    <version>1.4.6-SNAPSHOT</version>
+    <version>1.4.6</version>
     <packaging>pom</packaging>
 
     <name>Cassandra Reaper project</name>

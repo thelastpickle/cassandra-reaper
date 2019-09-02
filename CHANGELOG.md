@@ -1,5 +1,8 @@
 ## Change Log
 
+### 1.4.6 (2019/09/02 16:12 +00:00)
+- [bf18681](https://github.com/thelastpickle/cassandra-reaper/commit/bf18681cd1bf2625a3ab772294d3acb87b6240d2) Fix deploy phase (@adejanovski)
+
 ### 1.4.5 (2019/08/23 15:36 +00:00)
 - [8bcf6d3](https://github.com/thelastpickle/cassandra-reaper/commit/8bcf6d3df9ca3d05feabc2167d622976d5b833b8) Backport multiple DC UI fix to 1.4 (@michaelsembwever)
 - [3dcb5d5](https://github.com/thelastpickle/cassandra-reaper/commit/3dcb5d5021a5f3f153555edfed131e1f89cac4dd) Fix the find command to correctly identify the reaper jar on all systems while excluding source/javadoc jars (@adejanovski)
