@@ -156,7 +156,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Optional<String> enforcedLocalDatacenter = Optional.empty();
 
   @JsonProperty
-  @DefaultValue("false")
+  @DefaultValue("true")
   private Boolean enableConcurrentMigrations;
 
   private HttpClientConfiguration httpClient = new HttpClientConfiguration();
@@ -455,7 +455,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   public boolean getEnableConcurrentMigrations() {
-    return this.enableConcurrentMigrations == null ? false : this.enableConcurrentMigrations;
+    return this.enableConcurrentMigrations == null ? true : this.enableConcurrentMigrations;
   }
 
   public void setEnableConcurrentMigrations(boolean enableConcurrentMigrations) {

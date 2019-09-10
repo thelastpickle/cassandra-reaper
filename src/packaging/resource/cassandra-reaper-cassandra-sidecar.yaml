@@ -33,7 +33,7 @@ jmxConnectionTimeoutInSeconds: 5
 useAddressTranslator: false
 # purgeRecordsAfterInDays: 30
 # numberOfRunsToKeepPerUnit: 10
-enableConcurrentMigrations: true
+enableConcurrentMigrations: false
 
 # datacenterAvailability has three possible values: ALL | LOCAL | EACH | SIDECAR
 # the correct value to use depends on whether jmx ports to C* nodes in remote datacenters are accessible

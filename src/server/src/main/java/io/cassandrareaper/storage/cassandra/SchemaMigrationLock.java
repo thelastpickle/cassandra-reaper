@@ -25,7 +25,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.VersionNumber;
 import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,13 +36,11 @@ public final class SchemaMigrationLock implements AutoCloseable {
   private final boolean locked;
 
   public SchemaMigrationLock(VersionNumber version, Session session, ReaperApplicationConfiguration config) {
-
-    Preconditions.checkArgument(
-        !config.isInSidecarMode() || config.getEnableConcurrentMigrations(),
-        "Running in sidecar mode and concurrent migrations are not enabled.");
-
     this.session = session;
-    this.locked = migrationConsensusAvailable(config, version) && lockSchemaMigration();
+
+    this.locked = !config.getEnableConcurrentMigrations()
+        && migrationConsensusAvailable(config, version)
+        && lockSchemaMigration();
   }
 
   @Override
@@ -92,6 +89,6 @@ public final class SchemaMigrationLock implements AutoCloseable {
   }
 
   private static boolean migrationConsensusAvailable(ReaperApplicationConfiguration config, VersionNumber version) {
-    return config.getEnableConcurrentMigrations() && VersionNumber.parse("2.2").compareTo(version) <= 0;
+    return VersionNumber.parse("2.2").compareTo(version) <= 0;
   }
 }
