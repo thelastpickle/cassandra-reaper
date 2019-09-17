@@ -50,9 +50,14 @@ const Streams = React.createClass({
         component: this,
         dataType: 'json',
         complete: function(data) {
-            this.component.setState({streamSessions: data.responseJSON});
+            try {
+              this.component.setState({streamSessions: data.responseJSON});
+            } catch(error) {
+                this.component.setState({streamSessions: []});
+            }
         },
         error: function(data) {
+            this.component.setState({streamSessions: []});
             console.log("Failed getting streams : " + data.responseText);
         }
     })

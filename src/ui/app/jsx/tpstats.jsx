@@ -44,9 +44,14 @@ const TpStats = React.createClass({
         component: this,
         dataType: 'json',
         complete: function(data) {
+          try {
             this.component.setState({tpstats: data.responseJSON});
+          } catch(error) {
+            this.component.setState({tpstats: []});
+          }
         },
         error: function(data) {
+            this.component.setState({tpstats: []});
             console.log("Failed getting tpstats : " + data.responseText);
         }
     })

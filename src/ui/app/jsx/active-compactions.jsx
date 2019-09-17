@@ -45,10 +45,15 @@ const ActiveCompactions = React.createClass({
         component: this,
         dataType: 'json',
         complete: function(data) {
+          try {
             this.component.setState({activeCompactions: data.responseJSON});
+          } catch(error) {
+            this.component.setState({activeCompactions: []});
+          }
         },
         error: function(data) {
             console.log("Failed getting active compactions : " + data.responseText);
+            this.component.setState({activeCompactions: []});
         }
     })
     },
