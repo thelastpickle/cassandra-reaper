@@ -149,16 +149,18 @@ td > button {
     font-weight: bold;
 }
 
-.cluster-info-button {
-    position: relative;
-    right: 30px;
-    top: -2px;
-}
-
 .forget-cluster-button {
     position: relative;
-    top: 10px;
+	top: 10px;
+	
 }
+
+.cluster-info-button {
+    position: relative;
+	top: 10px;
+	margin-left: 5px;
+}
+
 
 .repair-progress-bar {
     position: relative;

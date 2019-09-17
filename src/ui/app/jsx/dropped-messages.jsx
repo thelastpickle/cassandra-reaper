@@ -44,10 +44,15 @@ const DroppedMessages = React.createClass({
         component: this,
         dataType: 'json',
         complete: function(data) {
+          try {
             this.component.setState({droppedMessages: data.responseJSON});
+          } catch(error) {
+            this.component.setState({droppedMessages: []});
+          }
         },
         error: function(data) {
-            console.log("Failed getting dropped messages : " + data.responseText);
+          this.component.setState({droppedMessages: []});
+          console.log("Failed getting dropped messages : " + data.responseText);
         }
     })
     },
