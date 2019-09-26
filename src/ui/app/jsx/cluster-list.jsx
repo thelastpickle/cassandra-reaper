@@ -18,11 +18,8 @@ import React from "react";
 import NodeStatus from "jsx/node-status";
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix} from "jsx/mixin";
 import Modal from 'react-bootstrap/lib/Modal';
-import Button from 'react-bootstrap/lib/Button';
-import Tooltip from 'react-bootstrap/lib/Tooltip';
-import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger';
 import ProgressBar from 'react-bootstrap/lib/ProgressBar';
-import Popover from 'react-bootstrap/lib/Popover';
+import Badge from 'react-bootstrap/lib/Badge';
 import $ from "jquery";
 var NotificationSystem = require('react-notification-system');
 
@@ -30,7 +27,8 @@ const Cluster = React.createClass({
 
   propTypes: {
     name: React.PropTypes.string.isRequired,
-    clusterFilter: React.PropTypes.string.isRequired
+    clusterFilter: React.PropTypes.string.isRequired,
+    nodeFilter: React.PropTypes.string.isRequired
   },
   
   getInitialState: function() {
@@ -76,6 +74,20 @@ const Cluster = React.createClass({
     clearInterval(this.state.clusterStatuses);
   },
 
+  chunkArray: function(myArray, chunk_size){
+    var index = 0;
+    var arrayLength = myArray.length;
+    var tempArray = [];
+    
+    for (index = 0; index < arrayLength; index += chunk_size) {
+        var myChunk = myArray.slice(index, index+chunk_size);
+        // Do something if you want with the group
+        tempArray.push(myChunk);
+    }
+
+    return tempArray;
+  },
+
   render: function() {
 
     let rowDivStyle = {
@@ -110,12 +122,19 @@ const Cluster = React.createClass({
     }
     
     if(this.state.nodes_status != null) {
-        datacenters = Object.keys(this.state.nodes_status.endpointStates[0].endpoints).sort().map(dc => 
+        var grouped_datacenters = this.chunkArray(Object.keys(this.state.nodes_status.endpointStates[0].endpoints).sort(), 3);
+        datacenters = grouped_datacenters.map(dcGroup => 
+          <div className="row" key="">
+            {dcGroup.map(dc => 
                         <Datacenter datacenter={this.state.nodes_status.endpointStates[0].endpoints[dc]} 
                                     datacenterName={dc} 
+                                    key={this.props.name + "-" + dc}
                                     nbDatacenters={Object.keys(this.state.nodes_status.endpointStates[0].endpoints).length} 
                                     clusterName={this.props.name} key={this.props.name + '-' + dc} 
-                                    totalLoad={this.state.nodes_status.endpointStates[0].totalLoad}/>
+                                    totalLoad={this.state.nodes_status.endpointStates[0].totalLoad}
+                                    nodeFilter={this.props.nodeFilter}/>)
+            }
+          </div>
        );
        totalLoad = this.state.nodes_status.endpointStates[0].totalLoad;
       } 
@@ -138,6 +157,11 @@ const Cluster = React.createClass({
       }
     }
 
+    var nbNodes = 0;
+    if(this.state.nodes_status != null) {
+      nbNodes = this.state.nodes_status.endpointStates[0].endpointNames.length;
+    }
+
     return (
       <div className="panel panel-default" style={clusterDisplayStyle}>
         <div className="panel-body">
@@ -147,18 +171,16 @@ const Cluster = React.createClass({
                 <div className="col-lg-8">
                   <a href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name}</h4></a>
                 </div>
-                <div className="col-lg-1">
-                  <button
-                    type="button"
-                    className="cluster-info-button btn btn-lg glyphicon glyphicon-info-sign"
-                    data-toggle="modal"
-                    data-target="#clusterInfoModal">
-                  </button>
-                </div>
               </div>
+              <div className="font-bold">Nodes: <span className="badge">{nbNodes}</span></div>
               <div className="font-bold">Total load: <span className="badge">{humanFileSize(totalLoad,1024)}</span></div>
               <div className="font-bold">Running repairs: {runningRepairsBadge}</div>
               <button type="button" className="forget-cluster-button btn btn-xs btn-danger" onClick={this._onDelete}>Forget cluster</button>
+              <button
+                type="button"
+                className="cluster-info-button btn btn-xs btn-info"
+                data-toggle="modal"
+                data-target="#clusterInfoModal">Info</button>
             </div>
             <div className="col-lg-10">
               <div className="row" style={rowDivStyle}>
@@ -200,7 +222,8 @@ const Datacenter = React.createClass({
     datacenterName: React.PropTypes.string.isRequired,
     nbDatacenters: React.PropTypes.number.isRequired,
     clusterName: React.PropTypes.string.isRequired,
-    totalLoad: React.PropTypes.number.isRequired
+    totalLoad: React.PropTypes.number.isRequired,
+    nodeFilter: React.PropTypes.string.isRequired
   },
   
   render: function() {
@@ -213,7 +236,7 @@ const Datacenter = React.createClass({
       marginLeft: "0",
       paddingLeft: "0",
       paddingRight: "1px",
-      width: Math.max(33,((dcSize/this.props.totalLoad)*100)) + "%"
+      width: ((dcSize/this.props.totalLoad)*100) + "%"
     };
 
     let badgeStyle = {
@@ -234,11 +257,13 @@ const Datacenter = React.createClass({
 
     const nbRacks = Object.keys(this.props.datacenter).length;
     const racks = Object.keys(this.props.datacenter).sort().map(rack => 
-          <Rack key={this.props.datacenterName+'-'+rack} rack={this.props.datacenter[rack]} nbRacks={nbRacks} clusterName={this.props.clusterName} dcLoad={dcSize}/>);
+          <Rack key={this.props.datacenterName+'-'+rack} rack={this.props.datacenter[rack]}
+                nbRacks={nbRacks} clusterName={this.props.clusterName} dcLoad={dcSize}
+                totalLoad={this.props.totalLoad} nodeFilter={this.props.nodeFilter}/>);
     return (
             <div className="col-lg-12" style={rowDivStyle}>
               <div className="panel panel-default panel-info" style={panelStyle}>
-                <div className="panel-heading" style={panelHeadingStyle}><b>{this.props.datacenterName} <span className="badge" style={badgeStyle}>{humanFileSize(dcSize, 1024)}</span></b></div>
+                <div className="panel-heading" style={panelHeadingStyle}><b>{this.props.datacenterName} <Badge>{humanFileSize(dcSize, 1024)}</Badge></b></div>
                 <div className="panel-body" style={panelBodyStyle}>{racks}</div>
               </div>
             </div>
@@ -253,7 +278,9 @@ const Rack = React.createClass({
     rack: React.PropTypes.array.isRequired,
     nbRacks: React.PropTypes.number.isRequired,
     clusterName: React.PropTypes.string.isRequired,
-    dcLoad: React.PropTypes.number.isRequired
+    dcLoad: React.PropTypes.number.isRequired,
+    totalLoad: React.PropTypes.number.isRequired,
+    nodeFilter: React.PropTypes.string.isRequired
   },
 
   componentDidMount: function() {
@@ -262,11 +289,15 @@ const Rack = React.createClass({
 
   render: function() {
     const rackSize = this.props.rack.reduce((previousValue, endpoint) => previousValue + endpoint.load, 0);
+    var rackWidth = 100;
+    if (this.props.rack.length < 3) {
+      rackWidth = ((rackSize/this.props.dcLoad)*100)
+    }
     let rowDivStyle = {
         marginLeft: "0",
         paddingLeft: "0",
         paddingRight: "1px",
-        width: ((rackSize/this.props.dcLoad)*100) + "%"
+        width: rackWidth + "%"
     };
 
     let badgeStyle = {
@@ -292,8 +323,9 @@ const Rack = React.createClass({
       rackName = this.props.rack[0].rack;
       nodes = this.props.rack.map(endpoint =>
           <NodeStatus key={endpoint.endpoint} endpointStatus={endpoint}
-            clusterName={this.props.clusterName} nbNodes={this.props.rack.length} rackLoad={rackSize}
-            notificationSystem={this._notificationSystem}/>
+            clusterName={this.props.clusterName} nbNodes={this.props.rack.length}
+            rackLoad={rackSize} notificationSystem={this._notificationSystem} totalLoad={this.props.totalLoad}
+            nodeFilter={this.props.nodeFilter}/>
       );
     }
 
@@ -301,7 +333,7 @@ const Rack = React.createClass({
       <div className="col-lg-12" style={rowDivStyle}>
         <NotificationSystem ref="notificationSystem" />
         <div className="panel panel-default panel-success" style={panelStyle}>
-          <div className="panel-heading" style={panelHeadingStyle}><b>{rackName} <span className="badge" style={badgeStyle}>{humanFileSize(rackSize, 1024)}</span></b></div>
+          <div className="panel-heading" style={panelHeadingStyle}><b>{rackName} <Badge>{humanFileSize(rackSize, 1024)}</Badge></b></div>
           <div className="panel-body" style={panelBodyStyle}>{nodes}</div>
         </div>
       </div>
@@ -319,7 +351,7 @@ const clusterList = React.createClass({
   },
 
   getInitialState: function() {
-    return {clusterNames: [], deleteResultMsg: null, clusterFilter: ""};
+    return {clusterNames: [], deleteResultMsg: null, clusterFilter: "", nodeFilter: ""};
   },
 
   componentWillMount: function() {
@@ -344,7 +376,7 @@ const clusterList = React.createClass({
 
   render: function() {
     const rows = this.state.clusterNames.sort().map(name =>
-      <Cluster name={name} key={name} deleteSubject={this.props.deleteSubject} getClusterStatus={this.props.getClusterStatus} getClusterSubject={this.props.getClusterSubject} clusterFilter={this.state.clusterFilter}/>);
+      <Cluster name={name} key={name} deleteSubject={this.props.deleteSubject} getClusterStatus={this.props.getClusterStatus} getClusterSubject={this.props.getClusterSubject} clusterFilter={this.state.clusterFilter} nodeFilter={this.state.nodeFilter}/>);
 
     let table = null;
     if(rows.length === 0) {
@@ -358,9 +390,13 @@ const clusterList = React.createClass({
         <form className="form-horizontal form-condensed">
           <div className="form-group">
             <label htmlFor="in_clusterName" className="col-sm-3 control-label">Filter: </label>
-            <div className="col-sm-9 col-md-7 col-lg-5">
+            <div className="col-sm-2">
               <input type="text" required className="form-control" value={this.state.clusterFilter}
                     onChange={this._handleChange} id="in_clusterFilter" placeholder="Start typing to filter clusters..."/>
+            </div>
+            <div className="col-sm-2">
+              <input type="text" required className="form-control" value={this.state.nodeFilter}
+                    onChange={this._handleChange} id="in_nodeFilter" placeholder="Start typing to filter nodes..."/>
             </div>
           </div>
         </form>

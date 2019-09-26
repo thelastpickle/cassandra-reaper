@@ -46,10 +46,15 @@ const ClientRequestLatency = React.createClass({
         component: this,
         dataType: 'json',
         complete: function(data) {
+          try {
             this.component.setState({clientRequestLatencies: data.responseJSON});
+          } catch(error) {
+            this.component.setState({clientRequestLatencies: []});
+          }
         },
         error: function(data) {
-            console.log("Failed getting client request latencies : " + data.responseText);
+          this.component.setState({clientRequestLatencies: []});
+          console.log("Failed getting client request latencies : " + data.responseText);
         }
     })
     },

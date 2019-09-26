@@ -39,7 +39,9 @@ const NodeStatus = React.createClass({
       clusterName: React.PropTypes.string.isRequired,
       nbNodes: React.PropTypes.number.isRequired,
       rackLoad: React.PropTypes.number.isRequired,
-      notificationSystem: React.PropTypes.object
+      notificationSystem: React.PropTypes.object,
+      totalLoad: React.PropTypes.number.isRequired,
+      nodeFilter: React.PropTypes.string
     },
   
     getInitialState() {
@@ -60,11 +62,15 @@ const NodeStatus = React.createClass({
             method: 'GET',
             component: this,
             complete: function(data) {
-              this.component.setState({tokens: $.parseJSON(data.responseText)});
+              try {
+                this.component.setState({tokens: $.parseJSON(data.responseText)});
+              }
+              catch(error) {
+                console.log("Failed grabbing the tokens...");
+              }
             },
             error: function(data) {
-              console.log("Failed grabbing the tokens for node " + this.props.endpointStatus.endpoint);
-              setTimeout(this.component._getNodesTokens, 10000);
+              console.log("Failed grabbing the tokens...");
             }
         });
     },
@@ -157,6 +163,14 @@ const NodeStatus = React.createClass({
     },
   
     render: function() {
+      let displayNodeStyle = {
+        display: "none"
+      }
+
+      if (this.props.nodeFilter == "" || this.props.endpointStatus.endpoint.includes(this.props.nodeFilter)) {
+        displayNodeStyle = {
+        }
+      }
       
       let progressStyle = {
         display: "none" 
@@ -165,7 +179,7 @@ const NodeStatus = React.createClass({
       let takeSnapshotStyle = {
         display: "inline-block" 
       }
-  
+
       if (this.state.communicating==true) {
         progressStyle = {
           display: "inline-block"
@@ -182,11 +196,17 @@ const NodeStatus = React.createClass({
         buttonStyle = "btn btn-xs btn-danger";
         largeButtonStyle = "btn btn-lg btn-danger";
       }
-  
+      
+      let averageSize = this.props.rackLoad/this.props.nbNodes;
+      var opacity = Math.max(0.3, (0.7*(this.props.endpointStatus.load/averageSize)));
+      //Math.max(1,(((this.props.endpointStatus.load/this.props.rackLoad)*100)-0.5)) + "%"
       const btStyle = {
-        width: (((this.props.endpointStatus.load/this.props.rackLoad)*100)-0) + "%",
+        width: "22px",
+        height: "22px",
         margin:"0px",
-        textOverflow: "hidden"
+        marginRight:"1px",
+        marginBottom:"1px",
+        opacity: opacity
       };
 
       const overflowStyle = {
@@ -198,7 +218,7 @@ const NodeStatus = React.createClass({
         <Tooltip id="tooltip"><strong>{this.props.endpointStatus.endpoint}</strong> ({humanFileSize(this.props.endpointStatus.load, 1024)})</Tooltip>
       );
 
-      const tokenList = this.state.tokens.map(token => <div>{token}</div>);
+      const tokenList = this.state.tokens.map(token => <div key={token}>{token}</div>);
 
       const tokens = (
         <Popover id="tokens" title="Tokens" trigger="click">
@@ -213,7 +233,8 @@ const NodeStatus = React.createClass({
                   listSnapshots={this._listSnapshots}
                   endpoint={this.props.endpointStatus.endpoint}
                   notificationSystem={this.props.notificationSystem}
-                  clusterName={this.props.clusterName}/>
+                  clusterName={this.props.clusterName}
+                  key={snapshotName}/>
       );
   
       const takeSnapshotClick = (
@@ -225,8 +246,8 @@ const NodeStatus = React.createClass({
       );
   
       return (
-            <span>
-              <OverlayTrigger placement="top" overlay={tooltip}><button type="button" style={btStyle} className={buttonStyle} onClick={this.open}>{this.props.endpointStatus.endpoint} ({humanFileSize(this.props.endpointStatus.load, 1024)})</button></OverlayTrigger>
+            <span style={displayNodeStyle}>
+              <OverlayTrigger placement="top" overlay={tooltip}><button type="button" style={btStyle} className={buttonStyle} onClick={this.open}>&nbsp;</button></OverlayTrigger>
               <Modal show={this.state.showModal} onHide={this.close} bsSize="large" aria-labelledby="contained-modal-title-lg" dialogClassName="large-modal">
                 <Modal.Header closeButton>
                   <Modal.Title>Endpoint {this.props.endpointStatus.endpoint}</Modal.Title>
