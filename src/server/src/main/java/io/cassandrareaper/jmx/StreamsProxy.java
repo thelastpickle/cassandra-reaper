@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.management.openmbean.CompositeData;
+import javax.management.openmbean.InvalidKeyException;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -38,6 +39,7 @@ import org.apache.cassandra.streaming.ProgressInfo;
 import org.apache.cassandra.streaming.SessionInfo;
 import org.apache.cassandra.streaming.StreamState;
 import org.apache.cassandra.streaming.StreamSummary;
+import org.apache.cassandra.streaming.management.ProgressInfoCompositeData;
 import org.apache.cassandra.streaming.management.StreamStateCompositeData;
 import org.apache.cassandra.streaming.management.StreamSummaryCompositeData;
 import org.slf4j.Logger;
@@ -85,10 +87,17 @@ public final class StreamsProxy {
         // start by trying to parse with classes coming from Reaper's C* dependency
         StreamState streamState = StreamStateCompositeData.fromCompositeData(compositeData);
         result.add(streamState);
-      } catch (AssertionError e) {
-        // if that fails, try the older version
-        StreamState olderStreamState = parseStreamStatePre2_1(compositeData);
-        result.add(olderStreamState);
+      } catch (AssertionError | InvalidKeyException e) {
+        try {
+          // if that fails, try the old version
+          StreamState olderStreamState = parseStreamStatePre2_1(compositeData);
+          result.add(olderStreamState);
+        } catch (InvalidKeyException ie) {
+          // and if even that fails, try the new version
+          // if that still fails, exception goes up
+          StreamState newerStreamState = parseStreamState4_0_0(compositeData);
+          result.add(newerStreamState);
+        }
       }
     }
     return result;
@@ -169,6 +178,70 @@ public final class StreamsProxy {
     int sessionIndex = Integer.MIN_VALUE;
 
     return new ProgressInfo(peer, sessionIndex, fileName, direction, currentBytes, totalBytes);
+  }
+
+  private StreamState parseStreamState4_0_0(CompositeData compositeData) {
+    UUID planId = UUID.fromString((String)compositeData.get("planId"));
+    String description = (String) compositeData.get("description");
+
+    CompositeData[] sessionCompositeData = (CompositeData[]) compositeData.get("sessions");
+
+    Set<SessionInfo> sessions = Arrays.stream(sessionCompositeData)
+        .map(this::parseSessionInfo4_0_0)
+        .collect(Collectors.toSet());
+
+    return new StreamState(planId, description, sessions);
+  }
+
+  private SessionInfo parseSessionInfo4_0_0(CompositeData compositeData) {
+
+    try {
+      InetAddress peer = InetAddress.getByName((String) compositeData.get("peer"));
+      InetAddress connecting = InetAddress.getByName((String) compositeData.get("connecting"));
+      org.apache.cassandra.streaming.StreamSession.State state
+          = org.apache.cassandra.streaming.StreamSession.State.valueOf((String) compositeData.get("state"));
+      int sessionIndex = (int) compositeData.get("sessionIndex");
+
+      CompositeData[] receivingSummariesData = (CompositeData[]) compositeData.get("receivingSummaries");
+      Set<StreamSummary> receivingSummaries = Arrays.stream(receivingSummariesData)
+          // stream summary must be custom because they changed cfId -> tableId
+          .map(this::parseStreamSummary4_0_0)
+          .collect(Collectors.toSet());
+
+      CompositeData[] sendingSummariesData = (CompositeData[]) compositeData.get("sendingSummaries");
+      Set<StreamSummary> sendingSummaries = Arrays.stream(sendingSummariesData)
+          // stream summary must be custom because they changed cfId -> tableId
+          .map(this::parseStreamSummary4_0_0)
+          .collect(Collectors.toSet());
+
+      SessionInfo sessionInfo
+          = new SessionInfo(peer, sessionIndex, connecting, receivingSummaries, sendingSummaries, state);
+
+      CompositeData[] receivingFilesData = (CompositeData[]) compositeData.get("receivingFiles");
+      Arrays.stream(receivingFilesData)
+          // we should be using a ProgressInfo from 4.0 as this one will ignore the port information
+          .map(ProgressInfoCompositeData::fromCompositeData)
+          .forEach(sessionInfo::updateProgress);
+
+      CompositeData[] sendingFilesData = (CompositeData[]) compositeData.get("sendingFiles");
+      Arrays.stream(sendingFilesData)
+          // we should be using a ProgressInfo from 4.0 as this one will ignore the port information
+          .map(ProgressInfoCompositeData::fromCompositeData)
+          .forEach(sessionInfo::updateProgress);
+
+      return sessionInfo;
+    } catch (UnknownHostException e) {
+      throw new IllegalStateException(e);
+    }
+
+  }
+
+  private StreamSummary parseStreamSummary4_0_0(CompositeData compositeData) {
+    int files = (int) compositeData.get("files");
+    UUID cfId = UUID.fromString((String) compositeData.get("tableId"));
+    long totalSize = (long) compositeData.get("totalSize");
+
+    return new StreamSummary(cfId, files, totalSize);
   }
 
 }

@@ -213,6 +213,56 @@ public class StreamServiceTest {
     assertEquals(1, result.size());
   }
 
+  @Test
+  public void testGetStreams_4_0_0()
+      throws OpenDataException, IOException, ClassNotFoundException, ReaperException, InterruptedException {
+
+    CompositeData streamSession = makeCompositeData_4_0_0();
+
+    URL url = Resources.getResource("repair-samples/stream-report-4-0-0.txt");
+    String ref = Resources.toString(url, Charsets.UTF_8);
+    assertEquals(ref.replaceAll("\\s", ""), streamSession.toString().replaceAll("\\s", ""));
+
+    JmxProxy proxy = (JmxProxy) mock(Class.forName("io.cassandrareaper.jmx.JmxProxyImpl"));
+    StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
+    JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
+    when(streamingManagerMBean.getCurrentStreams()).thenReturn(ImmutableSet.of(streamSession));
+
+    AppContext cxt = new AppContext();
+    cxt.config = TestRepairConfiguration.defaultConfig();
+    cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
+    Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any());
+
+    // do the actual pullStreams() call, which should succeed
+    List<StreamSession> result = StreamService
+        .create(() -> clusterFacadeSpy)
+        .listStreams(Node.builder().withHostname("127.0.0.1").build());
+
+    verify(streamingManagerMBean, times(1)).getCurrentStreams();
+    assertEquals(1, result.size());
+
+  }
+
+  private CompositeData makeCompositeData_4_0_0() throws OpenDataException {
+
+    Map<String, Object> fields = Maps.newTreeMap();
+    fields.put("currentRxBytes", 9947684L);
+    fields.put("currentTxBytes", 0L);
+    fields.put("description", "Repair");
+    fields.put("planId", "185b0440-e059-11e9-8be8-4db088857399");
+    fields.put("rxPercentage", 12.0);
+    fields.put("sessions", new CompositeData[] {makeSessions_4_0_0()});
+    fields.put("totalRxBytes", 79807773L);
+    fields.put("totalTxBytes", 0L);
+    fields.put("txPercentage", 100.0);
+
+    CompositeType compositeType = streamStateType_4_0_0();
+
+    return new CompositeDataSupport(compositeType, fields);
+  }
+
   private CompositeData makeCompositeData_3_11_2() throws OpenDataException {
 
     Map<String, Object> fields = Maps.newTreeMap();
@@ -285,6 +335,46 @@ public class StreamServiceTest {
     CompositeType compositeType = streamStateType_2_0_17();
 
     return new CompositeDataSupport(compositeType, fields);
+  }
+
+  private CompositeType streamStateType_4_0_0() throws OpenDataException {
+    String typeName = "org.apache.cassandra.streaming.StreamState";
+    String description = "StreamState";
+    String[] itemNames = {
+        "currentRxBytes",
+        "currentTxBytes",
+        "description",
+        "planId",
+        "rxPercentage",
+        "sessions",
+        "totalRxBytes",
+        "totalTxBytes",
+        "txPercentage"
+    };
+    String[] itemDescriptions = {
+        "currentRxBytes",
+        "currentTxBytes",
+        "description",
+        "planId",
+        "rxPercentage",
+        "sessions",
+        "totalRxBytes",
+        "totalTxBytes",
+        "txPercentage"
+    };
+    OpenType[] itemTypes = {
+        SimpleType.LONG,
+        SimpleType.LONG,
+        SimpleType.STRING,
+        SimpleType.STRING,
+        SimpleType.DOUBLE,
+        ArrayType.getArrayType(makeSessionsType4_0()),
+        SimpleType.LONG,
+        SimpleType.LONG,
+        SimpleType.DOUBLE
+    };
+
+    return new CompositeType(typeName, description, itemNames, itemDescriptions, itemTypes);
   }
 
   private CompositeType streamStateType_2_1_20() throws OpenDataException {
@@ -368,6 +458,49 @@ public class StreamServiceTest {
     return new CompositeType(typeName, description, itemNames, itemDescriptions, itemTypes);
   }
 
+  private CompositeDataSupport makeSessions_4_0_0() throws OpenDataException {
+    Map<String, Object> receivingFile = Maps.newTreeMap();
+    receivingFile.put("currentBytes", 9947684L);
+    receivingFile.put("direction", "IN");
+    receivingFile.put("fileName", "tlp_stress/sensor_data");
+    receivingFile.put("peer", "127.0.0.1");
+    receivingFile.put("peer storage port", 7000);
+    receivingFile.put("planId", "185b0440-e059-11e9-8be8-4db088857399");
+    receivingFile.put("sessionIndex", 0);
+    receivingFile.put("totalBytes", 71367085L);
+
+    Map<String, Object> receivingSummary = Maps.newTreeMap();
+    receivingSummary.put("files", 1);
+    receivingSummary.put("tableId", "3d973a30-e04f-11e9-ae1b-71c66a07a6c0");
+    receivingSummary.put("totalSize", 79807773L);
+
+    CompositeDataSupport[] receivingFiles = {
+        new CompositeDataSupport(makeFilesType_4_0_0(), receivingFile)
+    };
+
+    CompositeDataSupport[] receivingSummaries = {
+        new CompositeDataSupport(makeSummariesType_4_0_0(), receivingSummary)
+    };
+
+    CompositeDataSupport[] sendingFiles = new CompositeDataSupport[] {};
+    CompositeDataSupport[] sendingSummaries = new CompositeDataSupport[] {};
+
+    Map<String, Object> fields = Maps.newTreeMap();
+    fields.put("connecting", "127.0.0.1");
+    fields.put("connecting_port", 7000);
+    fields.put("peer", "127.0.0.1");
+    fields.put("peer_port", 7000);
+    fields.put("planId", "185b0440-e059-11e9-8be8-4db088857399");
+    fields.put("receivingFiles", receivingFiles);
+    fields.put("receivingSummaries", receivingSummaries);
+    fields.put("sendingFiles", sendingFiles);
+    fields.put("sendingSummaries", sendingSummaries);
+    fields.put("sessionIndex", 0);
+    fields.put("state", "PREPARING");
+
+    return new CompositeDataSupport(makeSessionsType4_0(), fields);
+  }
+
   private CompositeDataSupport makeSessions_3_11_2() throws OpenDataException {
 
     Map<String, Object> firstSendingFile = Maps.newTreeMap();
@@ -410,7 +543,7 @@ public class StreamServiceTest {
     sendingSummariesFields.put("files", 4);
     sendingSummariesFields.put("totalSize", 130972860L);
     CompositeDataSupport[] sendingSummaries = {
-        new CompositeDataSupport(makeSummariesType(), sendingSummariesFields)
+        new CompositeDataSupport(makeSummariesType_pre_4_0(), sendingSummariesFields)
     };
     fields.put("sendingSummaries", sendingSummaries);
 
@@ -447,7 +580,7 @@ public class StreamServiceTest {
     sendingSummariesFields.put("files", 2);
     sendingSummariesFields.put("totalSize", 44670289L);
     CompositeDataSupport[] sendingSummaries = {
-        new CompositeDataSupport(makeSummariesType(), sendingSummariesFields)
+        new CompositeDataSupport(makeSummariesType_pre_4_0(), sendingSummariesFields)
     };
     fields.put("sendingSummaries", sendingSummaries);
 
@@ -489,7 +622,7 @@ public class StreamServiceTest {
     receivingSummariesFields.put("files", 4);
     receivingSummariesFields.put("totalSize", 59036414L);
     CompositeDataSupport[] receivingSummaries = {
-        new CompositeDataSupport(makeSummariesType(), receivingSummariesFields)
+        new CompositeDataSupport(makeSummariesType_pre_4_0(), receivingSummariesFields)
     };
     fields.put("receivingSummaries", receivingSummaries);
 
@@ -514,7 +647,7 @@ public class StreamServiceTest {
     sendingSummariesFields.put("files", 2);
     sendingSummariesFields.put("totalSize", 53556352L);
     CompositeDataSupport[] sendingSummaries = {
-        new CompositeDataSupport(makeSummariesType(), sendingSummariesFields)
+        new CompositeDataSupport(makeSummariesType_pre_4_0(), sendingSummariesFields)
     };
     fields.put("sendingSummaries", sendingSummaries);
 
@@ -551,7 +684,7 @@ public class StreamServiceTest {
     receivingSummariesFields.put("files", 3);
     receivingSummariesFields.put("totalSize", 90835388L);
     CompositeDataSupport[] receivingSummaries = {
-        new CompositeDataSupport(makeSummariesType(), receivingSummariesFields)
+        new CompositeDataSupport(makeSummariesType_pre_4_0(), receivingSummariesFields)
     };
     fields.put("receivingSummaries", receivingSummaries);
 
@@ -566,6 +699,52 @@ public class StreamServiceTest {
     fields.put("state", "PREPARING");
 
     return new CompositeDataSupport(makeSessionsTypePre2_1(), fields);
+  }
+
+  private CompositeType makeSessionsType4_0() throws OpenDataException {
+    String typeName = "org.apache.cassandra.streaming.SessionInfo";
+    String description = "SessionInfo";
+    String[] itemNames = {
+        "connecting",
+        "connecting_port",
+        "peer",
+        "peer_port",
+        "planId",
+        "receivingFiles",
+        "receivingSummaries",
+        "sendingFiles",
+        "sendingSummaries",
+        "sessionIndex",
+        "state"
+    };
+    String[] itemDescriptions = {
+        "connecting",
+        "connecting_port",
+        "peer",
+        "peer_port",
+        "planId",
+        "receivingFiles",
+        "receivingSummaries",
+        "sendingFiles",
+        "sendingSummaries",
+        "sessionIndex",
+        "state"
+    };
+    OpenType[] itemTypes = {
+        SimpleType.STRING,
+        SimpleType.INTEGER,
+        SimpleType.STRING,
+        SimpleType.INTEGER,
+        SimpleType.STRING,
+        ArrayType.getArrayType(makeFilesType_4_0_0()),
+        ArrayType.getArrayType(makeSummariesType_4_0_0()),
+        ArrayType.getArrayType(makeFilesType_4_0_0()),
+        ArrayType.getArrayType(makeSummariesType_4_0_0()),
+        SimpleType.INTEGER,
+        SimpleType.STRING,
+    };
+
+    return new CompositeType(typeName, description, itemNames, itemDescriptions, itemTypes);
   }
 
   private CompositeType makeSessionsTypePost2_1() throws OpenDataException {
@@ -598,9 +777,9 @@ public class StreamServiceTest {
         SimpleType.STRING,
         SimpleType.STRING,
         ArrayType.getArrayType(makeFilesType_2_1_20()),
-        ArrayType.getArrayType(makeSummariesType()),
+        ArrayType.getArrayType(makeSummariesType_pre_4_0()),
         ArrayType.getArrayType(makeFilesType_2_1_20()),
-        ArrayType.getArrayType(makeSummariesType()),
+        ArrayType.getArrayType(makeSummariesType_pre_4_0()),
         SimpleType.INTEGER,
         SimpleType.STRING,
     };
@@ -637,10 +816,47 @@ public class StreamServiceTest {
         SimpleType.STRING,
         SimpleType.STRING,
         ArrayType.getArrayType(makeFilesType_2_0_17()),
-        ArrayType.getArrayType(makeSummariesType()),
+        ArrayType.getArrayType(makeSummariesType_pre_4_0()),
         ArrayType.getArrayType(makeFilesType_2_0_17()),
-        ArrayType.getArrayType(makeSummariesType()),
+        ArrayType.getArrayType(makeSummariesType_pre_4_0()),
         SimpleType.STRING,
+    };
+
+    return new CompositeType(typeName, description, itemNames, itemDescriptions, itemTypes);
+  }
+
+  private CompositeType makeFilesType_4_0_0() throws OpenDataException {
+    String typeName = "org.apache.cassandra.streaming.ProgressInfo";
+    String description = "ProgressInfo";
+    String[] itemNames = {
+        "currentBytes",
+        "direction",
+        "fileName",
+        "peer",
+        "peer storage port",
+        "planId",
+        "sessionIndex",
+        "totalBytes"
+    };
+    String[] itemDescriptions = {
+        "currentBytes",
+        "direction",
+        "fileName",
+        "peer",
+        "peer storage port",
+        "planId",
+        "sessionIndex",
+        "totalBytes"
+    };
+    OpenType[] itemTypes = {
+        SimpleType.LONG,
+        SimpleType.STRING,
+        SimpleType.STRING,
+        SimpleType.STRING,
+        SimpleType.INTEGER,
+        SimpleType.STRING,
+        SimpleType.INTEGER,
+        SimpleType.LONG,
     };
 
     return new CompositeType(typeName, description, itemNames, itemDescriptions, itemTypes);
@@ -711,7 +927,29 @@ public class StreamServiceTest {
     return new CompositeType(typeName, description, itemNames, itemDescriptions, itemTypes);
   }
 
-  private CompositeType makeSummariesType() throws OpenDataException {
+  private CompositeType makeSummariesType_4_0_0() throws OpenDataException {
+    String typeName = "org.apache.cassandra.streaming.StreamSummary";
+    String description = "StreamSummary";
+    String[] itemNames = {
+        "tableId",
+        "files",
+        "totalSize"
+    };
+    String[] itemDescriptions = {
+        "tableId",
+        "files",
+        "totalSize"
+    };
+    OpenType[] itemTypes = {
+        SimpleType.STRING,
+        SimpleType.INTEGER,
+        SimpleType.LONG
+    };
+
+    return new CompositeType(typeName, description, itemNames, itemDescriptions, itemTypes);
+  }
+
+  private CompositeType makeSummariesType_pre_4_0() throws OpenDataException {
     String typeName = "org.apache.cassandra.streaming.StreamSummary";
     String description = "StreamSummary";
     String[] itemNames = {
