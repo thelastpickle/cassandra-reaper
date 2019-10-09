@@ -14,6 +14,7 @@
 # limitations under the License.
 
 sudo: required
+dist: trusty
 language: java
 addons:
   postgresql: "9.4"
