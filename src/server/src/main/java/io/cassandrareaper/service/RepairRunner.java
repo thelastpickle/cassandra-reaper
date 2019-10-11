@@ -120,30 +120,44 @@ final class RepairRunner implements Runnable {
 
     // below four metric names are duplicated, so monitoring systems can follow per cluster or per cluster and keyspace
     String metricNameForRepairProgressPerKeyspace
-        = metricName("repairProgress", repairUnitClusterName, repairUnitKeyspaceName, repairRunId);
+        = metricName(
+            "repairProgress",
+            repairUnitClusterName,
+            repairUnitKeyspaceName,
+            repairRun.get().getRepairUnitId());
 
-    String metricNameForRepairProgress = metricName("repairProgress", repairUnitClusterName, repairRunId);
+    String metricNameForRepairProgress
+        = metricName("repairProgress", repairUnitClusterName, repairRun.get().getRepairUnitId());
 
     registerMetric(metricNameForRepairProgressPerKeyspace, (Gauge<Float>) ()  -> repairProgress);
     registerMetric(metricNameForRepairProgress, (Gauge<Float>) ()  -> repairProgress);
 
     metricNameForMillisSinceLastRepairPerKeyspace
-        = metricName("millisSinceLastRepair", repairUnitClusterName, repairUnitKeyspaceName, repairRunId);
+      = metricName(
+            "millisSinceLastRepair",
+            repairUnitClusterName,
+            repairUnitKeyspaceName,
+            repairRun.get().getRepairUnitId());
 
-    metricNameForMillisSinceLastRepair = metricName("millisSinceLastRepair", repairUnitClusterName, repairRunId);
+    metricNameForMillisSinceLastRepair
+      = metricName(
+            "millisSinceLastRepair", repairUnitClusterName, repairRun.get().getRepairUnitId());
 
     String metricNameForDoneSegmentsPerKeyspace
-        = metricName("segmentsDone", repairUnitClusterName, repairUnitKeyspaceName, repairRunId);
+        = metricName("segmentsDone", repairUnitClusterName, repairUnitKeyspaceName, repairRun.get().getRepairUnitId());
 
-    String metricNameForDoneSegments = metricName("segmentsDone", repairUnitClusterName, repairRunId);
+    String metricNameForDoneSegments
+        = metricName("segmentsDone", repairUnitClusterName, repairRun.get().getRepairUnitId());
 
     registerMetric(metricNameForDoneSegmentsPerKeyspace, (Gauge<Float>) ()  -> segmentsDone);
     registerMetric(metricNameForDoneSegments, (Gauge<Integer>) ()  -> (int)segmentsDone);
 
     String metricNameForTotalSegmentsPerKeyspace
-        = metricName("segmentsTotal", repairUnitClusterName, repairUnitKeyspaceName, repairRunId);
+        = metricName("segmentsTotal", repairUnitClusterName, repairUnitKeyspaceName, repairRun.get().getRepairUnitId());
 
-    String metricNameForTotalSegments = metricName("segmentsTotal", repairUnitClusterName, repairRunId);
+    String metricNameForTotalSegments
+        = metricName("segmentsTotal", repairUnitClusterName, repairRun.get().getRepairUnitId());
+
 
     registerMetric(metricNameForTotalSegmentsPerKeyspace, (Gauge<Integer>) ()  -> (int)segmentsTotal);
     registerMetric(metricNameForTotalSegments, (Gauge<Float>) ()  -> segmentsTotal);
