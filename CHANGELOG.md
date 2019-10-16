@@ -1,5 +1,9 @@
 ## Change Log
 
+### 1.4.7 (2019/10/16 13:18 +00:00)
+- [bb39388](https://github.com/thelastpickle/cassandra-reaper/commit/bb393887c561ae9a17e24bed9053ff46146412a3) Fix metric naming to allow long term tracking of repairs. (@adejanovski)
+- [68f92a4](https://github.com/thelastpickle/cassandra-reaper/commit/68f92a4ae3348330a82e2d7d3bc4eb8ab2cfef83) Cluster view UI reorg (@adejanovski)
+
 ### 1.4.6 (2019/09/02 16:12 +00:00)
 - [bf18681](https://github.com/thelastpickle/cassandra-reaper/commit/bf18681cd1bf2625a3ab772294d3acb87b6240d2) Fix deploy phase (@adejanovski)
 
