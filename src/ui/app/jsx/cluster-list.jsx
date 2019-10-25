@@ -169,7 +169,7 @@ const Cluster = React.createClass({
             <div className="col-lg-2">
               <div className="row">
                 <div className="col-lg-8">
-                  <a href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name}</h4></a>
+                  <a className="btn btn-lg btn-default" href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name}</h4></a>
                 </div>
               </div>
               <div className="font-bold">Nodes: <span className="badge">{nbNodes}</span></div>
@@ -262,7 +262,7 @@ const Datacenter = React.createClass({
                 totalLoad={this.props.totalLoad} nodeFilter={this.props.nodeFilter}/>);
     return (
             <div className="col-lg-12" style={rowDivStyle}>
-              <div className="panel panel-default panel-info" style={panelStyle}>
+              <div className="panel panel-info" style={panelStyle}>
                 <div className="panel-heading" style={panelHeadingStyle}><b>{this.props.datacenterName} <Badge>{humanFileSize(dcSize, 1024)}</Badge></b></div>
                 <div className="panel-body" style={panelBodyStyle}>{racks}</div>
               </div>
@@ -309,7 +309,7 @@ const Rack = React.createClass({
     };
 
     let panelBodyStyle = {
-      padding: "1px"
+      padding: "0px"
     };
 
     let panelStyle = {
@@ -332,7 +332,7 @@ const Rack = React.createClass({
     return (
       <div className="col-lg-12" style={rowDivStyle}>
         <NotificationSystem ref="notificationSystem" />
-        <div className="panel panel-default panel-success" style={panelStyle}>
+        <div className="panel panel-success" style={panelStyle}>
           <div className="panel-heading" style={panelHeadingStyle}><b>{rackName} <Badge>{humanFileSize(rackSize, 1024)}</Badge></b></div>
           <div className="panel-body" style={panelBodyStyle}>{nodes}</div>
         </div>

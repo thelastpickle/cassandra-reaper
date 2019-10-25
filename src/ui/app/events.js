@@ -16,6 +16,7 @@
 
 import jQuery from "jquery";
 import React from "react";
+import Cookies from "js-cookie";
 import ReactDOM from "react-dom";
 import eventScreen from "jsx/event-screen";
 import {
@@ -26,10 +27,10 @@ import {
 } from "observable";
 
 jQuery(document).ready(function($){
-
+  document.documentElement.setAttribute('data-theme', Cookies.get('reaper-theme'));
   $.urlParam = function(name){
     var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
-    if (results != null) {
+    if (results) {
       return results[1] || 0;
     }
     else {
@@ -37,8 +38,8 @@ jQuery(document).ready(function($){
     }
   }
 
-  let currentCluster: string = $.urlParam('currentCluster');
-  if(!currentCluster) {
+  let currentCluster = $.urlParam('currentCluster');
+  if(!currentCluster || currentCluster === "null") {
     currentCluster = 'all';
   }
 
@@ -52,7 +53,11 @@ jQuery(document).ready(function($){
       addSubscriptionSubject, addSubscriptionResult, eventSubscriptions,
       getClusterStatusSubject, clusterStatusResult, logoutSubject, logoutResult,
       deleteSubscriptionSubject, deleteResult: deleteSubscriptionResult,
-      listenSubscriptionSubject, unlistenSubscriptionSubject, clusterSelected}),
+      listenSubscriptionSubject, unlistenSubscriptionSubject, clusterSelected,
+      switchTheme: function(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        Cookies.set('reaper-theme', theme);
+      }}),
     document.getElementById('wrapper')
   );
 });

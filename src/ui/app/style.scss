@@ -31,7 +31,7 @@ td[data-toggle='collapse'] {
 	cursor: pointer;
 }
 .progress-bar {
-	color: $black;
+	color: $white;
 }
 .clusterLoader {
 	border: 16px solid $color_concrete_approx;
@@ -120,6 +120,7 @@ div {
 			border-bottom: 1px solid $color_alto_approx;
 			padding: 5px 10px;
 			margin: 0;
+			color: #888;
 			mark {
 				text-decoration: underline;
 				background: none;
@@ -171,7 +172,64 @@ td > button {
 	margin-top: 1em;
 }
 
+ul.side-nav li {
+	width: 100%;
+}
+/*
+// Must be customized according to the chose theme here : https://www.bootstrap-live-customizer.com/
+// Then, must be added to theme.less before the bootstrap.css file can be downloaded.
+// Downloaded bootstrap.min.css must be saved as app/theme.min.css
+
+body {
+    background-color: #2b3e50;
+}
+
+#page-wrapper {
+	background-color: #2b3e50;
+	border-left: 1px solid #4e5d6c;
+}
+
+#side-menu a {
+	color: #fff;
+	font-size: 1.2em;
+}
+
+.sidebar ul li {
+    border-bottom: 1px solid #2b3e50;
+}
+
+.sidebar ul li a.active {
+    background-color: #485563;
+}
+
+.table-bordered, .table-bordered>tbody>tr>td, .table-bordered>tbody>tr>th, .table-bordered>tfoot>tr>td, .table-bordered>tfoot>tr>th, .table-bordered>thead>tr>td, .table-bordered>thead>tr>th {
+    border: 1px solid #414d5a;
+}
+
+.panel-success>.panel-body {
+	border: 1px solid @brand-success;
+}
+
+.panel-info>.panel-body{
+	border: 1px solid @brand-info;
+}
+
+.panel-warning>.panel-body{
+	border: 1px solid @brand-warning;
+}
+
+.panel-danger>.panel-body{
+	border: 1px solid @brand-danger;
+}
+
+.panel-primary>.panel-body{
+	border: 1px solid @brand-primary;
+}
+*/
+
 $font-size: 16px;
 $input-height: 2.5em; // at 16px, this an even 40px
 
-@import '~react-widgets/lib/scss/react-widgets';
+div.ReactTags__selected span.ReactTags__tag {
+	background: transparent;
+}

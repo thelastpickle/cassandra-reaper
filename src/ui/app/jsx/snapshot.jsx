@@ -156,13 +156,13 @@ const Snapshot = React.createClass({
       );
   
       return (<div className="col-lg-12"> 
-                <div className="panel panel-info">
+                <div className="panel panel-default">
                 <div className="panel-heading">
                   <div className="row">
-                    <div className="col-lg-8"><a href={"#snapshot-" + this.props.snapshotName} data-toggle="collapse" onClick={this._toggleDisplay}><h4>{this.props.snapshotName}&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={snapshotPanelDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={snapshotPanelUpStyle}></span></h4></a>
-                      <OverlayTrigger trigger="focus" placement="bottom" overlay={clearThisNodeClick}><button type="button" className="btn btn-xs btn-danger">Delete</button></OverlayTrigger>
+                    <div className="col-lg-8"><button href={"#snapshot-" + this.props.snapshotName} data-toggle="collapse" onClick={this._toggleDisplay} className="btn btn-md btn-default">{this.props.snapshotName}&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={snapshotPanelDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={snapshotPanelUpStyle}></span></button>
                     </div>
-                    <div className="col-lg-4"><h5><span className="label label-primary">Size on disk: {humanFileSize(this.props.totalSizeOnDisk, 1024)}</span>&nbsp;<span className="label label-warning">True size: {humanFileSize(this.props.totalTrueSize, 1024)}</span></h5></div>
+                    <div className="col-lg-3"><h5><span className="label label-primary">Size on disk: {humanFileSize(this.props.totalSizeOnDisk, 1024)}</span>&nbsp;<span className="label label-warning">True size: {humanFileSize(this.props.totalTrueSize, 1024)}</span></h5></div>
+                    <div className="col-lg-1"><OverlayTrigger trigger="focus" placement="bottom" overlay={clearThisNodeClick}><h5><button type="button" className="btn btn-xs btn-danger">Delete</button></h5></OverlayTrigger></div>
                   </div>
                 </div>
                   <div className="panel-body collapse" id={"snapshot-" + this.props.snapshotName}>

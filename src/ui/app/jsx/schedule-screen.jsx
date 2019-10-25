@@ -34,7 +34,8 @@ const ScheduleScreen = React.createClass({
     currentCluster: React.PropTypes.string.isRequired,
     statusObservableTimer: React.PropTypes.object.isRequired,
     logoutSubject: React.PropTypes.object.isRequired,
-    logoutResult: React.PropTypes.object.isRequired
+    logoutResult: React.PropTypes.object.isRequired,
+    switchTheme: React.PropTypes.func
   },
 
   getInitialState: function() {
@@ -53,8 +54,8 @@ const ScheduleScreen = React.createClass({
 
     return (
     <div id="wrapper">
-        <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
-            <NavBar></NavBar>
+        <nav className="navbar navbar-inverse navbar-static-top" role="navigation" style={navStyle}>
+          <NavBar switchTheme={this.props.switchTheme}></NavBar>
 
             <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster}
               logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>

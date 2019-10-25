@@ -19,7 +19,8 @@ var webpack = require('webpack');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 
 var _commonDeps = [
-  "bootstrap.css", "sb-admin-2.css", "timeline.css", "font-awesome.css", "metisMenu.css", "style.scss",
+  "sb-admin-2.css", "react-widgets.css", "bootstrap.css", "theme.css",
+  "timeline.css", "font-awesome.css", "metisMenu.css", "style.scss",
   "jquery", "react", "bootstrap", "metisMenu", "sb-admin-2", "rxjs", "bootstrap-multiselect.css", "datatables.net-bs.css"
 ];
 
@@ -67,7 +68,9 @@ module.exports = {
     ],
     alias: {
       "jquery": "jquery/dist/jquery",
-      "bootstrap.css": "bootstrap/dist/css/bootstrap.min.css",
+      "react-widgets.css": "react-widgets/dist/css/react-widgets.css",
+      "bootstrap.css": "bootstrap.css",
+      "theme.css": "bootstrap-theme.css",
       "sb-admin-2.css": "startbootstrap-sb-admin-2/dist/css/sb-admin-2.css",
       "timeline.css": "startbootstrap-sb-admin-2/dist/css/timeline.css",
       "font-awesome.css": "font-awesome/css/font-awesome.min.css",

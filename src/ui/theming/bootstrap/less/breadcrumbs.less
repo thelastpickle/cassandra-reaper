@@ -1,0 +1,26 @@
+//
+// Breadcrumbs
+// --------------------------------------------------
+
+
+.breadcrumb {
+  padding: var(--breadcrumb-padding-vertical) var(--breadcrumb-padding-horizontal);
+  margin-bottom: var(--line-height-computed);
+  list-style: none;
+  background-color: var(--breadcrumb-bg);
+  border-radius: var(--border-radius-base);
+
+  > li {
+    display: inline-block;
+
+    + li:before {
+      padding: 0 5px;
+      color: var(--breadcrumb-color);
+      content: "var(--){breadcrumb-separator}\00a0"; // Unicode space added since inline-block means non-collapsing white-space
+    }
+  }
+
+  > .active {
+    color: var(--breadcrumb-active-color);
+  }
+}

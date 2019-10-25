@@ -37,7 +37,8 @@ const repairScreen = React.createClass({
     repairs: React.PropTypes.object.isRequired,
     statusObservableTimer: React.PropTypes.object.isRequired,
     repairRunResult: React.PropTypes.object.isRequired,
-    repairRunSubject: React.PropTypes.object.isRequired
+    repairRunSubject: React.PropTypes.object.isRequired,
+    switchTheme: React.PropTypes.func
   },
 
   getInitialState: function() {
@@ -56,8 +57,8 @@ const repairScreen = React.createClass({
 
     return (
     <div id="wrapper">
-        <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
-            <NavBar></NavBar>
+        <nav className="navbar navbar-inverse navbar-static-top" role="navigation" style={navStyle}>
+            <NavBar switchTheme={this.props.switchTheme}></NavBar>
 
             <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster}
               logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>

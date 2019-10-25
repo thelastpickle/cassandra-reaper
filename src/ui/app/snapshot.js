@@ -16,10 +16,7 @@
 import jQuery from "jquery";
 import React from "react";
 import ReactDOM from "react-dom";
-import ServerStatus from "jsx/server-status";
-import Sidebar from "jsx/sidebar";
-import RepairForm from "jsx/repair-form";
-import RepairList from "jsx/repair-list";
+import Cookies from "js-cookie";
 import snapshotScreen from "jsx/snapshot-screen";
 import {
   statusObservableTimer,
@@ -28,10 +25,10 @@ import {
 } from "observable";
 
 jQuery(document).ready(function($){
-
+  document.documentElement.setAttribute('data-theme', Cookies.get('reaper-theme'));
   $.urlParam = function(name){
     var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
-    if (results != null) {
+    if (results) {
       return results[1] || 0;
     }
     else {
@@ -39,14 +36,18 @@ jQuery(document).ready(function($){
     }
   }
 
-  let currentCluster: string = $.urlParam('currentCluster');
-  if(!currentCluster) {
+  let currentCluster = $.urlParam('currentCluster');
+  if(!currentCluster || currentCluster === "null") {
     currentCluster = 'all';
   }
 
   ReactDOM.render(
     React.createElement(snapshotScreen, {clusterNames, currentCluster, logoutSubject: logoutSubject, logoutResult: logoutResult,
-    statusObservableTimer}),
+    statusObservableTimer,
+    switchTheme: function(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      Cookies.set('reaper-theme', theme);
+    }}),
     document.getElementById('wrapper')
   );
 

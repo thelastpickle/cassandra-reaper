@@ -17,10 +17,8 @@
 import jQuery from "jquery";
 import React from "react";
 import ReactDOM from "react-dom";
-import ServerStatus from "jsx/server-status";
-import Sidebar from "jsx/sidebar";
+import Cookies from "js-cookie";
 import ScheduleScreen from "jsx/schedule-screen";
-import ScheduleList from "jsx/schedule-list";
 import {
   statusObservableTimer,
   addScheduleSubject, addScheduleResult, deleteScheduleSubject, deleteScheduleResult,
@@ -30,10 +28,10 @@ import {
 } from "observable";
 
 jQuery(document).ready(function($){
-
+  document.documentElement.setAttribute('data-theme', Cookies.get('reaper-theme'));
   $.urlParam = function(name){
     var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
-    if (results != null) {
+    if (results) {
       return results[1] || 0;
     } 
     else {
@@ -41,16 +39,20 @@ jQuery(document).ready(function($){
     }
   }
 
-  let currentCluster: string = $.urlParam('currentCluster');
-  if(!currentCluster) {
+  let currentCluster = $.urlParam('currentCluster');
+  if(!currentCluster || currentCluster === "null") {
     currentCluster = 'all';
-  } 
+  }
 
   ReactDOM.render(
     React.createElement(ScheduleScreen, {clusterNames, addScheduleSubject, addScheduleResult, currentCluster, schedules,
       logoutSubject: logoutSubject, logoutResult: logoutResult, 
       deleteSubject: deleteScheduleSubject,
-    deleteResult: deleteScheduleResult, updateStatusSubject: updateScheduleStatusSubject, statusObservableTimer}),
+    deleteResult: deleteScheduleResult, updateStatusSubject: updateScheduleStatusSubject, statusObservableTimer,
+    switchTheme: function(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      Cookies.set('reaper-theme', theme);
+    }}),
     document.getElementById('wrapper')
   );
 });

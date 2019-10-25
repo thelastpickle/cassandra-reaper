@@ -1,0 +1,86 @@
+//
+// Pagination (multiple pages)
+// --------------------------------------------------
+.pagination {
+  display: inline-block;
+  padding-left: 0;
+  margin: var(--line-height-computed) 0;
+  border-radius: var(--border-radius-base);
+
+  > li {
+    display: inline; // Remove list-style and block-level defaults
+    > a,
+    > span {
+      position: relative;
+      float: left; // Collapse white-space
+      padding: var(--padding-base-vertical) var(--padding-base-horizontal);
+      margin-left: -1px;
+      line-height: var(--line-height-base);
+      color: var(--pagination-color);
+      text-decoration: none;
+      background-color: var(--pagination-bg);
+      border: 1px solid var(--pagination-border);
+
+      &:hover,
+      &:focus {
+        z-index: 2;
+        color: var(--pagination-hover-color);
+        background-color: var(--pagination-hover-bg);
+        border-color: var(--pagination-hover-border);
+      }
+    }
+    &:first-child {
+      > a,
+      > span {
+        margin-left: 0;
+        .border-left-radius(var(--border-radius-base));
+      }
+    }
+    &:last-child {
+      > a,
+      > span {
+        .border-right-radius(var(--border-radius-base));
+      }
+    }
+  }
+
+  > .active > a,
+  > .active > span {
+    &,
+    &:hover,
+    &:focus {
+      z-index: 3;
+      color: var(--pagination-active-color);
+      cursor: default;
+      background-color: var(--pagination-active-bg);
+      border-color: var(--pagination-active-border);
+    }
+  }
+
+  > .disabled {
+    > span,
+    > span:hover,
+    > span:focus,
+    > a,
+    > a:hover,
+    > a:focus {
+      color: var(--pagination-disabled-color);
+      cursor: var(--cursor-disabled);
+      background-color: var(--pagination-disabled-bg);
+      border-color: var(--pagination-disabled-border);
+    }
+  }
+}
+
+// Sizing
+// --------------------------------------------------
+
+// Large
+.pagination-lg {
+  .pagination-size(var(--padding-large-vertical); var(--padding-large-horizontal); var(--font-size-large); var(--line-height-large); var(--border-radius-large));
+}
+
+// Small
+.pagination-sm {
+  .pagination-size(var(--padding-small-vertical); var(--padding-small-horizontal); var(--font-size-small); var(--line-height-small); var(--border-radius-small));
+}
