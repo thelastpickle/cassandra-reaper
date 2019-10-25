@@ -27,7 +27,8 @@ const SnapshotScreen = React.createClass({
   _notificationSystem: null,
   propTypes: {
     clusterNames: React.PropTypes.object.isRequired,
-    currentCluster: React.PropTypes.string.isRequired    
+    currentCluster: React.PropTypes.string.isRequired,
+    switchTheme: React.PropTypes.func  
   },
 
   getInitialState: function() {
@@ -164,8 +165,8 @@ const SnapshotScreen = React.createClass({
     return (
         <div>
         <NotificationSystem ref="notificationSystem" />
-        <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
-            <NavBar></NavBar>
+        <nav className="navbar navbar-inverse navbar-static-top" role="navigation" style={navStyle}>
+            <NavBar switchTheme={this.props.switchTheme}></NavBar>
 
             <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster}
               logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>

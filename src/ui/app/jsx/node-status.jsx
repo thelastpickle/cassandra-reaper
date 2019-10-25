@@ -199,14 +199,13 @@ const NodeStatus = React.createClass({
       
       let averageSize = this.props.rackLoad/this.props.nbNodes;
       var opacity = Math.max(0.3, (0.7*(this.props.endpointStatus.load/averageSize)));
-      //Math.max(1,(((this.props.endpointStatus.load/this.props.rackLoad)*100)-0.5)) + "%"
       const btStyle = {
         width: "22px",
         height: "22px",
-        margin:"0px",
-        marginRight:"1px",
-        marginBottom:"1px",
-        opacity: opacity
+        margin:"1px",
+        opacity: opacity,
+        borderRadius: "4px",
+        border: "1px solid #a5d2a5"
       };
 
       const overflowStyle = {

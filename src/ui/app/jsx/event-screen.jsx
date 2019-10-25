@@ -46,6 +46,7 @@ const eventScreen = React.createClass({
     // event-list
     diagnosticEvents: React.PropTypes.object.isRequired,
     listenSubscriptionSubject: React.PropTypes.object.isRequired,
+    switchTheme: React.PropTypes.func
   },
 
   getInitialState: function() {
@@ -122,9 +123,9 @@ const eventScreen = React.createClass({
     }
 
     return (
-      <div id="wrapper">
-          <nav className="navbar navbar-default navbar-static-top" role="navigation">
-            <NavBar></NavBar>
+      <div>
+          <nav className="navbar navbar-inverse navbar-static-top" role="navigation">
+            <NavBar switchTheme={this.props.switchTheme}></NavBar>
 
             <Sidebar
               logoutSubject={this.props.logoutSubject}

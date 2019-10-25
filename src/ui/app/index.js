@@ -17,6 +17,7 @@
 import jQuery from "jquery";
 import ReactDOM from "react-dom";
 import React from "react";
+import Cookies from "js-cookie";
 import ServerStatus from "jsx/server-status";
 import ClusterScreen from "jsx/cluster-screen";
 import {
@@ -28,10 +29,10 @@ import {
 } from "observable";
 
 jQuery(document).ready(function($){
-
- $.urlParam = function(name){
+  document.documentElement.setAttribute('data-theme', Cookies.get('reaper-theme'));
+  $.urlParam = function(name){
     var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
-    if (results != null) {
+    if (results) {
       return results[1] || 0;
     } 
     else {
@@ -39,10 +40,10 @@ jQuery(document).ready(function($){
     }
   }
 
-  let currentCluster: string = $.urlParam('currentCluster');
-  if(!currentCluster) {
+  let currentCluster = $.urlParam('currentCluster');
+  if(!currentCluster || currentCluster === "null") {
     currentCluster = 'all';
-  } 
+  }
 
   ReactDOM.render(
     React.createElement(ClusterScreen, {clusterNames, addClusterSubject, addClusterResult, currentCluster, 
@@ -50,7 +51,11 @@ jQuery(document).ready(function($){
       loginSubject: loginSubject, loginResult: loginResult,
       loginRequiredSubject: loginRequiredSubject, loginRequiredResult: loginRequiredResult,
       deleteSubject: deleteClusterSubject,
-      deleteResult: deleteClusterResult, statusObservableTimer}),
+      deleteResult: deleteClusterResult, statusObservableTimer,
+      switchTheme: function(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        Cookies.set('reaper-theme', theme);
+      }}),
     document.getElementById('wrapper')
   );
 });

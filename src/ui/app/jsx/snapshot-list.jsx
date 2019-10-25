@@ -270,7 +270,7 @@ const snapshotList = React.createClass({
     return (
             <div>
               <NotificationSystem ref="notificationSystem" />
-              <div className="panel panel-primary">
+              <div className="panel panel-info">
                 <div className="panel-heading">
                   {snapshotHeader}
                 </div>

@@ -15,7 +15,7 @@
 import jQuery from "jquery";
 import ReactDOM from "react-dom";
 import React from "react";
-import ServerStatus from "jsx/server-status";
+import Cookies from "js-cookie";
 import SegmentList from "jsx/segment-list";
 import {
   statusObservableTimer,
@@ -25,22 +25,22 @@ import {
 } from "observable";
 
 jQuery(document).ready(function($){
-
- $.urlParam = function(name){
-    var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
-    if (results != null) {
-      return results[1] || 0;
-    } 
-    else {
-      return null;
+  document.documentElement.setAttribute('data-theme', Cookies.get('reaper-theme'));
+  $.urlParam = function(name){
+      var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+      if (results) {
+        return results[1] || 0;
+      } 
+      else {
+        return null;
+      }
     }
-  }
 
 
   let repairRunId: string = $.urlParam('repairRunId');
   if(!repairRunId) {
     repairRunId = '0';
-  } 
+  }
 
   ReactDOM.render(
     React.createElement(SegmentList, {repairRunId, logoutSubject: logoutSubject, logoutResult: logoutResult, }),

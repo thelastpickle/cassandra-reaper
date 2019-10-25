@@ -36,8 +36,8 @@ const ClusterScreen = React.createClass({
     loginSubject: React.PropTypes.object.isRequired,
     loginResult: React.PropTypes.object.isRequired,
     logoutSubject: React.PropTypes.object.isRequired,
-    logoutResult: React.PropTypes.object.isRequired
-
+    logoutResult: React.PropTypes.object.isRequired,
+    switchTheme: React.PropTypes.func
   },
 
   getInitialState: function() {
@@ -48,6 +48,10 @@ const ClusterScreen = React.createClass({
 
   changeCurrentCluster : function(clusterName){
     this.setState({currentCluster: clusterName});
+  },
+
+  toggleTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
   },
 
   render: function() {
@@ -69,25 +73,25 @@ const ClusterScreen = React.createClass({
 
   return (
         <div>
-        <nav className="navbar navbar-default navbar-static-top" role="navigation" style={navStyle}>
-            <NavBar></NavBar>
+          <nav className="navbar navbar-inverse navbar-static-top" role="navigation" style={navStyle}>
+              <NavBar switchTheme={this.props.switchTheme}></NavBar>
 
-            <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} 
-                loginSubject={this.props.loginSubject} loginResult={this.props.loginResult}
-                logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>
-        </nav>
+              <Sidebar clusterNames={this.props.clusterNames} currentCluster={this.state.currentCluster} 
+                  loginSubject={this.props.loginSubject} loginResult={this.props.loginResult}
+                  logoutSubject={this.props.logoutSubject} logoutResult={this.props.logoutResult}> </Sidebar>
+          </nav>
 
-        <div id="page-wrapper">
-            <div className="row">
-                <ServerStatus statusObservableTimer={this.props.statusObservableTimer}></ServerStatus>
-            </div>
-            <div className="row">
-                <div className="col-lg-12">
-                    <h1 className="page-header">Cluster</h1>
-                </div>
-            </div>
-            {content}
-        </div>
+          <div id="page-wrapper">
+              <div className="row">
+                  <ServerStatus statusObservableTimer={this.props.statusObservableTimer}></ServerStatus>
+              </div>
+              <div className="row">
+                  <div className="col-lg-12">
+                      <h1 className="page-header">Cluster</h1>
+                  </div>
+              </div>
+              {content}
+          </div>
         </div>
     );
   }

@@ -182,9 +182,12 @@
                 <exclude>src/docs/data/**</exclude>
                 <exclude>src/docs/layouts/**</exclude>
                 <exclude>src/docs/static/**</exclude>
+                <exclude>src/ui/app/bootstrap.css</exclude>
+                <exclude>src/ui/app/bootstrap-theme.css</exclude>
                 <exclude>src/ui/node_modules/**</exclude>
                 <exclude>src/ui/bower_components/**</exclude>
                 <exclude>src/ui/build/**</exclude>
+                <exclude>src/ui/theming/**</exclude>
                 <exclude>**/*.md</exclude>
                 <exclude>**/*.json</exclude>
                 <exclude>**/*.access</exclude>

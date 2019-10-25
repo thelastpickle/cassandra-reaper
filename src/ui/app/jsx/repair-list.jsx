@@ -522,7 +522,7 @@ const repairList = React.createClass({
             <div>
               {segmentModal}
               {clusterFilter}
-              <div className="panel panel-primary">
+              <div className="panel panel-success">
                 <div className="panel-heading">
                   {runningHeader}
                 </div>
@@ -530,7 +530,7 @@ const repairList = React.createClass({
                   {tableRunning}
                 </div>
               </div>
-              <div className="panel panel-success">
+              <div className="panel panel-info">
                 <div className="panel-heading">
                   {doneHeader}
                 </div>

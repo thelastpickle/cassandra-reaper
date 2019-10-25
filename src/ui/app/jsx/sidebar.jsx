@@ -58,15 +58,18 @@ const sidebar = React.createClass({
     if (this.state.logoutResultMsg) {
       logoutError = <div className="alert alert-danger" role="alert">{this.state.logoutResultMsg}</div>
     }
+    let styleWidth100 = {
+      width: "100%"
+    }
 
     return (
       <div className="navbar-default sidebar" style={sideBarStyle} role="navigation">
           <div className="sidebar-nav navbar-collapse">
-              <ul className="nav" id="side-menu">
+              <ul className="nav navbar-nav side-nav" id="side-menu">
                   <li>
                       <a href={'index.html?currentCluster=' + this.state.currentCluster}><i className="fa fa-sitemap fa-fw"></i> Clusters</a>
                   </li>
-                  <li className="active">
+                  <li>
                       <a href={'schedules.html?currentCluster=' + this.state.currentCluster}><i className="fa fa-calendar fa-fw"></i> Schedules</a>
                   </li>
                   <li>
