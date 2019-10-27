@@ -14,7 +14,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-REAPER_JAR=$(find . -regex '.*/cassandra-reaper-.*[0-9rT]\.jar')
+REAPER_JAR=$(find . -maxdepth 4 -regex '.*/cassandra-reaper-.*[0-9rT]\.jar')
 
 if [ $REAPER_JAR ]; then
     echo "Using reaper in target"
@@ -23,7 +23,7 @@ fi
 
 if [ -z "$CLASS_PATH" ]; then
   echo "Looking for reaper in /usr/share/cassandra-reaper/"
-  CLASS_PATH="$(find /usr/local/share -regex '.*/cassandra-reaper-.*[0-9rT]\.jar'):$(find /usr/share -regex '.*/cassandra-reaper-.*[0-9rT]\.jar')"
+  CLASS_PATH="$(find /usr/local/share -maxdepth 4  -regex '.*/cassandra-reaper-.*[0-9rT]\.jar'):$(find /usr/share -regex '.*/cassandra-reaper-.*[0-9rT]\.jar')"
 fi
 
 if [ $# -eq 0 ]; then
@@ -37,6 +37,7 @@ else
 fi
 
 JVM_OPTS=(
+    # it is safe and performant to disable assertions in production environments (ie replace `-ea` with `-da`)
     -ea
     -Xms2G
     -Xmx2G
