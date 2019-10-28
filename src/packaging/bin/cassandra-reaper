@@ -22,7 +22,7 @@ if [ $REAPER_JAR ]; then
 fi
 
 if [ -z "$CLASS_PATH" ]; then
-  echo "Looking for reaper in /usr/share/cassandra-reaper/"
+  echo "Looking for reaper in /usr/local/share/"
   CLASS_PATH="$(find /usr/local/share -maxdepth 4  -regex '.*/cassandra-reaper-.*[0-9rT]\.jar'):$(find /usr/share -regex '.*/cassandra-reaper-.*[0-9rT]\.jar')"
 fi
 
