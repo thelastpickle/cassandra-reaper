@@ -1,5 +1,5 @@
 # Copyright 2017-2017 Spotify AB
-# Copyright 2017-2018 The Last Pickle Ltd
+# Copyright 2017-2019 The Last Pickle Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -76,32 +76,39 @@ ADD entrypoint.sh /usr/local/bin/entrypoint.sh
 ADD configure-persistence.sh /usr/local/bin/configure-persistence.sh
 ADD configure-metrics.sh /usr/local/bin/configure-metrics.sh
 ADD configure-webui-authentication.sh /usr/local/bin/configure-webui-authentication.sh
+ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
 
-RUN addgroup -S reaper && \
-    adduser -S reaper reaper && \
-    apk add --no-cache 'su-exec>=0.2' && \
-    mkdir -p /var/lib/cassandra-reaper && \
+# get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper.yml: Interrupted system call` unknown error
+RUN touch /etc/cassandra-reaper.yml
+
+RUN mkdir -p /var/lib/cassandra-reaper && \
     mkdir -p /etc/cassandra-reaper/shiro && \
     mkdir -p /var/log/cassandra-reaper && \
-    chown reaper:reaper \
+    chgrp 0 \
         /etc/cassandra-reaper.yml \
-        /etc/shiro.ini \
+        /usr/local/lib/cassandra-reaper.jar \
+        /usr/local/bin/entrypoint.sh \
+        /usr/local/bin/configure-persistence.sh \
+        /usr/local/bin/configure-webui-authentication.sh \
+        /usr/local/bin/configure-metrics.sh \
+        /etc/shiro.ini && \
+    chgrp -R 0 \
         /var/lib/cassandra-reaper \
-        /var/log/cassandra-reaper \
+        /etc/cassandra-reaper/shiro \
+        /var/log/cassandra-reaper && \
+    chmod 770 \
         /usr/local/bin/entrypoint.sh \
         /usr/local/bin/configure-persistence.sh \
         /usr/local/bin/configure-webui-authentication.sh \
         /usr/local/bin/configure-metrics.sh && \
-    chmod u+x \
-        /usr/local/bin/entrypoint.sh \
-        /usr/local/bin/configure-persistence.sh \
-        /usr/local/bin/configure-webui-authentication.sh \
-        /usr/local/bin/configure-metrics.sh
-
+    chmod 660 \
+        /etc/cassandra-reaper.yml \
+        /etc/shiro.ini
+        
 VOLUME /var/lib/cassandra-reaper
 VOLUME /etc/cassandra-reaper/shiro
 
-ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
+USER 1001
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["cassandra-reaper"]
