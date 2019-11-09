@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if [ "false" = "${REAPER_AUTH_ENABLED}" ]; then
+  exit 0
+fi
+
 if [ ! -z "${REAPER_SHIRO_INI}" ]; then
 cat <<EOT >> /etc/cassandra-reaper.yml
 accessControl:
