@@ -482,6 +482,43 @@ public final class ClusterResourceTest {
   }
 
   @Test
+  public void testClusterDeleting() throws Exception {
+    final MockObjects mocks = initMocks();
+    when(mocks.jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
+    when(mocks.jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1"));
+
+    when(mocks.jmxProxy.getTablesForKeyspace("keyspace1"))
+        .thenReturn(Sets.newHashSet(Table.builder().withName("table1").withCompactionStrategy(STCS).build()));
+
+    mocks.context.config = TestRepairConfiguration.defaultConfigBuilder()
+        .withAutoScheduling(
+            TestRepairConfiguration.defaultAutoSchedulingConfigBuilder()
+                .thatIsEnabled()
+                .withTimeBeforeFirstSchedule(Duration.ofMinutes(1))
+                .build())
+        .build();
+
+    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
+
+    Response response = clusterResource
+        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
+
+    assertEquals(HttpStatus.CREATED_201, response.getStatus());
+    assertEquals(1, mocks.context.storage.getAllRepairSchedules().size());
+    assertEquals(1, mocks.context.storage.getRepairSchedulesForClusterAndKeyspace(CLUSTER_NAME, "keyspace1").size());
+
+    assertEquals(HttpStatus.CONFLICT_409, clusterResource.deleteCluster(CLUSTER_NAME, Optional.empty()).getStatus());
+
+    assertEquals(
+        HttpStatus.CONFLICT_409,
+        clusterResource.deleteCluster(CLUSTER_NAME, Optional.of(Boolean.FALSE)).getStatus());
+
+    assertEquals(
+        HttpStatus.ACCEPTED_202,
+        clusterResource.deleteCluster(CLUSTER_NAME, Optional.of(Boolean.TRUE)).getStatus());
+  }
+
+  @Test
   public void testParseSeedHost() {
     String seedHostStringList = "127.0.0.1 , 127.0.0.2,  127.0.0.3";
     Set<String> seedHostSet = ClusterResource.parseSeedHosts(seedHostStringList);

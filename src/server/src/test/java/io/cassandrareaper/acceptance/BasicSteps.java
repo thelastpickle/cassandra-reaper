@@ -34,6 +34,7 @@ import io.cassandrareaper.storage.PostgresStorage;
 import io.cassandrareaper.storage.postgresql.DiagEventSubscriptionMapper;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -792,18 +793,6 @@ public final class BasicSteps {
   @And("^deleting cluster called \"([^\"]*)\" fails$")
   public void deleting_cluster_called_fails(String clusterName) throws Throwable {
     synchronized (BasicSteps.class) {
-      callAndExpect(
-          "DELETE",
-          "/cluster/" + clusterName,
-          EMPTY_PARAMS,
-          Optional.empty(),
-          Response.Status.CONFLICT);
-    }
-  }
-
-  @And("^deleting the last added cluster fails$")
-  public void deleting_the_last_added_cluster_fails() throws Throwable {
-    synchronized (BasicSteps.class) {
       await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
         try {
           callAndExpect(
@@ -821,41 +810,18 @@ public final class BasicSteps {
     }
   }
 
-  @And("^cluster called \"([^\"]*)\" is deleted$")
-  public void cluster_called_is_deleted(String clusterName) throws Throwable {
-    synchronized (BasicSteps.class) {
-      callAndExpect(
-          "DELETE",
-          "/cluster/" + clusterName,
-          EMPTY_PARAMS,
-          Optional.<String>empty(),
-          Response.Status.ACCEPTED,
-          Response.Status.NOT_FOUND);
+  @And("^the last added cluster is (force |)deleted$")
+  public void cluster_called_is_deleted(String force) throws Throwable {
 
-      await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
-        try {
-          callAndExpect(
-              "GET",
-              "/cluster/" + clusterName,
-              EMPTY_PARAMS,
-              Optional.<String>empty(),
-              Response.Status.NOT_FOUND);
-        } catch (AssertionError ex) {
-          LOG.warn("GET /cluster/" + TestContext.TEST_CLUSTER + " failed: " + ex.getMessage());
-          return false;
-        }
-        return true;
-      });
-    }
-  }
+    Optional<Map<String,String>> params = "force ".equals(force)
+        ? Optional.of(Collections.singletonMap("force", "true"))
+        : EMPTY_PARAMS;
 
-  @And("^the last added cluster is deleted$")
-  public void cluster_called_is_deleted() throws Throwable {
     synchronized (BasicSteps.class) {
       callAndExpect(
           "DELETE",
           "/cluster/" + TestContext.TEST_CLUSTER,
-          EMPTY_PARAMS,
+          params,
           Optional.<String>empty(),
           Response.Status.ACCEPTED,
           Response.Status.NOT_FOUND);

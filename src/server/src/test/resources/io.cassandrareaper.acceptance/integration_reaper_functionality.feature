@@ -36,6 +36,27 @@ Feature: Using Reaper
   ${cucumber.upgrade-versions}
 
   @sidecar
+  Scenario Outline: Force deleting a cluster
+    Given that reaper <version> is running
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    And reaper has 0 scheduled repairs for cluster called "test"
+    When a new daily "full" repair schedule is added for "test" and keyspace "test_keyspace"
+    Then reaper has a cluster called "test" in storage
+    And reaper has 1 scheduled repairs for cluster called "test"
+    When reaper is upgraded to latest
+    Then reaper has a cluster called "test" in storage
+    And reaper has 1 scheduled repairs for cluster called "test"
+    When deleting cluster called "test" fails
+    Then reaper has a cluster called "test" in storage
+    And reaper has 1 scheduled repairs for cluster called "test"
+    When the last added cluster is force deleted
+    And reaper has 0 scheduled repairs for cluster called "test"
+    Then reaper has no longer the last added cluster in storage
+  ${cucumber.upgrade-versions}
+
+  @sidecar
   Scenario Outline: Create a cluster and a scheduled repair run and delete them
     Given that reaper <version> is running
     And cluster seed host "127.0.0.2" points to cluster with name "test"
@@ -51,7 +72,7 @@ Feature: Using Reaper
     Then reaper has 1 scheduled repairs for the last added cluster
     When reaper is upgraded to latest
     Then reaper has 1 scheduled repairs for the last added cluster
-    And deleting the last added cluster fails
+    And deleting cluster called "test" fails
     When the last added schedule is deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
@@ -112,14 +133,14 @@ Feature: Using Reaper
     And reaper has 0 scheduled repairs for the last added cluster
     When a new daily repair schedule is added for the last added cluster and keyspace "booya" with next repair immediately
     Then reaper has 1 scheduled repairs for the last added cluster
-    And deleting the last added cluster fails
+    And deleting cluster called "test" fails
     When we wait for a scheduled repair run has started for cluster "test"
     And we wait for at least 1 segments to be repaired
     Then reaper has 1 started or done repairs for the last added cluster
     When the last added repair is stopped
     Then reseting one segment sets its state to not started
     And all added repair runs are deleted for the last added cluster
-    And deleting the last added cluster fails
+    And deleting cluster called "test" fails
     When all added schedules are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
@@ -137,7 +158,7 @@ Feature: Using Reaper
     And the last added repair has twcs table "booya_twcs" in the blacklist
     When reaper is upgraded to latest
     And the last added repair has table "booya2" in the blacklist
-    And deleting the last added cluster fails
+    And deleting cluster called "test" fails
     And the last added repair is activated
     And we wait for at least 1 segments to be repaired
     Then reaper has 1 started or done repairs for the last added cluster
@@ -158,7 +179,7 @@ Feature: Using Reaper
     And the last added repair has twcs table "booya_twcs" in the blacklist
     When reaper is upgraded to latest
     And the last added repair has twcs table "booya_twcs" in the blacklist
-    And deleting the last added cluster fails
+    And deleting cluster called "test" fails
     And the last added repair is activated
     And we wait for at least 1 segments to be repaired
     Then reaper has 1 started or done repairs for the last added cluster
@@ -178,7 +199,7 @@ Feature: Using Reaper
     Then reaper has the last added cluster in storage
     And reaper has 0 repairs for the last added cluster
     When a new incremental repair is added for the last added cluster and keyspace "booya"
-    And deleting the last added cluster fails
+    And deleting cluster called "test" fails
     And the last added repair is activated
     And we wait for at least 1 segments to be repaired
     Then reaper has 1 started or done repairs for the last added cluster
