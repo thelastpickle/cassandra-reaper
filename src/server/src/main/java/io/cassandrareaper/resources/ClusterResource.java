@@ -20,6 +20,7 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.ClusterStatus;
@@ -307,28 +308,42 @@ public final class ClusterResource {
   /**
    * Delete a Cluster object with given name.
    *
-   * <p>Cluster can be only deleted when it hasn't any running RepairRuns or active RepairSchedule instances under
+   * <p>Cluster can only be forced deleted when it has any RepairRuns or RepairSchedule instances associated to it.
    */
   @DELETE
   @Path("/{cluster_name}")
-  public Response deleteCluster(@PathParam("cluster_name") String clusterName) {
+  public Response deleteCluster(
+      @PathParam("cluster_name") String clusterName,
+      @QueryParam("force") Optional<Boolean> force) {
+
     LOG.info("delete cluster {}", clusterName);
     try {
-      if (!context.storage.getRepairSchedulesForCluster(clusterName).isEmpty()) {
+      if (!force.orElse(Boolean.FALSE)) {
+        if (!context.storage.getRepairSchedulesForCluster(clusterName).isEmpty()) {
+          return Response.status(Response.Status.CONFLICT)
+              .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair schedules")
+              .build();
+        }
+        if (!context.storage.getRepairRunsForCluster(clusterName, Optional.empty()).isEmpty()) {
+          return Response.status(Response.Status.CONFLICT)
+              .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair runs")
+              .build();
+        }
+        if (!context.storage.getEventSubscriptions(clusterName).isEmpty()) {
+          return Response.status(Response.Status.CONFLICT)
+              .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has diagnostic events subscriptions")
+              .build();
+        }
+      }
+      if (context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING)
+          .stream()
+          .anyMatch(run -> "clusterName".equals(run.getClusterName()))) {
+
         return Response.status(Response.Status.CONFLICT)
-            .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair schedules")
+            .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has running repairs. Stop them first.")
             .build();
       }
-      if (!context.storage.getRepairRunsForCluster(clusterName, Optional.empty()).isEmpty()) {
-        return Response.status(Response.Status.CONFLICT)
-            .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has repair runs")
-            .build();
-      }
-      if (!context.storage.getEventSubscriptions(clusterName).isEmpty()) {
-        return Response.status(Response.Status.CONFLICT)
-                .entity("cluster \"" + clusterName + "\" cannot be deleted, as it has diagnostic events subscriptions")
-                .build();
-      }
+
       context.storage.deleteCluster(clusterName);
       return Response.accepted().build();
     } catch (IllegalArgumentException ex) {

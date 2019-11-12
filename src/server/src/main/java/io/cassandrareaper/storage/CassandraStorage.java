@@ -148,6 +148,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement getRepairRunForUnitPrepStmt;
   private PreparedStatement deleteRepairRunPrepStmt;
   private PreparedStatement deleteRepairRunByClusterPrepStmt;
+  private PreparedStatement deleteRepairRunByClusterByIdPrepStmt;
   private PreparedStatement deleteRepairRunByUnitPrepStmt;
   private PreparedStatement insertRepairUnitPrepStmt;
   private PreparedStatement getRepairUnitPrepStmt;
@@ -168,11 +169,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement getRepairScheduleByClusterAndKsPrepStmt;
   private PreparedStatement insertRepairScheduleByClusterAndKsPrepStmt;
   private PreparedStatement deleteRepairSchedulePrepStmt;
-  private PreparedStatement deleteRepairScheduleByClusterAndKsPrepStmt;
+  private PreparedStatement deleteRepairScheduleByClusterAndKsByIdPrepStmt;
   private PreparedStatement takeLeadPrepStmt;
   private PreparedStatement renewLeadPrepStmt;
   private PreparedStatement releaseLeadPrepStmt;
-  private PreparedStatement forceReleaseLeadPrepStmt;
   private PreparedStatement getRunningReapersCountPrepStmt;
   private PreparedStatement saveHeartbeatPrepStmt;
   private PreparedStatement storeNodeMetricsPrepStmt;
@@ -344,6 +344,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     getRepairRunForUnitPrepStmt = session.prepare("SELECT * FROM repair_run_by_unit WHERE repair_unit_id = ?");
     deleteRepairRunPrepStmt = session.prepare("DELETE FROM repair_run WHERE id = ?");
     deleteRepairRunByClusterPrepStmt
+        = session.prepare("DELETE FROM repair_run_by_cluster WHERE cluster_name = ?");
+    deleteRepairRunByClusterByIdPrepStmt
         = session.prepare("DELETE FROM repair_run_by_cluster WHERE id = ? and cluster_name = ?");
     deleteRepairRunByUnitPrepStmt = session.prepare("DELETE FROM repair_run_by_unit "
         + "WHERE id = ? and repair_unit_id= ?");
@@ -408,7 +410,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         "SELECT repair_schedule_id FROM repair_schedule_by_cluster_and_keyspace "
             + "WHERE cluster_name = ? and keyspace_name = ?");
     deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule_v1 WHERE id = ?");
-    deleteRepairScheduleByClusterAndKsPrepStmt = session.prepare(
+    deleteRepairScheduleByClusterAndKsByIdPrepStmt = session.prepare(
         "DELETE FROM repair_schedule_by_cluster_and_keyspace "
             + "WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
     prepareLeaderElectionStatements(timeUdf);
@@ -461,7 +463,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             "UPDATE leader USING TTL ? SET reaper_instance_id = ?, reaper_instance_host = ?,"
                 + " last_heartbeat = " + timeUdf + "(now()) WHERE leader_id = ? IF reaper_instance_id = ?");
     releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?");
-    forceReleaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ?");
   }
 
   private void prepareMetricStatements() {
@@ -617,20 +618,21 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Cluster deleteCluster(String clusterName) {
-    assert getRepairSchedulesForCluster(clusterName).isEmpty()
-        : StringUtils.join(getRepairSchedulesForCluster(clusterName));
+    getRepairSchedulesForCluster(clusterName).forEach(schedule -> deleteRepairSchedule(schedule.getId()));
+    session.executeAsync(deleteRepairRunByClusterPrepStmt.bind(clusterName));
 
-    assert getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)).isEmpty()
-        : StringUtils.join(getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)));
+    getEventSubscriptions(clusterName)
+        .stream()
+        .filter(subscription -> subscription.getId().isPresent())
+        .forEach(subscription -> deleteEventSubscription(subscription.getId().get()));
 
     Statement stmt = new SimpleStatement(SELECT_REPAIR_UNIT);
-    stmt.setIdempotent(Boolean.TRUE);
+    stmt.setIdempotent(true);
     ResultSet results = session.execute(stmt);
     for (Row row : results) {
       if (row.getString("cluster_name").equals(clusterName)) {
         UUID id = row.getUUID("id");
-        assert getRepairRunsForUnit(id).isEmpty() : StringUtils.join(getRepairRunsForUnit(id));
-        session.execute(deleteRepairUnitPrepStmt.bind(id));
+        session.executeAsync(deleteRepairUnitPrepStmt.bind(id));
       }
     }
     Cluster cluster = getCluster(clusterName);
@@ -858,7 +860,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     Optional<RepairRun> repairRun = getRepairRun(id);
     if (repairRun.isPresent()) {
       session.execute(deleteRepairRunByUnitPrepStmt.bind(id, repairRun.get().getRepairUnitId()));
-      session.execute(deleteRepairRunByClusterPrepStmt.bind(id, repairRun.get().getClusterName()));
+      session.execute(deleteRepairRunByClusterByIdPrepStmt.bind(id, repairRun.get().getClusterName()));
     }
     session.execute(deleteRepairRunPrepStmt.bind(id));
     return repairRun;
@@ -1307,15 +1309,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       RepairUnit repairUnit = getRepairUnit(repairSchedule.get().getRepairUnitId());
 
       session.execute(
-          deleteRepairScheduleByClusterAndKsPrepStmt.bind(
+          deleteRepairScheduleByClusterAndKsByIdPrepStmt.bind(
               repairUnit.getClusterName(), repairUnit.getKeyspaceName(), repairSchedule.get().getId()));
 
       session.execute(
-          deleteRepairScheduleByClusterAndKsPrepStmt.bind(
+          deleteRepairScheduleByClusterAndKsByIdPrepStmt.bind(
               repairUnit.getClusterName(), " ", repairSchedule.get().getId()));
 
       session.execute(
-          deleteRepairScheduleByClusterAndKsPrepStmt.bind(
+          deleteRepairScheduleByClusterAndKsByIdPrepStmt.bind(
               " ", repairUnit.getKeyspaceName(), repairSchedule.get().getId()));
 
       session.execute(deleteRepairSchedulePrepStmt.bind(repairSchedule.get().getId()));

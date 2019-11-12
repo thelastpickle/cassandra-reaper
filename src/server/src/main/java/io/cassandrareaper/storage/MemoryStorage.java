@@ -124,11 +124,13 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public Cluster deleteCluster(String clusterName) {
-    assert getRepairSchedulesForCluster(clusterName).isEmpty()
-        : StringUtils.join(getRepairSchedulesForCluster(clusterName));
+    getRepairSchedulesForCluster(clusterName).forEach(schedule -> deleteRepairSchedule(schedule.getId()));
+    getRepairRunIdsForCluster(clusterName).forEach(runId -> deleteRepairRun(runId));
 
-    assert getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)).isEmpty()
-        : StringUtils.join(getRepairRunsForCluster(clusterName, Optional.of(Integer.MAX_VALUE)));
+    getEventSubscriptions(clusterName)
+        .stream()
+        .filter(subscription -> subscription.getId().isPresent())
+        .forEach(subscription -> deleteEventSubscription(subscription.getId().get()));
 
     repairUnits.values().stream()
         .filter((unit) -> unit.getClusterName().equals(clusterName))
