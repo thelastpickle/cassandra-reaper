@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.55.6" />
+  <meta name="generator" content="Hugo 0.40.3" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -342,18 +342,16 @@
 <h2 id="shiro-jwt-provider">Shiro JWT Provider</h2>
 
 <ul>
-<li><p><strong>GET     /jwt</strong></p>
+<li><strong>GET     /jwt</strong>
 
 <ul>
 <li>Expected query parameters: <em>None</em></li>
-
-<li><p>Returns a JWT to use in all REST calls when authentication is turned on in Reaper.
-The token must be passed in the <code>Authorization</code> HTTP header in the following form:</p>
-
-<pre><code>Authorization: Bearer [JWT value]
-</code></pre>
-
-<p>This operation expects that a call was previously made to <code>/login</code> and that the retrieved session id is passed in the cookies when requesting a JWT.</p></li>
+<li>Returns a JWT to use in all REST calls when authentication is turned on in Reaper.
+The token must be passed in the <code>Authorization</code> HTTP header in the following form:
+<code>
+Authorization: Bearer [JWT value]
+</code><br />
+This operation expects that a call was previously made to <code>/login</code> and that the retrieved session id is passed in the cookies when requesting a JWT.</li>
 </ul></li>
 </ul>
 
@@ -779,17 +777,14 @@ Delete all the related repair runs before calling this endpoint.
     
 
     
-<script type="application/javascript">
-var doNotTrack = false;
-if (!doNotTrack) {
-	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-	ga('create', 'UA-104925477-1', 'auto');
-	
-	ga('send', 'pageview');
-}
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-104925477-1', 'auto');
+ga('send', 'pageview');
 </script>
 
 

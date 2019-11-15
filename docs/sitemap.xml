@@ -120,12 +120,10 @@
   
   <url>
     <loc>http://cassandra-reaper.io/faq/</loc>
-    <priority>0</priority>
   </url>
   
   <url>
     <loc>http://cassandra-reaper.io/quickstart/</loc>
-    <priority>0</priority>
   </url>
   
   <url>
