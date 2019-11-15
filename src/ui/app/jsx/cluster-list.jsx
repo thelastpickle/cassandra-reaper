@@ -124,7 +124,7 @@ const Cluster = React.createClass({
     if(this.state.nodes_status != null) {
         var grouped_datacenters = this.chunkArray(Object.keys(this.state.nodes_status.endpointStates[0].endpoints).sort(), 3);
         datacenters = grouped_datacenters.map(dcGroup => 
-          <div className="row" key="">
+          <div className="row" key={dcGroup[0]}>
             {dcGroup.map(dc => 
                         <Datacenter datacenter={this.state.nodes_status.endpointStates[0].endpoints[dc]} 
                                     datacenterName={dc} 
