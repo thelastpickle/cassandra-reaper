@@ -73,6 +73,11 @@ aliases:
                 sudo chmod 777 /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
                 echo "cassandra     readwrite" >> /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
                 cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+                # Second possible location for the file
+                cat /usr/local/openjdk-8/jre/lib/management/jmxremote.access
+                sudo chmod 777 /usr/local/openjdk-8/jre/lib/management/jmxremote.access
+                echo "cassandra     readwrite" >> /usr/local/openjdk-8/jre/lib/management/jmxremote.access
+                cat /usr/local/openjdk-8/jre/lib/management/jmxremote.access
                 ccm create test -v $CASSANDRA_VERSION
                 ccm populate --vnodes -n $NODES_PER_DC:$NODES_PER_DC
                 for i in `seq 1 $(($NODES_PER_DC *2))` ; do
