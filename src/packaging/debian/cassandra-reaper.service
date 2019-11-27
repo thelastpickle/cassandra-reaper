@@ -21,6 +21,7 @@ After=remote-fs.target syslog.socket
 [Service]
 User=reaper
 Group=reaper
+WorkingDirectory=/usr/share/cassandra-reaper
 ExecStart=/usr/local/bin/cassandra-reaper
 
 StandardOutput=journal
