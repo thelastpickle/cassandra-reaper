@@ -14,7 +14,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-REAPER_JAR=$(find /usr/share/cassandra-reaper/ -maxdepth 4 -regex '.*/cassandra-reaper-.*[0-9rT]\.jar')
+REAPER_JAR=$(find . -maxdepth 4 -regex '.*/cassandra-reaper-.*[0-9rT]\.jar')
 
 if [ $REAPER_JAR ]; then
     echo "Using reaper in target"
