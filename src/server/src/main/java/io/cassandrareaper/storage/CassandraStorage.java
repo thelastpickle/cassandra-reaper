@@ -41,7 +41,6 @@ import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.cassandra.DateTimeCodec;
 import io.cassandrareaper.storage.cassandra.Migration016;
 import io.cassandrareaper.storage.cassandra.Migration021;
-import io.cassandrareaper.storage.cassandra.SchemaMigrationLock;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -239,16 +238,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             0 >= VersionNumber.parse("2.1").compareTo(version),
             "All Cassandra nodes in Reaper's backend storage must be running version 2.1+");
 
-    try (
-        SchemaMigrationLock schemaMigrationLock = new SchemaMigrationLock(version, session, config);
-        Database database = new Database(cassandra, config.getCassandraFactory().getKeyspace())) {
+    try (Database database = new Database(cassandra, config.getCassandraFactory().getKeyspace())) {
 
       int currentVersion = database.getVersion();
+      Preconditions.checkState(
+          currentVersion == 0 || currentVersion >= 15,
+          "You need to upgrade from Reaper 1.2.2 at least in order to run this version. "
+          + "Please upgrade to 1.2.2, or greater, before performing this upgrade.");
+
       MigrationRepository migrationRepo = new MigrationRepository("db/cassandra");
       if (currentVersion < migrationRepo.getLatestVersion()) {
         LOG.warn("Starting db migration from {} to {}…", currentVersion, migrationRepo.getLatestVersion());
 
-        if (4 <= currentVersion) {
+        if (15 <= currentVersion) {
           List<String> otherRunningReapers = session.execute("SELECT reaper_instance_host FROM running_reapers").all()
               .stream()
               .map((row) -> row.getString("reaper_instance_host"))
@@ -261,7 +263,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               StringUtils.join(otherRunningReapers));
         }
 
-        migrate(database.getVersion(), migrationRepo, session);
+        // We now only support migrations starting at version 15 (Reaper 1.2.2)
+        int startVersion = database.getVersion() == 0 ? 15 : database.getVersion();
+        migrate(startVersion, migrationRepo, session);
         // some migration steps depend on the Cassandra version, so must be rerun every startup
         Migration016.migrate(session, config.getCassandraFactory().getKeyspace());
         // Switch metrics table to TWCS if possible, this is intentionally executed every startup
@@ -295,7 +299,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       };
 
       try (Database database = new Database(session.getCluster(), session.getLoggedKeyspace())) {
-        MigrationTask migration = new MigrationTask(database, migrationRepo);
+        MigrationTask migration = new MigrationTask(database, migrationRepo, true);
         migration.migrate();
         // after the script execute any MigrationXXX class that exists with the same version number
         Class.forName("io.cassandrareaper.storage.cassandra.Migration" + String.format("%03d", nextVersion))
