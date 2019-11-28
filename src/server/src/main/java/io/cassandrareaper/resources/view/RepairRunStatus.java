@@ -109,6 +109,10 @@ public final class RepairRunStatus {
   @JsonProperty("repair_thread_count")
   private int repairThreadCount;
 
+  @JsonProperty("repair_unit_id")
+  private UUID repairUnitId;
+
+
   /**
    * Default public constructor Required for Jackson JSON parsing.
    */
@@ -136,7 +140,8 @@ public final class RepairRunStatus {
       Collection<String> nodes,
       Collection<String> datacenters,
       Collection<String> blacklistedTables,
-      int repairThreadCount) {
+      int repairThreadCount,
+      UUID repairUnitId) {
 
     this.id = runId;
     this.cause = cause;
@@ -194,6 +199,8 @@ public final class RepairRunStatus {
         estimatedTimeOfArrival = new DateTime(now + millisecondsPerSegment * segmentsLeft);
       }
     }
+
+    this.repairUnitId = repairUnitId;
   }
 
   public RepairRunStatus(RepairRun repairRun, RepairUnit repairUnit, int segmentsRepaired) {
@@ -218,7 +225,8 @@ public final class RepairRunStatus {
         repairUnit.getNodes(),
         repairUnit.getDatacenters(),
         repairUnit.getBlacklistedTables(),
-        repairUnit.getRepairThreadCount());
+        repairUnit.getRepairThreadCount(),
+        repairRun.getRepairUnitId());
   }
 
   @JsonProperty("creation_time")
@@ -487,4 +495,13 @@ public final class RepairRunStatus {
   public static String dateTimeToIso8601(@Nullable DateTime dateTime) {
     return null != dateTime ? ISODateTimeFormat.dateTimeNoMillis().print(dateTime) : null;
   }
+
+  public UUID getRepairUnitId() {
+    return repairUnitId;
+  }
+
+  public void setRepairUnitId(UUID repairUnitId) {
+    this.repairUnitId = repairUnitId;
+  }
+
 }

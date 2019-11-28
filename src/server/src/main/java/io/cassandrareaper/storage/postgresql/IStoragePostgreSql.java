@@ -210,7 +210,7 @@ public interface IStoragePostgreSql {
   // View-specific queries
   //
   String SQL_CLUSTER_RUN_OVERVIEW = "SELECT repair_run.id, repair_unit.cluster_name, keyspace_name, column_families, "
-          + "nodes, datacenters, blacklisted_tables, "
+          + "nodes, datacenters, blacklisted_tables, repair_run.repair_unit_id, "
           + "(SELECT COUNT(case when state = 2 then 1 else null end) "
           + "FROM repair_segment "
           + "WHERE run_id = repair_run.id) AS segments_repaired, "
