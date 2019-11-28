@@ -23,6 +23,7 @@ import io.cassandrareaper.core.ClusterProperties;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.Arrays;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,13 +56,17 @@ public final class ClusterMapper implements ResultSetMapper<Cluster> {
       throw new SQLException(e); // Ugly but the interface won't let us throw anything else...
     }
 
+    LocalDate lastContact
+        = rs.getDate("last_contact") != null
+            ? rs.getDate("last_contact").toLocalDate()
+            : LocalDate.now();
     Cluster.Builder builder = Cluster.builder()
         .withName(rs.getString("name"))
         .withSeedHosts(ImmutableSet.copyOf(seedHosts))
         .withState(null != rs.getString("state")
             ? Cluster.State.valueOf(rs.getString("state"))
             : Cluster.State.UNKNOWN)
-        .withLastContact(rs.getDate("last_contact").toLocalDate())
+        .withLastContact(lastContact)
         .withJmxPort(clusterProperties.getJmxPort());
 
     if (null != rs.getString("partitioner")) {
