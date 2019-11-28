@@ -36,6 +36,7 @@ public final class RepairRunStatusMapper implements ResultSetMapper<RepairRunSta
   @Override
   public RepairRunStatus map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
     long runId = rs.getLong("id");
+    long unitId = rs.getLong("repair_unit_id");
     String clusterName = rs.getString("cluster_name");
     String keyspaceName = rs.getString("keyspace_name");
 
@@ -98,6 +99,7 @@ public final class RepairRunStatusMapper implements ResultSetMapper<RepairRunSta
         nodes,
         datacenters,
         blacklistedTables,
-        repairThreadCount);
+        repairThreadCount,
+        UuidUtil.fromSequenceId(unitId));
   }
 }

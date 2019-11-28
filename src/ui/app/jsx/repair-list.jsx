@@ -156,6 +156,14 @@ const TableRowDetails = React.createClass({
           placeholder="repair intensity" />;
     }
 
+    var metrics = ["io.cassandrareaper.service.RepairRunner.repairProgress", "io.cassandrareaper.service.RepairRunner.segmentsDone",
+                   "io.cassandrareaper.service.RepairRunner.segmentsTotal", "io.cassandrareaper.service.RepairRunner.millisSinceLastRepair"];
+  let cleanupRegex = /[^A-Za-z0-9]/mg
+  let availableMetrics = metrics.map(metric => <div key={metric + this.props.row.repair_unit_id}>
+      {metric + "." 
+        + this.props.row.cluster_name.replace(cleanupRegex, "") + "." 
+        + this.props.row.keyspace_name.replace(cleanupRegex, "") + "." 
+        + this.props.row.repair_unit_id.replace(cleanupRegex, "")}</div>)
     return (
       <tr id={rowID} className="collapse out">
         <td colSpan="7">
@@ -232,6 +240,10 @@ const TableRowDetails = React.createClass({
                 <tr>
                     <td>Creation time</td>
                     <td>{createdAt}</td>
+                </tr>
+                <tr>
+                    <td>Available metrics<br/><i>(can require a full run before appearing)</i></td>
+                    <td>{availableMetrics}</td>
                 </tr>
             </tbody>
           </table>
