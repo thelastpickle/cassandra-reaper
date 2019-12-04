@@ -630,11 +630,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       if (row.getString("cluster_name").equals(clusterName)) {
         UUID id = row.getUUID("id");
         assert getRepairRunsForUnit(id).isEmpty() : StringUtils.join(getRepairRunsForUnit(id));
-        session.executeAsync(deleteRepairUnitPrepStmt.bind(id));
+        session.execute(deleteRepairUnitPrepStmt.bind(id));
       }
     }
     Cluster cluster = getCluster(clusterName);
-    session.executeAsync(deleteClusterPrepStmt.bind(clusterName));
+    session.execute(deleteClusterPrepStmt.bind(clusterName));
     return cluster;
   }
 
@@ -857,10 +857,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public Optional<RepairRun> deleteRepairRun(UUID id) {
     Optional<RepairRun> repairRun = getRepairRun(id);
     if (repairRun.isPresent()) {
-      session.executeAsync(deleteRepairRunByUnitPrepStmt.bind(id, repairRun.get().getRepairUnitId()));
-      session.executeAsync(deleteRepairRunByClusterPrepStmt.bind(id, repairRun.get().getClusterName()));
+      session.execute(deleteRepairRunByUnitPrepStmt.bind(id, repairRun.get().getRepairUnitId()));
+      session.execute(deleteRepairRunByClusterPrepStmt.bind(id, repairRun.get().getClusterName()));
     }
-    session.executeAsync(deleteRepairRunPrepStmt.bind(id));
+    session.execute(deleteRepairRunPrepStmt.bind(id));
     return repairRun;
   }
 
@@ -1306,19 +1306,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     if (repairSchedule.isPresent()) {
       RepairUnit repairUnit = getRepairUnit(repairSchedule.get().getRepairUnitId());
 
-      session.executeAsync(
+      session.execute(
           deleteRepairScheduleByClusterAndKsPrepStmt.bind(
               repairUnit.getClusterName(), repairUnit.getKeyspaceName(), repairSchedule.get().getId()));
 
-      session.executeAsync(
+      session.execute(
           deleteRepairScheduleByClusterAndKsPrepStmt.bind(
               repairUnit.getClusterName(), " ", repairSchedule.get().getId()));
 
-      session.executeAsync(
+      session.execute(
           deleteRepairScheduleByClusterAndKsPrepStmt.bind(
               " ", repairUnit.getKeyspaceName(), repairSchedule.get().getId()));
 
-      session.executeAsync(deleteRepairSchedulePrepStmt.bind(repairSchedule.get().getId()));
+      session.execute(deleteRepairSchedulePrepStmt.bind(repairSchedule.get().getId()));
     }
 
     return repairSchedule;
@@ -1653,7 +1653,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public boolean deleteEventSubscription(UUID id) {
-    session.executeAsync(deleteDiagnosticEventPrepStmt.bind(id));
+    session.execute(deleteDiagnosticEventPrepStmt.bind(id));
     return true;
   }
 

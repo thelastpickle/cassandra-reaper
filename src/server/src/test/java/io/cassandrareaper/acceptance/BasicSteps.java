@@ -99,7 +99,7 @@ public final class BasicSteps {
       .put("GossiperEvent", "org.apache.cassandra.gms.GossiperEvent")
       .put("HintEvent", "org.apache.cassandra.hints.HintEvent")
       .put("HintsServiceEvent", "org.apache.cassandra.hints.HintsServiceEvent")
-      .put("ReadRepairEvent", "org.apache.cassandra.reads.repair.ReadRepairEvent")
+      .put("ReadRepairEvent", "org.apache.cassandra.service.reads.repair.ReadRepairEvent")
       .put("SchemaEvent", "org.apache.cassandra.schema.SchemaEvent")
       .build();
 
@@ -1856,7 +1856,6 @@ public final class BasicSteps {
       testContext.getRetrievedEventSubscriptions()
           .parallelStream()
           .forEach((sub) -> {
-
             callAndExpect(
                 "DELETE",
                 "/diag_event/subscription/" + sub.getId().get(),
@@ -1864,21 +1863,25 @@ public final class BasicSteps {
                 Optional.empty(),
                 Response.Status.ACCEPTED,
                 Response.Status.NOT_FOUND);
-
-            await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
-              try {
-                callAndExpect(
-                    "DELETE",
-                    "/diag_event/subscription/" + sub.getId().get(),
-                    Optional.empty(),
-                    Optional.empty(),
-                    Response.Status.NOT_FOUND);
-              } catch (AssertionError ex) {
-                LOG.warn("DELETE /diag_event/subscription/" + sub.getId().get() + " failed: " + ex.getMessage());
-                return false;
-              }
-              return true;
-            });
+            try {
+              await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
+                try {
+                  callAndExpect(
+                      "DELETE",
+                      "/diag_event/subscription/" + sub.getId().get(),
+                      Optional.empty(),
+                      Optional.empty(),
+                      Response.Status.NOT_FOUND);
+                } catch (AssertionError ex) {
+                  LOG.warn("DELETE /diag_event/subscription/" + sub.getId().get() + " failed: " + ex.getMessage());
+                  return false;
+                }
+                return true;
+              });
+            } catch (ConditionTimeoutException ex) {
+              logResponse(RUNNERS.get(RAND.nextInt(RUNNERS.size())) , "/diag_event/subscription");
+              throw ex;
+            }
           });
     }
   }
