@@ -81,19 +81,23 @@ Default: *ALL*
 
 Indicates to Reaper its deployment in relation to cluster data center network locality. The value must be either **ALL**, **LOCAL**, **EACH** or **SIDECAR**. Note that this setting controls the behavior for metrics collection.
 
-For security reasons, it is possible that Reaper will have access limited to nodes in a single datacenter via JMX (multi region clusters for example). In this case, it is possible to deploy an operate an instance of Reaper in each datacenter where each instance only has access via JMX (with or without authentication) to the nodes in its local datacenter. Where multiple instances of Reaper are in operation in this configuration, only the Apache Cassandra storage option can be used with Reaper. All other storage options are unsuitable in this case. This is because Reaper instances will rely on lightweight transactions to get leadership on segments before processing them. In addition, Reaper will check the number of pending compactions and actively running repairs on all replicas prior to processing a segment.
+By default, Apache Cassandra restricts JMX communications to localhost only. In this setup, only the **SIDECAR** value is suitable.
+
+For security reasons, it is possible that Reaper will have access limited to nodes in a single datacenter via JMX (multi region clusters for example). In this case, it is possible to deploy an operate an instance of Reaper in each datacenter where each instance only has access via JMX (with or without authentication) to the nodes in its local datacenter. In addition, Reaper will check the number of pending compactions and actively running repairs on all replicas prior to processing a segment.
 
 **ALL** - requires Reaper to have access via JMX to all nodes across all datacenters. In this mode Reaper can be backed by all available storage types.
 
-**LOCAL** - requires Reaper to have access via JMX to all nodes only in the same datacenter local to Reaper. A single Reaper instance can operate in this mode and trigger repairs from within its local data center. In this case, can be backed by all available storage types and repairs to any remote datacenters are be handled internally by Cassandra. A Reaper instance can be deployed to each datacenter and be configured to operate in this mode. In this case, Reaper can only use Apache Cassandra as its storage. In addition, metrics can be collected asynchronously through the Apache Cassandra storage.
+**LOCAL** - requires Reaper to have access via JMX to all nodes only in the same datacenter local to Reaper. A single Reaper instance can operate in this mode and trigger repairs from within its local data center. In this case, can be backed by all available storage types and repairs to any remote datacenters are be handled internally by Cassandra. A Reaper instance can be deployed to each datacenter and be configured to operate in this mode. In this case, Reaper can use either of Apache Cassandra or Postgres as its storage.
 
-**EACH** - requires a minimum of one Reaper instance operating in each datacenter. Each Reaper instance is required to have access via JMX to all nodes only in its local datacenter. When operating in this mode, Reaper can only use Apache Cassandra as its storage. In addition, metrics from nodes in remote datacenters must be collected through the Cassandra storage backend. If any metric is unavailable, the segment will be postponed for later processing.
+Further information can be found in the [Operating with a Multi DC Cluster](../../usage/multi_dc) section.
+
+**EACH** - requires a minimum of one Reaper instance operating in each datacenter. Each Reaper instance is required to have access via JMX to all nodes only in its local datacenter. When operating in this mode, Reaper can use either of Apache Cassandra or Postgres as its storage. In addition, metrics from nodes in remote datacenters must be collected through the storage backend. If any metric is unavailable, the segment will be postponed for later processing.
 
 Further information can be found in the [Operating with a Multi DC Cluster](../../usage/multi_dc) section.
 
 **SIDECAR** - requires one reaper instance for each node in the cluster.
-Each Reaper instance is required to have access via JMX to the local node.
-When operating in this mode, Reaper must be configured to use the [Cassandra Backend](../../backends/cassandra).
+Each Reaper instance is required to have access via JMX to its local node.
+When operating in this mode, Reaper can use either of Apache Cassandra or Postgres as its storage.
 
 Further information can be found in the [Sidecar Mode](../../usage/sidecar_mode) section.
 
@@ -417,3 +421,11 @@ Type: *Integer*
 Since Cassandra 2.2, repairs are multithreaded in order to process several token ranges concurrently and speed up the process.
 This setting allows to set a default for automatic repair schedules.
 No more than four threads are allowed by Cassandra.
+
+### `maxPendingCompactions`
+
+Type: *Integer*
+
+Default: *20*
+
+Reaper will prevent repair from overwhelming the cluster when lots of SSTables are streamed, by pausing segment processing if there are more than a specific number of pending compactions. Adjust this setting if you have a lot of tables in the cluster and the total number of pending compactions is usually high.

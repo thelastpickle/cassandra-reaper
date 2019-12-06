@@ -54,7 +54,7 @@ Any keyspaces that only have replicas in remote JMX unreachable datacenters can 
   
 ## Multiple Reaper instances with JMX accessible locally to each DC
 
-In the case where the JMX port is accessible (with or without authentication) from the running Reaper instance for all nodes in the current DC only, it is possible to have a multiple instances of Reaper running in different DCs by using the following setting in the configuration yaml file :  
+In the case where the JMX port is accessible (with or without authentication) from the running Reaper instance for all nodes in the current DC only, it is possible to have a multiple instances of Reaper running in different DCs by using the following setting in the configuration yaml file:  
 
 ```
 datacenterAvailability: EACH
@@ -70,3 +70,21 @@ There must be installed and running a Reaper instance in every datacenter of eve
 
 Reaper must be able to access the JMX port (7199 by default) and port 9042 if the cluster is also used as Cassandra backend, on the local DC.
 
+
+## Multiple Reaper instances with JMX access restricted to localhost
+
+By default, Cassandra starts up with JMX access restricted to the local machine. This is considered by many companies as being a security requirement. In this case, one reaper instance must be collocated as a sidecar with each Cassandra process, using the following setting in the configuration yaml file:  
+
+```
+datacenterAvailability: SIDECAR
+```
+
+There must be installed and running a Reaper instance on each Cassandra node in the cluster. And every Reaper instance must have CQL access to the backend Cassandra cluster it uses as a backend.
+
+{{< screenshot src="/img/sidecar-mode.png">}}
+
+{{< /screenshot >}}
+
+Reaper must be able to access the JMX port (7199 by default) and port 9042 if the cluster is also used as Cassandra backend, on the local DC.
+
+More informations on the sidecar mode can be found on [this page]({{<ref "/docs/usage/sidecar_mode.md">}}).
