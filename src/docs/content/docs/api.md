@@ -68,7 +68,8 @@ This operation expects that a call was previously made to `/login` and that the 
   
   
 * **DELETE  /cluster/{cluster_name}**
-  * Expected query parameters: *None*
+  * Expected query parameters:
+      * *force* : Enforce deletion of the cluster even if there are active schedules and a repair run history (Optional)
   * Delete a cluster object identified by the given "cluster_name" path parameter.
     Cluster will get deleted only if there are no schedules or repair runs for the cluster,
     or the request will fail. Delete repair runs and schedules first before calling this.

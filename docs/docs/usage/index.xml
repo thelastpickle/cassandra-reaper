@@ -79,6 +79,15 @@ Fill in the Details Enter values for the keyspace, tables, owner and other field
     
     <item>
       <title></title>
+      <link>http://cassandra-reaper.io/docs/usage/sidecar_mode/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/usage/sidecar_mode/</guid>
+      <description>Sidecar Mode Sidecar Mode is a way of deploying Cassandra Reaper with one reaper instance for each node in the cluster. The name &amp;ldquo;Sidecar&amp;rdquo; comes from the Sidecar Pattern which describes a mechanism for co-locating an auxiliary service with its supported application. See also Design Patterns for Container-based Distributed Systems. It is a pattern that is often used in Kubernetes, where the main application and the sidecar application are deployed as separate containers in the same pod.</description>
+    </item>
+    
+    <item>
+      <title></title>
       <link>http://cassandra-reaper.io/docs/usage/single/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
