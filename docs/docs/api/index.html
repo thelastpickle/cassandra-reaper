@@ -278,6 +278,8 @@
         
         <li><a href="/docs/usage/multi_dc_distributed/"> Multi DCs with Multi Reapers </a> </li>
         
+        <li><a href="/docs/usage/sidecar_mode/"> Sidecar Mode </a> </li>
+        
         <li><a href="/docs/usage/cassandra-diagnostics/"> Cassandra Diagnostic Events </a> </li>
         
     </ul>
@@ -431,7 +433,11 @@ clusters seed host.</li>
 <li><p><strong>DELETE  /cluster/{cluster_name}</strong></p>
 
 <ul>
-<li>Expected query parameters: <em>None</em></li>
+<li>Expected query parameters:
+
+<ul>
+<li><em>force</em> : Enforce deletion of the cluster even if there are active schedules and a repair run history (Optional)</li>
+</ul></li>
 <li>Delete a cluster object identified by the given &ldquo;cluster_name&rdquo; path parameter.
 Cluster will get deleted only if there are no schedules or repair runs for the cluster,
 or the request will fail. Delete repair runs and schedules first before calling this.</li>

@@ -115,6 +115,10 @@
   </url>
   
   <url>
+    <loc>http://cassandra-reaper.io/docs/usage/sidecar_mode/</loc>
+  </url>
+  
+  <url>
     <loc>http://cassandra-reaper.io/docs/usage/single/</loc>
   </url>
   
