@@ -195,6 +195,7 @@
                 <exclude>**/*.txt</exclude>
                 <exclude>src/packaging/debian/compat</exclude>
                 <exclude>src/packaging/debian/changelog</exclude>
+                <exclude>src/packaging/data/**</exclude>
               </excludes>
             </configuration>
             <executions>
