@@ -96,7 +96,9 @@ This operation expects that a call was previously made to `/login` and that the 
 
 * **GET     /repair_run**
   * Optional query parameters:
-    	* *state*: Comma separated list of repair run state names. Only names found in `io.cassandrareaper.core.RunState` are accepted.
+      * *state*: Comma separated list of repair run state names. Only names found in `io.cassandrareaper.core.RunState` are accepted. (Optional)
+      * *cluster_name*: Name of the Cassandra cluster. (Optional)
+      * *keyspace_name*: The name of the table keyspace. (Optional)
   * Returns a list of repair runs, optionally fetching only the ones with *state* state.
   
   
@@ -169,7 +171,7 @@ Returns OK if all goes well NOT_MODIFIED if new state is the same as the old one
   * Expected query parameters:
       * *clusterName*: Filter the returned schedule list based on the given
         cluster name. (Optional)
-      * *keyspaceName*: Filter the returned schedule list based on the given
+      * *keyspace*: Filter the returned schedule list based on the given
         keyspace name. (Optional)
   * Returns all repair schedules present in the Reaper
   
@@ -191,7 +193,7 @@ Returns OK if all goes well NOT_MODIFIED if new state is the same as the old one
 	    * *tables*: The name of the targeted tables (column families) as comma separated list.
 	                If no tables given, then the whole keyspace is targeted. (Optional)
 	    * *owner*: Owner name for the schedule. This could be any string identifying the owner.
-	    * *segmentCount*: Defines the amount of segments to create for scheduled repair runs. (Optional)
+	    * *segmentCountPerNode*: Defines the amount of segments per node to create for scheduled repair runs. (Optional)
 	    * *repairParallelism*: Defines the used repair parallelism for scheduled repair runs. (Optional)
 	    * *intensity*: Defines the repair intensity for scheduled repair runs. (Optional)
 	    * *incrementalRepair*: Defines if incremental repair should be done. [true/false] (Optional)
@@ -205,6 +207,11 @@ Returns OK if all goes well NOT_MODIFIED if new state is the same as the old one
 	    * *blacklistedTables* : The name of the tables that should not be repaired. Cannot be used in conjunction with the tables parameter. (Optional)
 	    * *repairThreadCount* : Since Cassandra 2.2, repairs can be performed with up to 4 threads in order to parallelize the work on different token ranges. (Optional)
     * Create and activate a scheduled repair.
+
+
+* **POST    /repair_schedule/start/{id}**
+  * Expected query parameters: *None*
+  * Force start a repair from a schedule.
   
   
 * **DELETE  /repair_schedule/{id}**
@@ -217,8 +224,9 @@ Returns OK if all goes well NOT_MODIFIED if new state is the same as the old one
   
   
 * **PUT /repair_schedule/{id}**
-  * Expected query parameters: *None*
-  * Returns the repair schedule objects for the given cluster.
+  * Expected query parameters:
+    * *state*: "PAUSED" or "ACTIVE".
+  * Enables or disables the repair schedule.
 
   
 ## Snapshot Resource
