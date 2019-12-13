@@ -17,6 +17,9 @@
 if [ "$1" = 'cassandra-reaper' ]; then
     set -x
 
+    # get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper.yml: Interrupted system call` unknown error
+    touch /etc/cassandra-reaper.yml
+
     /usr/local/bin/configure-persistence.sh
     /usr/local/bin/configure-webui-authentication.sh
     /usr/local/bin/configure-metrics.sh
