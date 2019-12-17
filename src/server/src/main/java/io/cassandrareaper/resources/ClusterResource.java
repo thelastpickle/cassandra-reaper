@@ -57,8 +57,10 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import com.codahale.metrics.InstrumentedExecutorService;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -77,11 +79,22 @@ public final class ClusterResource {
   private final ClusterRepairScheduler clusterRepairScheduler;
   private final ClusterFacade clusterFacade;
 
-  public ClusterResource(AppContext context, ExecutorService executor) {
+  private ClusterResource(AppContext context, ExecutorService executor, Supplier<ClusterFacade> clusterFacadeSupplier)
+      throws ReaperException {
     this.context = context;
     this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
     this.clusterRepairScheduler = new ClusterRepairScheduler(context);
-    this.clusterFacade = ClusterFacade.create(context);
+    this.clusterFacade = clusterFacadeSupplier.get();
+  }
+
+  @VisibleForTesting
+  static ClusterResource create(AppContext context, ExecutorService executor, Supplier<ClusterFacade> supplier)
+      throws ReaperException {
+    return new ClusterResource(context, executor, supplier);
+  }
+
+  public static ClusterResource create(AppContext context, ExecutorService executor) throws ReaperException {
+    return new ClusterResource(context, executor, () -> ClusterFacade.create(context));
   }
 
   @GET
@@ -281,11 +294,16 @@ public final class ClusterResource {
   private Cluster updateClusterSeeds(Cluster cluster, String seedHosts) throws ReaperException {
     Set<String> newSeeds = parseSeedHosts(seedHosts);
     try {
-      Set<String> previousNodes = ImmutableSet.copyOf(clusterFacade.getLiveNodes(cluster));
+      Set<String> previousNodes = Collections.emptySet();
+      try {
+        previousNodes = ImmutableSet.copyOf(clusterFacade.getLiveNodes(cluster));
+      } catch (ReaperException expected) {
+        // The previous node could all be gone, and that's fine.
+      }
       Set<String> liveNodes = ImmutableSet.copyOf(clusterFacade.getLiveNodes(cluster, newSeeds));
 
       Preconditions.checkArgument(
-          !Collections.disjoint(previousNodes, liveNodes),
+          !Collections.disjoint(previousNodes, liveNodes) || previousNodes.isEmpty(),
           "Trying to update a different cluster using the same name: %s. No nodes overlap between %s and %s",
           cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(liveNodes, ','));
 

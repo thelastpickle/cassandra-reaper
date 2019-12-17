@@ -225,7 +225,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     final PingResource pingResource = new PingResource(healthCheck);
     environment.jersey().register(pingResource);
 
-    final ClusterResource addClusterResource = new ClusterResource(
+    final ClusterResource addClusterResource = ClusterResource.create(
         context,
         environment.lifecycle().executorService("ClusterResource").minThreads(6).maxThreads(6).build());
 

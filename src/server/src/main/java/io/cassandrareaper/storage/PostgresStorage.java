@@ -52,7 +52,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -63,7 +62,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
@@ -240,20 +238,6 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
         "Cluster should not be persisted with UNKNOWN state");
 
     Preconditions.checkState(cluster.getPartitioner().isPresent(), "Cannot store cluster with no partitioner.");
-    // assert we're not overwriting a cluster with the same name but different node list
-    Set<String> previousNodes;
-    try {
-      previousNodes = getCluster(cluster.getName()).getSeedHosts();
-    } catch (IllegalArgumentException ignore) {
-      // there is no previous cluster with same name
-      previousNodes = cluster.getSeedHosts();
-    }
-    Set<String> addedNodes = cluster.getSeedHosts();
-
-    Preconditions.checkArgument(
-        !Collections.disjoint(previousNodes, addedNodes),
-        "Trying to add/update cluster using an existing name: %s. No nodes overlap between %s and %s",
-        cluster.getName(), StringUtils.join(previousNodes, ','), StringUtils.join(addedNodes, ','));
 
     return true;
   }
