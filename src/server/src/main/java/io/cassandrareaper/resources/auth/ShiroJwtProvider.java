@@ -18,7 +18,8 @@
 package io.cassandrareaper.resources.auth;
 
 import io.cassandrareaper.AppContext;
-import io.cassandrareaper.storage.IDistributedStorage;
+import io.cassandrareaper.storage.CassandraStorage;
+import io.cassandrareaper.storage.PostgresStorage;
 
 import java.io.IOException;
 import java.security.Key;
@@ -56,9 +57,13 @@ public final class ShiroJwtProvider {
   private static Key getSigningKey(AppContext cxt) {
     String txt = System.getenv("JWT_SECRET");
     if (null == txt) {
-      txt = cxt.storage instanceof IDistributedStorage
-          ? cxt.config.getCassandraFactory().getClusterName()
-          : AppContext.REAPER_INSTANCE_ADDRESS;
+      if (cxt.storage instanceof CassandraStorage) {
+        txt = cxt.config.getCassandraFactory().getClusterName();
+      } else if (cxt.storage instanceof PostgresStorage) {
+        txt = cxt.config.getPostgresDataSourceFactory().getUrl();
+      } else {
+        txt = AppContext.REAPER_INSTANCE_ADDRESS;
+      }
     }
     return new SecretKeySpec(DatatypeConverter.parseBase64Binary(txt), SIG_ALG.getJcaName());
   }
