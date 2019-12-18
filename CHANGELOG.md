@@ -1,5 +1,9 @@
 ## Change Log
 
+### 2.0.1 (2019/12/18 12:48 +00:00)
+- [72b7fd5](https://github.com/thelastpickle/cassandra-reaper/commit/72b7fd5cc7c06cf7f7152b1fb63503af68414198) Fix the dockerfile issues along with Shiro when postgres is used as storage backend (@adejanovski)
+- [797fd78](https://github.com/thelastpickle/cassandra-reaper/commit/797fd7827248a8c21931068ce72d0329360c531f) fix regression caused by PR 783 (@jsanda)
+
 ### 2.0 (2019/12/06 06:25 +00:00)
 - [848e48b](https://github.com/thelastpickle/cassandra-reaper/commit/848e48bec6b2afe42cd9857abe1533e7d9f776d7) Add "force" flag to cluster delete REST endpoint, allowing registered clusters with schedules and repairs runs to be forcibly deleted. (@michaelsembwever)
 - [e13b34d](https://github.com/thelastpickle/cassandra-reaper/commit/e13b34d77f6ec5789e311bd287edb602dca8198f) Remove leader election in Reaper for schema migrations and instead rely on the cassandra-migration lib built in consensus. (@adejanovski)
