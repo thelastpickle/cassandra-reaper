@@ -49,7 +49,6 @@ public final class AppContext {
   public MetricRegistry metricRegistry = new MetricRegistry();
   volatile String localNodeAddress = null;
 
-
   private static class Private {
     private static final Logger LOG = LoggerFactory.getLogger(AppContext.class);
     private static final String DEFAULT_INSTANCE_ADDRESS = "127.0.0.1";

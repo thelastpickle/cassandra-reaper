@@ -22,6 +22,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.storage.CassandraStorage;
 
 import java.util.Collections;
@@ -43,10 +44,11 @@ public final class JmxCustomPortTest {
   @Test
   public void customJmxPortTest() throws ReaperException, InterruptedException {
     AppContext context = new AppContext();
+    final Cryptograph cryptographMock = mock(Cryptograph.class);
     final JmxProxy jmxProxyMock = mock(JmxProxy.class);
     final AtomicInteger port = new AtomicInteger(0);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
           @Override
           protected JmxProxy connectImpl(Node node) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;

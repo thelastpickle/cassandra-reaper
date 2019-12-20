@@ -23,6 +23,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.PostgresStorage;
 
@@ -46,10 +47,11 @@ public class JmxConnectionsInitializerTest {
   @Test
   public void initializerDatacenterAvailabilityEachTest() throws ReaperException {
     AppContext context = new AppContext();
+    final Cryptograph cryptographMock = mock(Cryptograph.class);
     final JmxProxy jmxProxyMock = mock(JmxProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
           @Override
           protected JmxProxy connectImpl(Node node) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
@@ -83,10 +85,11 @@ public class JmxConnectionsInitializerTest {
   @Test
   public void initializerDatacenterAvailabilityLocalTest() throws ReaperException {
     AppContext context = new AppContext();
+    final Cryptograph cryptographMock = mock(Cryptograph.class);
     final JmxProxy jmxProxyMock = mock(JmxProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
           @Override
           protected JmxProxy connectImpl(Node node) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
@@ -120,10 +123,11 @@ public class JmxConnectionsInitializerTest {
   @Test
   public void initializerDatacenterAvailabilityAllTest() throws ReaperException {
     AppContext context = new AppContext();
+    final Cryptograph cryptographMock = mock(Cryptograph.class);
     final JmxProxy jmxProxyMock = mock(JmxProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
           @Override
           protected JmxProxy connectImpl(Node node) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;
@@ -157,10 +161,11 @@ public class JmxConnectionsInitializerTest {
   @Test
   public void initializerPostgresTest() throws ReaperException {
     AppContext context = new AppContext();
+    final Cryptograph cryptographMock = mock(Cryptograph.class);
     final JmxProxy jmxProxyMock = mock(JmxProxy.class);
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
-    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
           @Override
           protected JmxProxy connectImpl(Node node) throws ReaperException {
             final JmxProxy jmx = jmxProxyMock;

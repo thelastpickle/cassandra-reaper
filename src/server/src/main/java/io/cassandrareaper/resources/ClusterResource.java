@@ -20,7 +20,9 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.RepairRun;
+import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.ClusterStatus;
@@ -76,12 +78,14 @@ public final class ClusterResource {
   private final ExecutorService executor;
   private final ClusterRepairScheduler clusterRepairScheduler;
   private final ClusterFacade clusterFacade;
+  private final Cryptograph cryptograph;
 
-  public ClusterResource(AppContext context, ExecutorService executor) {
+  public ClusterResource(AppContext context, Cryptograph cryptograph, ExecutorService executor) {
     this.context = context;
     this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
     this.clusterRepairScheduler = new ClusterRepairScheduler(context);
     this.clusterFacade = ClusterFacade.create(context);
+    this.cryptograph = cryptograph;
   }
 
   @GET
@@ -106,16 +110,17 @@ public final class ClusterResource {
 
     LOG.debug("get cluster called with cluster_name: {}", clusterName);
     try {
+      Cluster cluster = context.storage.getCluster(clusterName);
+
       String jmxUsername = "";
       boolean jmxPasswordIsSet = false;
 
-      if (context.jmxConnectionFactory.getJmxCredentialsForCluster(clusterName).isPresent()) {
-        jmxUsername = context.jmxConnectionFactory.getJmxCredentialsForCluster(clusterName).get().getUsername();
-
-        jmxPasswordIsSet = !StringUtils.isEmpty(
-            context.jmxConnectionFactory.getJmxCredentialsForCluster(clusterName).get().getPassword());
+      Optional<JmxCredentials> jmxCredentials = context.jmxConnectionFactory
+              .getJmxCredentialsForCluster(Optional.ofNullable(cluster));
+      if (jmxCredentials.isPresent()) {
+        jmxUsername = StringUtils.trimToEmpty(jmxCredentials.get().getUsername());
+        jmxPasswordIsSet = !StringUtils.isEmpty(jmxCredentials.get().getPassword());
       }
-      Cluster cluster = context.storage.getCluster(clusterName);
 
       ClusterStatus clusterStatus = new ClusterStatus(
             cluster,
@@ -146,10 +151,12 @@ public final class ClusterResource {
   public Response addOrUpdateCluster(
       @Context UriInfo uriInfo,
       @QueryParam("seedHost") Optional<String> seedHost,
-      @QueryParam("jmxPort") Optional<Integer> jmxPort) {
+      @QueryParam("jmxPort") Optional<Integer> jmxPort,
+      @QueryParam("jmxUsername") Optional<String> jmxUsername,
+      @QueryParam("jmxPassword") Optional<String> jmxPassword) {
 
     LOG.info("POST addOrUpdateCluster called with seedHost: {}", seedHost.orElse(null));
-    return addOrUpdateCluster(uriInfo, Optional.empty(), seedHost, jmxPort);
+    return addOrUpdateCluster(uriInfo, Optional.empty(), seedHost, jmxPort, jmxUsername, jmxPassword);
   }
 
   @PUT
@@ -158,27 +165,40 @@ public final class ClusterResource {
       @Context UriInfo uriInfo,
       @PathParam("cluster_name") String clusterName,
       @QueryParam("seedHost") Optional<String> seedHost,
-      @QueryParam("jmxPort") Optional<Integer> jmxPort) {
+      @QueryParam("jmxPort") Optional<Integer> jmxPort,
+      @QueryParam("jmxUsername") Optional<String> jmxUsername,
+      @QueryParam("jmxPassword") Optional<String> jmxPassword) {
 
     LOG.info(
         "PUT addOrUpdateCluster called with: cluster_name = {}, seedHost = {}",
         clusterName, seedHost.orElse(null));
 
-    return addOrUpdateCluster(uriInfo, Optional.of(clusterName), seedHost, jmxPort);
+    return addOrUpdateCluster(uriInfo, Optional.of(clusterName), seedHost, jmxPort, jmxUsername, jmxPassword);
   }
 
   private Response addOrUpdateCluster(
       UriInfo uriInfo,
       Optional<String> clusterName,
       Optional<String> seedHost,
-      Optional<Integer> jmxPort) {
+      Optional<Integer> jmxPort,
+      Optional<String> jmxUsername,
+      Optional<String> jmxPassword) {
 
     if (!seedHost.isPresent()) {
       LOG.error("POST/PUT on cluster resource {} called without seedHost", clusterName.orElse(null));
       return Response.status(Response.Status.BAD_REQUEST).entity("query parameter \"seedHost\" required").build();
     }
 
-    final Optional<Cluster> cluster = findClusterWithSeedHost(seedHost.get(), jmxPort);
+    JmxCredentials jmxCredentials = null;
+    if (jmxUsername.isPresent() && jmxPassword.isPresent()) {
+      jmxCredentials = JmxCredentials.builder()
+              .withUsername(jmxUsername.get())
+              .withPassword(cryptograph.encrypt(jmxPassword.get()))
+              .build();
+    }
+
+    final Optional<Cluster> cluster = findClusterWithSeedHost(seedHost.get(), jmxPort,
+            Optional.ofNullable(jmxCredentials));
     if (!cluster.isPresent()) {
       return Response
           .status(Response.Status.BAD_REQUEST)
@@ -238,14 +258,17 @@ public final class ClusterResource {
     return Response.created(location).build();
   }
 
-  public Optional<Cluster> findClusterWithSeedHost(String seedHost, Optional<Integer> jmxPort) {
+  public Optional<Cluster> findClusterWithSeedHost(String seedHost,
+                                                   Optional<Integer> jmxPort,
+                                                   Optional<JmxCredentials> jmxCredentials) {
     Set<String> seedHosts = parseSeedHosts(seedHost);
     try {
-      Cluster cluster = Cluster.builder()
-          .withName(parseClusterNameFromSeedHost(seedHost).orElse(""))
-          .withSeedHosts(ImmutableSet.of(seedHost))
-          .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT))
-          .build();
+      Cluster.Builder clusterBuilder = Cluster.builder()
+              .withName(parseClusterNameFromSeedHost(seedHost).orElse(""))
+              .withSeedHosts(ImmutableSet.of(seedHost))
+              .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT));
+      jmxCredentials.ifPresent(clusterBuilder::withJmxCredentials);
+      Cluster cluster = clusterBuilder.build();
 
       String clusterName = clusterFacade.getClusterName(cluster, seedHosts);
       String partitioner = clusterFacade.getPartitioner(cluster, seedHosts);
@@ -256,14 +279,15 @@ public final class ClusterResource {
       }
       LOG.debug("Cluster {}", seedHosts);
 
-      return Optional.of(Cluster.builder()
+      clusterBuilder = Cluster.builder()
               .withName(clusterName)
               .withPartitioner(partitioner)
               .withSeedHosts(seedHosts)
               .withJmxPort(jmxPort.orElse(Cluster.DEFAULT_JMX_PORT))
               .withState(Cluster.State.ACTIVE)
-              .withLastContact(LocalDate.now())
-              .build());
+              .withLastContact(LocalDate.now());
+      jmxCredentials.ifPresent(clusterBuilder::withJmxCredentials);
+      return Optional.of(clusterBuilder.build());
     } catch (ReaperException e) {
       LOG.error("failed to find cluster with seed hosts: {}", seedHosts, e);
     }
@@ -356,19 +380,17 @@ public final class ClusterResource {
   /**
    * Callable to get and parse endpoint states through JMX
    *
-   * @param jmxPort Optional jmx port to connect to
-   * @param seedHost The host address to connect to via JMX
+   * @param cluster the cluster object contains additional connection info like jmx port and jmx credentials
+   * @param seeds The host address to connect to via JMX
    * @return An optional NodesStatus object with the status of each node in the cluster as seen from
    *     the seedHost node
    */
-  private Callable<NodesStatus> getEndpointState(Set<String> seeds, String clusterName, int jmxPort) {
-    Cluster cluster = Cluster.builder().withName(clusterName).withSeedHosts(seeds).withJmxPort(jmxPort).build();
-
+  private Callable<NodesStatus> getEndpointState(Cluster cluster, Set<String> seeds) {
     return () -> {
       try {
         return clusterFacade.getNodesStatus(cluster, seeds);
       } catch (RuntimeException e) {
-        LOG.debug("failed to get endpoints for cluster {} with seeds {}", clusterName, seeds, e);
+        LOG.debug("failed to get endpoints for cluster {} with seeds {}", cluster.getName(), seeds, e);
         Thread.sleep((int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds() * 1000);
         return new NodesStatus(Collections.EMPTY_LIST);
       }
@@ -392,7 +414,7 @@ public final class ClusterResource {
       if (index >= 3) {
         break;
       }
-      endpointStateTasks.add(getEndpointState(Collections.singleton(host), cluster.getName(), cluster.getJmxPort()));
+      endpointStateTasks.add(getEndpointState(cluster, Collections.singleton(host)));
       index++;
     }
 

@@ -429,3 +429,73 @@ Type: *Integer*
 Default: *20*
 
 Reaper will prevent repair from overwhelming the cluster when lots of SSTables are streamed, by pausing segment processing if there are more than a specific number of pending compactions. Adjust this setting if you have a lot of tables in the cluster and the total number of pending compactions is usually high.
+
+<br/>
+
+### `cryptograph`
+
+Optional settings to configure how confidential text (ie: passwords) are encyrpted/decrypted.
+
+    cryptograph:
+      type: symmetric
+      systemPropertySecret: SOME_SYSTEM_PROPERTY_KEY
+
+### `type`
+
+The encryption technique used when encrypting, decrypting, or validating confidential text.  Symmetric encryption is the default.
+
+### `algorithm`
+
+Type: *String*
+
+Default: PBKDF2WithHmacSHA512
+
+The optional standard name of the requested secret-key algorithm. See the SecretKeyFactory section in the Java Cryptography Architecture Standard Algorithm Name Documentation for information about standard algorithm names.
+
+### `cipher`
+
+Type: *String*
+
+Default: AES/CBC/PKCS5Padding
+
+The optional name of the transformation, e.g., AES/CBC/PKCS5Padding. See the Cipher section in the Java Cryptography Architecture Standard Algorithm Name Documentation for information about standard transformation names.
+
+### `cipherType`
+
+Type: *String*
+
+Default: AES
+
+The optional name of the secret-key algorithm to be associated with the given key material. See Appendix A in the Java Cryptography Architecture Reference Guide for information about standard algorithm names.
+
+### `iterationCount`
+
+Type: Integer
+
+Default: 1024
+
+The optional number of times the password is hashed.
+
+### `keyStrength`
+
+Type: Integer
+
+Default: 256
+
+The optional length in bits of the derived symmetric key
+
+### `salt`
+
+Type: *String*
+
+Default: deadbeef
+
+The optional salt used for creating the PBEKeySpec
+
+### `systemPropertySecret`
+
+Type: *String*
+
+The key of a system property that holds the shared secret for the symmetric encryption.  If encrypted text is required, then this key and its value need to be defined in the environment before reaper can be started.  
+```export SOME_SYSTEM_PROPERTY_KEY=mysharedsecret```
+
