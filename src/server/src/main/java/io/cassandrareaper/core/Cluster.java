@@ -69,6 +69,11 @@ public final class Cluster implements Comparable<Cluster> {
         .withLastContact(lastContact)
         .withJmxPort(getJmxPort());
 
+    Optional<JmxCredentials> jmxCredentials = getJmxCredentials();
+    if (jmxCredentials.isPresent()) {
+      builder = builder.withJmxCredentials(jmxCredentials.get());
+    }
+
     if (partitioner.isPresent()) {
       builder = builder.withPartitioner(partitioner.get());
     }
@@ -94,6 +99,10 @@ public final class Cluster implements Comparable<Cluster> {
 
   public int getJmxPort() {
     return properties.getJmxPort();
+  }
+
+  public Optional<JmxCredentials> getJmxCredentials() {
+    return Optional.ofNullable(properties.getJmxCredentials());
   }
 
   public State getState() {
@@ -176,6 +185,14 @@ public final class Cluster implements Comparable<Cluster> {
 
     public Builder withJmxPort(int jmxPort) {
       this.properties.withJmxPort(jmxPort);
+      return this;
+    }
+
+    public Builder withJmxCredentials(JmxCredentials jmxCredentials) {
+      Preconditions.checkNotNull(jmxCredentials);
+      Preconditions.checkNotNull(jmxCredentials.getUsername());
+      Preconditions.checkNotNull(jmxCredentials.getPassword());
+      this.properties.withJmxCredentials(jmxCredentials);
       return this;
     }
 

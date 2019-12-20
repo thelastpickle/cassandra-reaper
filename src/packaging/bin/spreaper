@@ -188,6 +188,8 @@ def _arguments_for_add_cluster(parser):
     """Arguments relevant for registering a cluster"""
     parser.add_argument("seed_host", help="the seed host of the Cassandra cluster to be registered")
     parser.add_argument("jmx_port", help="the JMX port of the Cassandra cluster to be registered", default="7199")
+    parser.add_argument("--jmx-username", help="JMX username in case authentication is activated", default=None)
+    parser.add_argument("--jmx-password", help="JMX password in case authentication is activated", default=None)
 
 
 def _argument_owner(parser):
@@ -686,7 +688,9 @@ class ReaperCLI(object):
             extra_arguments=_arguments_for_add_cluster
         )
         printq("# Registering Cassandra cluster with seed host: {0} and jmx port : {1}".format(args.seed_host, args.jmx_port))
-        cluster_data = reaper.post("cluster", seedHost=args.seed_host, jmxPort=args.jmx_port)
+        payload = {'seedHost':args.seed_host, 'jmxPort':args.jmx_port, 'jmxUsername':args.jmx_username, 'jmxPassword':args.jmx_password}
+        cluster_data = reaper.postFormData("cluster/auth", 
+                            payload=payload)
         printq("# Registration succeeded:")
         print json.dumps(json.loads(cluster_data), indent=2, sort_keys=True)
 

@@ -28,6 +28,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
@@ -174,7 +175,7 @@ public final class SegmentRunnerTest {
               return 1;
             });
 
-    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
           @Override
           public JmxProxy connectImpl(Node host) throws ReaperException {
             return jmx;
@@ -325,7 +326,7 @@ public final class SegmentRunnerTest {
               return 1;
             });
 
-    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
           @Override
           protected JmxProxy connectImpl(Node host) throws ReaperException {
             return jmx;
@@ -464,7 +465,7 @@ public final class SegmentRunnerTest {
               return 1;
             });
 
-    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
           @Override
           protected JmxProxy connectImpl(Node host) throws ReaperException {
             return jmx;
@@ -599,7 +600,7 @@ public final class SegmentRunnerTest {
               return 1;
             });
 
-    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
           @Override
           protected JmxProxy connectImpl(Node host) throws ReaperException {
             return jmx;
@@ -735,7 +736,7 @@ public final class SegmentRunnerTest {
               return 1;
             });
 
-    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
           @Override
           protected JmxProxy connectImpl(Node host) throws ReaperException {
             return jmx;
@@ -872,7 +873,7 @@ public final class SegmentRunnerTest {
               return 1;
             });
 
-    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
           @Override
           protected JmxProxy connectImpl(Node host) throws ReaperException {
             return jmx;
@@ -1010,7 +1011,7 @@ public final class SegmentRunnerTest {
               return 1;
             });
 
-    context.jmxConnectionFactory = new JmxConnectionFactory(context) {
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
           @Override
           protected JmxProxy connectImpl(Node host) throws ReaperException {
             return jmx;

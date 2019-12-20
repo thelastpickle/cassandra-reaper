@@ -40,6 +40,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -86,7 +87,12 @@ public final class SimpleReaperClient {
     WebTarget webTarget = client.target(uri);
 
     LOG.info("calling (" + httpMethod + ") Reaper in resource: " + webTarget.getUri());
-    if (params.isPresent()) {
+    Form form = new Form();
+    if ("POSTFORM".equalsIgnoreCase(httpMethod)) {
+      for (Map.Entry<String, String> entry : params.get().entrySet()) {
+        form.param(entry.getKey(), entry.getValue());
+      }
+    } else if (params.isPresent()) {
       for (Map.Entry<String, String> entry : params.get().entrySet()) {
         webTarget = webTarget.queryParam(entry.getKey(), entry.getValue());
       }
@@ -101,6 +107,8 @@ public final class SimpleReaperClient {
       response = invocationBuilder.head();
     } else if ("POST".equalsIgnoreCase(httpMethod)) {
       response = invocationBuilder.post(null);
+    } else if ("POSTFORM".equalsIgnoreCase(httpMethod)) {
+      response = invocationBuilder.post(Entity.form(form));
     } else if ("PUT".equalsIgnoreCase(httpMethod)) {
       response = invocationBuilder.put(Entity.entity("", MediaType.APPLICATION_JSON));
     } else if ("DELETE".equalsIgnoreCase(httpMethod)) {

@@ -115,6 +115,15 @@ autoScheduling:
 #    - type: log
 #      logger: metrics
 
+# Uncomment the following to enable encryption and the ability to store jmx credentials in
+#  the backend data source where SOME_SYSTEM_PROPERTY_KEY is a system property that can be
+#  used to lookup the shared symmetric key.
+#  ie: export SOME_SYSTEM_PROPERTY=YOUR_SHARED_SYMMETRIC_KEY
+
+#cryptograph:
+#  type: symmetric
+#  systemPropertySecret: SOME_SYSTEM_PROPERTY
+
 # Authentication is enabled by default
 accessControl:
   sessionTimeout: PT10M
