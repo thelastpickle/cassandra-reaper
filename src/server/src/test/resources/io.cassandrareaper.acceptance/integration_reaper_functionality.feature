@@ -24,7 +24,27 @@ Feature: Using Reaper
     And cluster "test" has keyspace "test_keyspace3" with tables "test_table1, test_table2"
 
   @sidecar
-  Scenario Outline: Registering a cluster
+  Scenario Outline: Registering a cluster with JMX auth
+    Given that reaper <version> is running
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper with authentication
+    Then reaper has the last added cluster in storage
+    When reaper is upgraded to latest
+    Then reaper has the last added cluster in storage
+    When the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
+  ${cucumber.upgrade-versions}
+ 
+  @sidecar
+  Scenario Outline: Registering a cluster with JMX auth but no encryption
+    Given that reaper <version> is running
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper with authentication and no encryption
+    Then reaper has no cluster in storage
+  ${cucumber.upgrade-versions}
+  
+  @sidecar
+  Scenario Outline: Registering a cluster without JMX auth
     Given that reaper <version> is running
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
