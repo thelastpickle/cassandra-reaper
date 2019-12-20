@@ -295,6 +295,86 @@ public final class BasicSteps {
     }
   }
 
+  @When("^an add-cluster request is made to reaper with authentication$")
+  public void an_add_cluster_request_is_made_to_reaper_with_authentication() throws Throwable {
+    synchronized (BasicSteps.class) {
+      System.setProperty("REAPER_ENCRYPTION_KEY", "reaper");
+      RUNNERS.parallelStream().forEach(runner -> {
+        Map<String, String> params = Maps.newHashMap();
+        params.put("seedHost", TestContext.SEED_HOST);
+        params.put("jmxPort", "7100");
+        params.put("jmxUsername", "cassandra");
+        params.put("jmxPassword", "cassandrapassword");
+        Response response = runner.callReaper("POSTFORM", "/cluster/auth", Optional.of(params));
+        int responseStatus = response.getStatus();
+        String responseEntity = response.readEntity(String.class);
+
+        Assertions.assertThat(
+                ImmutableList.of(
+                    Response.Status.CREATED.getStatusCode(),
+                    Response.Status.NO_CONTENT.getStatusCode(),
+                    Response.Status.OK.getStatusCode()))
+            .withFailMessage(responseEntity)
+            .contains(responseStatus);
+
+        // rest command requests should not response with bodies, follow the location to GET that
+        Assertions.assertThat(responseEntity).isEmpty();
+
+        // follow to new location (to GET resource)
+        response = runner.callReaper("GET", response.getLocation().toString(), Optional.empty());
+
+        String responseData = response.readEntity(String.class);
+        Assertions.assertThat(responseData).isNotBlank();
+        Map<String, Object> cluster = SimpleReaperClient.parseClusterStatusJSON(responseData);
+
+        if (Response.Status.CREATED.getStatusCode() == responseStatus
+            || ((AppContext) runner.runnerInstance.getContext()).config.isInSidecarMode()) {
+          TestContext.TEST_CLUSTER = (String) cluster.get("name");
+        }
+      });
+
+      callAndExpect(
+          "GET",
+          "/cluster/" + TestContext.TEST_CLUSTER,
+          Optional.<Map<String, String>>empty(),
+          Optional.<String>empty(),
+          Response.Status.OK);
+    }
+  }
+
+  @When("^an add-cluster request is made to reaper with authentication and no encryption$")
+  public void an_add_cluster_request_is_made_to_reaper_with_authentication_and_no_encryption() throws Throwable {
+    synchronized (BasicSteps.class) {
+      System.clearProperty("REAPER_ENCRYPTION_KEY");
+      RUNNERS.parallelStream().forEach(runner -> {
+        Map<String, String> params = Maps.newHashMap();
+        params.put("seedHost", TestContext.SEED_HOST);
+        params.put("jmxPort", "7100");
+        params.put("jmxUsername", "cassandra");
+        params.put("jmxPassword", "cassandrapassword");
+        Response response = runner.callReaper("POSTFORM", "/cluster/auth", Optional.of(params));
+        int responseStatus = response.getStatus();
+        String responseEntity = response.readEntity(String.class);
+
+        // This should fail because there's no encryption key in the system env variables
+        Assertions.assertThat(
+                ImmutableList.of(
+                    Response.Status.BAD_REQUEST.getStatusCode(),
+                    Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()))
+            .withFailMessage(responseEntity)
+            .contains(responseStatus);
+
+      });
+
+      callAndExpect(
+          "GET",
+          "/cluster/" + TestContext.TEST_CLUSTER,
+          Optional.<Map<String, String>>empty(),
+          Optional.<String>empty(),
+          Response.Status.NOT_FOUND);
+    }
+  }
+
   @Then("^reaper has a cluster called \"([^\"]*)\" in storage$")
   public void reaper_has_a_cluster_called_in_storage(String clusterName) throws Throwable {
     synchronized (BasicSteps.class) {

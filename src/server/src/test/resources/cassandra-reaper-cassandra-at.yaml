@@ -93,3 +93,7 @@ cassandra:
         coreConnections: 0
         maxConnections: 0
         maxRequestsPerConnection: 0
+
+cryptograph:
+  type: symmetric
+  systemPropertySecret: REAPER_ENCRYPTION_KEY

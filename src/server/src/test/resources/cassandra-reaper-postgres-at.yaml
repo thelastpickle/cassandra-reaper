@@ -57,6 +57,9 @@ jmxCredentials:
     username: cassandra
     password: cassandrapassword
 
+cryptograph:
+  type: symmetric
+  systemPropertySecret: REAPER_ENCRYPTION_KEY
 # database section will be ignored if storageType is set to "memory"
 postgres:
   driverClass: org.postgresql.Driver

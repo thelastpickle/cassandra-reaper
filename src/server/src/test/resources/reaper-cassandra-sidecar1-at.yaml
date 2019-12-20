@@ -96,3 +96,7 @@ metrics:
   reporters:
     - type: csv
       file: target/dropwizard-metrics
+
+cryptograph:
+  type: symmetric
+  systemPropertySecret: REAPER_ENCRYPTION_KEY
