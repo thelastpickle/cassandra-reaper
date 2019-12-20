@@ -21,6 +21,8 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Table;
+import io.cassandrareaper.crypto.Cryptograph;
+import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.service.TestRepairConfiguration;
@@ -42,14 +44,17 @@ import javax.ws.rs.core.UriInfo;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -62,6 +67,8 @@ public final class ClusterResourceTest {
   static final URI SAMPLE_URI = URI.create("http://reaper_host/cluster/");
   static final String I_DO_EXIST = "i_do_exist";
   static final String I_DONT_EXIST = "i_dont_exist";
+  static final String JMX_USERNAME = "foo";
+  static final String JMX_PASSWORD = "bar";
 
   private static final String STCS = "SizeTieredCompactionStrategy";
   private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
@@ -70,10 +77,13 @@ public final class ClusterResourceTest {
   public void testAddCluster() throws Exception {
     final MockObjects mocks = initMocks();
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, mocks.cryptograph, EXECUTOR);
 
     Response response = clusterResource
-        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
+        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST),
+                Optional.of(Cluster.DEFAULT_JMX_PORT),
+                Optional.of(JMX_USERNAME),
+                Optional.of(JMX_PASSWORD));
 
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.CREATED_201);
     assertEquals(1, mocks.context.storage.getClusters().size());
@@ -84,6 +94,9 @@ public final class ClusterResourceTest {
     assertEquals(CLUSTER_NAME, cluster.getName());
     assertEquals(1, cluster.getSeedHosts().size());
     assertEquals(SEED_HOST, cluster.getSeedHosts().iterator().next());
+    assertTrue(cluster.getJmxCredentials().isPresent());
+    assertEquals(JMX_USERNAME, cluster.getJmxCredentials().get().getUsername());
+    assertNotEquals(JMX_PASSWORD, cluster.getJmxCredentials().get().getPassword());
   }
 
   @Test
@@ -100,10 +113,13 @@ public final class ClusterResourceTest {
 
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, mocks.cryptograph, EXECUTOR);
 
     Response response = clusterResource
-        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
+        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST),
+                Optional.of(Cluster.DEFAULT_JMX_PORT),
+                Optional.of(JMX_USERNAME),
+                Optional.of(JMX_PASSWORD));
 
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NO_CONTENT_204);
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
@@ -131,13 +147,15 @@ public final class ClusterResourceTest {
 
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, mocks.cryptograph, EXECUTOR);
 
     Response response = clusterResource.addOrUpdateCluster(
             mocks.uriInfo,
             CLUSTER_NAME,
             Optional.of(SEED_HOST),
-            Optional.of(Cluster.DEFAULT_JMX_PORT));
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
 
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NO_CONTENT_204);
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
@@ -152,11 +170,26 @@ public final class ClusterResourceTest {
   }
 
   @Test
+  public void testFailAddingJmxCredentialsWithoutEncryptionConfigured() throws Exception {
+    final MockObjects mocks = initMocks();
+
+    ClusterResource clusterResource = new ClusterResource(mocks.context, new NoopCrypotograph(), EXECUTOR);
+
+    Response response = clusterResource.addOrUpdateCluster(mocks.uriInfo,
+                    Optional.of(SEED_HOST),
+                    Optional.of(Cluster.DEFAULT_JMX_PORT),
+                    Optional.of(JMX_USERNAME),
+                    Optional.of(JMX_PASSWORD));
+
+    assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+  }
+
+  @Test
   public void testGetNonExistingCluster() throws ReaperException {
     final MockObjects mocks = initMocks();
     when(mocks.jmxProxy.getLiveNodes()).thenReturn(Arrays.asList(SEED_HOST));
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, mocks.cryptograph, EXECUTOR);
     Response response = clusterResource.getCluster(I_DONT_EXIST, Optional.<Integer>empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND_404);
   }
@@ -175,7 +208,7 @@ public final class ClusterResourceTest {
 
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, mocks.cryptograph, EXECUTOR);
     Response response = clusterResource.getCluster(I_DO_EXIST, Optional.<Integer>empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
   }
@@ -192,7 +225,7 @@ public final class ClusterResourceTest {
 
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, mocks.cryptograph, EXECUTOR);
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -212,7 +245,7 @@ public final class ClusterResourceTest {
 
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, mocks.cryptograph, EXECUTOR);
     Response response = clusterResource.getClusterList(Optional.of(SEED_HOST));
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -240,7 +273,7 @@ public final class ClusterResourceTest {
 
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, mocks.cryptograph, EXECUTOR);
     Response response = clusterResource.getClusterList(Optional.of(SEED_HOST));
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -268,7 +301,7 @@ public final class ClusterResourceTest {
 
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, mocks.cryptograph, EXECUTOR);
     Response response = clusterResource.getClusterList(Optional.of("host2"));
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -296,7 +329,7 @@ public final class ClusterResourceTest {
 
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, mocks.cryptograph, EXECUTOR);
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -324,7 +357,7 @@ public final class ClusterResourceTest {
 
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, mocks.cryptograph, EXECUTOR);
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -352,7 +385,7 @@ public final class ClusterResourceTest {
 
     mocks.context.storage.addCluster(cluster);
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, EXECUTOR);
+    ClusterResource clusterResource = new ClusterResource(mocks.context, mocks.cryptograph, EXECUTOR);
     Response response = clusterResource.getClusterList(Optional.empty());
     Assertions.assertThat(response.getStatus()).isEqualTo(HttpStatus.OK_200);
     List<String> clusterNames = (List<String>) response.getEntity();
@@ -397,12 +430,19 @@ public final class ClusterResourceTest {
   public void testModifyClusterSeeds() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
-    clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
+    ClusterResource clusterResource = new ClusterResource(
+            mocks.context,
+            mocks.cryptograph,
+            Executors.newFixedThreadPool(2));
+    clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
     doReturn(Arrays.asList(SEED_HOST + 1, SEED_HOST)).when(mocks.jmxProxy).getLiveNodes();
 
     Response response = clusterResource
-        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST + 1), Optional.of(Cluster.DEFAULT_JMX_PORT));
+        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST + 1),
+                Optional.of(Cluster.DEFAULT_JMX_PORT),
+                Optional.of(JMX_USERNAME),
+                Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.OK_200, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + CLUSTER_NAME));
@@ -416,7 +456,9 @@ public final class ClusterResourceTest {
             mocks.uriInfo,
             CLUSTER_NAME,
             Optional.of(SEED_HOST + 1),
-            Optional.of(Cluster.DEFAULT_JMX_PORT));
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
@@ -426,15 +468,21 @@ public final class ClusterResourceTest {
   public void testModifyClusterSeedsWithClusterName() throws ReaperException {
     final MockObjects mocks = initMocks();
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
-    clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
+    ClusterResource clusterResource = new ClusterResource(
+            mocks.context,
+            mocks.cryptograph,
+            Executors.newFixedThreadPool(2));
+    clusterResource.addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
     doReturn(Arrays.asList(SEED_HOST + 1, SEED_HOST)).when(mocks.jmxProxy).getLiveNodes();
 
     Response response = clusterResource.addOrUpdateCluster(
             mocks.uriInfo,
             CLUSTER_NAME,
             Optional.of(SEED_HOST + 1),
-            Optional.of(Cluster.DEFAULT_JMX_PORT));
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.OK_200, response.getStatus());
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + CLUSTER_NAME));
@@ -448,7 +496,9 @@ public final class ClusterResourceTest {
             mocks.uriInfo,
             CLUSTER_NAME,
             Optional.of(SEED_HOST + 1),
-            Optional.of(Cluster.DEFAULT_JMX_PORT));
+            Optional.of(Cluster.DEFAULT_JMX_PORT),
+            Optional.of(JMX_USERNAME),
+            Optional.of(JMX_PASSWORD));
     assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
 
     assertTrue(response.getLocation().toString().endsWith("/cluster/" + cluster.getName()));
@@ -471,10 +521,14 @@ public final class ClusterResourceTest {
                 .build())
         .build();
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
+    ClusterResource clusterResource = new ClusterResource(
+            mocks.context,
+            mocks.cryptograph,
+            Executors.newFixedThreadPool(2));
 
     Response response = clusterResource
-        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
+        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT),
+                Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
     assertEquals(1, mocks.context.storage.getAllRepairSchedules().size());
@@ -498,10 +552,14 @@ public final class ClusterResourceTest {
                 .build())
         .build();
 
-    ClusterResource clusterResource = new ClusterResource(mocks.context, Executors.newFixedThreadPool(2));
+    ClusterResource clusterResource = new ClusterResource(
+            mocks.context,
+            mocks.cryptograph,
+            Executors.newFixedThreadPool(2));
 
     Response response = clusterResource
-        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT));
+        .addOrUpdateCluster(mocks.uriInfo, Optional.of(SEED_HOST), Optional.of(Cluster.DEFAULT_JMX_PORT),
+                Optional.of(JMX_USERNAME), Optional.of(JMX_PASSWORD));
 
     assertEquals(HttpStatus.CREATED_201, response.getStatus());
     assertEquals(1, mocks.context.storage.getAllRepairSchedules().size());
@@ -561,18 +619,23 @@ public final class ClusterResourceTest {
 
     when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(jmxProxy);
 
-    return new MockObjects(context, uriInfo, jmxProxy);
+    Cryptograph cryptograph = mock(Cryptograph.class);
+    when(cryptograph.encrypt(any(String.class))).thenReturn(RandomStringUtils.randomNumeric(10));
+
+    return new MockObjects(context, cryptograph, uriInfo, jmxProxy);
   }
 
   private static final class MockObjects {
 
     final AppContext context;
+    final Cryptograph cryptograph;
     final UriInfo uriInfo;
     final JmxProxy jmxProxy;
 
-    MockObjects(AppContext context, UriInfo uriInfo, JmxProxy jmxProxy) {
+    MockObjects(AppContext context, Cryptograph cryptograph, UriInfo uriInfo, JmxProxy jmxProxy) {
       super();
       this.context = context;
+      this.cryptograph = cryptograph;
       this.uriInfo = uriInfo;
       this.jmxProxy = jmxProxy;
     }

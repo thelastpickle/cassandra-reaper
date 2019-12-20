@@ -17,6 +17,8 @@
 
 package io.cassandrareaper;
 
+import io.cassandrareaper.core.JmxCredentials;
+
 import java.time.Duration;
 import java.util.Map;
 
@@ -33,7 +35,7 @@ public final class ReaperApplicationConfigurationBuilder {
   private String storageType;
   private Boolean enableCrossOrigin;
   private Map<String, Integer> jmxPorts;
-  private ReaperApplicationConfiguration.JmxCredentials jmxAuth;
+  private JmxCredentials jmxAuth;
   private ReaperApplicationConfiguration.AutoSchedulingConfiguration autoRepairScheduling;
 
   private ReaperApplicationConfigurationBuilder() {
@@ -88,7 +90,7 @@ public final class ReaperApplicationConfigurationBuilder {
     return this;
   }
 
-  public ReaperApplicationConfigurationBuilder withJmxAuth(ReaperApplicationConfiguration.JmxCredentials jmxAuth) {
+  public ReaperApplicationConfigurationBuilder withJmxAuth(JmxCredentials jmxAuth) {
     this.jmxAuth = jmxAuth;
     return this;
   }

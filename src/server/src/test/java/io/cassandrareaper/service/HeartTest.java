@@ -22,6 +22,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.NodeMetrics;
+import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.jmx.HostConnectionCounters;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
@@ -132,7 +133,7 @@ public final class HeartTest {
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(ReaperApplicationConfiguration.DatacenterAvailability.EACH);
     context.storage = Mockito.mock(CassandraStorage.class);
-    context.jmxConnectionFactory = new JmxConnectionFactory(context);
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph());
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
@@ -163,7 +164,7 @@ public final class HeartTest {
     context.repairManager.repairRunners.put(UUID.randomUUID(), Mockito.mock(RepairRunner.class));
 
     context.storage = Mockito.mock(CassandraStorage.class);
-    context.jmxConnectionFactory = new JmxConnectionFactory(context);
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph());
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
