@@ -18,9 +18,9 @@
 package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.AppContext;
-import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
 
 import java.util.ArrayList;
@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
@@ -89,16 +88,11 @@ public class JmxConnectionFactory {
       LOG.debug("Connecting to {} with custom port", host);
     }
 
-    String username = null;
-    String password = null;
-    if (getJmxCredentialsForCluster(node.getClusterName()).isPresent()) {
-      username = getJmxCredentialsForCluster(node.getClusterName()).get().getUsername();
-      password = getJmxCredentialsForCluster(node.getClusterName()).get().getPassword();
-    }
+    JmxCredentials jmxCredentials = getJmxCredentialsForCluster(node);
 
     try {
       JmxConnectionProvider provider = new JmxConnectionProvider(
-              host, username, password, context.config.getJmxConnectionTimeoutInSeconds(), this.metricRegistry);
+              host, jmxCredentials, context.config.getJmxConnectionTimeoutInSeconds(), this.metricRegistry);
       JMX_CONNECTIONS.computeIfAbsent(host, provider::apply);
       JmxProxy proxy = JMX_CONNECTIONS.get(host);
       if (!proxy.isConnectionAlive()) {
@@ -171,37 +165,37 @@ public class JmxConnectionFactory {
     return accessibleDatacenters;
   }
 
-  public Optional<JmxCredentials> getJmxCredentialsForCluster(String clusterName) {
-    Optional<JmxCredentials> jmxCreds = Optional.ofNullable(jmxAuth);
-    if (jmxCredentials != null && jmxCredentials.containsKey(clusterName)) {
-      jmxCreds = Optional.of(jmxCredentials.get(clusterName));
+  public JmxCredentials getJmxCredentialsForCluster(Node node) {
+    JmxCredentials nodeCredentials = node.getJmxCredentials().orElse(jmxAuth);
+
+    if (nodeCredentials == null && jmxCredentials != null) {
+
+      if (jmxCredentials.containsKey(node.getClusterName())) {
+        nodeCredentials = jmxCredentials.get(node.getClusterName());
+      } else if (jmxCredentials.containsKey(Cluster.toSymbolicName(node.getClusterName()))) {
+        // As clusters get stored in the database with their "symbolic name" we have to look for that too
+        nodeCredentials = jmxCredentials.get(Cluster.toSymbolicName(node.getClusterName()));
+      }
+
     }
 
-    // As clusters get stored in the database with their "symbolic name" we have to look for that too
-    if (jmxCredentials != null && jmxCredentials.containsKey(Cluster.toSymbolicName(clusterName))) {
-      jmxCreds = Optional.of(jmxCredentials.get(Cluster.toSymbolicName(clusterName)));
-    }
-
-    return jmxCreds;
+    return nodeCredentials == null ? JmxCredentials.builder().build() : nodeCredentials;
   }
 
   private class JmxConnectionProvider implements Function<String, JmxProxy> {
 
     private final String host;
-    private final String username;
-    private final String password;
+    private final JmxCredentials jmxCredentials;
     private final int connectionTimeout;
     private final MetricRegistry metricRegistry;
 
     JmxConnectionProvider(
         String host,
-        String username,
-        String password,
+        JmxCredentials jmxCredentials,
         int connectionTimeout,
         MetricRegistry metricRegistry) {
       this.host = host;
-      this.username = username;
-      this.password = password;
+      this.jmxCredentials = jmxCredentials;
       this.connectionTimeout = connectionTimeout;
       this.metricRegistry = metricRegistry;
     }
@@ -211,7 +205,7 @@ public class JmxConnectionFactory {
       Preconditions.checkArgument(host.equals(this.host));
       try {
         JmxProxy proxy = JmxProxyImpl.connect(
-                host, username, password, addressTranslator, connectionTimeout, metricRegistry);
+                host, jmxCredentials, addressTranslator, connectionTimeout, metricRegistry);
         if (hostConnectionCounters.getSuccessfulConnections(host) <= 0) {
           accessibleDatacenters.add(EndpointSnitchInfoProxy.create(proxy).getDataCenter());
         }

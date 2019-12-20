@@ -18,8 +18,8 @@
 package io.cassandrareaper;
 
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
-import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
@@ -350,7 +350,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
   private boolean selfRegisterClusterForSidecar(ClusterResource addClusterResource, String seedHost)
       throws ReaperException {
-    final Optional<Cluster> cluster = addClusterResource.findClusterWithSeedHost(seedHost, Optional.empty());
+    final Optional<Cluster> cluster = addClusterResource.findClusterWithSeedHost(seedHost, Optional.empty(),
+            Optional.empty());
     if (!cluster.isPresent()) {
       return false;
     }

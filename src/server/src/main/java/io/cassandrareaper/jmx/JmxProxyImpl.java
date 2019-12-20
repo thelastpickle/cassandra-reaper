@@ -19,6 +19,7 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.service.RingRange;
 
@@ -148,12 +149,11 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   /**
-   * @see #connect(String, int, String, String, EC2MultiRegionAddressTranslator, int, MetricRegistry)
+   * @see #connect(String, int, JmxCredentials, EC2MultiRegionAddressTranslator, int, MetricRegistry)
    */
   static JmxProxy connect(
       String host,
-      String username,
-      String password,
+      JmxCredentials jmxCredentials,
       final EC2MultiRegionAddressTranslator addressTranslator,
       int connectionTimeout,
       MetricRegistry metricRegistry)
@@ -168,8 +168,7 @@ final class JmxProxyImpl implements JmxProxy {
     return connect(
         hostAndPort.getHost(),
         hostAndPort.getPortOrDefault(Cluster.DEFAULT_JMX_PORT),
-        username,
-        password,
+        jmxCredentials,
         addressTranslator,
         connectionTimeout,
         metricRegistry);
@@ -178,20 +177,16 @@ final class JmxProxyImpl implements JmxProxy {
   /**
    * Connect to JMX interface on the given host and port.
    *
-   * @param handler Implementation of {@link RepairStatusHandler} to process incoming notifications
-   *     of repair events.
    * @param originalHost hostname or ip address of Cassandra node
    * @param port port number to use for JMX connection
-   * @param username username to use for JMX authentication
-   * @param password password to use for JMX authentication
+   * @param jmxCredentials credentials to use for JMX authentication
    * @param addressTranslator if EC2MultiRegionAddressTranslator isn't null it will be used to
    *     translate addresses
    */
   private static JmxProxy connect(
       String originalHost,
       int port,
-      String username,
-      String password,
+      JmxCredentials jmxCredentials,
       final EC2MultiRegionAddressTranslator addressTranslator,
       int connectionTimeout,
       MetricRegistry metricRegistry) throws ReaperException, InterruptedException {
@@ -213,8 +208,8 @@ final class JmxProxyImpl implements JmxProxy {
     }
     try {
       final Map<String, Object> env = new HashMap<>();
-      if (username != null && password != null) {
-        String[] creds = {username, password};
+      if (jmxCredentials != null && jmxCredentials.getUsername() != null && jmxCredentials.getPassword() != null) {
+        String[] creds = {jmxCredentials.getUsername(), jmxCredentials.getPassword()};
         env.put(JMXConnector.CREDENTIALS, creds);
       }
       env.put("com.sun.jndi.rmi.factory.socket", getRmiClientSocketFactory());

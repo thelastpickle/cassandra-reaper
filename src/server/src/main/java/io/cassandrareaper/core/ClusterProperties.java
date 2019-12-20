@@ -23,13 +23,25 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 @JsonDeserialize(builder = ClusterProperties.Builder.class)
 public final class ClusterProperties {
   private final int jmxPort;
+  private String jmxUsername;
+  private String jmxPassword;
 
   private ClusterProperties(Builder builder) {
     this.jmxPort = builder.jmxPort;
+    this.jmxUsername = builder.jmxUsername;
+    this.jmxPassword = builder.jmxPassword;
   }
 
   public int getJmxPort() {
     return jmxPort;
+  }
+
+  public String getJmxUsername() {
+    return jmxUsername;
+  }
+
+  public String getJmxPassword() {
+    return jmxPassword;
   }
 
   public static Builder builder() {
@@ -39,11 +51,23 @@ public final class ClusterProperties {
   @JsonPOJOBuilder(buildMethodName = "build", withPrefix = "with")
   public static final class Builder {
     private int jmxPort;
+    private String jmxUsername;
+    private String jmxPassword;
 
     private Builder() {}
 
     public Builder withJmxPort(int jmxPort) {
       this.jmxPort = jmxPort;
+      return this;
+    }
+
+    public Builder withJmxUsername(String jmxUsername) {
+      this.jmxUsername = jmxUsername;
+      return this;
+    }
+
+    public Builder withJmxPassword(String jmxPassword) {
+      this.jmxPassword = jmxPassword;
       return this;
     }
 

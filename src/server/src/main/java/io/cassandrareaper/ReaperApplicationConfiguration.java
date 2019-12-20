@@ -17,6 +17,8 @@
 
 package io.cassandrareaper;
 
+import io.cassandrareaper.core.JmxCredentials;
+
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -468,23 +470,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setHttpClientConfiguration(HttpClientConfiguration httpClient) {
     this.httpClient = httpClient;
-  }
-
-  public static final class JmxCredentials {
-
-    @JsonProperty
-    private String username;
-
-    @JsonProperty
-    private String password;
-
-    public String getUsername() {
-      return username;
-    }
-
-    public String getPassword() {
-      return password;
-    }
   }
 
   public static final class AutoSchedulingConfiguration {

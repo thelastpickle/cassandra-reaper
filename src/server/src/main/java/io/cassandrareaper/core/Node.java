@@ -57,6 +57,10 @@ public final class Node {
     return cluster.isPresent() ? cluster.get().getJmxPort() : Cluster.DEFAULT_JMX_PORT;
   }
 
+  public Optional<JmxCredentials> getJmxCredentials() {
+    return cluster.isPresent() ? cluster.get().getJmxCredentials() : Optional.empty();
+  }
+
   public String toString() {
     return hostname + (cluster.isPresent() ? "@" + cluster.get().getName() : "");
   }
