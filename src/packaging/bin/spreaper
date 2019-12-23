@@ -524,7 +524,7 @@ class ReaperCLI(object):
         printq("# Listing repair runs")
         endpoint = 'repair_run'
         if args.state is not None:
-            endpoint = '{0}?{1}'.format(endpoint, urllib.urlencode({'state': args.state, 'cluster': args.cluster, 'keyspace': args.keyspace}))
+            endpoint = '{0}?{1}'.format(endpoint, urllib.urlencode({'state': args.state, 'cluster_name': args.cluster, 'keyspace_name': args.keyspace}))
         repair_runs = json.loads(reaper.get(endpoint))
         printq("# Found {0} repair runs".format(len(repair_runs)))
         print json.dumps(repair_runs, indent=2, sort_keys=True)
