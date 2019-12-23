@@ -228,7 +228,7 @@ public interface IStoragePostgreSql {
       = "SELECT repair_schedule.id, owner, cluster_name, keyspace_name, column_families, state, "
           + "creation_time, next_activation, pause_time, intensity, segment_count, "
           + "repair_parallelism, days_between, incremental_repair, nodes, "
-          + "datacenters, blacklisted_tables, segment_count_per_node, repair_thread_count "
+          + "datacenters, blacklisted_tables, segment_count_per_node, repair_thread_count, repair_unit_id "
           + "FROM repair_schedule "
           + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
           + "WHERE cluster_name = :clusterName";
