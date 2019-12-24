@@ -463,7 +463,7 @@
 					<repository>thelastpickle/cassandra-reaper</repository>
 					<contextDirectory>.</contextDirectory>
 					<dockerfile>src/main/docker/Dockerfile</dockerfile>
-					<tag>${project.version}</tag>
+					<tag>latest</tag>
 					<buildArgs>
 						<SHADED_JAR>target/cassandra-reaper-${project.version}.jar</SHADED_JAR>
 					</buildArgs>
