@@ -100,6 +100,7 @@ case "${TEST_TYPE}" in
         MAVEN_OPTS="-Xmx384m" mvn -B surefire:test -Dtest=ReaperCassandraIT
         ;;
     "docker")
+        mvn -B package -DskipTests
         docker-compose -f ./src/packaging/docker-build/docker-compose.yml build
         docker-compose -f ./src/packaging/docker-build/docker-compose.yml run build
 
