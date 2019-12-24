@@ -131,7 +131,7 @@ services:
       - ./ssl-stores/generic-server-truststore.jks:/etc/ssl/generic-server-truststore.jks
 
   reaper-common:
-    image: cassandra-reaper:latest
+    image: thelastpickle/cassandra-reaper:latest
     env_file:
       - ./docker-services/reaper/reaper.env
     ports:
