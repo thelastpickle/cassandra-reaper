@@ -127,7 +127,7 @@ case "${TEST_TYPE}" in
             sleep 30
             docker ps -a
 
-            src/packaging/bin/spreaper add-cluster $(docker-compose -f ./src/packaging/docker-compose.yml run nodetool${docker_env} status | grep UN | tr -s ' ' | cut -d' ' -f2)
+            src/packaging/bin/spreaper add-cluster $(docker-compose -f ./src/packaging/docker-compose.yml run nodetool${docker_env} status | grep UN | tr -s ' ' | cut -d' ' -f2) 7199
             sleep 5
             docker-compose -f ./src/packaging/docker-compose.yml down
         done
