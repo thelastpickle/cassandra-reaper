@@ -126,7 +126,9 @@ case "${TEST_TYPE}" in
             docker-compose -f ./src/packaging/docker-compose.yml up -d reaper${docker_env}
             sleep 30
             docker ps -a
-
+            mkdir ~/.reaper
+            echo "admin" > ~/.reaper/credentials
+            src/packaging/bin/spreaper login admin
             src/packaging/bin/spreaper add-cluster $(docker-compose -f ./src/packaging/docker-compose.yml run nodetool${docker_env} status | grep UN | tr -s ' ' | cut -d' ' -f2) 7199
             sleep 5
             docker-compose -f ./src/packaging/docker-compose.yml down
