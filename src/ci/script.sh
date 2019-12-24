@@ -107,7 +107,7 @@ case "${TEST_TYPE}" in
         # Need to change the permissions after building the packages using the Docker image because they
         # are set to root and if left unchanged they will cause Maven to fail
         sudo chown -R travis:travis ./src/server/target/
-        mvn -B -f src/server/pom.xml docker:build -Ddocker.directory=src/server/src/main/docker -DskipTests
+        mvn -B -f src/server/pom.xml dockerfile:build -DskipTests
         docker images
 
         # Generation of SSL stores - this can be done at any point in time prior to running setting up the SSL environment

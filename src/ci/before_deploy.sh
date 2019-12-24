@@ -50,7 +50,7 @@ then
     export GIT_HASH=$(git log --pretty=format:'%h' -n 1)
     docker login -u $DOCKER_USER -p $DOCKER_PASS
     export REPO=thelastpickle/cassandra-reaper
-    mvn -B -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
+    mvn -B dockerfile:build -DskipTests
     docker tag cassandra-reaper:latest $REPO:master
     docker push $REPO:master
     docker tag cassandra-reaper:latest $REPO:$GIT_HASH
@@ -85,7 +85,7 @@ then
     sudo mv cassandra-reaper-${TRAVIS_TAG}-release.tar.gz src/packages/
     docker login -u $DOCKER_USER -p $DOCKER_PASS
     export REPO=thelastpickle/cassandra-reaper
-    mvn -B -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
+    mvn -B dockerfile:build -DskipTests
     docker tag cassandra-reaper:latest $REPO:latest
     docker push $REPO:latest
     docker tag cassandra-reaper:latest $REPO:$TRAVIS_TAG

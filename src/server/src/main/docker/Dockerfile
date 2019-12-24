@@ -71,12 +71,12 @@ ENV REAPER_SEGMENT_COUNT=200 \
     REAPER_SHIRO_INI="" \
     JAVA_OPTS=""
 
-ADD cassandra-reaper.yml /etc/cassandra-reaper.yml
-ADD shiro.ini /etc/shiro.ini
-ADD entrypoint.sh /usr/local/bin/entrypoint.sh
-ADD configure-persistence.sh /usr/local/bin/configure-persistence.sh
-ADD configure-metrics.sh /usr/local/bin/configure-metrics.sh
-ADD configure-webui-authentication.sh /usr/local/bin/configure-webui-authentication.sh
+ADD src/main/docker/cassandra-reaper.yml /etc/cassandra-reaper.yml
+ADD src/main/docker/shiro.ini /etc/shiro.ini
+ADD src/main/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+ADD src/main/docker/configure-persistence.sh /usr/local/bin/configure-persistence.sh
+ADD src/main/docker/configure-metrics.sh /usr/local/bin/configure-metrics.sh
+ADD src/main/docker/configure-webui-authentication.sh /usr/local/bin/configure-webui-authentication.sh
 ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
 
 # get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper.yml: Interrupted system call` unknown error

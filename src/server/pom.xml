@@ -448,21 +448,32 @@
             </plugin>
             <plugin>
                 <groupId>com.spotify</groupId>
-                <artifactId>docker-maven-plugin</artifactId>
-                <configuration>
-                    <imageName>cassandra-reaper</imageName>
-                    <dockerDirectory>${docker.directory}</dockerDirectory>
-                    <buildArgs>
-                        <SHADED_JAR>cassandra-reaper-${project.version}.jar</SHADED_JAR>
-                    </buildArgs>
-                    <resources>
+                <artifactId>dockerfile-maven-plugin</artifactId>
+                <version>1.4.13</version>
+				<executions>
+					<execution>
+						<id>default</id>
+						<goals>
+							<goal>build</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<skip>false</skip>
+					<repository>thelastpickle/cassandra-reaper</repository>
+					<contextDirectory>.</contextDirectory>
+					<dockerfile>src/main/docker/Dockerfile</dockerfile>
+					<tag>${project.version}</tag>
+					<buildArgs>
+						<SHADED_JAR>target/cassandra-reaper-${project.version}.jar</SHADED_JAR>
+					</buildArgs>
+					<resources>
                         <resource>
-                            <targetPath>/</targetPath>
                             <directory>${project.build.directory}</directory>
                             <include>cassandra-reaper-${project.version}.jar</include>
                         </resource>
                     </resources>
-                </configuration>
+				</configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
