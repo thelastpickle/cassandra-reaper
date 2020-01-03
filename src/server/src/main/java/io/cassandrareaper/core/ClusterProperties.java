@@ -23,8 +23,8 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 @JsonDeserialize(builder = ClusterProperties.Builder.class)
 public final class ClusterProperties {
   private final int jmxPort;
-  private String jmxUsername;
-  private String jmxPassword;
+  private final String jmxUsername;
+  private final String jmxPassword;
 
   private ClusterProperties(Builder builder) {
     this.jmxPort = builder.jmxPort;

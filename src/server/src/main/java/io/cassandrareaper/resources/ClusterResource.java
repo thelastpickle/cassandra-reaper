@@ -114,10 +114,10 @@ public final class ClusterResource {
       String jmxUsername = "";
       boolean jmxPasswordIsSet = false;
 
-      JmxCredentials jmxCredentials = context.jmxConnectionFactory.getJmxCredentialsForCluster(node);
-      if (jmxCredentials != null) {
-        jmxUsername = StringUtils.trimToEmpty(jmxCredentials.getUsername());
-        jmxPasswordIsSet = !StringUtils.isEmpty(jmxCredentials.getPassword());
+      Optional<JmxCredentials> jmxCredentials = context.jmxConnectionFactory.getJmxCredentialsForCluster(node);
+      if (jmxCredentials.isPresent()) {
+        jmxUsername = StringUtils.trimToEmpty(jmxCredentials.get().getUsername());
+        jmxPasswordIsSet = !StringUtils.isEmpty(jmxCredentials.get().getPassword());
       }
 
       ClusterStatus clusterStatus = new ClusterStatus(

@@ -18,6 +18,7 @@
 package io.cassandrareaper;
 
 import io.cassandrareaper.core.JmxCredentials;
+import io.cassandrareaper.crypto.CryptographFactory;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -162,6 +163,10 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Boolean enableConcurrentMigrations;
 
   private HttpClientConfiguration httpClient = new HttpClientConfiguration();
+
+  @JsonProperty
+  @Nullable
+  private CryptographFactory cryptographFactory;
 
   public int getSegmentCount() {
     return segmentCount == null ? 0 : segmentCount;
@@ -470,6 +475,15 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setHttpClientConfiguration(HttpClientConfiguration httpClient) {
     this.httpClient = httpClient;
+  }
+
+  @Nullable
+  public CryptographFactory getCryptographFactory() {
+    return cryptographFactory;
+  }
+
+  public void setCryptographFactory(@Nullable CryptographFactory cryptographFactory) {
+    this.cryptographFactory = cryptographFactory;
   }
 
   public static final class AutoSchedulingConfiguration {

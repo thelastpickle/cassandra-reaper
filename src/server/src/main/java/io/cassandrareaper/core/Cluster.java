@@ -197,7 +197,7 @@ public final class Cluster implements Comparable<Cluster> {
     public Builder withJmxCredentials(JmxCredentials jmxCredentials) {
       Preconditions.checkNotNull(jmxCredentials);
       Preconditions.checkNotNull(jmxCredentials.getUsername());
-      Preconditions.checkNotNull(jmxCredentials.getUsername());
+      Preconditions.checkNotNull(jmxCredentials.getPassword());
       this.properties.withJmxUsername(jmxCredentials.getUsername());
       this.properties.withJmxPassword(jmxCredentials.getPassword());
       return this;

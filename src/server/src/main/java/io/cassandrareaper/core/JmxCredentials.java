@@ -58,13 +58,13 @@ public final class JmxCredentials {
     }
 
     public Builder withUsername(String username) {
-      Preconditions.checkState(null == this.username);
+      Preconditions.checkNotNull(username);
       this.username = username;
       return this;
     }
 
     public Builder withPassword(String password) {
-      Preconditions.checkState(null == this.password);
+      Preconditions.checkNotNull(password);
       this.password = password;
       return this;
     }

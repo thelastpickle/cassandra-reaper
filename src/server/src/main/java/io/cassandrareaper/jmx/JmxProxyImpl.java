@@ -149,11 +149,11 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   /**
-   * @see #connect(String, int, JmxCredentials, EC2MultiRegionAddressTranslator, int, MetricRegistry)
+   * @see #connect(String, int, Optional, EC2MultiRegionAddressTranslator, int, MetricRegistry)
    */
   static JmxProxy connect(
       String host,
-      JmxCredentials jmxCredentials,
+      Optional<JmxCredentials> jmxCredentials,
       final EC2MultiRegionAddressTranslator addressTranslator,
       int connectionTimeout,
       MetricRegistry metricRegistry)
@@ -186,7 +186,7 @@ final class JmxProxyImpl implements JmxProxy {
   private static JmxProxy connect(
       String originalHost,
       int port,
-      JmxCredentials jmxCredentials,
+      Optional<JmxCredentials> jmxCredentials,
       final EC2MultiRegionAddressTranslator addressTranslator,
       int connectionTimeout,
       MetricRegistry metricRegistry) throws ReaperException, InterruptedException {
@@ -208,8 +208,8 @@ final class JmxProxyImpl implements JmxProxy {
     }
     try {
       final Map<String, Object> env = new HashMap<>();
-      if (jmxCredentials != null && jmxCredentials.getUsername() != null && jmxCredentials.getPassword() != null) {
-        String[] creds = {jmxCredentials.getUsername(), jmxCredentials.getPassword()};
+      if (jmxCredentials.isPresent()) {
+        String[] creds = {jmxCredentials.get().getUsername(), jmxCredentials.get().getPassword()};
         env.put(JMXConnector.CREDENTIALS, creds);
       }
       env.put("com.sun.jndi.rmi.factory.socket", getRmiClientSocketFactory());

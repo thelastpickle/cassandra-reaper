@@ -22,12 +22,15 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.crypto.Cryptograph;
+import io.cassandrareaper.crypto.NoopCrypotograph;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
@@ -49,6 +52,7 @@ public class JmxConnectionFactory {
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
   private final AppContext context;
+  private final Cryptograph cryptograph;
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
   private Map<String, JmxCredentials> jmxCredentials;
@@ -61,6 +65,8 @@ public class JmxConnectionFactory {
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
     registerConnectionsGauge();
     this.context = context;
+    this.cryptograph = context.config == null || context.config.getCryptographFactory() == null
+            ? new NoopCrypotograph() : context.config.getCryptographFactory().create();
   }
 
   private void registerConnectionsGauge() {
@@ -88,7 +94,7 @@ public class JmxConnectionFactory {
       LOG.debug("Connecting to {} with custom port", host);
     }
 
-    JmxCredentials jmxCredentials = getJmxCredentialsForCluster(node);
+    Optional<JmxCredentials> jmxCredentials = getJmxCredentialsForCluster(node);
 
     try {
       JmxConnectionProvider provider = new JmxConnectionProvider(
@@ -165,33 +171,42 @@ public class JmxConnectionFactory {
     return accessibleDatacenters;
   }
 
-  public JmxCredentials getJmxCredentialsForCluster(Node node) {
-    JmxCredentials nodeCredentials = node.getJmxCredentials().orElse(jmxAuth);
+  public Optional<JmxCredentials> getJmxCredentialsForCluster(Node node) {
+    JmxCredentials credentials = node.getJmxCredentials().orElse(null);
 
-    if (nodeCredentials == null && jmxCredentials != null) {
-
+    if (credentials == null && jmxCredentials != null) {
       if (jmxCredentials.containsKey(node.getClusterName())) {
-        nodeCredentials = jmxCredentials.get(node.getClusterName());
+        credentials = jmxCredentials.get(node.getClusterName());
       } else if (jmxCredentials.containsKey(Cluster.toSymbolicName(node.getClusterName()))) {
         // As clusters get stored in the database with their "symbolic name" we have to look for that too
-        nodeCredentials = jmxCredentials.get(Cluster.toSymbolicName(node.getClusterName()));
+        credentials = jmxCredentials.get(Cluster.toSymbolicName(node.getClusterName()));
       }
-
     }
 
-    return nodeCredentials == null ? JmxCredentials.builder().build() : nodeCredentials;
+    if (credentials == null && jmxAuth != null) {
+      credentials = jmxAuth;
+    }
+
+    if (credentials != null) {
+      credentials = JmxCredentials.builder()
+              .withUsername(credentials.getUsername())
+              .withPassword(cryptograph.decrypt(credentials.getPassword()))
+              .build();
+    }
+
+    return Optional.ofNullable(credentials);
   }
 
   private class JmxConnectionProvider implements Function<String, JmxProxy> {
 
     private final String host;
-    private final JmxCredentials jmxCredentials;
+    private final Optional<JmxCredentials> jmxCredentials;
     private final int connectionTimeout;
     private final MetricRegistry metricRegistry;
 
     JmxConnectionProvider(
         String host,
-        JmxCredentials jmxCredentials,
+        Optional<JmxCredentials> jmxCredentials,
         int connectionTimeout,
         MetricRegistry metricRegistry) {
       this.host = host;
