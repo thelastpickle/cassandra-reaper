@@ -23,7 +23,6 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
-import io.cassandrareaper.crypto.NoopCrypotograph;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,7 +51,6 @@ public class JmxConnectionFactory {
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
   private final AppContext context;
-  private final Cryptograph cryptograph;
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
   private Map<String, JmxCredentials> jmxCredentials;
@@ -65,8 +63,6 @@ public class JmxConnectionFactory {
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
     registerConnectionsGauge();
     this.context = context;
-    this.cryptograph = context.config == null || context.config.getCryptograph() == null
-            ? new NoopCrypotograph() : context.config.getCryptograph().create();
   }
 
   private void registerConnectionsGauge() {
@@ -99,7 +95,7 @@ public class JmxConnectionFactory {
     try {
       JmxConnectionProvider provider = new JmxConnectionProvider(
               host, jmxCredentials, context.config.getJmxConnectionTimeoutInSeconds(),
-              this.metricRegistry, cryptograph);
+              this.metricRegistry, context.cryptograph);
       JMX_CONNECTIONS.computeIfAbsent(host, provider::apply);
       JmxProxy proxy = JMX_CONNECTIONS.get(host);
       if (!proxy.isConnectionAlive()) {

@@ -19,7 +19,6 @@ package io.cassandrareaper.resources;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.crypto.Cryptograph;
-import io.cassandrareaper.crypto.NoopCrypotograph;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -40,8 +39,7 @@ public final class CryptoResource {
   private final Cryptograph cryptograph;
 
   public CryptoResource(AppContext context) {
-    this.cryptograph = context.config == null || context.config.getCryptograph() == null
-            ? new NoopCrypotograph() : context.config.getCryptograph().create();
+    this.cryptograph = context.cryptograph;
   }
 
   @GET

@@ -191,7 +191,7 @@ public final class ClusterResource {
     if (jmxUsername.isPresent() && jmxPassword.isPresent()) {
       jmxCredentials = JmxCredentials.builder()
               .withUsername(jmxUsername.get())
-              .withPassword(jmxPassword.get())
+              .withPassword(context.cryptograph.encrypt(jmxPassword.get()))
               .build();
     }
 

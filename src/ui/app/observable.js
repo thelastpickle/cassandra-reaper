@@ -81,7 +81,10 @@ export const selectClusterSubject = new Rx.Subject();
 export const addClusterResult = addClusterSubject.map(addCluster => {
   console.info("Adding new cluster with seed node: " + addCluster.seed_node);
   return Rx.Observable.fromPromise($.ajax({
-    url: `${URL_PREFIX}/cluster?seedHost=${encodeURIComponent(addCluster.seed_node)}&jmxPort=${encodeURIComponent(addCluster.jmx_port)}`,
+    url: `${URL_PREFIX}/cluster?seedHost=${encodeURIComponent(addCluster.seed_node)}`
+            + `&jmxPort=${encodeURIComponent(addCluster.jmx_port)}`
+            + `&jmxUsername=${encodeURIComponent(addCluster.jmx_username)}`
+            + `&jmxPassword=${encodeURIComponent(addCluster.jmx_password)}`,
     method: 'POST'
   }).promise());
 }).share();
