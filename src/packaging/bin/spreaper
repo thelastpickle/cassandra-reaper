@@ -333,6 +333,11 @@ def _arguments_for_login(parser):
     """Arguments needed to login"""
     parser.add_argument("username", help="Username to login with")
 
+def _arguments_for_delete_cluster(parser):
+    """Arguments needed for deleting a cluster"""
+    parser.add_argument("cluster_name", help="Name of the cluster to delete")
+    parser.add_argument("--force", action="store_true", help="Force deletion of the cluster")
+
 def _parse_arguments(command, description, usage=None, extra_arguments=None):
     """Generic argument parsing done by every command"""
     parser = argparse.ArgumentParser(description=description, usage=usage)
@@ -371,6 +376,7 @@ Usage: spreaper [<global_args>] <command> [<command_args>]
     status-repair   Show status of a repair run.
     status-schedule Show status of a repair schedule.
     add-cluster     Register a cluster.
+    delete-cluster  Delete a cluster.
     repair          Create a repair run, optionally starting it. You need to register
                     a cluster into Reaper (add-cluster) before calling repair.
     schedule        Create a repair schedule, choosing the first activation time and days
@@ -518,7 +524,7 @@ class ReaperCLI(object):
         printq("# Listing repair runs")
         endpoint = 'repair_run'
         if args.state is not None:
-            endpoint = '{0}?{1}'.format(endpoint, urllib.urlencode({'state': args.state, 'cluster': args.cluster, 'keyspace': args.keyspace}))
+            endpoint = '{0}?{1}'.format(endpoint, urllib.urlencode({'state': args.state, 'cluster_name': args.cluster, 'keyspace_name': args.keyspace}))
         repair_runs = json.loads(reaper.get(endpoint))
         printq("# Found {0} repair runs".format(len(repair_runs)))
         print json.dumps(repair_runs, indent=2, sort_keys=True)
@@ -683,6 +689,16 @@ class ReaperCLI(object):
         cluster_data = reaper.post("cluster", seedHost=args.seed_host, jmxPort=args.jmx_port)
         printq("# Registration succeeded:")
         print json.dumps(json.loads(cluster_data), indent=2, sort_keys=True)
+
+    def delete_cluster(self):
+        reaper, args = ReaperCLI.prepare_reaper(
+            "delete-cluster",
+            "Delete a cluster.",
+            extra_arguments=_arguments_for_delete_cluster
+        )
+        printq("# Removing Cassandra cluster {0} from Reaper".format(args.cluster_name))
+        result = reaper.delete("cluster/{0}?force={1}".format(args.cluster_name, args.force))
+        printq("# Removal succeeded")
 
     def repair(self):
         reaper, args = ReaperCLI.prepare_reaper(

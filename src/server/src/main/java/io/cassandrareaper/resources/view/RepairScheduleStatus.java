@@ -88,6 +88,9 @@ public final class RepairScheduleStatus {
   @JsonProperty("repair_thread_count")
   private int repairThreadCount;
 
+  @JsonProperty("repair_unit_id")
+  private UUID repairUnitId;
+
   /**
    * Default public constructor Required for Jackson JSON parsing.
    */
@@ -113,7 +116,8 @@ public final class RepairScheduleStatus {
       Collection<String> datacenters,
       Collection<String> blacklistedTables,
       int segmentCountPerNode,
-      int repairThreadCount) {
+      int repairThreadCount,
+      UUID repairUnitId) {
 
     this.id = id;
     this.owner = owner;
@@ -134,6 +138,8 @@ public final class RepairScheduleStatus {
     this.blacklistedTables = blacklistedTables;
     this.segmentCountPerNode = segmentCountPerNode;
     this.repairThreadCount = repairThreadCount;
+    this.repairUnitId = repairUnitId;
+
   }
 
   public RepairScheduleStatus(RepairSchedule repairSchedule, RepairUnit repairUnit) {
@@ -156,7 +162,8 @@ public final class RepairScheduleStatus {
         repairUnit.getDatacenters(),
         repairUnit.getBlacklistedTables(),
         repairSchedule.getSegmentCountPerNode(),
-        repairUnit.getRepairThreadCount());
+        repairUnit.getRepairThreadCount(),
+        repairUnit.getId());
   }
 
   public UUID getId() {
@@ -354,5 +361,12 @@ public final class RepairScheduleStatus {
     this.repairThreadCount = repairThreadCount;
   }
 
+  @JsonProperty("repair_unit_id")
+  public UUID getRepairUnitId() {
+    return repairUnitId;
+  }
 
+  public void setRepairUnitId(UUID repairUnitId) {
+    this.repairUnitId = repairUnitId;
+  }
 }
