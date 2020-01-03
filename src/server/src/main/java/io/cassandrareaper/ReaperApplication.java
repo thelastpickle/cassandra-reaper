@@ -25,6 +25,7 @@ import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxConnectionsInitializer;
 import io.cassandrareaper.resources.ClusterResource;
+import io.cassandrareaper.resources.CryptoResource;
 import io.cassandrareaper.resources.DiagEventSseResource;
 import io.cassandrareaper.resources.DiagEventSubscriptionResource;
 import io.cassandrareaper.resources.NodeStatsResource;
@@ -239,6 +240,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     final NodeStatsResource nodeStatsResource = new NodeStatsResource(context);
     environment.jersey().register(nodeStatsResource);
+
+    final CryptoResource addCryptoResource = new CryptoResource(context);
+    environment.jersey().register(addCryptoResource);
 
     HttpClient httpClient = createHttpClient(config, environment);
     ScheduledExecutorService ses = environment.lifecycle().scheduledExecutorService("Diagnostics").threads(6).build();

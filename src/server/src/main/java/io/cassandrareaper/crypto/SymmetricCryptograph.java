@@ -81,7 +81,7 @@ public final class SymmetricCryptograph implements Cryptograph {
     } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeySpecException
             | InvalidAlgorithmParameterException | InvalidKeyException | BadPaddingException
             | IllegalBlockSizeException e) {
-      throw new RuntimeException("Encryption failure", e);
+      throw new RuntimeException("Unable to encrypt text", e);
     }
   }
 
@@ -100,7 +100,7 @@ public final class SymmetricCryptograph implements Cryptograph {
     } catch (InvalidKeySpecException | NoSuchAlgorithmException | NoSuchPaddingException
             | InvalidKeyException | BadPaddingException | IllegalBlockSizeException
             | InvalidAlgorithmParameterException e) {
-      throw new RuntimeException("Decryption failure", e);
+      throw new RuntimeException("Unable to decrypt text", e);
     }
   }
 

@@ -166,7 +166,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   @JsonProperty
   @Nullable
-  private CryptographFactory cryptographFactory;
+  private CryptographFactory cryptograph;
 
   public int getSegmentCount() {
     return segmentCount == null ? 0 : segmentCount;
@@ -478,12 +478,12 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   @Nullable
-  public CryptographFactory getCryptographFactory() {
-    return cryptographFactory;
+  public CryptographFactory getCryptograph() {
+    return cryptograph;
   }
 
-  public void setCryptographFactory(@Nullable CryptographFactory cryptographFactory) {
-    this.cryptographFactory = cryptographFactory;
+  public void setCryptograph(@Nullable CryptographFactory cryptograph) {
+    this.cryptograph = cryptograph;
   }
 
   public static final class AutoSchedulingConfiguration {

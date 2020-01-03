@@ -65,8 +65,8 @@ public class JmxConnectionFactory {
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
     registerConnectionsGauge();
     this.context = context;
-    this.cryptograph = context.config == null || context.config.getCryptographFactory() == null
-            ? new NoopCrypotograph() : context.config.getCryptographFactory().create();
+    this.cryptograph = context.config == null || context.config.getCryptograph() == null
+            ? new NoopCrypotograph() : context.config.getCryptograph().create();
   }
 
   private void registerConnectionsGauge() {
