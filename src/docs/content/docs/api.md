@@ -249,3 +249,11 @@ Returns OK if all goes well NOT_MODIFIED if new state is the same as the old one
 	                If no tables given, then the whole keyspace is targeted. (Optional)
 	    * *snapshot_name*: name to use for the snapshot. (Optional)
     * Create a snapshot on a specific host.
+
+## Crypto Resource
+
+* **GET /crypto/encrypt/{text}**
+  * Expected query parameters:
+	    * *text*: The text to encrypt.
+  * Encrypt text when cryptograph settings are configured in the reaper yaml.
+

@@ -21,6 +21,7 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Table;
+import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
@@ -149,14 +150,15 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   /**
-   * @see #connect(String, int, Optional, EC2MultiRegionAddressTranslator, int, MetricRegistry)
+   * @see #connect(String, int, Optional, EC2MultiRegionAddressTranslator, int, MetricRegistry, Cryptograph)
    */
   static JmxProxy connect(
       String host,
       Optional<JmxCredentials> jmxCredentials,
       final EC2MultiRegionAddressTranslator addressTranslator,
       int connectionTimeout,
-      MetricRegistry metricRegistry)
+      MetricRegistry metricRegistry,
+      Cryptograph cryptograph)
       throws ReaperException, InterruptedException {
 
     if (host == null) {
@@ -171,7 +173,8 @@ final class JmxProxyImpl implements JmxProxy {
         jmxCredentials,
         addressTranslator,
         connectionTimeout,
-        metricRegistry);
+        metricRegistry,
+        cryptograph);
   }
 
   /**
@@ -189,7 +192,8 @@ final class JmxProxyImpl implements JmxProxy {
       Optional<JmxCredentials> jmxCredentials,
       final EC2MultiRegionAddressTranslator addressTranslator,
       int connectionTimeout,
-      MetricRegistry metricRegistry) throws ReaperException, InterruptedException {
+      MetricRegistry metricRegistry,
+      Cryptograph cryptograph) throws ReaperException, InterruptedException {
 
     JMXServiceURL jmxUrl;
     String host = originalHost;
@@ -209,7 +213,8 @@ final class JmxProxyImpl implements JmxProxy {
     try {
       final Map<String, Object> env = new HashMap<>();
       if (jmxCredentials.isPresent()) {
-        String[] creds = {jmxCredentials.get().getUsername(), jmxCredentials.get().getPassword()};
+        String jmxPassword = cryptograph.decrypt(jmxCredentials.get().getPassword());
+        String[] creds = {jmxCredentials.get().getUsername(), jmxPassword};
         env.put(JMXConnector.CREDENTIALS, creds);
       }
       env.put("com.sun.jndi.rmi.factory.socket", getRmiClientSocketFactory());

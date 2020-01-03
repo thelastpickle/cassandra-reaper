@@ -98,7 +98,8 @@ public class JmxConnectionFactory {
 
     try {
       JmxConnectionProvider provider = new JmxConnectionProvider(
-              host, jmxCredentials, context.config.getJmxConnectionTimeoutInSeconds(), this.metricRegistry);
+              host, jmxCredentials, context.config.getJmxConnectionTimeoutInSeconds(),
+              this.metricRegistry, cryptograph);
       JMX_CONNECTIONS.computeIfAbsent(host, provider::apply);
       JmxProxy proxy = JMX_CONNECTIONS.get(host);
       if (!proxy.isConnectionAlive()) {
@@ -187,13 +188,6 @@ public class JmxConnectionFactory {
       credentials = jmxAuth;
     }
 
-    if (credentials != null) {
-      credentials = JmxCredentials.builder()
-              .withUsername(credentials.getUsername())
-              .withPassword(cryptograph.decrypt(credentials.getPassword()))
-              .build();
-    }
-
     return Optional.ofNullable(credentials);
   }
 
@@ -203,16 +197,19 @@ public class JmxConnectionFactory {
     private final Optional<JmxCredentials> jmxCredentials;
     private final int connectionTimeout;
     private final MetricRegistry metricRegistry;
+    private final Cryptograph cryptograph;
 
     JmxConnectionProvider(
-        String host,
-        Optional<JmxCredentials> jmxCredentials,
-        int connectionTimeout,
-        MetricRegistry metricRegistry) {
+            String host,
+            Optional<JmxCredentials> jmxCredentials,
+            int connectionTimeout,
+            MetricRegistry metricRegistry,
+            Cryptograph cryptograph) {
       this.host = host;
       this.jmxCredentials = jmxCredentials;
       this.connectionTimeout = connectionTimeout;
       this.metricRegistry = metricRegistry;
+      this.cryptograph = cryptograph;
     }
 
     @Override
@@ -220,7 +217,7 @@ public class JmxConnectionFactory {
       Preconditions.checkArgument(host.equals(this.host));
       try {
         JmxProxy proxy = JmxProxyImpl.connect(
-                host, jmxCredentials, addressTranslator, connectionTimeout, metricRegistry);
+                host, jmxCredentials, addressTranslator, connectionTimeout, metricRegistry, cryptograph);
         if (hostConnectionCounters.getSuccessfulConnections(host) <= 0) {
           accessibleDatacenters.add(EndpointSnitchInfoProxy.create(proxy).getDataCenter());
         }

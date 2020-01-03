@@ -51,12 +51,12 @@ public final class SymmetricCryptograph implements Cryptograph {
   private static final int DEFAULT_ITERATION_COUNT = 1024;
   private static final int DEFAULT_KEY_STRENGTH = 256;
 
-  private final String salt;
+  private final String algorithm;
   private final String cipher;
   private final String cipherType;
-  private final String algorithm;
   private final Integer iterationCount;
   private final Integer keyStrength;
+  private final String salt;
   private final String systemPropertySecret;
 
   private SymmetricCryptograph(SymmetricCryptograph.Builder builder) {
@@ -202,19 +202,19 @@ public final class SymmetricCryptograph implements Cryptograph {
 
   public static final class Builder {
 
-    private String salt;
+    private String algorithm;
     private String cipher;
     private String cipherType;
-    private String algorithm;
     private Integer iterationCount;
     private Integer keyStrength;
+    private String salt;
     private String systemPropertySecret;
 
     private Builder() {
     }
 
-    public SymmetricCryptograph.Builder withSalt(String salt) {
-      this.salt = StringUtils.trimToNull(salt);
+    public SymmetricCryptograph.Builder withAlgorithm(String algorithm) {
+      this.algorithm = StringUtils.trimToNull(algorithm);
       return this;
     }
 
@@ -228,11 +228,6 @@ public final class SymmetricCryptograph implements Cryptograph {
       return this;
     }
 
-    public SymmetricCryptograph.Builder withAlgorithm(String algorithm) {
-      this.algorithm = StringUtils.trimToNull(algorithm);
-      return this;
-    }
-
     public SymmetricCryptograph.Builder withIterationCount(Integer iterationCount) {
       this.iterationCount = iterationCount;
       return this;
@@ -240,6 +235,11 @@ public final class SymmetricCryptograph implements Cryptograph {
 
     public SymmetricCryptograph.Builder withKeyStrength(Integer keyStrength) {
       this.keyStrength = keyStrength;
+      return this;
+    }
+
+    public SymmetricCryptograph.Builder withSalt(String salt) {
+      this.salt = StringUtils.trimToNull(salt);
       return this;
     }
 
