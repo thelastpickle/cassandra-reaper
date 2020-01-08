@@ -1,0 +1,5 @@
+monitorRole readonly
+cassandra readwrite
+controlRole readwrite \
+create javax.management.monitor.,javax.management.timer. \
+unregister
