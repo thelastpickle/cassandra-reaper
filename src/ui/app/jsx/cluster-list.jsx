@@ -15,6 +15,8 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import NodeStatus from "jsx/node-status";
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix} from "jsx/mixin";
 import Modal from 'react-bootstrap/lib/Modal';
@@ -23,12 +25,12 @@ import Badge from 'react-bootstrap/lib/Badge';
 import $ from "jquery";
 var NotificationSystem = require('react-notification-system');
 
-const Cluster = React.createClass({
+const Cluster = CreateReactClass({
 
   propTypes: {
-    name: React.PropTypes.string.isRequired,
-    clusterFilter: React.PropTypes.string.isRequired,
-    nodeFilter: React.PropTypes.string.isRequired
+    name: PropTypes.string.isRequired,
+    clusterFilter: PropTypes.string.isRequired,
+    nodeFilter: PropTypes.string.isRequired
   },
   
   getInitialState: function() {
@@ -43,7 +45,7 @@ const Cluster = React.createClass({
           };
   },
 
-  componentWillMount: function() {
+  UNSAFE_componentWillMount: function() {
     this._refreshClusterStatus();
   },
 
@@ -166,12 +168,13 @@ const Cluster = React.createClass({
       <div className="panel panel-default" style={clusterDisplayStyle}>
         <div className="panel-body">
           <div className="row">
+            <div className="col-lg-12">
+              <a className="btn btn-lg btn-default" href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name}</h4></a><br/><br/>  
+            </div>
+          </div>
+          
+          <div className="row">
             <div className="col-lg-2">
-              <div className="row">
-                <div className="col-lg-8">
-                  <a className="btn btn-lg btn-default" href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name}</h4></a>
-                </div>
-              </div>
               <div className="font-bold">Nodes: <span className="badge">{nbNodes}</span></div>
               <div className="font-bold">Total load: <span className="badge">{humanFileSize(totalLoad,1024)}</span></div>
               <div className="font-bold">Running repairs: {runningRepairsBadge}</div>
@@ -215,15 +218,15 @@ const Cluster = React.createClass({
 });
 
 
-const Datacenter = React.createClass({
+const Datacenter = CreateReactClass({
 
   propTypes: {
-    datacenter: React.PropTypes.object.isRequired,
-    datacenterName: React.PropTypes.string.isRequired,
-    nbDatacenters: React.PropTypes.number.isRequired,
-    clusterName: React.PropTypes.string.isRequired,
-    totalLoad: React.PropTypes.number.isRequired,
-    nodeFilter: React.PropTypes.string.isRequired
+    datacenter: PropTypes.object.isRequired,
+    datacenterName: PropTypes.string.isRequired,
+    nbDatacenters: PropTypes.number.isRequired,
+    clusterName: PropTypes.string.isRequired,
+    totalLoad: PropTypes.number.isRequired,
+    nodeFilter: PropTypes.string.isRequired
   },
   
   render: function() {
@@ -271,16 +274,16 @@ const Datacenter = React.createClass({
   },
 });
 
-const Rack = React.createClass({
+const Rack = CreateReactClass({
   _notificationSystem: null,
 
   propTypes: {
-    rack: React.PropTypes.array.isRequired,
-    nbRacks: React.PropTypes.number.isRequired,
-    clusterName: React.PropTypes.string.isRequired,
-    dcLoad: React.PropTypes.number.isRequired,
-    totalLoad: React.PropTypes.number.isRequired,
-    nodeFilter: React.PropTypes.string.isRequired
+    rack: PropTypes.array.isRequired,
+    nbRacks: PropTypes.number.isRequired,
+    clusterName: PropTypes.string.isRequired,
+    dcLoad: PropTypes.number.isRequired,
+    totalLoad: PropTypes.number.isRequired,
+    nodeFilter: PropTypes.string.isRequired
   },
 
   componentDidMount: function() {
@@ -341,20 +344,20 @@ const Rack = React.createClass({
   },
 });
 
-const clusterList = React.createClass({
+const clusterList = CreateReactClass({
   mixins: [DeleteStatusMessageMixin],
 
   propTypes: {
-    clusterNames: React.PropTypes.object.isRequired,
-    deleteSubject: React.PropTypes.object.isRequired,
-    deleteResult: React.PropTypes.object.isRequired
+    clusterNames: PropTypes.object.isRequired,
+    deleteSubject: PropTypes.object.isRequired,
+    deleteResult: PropTypes.object.isRequired
   },
 
   getInitialState: function() {
     return {clusterNames: [], deleteResultMsg: null, clusterFilter: "", nodeFilter: ""};
   },
 
-  componentWillMount: function() {
+  UNSAFE_componentWillMount: function() {
     this._clusterNamesSubscription = this.props.clusterNames.subscribeOnNext(obs =>
       obs.subscribeOnNext(names => this.setState({clusterNames: names}))
     );

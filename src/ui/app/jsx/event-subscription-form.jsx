@@ -16,35 +16,45 @@
 
 import $ from "jquery";
 import React from "react";
-import { WithContext as ReactTags } from 'react-tag-input';
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
+import Select from 'react-select';
 import {getUrlPrefix} from "jsx/mixin";
 
 
-const subscriptionForm = React.createClass({
+const subscriptionForm = CreateReactClass({
 
   propTypes: {
-    addSubscriptionSubject: React.PropTypes.object.isRequired,
-    listenSubscriptionSubject: React.PropTypes.object.isRequired,
-    addSubscriptionResult: React.PropTypes.object.isRequired,
-    clusterStatusResult: React.PropTypes.object.isRequired,
-    clusterSelected: React.PropTypes.object.isRequired,
-    clusterNames: React.PropTypes.object.isRequired
+    addSubscriptionSubject: PropTypes.object.isRequired,
+    listenSubscriptionSubject: PropTypes.object.isRequired,
+    addSubscriptionResult: PropTypes.object.isRequired,
+    clusterStatusResult: PropTypes.object.isRequired,
+    clusterSelected: PropTypes.object.isRequired,
+    clusterNames: PropTypes.object.isRequired
   },
 
   getInitialState: function(formExpanded) {
     const URL_PREFIX = getUrlPrefix(window.top.location.pathname);
 
     return {
-      addSubscriptionResultMsg: null, submitEnabled: false, clusterName: null,
-      description: null, export_sse: false, export_logger: null, export_http: null,
-      nodes: "", nodeList: [], nodeSuggestions: [], events_selection: [],
+      addSubscriptionResultMsg: null,
+      submitEnabled: false,
+      clusterName: null,
+      clusterNames: [],
+      description: "",
+      export_sse: false,
+      export_logger: "",
+      export_http: "",
+      nodes: "",
+      nodeList: [],
+      nodeOptions: [],
+      events_selection: [],
       formCollapsed: !formExpanded,
-      datacenters: null, datacenters: "", datacenterList: [], datacenterSuggestions: [],
-      clusterNames: [], urlPrefix: URL_PREFIX
+      urlPrefix: URL_PREFIX
     };
   },
 
-  componentWillMount: function() {
+  UNSAFE_componentWillMount: function() {
     this._scheduleResultSubscription = this.props.addSubscriptionResult.subscribeOnNext(obs =>
       obs.subscribe(
         r => this.setState({addSubscriptionResultMsg: null}),
@@ -68,8 +78,8 @@ const subscriptionForm = React.createClass({
       obs.subscribeOnNext(names => {
         let previousNames = this.state.clusterNames;
         this.setState({clusterNames: names});
-        if(names.length == 1) this.setState({clusterName: names[0]});
-        if(previousNames.length == 0) {
+        if (names.length) this.setState({clusterName: names[0]});
+        if (!previousNames.length) {
           this._getClusterStatus();
         }
       })
@@ -88,11 +98,14 @@ const subscriptionForm = React.createClass({
       description: this.state.description,
       nodes: this.state.nodes,
       events: this.state.events_selection.join(","),
-      exportSse: this.state.export_sse
+      exportSse: this.state.export_sse,
     };
-    if(this.state.export_logger) sub.exportFileLogger = this.state.export_logger;
-    if(this.state.export_http) sub.exportHttpEndpoint = this.state.export_http;
-    if(this.state.nodes) sub.nodes = this.state.nodes;
+    if (this.state.export_logger) {
+      sub[exportFileLogger] = this.state.export_logger;
+    }
+    if (this.state.export_http) {
+      sub[exportHttpEndpoint] = this.state.export_http;
+    }
 
     this.props.addSubscriptionSubject.onNext(sub);
   },
@@ -100,7 +113,7 @@ const subscriptionForm = React.createClass({
   _handleChange: function(e) {
     var v = e.target.value;
     var n = e.target.id.substring(3); // strip in_ prefix
-    if(n == "export_sse") {
+    if (n === "export_sse") {
       v = e.target.checked === true;
     }
 
@@ -109,9 +122,8 @@ const subscriptionForm = React.createClass({
     state[n] = v;
     this.replaceState(state);
 
-    if (n == 'clusterName') {
+    if (n === "clusterName") {
       this._getClusterStatus();
-      this._getSuggestions();
     }
 
     // validate
@@ -130,17 +142,27 @@ const subscriptionForm = React.createClass({
 
   _checkValidity: function() {
     const valid = this.state.description
-      && this.state.events_selection && this.state.events_selection.length > 0
-      && this.state.nodes && this.state.nodes.length > 0
-      && (this.state.export_sse === true || this.state.export_logger
-      || (this.state.export_http && (this.state.export_http.startsWith("http://")
-                                     || this.state.export_http.startsWith("https://"))));
+      && this.state.events_selection
+      && this.state.events_selection.length
+      && this.state.nodes
+      && this.state.nodes.length
+      && (
+        this.state.export_sse
+        || this.state.export_logger
+        || (
+          this.state.export_http
+          && (
+            this.state.export_http.startsWith("http://")
+            || this.state.export_http.startsWith("https://")
+          )
+        )
+      );
 
     this.setState({submitEnabled: valid});
   },
 
   _toggleFormDisplay: function() {
-    if(this.state.formCollapsed == true) {
+    if (this.state.formCollapsed) {
       this.setState({formCollapsed: false});
     }
     else {
@@ -153,7 +175,7 @@ const subscriptionForm = React.createClass({
     var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = (dt + Math.random()*16)%16 | 0;
         dt = Math.floor(dt/16);
-        return (c=='x' ? r :(r&0x3|0x8)).toString(16);
+        return (c === 'x' ? r : (r&0x3|0x8)).toString(16);
     });
     return uuid;
   },
@@ -161,63 +183,62 @@ const subscriptionForm = React.createClass({
   _getClusterStatus: function() {
     let clusterName = this.state.clusterName;
 
-    if (clusterName !== null) {
+    if (clusterName) {
       $.ajax({
           url: this.state.urlPrefix + '/cluster/' + encodeURIComponent(clusterName),
           method: 'GET',
           component: this,
           complete: function(data) {
             this.component.setState({clusterStatus: $.parseJSON(data.responseText)});
-            this.component._getSuggestions();
+            this.component._getNodeOptions();
           }
       });
     }
   },
 
-  _getSuggestions: function() {
-    var nodes = this.state.clusterStatus.nodes_status.endpointStates[0].endpointNames;
-    nodes.sort();
-    this.state.nodeSuggestions = nodes;
+  _getNodeOptions: function() {
+    this.setState({
+      nodeOptions: this.state.clusterStatus.nodes_status.endpointStates[0].endpointNames.map(
+        obj => { return {value: obj, label: obj}; }
+      )
+    });
   },
 
-  _handleAddition(node) {
-    if (this.state.datacenterList.length == 0 && node.length > 1) {
-      let nodes = this.state.nodeList;
-      if ($.inArray(node, this.state.nodes.split(','))==-1) {
-        nodes.push({
-            id: nodes.length + 1,
-            text: node
-        });
-        this.setState({nodeList: nodes, nodes: nodes.map(node => node.text).join(',')});
-        this._checkValidity();
-      }
+  _handleSelectOnChange: function(valueContext, actionContext) {
+    let nodeListRef = this.state.nodeList;
+    let nodesRef = "";
+
+    nodeListRef.length = 0;
+
+    if (valueContext) {
+      nodeListRef = valueContext.map(
+        obj => { return {id: this._create_UUID(), text: obj.value}; }
+      );
+      nodesRef = valueContext.map(
+        obj => { return obj.value; }
+      ).join(",");
     }
+
+    this.setState({
+      nodeList: nodeListRef,
+      nodes: nodesRef,
+    });
+
+    this._checkValidity();
   },
-
-  _handleDelete(i) {
-        let nodes = this.state.nodeList;
-        nodes.splice(i, 1);
-        this.setState({nodeList: nodes, nodes: nodes.map(node => node.text).join(',')});
-        this._checkValidity();
-  },
-
-  _handleNodeFilterSuggestions(textInputValue, possibleSuggestionsArray) {
-    var lowerCaseQuery = textInputValue.toLowerCase();
-    let nodes = this.state.nodes;
-
-    return possibleSuggestionsArray.filter(function(suggestion)  {
-        return suggestion.toLowerCase().includes(lowerCaseQuery) && $.inArray(suggestion, nodes.split(','))==-1;
-    })
-  },
-
 
   render: function() {
     let addMsg = null;
     if(this.state.addSubscriptionResultMsg) {
-      addMsg = <div className="alert alert-danger" role="alert">{this.state.addSubscriptionResultMsg}</div>
+      addMsg = (
+        <div className="alert alert-danger" role="alert">
+          {this.state.addSubscriptionResultMsg}
+        </div>
+      );
     }
 
-    const form = <div className="row">
+    const form = (
+      <div className="row">
         <div className="col-lg-12">
 
           <form className="form-horizontal form-condensed">
@@ -232,16 +253,17 @@ const subscriptionForm = React.createClass({
               <div className="form-group">
                 <label htmlFor="in_nodes" className="col-sm-3 control-label">Nodes</label>
                 <div className="col-sm-14 col-md-12 col-lg-9">
-                <ReactTags id={'in_nodes'} tags={this.state.nodeList}
-                  suggestions={this.state.nodeSuggestions}
-                  labelField={'text'} handleAddition={this._handleAddition}
-                  handleInputBlur={this._handleAddition}
-                  handleDelete={this._handleDelete}
-                  placeholder={'Add a node (optional)'}
-                  handleFilterSuggestions={this._handleNodeFilterSuggestions}
-                  classNames={{
-                      tagInputField: 'form-control'
-                    }}/>
+                  <Select
+                    id="in_nodes"
+                    name="in_nodes"
+                    classNamePrefix="select"
+                    isClearable
+                    isSearchable
+                    isMulti
+                    placeholder="Add a node"
+                    options={this.state.nodeOptions}
+                    onChange={this._handleSelectOnChange}
+                  />
                 </div>
               </div>
               <div className="form-group">
@@ -289,8 +311,9 @@ const subscriptionForm = React.createClass({
                 onClick={this._onAdd}>Save</button>
             </div>
           </form>
+        </div>
       </div>
-    </div>
+    );
 
     let menuDownStyle = {
       display: "inline-block" 
@@ -309,22 +332,28 @@ const subscriptionForm = React.createClass({
       }
     }
 
-    const formHeader = <div className="panel-title" >
-                          <a href="#schedule-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>Add Events Subscription</a>
-                          &nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDownStyle}></span>
-                                 <span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span></div>
+    const formHeader = (
+      <div className="panel-title" >
+        <a href="#schedule-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>
+          Add Events Subscription
+        </a>
+        &nbsp;
+        <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDownStyle}></span>
+        <span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span>
+      </div>
+    );
 
-
-
-    return (<div className="panel panel-warning">
-              <div className="panel-heading">
-                {formHeader}
-              </div>
-              <div className="panel-body collapse" id="schedule-form">
-                {addMsg}
-                {form}
-              </div>
-            </div>);
+    return (
+      <div className="panel panel-warning">
+        <div className="panel-heading">
+          {formHeader}
+        </div>
+        <div className="panel-body collapse" id="schedule-form">
+          {addMsg}
+          {form}
+        </div>
+      </div>
+    );
   }
 });
 

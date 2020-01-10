@@ -17,7 +17,7 @@
 var webpack = require('webpack');
 var WebpackDevServer = require('webpack-dev-server');
 
-process.env.BUILD_DEV='1';
+process.env.BUILD_DEV = '1';
 var config = require('./webpack.config');
 
 new WebpackDevServer(webpack(config), {

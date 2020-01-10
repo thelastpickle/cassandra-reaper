@@ -126,55 +126,6 @@ export const clusterStatusResult = Rx.Observable.merge(
 
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// repair_schedule
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-export const addScheduleSubject = new Rx.Subject();
-export const deleteScheduleSubject = new Rx.Subject();
-export const updateScheduleStatusSubject = new Rx.Subject();
-
-
-export const addScheduleResult = addScheduleSubject.map(schedule => {
-  console.info("Adding new schedule for cluster: " + schedule.clusterName);
-  const params = $.param(schedule);
-  return Rx.Observable.fromPromise($.ajax({
-    url: `${URL_PREFIX}/repair_schedule?${params}`,
-    method: 'POST'
-  }).promise());
-}).share();
-
-export const deleteScheduleResult = deleteScheduleSubject.map(schedule => {
-  console.info("Deleting schedule with id: " + schedule.id);
-  return Rx.Observable.fromPromise($.ajax({
-    url: `${URL_PREFIX}/repair_schedule/${encodeURIComponent(schedule.id)}?owner=${encodeURIComponent(schedule.owner)}`,
-    method: 'DELETE'
-  }).promise());
-}).share();
-
-export const updateScheduleStatusResult = updateScheduleStatusSubject.map(schedule => {
-  console.info(`Updating schedule ${schedule.id} status with state ${schedule.state} `);
-  return Rx.Observable.fromPromise($.ajax({
-    url: `${URL_PREFIX}/repair_schedule/${encodeURIComponent(schedule.id)}?state=${encodeURIComponent(schedule.state)}`,
-    method: 'PUT'
-  }).promise());
-}).share();
-
-
-export const schedules = Rx.Observable.merge(
-    Rx.Observable.timer(0, POLLING_INTERVAL).map(t => Rx.Observable.just({})),
-    addScheduleResult,
-    deleteScheduleResult,
-    updateScheduleStatusResult
-  ).map(s =>
-    s.flatMap(t => Rx.Observable.fromPromise($.ajax({
-        url: `${URL_PREFIX}/repair_schedule`
-      }).promise())
-    )
-);
-
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // repair_run
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -185,11 +136,22 @@ export const updateRepairStatusSubject = new Rx.Subject();
 export const updateRepairIntensitySubject = new Rx.Subject();
 export const repairRunSubject = new Rx.Subject();
 
+// The addReaperSubject handles both on demand and scheduled repairs. This is
+// because the form component to fill out the repair details is used to capture
+// the information for both types of repair.
 export const addRepairResult = addRepairSubject.map(repair => {
-  console.info("Starting repair for cluster: " + repair.clusterName);
-  const params = $.param(repair);
+  const repairParams = $.param(repair.params);
+  let repairEndpoint = "repair_run";
+  let messagePrefix = "Starting repair";
+
+  if (repair.type === "schedule") {
+    repairEndpoint = "repair_schedule";
+    messagePrefix = "Adding new schedule";
+  }
+
+  console.info(`${messagePrefix} for cluster: ${repair.params.clusterName}`);
   return Rx.Observable.fromPromise($.ajax({
-    url: `${URL_PREFIX}/repair_run?${params}`,
+    url: `${URL_PREFIX}/${repairEndpoint}?${repairParams}`,
     method: 'POST'
   }).promise());
 }).share();
@@ -237,6 +199,46 @@ export const repairs = Rx.Observable.merge(
         url: `${URL_PREFIX}/repair_run`
       }).promise())
     ).map(arr=>arr.reverse())
+);
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// repair_schedule
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Schedules only have delete and update subjects because the addReaperSubject
+// handles creating both on demand and scheduled repairs.
+// See "addRepairResult" above.
+export const deleteScheduleSubject = new Rx.Subject();
+export const updateScheduleStatusSubject = new Rx.Subject();
+
+export const deleteScheduleResult = deleteScheduleSubject.map(schedule => {
+  console.info("Deleting schedule with id: " + schedule.id);
+  return Rx.Observable.fromPromise($.ajax({
+    url: `${URL_PREFIX}/repair_schedule/${encodeURIComponent(schedule.id)}?owner=${encodeURIComponent(schedule.owner)}`,
+    method: 'DELETE'
+  }).promise());
+}).share();
+
+export const updateScheduleStatusResult = updateScheduleStatusSubject.map(schedule => {
+  console.info(`Updating schedule ${schedule.id} status with state ${schedule.state} `);
+  return Rx.Observable.fromPromise($.ajax({
+    url: `${URL_PREFIX}/repair_schedule/${encodeURIComponent(schedule.id)}?state=${encodeURIComponent(schedule.state)}`,
+    method: 'PUT'
+  }).promise());
+}).share();
+
+
+export const schedules = Rx.Observable.merge(
+    Rx.Observable.timer(0, POLLING_INTERVAL).map(t => Rx.Observable.just({})),
+    addRepairResult,
+    deleteScheduleResult,
+    updateScheduleStatusResult
+  ).map(s =>
+    s.flatMap(t => Rx.Observable.fromPromise($.ajax({
+        url: `${URL_PREFIX}/repair_schedule`
+      }).promise())
+    )
 );
 
 
