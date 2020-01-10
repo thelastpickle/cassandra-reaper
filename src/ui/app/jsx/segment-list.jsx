@@ -14,6 +14,8 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import moment from "moment";
 import {CFsListRender, getUrlPrefix} from "jsx/mixin";
 import Button from 'react-bootstrap/lib/Button';
@@ -21,11 +23,11 @@ import Modal from 'react-bootstrap/lib/Modal';
 import $ from "jquery";
 const NotificationSystem = require('react-notification-system');
 
-const SegmentList = React.createClass({
+const SegmentList = CreateReactClass({
     _notificationSystem: null,
 
     propTypes: {
-      repairRunId: React.PropTypes.string.isRequired
+      repairRunId: PropTypes.string.isRequired
     },
   
     getInitialState: function() {
@@ -34,7 +36,7 @@ const SegmentList = React.createClass({
       runningCollapsed: false, doneCollapsed: false, notStartedCollapsed: false};
     },
   
-    componentWillMount: function() {
+    UNSAFE_componentWillMount: function() {
         this._refreshSegments();
         this.setState({scheduler : setInterval(this._refreshSegments, 30000)});
     },
@@ -132,7 +134,7 @@ const SegmentList = React.createClass({
             return comparison;
         }
 
-      if(this.state.segments !== null) {
+      if (this.state.segments !== null) {
           runningSegments = this.state.segments.filter(segment => segment.state === 'RUNNING' || segment.state === 'STARTED');
           rowsRunning = runningSegments.sort(compareByStartDate).map(segment =>
               <tbody key={segment.id+'-rows'}>
@@ -156,7 +158,7 @@ const SegmentList = React.createClass({
       }
 
       let tableRunning = null;
-      if(rowsRunning === null) {
+      if (rowsRunning === null) {
         tableRunning = <div className="clusterLoader"></div>;
       } else if(rowsRunning.length === 0) {
         tableRunning = <div className="alert alert-info" role="alert">No running segments found</div>
@@ -185,7 +187,7 @@ const SegmentList = React.createClass({
       }
   
       let tableDone = null;
-      if(rowsDone === null) {
+      if (rowsDone === null) {
         tableDone = <div className="clusterLoader"></div>;
       } else if(rowsDone.length === 0) {
         tableDone = <div className="alert alert-info" role="alert">No segment done yet</div>
@@ -216,7 +218,7 @@ const SegmentList = React.createClass({
       }
 
       let tableNotStarted = null;
-      if(rowsNotStarted === null) {
+      if (rowsNotStarted === null) {
           tableNotStarted = <div className="clusterLoader"></div>;
       } else if(rowsNotStarted.length === 0) {
         tableNotStarted = <div className="alert alert-info" role="alert">No more segment to process</div>
@@ -249,7 +251,7 @@ const SegmentList = React.createClass({
         display: "inline-block" 
       };
   
-      if(this.state.runningCollapsed === true) {
+      if (this.state.runningCollapsed === true) {
         menuRunningDownStyle = {
           display: "inline-block"
         };
@@ -267,7 +269,7 @@ const SegmentList = React.createClass({
         display: "none" 
       };
   
-      if(this.state.doneCollapsed === true) {
+      if (this.state.doneCollapsed === true) {
         menuDoneDownStyle = {
           display: "none"
         };
@@ -284,7 +286,7 @@ const SegmentList = React.createClass({
         display: "inline-block" 
       };
   
-      if(this.state.notStartedCollapsed === true) {
+      if (this.state.notStartedCollapsed === true) {
         menuNotStartedDownStyle = {
           display: "inline-block"
         };
@@ -329,11 +331,11 @@ const SegmentList = React.createClass({
     }
   });
 
-const Segment = React.createClass({
+const Segment = CreateReactClass({
     propTypes: {
-        segment: React.PropTypes.object.isRequired,
-        refreshSegments: React.PropTypes.func,
-        notify: React.PropTypes.func
+        segment: PropTypes.object.isRequired,
+        refreshSegments: PropTypes.func,
+        notify: PropTypes.func
     },
     
     getInitialState: function() {
@@ -366,7 +368,7 @@ const Segment = React.createClass({
                 <td>{this.props.segment.tokenRange.baseRange.start}</td>
                 <td>{this.props.segment.tokenRange.baseRange.end}</td>
                 <td>{this.props.segment.failCount}</td>
-                <td><Button bsStyle='primary'>{this.props.segment.state}</Button></td>
+                <td className="table-data-label-primary">{this.props.segment.state}</td>
             </tr>
         } else if (this.props.segment.state === 'RUNNING' || this.props.segment.state === 'STARTED') {
             return  <tr>
@@ -374,10 +376,10 @@ const Segment = React.createClass({
                 <td>{this.props.segment.tokenRange.baseRange.start}</td>
                 <td>{this.props.segment.tokenRange.baseRange.end}</td>
                 <td>{this.props.segment.failCount}</td>
-                <td><Button bsStyle='warning'>{this.props.segment.state}</Button></td>
+                <td className='table-data-label-warning'>{this.props.segment.state}</td>
                 <td>{this.props.segment.coordinatorHost}</td>
                 <td>{moment(this.props.segment.startTime).format("LLL")}</td>
-                <td><Button bsStyle='danger' onClick={() => this._abortSegment()}>Abort</Button></td>
+                <td><Button className='btn-xs btn-danger' onClick={() => this._abortSegment()}>Abort</Button></td>
             </tr>
         } else {
             return  <tr>
@@ -385,12 +387,12 @@ const Segment = React.createClass({
                 <td>{this.props.segment.tokenRange.baseRange.start}</td>
                 <td>{this.props.segment.tokenRange.baseRange.end}</td>
                 <td>{this.props.segment.failCount}</td>
-                <td><Button bsStyle='success'>{this.props.segment.state}</Button></td>
+                <td className='table-data-label-success'>{this.props.segment.state}</td>
                 <td>{this.props.segment.coordinatorHost}</td>
                 <td>{moment(this.props.segment.startTime).format("LLL")}</td>
                 <td>{moment(this.props.segment.endTime).format("LLL")}</td>
                 <td>{moment.duration(moment(this.props.segment.endTime).diff(moment(this.props.segment.startTime))).humanize()}</td>
-                <td><Button bsStyle='danger' onClick={() => this._abortSegment()}>Replay</Button></td>
+                <td><Button className='btn-xs btn-danger' onClick={() => this._abortSegment()}>Replay</Button></td>
             </tr>
         }
     }

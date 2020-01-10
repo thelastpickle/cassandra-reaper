@@ -15,20 +15,22 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 
 
-const clusterForm = React.createClass({
+const clusterForm = CreateReactClass({
 
   propTypes: {
-    addClusterSubject: React.PropTypes.object.isRequired,
-    addClusterResult: React.PropTypes.object.isRequired
+    addClusterSubject: PropTypes.object.isRequired,
+    addClusterResult: PropTypes.object.isRequired
   },
 
   getInitialState: function() {
     return {addClusterResultMsg: null, seed_node:"", jmx_port:"7199", submitEnabled: false};
   },
 
-  componentWillMount: function() {
+  UNSAFE_componentWillMount: function() {
     this._clusterResultSubscription = this.props.addClusterResult.subscribeOnNext(obs =>
       obs.subscribe(
         r => this.setState({addClusterResultMsg: null}),

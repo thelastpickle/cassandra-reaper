@@ -14,9 +14,10 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
 import Modal from 'react-bootstrap/lib/Modal';
-import Button from 'react-bootstrap/lib/Button';
 import Tooltip from 'react-bootstrap/lib/Tooltip';
 import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger';
 import ProgressBar from 'react-bootstrap/lib/ProgressBar';
@@ -24,16 +25,16 @@ import Popover from 'react-bootstrap/lib/Popover';
 import $ from "jquery";
 var NotificationSystem = require('react-notification-system');
 
-const Snapshot = React.createClass({
+const Snapshot = CreateReactClass({
     propTypes: {
-      snapshotName: React.PropTypes.string.isRequired,
-      snapshots: React.PropTypes.array.isRequired,
-      totalSizeOnDisk: React.PropTypes.number,
-      totalTrueSize: React.PropTypes.number,
-      listSnapshots: React.PropTypes.func.isRequired,
-      endpoint: React.PropTypes.string.isRequired,
-      notificationSystem: React.PropTypes.object,
-      clusterName: React.PropTypes.string.isRequired
+      snapshotName: PropTypes.string.isRequired,
+      snapshots: PropTypes.array.isRequired,
+      totalSizeOnDisk: PropTypes.number,
+      totalTrueSize: PropTypes.number,
+      listSnapshots: PropTypes.func.isRequired,
+      endpoint: PropTypes.string.isRequired,
+      notificationSystem: PropTypes.object,
+      clusterName: PropTypes.string.isRequired
     },
 
     getInitialState() {
