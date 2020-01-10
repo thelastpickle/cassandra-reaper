@@ -31,7 +31,7 @@
     "react": "^16.12.0",
     "react-bootstrap": "^0.32.4",
     "react-dom": "^16.12.0",
-    "react-hot-loader": "^1.2.4",
+    "react-hot-loader": "^4.12.18",
     "react-notification-system": "^0.2.0",
     "react-tag-input": "^6.4.2",
     "react-widgets": "^4.3.2",
