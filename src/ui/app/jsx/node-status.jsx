@@ -14,6 +14,8 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import Snapshot from "jsx/snapshot";
 import TpStats from "jsx/tpstats";
 import Streams from "jsx/streams";
@@ -32,16 +34,16 @@ import Tab from 'react-bootstrap/lib/Tab';
 import $ from "jquery";
 var NotificationSystem = require('react-notification-system');
 
-const NodeStatus = React.createClass({
+const NodeStatus = CreateReactClass({
 
     propTypes: {
-      endpointStatus: React.PropTypes.object.isRequired,
-      clusterName: React.PropTypes.string.isRequired,
-      nbNodes: React.PropTypes.number.isRequired,
-      rackLoad: React.PropTypes.number.isRequired,
-      notificationSystem: React.PropTypes.object,
-      totalLoad: React.PropTypes.number.isRequired,
-      nodeFilter: React.PropTypes.string
+      endpointStatus: PropTypes.object.isRequired,
+      clusterName: PropTypes.string.isRequired,
+      nbNodes: PropTypes.number.isRequired,
+      rackLoad: PropTypes.number.isRequired,
+      notificationSystem: PropTypes.object,
+      totalLoad: PropTypes.number.isRequired,
+      nodeFilter: PropTypes.string
     },
   
     getInitialState() {
@@ -52,7 +54,7 @@ const NodeStatus = React.createClass({
               communicating: false, tokens:[]};
     },
 
-    componentWillMount: function() {
+    UNSAFE_componentWillMount: function() {
       this._getNodeTokens();
     },
   
@@ -190,11 +192,11 @@ const NodeStatus = React.createClass({
       }
   
       let buttonStyle = "btn btn-xs btn-success";
-      let largeButtonStyle = "btn btn-lg btn-success";
+      let largeButtonStyle = "btn btn-lg btn-static btn-success";
   
       if(!this.props.endpointStatus.status.endsWith('UP')){
         buttonStyle = "btn btn-xs btn-danger";
-        largeButtonStyle = "btn btn-lg btn-danger";
+        largeButtonStyle = "btn btn-lg btn-static btn-danger";
       }
       
       let averageSize = this.props.rackLoad/this.props.nbNodes;
@@ -267,7 +269,7 @@ const NodeStatus = React.createClass({
                     </div>
                     <div className="col-lg-3">
                       <h4>Tokens</h4>
-                      <p><OverlayTrigger trigger="click" placement="bottom" overlay={tokens}><button type="button" className="btn btn-md btn-success" style={takeSnapshotStyle}>{this.state.tokens.length}</button></OverlayTrigger></p>
+                      <p><OverlayTrigger trigger="click" placement="bottom" overlay={tokens}><button type="button" className="btn btn-md btn-info" style={takeSnapshotStyle}>{this.state.tokens.length}</button></OverlayTrigger></p>
                     </div>
                     <div className="col-lg-3">
                       <h4>Status</h4>

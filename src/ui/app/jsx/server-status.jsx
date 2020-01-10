@@ -15,18 +15,20 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 
-var serverStatus = React.createClass({
+var serverStatus = CreateReactClass({
 
   propTypes: {
-    statusObservableTimer: React.PropTypes.object.isRequired
+    statusObservableTimer: PropTypes.object.isRequired
   },
 
   getInitialState: function() {
     return {isDisconnected: false};
   },
 
-  componentWillMount: function() {
+  UNSAFE_componentWillMount: function() {
     this._statusSubscription = this.props.statusObservableTimer.subscribeOnNext(obs =>
         obs.subscribe(this._onStatusOk, this._onStatusError, this._onStatusOk));
   },
