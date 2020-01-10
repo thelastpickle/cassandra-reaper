@@ -15,9 +15,10 @@
 //  limitations under the License.
 
 import React from "react";
-import Button from 'react-bootstrap/lib/Button';
-import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger';
-import Tooltip from 'react-bootstrap/lib/Tooltip';
+import CreateReactClass from 'create-react-class';
+import Button from 'react-bootstrap/Button';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 
 export const RowDeleteMixin = {
 
@@ -79,7 +80,7 @@ export const StatusUpdateMixin = {
 
 export const DeleteStatusMessageMixin = {
 
-  componentWillMount: function() {
+  UNSAFE_componentWillMount: function() {
     this._deleteResultSubscription = this.props.deleteResult.subscribeOnNext(obs =>
       obs.subscribe(
         r => this.setState({deleteResultMsg: null}),
@@ -100,13 +101,13 @@ export const DeleteStatusMessageMixin = {
 
 };
 
-export const CFsListRender = React.createClass({
+export const CFsListRender = CreateReactClass({
     render: function() {
         return (
-            <div className="ReactTags__tags">
-              <div className="ReactTags__selected">
+            <div>
+              <div>
                 {this.props.list.map(function(listValue){
-                    return <span className="ReactTags__tag" key={listValue}>{listValue}</span>;
+                    return <span key={listValue}>{listValue}</span>;
                 })}
               </div>
             </div>
@@ -114,27 +115,26 @@ export const CFsListRender = React.createClass({
     }
 });
 
-export const CFsCountListRender = React.createClass({
+export const CFsCountListRender = CreateReactClass({
   render: function() {
       return (
-          <div className="ReactTags__tags">
-            <div className="ReactTags__selected">
-              <OverlayTrigger
-                key={this.props.id}
-                placement="top"
-                overlay={
-                  <Tooltip id={`tooltip-bottom`}>
-                    {this.props.list.sort().map(function(table){
-                      return <div>{table}</div>;
-                    })
-                    }
-                  </Tooltip>
+        <div>
+          <OverlayTrigger
+            placement="top"
+            overlay={
+              <Tooltip id={this.props.id + '-tooltip'}>
+                {this.props.list.sort().map(function(table){
+                  return <div key={table}>{table}</div>;
+                })
                 }
-              >
-                <Button variant="secondary" className="btn btn-xs">{this.props.list.length>0?this.props.list.length:"All"} table{this.props.list.length==1?"":"s"}</Button>
-              </OverlayTrigger>
-            </div>
-          </div>
+              </Tooltip>
+            }
+          >
+            <Button variant="secondary" className="btn btn-xs repairs-done-accented-value">
+              {this.props.list.length > 0 ? this.props.list.length : "All" } table{this.props.list.length === 1 ? "" : "s"}
+            </Button>
+          </OverlayTrigger>
+        </div>
       )
   }
 });
@@ -156,10 +156,9 @@ export const humanFileSize = function(bytes, si) {
 }
 
 export const getUrlPrefix = function(location) {
-  const isDev = location.includes('webpack-dev-server');
   const contextPath = location.includes('/webui') ? location.substring(0, location.indexOf("/webui")) : '';
-  const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : contextPath;
-  return URL_PREFIX;
+  // GLOBAL_* variables are defined and assigned in webpack. See webpack.config.js
+  return (GLOBAL_IS_DEV ? `http://${GLOBAL_REAPER_HOST}:8080` : contextPath);
 }
 
 export const toast = function(notificationSystem, message, type, uid) {

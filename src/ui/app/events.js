@@ -39,14 +39,9 @@ jQuery(document).ready(function($){
   }
 
   let currentCluster = $.urlParam('currentCluster');
-  if(!currentCluster || currentCluster === "null") {
+  if (!currentCluster || currentCluster === "null") {
     currentCluster = 'all';
   }
-
-
-  const isDev = window != window.top;
-  const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : '';
-
 
   ReactDOM.render(
     React.createElement(eventScreen, {clusterNames, currentCluster, statusObservableTimer, diagnosticEvents,

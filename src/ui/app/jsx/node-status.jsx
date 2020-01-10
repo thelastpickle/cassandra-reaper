@@ -14,6 +14,8 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import Snapshot from "jsx/snapshot";
 import TpStats from "jsx/tpstats";
 import Streams from "jsx/streams";
@@ -21,27 +23,27 @@ import DroppedMessages from "jsx/dropped-messages";
 import ClientRequestLatency from "jsx/client-request-latency";
 import ActiveCompactions from "jsx/active-compactions";
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
-import Modal from 'react-bootstrap/lib/Modal';
-import Button from 'react-bootstrap/lib/Button';
-import Tooltip from 'react-bootstrap/lib/Tooltip';
-import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger';
-import ProgressBar from 'react-bootstrap/lib/ProgressBar';
-import Popover from 'react-bootstrap/lib/Popover';
-import Tabs from 'react-bootstrap/lib/Tabs';
-import Tab from 'react-bootstrap/lib/Tab';
+import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
+import Tooltip from 'react-bootstrap/Tooltip';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import ProgressBar from 'react-bootstrap/ProgressBar';
+import Popover from 'react-bootstrap/Popover';
+import Tabs from 'react-bootstrap/Tabs';
+import Tab from 'react-bootstrap/Tab';
 import $ from "jquery";
 var NotificationSystem = require('react-notification-system');
 
-const NodeStatus = React.createClass({
+const NodeStatus = CreateReactClass({
 
     propTypes: {
-      endpointStatus: React.PropTypes.object.isRequired,
-      clusterName: React.PropTypes.string.isRequired,
-      nbNodes: React.PropTypes.number.isRequired,
-      rackLoad: React.PropTypes.number.isRequired,
-      notificationSystem: React.PropTypes.object,
-      totalLoad: React.PropTypes.number.isRequired,
-      nodeFilter: React.PropTypes.string
+      endpointStatus: PropTypes.object.isRequired,
+      clusterName: PropTypes.string.isRequired,
+      nbNodes: PropTypes.number.isRequired,
+      rackLoad: PropTypes.number.isRequired,
+      notificationSystem: PropTypes.object,
+      totalLoad: PropTypes.number.isRequired,
+      nodeFilter: PropTypes.string
     },
   
     getInitialState() {
@@ -52,7 +54,7 @@ const NodeStatus = React.createClass({
               communicating: false, tokens:[]};
     },
 
-    componentWillMount: function() {
+    UNSAFE_componentWillMount: function() {
       this._getNodeTokens();
     },
   

@@ -21,7 +21,7 @@ import Cookies from "js-cookie";
 import ScheduleScreen from "jsx/schedule-screen";
 import {
   statusObservableTimer,
-  addScheduleSubject, addScheduleResult, deleteScheduleSubject, deleteScheduleResult,
+  addRepairSubject, addRepairResult, deleteScheduleSubject, deleteScheduleResult,
   updateScheduleStatusSubject, updateScheduleStatusResult,
   schedules, clusterNames,
   logoutSubject, logoutResult
@@ -30,7 +30,7 @@ import {
 jQuery(document).ready(function($){
   document.documentElement.setAttribute('data-theme', Cookies.get('reaper-theme'));
   $.urlParam = function(name){
-    var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+    let results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
     if (results) {
       return results[1] || 0;
     } 
@@ -40,12 +40,12 @@ jQuery(document).ready(function($){
   }
 
   let currentCluster = $.urlParam('currentCluster');
-  if(!currentCluster || currentCluster === "null") {
+  if (!currentCluster || currentCluster === "null") {
     currentCluster = 'all';
   }
 
   ReactDOM.render(
-    React.createElement(ScheduleScreen, {clusterNames, addScheduleSubject, addScheduleResult, currentCluster, schedules,
+    React.createElement(ScheduleScreen, {clusterNames, addRepairSubject, addRepairResult, currentCluster, schedules,
       logoutSubject: logoutSubject, logoutResult: logoutResult, 
       deleteSubject: deleteScheduleSubject,
     deleteResult: deleteScheduleResult, updateStatusSubject: updateScheduleStatusSubject, statusObservableTimer,

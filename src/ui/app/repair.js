@@ -34,7 +34,7 @@ import {
 jQuery(document).ready(function($){
   document.documentElement.setAttribute('data-theme', Cookies.get('reaper-theme'));
   $.urlParam = function(name){
-    var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+    let results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
     if (results) {
       return results[1] || 0;
     }
@@ -44,7 +44,7 @@ jQuery(document).ready(function($){
   }
 
   let currentCluster = $.urlParam('currentCluster');
-  if(!currentCluster || currentCluster === "null") {
+  if (!currentCluster || currentCluster === "null") {
     currentCluster = 'all';
   }
 

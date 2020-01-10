@@ -21,6 +21,19 @@
 .btn-default:hover {
   background-color: var(--btn-default-bg-3);
 }
+
+.table-data-label-primary {
+  color: var(--btn-primary-bg);
+}
+
+.table-data-label-success {
+  color: var(--btn-success-bg);
+}
+
+.table-data-label-warning {
+  color: var(--btn-warning-bg);
+}
+
 .btn-sm,
 .btn-xs {
   font-size: var(--font-size-small);
@@ -257,6 +270,11 @@ a.list-group-item-danger.active:focus {
   border: none;
   border-radius: 0;
 }
+
+.show {
+  opacity: 1;
+}
+
 .popover-title {
   border: none;
 }
@@ -323,4 +341,80 @@ body {
   border: 1px solid var(--brand-primary);
 }
 
+.repairs-done-accented-value {
+  color: var(--text-color) !important;
+  background-color: var(--body-bg) !important;
+}
+
+.progress-bar {
+  color: var(--text-color) !important;
+  background-color: var(--body-bg) !important;
+}
+
+.select__control {
+  border-radius: 0px !important;
+}
+
+.select__option {
+  color: var(--gray-light) !important;
+}
+
+.react-datepicker {
+  font-size: var(--font-size-base) !important;
+  font-family: var(--font-family-base) !important;
+}
+
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container > input {
+  width: 100%;
+  height: var(--input-height-base);
+  padding: var(--padding-base-vertical) var(--padding-base-horizontal);
+  line-height: var(--line-height-base);
+  color: var(--gray-light);
+  background-color: var(--input-bg);
+}
+
+.react-datepicker__current-month {
+  font-size: var(--font-size-base) !important;
+  font-family: var(--font-family-base) !important;
+}
+
+.react-datepicker__day-name {
+  width: 30px !important;
+}
+
+.react-datepicker__day {
+  width: 30px !important;
+  line-height: 30px !important;
+  color: var(--gray-light) !important;
+}
+
+.react-datepicker__day--selected {
+  color: #fff !important;
+}
+
+.react-datepicker__day--today {
+  background-color: #eee;
+}
+
+.react-datepicker__navigation--next {
+  right: 100px !important;
+}
+
+.react-datepicker-time__header {
+  font-size: var(--font-size-base) !important;
+  font-family: var(--font-family-base) !important;
+  height: 33px !important;
+}
+
+.react-datepicker__time-list-item {
+  color: var(--gray-light) !important;
+}
+
+.react-datepicker__time-list-item--selected {
+  color: #fff !important;
+}
 /*# sourceMappingURL=bootstrap-theme.css.map */

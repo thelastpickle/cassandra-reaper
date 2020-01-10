@@ -15,14 +15,17 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
+import Select from 'react-select';
 import moment from "moment";
 import {RowDeleteMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender, toast, getUrlPrefix} from "jsx/mixin";
 var NotificationSystem = require('react-notification-system');
 
-const TableRow = React.createClass({
+const TableRow = CreateReactClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin],
   propTypes: {
-    notificationSystem: React.PropTypes.object.isRequired
+    notificationSystem: PropTypes.object.isRequired
   },
 
   _runNow: function() {
@@ -68,7 +71,7 @@ const TableRow = React.createClass({
 });
 
 
-const TableRowDetails = React.createClass({
+const TableRowDetails = CreateReactClass({
   render: function() {
 
     const createdAt = moment(this.props.row.creation_time).format("LLL");
@@ -148,24 +151,30 @@ const TableRowDetails = React.createClass({
 });
 
 
-const scheduleList = React.createClass({
+const scheduleList = CreateReactClass({
   mixins: [DeleteStatusMessageMixin],
   _notificationSystem: null,
 
   propTypes: {
-    schedules: React.PropTypes.object.isRequired,
-    clusterNames: React.PropTypes.object.isRequired,
-    deleteSubject: React.PropTypes.object.isRequired,
-    updateStatusSubject: React.PropTypes.object.isRequired,
-    deleteResult: React.PropTypes.object.isRequired,
-    changeCurrentCluster: React.PropTypes.func.isRequired
+    schedules: PropTypes.object.isRequired,
+    clusterNames: PropTypes.object.isRequired,
+    deleteSubject: PropTypes.object.isRequired,
+    updateStatusSubject: PropTypes.object.isRequired,
+    deleteResult: PropTypes.object.isRequired,
+    changeCurrentCluster: PropTypes.func.isRequired
   },
 
   getInitialState: function() {
-    return {schedules: [], deleteResultMsg: null, clusterNames: [], currentCluster:this.props.currentCluster};
+    return {
+      schedules: [],
+      deleteResultMsg: null,
+      clusterNames: [],
+      currentClusterSelectValue: {value: 'all', label: 'all'},
+      currentCluster: this.props.currentCluster
+    };
   },
 
-  componentWillMount: function() {
+  UNSAFE_componentWillMount: function() {
     this._schedulesSubscription = this.props.schedules.subscribeOnNext(obs =>
       obs.subscribeOnNext(schedules => {
         const sortedSchedules = Array.from(schedules);
@@ -188,18 +197,23 @@ const scheduleList = React.createClass({
     this._clustersSubscription.dispose();
   },
 
-  _handleChange: function(e) {
-    var v = e.target.value;
-    var n = e.target.id.substring(3); // strip in_ prefix
+  _handleSelectOnChange: function(valueContext, actionContext) {
+    const nameRef = actionContext.name.split("_")[1];
+    const nameSelectValueRef = `${nameRef}SelectValue`;
 
-    // update state
-    const state = this.state;
-    state[n] = v;
-    this.replaceState(state);
+    let newSelectValue = {};
+    let newValueRef = "";
 
-    // validate
-    const valid = state.currentCluster;
-    this.setState({submitEnabled: valid});
+    if (valueContext) {
+        newSelectValue = valueContext;
+        newValueRef = valueContext.value;
+    }
+
+    let newState = {};
+    newState[nameRef] = newValueRef;
+    newState[nameSelectValueRef] = newSelectValue;
+
+    this.setState(newState);
     this.props.changeCurrentCluster(this.state.currentCluster);
   },
 
@@ -213,19 +227,24 @@ const scheduleList = React.createClass({
       return 0;
     }
 
-    const clusterItems = this.state.clusterNames.sort().map(name =>
-      <option key={name} value={name}>{name}</option>
-    );
+    let selectClusterItems = this.state.clusterNames.sort().map(name => {
+        { return { value: name, label: name}; }
+    });
+
+    selectClusterItems.unshift({value: 'all', label: 'all'});
 
     const clusterFilter = <form className="form-horizontal form-condensed">
             <div className="form-group">
               <label htmlFor="in_clusterName" className="col-sm-3 control-label">Filter cluster:</label>
               <div className="col-sm-9 col-md-7 col-lg-5">
-                <select className="form-control" id="in_currentCluster"
-                  onChange={this._handleChange} value={this.state.currentCluster}>
-                  <option key="all" value="all">All</option>
-                  {clusterItems}
-                </select>
+                <Select
+                    id="in_currentCluster"
+                    name="in_currentCluster"
+                    classNamePrefix="select"
+                    options={selectClusterItems}
+                    value={this.state.currentClusterSelectValue}
+                    onChange={this._handleSelectOnChange}
+                />
               </div>
             </div>
     </form>

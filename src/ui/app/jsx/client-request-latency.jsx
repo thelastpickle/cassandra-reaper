@@ -14,23 +14,25 @@
 //  limitations under the License.
 
 import React from "react";
-import Table from 'react-bootstrap/lib/Table';
-import Tooltip from 'react-bootstrap/lib/Tooltip';
-import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger';
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
+import Table from 'react-bootstrap/Table';
+import Tooltip from 'react-bootstrap/Tooltip';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
 import $ from "jquery";
 
-const ClientRequestLatency = React.createClass({
+const ClientRequestLatency = CreateReactClass({
     propTypes: {
-      endpoint: React.PropTypes.string.isRequired,
-      clusterName: React.PropTypes.string.isRequired
+      endpoint: PropTypes.string.isRequired,
+      clusterName: PropTypes.string.isRequired
     },
 
     getInitialState() {
       return {clientRequestLatencies: [], scheduler: {}};
     },
 
-    componentWillMount: function() {
+    UNSAFE_componentWillMount: function() {
       this._collectClientRequestLatencies();
       this.setState({scheduler : setInterval(this._collectclientRequestLatencies, 10000)});
     },
