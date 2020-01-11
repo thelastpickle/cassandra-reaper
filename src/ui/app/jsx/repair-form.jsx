@@ -17,7 +17,7 @@
 import React from "react";
 import CreateReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
-import { WithContext as ReactTags } from 'react-tag-input';
+import Select from 'react-select';
 import { getUrlPrefix } from "jsx/mixin";
 import $ from "jquery";
 
@@ -38,7 +38,7 @@ const repairForm = CreateReactClass({
       clusterName: this.props.currentCluster!="all"?this.props.currentCluster:this.props.clusterNames[0], keyspace: "", tables: "", owner: null, segments: null,
       parallelism: null, intensity: null, cause: null, incrementalRepair: null, formCollapsed: true, nodes: "", datacenters: "", blacklistedTables: "",
       nodeList: [], datacenterList: [], clusterStatus: {}, urlPrefix: URL_PREFIX, nodeSuggestions: [], datacenterSuggestions: [], tableSuggestions: [], 
-      clusterTables: {}, blacklistSuggestions: [], tableList: [], blacklistList: [], keyspaceList: [], keyspaceSuggestions: [],
+      clusterTables: {}, blacklistSuggestions: [], tableList: [], blacklistList: [], keyspaceList: [], keyspaceOptions: [],
       blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true, repairThreadCount: 1
     };
   },
@@ -88,7 +88,7 @@ const repairForm = CreateReactClass({
         component: this,
         complete: function(data) {
           this.component.setState({clusterTables: $.parseJSON(data.responseText)});
-          this.component._getKeyspaceSuggestions();
+          this.component._getKeyspaceOptions();
         }
       });
     }
@@ -104,8 +104,10 @@ const repairForm = CreateReactClass({
     this.setState({datacenterSuggestions: datacenters});
   },
 
-  _getKeyspaceSuggestions: function() {
-    this.setState({keyspaceSuggestions: Object.keys(this.state.clusterTables)});
+  _getKeyspaceOptions: function() {
+    this.setState({keyspaceOptions: Object.keys(this.state.clusterTables).map(
+      obj => { return {value: obj, label: obj}; }
+    )});
   },
 
   _getTableSuggestions: function(ks) {
@@ -295,37 +297,24 @@ const repairForm = CreateReactClass({
         this.setState({blacklistReadOnly: (tables.length > 0)});
     },
   
-    // Keyspace tag list functions
-    _handleKeyspaceAddition(ks) {
-      let keyspaces = this.state.keyspaceList;
-      if (keyspaces.length==0) {
-        if ($.inArray(ks, this.state.keyspace.split(','))==-1) {
-          keyspaces.push({
-              id: this._create_UUID(),
-              text: ks
-          });
-          this.setState({keyspaceList: keyspaces, keyspace: ks, keyspaces: keyspaces.map(ks => ks.text).join(',')});
-          this._checkValidity();
-          this._getTableSuggestions(ks);
-        }
-      }
-    },
-  
-    _handleKeyspaceDelete(i) {
-        let keyspaces = this.state.keyspaceList;
-        keyspaces.splice(i, 1);
-        this.setState({keyspaceList: keyspaces, keyspace: "", keyspaces: keyspaces.map(ks => ks.text).join(',')});
-        this._checkValidity();
-        this._getTableSuggestions("");
-    },
+    // Keyspace list functions
+    _handleKeySpaceSelectOnChange: function(valueContext, actionContext) {
+      let keyspaceListRef = this.state.keyspaceList;
+      var keyspaceRef = "";
 
-    _handleKeyspaceFilterSuggestions(textInputValue, possibleSuggestionsArray) {
-      var lowerCaseQuery = textInputValue.toLowerCase();
-      let keyspaces = this.state.keyspaceList;
-   
-      return possibleSuggestionsArray.filter(function(suggestion)  {
-          return suggestion.toLowerCase().includes(lowerCaseQuery) && keyspaces.length==0;
-      })
+      keyspaceListRef.length = 0;
+
+      if (valueContext) {
+        keyspaceListRef.push({
+          id: this._create_UUID(),
+          text: valueContext.value
+        });
+        keyspaceRef = valueContext.value;
+      }
+
+      this.setState({ keyspaceList: keyspaceListRef, keyspace: keyspaceRef });
+      this._checkValidity();
+      this._getTableSuggestions(keyspaceRef);
     },
 
     _create_UUID(){
@@ -373,7 +362,6 @@ const repairForm = CreateReactClass({
     &nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={advancedMenuDownStyle}></span>
            <span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={advancedMenuUpStyle}></span></a></div>
 
-
     const form = <div className="row">
         <div className="col-lg-12">
 
@@ -391,17 +379,21 @@ const repairForm = CreateReactClass({
 
             <div className="form-group">
             <label htmlFor="in_keyspace" className="col-sm-3 control-label">Keyspace*</label>
-            <div className="col-sm-9 col-md-7 col-lg-5">
-              <ReactTags id={'in_keyspace'} tags={this.state.keyspaceList}
-                suggestions={this.state.keyspaceSuggestions}
-                labelField={'text'} handleAddition={this._handleKeyspaceAddition} 
-                handleInputBlur={this._handleKeyspaceAddition} 
-                handleDelete={this._handleKeyspaceDelete}
-                placeholder={'Add a keyspace'}
-                handleFilterSuggestions={this._handleKeyspaceFilterSuggestions}
-                classNames={{
-                    tagInputField: keyspaceInputStyle
-                  }}/>
+              <div className="col-sm-9 col-md-7 col-lg-5">
+                <Select
+                  id="in_keyspace"
+                  isClearable
+                  isSearchable
+                  name="in_keyspace"
+                  options={this.state.keyspaceOptions}
+                  placeholder="Add a keyspace"
+                  onChange={this._handleKeySpaceSelectOnChange}
+                  components={{
+                    DropdownIndicator: () => null,
+                    IndicatorSeparator: () => null,
+                   }}
+                  classNames={{tagInputField: keyspaceInputStyle}}
+                />
               </div>
             </div>
             
@@ -431,64 +423,26 @@ const repairForm = CreateReactClass({
                   <div className="panel-body collapse" id="advanced-form">
                     <div className="form-group">
                     <label htmlFor="in_tables" className="col-sm-3 control-label">Tables</label>
-                    <div className="col-sm-14 col-md-12 col-lg-9">
-                      <ReactTags id={'in_tables'} tags={this.state.tableList}
-                        suggestions={this.state.tableSuggestions}
-                        labelField={'text'} handleAddition={this._handleTableAddition} 
-                        handleInputBlur={this._handleTableAddition} 
-                        handleDelete={this._handleTableDelete}
-                        readOnly={this.state.tablelistReadOnly}
-                        placeholder={'Add a table (optional)'}
-                        handleFilterSuggestions={this._handleBlacklistFilterSuggestions}
-                        classNames={{
-                            tagInputField: 'form-control'
-                          }}/>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                        <p>ReactTag was here</p>
                       </div>
                     </div>
                     <div className="form-group">
                     <label htmlFor="in_blacklist" className="col-sm-3 control-label">Blacklist</label>
-                    <div className="col-sm-14 col-md-12 col-lg-9">
-                      <ReactTags id={'in_blacklist'} tags={this.state.blacklistList}
-                        suggestions={this.state.tableSuggestions}
-                        labelField={'text'} handleAddition={this._handleBlacklistAddition} 
-                        handleInputBlur={this._handleBlacklistAddition}
-                        handleDelete={this._handleBlacklistDelete}
-                        readOnly={this.state.blacklistReadOnly}
-                        placeholder={'Add a table (optional)'}
-                        handleFilterSuggestions={this._handleBlacklistFilterSuggestions}
-                        classNames={{
-                            tagInputField: 'form-control'
-                          }}/>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                        <p>ReactTag was here</p>
                       </div>
                     </div>
                     <div className="form-group">
                       <label htmlFor="in_nodes" className="col-sm-3 control-label">Nodes</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
-                      <ReactTags id={'in_nodes'} tags={this.state.nodeList}
-                        suggestions={this.state.nodeSuggestions}
-                        labelField={'text'} handleAddition={this._handleAddition} 
-                        handleInputBlur={this._handleAddition} 
-                        handleDelete={this._handleDelete}
-                        placeholder={'Add a node (optional)'}
-                        handleFilterSuggestions={this._handleNodeFilterSuggestions}
-                        classNames={{
-                            tagInputField: 'form-control'
-                          }}/>
+                        <p>ReactTag was here</p>
                       </div>
                     </div>
                     <div className="form-group">
                       <label htmlFor="in_datacenters" className="col-sm-3 control-label">Datacenters</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
-                      <ReactTags id={'in_datacenters'} tags={this.state.datacenterList}
-                      suggestions={this.state.datacenterSuggestions}
-                      labelField={'text'} handleAddition={this._handleDcAddition} 
-                      handleInputBlur={this._handleDcAddition} 
-                      handleDelete={this._handleDcDelete}
-                      placeholder={'Add a datacenter (optional)'}
-                      handleFilterSuggestions={this._handleDcFilterSuggestions}
-                      classNames={{
-                          tagInputField: 'form-control'
-                        }}/>
+                        <p>ReactTag was here</p>
                       </div>
                     </div>
                     <div className="form-group">
@@ -571,10 +525,6 @@ const repairForm = CreateReactClass({
     }
 
     const formHeader = <div className="panel-title" ><a href="#repair-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>Start a new repair&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span></a></div>
-
-
-
-
 
     return (<div className="panel panel-warning">
               <div className="panel-heading">
