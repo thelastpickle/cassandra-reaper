@@ -14,16 +14,18 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import Table from 'react-bootstrap/lib/Table';
 import Stream from 'jsx/stream';
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
 import $ from "jquery";
 
-const Streams = React.createClass({
+const Streams = CreateReactClass({
 
     propTypes: {
-      endpoint: React.PropTypes.string.isRequired,
-      clusterName: React.PropTypes.string.isRequired
+      endpoint: PropTypes.string.isRequired,
+      clusterName: PropTypes.string.isRequired
     },
 
     getInitialState() {

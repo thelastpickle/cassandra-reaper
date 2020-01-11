@@ -15,13 +15,15 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 
 
-const clusterForm = React.createClass({
+const clusterForm = CreateReactClass({
 
   propTypes: {
-    addClusterSubject: React.PropTypes.object.isRequired,
-    addClusterResult: React.PropTypes.object.isRequired
+    addClusterSubject: PropTypes.object.isRequired,
+    addClusterResult: PropTypes.object.isRequired
   },
 
   getInitialState: function() {

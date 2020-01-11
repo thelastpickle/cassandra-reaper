@@ -16,19 +16,21 @@
 
 import $ from "jquery";
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import { WithContext as ReactTags } from 'react-tag-input';
 import {getUrlPrefix} from "jsx/mixin";
 
 
-const subscriptionForm = React.createClass({
+const subscriptionForm = CreateReactClass({
 
   propTypes: {
-    addSubscriptionSubject: React.PropTypes.object.isRequired,
-    listenSubscriptionSubject: React.PropTypes.object.isRequired,
-    addSubscriptionResult: React.PropTypes.object.isRequired,
-    clusterStatusResult: React.PropTypes.object.isRequired,
-    clusterSelected: React.PropTypes.object.isRequired,
-    clusterNames: React.PropTypes.object.isRequired
+    addSubscriptionSubject: PropTypes.object.isRequired,
+    listenSubscriptionSubject: PropTypes.object.isRequired,
+    addSubscriptionResult: PropTypes.object.isRequired,
+    clusterStatusResult: PropTypes.object.isRequired,
+    clusterSelected: PropTypes.object.isRequired,
+    clusterNames: PropTypes.object.isRequired
   },
 
   getInitialState: function(formExpanded) {

@@ -15,15 +15,16 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from'create-react-class';
 import moment from "moment";
 import {RowDeleteMixin, DeleteStatusMessageMixin} from "jsx/mixin";
 
-const TableRow = React.createClass({
+const TableRow = CreateReactClass({
   mixins: [RowDeleteMixin],
 
   propTypes: {
-    deleteSubject: React.PropTypes.object.isRequired,
-    listenSubscriptionSubject: React.PropTypes.object.isRequired
+    deleteSubject: PropTypes.object.isRequired,
+    listenSubscriptionSubject: PropTypes.object.isRequired
   },
 
   _onView: function() {
@@ -83,14 +84,14 @@ const TableRow = React.createClass({
   }
 });
 
-const eventSubscriptionList = React.createClass({
+const eventSubscriptionList = CreateReactClass({
   mixins: [DeleteStatusMessageMixin],
 
   propTypes: {
-    eventSubscriptions: React.PropTypes.object.isRequired,
-    deleteSubscriptionSubject: React.PropTypes.object.isRequired,
-    deleteResult: React.PropTypes.object.isRequired,
-    listenSubscriptionSubject: React.PropTypes.object.isRequired
+    eventSubscriptions: PropTypes.object.isRequired,
+    deleteSubscriptionSubject: PropTypes.object.isRequired,
+    deleteResult: PropTypes.object.isRequired,
+    listenSubscriptionSubject: PropTypes.object.isRequired
   },
 
   getInitialState: function() {

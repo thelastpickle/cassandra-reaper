@@ -14,6 +14,8 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import moment from "moment";
 import ServerStatus from "jsx/server-status";
 import Sidebar from "jsx/sidebar";
@@ -22,20 +24,20 @@ import ScheduleList from "jsx/schedule-list";
 import NavBar from "jsx/navbar";
 import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
 
-const ScheduleScreen = React.createClass({
+const ScheduleScreen = CreateReactClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin, RowAbortMixin],
 
   propTypes: {
-    schedules: React.PropTypes.object.isRequired,
-    clusterNames: React.PropTypes.object.isRequired,
-    deleteSubject: React.PropTypes.object.isRequired,
-    updateStatusSubject: React.PropTypes.object.isRequired,
-    deleteResult: React.PropTypes.object.isRequired,
-    currentCluster: React.PropTypes.string.isRequired,
-    statusObservableTimer: React.PropTypes.object.isRequired,
-    logoutSubject: React.PropTypes.object.isRequired,
-    logoutResult: React.PropTypes.object.isRequired,
-    switchTheme: React.PropTypes.func
+    schedules: PropTypes.object.isRequired,
+    clusterNames: PropTypes.object.isRequired,
+    deleteSubject: PropTypes.object.isRequired,
+    updateStatusSubject: PropTypes.object.isRequired,
+    deleteResult: PropTypes.object.isRequired,
+    currentCluster: PropTypes.string.isRequired,
+    statusObservableTimer: PropTypes.object.isRequired,
+    logoutSubject: PropTypes.object.isRequired,
+    logoutResult: PropTypes.object.isRequired,
+    switchTheme: PropTypes.func
   },
 
   getInitialState: function() {

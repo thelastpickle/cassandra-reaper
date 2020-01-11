@@ -14,15 +14,17 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import Table from 'react-bootstrap/lib/Table';
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
 import ProgressBar from 'react-bootstrap/lib/ProgressBar';
 import $ from "jquery";
 
-const ActiveCompactions = React.createClass({
+const ActiveCompactions = CreateReactClass({
     propTypes: {
-      endpoint: React.PropTypes.string.isRequired,
-      clusterName: React.PropTypes.string.isRequired
+      endpoint: PropTypes.string.isRequired,
+      clusterName: PropTypes.string.isRequired
     },
 
     getInitialState() {

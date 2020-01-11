@@ -15,6 +15,8 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import { WithContext as ReactTags } from 'react-tag-input';
 import $ from "jquery";
 import { DateTimePicker } from 'react-widgets';
@@ -26,13 +28,13 @@ import moment from "moment";
 Moment.locale(navigator.language);
 momentLocalizer();
 
-const scheduleForm = React.createClass({
+const scheduleForm = CreateReactClass({
 
   propTypes: {
-    addScheduleSubject: React.PropTypes.object.isRequired,
-    addScheduleResult: React.PropTypes.object.isRequired,
-    clusterNames: React.PropTypes.object.isRequired,
-    currentCluster: React.PropTypes.string.isRequired
+    addScheduleSubject: PropTypes.object.isRequired,
+    addScheduleResult: PropTypes.object.isRequired,
+    clusterNames: PropTypes.object.isRequired,
+    currentCluster: PropTypes.string.isRequired
   },
 
   getInitialState: function() {

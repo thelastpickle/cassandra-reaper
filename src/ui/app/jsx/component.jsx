@@ -14,8 +14,9 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
 
-var mainPage = React.createClass({
+var mainPage = CreateReactClass({
   render: function() {
     return (
       <h1>Good night, World!!!???!</h1>

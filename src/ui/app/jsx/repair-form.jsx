@@ -15,17 +15,19 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import { WithContext as ReactTags } from 'react-tag-input';
 import { getUrlPrefix } from "jsx/mixin";
 import $ from "jquery";
 
 
-const repairForm = React.createClass({
+const repairForm = CreateReactClass({
 
   propTypes: {
-    addRepairSubject: React.PropTypes.object.isRequired,
-    addRepairResult: React.PropTypes.object.isRequired,
-    clusterNames: React.PropTypes.object.isRequired
+    addRepairSubject: PropTypes.object.isRequired,
+    addRepairResult: PropTypes.object.isRequired,
+    clusterNames: PropTypes.object.isRequired
   },
 
   getInitialState: function() {

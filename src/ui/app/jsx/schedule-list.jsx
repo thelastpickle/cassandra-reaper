@@ -15,14 +15,16 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import moment from "moment";
 import {RowDeleteMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender, toast, getUrlPrefix} from "jsx/mixin";
 var NotificationSystem = require('react-notification-system');
 
-const TableRow = React.createClass({
+const TableRow = CreateReactClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin],
   propTypes: {
-    notificationSystem: React.PropTypes.object.isRequired
+    notificationSystem: PropTypes.object.isRequired
   },
 
   _runNow: function() {
@@ -68,7 +70,7 @@ const TableRow = React.createClass({
 });
 
 
-const TableRowDetails = React.createClass({
+const TableRowDetails = CreateReactClass({
   render: function() {
 
     const createdAt = moment(this.props.row.creation_time).format("LLL");
@@ -148,17 +150,17 @@ const TableRowDetails = React.createClass({
 });
 
 
-const scheduleList = React.createClass({
+const scheduleList = CreateReactClass({
   mixins: [DeleteStatusMessageMixin],
   _notificationSystem: null,
 
   propTypes: {
-    schedules: React.PropTypes.object.isRequired,
-    clusterNames: React.PropTypes.object.isRequired,
-    deleteSubject: React.PropTypes.object.isRequired,
-    updateStatusSubject: React.PropTypes.object.isRequired,
-    deleteResult: React.PropTypes.object.isRequired,
-    changeCurrentCluster: React.PropTypes.func.isRequired
+    schedules: PropTypes.object.isRequired,
+    clusterNames: PropTypes.object.isRequired,
+    deleteSubject: PropTypes.object.isRequired,
+    updateStatusSubject: PropTypes.object.isRequired,
+    deleteResult: PropTypes.object.isRequired,
+    changeCurrentCluster: PropTypes.func.isRequired
   },
 
   getInitialState: function() {

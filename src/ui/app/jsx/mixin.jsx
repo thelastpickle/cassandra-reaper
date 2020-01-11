@@ -15,6 +15,7 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
 import Button from 'react-bootstrap/lib/Button';
 import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger';
 import Tooltip from 'react-bootstrap/lib/Tooltip';
@@ -100,7 +101,7 @@ export const DeleteStatusMessageMixin = {
 
 };
 
-export const CFsListRender = React.createClass({
+export const CFsListRender = CreateReactClass({
     render: function() {
         return (
             <div className="ReactTags__tags">
@@ -114,7 +115,7 @@ export const CFsListRender = React.createClass({
     }
 });
 
-export const CFsCountListRender = React.createClass({
+export const CFsCountListRender = CreateReactClass({
   render: function() {
       return (
           <div className="ReactTags__tags">

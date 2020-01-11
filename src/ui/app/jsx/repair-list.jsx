@@ -15,6 +15,8 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import moment from "moment";
 import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender, CFsCountListRender} from "jsx/mixin";
 import ProgressBar from 'react-bootstrap/lib/ProgressBar';
@@ -22,7 +24,7 @@ import Button from 'react-bootstrap/lib/Button';
 import Modal from 'react-bootstrap/lib/Modal';
 import segmentList from 'jsx/segment-list'
 
-const TableRow = React.createClass({
+const TableRow = CreateReactClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin, RowAbortMixin],
 
   _viewSegments: function(id) {
@@ -98,7 +100,7 @@ const TableRow = React.createClass({
 
 });
 
-const TableRowDetails = React.createClass({
+const TableRowDetails = CreateReactClass({
   getInitialState() {
       return { intensity: this.props.row.intensity };
   },
@@ -254,18 +256,18 @@ const TableRowDetails = React.createClass({
 
 });
 
-const repairList = React.createClass({
+const repairList = CreateReactClass({
   mixins: [DeleteStatusMessageMixin],
 
   propTypes: {
-    repairs: React.PropTypes.object.isRequired,
-    clusterNames: React.PropTypes.object.isRequired,
-    deleteSubject: React.PropTypes.object.isRequired,
-    deleteResult: React.PropTypes.object.isRequired,
-    updateStatusSubject: React.PropTypes.object.isRequired,
-    updateIntensitySubject: React.PropTypes.object.isRequired,
-    currentCluster: React.PropTypes.string.isRequired,
-    changeCurrentCluster: React.PropTypes.func.isRequired
+    repairs: PropTypes.object.isRequired,
+    clusterNames: PropTypes.object.isRequired,
+    deleteSubject: PropTypes.object.isRequired,
+    deleteResult: PropTypes.object.isRequired,
+    updateStatusSubject: PropTypes.object.isRequired,
+    updateIntensitySubject: PropTypes.object.isRequired,
+    currentCluster: PropTypes.string.isRequired,
+    changeCurrentCluster: PropTypes.func.isRequired
 
   },
 
@@ -554,7 +556,7 @@ const repairList = React.createClass({
   }
 });
 
-const SegmentModal = React.createClass({
+const SegmentModal = CreateReactClass({
   getInitialState: function() {
     return {height: this.props.height};
   },

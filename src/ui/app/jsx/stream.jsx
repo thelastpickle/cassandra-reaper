@@ -14,16 +14,18 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import ProgressBar from 'react-bootstrap/lib/ProgressBar';
 import Table from 'react-bootstrap/lib/Table';
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
 import { WithContext as ReactTags } from 'react-tag-input';
 
-const Stream = React.createClass({
+const Stream = CreateReactClass({
     propTypes: {
-        planId: React.PropTypes.string.isRequired,
-        direction: React.PropTypes.string.isRequired,
-        stream: React.PropTypes.object.isRequired
+        planId: PropTypes.string.isRequired,
+        direction: PropTypes.string.isRequired,
+        stream: PropTypes.object.isRequired
     },
 
     getInitialState() {

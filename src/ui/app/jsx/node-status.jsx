@@ -14,6 +14,8 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import Snapshot from "jsx/snapshot";
 import TpStats from "jsx/tpstats";
 import Streams from "jsx/streams";
@@ -32,16 +34,16 @@ import Tab from 'react-bootstrap/lib/Tab';
 import $ from "jquery";
 var NotificationSystem = require('react-notification-system');
 
-const NodeStatus = React.createClass({
+const NodeStatus = CreateReactClass({
 
     propTypes: {
-      endpointStatus: React.PropTypes.object.isRequired,
-      clusterName: React.PropTypes.string.isRequired,
-      nbNodes: React.PropTypes.number.isRequired,
-      rackLoad: React.PropTypes.number.isRequired,
-      notificationSystem: React.PropTypes.object,
-      totalLoad: React.PropTypes.number.isRequired,
-      nodeFilter: React.PropTypes.string
+      endpointStatus: PropTypes.object.isRequired,
+      clusterName: PropTypes.string.isRequired,
+      nbNodes: PropTypes.number.isRequired,
+      rackLoad: PropTypes.number.isRequired,
+      notificationSystem: PropTypes.object,
+      totalLoad: PropTypes.number.isRequired,
+      nodeFilter: PropTypes.string
     },
   
     getInitialState() {

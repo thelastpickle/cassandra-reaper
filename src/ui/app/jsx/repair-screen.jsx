@@ -14,6 +14,8 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import moment from "moment";
 import ServerStatus from "jsx/server-status";
 import Sidebar from "jsx/sidebar";
@@ -22,23 +24,23 @@ import RepairList from "jsx/repair-list";
 import NavBar from "jsx/navbar";
 import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
 
-const repairScreen = React.createClass({
+const repairScreen = CreateReactClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin, RowAbortMixin],
 
   propTypes: {
-    currentCluster: React.PropTypes.string.isRequired,
-    addRepairSubject: React.PropTypes.object.isRequired,
-    addRepairResult: React.PropTypes.object.isRequired,
-    clusterNames: React.PropTypes.object.isRequired,
-    deleteSubject: React.PropTypes.object.isRequired,
-    deleteResult: React.PropTypes.object.isRequired,
-    updateStatusSubject: React.PropTypes.object.isRequired,
-    updateIntensitySubject: React.PropTypes.object.isRequired,
-    repairs: React.PropTypes.object.isRequired,
-    statusObservableTimer: React.PropTypes.object.isRequired,
-    repairRunResult: React.PropTypes.object.isRequired,
-    repairRunSubject: React.PropTypes.object.isRequired,
-    switchTheme: React.PropTypes.func
+    currentCluster: PropTypes.string.isRequired,
+    addRepairSubject: PropTypes.object.isRequired,
+    addRepairResult: PropTypes.object.isRequired,
+    clusterNames: PropTypes.object.isRequired,
+    deleteSubject: PropTypes.object.isRequired,
+    deleteResult: PropTypes.object.isRequired,
+    updateStatusSubject: PropTypes.object.isRequired,
+    updateIntensitySubject: PropTypes.object.isRequired,
+    repairs: PropTypes.object.isRequired,
+    statusObservableTimer: PropTypes.object.isRequired,
+    repairRunResult: PropTypes.object.isRequired,
+    repairRunSubject: PropTypes.object.isRequired,
+    switchTheme: PropTypes.func
   },
 
   getInitialState: function() {

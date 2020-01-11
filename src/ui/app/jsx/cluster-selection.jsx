@@ -15,9 +15,10 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
 import { selectClusterSubject, clusterSelected, clusterNames, getClusterStatusSubject } from "observable";
 
-const clusterSelection = React.createClass({
+const clusterSelection = CreateReactClass({
 
   propTypes: {
   },

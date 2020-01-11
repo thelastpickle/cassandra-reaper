@@ -15,15 +15,17 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import clusterFilterSelection from "observable";
 
 const diagnosticEvents = new Rx.Subject();
 
-const ClusterFilterSelection = React.createClass({
+const ClusterFilterSelection = CreateReactClass({
 
   propTypes: {
-    clusterNames: React.PropTypes.object.isRequired,
-    currentCluster: React.PropTypes.object.isRequired
+    clusterNames: PropTypes.object.isRequired,
+    currentCluster: PropTypes.object.isRequired
   },
 
   getInitialState: function() {

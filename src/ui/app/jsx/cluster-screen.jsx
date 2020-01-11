@@ -14,6 +14,8 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import moment from "moment";
 import ServerStatus from "jsx/server-status";
 import Sidebar from "jsx/sidebar";
@@ -23,21 +25,21 @@ import NavBar from "jsx/navbar";
 import LoginForm from "jsx/login-form";
 import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
 
-const ClusterScreen = React.createClass({
+const ClusterScreen = CreateReactClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin, RowAbortMixin],
 
   propTypes: {
-    clusterNames: React.PropTypes.object.isRequired,
-    deleteSubject: React.PropTypes.object.isRequired,
-    deleteResult: React.PropTypes.object.isRequired,
-    currentCluster: React.PropTypes.string.isRequired,
-    addClusterSubject: React.PropTypes.object.isRequired,
-    addClusterResult:  React.PropTypes.object.isRequired,
-    loginSubject: React.PropTypes.object.isRequired,
-    loginResult: React.PropTypes.object.isRequired,
-    logoutSubject: React.PropTypes.object.isRequired,
-    logoutResult: React.PropTypes.object.isRequired,
-    switchTheme: React.PropTypes.func
+    clusterNames: PropTypes.object.isRequired,
+    deleteSubject: PropTypes.object.isRequired,
+    deleteResult: PropTypes.object.isRequired,
+    currentCluster: PropTypes.string.isRequired,
+    addClusterSubject: PropTypes.object.isRequired,
+    addClusterResult:  PropTypes.object.isRequired,
+    loginSubject: PropTypes.object.isRequired,
+    loginResult: PropTypes.object.isRequired,
+    logoutSubject: PropTypes.object.isRequired,
+    logoutResult: PropTypes.object.isRequired,
+    switchTheme: PropTypes.func
   },
 
   getInitialState: function() {

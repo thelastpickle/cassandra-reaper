@@ -14,9 +14,10 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
 import Component from "jsx/component";
 
-var mainPage = React.createClass({
+var mainPage = CreateReactClass({
   render: function() {
     return (
       <div>

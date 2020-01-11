@@ -14,14 +14,16 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import ReactDOM from "react-dom";
 
-const loginForm = React.createClass({
+const loginForm = CreateReactClass({
 
   propTypes: {
-    loginSubject: React.PropTypes.object.isRequired,
-    loginResult: React.PropTypes.object.isRequired,
-    loginCallback: React.PropTypes.func
+    loginSubject: PropTypes.object.isRequired,
+    loginResult: PropTypes.object.isRequired,
+    loginCallback: PropTypes.func
   },
 
   getInitialState: function () {

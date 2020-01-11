@@ -14,6 +14,8 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import moment from "moment";
 import {CFsListRender, getUrlPrefix, humanFileSize, toast} from "jsx/mixin";
 import NodeStatus from "jsx/node-status";
@@ -25,16 +27,16 @@ import Popover from 'react-bootstrap/lib/Popover';
 import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger';
 var NotificationSystem = require('react-notification-system');
 
-const TableRow = React.createClass({
+const TableRow = CreateReactClass({
   
   propTypes: {
-    snapshot: React.PropTypes.object.isRequired,
-    snapshotName: React.PropTypes.string.isRequired,
-    snapshotTrueSize: React.PropTypes.number.isRequired,
-    snapshotSizeOnDisk: React.PropTypes.number.isRequired,
-    listSnapshots: React.PropTypes.func.isRequired,
-    notificationSystem: React.PropTypes.object.isRequired,
-    currentCluster: React.PropTypes.string.isRequired
+    snapshot: PropTypes.object.isRequired,
+    snapshotName: PropTypes.string.isRequired,
+    snapshotTrueSize: PropTypes.number.isRequired,
+    snapshotSizeOnDisk: PropTypes.number.isRequired,
+    listSnapshots: PropTypes.func.isRequired,
+    notificationSystem: PropTypes.object.isRequired,
+    currentCluster: PropTypes.string.isRequired
   },
 
   getInitialState() {
@@ -108,7 +110,7 @@ const TableRow = React.createClass({
 
 });
 
-const TableRowDetails = React.createClass({
+const TableRowDetails = CreateReactClass({
   getInitialState() {
       return {};
   },
@@ -153,19 +155,19 @@ const TableRowDetails = React.createClass({
 
 });
 
-const snapshotList = React.createClass({
+const snapshotList = CreateReactClass({
   _notificationSystem: null,
 
   propTypes: {
-    clusterNames: React.PropTypes.object.isRequired,
-    currentCluster: React.PropTypes.string.isRequired,
-    changeCurrentCluster: React.PropTypes.func.isRequired,
-    snapshots: React.PropTypes.object,  
-    snapshotsSizeOnDisk: React.PropTypes.object, 
-    snapshotsTrueSize: React.PropTypes.object,
-    totalSnapshotSizeOnDisk: React.PropTypes.number, 
-    totalSnapshotTrueSize: React.PropTypes.number,
-    listSnapshots: React.PropTypes.func
+    clusterNames: PropTypes.object.isRequired,
+    currentCluster: PropTypes.string.isRequired,
+    changeCurrentCluster: PropTypes.func.isRequired,
+    snapshots: PropTypes.object,
+    snapshotsSizeOnDisk: PropTypes.object,
+    snapshotsTrueSize: PropTypes.object,
+    totalSnapshotSizeOnDisk: PropTypes.number,
+    totalSnapshotTrueSize: PropTypes.number,
+    listSnapshots: PropTypes.func
 
   },
 

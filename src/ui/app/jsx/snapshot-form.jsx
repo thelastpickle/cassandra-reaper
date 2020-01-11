@@ -14,18 +14,20 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import { WithContext as ReactTags } from 'react-tag-input';
 import {getUrlPrefix, toast} from "jsx/mixin";
 import $ from "jquery";
 var NotificationSystem = require('react-notification-system');
 
-const snapshotForm = React.createClass({
+const snapshotForm = CreateReactClass({
   _notificationSystem: null,
 
   propTypes: {
-    clusterNames: React.PropTypes.object.isRequired,
-    listSnapshots: React.PropTypes.func,
-    changeCurrentCluster: React.PropTypes.func
+    clusterNames: PropTypes.object.isRequired,
+    listSnapshots: PropTypes.func,
+    changeCurrentCluster: PropTypes.func
   },
 
   getInitialState: function() {

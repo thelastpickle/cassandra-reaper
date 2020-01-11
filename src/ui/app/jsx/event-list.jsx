@@ -15,18 +15,20 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import $ from "jquery";
 import moment from "moment";
 import _datatables from "datatables.net";
 import _datatables_bs from "datatables.net-bs.js";
 
 
-const diagEventsList = React.createClass({
+const diagEventsList = CreateReactClass({
 
   propTypes: {
-    diagnosticEvents: React.PropTypes.object.isRequired,
-    listenSubscriptionSubject: React.PropTypes.object.isRequired,
-    clusterSelected: React.PropTypes.object.isRequired,
+    diagnosticEvents: PropTypes.object.isRequired,
+    listenSubscriptionSubject: PropTypes.object.isRequired,
+    clusterSelected: PropTypes.object.isRequired,
   },
 
   getInitialState: function() {

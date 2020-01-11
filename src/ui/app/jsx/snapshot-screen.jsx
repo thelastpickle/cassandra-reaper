@@ -14,6 +14,8 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class'
+import PropTypes from 'prop-types';
 import moment from "moment";
 import ServerStatus from "jsx/server-status";
 import Sidebar from "jsx/sidebar";
@@ -23,12 +25,12 @@ import NavBar from "jsx/navbar";
 import {CFsListRender, getUrlPrefix, humanFileSize, toastPermanent} from "jsx/mixin";
 var NotificationSystem = require('react-notification-system');
 
-const SnapshotScreen = React.createClass({
+const SnapshotScreen = CreateReactClass({
   _notificationSystem: null,
   propTypes: {
-    clusterNames: React.PropTypes.object.isRequired,
-    currentCluster: React.PropTypes.string.isRequired,
-    switchTheme: React.PropTypes.func  
+    clusterNames: PropTypes.object.isRequired,
+    currentCluster: PropTypes.string.isRequired,
+    switchTheme: PropTypes.func
   },
 
   getInitialState: function() {
