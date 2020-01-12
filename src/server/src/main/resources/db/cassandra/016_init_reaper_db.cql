@@ -14,7 +14,7 @@
 --  limitations under the License.
 --
 
-CREATE TABLE IF NOT EXISTS reaper_db.running_reapers (
+CREATE TABLE IF NOT EXISTS running_reapers (
     reaper_instance_id uuid PRIMARY KEY,
     last_heartbeat timestamp,
     reaper_instance_host text
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.running_reapers (
     AND default_time_to_live = 180
     AND gc_grace_seconds = 180;
 
-CREATE TABLE IF NOT EXISTS reaper_db.repair_unit_v1 (
+CREATE TABLE IF NOT EXISTS repair_unit_v1 (
     id timeuuid PRIMARY KEY,
     blacklisted_tables set<text>,
     cluster_name text,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.repair_unit_v1 (
     AND default_time_to_live = 0
     AND gc_grace_seconds = 864000;
 
-CREATE TABLE IF NOT EXISTS reaper_db.repair_schedule_by_cluster_and_keyspace (
+CREATE TABLE IF NOT EXISTS repair_schedule_by_cluster_and_keyspace (
     cluster_name text,
     keyspace_name text,
     repair_schedule_id timeuuid,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.repair_schedule_by_cluster_and_keyspace (
     AND default_time_to_live = 0
     AND gc_grace_seconds = 864000;
 
-CREATE TABLE IF NOT EXISTS reaper_db.repair_run_by_cluster (
+CREATE TABLE IF NOT EXISTS repair_run_by_cluster (
     cluster_name text,
     id timeuuid,
     PRIMARY KEY (cluster_name, id)
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.repair_run_by_cluster (
     AND default_time_to_live = 0
     AND gc_grace_seconds = 864000;
 
-CREATE TABLE IF NOT EXISTS reaper_db.repair_schedule_v1 (
+CREATE TABLE IF NOT EXISTS repair_schedule_v1 (
     id timeuuid PRIMARY KEY,
     creation_time timestamp,
     days_between int,
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.repair_schedule_v1 (
     AND default_time_to_live = 0
     AND gc_grace_seconds = 864000;
 
-CREATE TABLE IF NOT EXISTS reaper_db.cluster (
+CREATE TABLE IF NOT EXISTS cluster (
     name text PRIMARY KEY,
     partitioner text,
     seed_hosts set<text>
@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.cluster (
     AND default_time_to_live = 0
     AND gc_grace_seconds = 864000;
 
-CREATE TABLE IF NOT EXISTS reaper_db.snapshot (
+CREATE TABLE IF NOT EXISTS snapshot (
     cluster text,
     snapshot_name text,
     cause text,
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.snapshot (
     AND default_time_to_live = 0
     AND gc_grace_seconds = 864000;
 
-CREATE TABLE IF NOT EXISTS reaper_db.node_metrics_v1 (
+CREATE TABLE IF NOT EXISTS node_metrics_v1 (
     run_id uuid,
     time_partition bigint,
     node text,
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.node_metrics_v1 (
     AND default_time_to_live = 180
     AND gc_grace_seconds = 120;
 
-CREATE TABLE IF NOT EXISTS reaper_db.repair_run (
+CREATE TABLE IF NOT EXISTS repair_run (
     id timeuuid,
     segment_id timeuuid,
     cause text static,
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.repair_run (
     AND default_time_to_live = 0
     AND gc_grace_seconds = 864000;
 
-CREATE TABLE IF NOT EXISTS reaper_db.repair_run_by_unit (
+CREATE TABLE IF NOT EXISTS repair_run_by_unit (
     repair_unit_id timeuuid,
     id timeuuid,
     PRIMARY KEY (repair_unit_id, id)
@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS reaper_db.repair_run_by_unit (
     AND default_time_to_live = 0
     AND gc_grace_seconds = 864000;
 
-CREATE TABLE IF NOT EXISTS reaper_db.leader (
+CREATE TABLE IF NOT EXISTS leader (
     leader_id timeuuid PRIMARY KEY,
     last_heartbeat timestamp,
     reaper_instance_host text,
@@ -172,4 +172,3 @@ CREATE TABLE IF NOT EXISTS reaper_db.leader (
     AND compaction = {'class': 'org.apache.cassandra.db.compaction.LeveledCompactionStrategy'}
     AND default_time_to_live = 600
     AND gc_grace_seconds = 600;
-
