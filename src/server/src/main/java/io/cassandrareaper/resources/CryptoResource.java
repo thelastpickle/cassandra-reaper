@@ -26,14 +26,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 @Path("/crypto")
 @Produces(MediaType.TEXT_PLAIN)
 public final class CryptoResource {
-
-  private static final Logger LOG = LoggerFactory.getLogger(CryptoResource.class);
 
   private final Cryptograph cryptograph;
 
