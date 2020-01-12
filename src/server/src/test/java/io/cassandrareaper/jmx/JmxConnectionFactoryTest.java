@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2018 The Last Pickle Ltd
+ * Copyright 2020-2020 The Last Pickle Ltd
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,7 @@ package io.cassandrareaper.jmx;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
-import io.cassandrareaper.core.Node;
+import io.cassandrareaper.crypto.Cryptograph;
 
 import java.util.Optional;
 
@@ -45,14 +45,12 @@ public class JmxConnectionFactoryTest {
             .withUsername("storage").withPassword("foo3").build();
     Cluster cluster = Cluster.builder().withName("FooCluster")
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).withJmxCredentials(clusterStorageJmxAuth).build();
-    Node node = Node.builder().withCluster(cluster)
-            .withHostname("myhost").build();
 
-    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class));
+    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
     connectionFactory.setJmxCredentials(ImmutableMap.of(cluster.getName(), clusterYamlJmxAuth));
 
-    Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(node);
+    Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
 
     assertTrue(jmxCredentials.isPresent());
     assertEquals(clusterStorageJmxAuth.getUsername(), jmxCredentials.get().getUsername());
@@ -67,14 +65,12 @@ public class JmxConnectionFactoryTest {
             .withUsername("cluster").withPassword("foo2").build();
     Cluster cluster = Cluster.builder().withName("FooCluster")
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
-    Node node = Node.builder().withCluster(cluster)
-            .withHostname("myhost").build();
 
-    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class));
+    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
     connectionFactory.setJmxCredentials(ImmutableMap.of(cluster.getName(), clusterYamlJmxAuth));
 
-    Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(node);
+    Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
 
     assertTrue(jmxCredentials.isPresent());
     assertEquals(clusterYamlJmxAuth.getUsername(), jmxCredentials.get().getUsername());
@@ -87,13 +83,11 @@ public class JmxConnectionFactoryTest {
             .withUsername("global").withPassword("foo1").build();
     Cluster cluster = Cluster.builder().withName("FooCluster")
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
-    Node node = Node.builder().withCluster(cluster)
-            .withHostname("myhost").build();
 
-    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class));
+    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
     connectionFactory.setJmxAuth(globalYamlJmxAuth);
 
-    Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(node);
+    Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
 
     assertTrue(jmxCredentials.isPresent());
     assertEquals(globalYamlJmxAuth.getUsername(), jmxCredentials.get().getUsername());
@@ -104,12 +98,10 @@ public class JmxConnectionFactoryTest {
   public void fetchingJmxCredentialsIsntPresentWhenNotDefinedAnywhere() {
     Cluster cluster = Cluster.builder().withName("FooCluster")
             .withSeedHosts(ImmutableSet.of("127.0.0.1")).build();
-    Node node = Node.builder().withCluster(cluster)
-            .withHostname("myhost").build();
 
-    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class));
+    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
 
-    Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(node);
+    Optional<JmxCredentials> jmxCredentials = connectionFactory.getJmxCredentialsForCluster(Optional.of(cluster));
 
     assertFalse(jmxCredentials.isPresent());
   }

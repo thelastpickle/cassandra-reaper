@@ -21,6 +21,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
@@ -163,7 +164,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     context.metricRegistry = environment.metrics();
     CollectorRegistry.defaultRegistry.register(new DropwizardExports(environment.metrics()));
 
-    environment.admin()
+    environment
+        .admin()
         .addServlet("prometheusMetrics", new MetricsServlet(CollectorRegistry.defaultRegistry))
         .addMapping("/prometheusMetrics");
 
@@ -172,37 +174,13 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     tryInitializeStorage(config, environment);
 
-    context.cryptograph = context.config == null || context.config.getCryptograph() == null
+    Cryptograph cryptograph = context.config == null || context.config.getCryptograph() == null
             ? new NoopCrypotograph() : context.config.getCryptograph().create();
 
-    if (context.jmxConnectionFactory == null) {
-      LOG.info("no JMX connection factory given in context, creating default");
-      context.jmxConnectionFactory = new JmxConnectionFactory(context);
+    initializeJmx(config, cryptograph);
 
-      // read jmx host/port mapping from config and provide to jmx con.factory
-      Map<String, Integer> jmxPorts = config.getJmxPorts();
-      if (jmxPorts != null) {
-        LOG.debug("using JMX ports mapping: {}", jmxPorts);
-        context.jmxConnectionFactory.setJmxPorts(jmxPorts);
-      }
-      if (config.useAddressTranslator()) {
-        context.jmxConnectionFactory.setAddressTranslator(new EC2MultiRegionAddressTranslator());
-      }
-    }
-
-    JmxCredentials jmxAuth = config.getJmxAuth();
-    if (jmxAuth != null) {
-      LOG.debug("using specified JMX credentials for authentication");
-      context.jmxConnectionFactory.setJmxAuth(jmxAuth);
-    }
-
-    Map<String, JmxCredentials> jmxCredentials = config.getJmxCredentials();
-    if (jmxCredentials != null) {
-      LOG.debug("using specified JMX credentials per cluster for authentication");
-      context.jmxConnectionFactory.setJmxCredentials(jmxCredentials);
-    }
-
-    context.repairManager = RepairManager.create(context,
+    context.repairManager = RepairManager.create(
+        context,
         environment.lifecycle().scheduledExecutorService("RepairRunner").threads(repairThreads).build(),
         config.getHangingRepairTimeoutMins(),
         TimeUnit.MINUTES,
@@ -228,7 +206,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     final PingResource pingResource = new PingResource(healthCheck);
     environment.jersey().register(pingResource);
 
-    final ClusterResource addClusterResource = new ClusterResource(context,
+    final ClusterResource addClusterResource = new ClusterResource(
+        context,
+        cryptograph,
         environment.lifecycle().executorService("ClusterResource").minThreads(6).maxThreads(6).build());
 
     environment.jersey().register(addClusterResource);
@@ -242,7 +222,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     final NodeStatsResource nodeStatsResource = new NodeStatsResource(context);
     environment.jersey().register(nodeStatsResource);
 
-    final CryptoResource addCryptoResource = new CryptoResource(context);
+    final CryptoResource addCryptoResource = new CryptoResource(cryptograph);
     environment.jersey().register(addCryptoResource);
 
     HttpClient httpClient = createHttpClient(config, environment);
@@ -326,6 +306,35 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       }
     } else {
       LOG.info("storage already given in context, not initializing a new one");
+    }
+  }
+
+  private void initializeJmx(ReaperApplicationConfiguration config, Cryptograph cryptograph) {
+    if (context.jmxConnectionFactory == null) {
+      LOG.info("no JMX connection factory given in context, creating default");
+      context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptograph);
+
+      // read jmx host/port mapping from config and provide to jmx con.factory
+      Map<String, Integer> jmxPorts = config.getJmxPorts();
+      if (jmxPorts != null) {
+        LOG.debug("using JMX ports mapping: {}", jmxPorts);
+        context.jmxConnectionFactory.setJmxPorts(jmxPorts);
+      }
+      if (config.useAddressTranslator()) {
+        context.jmxConnectionFactory.setAddressTranslator(new EC2MultiRegionAddressTranslator());
+      }
+    }
+
+    JmxCredentials jmxAuth = config.getJmxAuth();
+    if (jmxAuth != null) {
+      LOG.debug("using specified JMX credentials for authentication");
+      context.jmxConnectionFactory.setJmxAuth(jmxAuth);
+    }
+
+    Map<String, JmxCredentials> jmxCredentials = config.getJmxCredentials();
+    if (jmxCredentials != null) {
+      LOG.debug("using specified JMX credentials per cluster for authentication");
+      context.jmxConnectionFactory.setJmxCredentials(jmxCredentials);
     }
   }
 

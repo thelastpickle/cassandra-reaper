@@ -24,7 +24,6 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.ClusterProperties;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.GenericMetric;
-import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.Builder;
@@ -611,11 +610,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               : Cluster.State.UNREACHABLE)
           .withLastContact(lastContact);
 
-    if (properties.getJmxUsername() != null && properties.getJmxPassword() != null) {
-      builder = builder.withJmxCredentials(JmxCredentials.builder()
-              .withUsername(properties.getJmxUsername())
-              .withPassword(properties.getJmxPassword())
-              .build());
+    if (null != properties.getJmxCredentials()) {
+      builder = builder.withJmxCredentials(properties.getJmxCredentials());
     }
 
     if (null != row.getString("partitioner")) {

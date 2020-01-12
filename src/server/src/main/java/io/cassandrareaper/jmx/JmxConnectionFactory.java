@@ -51,18 +51,20 @@ public class JmxConnectionFactory {
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
   private final AppContext context;
+  private final Cryptograph cryptograph;
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
   private Map<String, JmxCredentials> jmxCredentials;
   private EC2MultiRegionAddressTranslator addressTranslator;
   private final Set<String> accessibleDatacenters = Sets.newHashSet();
 
-  public JmxConnectionFactory(AppContext context) {
+  public JmxConnectionFactory(AppContext context, Cryptograph cryptograph) {
     this.metricRegistry
         = context.metricRegistry == null ? new MetricRegistry() : context.metricRegistry;
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
     registerConnectionsGauge();
     this.context = context;
+    this.cryptograph = cryptograph;
   }
 
   private void registerConnectionsGauge() {
@@ -90,12 +92,12 @@ public class JmxConnectionFactory {
       LOG.debug("Connecting to {} with custom port", host);
     }
 
-    Optional<JmxCredentials> jmxCredentials = getJmxCredentialsForCluster(node);
+    Optional<JmxCredentials> jmxCredentials = getJmxCredentialsForCluster(node.getCluster());
 
     try {
       JmxConnectionProvider provider = new JmxConnectionProvider(
               host, jmxCredentials, context.config.getJmxConnectionTimeoutInSeconds(),
-              this.metricRegistry, context.cryptograph);
+              this.metricRegistry, cryptograph);
       JMX_CONNECTIONS.computeIfAbsent(host, provider::apply);
       JmxProxy proxy = JMX_CONNECTIONS.get(host);
       if (!proxy.isConnectionAlive()) {
@@ -168,15 +170,16 @@ public class JmxConnectionFactory {
     return accessibleDatacenters;
   }
 
-  public Optional<JmxCredentials> getJmxCredentialsForCluster(Node node) {
-    JmxCredentials credentials = node.getJmxCredentials().orElse(null);
+  public Optional<JmxCredentials> getJmxCredentialsForCluster(Optional<Cluster> cluster) {
+    JmxCredentials credentials = cluster.flatMap(Cluster::getJmxCredentials).orElse(null);
+    String clusterName = cluster.map(Cluster::getName).orElse("");
 
     if (credentials == null && jmxCredentials != null) {
-      if (jmxCredentials.containsKey(node.getClusterName())) {
-        credentials = jmxCredentials.get(node.getClusterName());
-      } else if (jmxCredentials.containsKey(Cluster.toSymbolicName(node.getClusterName()))) {
+      if (jmxCredentials.containsKey(clusterName)) {
+        credentials = jmxCredentials.get(clusterName);
+      } else if (jmxCredentials.containsKey(Cluster.toSymbolicName(clusterName))) {
         // As clusters get stored in the database with their "symbolic name" we have to look for that too
-        credentials = jmxCredentials.get(Cluster.toSymbolicName(node.getClusterName()));
+        credentials = jmxCredentials.get(Cluster.toSymbolicName(clusterName));
       }
     }
 

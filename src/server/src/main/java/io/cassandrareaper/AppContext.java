@@ -17,7 +17,6 @@
 
 package io.cassandrareaper;
 
-import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
@@ -47,10 +46,8 @@ public final class AppContext {
   public SchedulingManager schedulingManager;
   public JmxConnectionFactory jmxConnectionFactory;
   public ReaperApplicationConfiguration config;
-  public Cryptograph cryptograph;
   public MetricRegistry metricRegistry = new MetricRegistry();
   volatile String localNodeAddress = null;
-
 
   private static class Private {
     private static final Logger LOG = LoggerFactory.getLogger(AppContext.class);

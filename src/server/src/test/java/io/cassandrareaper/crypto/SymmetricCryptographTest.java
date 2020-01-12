@@ -1,6 +1,6 @@
 /*
- * Copyright 2017-2017 Spotify AB
- * Copyright 2017-2018 The Last Pickle Ltd
+ * Copyright 2020-2020 The Last Pickle Ltd
+ *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,7 +114,7 @@ public class SymmetricCryptographTest {
     try {
       symmetricCryptograph.encrypt(secretText);
       fail("Should not be able to encrypt text using a bogus cipher: BAR");
-    } catch (RuntimeException e) {
+    } catch (IllegalStateException e) {
       if (!(Throwables.getRootCause(e) instanceof NoSuchAlgorithmException)) {
         fail("Should fail with NoSuchAlgorithmException but found "
                 + Throwables.getRootCause(e).getClass().getName() + " instead");

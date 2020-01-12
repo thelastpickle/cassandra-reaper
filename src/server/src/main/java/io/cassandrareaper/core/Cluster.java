@@ -102,13 +102,7 @@ public final class Cluster implements Comparable<Cluster> {
   }
 
   public Optional<JmxCredentials> getJmxCredentials() {
-    JmxCredentials jmxCredentials = null;
-    if (properties.getJmxUsername() != null && properties.getJmxPassword() != null) {
-      jmxCredentials = JmxCredentials.builder()
-              .withUsername(properties.getJmxUsername())
-              .withPassword(properties.getJmxPassword()).build();
-    }
-    return Optional.ofNullable(jmxCredentials);
+    return Optional.ofNullable(properties.getJmxCredentials());
   }
 
   public State getState() {
@@ -198,8 +192,7 @@ public final class Cluster implements Comparable<Cluster> {
       Preconditions.checkNotNull(jmxCredentials);
       Preconditions.checkNotNull(jmxCredentials.getUsername());
       Preconditions.checkNotNull(jmxCredentials.getPassword());
-      this.properties.withJmxUsername(jmxCredentials.getUsername());
-      this.properties.withJmxPassword(jmxCredentials.getPassword());
+      this.properties.withJmxCredentials(jmxCredentials);
       return this;
     }
 

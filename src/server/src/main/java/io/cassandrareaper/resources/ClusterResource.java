@@ -21,8 +21,8 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
-import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
+import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.ClusterStatus;
@@ -78,12 +78,14 @@ public final class ClusterResource {
   private final ExecutorService executor;
   private final ClusterRepairScheduler clusterRepairScheduler;
   private final ClusterFacade clusterFacade;
+  private final Cryptograph cryptograph;
 
-  public ClusterResource(AppContext context, ExecutorService executor) {
+  public ClusterResource(AppContext context, Cryptograph cryptograph, ExecutorService executor) {
     this.context = context;
     this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
     this.clusterRepairScheduler = new ClusterRepairScheduler(context);
     this.clusterFacade = ClusterFacade.create(context);
+    this.cryptograph = cryptograph;
   }
 
   @GET
@@ -109,12 +111,12 @@ public final class ClusterResource {
     LOG.debug("get cluster called with cluster_name: {}", clusterName);
     try {
       Cluster cluster = context.storage.getCluster(clusterName);
-      Node node = Node.builder().withCluster(cluster).withHostname("").build();
 
       String jmxUsername = "";
       boolean jmxPasswordIsSet = false;
 
-      Optional<JmxCredentials> jmxCredentials = context.jmxConnectionFactory.getJmxCredentialsForCluster(node);
+      Optional<JmxCredentials> jmxCredentials = context.jmxConnectionFactory
+              .getJmxCredentialsForCluster(Optional.ofNullable(cluster));
       if (jmxCredentials.isPresent()) {
         jmxUsername = StringUtils.trimToEmpty(jmxCredentials.get().getUsername());
         jmxPasswordIsSet = !StringUtils.isEmpty(jmxCredentials.get().getPassword());
@@ -191,7 +193,7 @@ public final class ClusterResource {
     if (jmxUsername.isPresent() && jmxPassword.isPresent()) {
       jmxCredentials = JmxCredentials.builder()
               .withUsername(jmxUsername.get())
-              .withPassword(context.cryptograph.encrypt(jmxPassword.get()))
+              .withPassword(cryptograph.encrypt(jmxPassword.get()))
               .build();
     }
 
@@ -256,7 +258,8 @@ public final class ClusterResource {
     return Response.created(location).build();
   }
 
-  public Optional<Cluster> findClusterWithSeedHost(String seedHost, Optional<Integer> jmxPort,
+  public Optional<Cluster> findClusterWithSeedHost(String seedHost,
+                                                   Optional<Integer> jmxPort,
                                                    Optional<JmxCredentials> jmxCredentials) {
     Set<String> seedHosts = parseSeedHosts(seedHost);
     try {

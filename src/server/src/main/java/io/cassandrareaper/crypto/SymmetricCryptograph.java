@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 The Last Pickle Ltd
+ * Copyright 2020-2020 The Last Pickle Ltd
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -81,7 +81,7 @@ public final class SymmetricCryptograph implements Cryptograph {
     } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeySpecException
             | InvalidAlgorithmParameterException | InvalidKeyException | BadPaddingException
             | IllegalBlockSizeException e) {
-      throw new RuntimeException("Unable to encrypt text", e);
+      throw new IllegalStateException("Unable to encrypt text", e);
     }
   }
 
@@ -100,7 +100,7 @@ public final class SymmetricCryptograph implements Cryptograph {
     } catch (InvalidKeySpecException | NoSuchAlgorithmException | NoSuchPaddingException
             | InvalidKeyException | BadPaddingException | IllegalBlockSizeException
             | InvalidAlgorithmParameterException e) {
-      throw new RuntimeException("Unable to decrypt text", e);
+      throw new IllegalStateException("Unable to decrypt text", e);
     }
   }
 

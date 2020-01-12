@@ -1,6 +1,6 @@
 /*
- * Copyright 2014-2017 Spotify AB
- * Copyright 2016-2018 The Last Pickle Ltd
+ * Copyright 2020-2020 The Last Pickle Ltd
+ *
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.resources;
 
-import io.cassandrareaper.AppContext;
 import io.cassandrareaper.crypto.Cryptograph;
 
 import javax.ws.rs.GET;
@@ -38,19 +37,14 @@ public final class CryptoResource {
 
   private final Cryptograph cryptograph;
 
-  public CryptoResource(AppContext context) {
-    this.cryptograph = context.cryptograph;
+  public CryptoResource(Cryptograph cryptograph) {
+    this.cryptograph = cryptograph;
   }
 
   @GET
   @Path("/encrypt/{text}")
   public Response encrypt(@PathParam("text") String text) {
-    try {
-      return Response.ok().entity(cryptograph.encrypt(text)).build();
-    } catch (RuntimeException e) {
-      LOG.error(e.getMessage(), e);
-      return Response.serverError().entity(e.getMessage()).build();
-    }
+    return Response.ok().entity(cryptograph.encrypt(text)).build();
   }
 
 }

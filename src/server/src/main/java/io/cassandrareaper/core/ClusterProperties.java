@@ -23,25 +23,19 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 @JsonDeserialize(builder = ClusterProperties.Builder.class)
 public final class ClusterProperties {
   private final int jmxPort;
-  private final String jmxUsername;
-  private final String jmxPassword;
+  private final JmxCredentials jmxCredentials;
 
   private ClusterProperties(Builder builder) {
     this.jmxPort = builder.jmxPort;
-    this.jmxUsername = builder.jmxUsername;
-    this.jmxPassword = builder.jmxPassword;
+    this.jmxCredentials = builder.jmxCredentials;
   }
 
   public int getJmxPort() {
     return jmxPort;
   }
 
-  public String getJmxUsername() {
-    return jmxUsername;
-  }
-
-  public String getJmxPassword() {
-    return jmxPassword;
+  public JmxCredentials getJmxCredentials() {
+    return jmxCredentials;
   }
 
   public static Builder builder() {
@@ -51,8 +45,7 @@ public final class ClusterProperties {
   @JsonPOJOBuilder(buildMethodName = "build", withPrefix = "with")
   public static final class Builder {
     private int jmxPort;
-    private String jmxUsername;
-    private String jmxPassword;
+    private JmxCredentials jmxCredentials;
 
     private Builder() {}
 
@@ -61,13 +54,8 @@ public final class ClusterProperties {
       return this;
     }
 
-    public Builder withJmxUsername(String jmxUsername) {
-      this.jmxUsername = jmxUsername;
-      return this;
-    }
-
-    public Builder withJmxPassword(String jmxPassword) {
-      this.jmxPassword = jmxPassword;
+    public Builder withJmxCredentials(JmxCredentials jmxCredentials) {
+      this.jmxCredentials = jmxCredentials;
       return this;
     }
 
