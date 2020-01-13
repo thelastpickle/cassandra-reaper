@@ -1,5 +1,11 @@
 ## Change Log
 
+### 2.0.2 (2020/01/13 06:37 +00:00)
+- [16b0db9](https://github.com/thelastpickle/cassandra-reaper/commit/16b0db9ebae0c75ef86c5213f2629a00b0812eb8) Remove the keyspace from the initial Cassandra migration script (@adejanovski)
+- [256682f](https://github.com/thelastpickle/cassandra-reaper/commit/256682fbf7829e5a5a38080a1756aa6a146a3e40) Add cluster deletion support to spreaper (@adejanovski)
+- [c6937a5](https://github.com/thelastpickle/cassandra-reaper/commit/c6937a5a66e5e38553e37acbc9af9660af3a39e5) Add the repair_unit_id in the repair schedule status (@adejanovski)
+- [c1ca09f](https://github.com/thelastpickle/cassandra-reaper/commit/c1ca09f8f9e29f1aeb74665b23cf84e5fbd19585) Fix spreaper list_runs() command not using the right query params (@adejanovski)
+
 ### 2.0.1 (2019/12/18 12:48 +00:00)
 - [72b7fd5](https://github.com/thelastpickle/cassandra-reaper/commit/72b7fd5cc7c06cf7f7152b1fb63503af68414198) Fix the dockerfile issues along with Shiro when postgres is used as storage backend (@adejanovski)
 - [797fd78](https://github.com/thelastpickle/cassandra-reaper/commit/797fd7827248a8c21931068ce72d0329360c531f) fix regression caused by PR 783 (@jsanda)
