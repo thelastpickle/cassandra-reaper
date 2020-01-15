@@ -34,12 +34,41 @@ const repairForm = CreateReactClass({
     const URL_PREFIX = getUrlPrefix(window.top.location.pathname);
     
     return {
-      addRepairResultMsg: null, clusterNames: [], submitEnabled: false,
-      clusterName: this.props.currentCluster!="all"?this.props.currentCluster:this.props.clusterNames[0], keyspace: "", tables: "", owner: null, segments: null,
-      parallelism: null, intensity: null, cause: null, incrementalRepair: null, formCollapsed: true, nodes: "", datacenters: "", blacklistedTables: "",
-      nodeList: [], datacenterList: [], clusterStatus: {}, urlPrefix: URL_PREFIX, nodeSuggestions: [], datacenterSuggestions: [], tableSuggestions: [], 
-      clusterTables: {}, blacklistSuggestions: [], tableList: [], blacklistList: [], keyspaceList: [], keyspaceOptions: [],
-      blacklistReadOnly: false, tablelistReadOnly: false, advancedFormCollapsed: true, repairThreadCount: 1
+      addRepairResultMsg: null,
+      clusterNames: [],
+      submitEnabled: false,
+      clusterName: this.props.currentCluster != "all" ? this.props.currentCluster : this.props.clusterNames[0],
+      keyspace: "",
+      tables: "",
+      blacklistedTables: "",
+      owner: null,
+      segments: null,
+      parallelism: null,
+      intensity: null,
+      cause: null,
+      incrementalRepair: null,
+      formCollapsed: true,
+      nodes: "",
+      datacenters: "",
+      nodeList: [],
+      datacenterList: [],
+      clusterStatus: {},
+      urlPrefix: URL_PREFIX,
+      nodeSuggestions: [],
+      datacenterSuggestions: [],
+      clusterTables: {},
+      tableList: [],
+      tableOptions: [],
+      tableSelectValues: [],
+      tableSelectDisabled: false,
+      blacklistList: [],
+      blacklistSelectValues: [],
+      blacklistSelectDisabled: false,
+      keyspaceList: [],
+      keyspaceOptions: [],
+      keyspaceSelectValues: [],
+      advancedFormCollapsed: true,
+      repairThreadCount: 1
     };
   },
 
@@ -110,8 +139,15 @@ const repairForm = CreateReactClass({
     )});
   },
 
-  _getTableSuggestions: function(ks) {
-    this.setState({tableSuggestions: this.state.clusterTables[ks]});
+  _getTableOptions: function(ks) {
+    let tableOptionsRef = [];
+    if (ks) {
+      tableOptionsRef = this.state.clusterTables[ks].map(
+        obj => { return {value: obj, label: obj}; }
+      );
+    }
+
+    this.setState({tableOptions: tableOptionsRef});
   },
 
   _onAdd: function(e) {
@@ -239,68 +275,74 @@ const repairForm = CreateReactClass({
   },
 
     // Blacklist tag list functions
-    _handleBlacklistAddition(table) {
-      if (this.state.tableList.length == 0 && table.length > 1) {
-        let blacklist = this.state.blacklistList;
-        if ($.inArray(table, this.state.blacklistedTables.split(','))==-1) {
-          blacklist.push({
-              id: this._create_UUID(),
-              text: table
-          });
-          this.setState({blacklistList: blacklist, blacklistedTables: blacklist.map(table => table.text).join(',')});
-          this._checkValidity();
-          this.setState({tablelistReadOnly: true});
-        }
+    _handleBlacklistSelectOnChange: function(valueContext, actionContext) {
+      if (this.state.tableList.length) {
+        return;
       }
-    },
-  
-    _handleBlacklistDelete(i) {
-        let blacklist = this.state.blacklistList;
-        blacklist.splice(i, 1);
-        this.setState({blacklistList: blacklist, blacklistedTables: blacklist.map(table => table.text).join(',')});
-        this._checkValidity();
-        this.setState({tablelistReadOnly: (blacklist.length>0)});
-    },
-  
-    _handleBlacklistFilterSuggestions(textInputValue, possibleSuggestionsArray) {
-      var lowerCaseQuery = textInputValue.toLowerCase();
-      let blacklist = this.state.blacklistedTables;
-      let tables = this.state.tables;
-   
-      return possibleSuggestionsArray.filter(function(suggestion)  {
-          return suggestion.toLowerCase().includes(lowerCaseQuery) && $.inArray(suggestion, blacklist.split(','))==-1
-                 && $.inArray(suggestion, tables.split(','))==-1;
-      })
+
+      let blacklistListRef = this.state.blacklistList;
+      let blacklistSelectValuesRef = [];
+      let blacklistedTablesRef = "";
+
+      blacklistListRef.length = 0;
+
+      if (valueContext) {
+        blacklistListRef = valueContext.map(
+          obj => { return {id: this._create_UUID(), text: obj.value}; }
+        );
+        blacklistedTablesRef = valueContext.map(
+          obj => { return obj.value; }
+        ).join(",");
+        blacklistSelectValuesRef = valueContext.map(
+          obj => { return {label: obj.value, value: obj.value}; }
+        );
+      }
+
+      this.setState({
+        blacklistedTables: blacklistedTablesRef,
+        blacklistList: blacklistListRef,
+        blacklistSelectValues: blacklistSelectValuesRef,
+      });
+      this._checkValidity();
+      this.setState({tableSelectDisabled: blacklistListRef.length > 0});
     },
   
     // Tables tag list functions
-    _handleTableAddition(table) {
-      if (this.state.blacklistList.length == 0 && table.length > 1) { 
-        let tables = this.state.tableList;
-        if ($.inArray(table, this.state.tables.split(','))==-1) {
-          tables.push({
-              id: this._create_UUID(),
-              text: table
-          });
-          this.setState({tableList: tables, tables: tables.map(table => table.text).join(',')});
-          this._checkValidity();
-          this.setState({blacklistReadOnly: true});
-        }
+    _handleTableSelectOnChange: function(valueContext, actionContext) {
+      if (this.state.blacklistList.length) {
+        return;
       }
-    },
-  
-    _handleTableDelete(i) {
-        let tables = this.state.tableList;
-        tables.splice(i, 1);
-        this.setState({tableList: tables, tables: tables.map(table => table.text).join(',')});
-        this._checkValidity();
-        this.setState({blacklistReadOnly: (tables.length > 0)});
+
+      let tableListRef = this.state.tableList;
+      let tableSelectValuesRef = [];
+      let tableRef = "";
+
+      tableListRef.length = 0;
+
+      if (valueContext) {
+        tableListRef = valueContext.map(
+          obj => { return {id: this._create_UUID(), text: obj.value}; }
+        );
+        tableRef = valueContext.map(obj => { return obj.value; }).join(",");
+        tableSelectValuesRef = valueContext.map(
+          obj => { return {label: obj.value, value: obj.value }; }
+        );
+      }
+
+      this.setState({
+        tables: tableRef,
+        tableList: tableListRef,
+        tableSelectValues: tableSelectValuesRef,
+      });
+      this._checkValidity();
+      this.setState({blacklistSelectDisabled: tableListRef.length > 0});
     },
   
     // Keyspace list functions
     _handleKeySpaceSelectOnChange: function(valueContext, actionContext) {
       let keyspaceListRef = this.state.keyspaceList;
-      var keyspaceRef = "";
+      let keyspaceSelectValuesRef = [];
+      let keyspaceRef = "";
 
       keyspaceListRef.length = 0;
 
@@ -310,11 +352,20 @@ const repairForm = CreateReactClass({
           text: valueContext.value
         });
         keyspaceRef = valueContext.value;
+        keyspaceSelectValuesRef.push({
+          label: valueContext.value, value: valueContext.value
+        });
       }
 
-      this.setState({ keyspaceList: keyspaceListRef, keyspace: keyspaceRef });
+      this.setState({
+        keyspace: keyspaceRef,
+        keyspaceList: keyspaceListRef,
+        keyspaceSelectValues: keyspaceSelectValuesRef,
+      });
       this._checkValidity();
-      this._getTableSuggestions(keyspaceRef);
+      this._handleTableSelectOnChange(null, null);
+      this._handleBlacklistSelectOnChange(null, null);
+      this._getTableOptions(keyspaceRef);
     },
 
     _create_UUID(){
@@ -382,16 +433,13 @@ const repairForm = CreateReactClass({
               <div className="col-sm-9 col-md-7 col-lg-5">
                 <Select
                   id="in_keyspace"
+                  name="in_keyspace"
                   isClearable
                   isSearchable
-                  name="in_keyspace"
                   options={this.state.keyspaceOptions}
+                  value={this.state.keyspaceSelectValues}
                   placeholder="Add a keyspace"
                   onChange={this._handleKeySpaceSelectOnChange}
-                  components={{
-                    DropdownIndicator: () => null,
-                    IndicatorSeparator: () => null,
-                   }}
                   classNames={{tagInputField: keyspaceInputStyle}}
                 />
               </div>
@@ -424,25 +472,49 @@ const repairForm = CreateReactClass({
                     <div className="form-group">
                     <label htmlFor="in_tables" className="col-sm-3 control-label">Tables</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
-                        <p>ReactTag was here</p>
+                        <Select
+                          id="in_table"
+                          name="in_table"
+                          isClearable
+                          isSearchable
+                          isMulti
+                          isDisabled={this.state.tableSelectDisabled}
+                          options={this.state.tableOptions}
+                          value={this.state.tableSelectValues}
+                          placeholder="Add a table (optional)"
+                          onChange={this._handleTableSelectOnChange}
+                          classNames={{tagInputField: 'form-control'}}
+                        />
                       </div>
                     </div>
                     <div className="form-group">
                     <label htmlFor="in_blacklist" className="col-sm-3 control-label">Blacklist</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
-                        <p>ReactTag was here</p>
+                        <Select
+                          id="in_blacklist"
+                          name="in_blacklist"
+                          isClearable
+                          isSearchable
+                          isMulti
+                          isDisabled={this.state.blacklistSelectDisabled}
+                          options={this.state.tableOptions}
+                          value={this.state.blacklistSelectValues}
+                          placeholder="Add a table (optional)"
+                          onChange={this._handleBlacklistSelectOnChange}
+                          classNames={{tagInputField: 'form-control'}}
+                        />
                       </div>
                     </div>
                     <div className="form-group">
                       <label htmlFor="in_nodes" className="col-sm-3 control-label">Nodes</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
-                        <p>ReactTag was here</p>
+                        <p>ReactTag node list was here</p>
                       </div>
                     </div>
                     <div className="form-group">
                       <label htmlFor="in_datacenters" className="col-sm-3 control-label">Datacenters</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
-                        <p>ReactTag was here</p>
+                        <p>ReactTag datacenter list was here</p>
                       </div>
                     </div>
                     <div className="form-group">
