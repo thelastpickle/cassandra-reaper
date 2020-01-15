@@ -57,6 +57,17 @@ public final class ClusterRepairScheduler {
   }
 
   public void scheduleRepairs(Cluster cluster) throws ReaperException {
+    List<String> excludedClusters = context
+        .config
+        .getAutoScheduling()
+        .getExcludedClusters()
+        .stream()
+        .map(Cluster::toSymbolicName)
+        .collect(Collectors.toList());
+    if (excludedClusters.contains(cluster.getName())) {
+      LOG.debug("Not creating schedules for excluded cluster {}.", cluster.getName());
+      return;
+    }
     AtomicInteger scheduleIndex = new AtomicInteger();
     ScheduledRepairDiffView schedulesDiff = ScheduledRepairDiffView.compareWithExistingSchedules(context, cluster);
     schedulesDiff.keyspacesDeleted().forEach(keyspace -> deleteRepairSchedule(cluster, keyspace));

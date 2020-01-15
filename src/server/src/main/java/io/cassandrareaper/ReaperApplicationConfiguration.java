@@ -506,6 +506,9 @@ public final class ReaperApplicationConfiguration extends Configuration {
     @JsonProperty
     private List<String> excludedKeyspaces = Collections.emptyList();
 
+    @JsonProperty
+    private List<String> excludedClusters = Collections.emptyList();
+
     public Boolean isEnabled() {
       return enabled;
     }
@@ -556,6 +559,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
     public List<String> getExcludedKeyspaces() {
       return excludedKeyspaces;
+    }
+
+    public void setExcludedClusters(List<String> excludedClusters) {
+      this.excludedClusters = null != excludedClusters ? excludedClusters : Collections.emptyList();
+    }
+
+    public List<String> getExcludedClusters() {
+      return excludedClusters;
     }
 
     @Override
