@@ -17,6 +17,7 @@ The Docker environment variables listed in this section map directly to Reaper s
 --- | --- | ---
 <code class="codeLarge">REAPER_AUTO_SCHEDULING_ENABLED</code> | [enabled]({{< relref "reaper_specific.md#enabled" >}}) | false
 <code class="codeLarge">REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES</code> | [excludedKeyspaces]({{< relref "reaper_specific.md#excludedkeyspaces" >}}) | []
+<code class="codeLarge">REAPER_AUTO_SCHEDULING_EXCLUDED_CLUSTERS</code> | [excludedClusters]({{< relref "reaper_specific.md#excludedclusters" >}}) | []
 <code class="codeLarge">REAPER_AUTO_SCHEDULING_INITIAL_DELAY_PERIOD</code> | [initialDelayPeriod]({{< relref "reaper_specific.md#initialdelayperiod" >}}) | PT15S
 <code class="codeLarge">REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS</code> | [periodBetweenPolls]({{< relref "reaper_specific.md#periodbetweenpolls" >}}) | PT10M
 <code class="codeLarge">REAPER_AUTO_SCHEDULING_SCHEDULE_SPREAD_PERIOD</code> | [scheduleSpreadPeriod]({{< relref "reaper_specific.md#schedulespreadperiod" >}}) | PT6H
@@ -64,6 +65,7 @@ Some variable names have changed between the release of Docker-support and Reape
 `REAPER_AUTO_SCHEDULE_PERIOD_BETWEEN_POLLS` | `REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS`
 `REAPER_AUTO_SCHEDULE_TIME_BETWEEN_FIRST_SCHEDULE` | `REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE`
 `REAPER_AUTO_SCHEDULE_EXCLUDED_KEYSPACES` | `REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES`
+`REAPER_AUTO_SCHEDULE_EXCLUDED_CLUSTERS` | `REAPER_AUTO_SCHEDULING_EXCLUDED_CLUSTERS`
 `REAPER_JMX_USERNAME` | `REAPER_JMX_AUTH_USERNAME`
 `REAPER_JMX_PASSWORD` | `REAPER_JMX_AUTH_PASSWORD`
 `REAPER_LOGGERS` | `REAPER_LOGGING_LOGGERS`

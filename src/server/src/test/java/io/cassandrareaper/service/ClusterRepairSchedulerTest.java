@@ -29,6 +29,7 @@ import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.MemoryStorage;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
 
 import com.google.common.collect.ImmutableSet;
@@ -209,6 +210,33 @@ public final class ClusterRepairSchedulerTest {
         .andThen()
         .repairScheduleForKeyspace("keyspace4")
         .hasNextActivationDateCloseTo(timeOfFirstSchedule().plusHours(12));
+  }
+
+  @Test
+  public void doesNotScheduleRepairWhenClusterExcluded() throws Exception {
+    context.config.getAutoScheduling().setExcludedClusters(Arrays.asList(cluster.getName()));
+    context.storage.addCluster(cluster);
+
+    clusterRepairAuto.scheduleRepairs(cluster);
+
+    assertThat(context.storage.getAllRepairSchedules()).hasSize(0);
+  }
+
+  @Test
+  public void scheduleRepairsWhenClusterNotExcluded() throws Exception {
+    context.config.getAutoScheduling().setExcludedClusters(
+        Arrays.asList(cluster.getName() + "-1", cluster.getName() + "-2")
+    );
+    context.storage.addCluster(cluster);
+    context.storage.addRepairSchedule(aRepairSchedule(cluster, "keyspace1", TWO_HOURS_AGO));
+    when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1"));
+
+    clusterRepairAuto.scheduleRepairs(cluster);
+    assertThat(context.storage.getAllRepairSchedules()).hasSize(1);
+
+    assertThatClusterRepairSchedules(context.storage.getRepairSchedulesForCluster(cluster.getName()))
+        .hasScheduleCount(1)
+        .repairScheduleForKeyspace("keyspace1").hasCreationTimeCloseTo(TWO_HOURS_AGO);
   }
 
   private DateTime timeOfFirstSchedule() {

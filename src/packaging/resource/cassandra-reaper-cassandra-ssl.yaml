@@ -124,6 +124,8 @@ autoScheduling:
   excludedKeyspaces:
     - keyspace1
     - keyspace2
+  excludedClusters:
+#   - cluster1
 
 
 # Uncomment the following to enable dropwizard metrics

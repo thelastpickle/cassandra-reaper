@@ -22,6 +22,7 @@ Optional setting to automatically setup repair schedules for all non-system keys
       timeBeforeFirstSchedule: PT5M
       scheduleSpreadPeriod: PT6H
       excludedKeyspaces: [myTTLKeyspace, ...]
+      excludedClusters: [myCluster, ...]
 
 Definitions for the above sub-settings are as follows.
 
@@ -70,6 +71,14 @@ The time spacing between each of the repair schedules that is to be carried out.
 Type: *Array* (comma separated *Strings*)
 
 The Keyspaces that are to be excluded from the repair schedule.
+
+<br/>
+
+#### `excludedClusters`
+
+Type: *Array* (comma separated *Strings*)
+
+The Clusters that are to be excluded from the repair schedule.
 
 <br/>
 
