@@ -73,6 +73,14 @@ ENV REAPER_SEGMENT_COUNT=200 \
     REAPER_JMXMP_SSL="false" \
     JAVA_OPTS=""
 
+# used to run spreaper cli
+RUN apk add --update \
+    python \
+    py-pip \
+  && pip install requests \
+  && rm -rf /var/cache/apk/*
+
+
 ADD cassandra-reaper.yml /etc/cassandra-reaper.yml
 ADD shiro.ini /etc/shiro.ini
 ADD entrypoint.sh /usr/local/bin/entrypoint.sh
@@ -80,38 +88,36 @@ ADD configure-persistence.sh /usr/local/bin/configure-persistence.sh
 ADD configure-metrics.sh /usr/local/bin/configure-metrics.sh
 ADD configure-webui-authentication.sh /usr/local/bin/configure-webui-authentication.sh
 ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
+ADD spreaper /usr/local/bin/spreaper
 
-# get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper.yml: Interrupted system call` unknown error
-RUN touch /etc/cassandra-reaper.yml
-
-RUN mkdir -p /var/lib/cassandra-reaper && \
+RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
+    mkdir -p /var/lib/cassandra-reaper && \
     mkdir -p /etc/cassandra-reaper/shiro && \
     mkdir -p /var/log/cassandra-reaper && \
-    chgrp 0 \
+    chown reaper:reaper \
         /etc/cassandra-reaper.yml \
         /usr/local/lib/cassandra-reaper.jar \
         /usr/local/bin/entrypoint.sh \
         /usr/local/bin/configure-persistence.sh \
         /usr/local/bin/configure-webui-authentication.sh \
         /usr/local/bin/configure-metrics.sh \
+        /usr/local/bin/spreaper \
         /etc/shiro.ini && \
-    chgrp -R 0 \
+    chown -R reaper:reaper \
         /var/lib/cassandra-reaper \
         /etc/cassandra-reaper/shiro \
         /var/log/cassandra-reaper && \
-    chmod 770 \
+    chmod +x \
         /usr/local/bin/entrypoint.sh \
         /usr/local/bin/configure-persistence.sh \
         /usr/local/bin/configure-webui-authentication.sh \
-        /usr/local/bin/configure-metrics.sh && \
-    chmod 660 \
-        /etc/cassandra-reaper.yml \
-        /etc/shiro.ini
-        
+        /usr/local/bin/configure-metrics.sh \
+        /usr/local/bin/spreaper
+
 VOLUME /var/lib/cassandra-reaper
 VOLUME /etc/cassandra-reaper/shiro
 
-USER 1001
+USER reaper
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["cassandra-reaper"]
