@@ -53,23 +53,23 @@ const repairForm = CreateReactClass({
       clusterStatus: {},
       urlPrefix: URL_PREFIX,
       clusterTables: {},
-      datacenterList: [],
       datacenterOptions: [],
-      datacenterSelectValues: [],
-      datacenterSelectDisabled: false,
-      nodeList: [],
       nodeOptions: [],
-      nodeSelectValues: [],
-      nodeSelectDisabled: false,
-      tableList: [],
       tableOptions: [],
-      tableSelectValues: [],
-      tableSelectDisabled: false,
-      blacklistList: [],
-      blacklistSelectValues: [],
-      blacklistSelectDisabled: false,
-      keyspaceList: [],
       keyspaceOptions: [],
+      datacentersList: [],
+      datacentersSelectValues: [],
+      datacentersSelectDisabled: false,
+      nodesList: [],
+      nodesSelectValues: [],
+      nodesSelectDisabled: false,
+      tablesList: [],
+      tablesSelectValues: [],
+      tablesSelectDisabled: false,
+      blacklistedTablesList: [],
+      blacklistedTablesSelectValues: [],
+      blacklistedTablesSelectDisabled: false,
+      keyspaceList: [],
       keyspaceSelectValues: [],
       advancedFormCollapsed: true,
       repairThreadCount: 1
@@ -224,134 +224,57 @@ const repairForm = CreateReactClass({
     }
   },
 
-  _handleDatacenterSelectOnChange: function(valueContext, actionContext) {
-    if (this.state.nodeList.length) {
+  _getOppositeSelect: function(selectName) {
+    const selectNameMap = {
+      "tables": "blacklistedTables",
+      "blacklistedTables": "tables",
+      "nodes": "datacenters",
+      "datacenters": "nodes",
+    };
+    return selectNameMap[selectName];
+  },
+
+  _handleSelectOnChange: function(valueContext, actionContext) {
+    const nameRef = actionContext.name.split("_")[0];
+    const oppositeNameRef = this._getOppositeSelect(nameRef);
+    const oppositeNameListRef = `${oppositeNameRef}List`;
+
+    if (this.state[oppositeNameListRef].length) {
       return;
     }
 
-    let datacenterListRef = this.state.datacenterList;
-    let datacenterSelectValuesRef = [];
-    let datacenterRef = "";
+    const nameListRef = `${nameRef}List`;
+    const nameSelectValuesRef = `${nameRef}SelectValues`;
+    const oppositeNameDisabledRef = `${oppositeNameRef}SelectDisabled`;
 
-    datacenterListRef = 0;
+    let newList = this.state[nameListRef];
+    let newSelectValues = [];
+    let newRef = "";
+
+    newList.length = 0;
 
     if (valueContext) {
-      datacenterListRef = valueContext.map(
+      newList = valueContext.map(
         obj => { return {id: this._create_UUID(), text: obj.value}; }
       );
-      datacenterRef = valueContext.map(
+      newRef = valueContext.map(
         obj => { return obj.value; }
       ).join(",");
-      datacenterSelectValuesRef = valueContext.map(
+      newSelectValues = valueContext.map(
         obj => { return {label: obj.value, value: obj.value}; }
       );
     }
 
-    this.setState({
-      datacenters: datacenterRef,
-      datacenterList: datacenterListRef,
-      datacenterSelectValues: datacenterSelectValuesRef,
-    });
+    let newState = {};
+    newState[nameRef] = newRef;
+    newState[nameListRef] = newList;
+    newState[nameSelectValuesRef] = newSelectValues;
+    newState[oppositeNameDisabledRef] = newList.length > 0;
+
+    this.setState(newState);
     this._checkValidity();
-    this.setState({nodeSelectDisabled: datacenterListRef.length > 0});
   },
 
-  _handleNodeSelectOnChange: function(valueContext, actionContext) {
-    if (this.state.datacenterList.length) {
-      return;
-    }
-
-    let nodeListRef = this.state.nodeList;
-    let nodeSelectValuesRef = [];
-    let nodeRef = "";
-
-    nodeListRef = 0;
-
-    if (valueContext) {
-      nodeListRef = valueContext.map(
-        obj => { return {id: this._create_UUID(), text: obj.value}; }
-      );
-      nodeRef = valueContext.map(
-        obj => { return obj.value; }
-      ).join(",");
-      nodeSelectValuesRef = valueContext.map(
-        obj => { return {label: obj.value, value: obj.value}; }
-      );
-    }
-
-    this.setState({
-      nodes: nodeRef,
-      nodeList: nodeListRef,
-      nodeSelectValues: nodeSelectValuesRef,
-    });
-    this._checkValidity();
-    this.setState({datacenterSelectDisabled: nodeListRef.length > 0});
-  },
-
-   // Blacklist tag list functions
-  _handleBlacklistSelectOnChange: function(valueContext, actionContext) {
-    if (this.state.tableList.length) {
-      return;
-    }
-
-    let blacklistListRef = this.state.blacklistList;
-    let blacklistSelectValuesRef = [];
-    let blacklistedTablesRef = "";
-
-    blacklistListRef.length = 0;
-
-    if (valueContext) {
-      blacklistListRef = valueContext.map(
-        obj => { return {id: this._create_UUID(), text: obj.value}; }
-      );
-      blacklistedTablesRef = valueContext.map(
-        obj => { return obj.value; }
-      ).join(",");
-      blacklistSelectValuesRef = valueContext.map(
-        obj => { return {label: obj.value, value: obj.value}; }
-      );
-    }
-
-    this.setState({
-      blacklistedTables: blacklistedTablesRef,
-      blacklistList: blacklistListRef,
-      blacklistSelectValues: blacklistSelectValuesRef,
-    });
-    this._checkValidity();
-    this.setState({tableSelectDisabled: blacklistListRef.length > 0});
-  },
-  
-  // Tables tag list functions
-  _handleTableSelectOnChange: function(valueContext, actionContext) {
-    if (this.state.blacklistList.length) {
-      return;
-    }
-
-    let tableListRef = this.state.tableList;
-    let tableSelectValuesRef = [];
-    let tableRef = "";
-
-    tableListRef.length = 0;
-
-    if (valueContext) {
-      tableListRef = valueContext.map(
-        obj => { return {id: this._create_UUID(), text: obj.value}; }
-      );
-      tableRef = valueContext.map(obj => { return obj.value; }).join(",");
-      tableSelectValuesRef = valueContext.map(
-        obj => { return {label: obj.value, value: obj.value }; }
-      );
-    }
-
-    this.setState({
-      tables: tableRef,
-      tableList: tableListRef,
-      tableSelectValues: tableSelectValuesRef,
-    });
-    this._checkValidity();
-    this.setState({blacklistSelectDisabled: tableListRef.length > 0});
-  },
-  
   // Keyspace list functions
   _handleKeySpaceSelectOnChange: function(valueContext, actionContext) {
     let keyspaceListRef = this.state.keyspaceList;
@@ -377,8 +300,8 @@ const repairForm = CreateReactClass({
       keyspaceSelectValues: keyspaceSelectValuesRef,
     });
     this._checkValidity();
-    this._handleTableSelectOnChange(null, null);
-    this._handleBlacklistSelectOnChange(null, null);
+    this._handleSelectOnChange(null, {name: "tables"});
+    this._handleSelectOnChange(null, {name: "blacklistedTables"});
     this._getTableOptions(keyspaceRef);
   },
 
@@ -446,8 +369,8 @@ const repairForm = CreateReactClass({
             <label htmlFor="in_keyspace" className="col-sm-3 control-label">Keyspace*</label>
               <div className="col-sm-9 col-md-7 col-lg-5">
                 <Select
-                  id="in_keyspace"
-                  name="in_keyspace"
+                  id="keyspace_select"
+                  name="keyspace_select"
                   isClearable
                   isSearchable
                   options={this.state.keyspaceOptions}
@@ -487,16 +410,16 @@ const repairForm = CreateReactClass({
                     <label htmlFor="in_tables" className="col-sm-3 control-label">Tables</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
                         <Select
-                          id="in_table"
-                          name="in_table"
+                          id="tables_select"
+                          name="tables_select"
                           isClearable
                           isSearchable
                           isMulti
-                          isDisabled={this.state.tableSelectDisabled}
+                          isDisabled={this.state.tablesSelectDisabled}
                           options={this.state.tableOptions}
-                          value={this.state.tableSelectValues}
+                          value={this.state.tablesSelectValues}
                           placeholder="Add a table (optional)"
-                          onChange={this._handleTableSelectOnChange}
+                          onChange={this._handleSelectOnChange}
                           classNames={{tagInputField: 'form-control'}}
                         />
                       </div>
@@ -505,16 +428,16 @@ const repairForm = CreateReactClass({
                     <label htmlFor="in_blacklist" className="col-sm-3 control-label">Blacklist</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
                         <Select
-                          id="in_blacklist"
-                          name="in_blacklist"
+                          id="blacklistedTables_select"
+                          name="blacklistedTables_select"
                           isClearable
                           isSearchable
                           isMulti
-                          isDisabled={this.state.blacklistSelectDisabled}
+                          isDisabled={this.state.blacklistedTablesSelectDisabled}
                           options={this.state.tableOptions}
-                          value={this.state.blacklistSelectValues}
+                          value={this.state.blacklistedTablesSelectValues}
                           placeholder="Add a table (optional)"
-                          onChange={this._handleBlacklistSelectOnChange}
+                          onChange={this._handleSelectOnChange}
                           classNames={{tagInputField: 'form-control'}}
                         />
                       </div>
@@ -523,16 +446,16 @@ const repairForm = CreateReactClass({
                       <label htmlFor="in_nodes" className="col-sm-3 control-label">Nodes</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
                         <Select
-                          id="in_nodes"
-                          name="in_nodes"
+                          id="nodes_select"
+                          name="nodes_select"
                           isClearable
                           isSearchable
                           isMulti
-                          isDisabled={this.state.nodeSelectDisabled}
+                          isDisabled={this.state.nodesSelectDisabled}
                           options={this.state.nodeOptions}
-                          value={this.state.nodeSelectValues}
+                          value={this.state.nodesSelectValues}
                           placeholder="Add a node (optional)"
-                          onChange={this._handleNodeSelectOnChange}
+                          onChange={this._handleSelectOnChange}
                           classNames={{tagInputField: 'form-control'}}
                         />
                       </div>
@@ -541,16 +464,16 @@ const repairForm = CreateReactClass({
                       <label htmlFor="in_datacenters" className="col-sm-3 control-label">Datacenters</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
                         <Select
-                          id="in_datacenters"
-                          name="in_datacenters"
+                          id="datacenters_select"
+                          name="datacenters_select"
                           isClearable
                           isSearchable
                           isMulti
-                          isDisabled={this.state.datacenterSelectDisabled}
+                          isDisabled={this.state.datacentersSelectDisabled}
                           options={this.state.datacenterOptions}
-                          value={this.state.datacenterSelectValues}
+                          value={this.state.datacentersSelectValues}
                           placeholder="Add a node (optional)"
-                          onChange={this._handleDatacenterSelectOnChange}
+                          onChange={this._handleSelectOnChange}
                           classNames={{tagInputField: 'form-control'}}
                         />
                       </div>
