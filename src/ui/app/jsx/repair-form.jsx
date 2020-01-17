@@ -41,6 +41,8 @@ const repairForm = CreateReactClass({
       keyspace: "",
       tables: "",
       blacklistedTables: "",
+      nodes: "",
+      datacenters: "",
       owner: null,
       segments: null,
       parallelism: null,
@@ -48,15 +50,17 @@ const repairForm = CreateReactClass({
       cause: null,
       incrementalRepair: null,
       formCollapsed: true,
-      nodes: "",
-      datacenters: "",
-      nodeList: [],
-      datacenterList: [],
       clusterStatus: {},
       urlPrefix: URL_PREFIX,
-      nodeSuggestions: [],
-      datacenterSuggestions: [],
       clusterTables: {},
+      datacenterList: [],
+      datacenterOptions: [],
+      datacenterSelectValues: [],
+      datacenterSelectDisabled: false,
+      nodeList: [],
+      nodeOptions: [],
+      nodeSelectValues: [],
+      nodeSelectDisabled: false,
       tableList: [],
       tableOptions: [],
       tableSelectValues: [],
@@ -97,7 +101,6 @@ const repairForm = CreateReactClass({
     this._clusterNamesSubscription.dispose();
   },
 
-
   _getClusterStatus: function() {
     let clusterName = this.state.clusterName;
 
@@ -108,7 +111,8 @@ const repairForm = CreateReactClass({
           component: this,
           complete: function(data) {
             this.component.setState({clusterStatus: $.parseJSON(data.responseText)});
-            this.component._getSuggestions();
+            this.component._getDatacetnerOptions();
+            this.component._getNodeOptions();
           }
       });
         $.ajax({
@@ -123,14 +127,20 @@ const repairForm = CreateReactClass({
     }
   },
 
-  _getSuggestions: function() {
-    var nodes = this.state.clusterStatus.nodes_status.endpointStates[0].endpointNames;
-    nodes.sort();
-    this.state.nodeSuggestions = nodes;
-    
-    var datacenters = Object.keys(this.state.clusterStatus.nodes_status.endpointStates[0].endpoints);
-    datacenters.sort;
-    this.setState({datacenterSuggestions: datacenters});
+  _getDatacetnerOptions: function() {
+    this.setState({
+      datacenterOptions: Object.keys(this.state.clusterStatus.nodes_status.endpointStates[0].endpoints).sort().map(
+        obj => { return {value: obj, label: obj}; }
+      )
+    });
+  },
+
+  _getNodeOptions: function() {
+    this.setState({
+      nodeOptions: this.state.clusterStatus.nodes_status.endpointStates[0].endpointNames.sort().map(
+        obj => { return {value: obj, label: obj}; }
+      )
+    });
   },
 
   _getKeyspaceOptions: function() {
@@ -214,169 +224,173 @@ const repairForm = CreateReactClass({
     }
   },
 
-  _handleAddition(node) {
-    if (this.state.datacenterList.length == 0 && node.length > 1) {
-      let nodes = this.state.nodeList;
-      if ($.inArray(node, this.state.nodes.split(','))==-1) {
-        nodes.push({
-            id: nodes.length + 1,
-            text: node
-        });
-        this.setState({nodeList: nodes, nodes: nodes.map(node => node.text).join(',')});
-        this._checkValidity();
-      }
+  _handleDatacenterSelectOnChange: function(valueContext, actionContext) {
+    if (this.state.nodeList.length) {
+      return;
     }
-  },
-  
-  _handleDelete(i) {
-        let nodes = this.state.nodeList;
-        nodes.splice(i, 1);
-        this.setState({nodeList: nodes, nodes: nodes.map(node => node.text).join(',')});
-        this._checkValidity();
-  },
 
-  _handleDcAddition(dc) {
-    if (this.state.nodeList.length == 0 && dc.length > 1) {
-      let datacenters = this.state.datacenterList;
-      if ($.inArray(dc, this.state.datacenters.split(','))==-1) {
-        datacenters.push({
-            id: datacenters.length + 1,
-            text: dc
-        });
-        this.setState({datacenterList: datacenters, datacenters: datacenters.map(dc => dc.text).join(',')});
-        this._checkValidity();
-      }
+    let datacenterListRef = this.state.datacenterList;
+    let datacenterSelectValuesRef = [];
+    let datacenterRef = "";
+
+    datacenterListRef = 0;
+
+    if (valueContext) {
+      datacenterListRef = valueContext.map(
+        obj => { return {id: this._create_UUID(), text: obj.value}; }
+      );
+      datacenterRef = valueContext.map(
+        obj => { return obj.value; }
+      ).join(",");
+      datacenterSelectValuesRef = valueContext.map(
+        obj => { return {label: obj.value, value: obj.value}; }
+      );
     }
+
+    this.setState({
+      datacenters: datacenterRef,
+      datacenterList: datacenterListRef,
+      datacenterSelectValues: datacenterSelectValuesRef,
+    });
+    this._checkValidity();
+    this.setState({nodeSelectDisabled: datacenterListRef.length > 0});
+  },
+
+  _handleNodeSelectOnChange: function(valueContext, actionContext) {
+    if (this.state.datacenterList.length) {
+      return;
+    }
+
+    let nodeListRef = this.state.nodeList;
+    let nodeSelectValuesRef = [];
+    let nodeRef = "";
+
+    nodeListRef = 0;
+
+    if (valueContext) {
+      nodeListRef = valueContext.map(
+        obj => { return {id: this._create_UUID(), text: obj.value}; }
+      );
+      nodeRef = valueContext.map(
+        obj => { return obj.value; }
+      ).join(",");
+      nodeSelectValuesRef = valueContext.map(
+        obj => { return {label: obj.value, value: obj.value}; }
+      );
+    }
+
+    this.setState({
+      nodes: nodeRef,
+      nodeList: nodeListRef,
+      nodeSelectValues: nodeSelectValuesRef,
+    });
+    this._checkValidity();
+    this.setState({datacenterSelectDisabled: nodeListRef.length > 0});
+  },
+
+   // Blacklist tag list functions
+  _handleBlacklistSelectOnChange: function(valueContext, actionContext) {
+    if (this.state.tableList.length) {
+      return;
+    }
+
+    let blacklistListRef = this.state.blacklistList;
+    let blacklistSelectValuesRef = [];
+    let blacklistedTablesRef = "";
+
+    blacklistListRef.length = 0;
+
+    if (valueContext) {
+      blacklistListRef = valueContext.map(
+        obj => { return {id: this._create_UUID(), text: obj.value}; }
+      );
+      blacklistedTablesRef = valueContext.map(
+        obj => { return obj.value; }
+      ).join(",");
+      blacklistSelectValuesRef = valueContext.map(
+        obj => { return {label: obj.value, value: obj.value}; }
+      );
+    }
+
+    this.setState({
+      blacklistedTables: blacklistedTablesRef,
+      blacklistList: blacklistListRef,
+      blacklistSelectValues: blacklistSelectValuesRef,
+    });
+    this._checkValidity();
+    this.setState({tableSelectDisabled: blacklistListRef.length > 0});
   },
   
-  _handleDcDelete(i) {
-        let datacenters = this.state.datacenterList;
-        datacenters.splice(i, 1);
-        this.setState({datacenterList: datacenters, datacenters: datacenters.map(dc => dc.text).join(',')});
-        this._checkValidity();
+  // Tables tag list functions
+  _handleTableSelectOnChange: function(valueContext, actionContext) {
+    if (this.state.blacklistList.length) {
+      return;
+    }
+
+    let tableListRef = this.state.tableList;
+    let tableSelectValuesRef = [];
+    let tableRef = "";
+
+    tableListRef.length = 0;
+
+    if (valueContext) {
+      tableListRef = valueContext.map(
+        obj => { return {id: this._create_UUID(), text: obj.value}; }
+      );
+      tableRef = valueContext.map(obj => { return obj.value; }).join(",");
+      tableSelectValuesRef = valueContext.map(
+        obj => { return {label: obj.value, value: obj.value }; }
+      );
+    }
+
+    this.setState({
+      tables: tableRef,
+      tableList: tableListRef,
+      tableSelectValues: tableSelectValuesRef,
+    });
+    this._checkValidity();
+    this.setState({blacklistSelectDisabled: tableListRef.length > 0});
   },
-
-  _handleNodeFilterSuggestions(textInputValue, possibleSuggestionsArray) {
-    var lowerCaseQuery = textInputValue.toLowerCase();
-    let nodes = this.state.nodes;
- 
-    return possibleSuggestionsArray.filter(function(suggestion)  {
-        return suggestion.toLowerCase().includes(lowerCaseQuery) && $.inArray(suggestion, nodes.split(','))==-1;
-    })
-  },
-
-  _handleDcFilterSuggestions(textInputValue, possibleSuggestionsArray) {
-    var lowerCaseQuery = textInputValue.toLowerCase();
-    let datacenters = this.state.datacenters;
- 
-    return possibleSuggestionsArray.filter(function(suggestion)  {
-        return suggestion.toLowerCase().includes(lowerCaseQuery) && $.inArray(suggestion, datacenters.split(','))==-1;
-    })
-  },
-
-    // Blacklist tag list functions
-    _handleBlacklistSelectOnChange: function(valueContext, actionContext) {
-      if (this.state.tableList.length) {
-        return;
-      }
-
-      let blacklistListRef = this.state.blacklistList;
-      let blacklistSelectValuesRef = [];
-      let blacklistedTablesRef = "";
-
-      blacklistListRef.length = 0;
-
-      if (valueContext) {
-        blacklistListRef = valueContext.map(
-          obj => { return {id: this._create_UUID(), text: obj.value}; }
-        );
-        blacklistedTablesRef = valueContext.map(
-          obj => { return obj.value; }
-        ).join(",");
-        blacklistSelectValuesRef = valueContext.map(
-          obj => { return {label: obj.value, value: obj.value}; }
-        );
-      }
-
-      this.setState({
-        blacklistedTables: blacklistedTablesRef,
-        blacklistList: blacklistListRef,
-        blacklistSelectValues: blacklistSelectValuesRef,
-      });
-      this._checkValidity();
-      this.setState({tableSelectDisabled: blacklistListRef.length > 0});
-    },
   
-    // Tables tag list functions
-    _handleTableSelectOnChange: function(valueContext, actionContext) {
-      if (this.state.blacklistList.length) {
-        return;
-      }
+  // Keyspace list functions
+  _handleKeySpaceSelectOnChange: function(valueContext, actionContext) {
+    let keyspaceListRef = this.state.keyspaceList;
+    let keyspaceSelectValuesRef = [];
+    let keyspaceRef = "";
 
-      let tableListRef = this.state.tableList;
-      let tableSelectValuesRef = [];
-      let tableRef = "";
+    keyspaceListRef.length = 0;
 
-      tableListRef.length = 0;
-
-      if (valueContext) {
-        tableListRef = valueContext.map(
-          obj => { return {id: this._create_UUID(), text: obj.value}; }
-        );
-        tableRef = valueContext.map(obj => { return obj.value; }).join(",");
-        tableSelectValuesRef = valueContext.map(
-          obj => { return {label: obj.value, value: obj.value }; }
-        );
-      }
-
-      this.setState({
-        tables: tableRef,
-        tableList: tableListRef,
-        tableSelectValues: tableSelectValuesRef,
+    if (valueContext) {
+      keyspaceListRef.push({
+        id: this._create_UUID(),
+        text: valueContext.value
       });
-      this._checkValidity();
-      this.setState({blacklistSelectDisabled: tableListRef.length > 0});
-    },
-  
-    // Keyspace list functions
-    _handleKeySpaceSelectOnChange: function(valueContext, actionContext) {
-      let keyspaceListRef = this.state.keyspaceList;
-      let keyspaceSelectValuesRef = [];
-      let keyspaceRef = "";
-
-      keyspaceListRef.length = 0;
-
-      if (valueContext) {
-        keyspaceListRef.push({
-          id: this._create_UUID(),
-          text: valueContext.value
-        });
-        keyspaceRef = valueContext.value;
-        keyspaceSelectValuesRef.push({
-          label: valueContext.value, value: valueContext.value
-        });
-      }
-
-      this.setState({
-        keyspace: keyspaceRef,
-        keyspaceList: keyspaceListRef,
-        keyspaceSelectValues: keyspaceSelectValuesRef,
+      keyspaceRef = valueContext.value;
+      keyspaceSelectValuesRef.push({
+        label: valueContext.value, value: valueContext.value
       });
-      this._checkValidity();
-      this._handleTableSelectOnChange(null, null);
-      this._handleBlacklistSelectOnChange(null, null);
-      this._getTableOptions(keyspaceRef);
-    },
+    }
 
-    _create_UUID(){
-      var dt = new Date().getTime();
-      var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          var r = (dt + Math.random()*16)%16 | 0;
-          dt = Math.floor(dt/16);
-          return (c=='x' ? r :(r&0x3|0x8)).toString(16);
-      });
-      return uuid;
-    },
+    this.setState({
+      keyspace: keyspaceRef,
+      keyspaceList: keyspaceListRef,
+      keyspaceSelectValues: keyspaceSelectValuesRef,
+    });
+    this._checkValidity();
+    this._handleTableSelectOnChange(null, null);
+    this._handleBlacklistSelectOnChange(null, null);
+    this._getTableOptions(keyspaceRef);
+  },
+
+  _create_UUID(){
+    var dt = new Date().getTime();
+    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = (dt + Math.random()*16)%16 | 0;
+        dt = Math.floor(dt/16);
+        return (c=='x' ? r :(r&0x3|0x8)).toString(16);
+    });
+    return uuid;
+  },
 
   render: function() {
 
@@ -408,16 +422,16 @@ const repairForm = CreateReactClass({
 
     const keyspaceInputStyle = this.state.keyspaceList.length > 0 ? 'form-control-hidden':'form-control';
 
-    const advancedSettingsHeader = <div className="panel-title" >
+    const advancedSettingsHeader = (
+      <div className="panel-title" >
     <a href="#advanced-form" data-toggle="collapse" onClick={this._toggleAdvancedSettingsDisplay}>Advanced settings
     &nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={advancedMenuDownStyle}></span>
-           <span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={advancedMenuUpStyle}></span></a></div>
+           <span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={advancedMenuUpStyle}></span></a></div>);
 
-    const form = <div className="row">
+    const form = (
+      <div className="row">
         <div className="col-lg-12">
-
           <form className="form-horizontal form-condensed">
-
             <div className="form-group">
               <label htmlFor="in_clusterName" className="col-sm-3 control-label">Cluster*</label>
               <div className="col-sm-9 col-md-7 col-lg-5">
@@ -508,13 +522,37 @@ const repairForm = CreateReactClass({
                     <div className="form-group">
                       <label htmlFor="in_nodes" className="col-sm-3 control-label">Nodes</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
-                        <p>ReactTag node list was here</p>
+                        <Select
+                          id="in_nodes"
+                          name="in_nodes"
+                          isClearable
+                          isSearchable
+                          isMulti
+                          isDisabled={this.state.nodeSelectDisabled}
+                          options={this.state.nodeOptions}
+                          value={this.state.nodeSelectValues}
+                          placeholder="Add a node (optional)"
+                          onChange={this._handleNodeSelectOnChange}
+                          classNames={{tagInputField: 'form-control'}}
+                        />
                       </div>
                     </div>
                     <div className="form-group">
                       <label htmlFor="in_datacenters" className="col-sm-3 control-label">Datacenters</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
-                        <p>ReactTag datacenter list was here</p>
+                        <Select
+                          id="in_datacenters"
+                          name="in_datacenters"
+                          isClearable
+                          isSearchable
+                          isMulti
+                          isDisabled={this.state.datacenterSelectDisabled}
+                          options={this.state.datacenterOptions}
+                          value={this.state.datacenterSelectValues}
+                          placeholder="Add a node (optional)"
+                          onChange={this._handleDatacenterSelectOnChange}
+                          classNames={{tagInputField: 'form-control'}}
+                        />
                       </div>
                     </div>
                     <div className="form-group">
@@ -573,11 +611,9 @@ const repairForm = CreateReactClass({
               </div>
             </div>            
           </form>
-
+        </div>
       </div>
-    </div>
-
-    
+    );
 
     let menuDownStyle = {
       display: "inline-block" 
@@ -596,17 +632,27 @@ const repairForm = CreateReactClass({
       }
     }
 
-    const formHeader = <div className="panel-title" ><a href="#repair-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>Start a new repair&nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDownStyle}></span><span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span></a></div>
+    const formHeader = (
+      <div className="panel-title" >
+        <a href="#repair-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>
+          Start a new repair&nbsp;
+          <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDownStyle}></span>
+          <span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span>
+        </a>
+      </div>
+    );
 
-    return (<div className="panel panel-warning">
-              <div className="panel-heading">
-                {formHeader}
-              </div>
-              <div className="panel-body collapse" id="repair-form">
-                {addMsg}
-                {form}
-              </div>
-            </div>);
+    return (
+      <div className="panel panel-warning">
+        <div className="panel-heading">
+          {formHeader}
+        </div>
+        <div className="panel-body collapse" id="repair-form">
+          {addMsg}
+          {form}
+        </div>
+      </div>
+    );
   }
 });
 
