@@ -13,28 +13,278 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: ITs Using cassandra Storage
+name: Integration tests
 
 on:
   push:
-    paths-ignore:
-      - "untagged-.**"
-      - "master-snapshot.**"
-#  pull_request:
-#    paths-ignore:
-#      - "untagged-.**"
-#      - "master-snapshot.**"
 
 jobs:
   its-ccm-cass:
     name: Run ITs
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:9.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ''
+          # this replaces the manual reaper creation
+          POSTGRES_DB: reaper
+        ports:
+          - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     strategy:
       matrix:
-        cassandra-version: [2.1.20, 2.2.13, 3.0.17, 3.11.4, 'github:apache/trunk']
-        storage-type: [cassandra]
-        test-type: [ccm]
-        cucumber-options: ['--tags ~@cassandra_4_0_onwards']
+        test-suite: [c_1-2_memory, c_1-2_h2, c_2-0_memory, c_2-0_h2, c_2-1_memory, c_2-1_h2, c_2-1_one-reaper, c_2-1_two-reapers, c_2-1_flapping-reapers, c_2-1_one-reaper__all_nodes_reachable, c_2-1_two-reapers__all_nodes_reachable, c_2-1_flapping-reapers__all_nodes_reachable, c_2-1_sidecar, c_2-1_upgrades, c_2-1_upgrades__all_nodes_reachable, c_2-2_memory, c_2-2_h2, c_2-2_one-reaper, c_2-2_two-reapers, c_2-2_flapping-reapers, c_2-2_one-reaper__all_nodes_reachable, c_2-2_two-reapers__all_nodes_reachable, c_2-2_flapping-reapers__all_nodes_reachable, c_2-2_sidecar, c_2-2_upgrades, c_2-2_upgrades__all_nodes_reachable, c_3-0_memory, c_3-0_h2, c_3-0_one-reaper, c_3-0_two-reapers, c_3-0_flapping-reapers, c_3-0_one-reaper__all_nodes_reachable, c_3-0_two-reapers__all_nodes_reachable, c_3-0_flapping-reapers__all_nodes_reachable, c_3-0_sidecar, c_3-0_upgrades, c_3-0_upgrades__all_nodes_reachable, c_3-11_memory, c_3-11_h2, c_3-11_one-reaper, c_3-11_two-reapers, c_3-11_flapping-reapers, c_3-11_one-reaper__all_nodes_reachable, c_3-11_two-reapers__all_nodes_reachable, c_3-11_flapping-reapers__all_nodes_reachable, c_3-11_sidecar, c_3-11_upgrades, c_3-11_upgrades__all_nodes_reachable, c_4-0_memory, c_4-0_h2, c_4-0_one-reaper, c_4-0_two-reapers, c_4-0_flapping-reapers, c_4-0_one-reaper__all_nodes_reachable, c_4-0_two-reapers__all_nodes_reachable, c_4-0_flapping-reapers__all_nodes_reachable, c_4-0_sidecar, c_4-0_upgrades, c_4-0_upgrades__all_nodes_reachable]
+        include:
+          - test-suite: c_1-2_memory:
+            CASSANDRA_VERSION: 1.2.19
+            CUCUMBER_OPTIONS: "-t ~@cassandra_2_1_onwards -t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperIT
+          - test-suite: c_1-2_h2:
+            CASSANDRA_VERSION: 1.2.19
+            CUCUMBER_OPTIONS: "-t ~@cassandra_2_1_onwards -t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperH2IT
+          - test-suite: c_2-0_memory:
+            CASSANDRA_VERSION: 2.0.17
+            CUCUMBER_OPTIONS: "-t ~@cassandra_2_1_onwards -t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperIT
+          - test-suite: c_2-0_h2:
+            CASSANDRA_VERSION: 2.0.17
+            CUCUMBER_OPTIONS: "-t ~@cassandra_2_1_onwards -t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperH2IT
+          - test-suite: c_2-1_memory:
+            CASSANDRA_VERSION: 2.1.20
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperIT
+          - test-suite: c_2-1_h2:
+            CASSANDRA_VERSION: 2.1.20
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperH2IT
+          - test-suite: c_2-1_one-reaper:
+            CASSANDRA_VERSION: 2.1.20
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT
+          - test-suite: c_2-1_two-reapers:
+            CASSANDRA_VERSION: 2.1.20
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+          - test-suite: c_2-1_flapping-reapers:
+            CASSANDRA_VERSION: 2.1.20
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx434m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+          - test-suite: c_2-1_one-reaper__all_nodes_reachable:
+            CASSANDRA_VERSION: 2.1.20
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT
+          - test-suite: c_2-1_two-reapers__all_nodes_reachable:
+            CASSANDRA_VERSION: 2.1.20
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+          - test-suite: c_2-1_flapping-reapers__all_nodes_reachable:
+            CASSANDRA_VERSION: 2.1.20
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+          - test-suite: c_2-1_sidecar:
+            CASSANDRA_VERSION: 2.1.20
+            CUCUMBER_OPTIONS: "-t @sidecar -t ~@cassandra_4_0_onwards"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx416m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
+          - test-suite: c_2-1_upgrades:
+            CASSANDRA_VERSION: 2.1.20
+            CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable -t ~@cassandra_4_0_onwards"
+            JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+          - test-suite: c_2-1_upgrades__all_nodes_reachable:
+            CASSANDRA_VERSION: 2.1.20
+            CUCUMBER_OPTIONS: "-t @all_nodes_reachable -t ~@cassandra_4_0_onwards"
+            JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+          - test-suite: c_2-2_memory:
+            CASSANDRA_VERSION: 2.2.13
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperIT
+          - test-suite: c_2-2_h2:
+            CASSANDRA_VERSION: 2.2.13
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperH2IT
+          - test-suite: c_2-2_one-reaper:
+            CASSANDRA_VERSION: 2.2.13
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT
+          - test-suite: c_2-2_two-reapers:
+            CASSANDRA_VERSION: 2.2.13
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+          - test-suite: c_2-2_flapping-reapers:
+            CASSANDRA_VERSION: 2.2.13
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx434m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+          - test-suite: c_2-2_one-reaper__all_nodes_reachable:
+            CASSANDRA_VERSION: 2.2.13
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT
+          - test-suite: c_2-2_two-reapers__all_nodes_reachable:
+            CASSANDRA_VERSION: 2.2.13
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+          - test-suite: c_2-2_flapping-reapers__all_nodes_reachable:
+            CASSANDRA_VERSION: 2.2.13
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+          - test-suite: c_2-2_sidecar:
+            CASSANDRA_VERSION: 2.2.13
+            CUCUMBER_OPTIONS: "-t @sidecar -t ~@cassandra_4_0_onwards"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx416m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
+          - test-suite: c_2-2_upgrades:
+            CASSANDRA_VERSION: 2.2.13
+            CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable -t ~@cassandra_4_0_onwards"
+            JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+          - test-suite: c_2-2_upgrades__all_nodes_reachable:
+            CASSANDRA_VERSION: 2.2.13
+            CUCUMBER_OPTIONS: "-t @all_nodes_reachable -t ~@cassandra_4_0_onwards"
+            JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+          - test-suite: c_3-0_memory:
+            CASSANDRA_VERSION: 3.0.17
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperIT
+          - test-suite: c_3-0_h2:
+            CASSANDRA_VERSION: 3.0.17
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperH2IT
+          - test-suite: c_3-0_one-reaper:
+            CASSANDRA_VERSION: 3.0.17
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT
+          - test-suite: c_3-0_two-reapers:
+            CASSANDRA_VERSION: 3.0.17
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+          - test-suite: c_3-0_flapping-reapers:
+            CASSANDRA_VERSION: 3.0.17
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx434m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+          - test-suite: c_3-0_one-reaper__all_nodes_reachable:
+            CASSANDRA_VERSION: 3.0.17
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT
+          - test-suite: c_3-0_two-reapers__all_nodes_reachable:
+            CASSANDRA_VERSION: 3.0.17
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+          - test-suite: c_3-0_flapping-reapers__all_nodes_reachable:
+            CASSANDRA_VERSION: 3.0.17
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+          - test-suite: c_3-0_sidecar:
+            CASSANDRA_VERSION: 3.0.17
+            CUCUMBER_OPTIONS: "-t @sidecar -t ~@cassandra_4_0_onwards"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx416m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
+          - test-suite: c_3-0_upgrades:
+            CASSANDRA_VERSION: 3.0.17
+            CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable -t ~@cassandra_4_0_onwards"
+            JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+          - test-suite: c_3-0_upgrades__all_nodes_reachable:
+            CASSANDRA_VERSION: 3.0.17
+            CUCUMBER_OPTIONS: "-t @all_nodes_reachable -t ~@cassandra_4_0_onwards"
+            JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+          - test-suite: c_3-11_memory:
+            CASSANDRA_VERSION: 3.11.3
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperIT
+          - test-suite: c_3-11_h2:
+            CASSANDRA_VERSION: 3.11.3
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperH2IT
+          - test-suite: c_3-11_one-reaper:
+            CASSANDRA_VERSION: 3.11.3
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT
+          - test-suite: c_3-11_two-reapers:
+            CASSANDRA_VERSION: 3.11.3
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+          - test-suite: c_3-11_flapping-reapers:
+            CASSANDRA_VERSION: 3.11.3
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable -t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx434m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+          - test-suite: c_3-11_one-reaper__all_nodes_reachable:
+            CASSANDRA_VERSION: 3.11.3
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT
+          - test-suite: c_3-11_two-reapers__all_nodes_reachable:
+            CASSANDRA_VERSION: 3.11.3
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+          - test-suite: c_3-11_flapping-reapers__all_nodes_reachable:
+            CASSANDRA_VERSION: 3.11.3
+            CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+          - test-suite: c_3-11_sidecar:
+            CASSANDRA_VERSION: 3.11.3
+            CUCUMBER_OPTIONS: "-t @sidecar -t ~@cassandra_4_0_onwards"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx416m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=4
+          - test-suite: c_3-11_upgrades:
+            CASSANDRA_VERSION: 3.11.3
+            CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable -t ~@cassandra_4_0_onwards"
+            JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+          - test-suite: c_3-11_upgrades__all_nodes_reachable:
+            CASSANDRA_VERSION: 3.11.3
+            CUCUMBER_OPTIONS: "-t @all_nodes_reachable -t ~@cassandra_4_0_onwards"
+            JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx384m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+          - test-suite: c_4-0_memory:
+            CASSANDRA_VERSION: github:apache/trunk
+            NODES_PER_DC: 1
+            CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn surefire:test -B -DsurefireArgLine="-Xmx256m" -Dtest=ReaperIT
+          - test-suite: c_4-0_h2:
+            CASSANDRA_VERSION: github:apache/trunk
+            NODES_PER_DC: 1
+            CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn surefire:test -B -DsurefireArgLine="-Xmx256m" -Dtest=ReaperH2IT
+          - test-suite: c_4-0_one-reaper:
+            CASSANDRA_VERSION: github:apache/trunk
+            NODES_PER_DC: 1
+            CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT
+          - test-suite: c_4-0_two-reapers:
+            CASSANDRA_VERSION: github:apache/trunk
+            NODES_PER_DC: 1
+            CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+          - test-suite: c_4-0_flapping-reapers:
+            CASSANDRA_VERSION: github:apache/trunk
+            NODES_PER_DC: 1
+            CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx434m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+          - test-suite: c_4-0_one-reaper__all_nodes_reachable:
+            CASSANDRA_VERSION: github:apache/trunk
+            NODES_PER_DC: 1
+            CUCUMBER_OPTIONS: "-t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT
+          - test-suite: c_4-0_two-reapers__all_nodes_reachable:
+            CASSANDRA_VERSION: github:apache/trunk
+            NODES_PER_DC: 1
+            CUCUMBER_OPTIONS: "-t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=2
+          - test-suite: c_4-0_flapping-reapers__all_nodes_reachable:
+            CASSANDRA_VERSION: github:apache/trunk
+            NODES_PER_DC: 1
+            CUCUMBER_OPTIONS: "-t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=2 -Dgrim.reaper.max=4
+          - test-suite: c_4-0_sidecar:
+            CASSANDRA_VERSION: github:apache/trunk
+            NODES_PER_DC: 1
+            CUCUMBER_OPTIONS: "-t @sidecar"
+            JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperCassandraSidecarIT -Dgrim.reaper.min=2
+          - test-suite: c_4-0_upgrades:
+            CASSANDRA_VERSION: github:apache/trunk
+            NODES_PER_DC: 1
+            CUCUMBER_OPTIONS: "-t ~@all_nodes_reachable"
+            JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx256m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
+          - test-suite: c_4-0_upgrades__all_nodes_reachable:
+            CASSANDRA_VERSION: github:apache/trunk
+            NODES_PER_DC: 1
+            CUCUMBER_OPTIONS: "-t @all_nodes_reachable"
+            JOB_COMMAND: mvn -B -DsurefireArgLine="-Xmx256m" resources:testResources surefire:test -Pintegration-upgrade-tests -Dtest=ReaperCassandraIT
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -79,17 +329,69 @@ jobs:
       - name: Install CCM
         run: pip install pyyaml ccm
 
-      - name: Setup CCM Cluster
-        run: ./.github/scripts/configure-ccm.sh
+      - name: Start ccm and run tests
         env:
-          TEST_TYPE: ${{ matrix.test-type }}
-          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-          STORAGE_TYPE: ${{ matrix.storage-type }}
-
-      - name: Run Tests
-        run: ./.github/scripts/run-tests.sh
-        env:
-          TEST_TYPE: ${{ matrix.test-type }}
-          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-          STORAGE_TYPE: ${{ matrix.storage-type }}
-          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          CUCUMBER_OPTIONS: ${{ matrix.CUCUMBER_OPTIONS }}
+        run: |
+            set -x
+            mkdir -p ~/.local
+            if [[ ${{ matrix.JOB_COMMAND }} != *"ReaperCassandraSidecarIT"* ]];then
+              # jmx password should only be set if we're not in sidecar mode
+              cp src/ci/jmxremote.password ~/.local/jmxremote.password
+              touch ~/.local/jmxremote.blank.password
+              chmod 400 ~/.local/jmxremote*.password
+              cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+              sudo chmod 777 /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+              echo "cassandra     readwrite" >> /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+              cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+              # Second possible location for the file
+              cat /usr/local/openjdk-8/jre/lib/management/jmxremote.access
+              sudo chmod 777 /usr/local/openjdk-8/jre/lib/management/jmxremote.access
+              echo "cassandra     readwrite" >> /usr/local/openjdk-8/jre/lib/management/jmxremote.access
+              cat /usr/local/openjdk-8/jre/lib/management/jmxremote.access
+            fi
+            ccm create test -v ${{ matrix.CASSANDRA_VERSION }}
+            ccm populate --vnodes -n ${{ matrix.NODES_PER_DC }}:${{ matrix.NODES_PER_DC }}
+            for i in `seq 1 $((${{ matrix.NODES_PER_DC }} *2))` ; do
+              if [[ ${{ matrix.JOB_COMMAND }} != *"ReaperCassandraSidecarIT"* ]];then
+                # jmx password should only be set if we're not in sidecar mode
+                sed -i 's/LOCAL_JMX=yes/LOCAL_JMX=no/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+                if [ "$i" -gt "${{ matrix.NODES_PER_DC }}" ] && [ echo "${{ matrix.CUCUMBER_OPTIONS }}" | grep -q '~@all_nodes_reachable' ] ; then
+                  # scenarios that are not tagged with @all_nodes_reachable will be tested with an unreachable DC2
+                  sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.blank.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+                else
+                  sed -i 's/etc\/cassandra\/jmxremote.password/home\/circleci\/.local\/jmxremote.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+                fi
+              else
+                sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+              fi
+              if echo "$CASSANDRA_VERSION" | grep -q "trunk" ; then
+                sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="200m"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+              else
+                sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="136m"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+              fi
+              sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="112M"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+              sed -i 's/_timeout_in_ms:.*/_timeout_in_ms: 60000/' ~/.ccm/test/node$i/conf/cassandra.yaml
+              sed -i 's/cross_node_timeout: false/cross_node_timeout: true/' ~/.ccm/test/node$i/conf/cassandra.yaml
+              sed -i 's/concurrent_reads: 32/concurrent_reads: 4/' ~/.ccm/test/node$i/conf/cassandra.yaml
+              sed -i 's/concurrent_writes: 32/concurrent_writes: 4/' ~/.ccm/test/node$i/conf/cassandra.yaml
+              sed -i 's/concurrent_counter_writes: 32/concurrent_counter_writes: 4/' ~/.ccm/test/node$i/conf/cassandra.yaml
+              sed -i 's/num_tokens: 256/num_tokens: 4/' ~/.ccm/test/node$i/conf/cassandra.yaml
+              sed -i 's/auto_snapshot: true/auto_snapshot: false/' ~/.ccm/test/node$i/conf/cassandra.yaml
+              sed -i 's/enable_materialized_views: true/enable_materialized_views: false/' ~/.ccm/test/node$i/conf/cassandra.yaml
+              sed -i 's/internode_compression: dc/internode_compression: none/' ~/.ccm/test/node$i/conf/cassandra.yaml
+              echo 'phi_convict_threshold: 16' >> ~/.ccm/test/node$i/conf/cassandra.yaml
+              sed -i 's/# file_cache_size_in_mb: 512/file_cache_size_in_mb: 1/' ~/.ccm/test/node$i/conf/cassandra.yaml
+              if  echo "${{ matrix.CASSANDRA_VERSION }}" | grep -q "trunk"  ; then
+                sed -i 's/start_rpc: true//' ~/.ccm/test/node$i/conf/cassandra.yaml
+                echo '-Dcassandra.max_local_pause_in_ms=15000' >> ~/.ccm/test/node$i/conf/jvm-server.options
+              else
+                sed -i 's/start_rpc: true/start_rpc: false/' ~/.ccm/test/node$i/conf/cassandra.yaml
+              fi
+              echo 'JAVA_OPTS="$JAVA_OPTS -Dcassandra.available_processors=2"' >> ~/.ccm/test/node$i/conf/cassandra-env.sh
+            done
+            mvn install -B -DskipTests
+            ccm start -v
+            ccm status
+            ccm checklogerror
+            sh -c '${{ matrix.JOB_COMMAND }}'
