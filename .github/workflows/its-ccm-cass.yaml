@@ -335,18 +335,18 @@ jobs:
       - name: Install CCM
         run: pip install pyyaml ccm
 
-      - name: Setup CCM Cluster
-        run: ./.github/scripts/configure-ccm.sh
-        env:
-          TEST_TYPE: ${{ matrix.test-type }}
-          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-          STORAGE_TYPE: ${{ matrix.storage-type }}
+      #- name: Setup CCM Cluster
+      #  run: ./.github/scripts/configure-ccm.sh
+      #  env:
+      #    TEST_TYPE: ${{ matrix.test-type }}
+      #    CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+      #    STORAGE_TYPE: ${{ matrix.storage-type }}
 
       - name: Run Tests
         #run: ./.github/scripts/run-tests.sh
         env:
           TEST_TYPE: ${{ matrix.test-type }}
-          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          CASSANDRA_VERSION: ${{ matrix.CASSANDRA_VERSION }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
         run: |
