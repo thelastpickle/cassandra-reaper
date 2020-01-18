@@ -190,7 +190,7 @@ jobs:
             CASSANDRA_VERSION: 3.11.3
             CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
             JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperIT
-          - test-suite: c_3-11_h2:
+          - test-suite: c_3-11_h2
             CASSANDRA_VERSION: 3.11.3
             CUCUMBER_OPTIONS: "-t ~@cassandra_4_0_onwards -t ~@all_nodes_reachable"
             JOB_COMMAND: mvn -B surefire:test -DsurefireArgLine="-Xmx256m" -Dtest=ReaperH2IT
