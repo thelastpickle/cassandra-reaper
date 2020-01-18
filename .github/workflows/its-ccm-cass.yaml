@@ -335,7 +335,7 @@ jobs:
         run: |
             set -x
             mkdir -p ~/.local
-            if [[ ${{ matrix.JOB_COMMAND }} != *"ReaperCassandraSidecarIT"* ]];then
+            if [[ "${{ matrix.JOB_COMMAND }}" != *"ReaperCassandraSidecarIT"* ]];then
               # jmx password should only be set if we're not in sidecar mode
               cp src/ci/jmxremote.password ~/.local/jmxremote.password
               touch ~/.local/jmxremote.blank.password
@@ -353,7 +353,7 @@ jobs:
             ccm create test -v ${{ matrix.CASSANDRA_VERSION }}
             ccm populate --vnodes -n ${{ matrix.NODES_PER_DC }}:${{ matrix.NODES_PER_DC }}
             for i in `seq 1 $((${{ matrix.NODES_PER_DC }} *2))` ; do
-              if [[ ${{ matrix.JOB_COMMAND }} != *"ReaperCassandraSidecarIT"* ]];then
+              if [[ "${{ matrix.JOB_COMMAND }}" != *"ReaperCassandraSidecarIT"* ]];then
                 # jmx password should only be set if we're not in sidecar mode
                 sed -i 's/LOCAL_JMX=yes/LOCAL_JMX=no/' ~/.ccm/test/node$i/conf/cassandra-env.sh
                 if [ "$i" -gt "${{ matrix.NODES_PER_DC }}" ] && [ echo "${{ matrix.CUCUMBER_OPTIONS }}" | grep -q '~@all_nodes_reachable' ] ; then
@@ -365,7 +365,7 @@ jobs:
               else
                 sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' ~/.ccm/test/node$i/conf/cassandra-env.sh
               fi
-              if echo "$CASSANDRA_VERSION" | grep -q "trunk" ; then
+              if echo "${{ matrix.CASSANDRA_VERSION }}" | grep -q "trunk" ; then
                 sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="200m"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
               else
                 sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="136m"/' ~/.ccm/test/node$i/conf/cassandra-env.sh
