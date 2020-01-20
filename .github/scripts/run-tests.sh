@@ -57,6 +57,7 @@ case "${TEST_TYPE}" in
                 mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperPostgresIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
                 ;;
             "cassandra")
+                ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
                 mvn -B package -DskipTests
                 mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
                 ;;
@@ -82,6 +83,7 @@ case "${TEST_TYPE}" in
                 mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperPostgresSidecarIT -Dcucumber.options="-t @sidecar"
                 ;;
             "cassandra")
+                ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
                 mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraSidecarIT -Dcucumber.options="-t @sidecar"
                 ;;
             *)
@@ -96,6 +98,7 @@ case "${TEST_TYPE}" in
         sleep 30
         ccm status
 
+        ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
         mvn package -B -DskipTests -Pintegration-upgrade-tests
         MAVEN_OPTS="-Xmx384m" mvn -B surefire:test -Dtest=ReaperCassandraIT
         ;;
