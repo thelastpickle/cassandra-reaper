@@ -32,12 +32,12 @@ const repairForm = CreateReactClass({
 
   getInitialState: function() {
     const URL_PREFIX = getUrlPrefix(window.top.location.pathname);
-    
+
     return {
       addRepairResultMsg: null,
       clusterNames: [],
       submitEnabled: false,
-      clusterName: this.props.currentCluster != "all" ? this.props.currentCluster : this.props.clusterNames[0],
+      clusterName: this.props.currentCluster == "all" ? this.props.clusterNames[0] : this.props.currentCluster,
       keyspace: "",
       tables: "",
       blacklistedTables: "",
@@ -48,7 +48,7 @@ const repairForm = CreateReactClass({
       parallelism: null,
       intensity: null,
       cause: null,
-      incrementalRepair: null,
+      incrementalRepair: "false",
       formCollapsed: true,
       clusterStatus: {},
       urlPrefix: URL_PREFIX,
@@ -104,7 +104,7 @@ const repairForm = CreateReactClass({
   _getClusterStatus: function() {
     let clusterName = this.state.clusterName;
 
-    if (clusterName !== null) {
+    if (clusterName) {
       $.ajax({
           url: this.state.urlPrefix + '/cluster/' + encodeURIComponent(clusterName),
           method: 'GET',
@@ -177,7 +177,7 @@ const repairForm = CreateReactClass({
     if(this.state.repairThreadCount && this.state.repairThreadCount > 0) repair.repairThreadCount = this.state.repairThreadCount;
 
     // Force incremental repair to FALSE if empty
-    if(!this.state.incrementalRepair) repair.incrementalRepair = "false";
+    if (!this.state.incrementalRepair) repair.incrementalRepair = "false";
 
     this.props.addRepairSubject.onNext(repair);
   },
@@ -200,9 +200,17 @@ const repairForm = CreateReactClass({
   },
 
   _checkValidity: function() {
-    const valid = this.state.keyspaceList.length > 0 && this.state.clusterName && this.state.owner
-                                      && ((this.state.datacenterList.length>0 && this.state.nodeList.length==0)
-                                      || (this.state.datacenterList.length==0 && this.state.nodeList.length > 0) || (this.state.datacenterList.length==0  && this.state.nodeList==0) );
+    const valid = this.state.keyspaceList.length > 0
+                    && this.state.clusterName
+                    && this.state.owner
+                    && (
+                        (this.state.datacenterList.length > 0 && this.state.nodeList.length === 0)
+                        ||
+                        (this.state.datacenterList.length === 0 && this.state.nodeList.length > 0)
+                        ||
+                        AA(this.state.datacenterList.length === 0 && this.state.nodeList === 0)
+                    );
+
     this.setState({submitEnabled: valid});
   },
 
@@ -224,6 +232,22 @@ const repairForm = CreateReactClass({
     }
   },
 
+  _handleSelectOnChange: function(valueContext, actionContext) {
+    console.log("_handleSelectOnChange");
+
+    const stateName = actionContext.name.split("_")[1];
+    let stateValue = {};
+
+    stateValue[stateName] = valueContext.value;
+    this.setState(stateValue);
+
+    if (stateName === "clusterName") {
+      this._getClusterStatus();
+    }
+
+    this._checkValidity();
+  },
+
   _getOppositeSelect: function(selectName) {
     const selectNameMap = {
       "tables": "blacklistedTables",
@@ -234,8 +258,8 @@ const repairForm = CreateReactClass({
     return selectNameMap[selectName];
   },
 
-  _handleSelectOnChange: function(valueContext, actionContext) {
-    const nameRef = actionContext.name.split("_")[0];
+  _handleLinkedSelectOnChange: function(valueContext, actionContext) {
+    const nameRef = actionContext.name.split("_")[1];
     const oppositeNameRef = this._getOppositeSelect(nameRef);
     const oppositeNameListRef = `${oppositeNameRef}List`;
 
@@ -300,8 +324,8 @@ const repairForm = CreateReactClass({
       keyspaceSelectValues: keyspaceSelectValuesRef,
     });
     this._checkValidity();
-    this._handleSelectOnChange(null, {name: "tables"});
-    this._handleSelectOnChange(null, {name: "blacklistedTables"});
+    this._handleLinkedSelectOnChange(null, {name: "in_tables"});
+    this._handleLinkedSelectOnChange(null, {name: "in_blacklistedTables"});
     this._getTableOptions(keyspaceRef);
   },
 
@@ -325,6 +349,12 @@ const repairForm = CreateReactClass({
     const clusterItems = this.state.clusterNames.sort().map(name =>
       <option key={name} value={name}>{name}</option>
     );
+
+    const clusterNameOptions = this.state.clusterNames.sort().map(name => {
+      return {label: name, value: name};
+    });
+
+    const clusterNamePlaceholder = this.state.clusterName ? this.state.clusterName : "Select cluster";
 
     let advancedMenuDownStyle = {
       display: "inline-block" 
@@ -358,10 +388,13 @@ const repairForm = CreateReactClass({
             <div className="form-group">
               <label htmlFor="in_clusterName" className="col-sm-3 control-label">Cluster*</label>
               <div className="col-sm-9 col-md-7 col-lg-5">
-                <select className="form-control" id="in_clusterName"
-                  onChange={this._handleChange} value={this.state.clusterName}>
-                  {clusterItems}
-                </select>
+                <Select
+                  id="in_clusterName"
+                  name="in_clusterName"
+                  options={clusterNameOptions}
+                  placeholder={clusterNamePlaceholder}
+                  onChange={this._handleSelectOnChange}
+                />
               </div>
             </div>
 
@@ -369,15 +402,15 @@ const repairForm = CreateReactClass({
             <label htmlFor="in_keyspace" className="col-sm-3 control-label">Keyspace*</label>
               <div className="col-sm-9 col-md-7 col-lg-5">
                 <Select
-                  id="keyspace_select"
-                  name="keyspace_select"
+                  id="in_keyspace"
+                  name="in_keyspace"
                   isClearable
                   isSearchable
                   options={this.state.keyspaceOptions}
                   value={this.state.keyspaceSelectValues}
                   placeholder="Add a keyspace"
                   onChange={this._handleKeySpaceSelectOnChange}
-                  classNames={{tagInputField: keyspaceInputStyle}}
+                  className2={{tagInputField: keyspaceInputStyle}}
                 />
               </div>
             </div>
@@ -410,8 +443,8 @@ const repairForm = CreateReactClass({
                     <label htmlFor="in_tables" className="col-sm-3 control-label">Tables</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
                         <Select
-                          id="tables_select"
-                          name="tables_select"
+                          id="in_tables"
+                          name="in_tables"
                           isClearable
                           isSearchable
                           isMulti
@@ -419,8 +452,8 @@ const repairForm = CreateReactClass({
                           options={this.state.tableOptions}
                           value={this.state.tablesSelectValues}
                           placeholder="Add a table (optional)"
-                          onChange={this._handleSelectOnChange}
-                          classNames={{tagInputField: 'form-control'}}
+                          onChange={this._handleLinkedSelectOnChange}
+                          className={{tagInputField: 'form-control'}}
                         />
                       </div>
                     </div>
@@ -428,8 +461,8 @@ const repairForm = CreateReactClass({
                     <label htmlFor="in_blacklist" className="col-sm-3 control-label">Blacklist</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
                         <Select
-                          id="blacklistedTables_select"
-                          name="blacklistedTables_select"
+                          id="in_blacklistedTables"
+                          name="in_blacklistedTables"
                           isClearable
                           isSearchable
                           isMulti
@@ -437,8 +470,8 @@ const repairForm = CreateReactClass({
                           options={this.state.tableOptions}
                           value={this.state.blacklistedTablesSelectValues}
                           placeholder="Add a table (optional)"
-                          onChange={this._handleSelectOnChange}
-                          classNames={{tagInputField: 'form-control'}}
+                          onChange={this._handleLinkedSelectOnChange}
+                          className={{tagInputField: 'form-control'}}
                         />
                       </div>
                     </div>
@@ -446,8 +479,8 @@ const repairForm = CreateReactClass({
                       <label htmlFor="in_nodes" className="col-sm-3 control-label">Nodes</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
                         <Select
-                          id="nodes_select"
-                          name="nodes_select"
+                          id="in_nodes"
+                          name="in_nodes"
                           isClearable
                           isSearchable
                           isMulti
@@ -455,8 +488,8 @@ const repairForm = CreateReactClass({
                           options={this.state.nodeOptions}
                           value={this.state.nodesSelectValues}
                           placeholder="Add a node (optional)"
-                          onChange={this._handleSelectOnChange}
-                          classNames={{tagInputField: 'form-control'}}
+                          onChange={this._handleLinkedSelectOnChange}
+                          className={{tagInputField: 'form-control'}}
                         />
                       </div>
                     </div>
@@ -464,17 +497,17 @@ const repairForm = CreateReactClass({
                       <label htmlFor="in_datacenters" className="col-sm-3 control-label">Datacenters</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
                         <Select
-                          id="datacenters_select"
-                          name="datacenters_select"
+                          id="in_datacenters"
+                          name="in_datacenters"
                           isClearable
                           isSearchable
                           isMulti
                           isDisabled={this.state.datacentersSelectDisabled}
                           options={this.state.datacenterOptions}
                           value={this.state.datacentersSelectValues}
-                          placeholder="Add a node (optional)"
-                          onChange={this._handleSelectOnChange}
-                          classNames={{tagInputField: 'form-control'}}
+                          placeholder="Add a datacenter (optional)"
+                          onChange={this._handleLinkedSelectOnChange}
+                          className={{tagInputField: 'form-control'}}
                         />
                       </div>
                     </div>
@@ -488,13 +521,17 @@ const repairForm = CreateReactClass({
                     <div className="form-group">
                       <label htmlFor="in_parallelism" className="col-sm-3 control-label">Parallelism</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
-                        <select className="form-control" id="in_parallelism"
-                          onChange={this._handleChange} value={this.state.parallelism}>
-                          <option value=""></option>
-                          <option value="SEQUENTIAL">Sequential</option>
-                          <option value="PARALLEL">Parallel</option>
-                          <option value="DATACENTER_AWARE">DC-Aware</option>
-                        </select>
+                        <Select
+                          id="in_parallelism"
+                          name="in_parallelism"
+                          options={[
+                            {label: "Sequential", value: "SEQUENTIAL"},
+                            {label: "Parallel", value: "PARALLEL"},
+                            {label: "DC-Aware", value: "DATACENTER_AWARE"},
+                          ]}
+                          placeholder="Select parallelism"
+                          onChange={this._handleSelectOnChange}
+                        />
                       </div>
                     </div>
                     <div className="form-group">
@@ -508,11 +545,13 @@ const repairForm = CreateReactClass({
                     <div className="form-group">
                       <label htmlFor="in_incrementalRepair" className="col-sm-3 control-label">Incremental</label>
                       <div className="col-sm-14 col-md-12 col-lg-9">
-                        <select className="form-control" id="in_incrementalRepair"
-                          onChange={this._handleChange} value={this.state.incrementalRepair}>
-                          <option value="false">false</option>
-                          <option value="true">true</option>
-                        </select>
+                        <Select
+                          id="in_incrementalRepair"
+                          name="in_incrementalRepair"
+                          options={[{label: "true", value: "true"}, {label: "false", value: "false"}]}
+                          placeholder="false"
+                          onChange={this._handleSelectOnChange}
+                        />
                       </div>
                     </div>
                     <div className="form-group">
