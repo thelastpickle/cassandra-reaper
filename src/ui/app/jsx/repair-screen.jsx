@@ -78,7 +78,7 @@ const repairScreen = CreateReactClass({
 
             <div className="row">
                 <div className="col-lg-12">
-                  <RepairForm addRepairSubject={this.props.addRepairSubject} addRepairResult={this.props.addRepairResult} clusterNames={this.props.clusterNames} currentCluster={this.props.currentCluster}> </RepairForm>
+                  <RepairForm addRepairSubject={this.props.addRepairSubject} addRepairResult={this.props.addRepairResult} clusterNames={this.props.clusterNames} currentCluster={this.props.currentCluster} formType="repair"> </RepairForm>
                 </div>
             </div>
             

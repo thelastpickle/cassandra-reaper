@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import moment from "moment";
 import ServerStatus from "jsx/server-status";
 import Sidebar from "jsx/sidebar";
-import ScheduleForm from "jsx/schedule-form";
+import RepairForm from "jsx/repair-form";
 import ScheduleList from "jsx/schedule-list";
 import NavBar from "jsx/navbar";
 import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender} from "jsx/mixin";
@@ -76,7 +76,7 @@ const ScheduleScreen = CreateReactClass({
 
       <div className="row">
                 <div className="col-lg-12">
-                  <ScheduleForm addScheduleSubject={this.props.addScheduleSubject} addScheduleResult={this.props.addScheduleResult} clusterNames={this.props.clusterNames} currentCluster={this.props.currentCluster}> </ScheduleForm>
+                  <RepairForm addRepairSubject={this.props.addRepairSubject} addRepairResult={this.props.addRepairResult} clusterNames={this.props.clusterNames} currentCluster={this.props.currentCluster} formType="schedule"> </RepairForm>
                 </div>
             </div>
 

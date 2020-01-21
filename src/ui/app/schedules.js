@@ -21,7 +21,7 @@ import Cookies from "js-cookie";
 import ScheduleScreen from "jsx/schedule-screen";
 import {
   statusObservableTimer,
-  addScheduleSubject, addScheduleResult, deleteScheduleSubject, deleteScheduleResult,
+  addRepairSubject, addRepairResult, deleteScheduleSubject, deleteScheduleResult,
   updateScheduleStatusSubject, updateScheduleStatusResult,
   schedules, clusterNames,
   logoutSubject, logoutResult
@@ -45,7 +45,7 @@ jQuery(document).ready(function($){
   }
 
   ReactDOM.render(
-    React.createElement(ScheduleScreen, {clusterNames, addScheduleSubject, addScheduleResult, currentCluster, schedules,
+    React.createElement(ScheduleScreen, {clusterNames, addRepairSubject, addRepairResult, currentCluster, schedules,
       logoutSubject: logoutSubject, logoutResult: logoutResult, 
       deleteSubject: deleteScheduleSubject,
     deleteResult: deleteScheduleResult, updateStatusSubject: updateScheduleStatusSubject, statusObservableTimer,

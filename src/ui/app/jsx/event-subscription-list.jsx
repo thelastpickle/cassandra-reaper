@@ -16,6 +16,7 @@
 
 import React from "react";
 import CreateReactClass from'create-react-class';
+import PropTypes from 'prop-types';
 import moment from "moment";
 import {RowDeleteMixin, DeleteStatusMessageMixin} from "jsx/mixin";
 

@@ -20,24 +20,33 @@ import PropTypes from 'prop-types';
 import Select from 'react-select';
 import { getUrlPrefix } from "jsx/mixin";
 import $ from "jquery";
+import { DateTimePicker } from 'react-widgets';
+import momentLocalizer from 'react-widgets-moment';
+import Moment from 'moment';
+import moment from "moment";
 
+Moment.locale(navigator.language);
+momentLocalizer();
 
 const repairForm = CreateReactClass({
 
   propTypes: {
     addRepairSubject: PropTypes.object.isRequired,
     addRepairResult: PropTypes.object.isRequired,
-    clusterNames: PropTypes.object.isRequired
+    clusterNames: PropTypes.object.isRequired,
+    currentCluster: PropTypes.string.isRequired,
+    formType: PropTypes.string.isRequired,
   },
 
   getInitialState: function() {
     const URL_PREFIX = getUrlPrefix(window.top.location.pathname);
 
     return {
+      formType: this.props.formType,
       addRepairResultMsg: null,
       clusterNames: [],
       submitEnabled: false,
-      clusterName: this.props.currentCluster == "all" ? this.props.clusterNames[0] : this.props.currentCluster,
+      clusterName: this.props.currentCluster === "all" ? this.props.clusterNames[0] : this.props.currentCluster,
       keyspace: "",
       tables: "",
       blacklistedTables: "",
@@ -48,31 +57,33 @@ const repairForm = CreateReactClass({
       parallelism: null,
       intensity: null,
       cause: null,
+      startTime: this.props.formType === "schedule" ? moment().toDate() : null,
+      intervalDays: null,
       incrementalRepair: "false",
+      repairThreadCount: 1,
       formCollapsed: true,
+      advancedFormCollapsed: true,
       clusterStatus: {},
-      urlPrefix: URL_PREFIX,
       clusterTables: {},
-      datacenterOptions: [],
-      nodeOptions: [],
-      tableOptions: [],
+      urlPrefix: URL_PREFIX,
       keyspaceOptions: [],
-      datacentersList: [],
-      datacentersSelectValues: [],
-      datacentersSelectDisabled: false,
-      nodesList: [],
-      nodesSelectValues: [],
-      nodesSelectDisabled: false,
+      tableOptions: [],
+      nodeOptions: [],
+      datacenterOptions: [],
+      keyspaceList: [],
+      keyspaceSelectValues: [],
       tablesList: [],
       tablesSelectValues: [],
       tablesSelectDisabled: false,
       blacklistedTablesList: [],
       blacklistedTablesSelectValues: [],
       blacklistedTablesSelectDisabled: false,
-      keyspaceList: [],
-      keyspaceSelectValues: [],
-      advancedFormCollapsed: true,
-      repairThreadCount: 1
+      nodesList: [],
+      nodesSelectValues: [],
+      nodesSelectDisabled: false,
+      datacentersList: [],
+      datacentersSelectValues: [],
+      datacentersSelectDisabled: false,
     };
   },
 
@@ -88,8 +99,10 @@ const repairForm = CreateReactClass({
       obs.subscribeOnNext(names => {
         let previousNames = this.state.clusterNames;
         this.setState({clusterNames: names});
-        if(names.length == 1) this.setState({clusterName: names[0]});
-        if(previousNames.length == 0) {
+        if (names.length) {
+          this.setState({clusterName: names[0]});
+        }
+        if (!previousNames.length) {
           this._getClusterStatus();
         }
       })
@@ -106,16 +119,16 @@ const repairForm = CreateReactClass({
 
     if (clusterName) {
       $.ajax({
-          url: this.state.urlPrefix + '/cluster/' + encodeURIComponent(clusterName),
-          method: 'GET',
-          component: this,
-          complete: function(data) {
-            this.component.setState({clusterStatus: $.parseJSON(data.responseText)});
-            this.component._getDatacetnerOptions();
-            this.component._getNodeOptions();
-          }
+        url: this.state.urlPrefix + '/cluster/' + encodeURIComponent(clusterName),
+        method: 'GET',
+        component: this,
+        complete: function(data) {
+          this.component.setState({clusterStatus: $.parseJSON(data.responseText)});
+          this.component._getDatacetnerOptions();
+          this.component._getNodeOptions();
+        }
       });
-        $.ajax({
+      $.ajax({
         url: this.state.urlPrefix + '/cluster/' + encodeURIComponent(clusterName) + '/tables',
         method: 'GET',
         component: this,
@@ -161,56 +174,65 @@ const repairForm = CreateReactClass({
   },
 
   _onAdd: function(e) {
-    const repair = {
-      clusterName: this.state.clusterName, keyspace: this.state.keyspace,
+    let repair = {
+      clusterName: this.state.clusterName,
+      keyspace: this.state.keyspace,
       owner: this.state.owner
     };
-    if(this.state.tables) repair.tables = this.state.tables;
-    if(this.state.segments) repair.segmentCount = this.state.segments;
-    if(this.state.parallelism) repair.repairParallelism = this.state.parallelism;
-    if(this.state.intensity) repair.intensity = this.state.intensity;
-    if(this.state.cause) repair.cause = this.state.cause;
-    if(this.state.incrementalRepair) repair.incrementalRepair = this.state.incrementalRepair;
-    if(this.state.nodes) repair.nodes = this.state.nodes;
-    if(this.state.datacenters) repair.datacenters = this.state.datacenters;
-    if(this.state.blacklistedTables) repair.blacklistedTables = this.state.blacklistedTables;
-    if(this.state.repairThreadCount && this.state.repairThreadCount > 0) repair.repairThreadCount = this.state.repairThreadCount;
 
-    // Force incremental repair to FALSE if empty
-    if (!this.state.incrementalRepair) repair.incrementalRepair = "false";
+    if (this.state.formType === "schedule") {
+      repair["scheduleTriggerTime"] = moment(this.state.startTime).utc().format("YYYY-MM-DDTHH:mm");
+      repair["scheduleDaysBetween"] = this.state.intervalDays;
+    }
 
-    this.props.addRepairSubject.onNext(repair);
+    if (this.state.tables) repair.tables = this.state.tables;
+    if (this.state.segments) repair.segmentCount = this.state.segments;
+    if (this.state.parallelism) repair.repairParallelism = this.state.parallelism;
+    if (this.state.intensity) repair.intensity = this.state.intensity;
+    if (this.state.cause) repair.cause = this.state.cause;
+    if (this.state.incrementalRepair) {
+      repair.incrementalRepair = this.state.incrementalRepair;
+    }
+    else {
+      repair.incrementalRepair = "false";
+    }
+    if (this.state.nodes) repair.nodes = this.state.nodes;
+    if (this.state.datacenters) repair.datacenters = this.state.datacenters;
+    if (this.state.blacklistedTables) repair.blacklistedTables = this.state.blacklistedTables;
+    if (this.state.repairThreadCount && this.state.repairThreadCount > 0) repair.repairThreadCount = this.state.repairThreadCount;
+
+    this.props.addRepairSubject.onNext({
+      type: this.state.formType,
+      params: repair,
+    });
   },
 
   _handleChange: function(e) {
     var v = e.target.value;
-    var n = e.target.id.substring(3); // strip in_ prefix
+    var n = e.target.id.split("_")[1];
 
     // update state
     const state = this.state;
     state[n] = v;
     this.replaceState(state);
-    
-    if (n == 'clusterName') {
-      this._getClusterStatus();
-    }
-    
+
     // validate
     this._checkValidity();
   },
 
   _checkValidity: function() {
-    const valid = this.state.keyspaceList.length > 0
-                    && this.state.clusterName
-                    && this.state.owner
-                    && (
-                        (this.state.datacenterList.length > 0 && this.state.nodeList.length === 0)
-                        ||
-                        (this.state.datacenterList.length === 0 && this.state.nodeList.length > 0)
-                        ||
-                        AA(this.state.datacenterList.length === 0 && this.state.nodeList === 0)
-                    );
-
+    const valid = this.state.keyspaceList.length
+      && this.state.clusterName
+      && this.state.owner
+      && (
+        (this.state.formType === "schedule" && this.state.startTime && this.state.intervalDays)
+        || (this.state.formType === "repair" && !this.state.startTime && !this.state.intervalDays)
+      )
+      && (
+        (this.state.datacentersList.length && !this.state.nodesList.length)
+          || (!this.state.datacentersList.length && this.state.nodesList.length)
+          || (!this.state.datacentersList.length && !this.state.nodesList.length)
+      );
     this.setState({submitEnabled: valid});
   },
 
@@ -233,8 +255,6 @@ const repairForm = CreateReactClass({
   },
 
   _handleSelectOnChange: function(valueContext, actionContext) {
-    console.log("_handleSelectOnChange");
-
     const stateName = actionContext.name.split("_")[1];
     let stateValue = {};
 
@@ -346,15 +366,32 @@ const repairForm = CreateReactClass({
       addMsg = <div className="alert alert-danger" role="alert">{this.state.addRepairResultMsg}</div>
     }
 
-    const clusterItems = this.state.clusterNames.sort().map(name =>
-      <option key={name} value={name}>{name}</option>
-    );
-
     const clusterNameOptions = this.state.clusterNames.sort().map(name => {
       return {label: name, value: name};
     });
 
     const clusterNamePlaceholder = this.state.clusterName ? this.state.clusterName : "Select cluster";
+    const ownerPlaceholder = `owner name for the ${this.state.formType} run (any string)`;
+
+    let formHeaderLabel = "Start a new repair";
+    let repairButtonLabel = "Repair";
+    let repairButtonClassName = "btn btn-warning";
+
+    if (this.state.formType === "schedule") {
+      formHeaderLabel = "Add a new schedule";
+      repairButtonLabel = "Add Schedule";
+      repairButtonClassName = "btn btn-success";
+    }
+
+    switch (this.state.formType) {
+      case "repair":
+        formHeaderLabel = "Start a new repair";
+
+        break;
+      case "schedule":
+        formHeaderLabel = "Add a new schedule";
+        break;
+    }
 
     let advancedMenuDownStyle = {
       display: "inline-block" 
@@ -364,7 +401,7 @@ const repairForm = CreateReactClass({
       display: "none" 
     }
 
-    if(this.state.advancedFormCollapsed == false) {
+    if (this.state.advancedFormCollapsed == false) {
       advancedMenuDownStyle = {
         display: "none"
       }
@@ -373,13 +410,53 @@ const repairForm = CreateReactClass({
       }
     }
 
+    let customInput = "";
+    if (this.state.formType === "repair") {
+      customInput = (
+        <div className="form-group">
+          <label htmlFor="in_cause" className="col-sm-3 control-label">Cause</label>
+          <div className="col-sm-9 col-md-7 col-lg-5">
+            <input type="text" className="form-control" value={this.state.cause}
+              onChange={this._handleChange} id="in_cause" placeholder="reason repair was started"/>
+          </div>
+        </div>
+      );
+    }
+    else if (this.state.formType === "schedule") {
+      customInput = (
+        <div>
+        <div className="form-group">
+          <label htmlFor="in_startTime" className="col-sm-3 control-label">Start time*</label>
+          <div className="col-sm-9 col-md-7 col-lg-5">
+            <DateTimePicker
+              value={this.state.startTime}
+              onChange={value => this.setState({ startTime: value })}
+              step={15}
+            />
+          </div>
+        </div>
+        <div className="form-group">
+          <label htmlFor="in_intervalDays" className="col-sm-3 control-label">Interval in days*</label>
+          <div className="col-sm-9 col-md-7 col-lg-5">
+            <input type="number" required className="form-control" value={this.state.intervalDays}
+              onChange={this._handleChange} id="in_intervalDays" placeholder="amount of days to wait between scheduling new repairs, (e.g. 7 for weekly)"/>
+          </div>
+        </div>
+        </div>
+      );
+    }
+
     const keyspaceInputStyle = this.state.keyspaceList.length > 0 ? 'form-control-hidden':'form-control';
 
     const advancedSettingsHeader = (
       <div className="panel-title" >
-    <a href="#advanced-form" data-toggle="collapse" onClick={this._toggleAdvancedSettingsDisplay}>Advanced settings
-    &nbsp; <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={advancedMenuDownStyle}></span>
-           <span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={advancedMenuUpStyle}></span></a></div>);
+        <a href="#advanced-form" data-toggle="collapse" onClick={this._toggleAdvancedSettingsDisplay}>
+          Advanced settings&nbsp;
+          <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={advancedMenuDownStyle}></span>
+          <span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={advancedMenuUpStyle}></span>
+        </a>
+      </div>
+    );
 
     const form = (
       <div className="row">
@@ -419,19 +496,10 @@ const repairForm = CreateReactClass({
               <label htmlFor="in_owner" className="col-sm-3 control-label">Owner*</label>
               <div className="col-sm-9 col-md-7 col-lg-5">
                 <input type="text" required className="form-control" value={this.state.owner}
-                  onChange={this._handleChange} id="in_owner" placeholder="owner name for the repair run (any string)"/>
+                  onChange={this._handleChange} id="in_owner" placeholder={ownerPlaceholder}/>
               </div>
             </div>
- 
-
-            <div className="form-group">
-              <label htmlFor="in_cause" className="col-sm-3 control-label">Cause</label>
-              <div className="col-sm-9 col-md-7 col-lg-5">
-                <input type="text" className="form-control" value={this.state.cause}
-                  onChange={this._handleChange} id="in_cause" placeholder="reason repair was started"/>
-              </div>
-            </div>
-
+            {customInput}
             <div className="form-group">
               <div className="col-sm-offset-1 col-sm-9">
                 <div className="panel panel-info">
@@ -568,8 +636,8 @@ const repairForm = CreateReactClass({
             </div>
             <div className="form-group">
               <div className="col-sm-offset-3 col-sm-9">
-                <button type="button" className="btn btn-warning" disabled={!this.state.submitEnabled}
-                  onClick={this._onAdd}>Repair</button>
+                <button type="button" className={repairButtonClassName} disabled={!this.state.submitEnabled}
+                  onClick={this._onAdd}>{repairButtonLabel}</button>
               </div>
             </div>            
           </form>
@@ -597,7 +665,7 @@ const repairForm = CreateReactClass({
     const formHeader = (
       <div className="panel-title" >
         <a href="#repair-form" data-toggle="collapse" onClick={this._toggleFormDisplay}>
-          Start a new repair&nbsp;
+          {formHeaderLabel}&nbsp;
           <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={menuDownStyle}></span>
           <span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={menuUpStyle}></span>
         </a>
