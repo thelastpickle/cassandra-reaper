@@ -320,7 +320,7 @@ const repairForm = CreateReactClass({
   },
 
   // Keyspace list functions
-  _handleKeySpaceSelectOnChange: function(valueContext, actionContext) {
+  _handleKeyspaceSelectOnChange: function(valueContext, actionContext) {
     let keyspaceListRef = this.state.keyspaceList;
     let keyspaceSelectValuesRef = [];
     let keyspaceRef = "";
@@ -486,8 +486,8 @@ const repairForm = CreateReactClass({
                   options={this.state.keyspaceOptions}
                   value={this.state.keyspaceSelectValues}
                   placeholder="Add a keyspace"
-                  onChange={this._handleKeySpaceSelectOnChange}
-                  className2={{tagInputField: keyspaceInputStyle}}
+                  onChange={this._handleKeyspaceSelectOnChange}
+                  className={{tagInputField: keyspaceInputStyle}}
                 />
               </div>
             </div>
