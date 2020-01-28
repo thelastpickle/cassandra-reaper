@@ -610,6 +610,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               : Cluster.State.UNREACHABLE)
           .withLastContact(lastContact);
 
+    if (null != properties.getJmxCredentials()) {
+      builder = builder.withJmxCredentials(properties.getJmxCredentials());
+    }
+
     if (null != row.getString("partitioner")) {
       builder = builder.withPartitioner(row.getString("partitioner"));
     }

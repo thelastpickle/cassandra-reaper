@@ -18,10 +18,11 @@
 package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.AppContext;
-import io.cassandrareaper.ReaperApplicationConfiguration.JmxCredentials;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.crypto.Cryptograph;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,18 +51,20 @@ public class JmxConnectionFactory {
   private final MetricRegistry metricRegistry;
   private final HostConnectionCounters hostConnectionCounters;
   private final AppContext context;
+  private final Cryptograph cryptograph;
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
   private Map<String, JmxCredentials> jmxCredentials;
   private EC2MultiRegionAddressTranslator addressTranslator;
   private final Set<String> accessibleDatacenters = Sets.newHashSet();
 
-  public JmxConnectionFactory(AppContext context) {
+  public JmxConnectionFactory(AppContext context, Cryptograph cryptograph) {
     this.metricRegistry
         = context.metricRegistry == null ? new MetricRegistry() : context.metricRegistry;
     hostConnectionCounters = new HostConnectionCounters(metricRegistry);
     registerConnectionsGauge();
     this.context = context;
+    this.cryptograph = cryptograph;
   }
 
   private void registerConnectionsGauge() {
@@ -89,16 +92,12 @@ public class JmxConnectionFactory {
       LOG.debug("Connecting to {} with custom port", host);
     }
 
-    String username = null;
-    String password = null;
-    if (getJmxCredentialsForCluster(node.getClusterName()).isPresent()) {
-      username = getJmxCredentialsForCluster(node.getClusterName()).get().getUsername();
-      password = getJmxCredentialsForCluster(node.getClusterName()).get().getPassword();
-    }
+    Optional<JmxCredentials> jmxCredentials = getJmxCredentialsForCluster(node.getCluster());
 
     try {
       JmxConnectionProvider provider = new JmxConnectionProvider(
-              host, username, password, context.config.getJmxConnectionTimeoutInSeconds(), this.metricRegistry);
+              host, jmxCredentials, context.config.getJmxConnectionTimeoutInSeconds(),
+              this.metricRegistry, cryptograph);
       JMX_CONNECTIONS.computeIfAbsent(host, provider::apply);
       JmxProxy proxy = JMX_CONNECTIONS.get(host);
       if (!proxy.isConnectionAlive()) {
@@ -171,39 +170,45 @@ public class JmxConnectionFactory {
     return accessibleDatacenters;
   }
 
-  public Optional<JmxCredentials> getJmxCredentialsForCluster(String clusterName) {
-    Optional<JmxCredentials> jmxCreds = Optional.ofNullable(jmxAuth);
-    if (jmxCredentials != null && jmxCredentials.containsKey(clusterName)) {
-      jmxCreds = Optional.of(jmxCredentials.get(clusterName));
+  public Optional<JmxCredentials> getJmxCredentialsForCluster(Optional<Cluster> cluster) {
+    JmxCredentials credentials = cluster.flatMap(Cluster::getJmxCredentials).orElse(null);
+    String clusterName = cluster.map(Cluster::getName).orElse("");
+
+    if (credentials == null && jmxCredentials != null) {
+      if (jmxCredentials.containsKey(clusterName)) {
+        credentials = jmxCredentials.get(clusterName);
+      } else if (jmxCredentials.containsKey(Cluster.toSymbolicName(clusterName))) {
+        // As clusters get stored in the database with their "symbolic name" we have to look for that too
+        credentials = jmxCredentials.get(Cluster.toSymbolicName(clusterName));
+      }
     }
 
-    // As clusters get stored in the database with their "symbolic name" we have to look for that too
-    if (jmxCredentials != null && jmxCredentials.containsKey(Cluster.toSymbolicName(clusterName))) {
-      jmxCreds = Optional.of(jmxCredentials.get(Cluster.toSymbolicName(clusterName)));
+    if (credentials == null && jmxAuth != null) {
+      credentials = jmxAuth;
     }
 
-    return jmxCreds;
+    return Optional.ofNullable(credentials);
   }
 
   private class JmxConnectionProvider implements Function<String, JmxProxy> {
 
     private final String host;
-    private final String username;
-    private final String password;
+    private final Optional<JmxCredentials> jmxCredentials;
     private final int connectionTimeout;
     private final MetricRegistry metricRegistry;
+    private final Cryptograph cryptograph;
 
     JmxConnectionProvider(
-        String host,
-        String username,
-        String password,
-        int connectionTimeout,
-        MetricRegistry metricRegistry) {
+            String host,
+            Optional<JmxCredentials> jmxCredentials,
+            int connectionTimeout,
+            MetricRegistry metricRegistry,
+            Cryptograph cryptograph) {
       this.host = host;
-      this.username = username;
-      this.password = password;
+      this.jmxCredentials = jmxCredentials;
       this.connectionTimeout = connectionTimeout;
       this.metricRegistry = metricRegistry;
+      this.cryptograph = cryptograph;
     }
 
     @Override
@@ -211,7 +216,7 @@ public class JmxConnectionFactory {
       Preconditions.checkArgument(host.equals(this.host));
       try {
         JmxProxy proxy = JmxProxyImpl.connect(
-                host, username, password, addressTranslator, connectionTimeout, metricRegistry);
+                host, jmxCredentials, addressTranslator, connectionTimeout, metricRegistry, cryptograph);
         if (hostConnectionCounters.getSuccessfulConnections(host) <= 0) {
           accessibleDatacenters.add(EndpointSnitchInfoProxy.create(proxy).getDataCenter());
         }
