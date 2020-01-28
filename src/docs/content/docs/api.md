@@ -59,6 +59,13 @@ This operation expects that a call was previously made to `/login` and that the 
       * *seedHost*: Host name or IP address of the added Cassandra
         clusters seed host.
       * *jmxPort*: A custom port that reaper will use to JMX into the Cluster.  Defaults to 7199.  (Optional)
+  * Adds a new cluster to the service, and returns the newly added cluster object, if the operation was successful. If the cluster is already registered, the list of host will be updated to match the current topology.
+
+* **POST    /cluster/auth**
+  * Expected query parameters:
+      * *seedHost*: Host name or IP address of the added Cassandra
+        clusters seed host.
+      * *jmxPort*: A custom port that reaper will use to JMX into the Cluster.  Defaults to 7199.  (Optional)
       * *jmxUsername*: JMX Username specific to the Cluster.  Defaults to what is defined in [configuration](http://cassandra-reaper.io/docs/configuration/reaper_specific/).  (Optional)
       * *jmxUsername*: JMX Password specific to the Cluster.  Defaults to what is defined in [configuration](http://cassandra-reaper.io/docs/configuration/reaper_specific/).  (Optional)
   * Adds a new cluster to the service, and returns the newly added cluster object, if the operation was successful. If the cluster is already registered, the list of host will be updated to match the current topology.
@@ -68,10 +75,15 @@ This operation expects that a call was previously made to `/login` and that the 
   * Expected query parameters:
       * *seedHost*: New host name or IP address used as Cassandra cluster seed.
       * *jmxPort*: A custom port that reaper will use to JMX into the Cluster.  Defaults to 7199.  (Optional)
+  * Adds a new cluster or modifies an existing cluster's seed host. Comes in handy when the previous seed has left the cluster.
+  
+* **PUT     /cluster/auth/{cluster_name}**
+  * Expected query parameters:
+      * *seedHost*: New host name or IP address used as Cassandra cluster seed.
+      * *jmxPort*: A custom port that reaper will use to JMX into the Cluster.  Defaults to 7199.  (Optional)
       * *jmxUsername*: JMX Username specific to the Cluster.  Defaults to what is defined in [configuration](http://cassandra-reaper.io/docs/configuration/reaper_specific/).  (Optional)
       * *jmxUsername*: JMX Password specific to the Cluster.  Defaults to what is defined in [configuration](http://cassandra-reaper.io/docs/configuration/reaper_specific/).  (Optional)
   * Adds a new cluster or modifies an existing cluster's seed host. Comes in handy when the previous seed has left the cluster.
-  
   
 * **DELETE  /cluster/{cluster_name}**
   * Expected query parameters:

@@ -151,6 +151,17 @@ public final class ClusterResource {
   @POST
   public Response addOrUpdateCluster(
       @Context UriInfo uriInfo,
+      @QueryParam("seedHost") Optional<String> seedHost,
+      @QueryParam("jmxPort") Optional<Integer> jmxPort) {
+
+    LOG.info("POST addOrUpdateCluster called with seedHost: {}", seedHost.orElse(null));
+    return addOrUpdateCluster(uriInfo, Optional.empty(), seedHost, jmxPort, Optional.empty(), Optional.empty());
+  }
+
+  @POST
+  @Path("/auth")
+  public Response addOrUpdateCluster(
+      @Context UriInfo uriInfo,
       @FormParam("seedHost") Optional<String> seedHost,
       @FormParam("jmxPort") Optional<Integer> jmxPort,
       @FormParam("jmxUsername") Optional<String> jmxUsername,
@@ -162,6 +173,21 @@ public final class ClusterResource {
 
   @PUT
   @Path("/{cluster_name}")
+  public Response addOrUpdateCluster(
+      @Context UriInfo uriInfo,
+      @PathParam("cluster_name") String clusterName,
+      @QueryParam("seedHost") Optional<String> seedHost,
+      @QueryParam("jmxPort") Optional<Integer> jmxPort) {
+
+    LOG.info(
+        "PUT addOrUpdateCluster called with: cluster_name = {}, seedHost = {}",
+        clusterName, seedHost.orElse(null));
+
+    return addOrUpdateCluster(uriInfo, Optional.of(clusterName), seedHost, jmxPort, Optional.empty(), Optional.empty());
+  }
+
+  @PUT
+  @Path("/auth/{cluster_name}")
   public Response addOrUpdateCluster(
       @Context UriInfo uriInfo,
       @PathParam("cluster_name") String clusterName,
