@@ -371,6 +371,24 @@ cassandra:
 
 <p>Schema initialization and migration will be done automatically upon startup.</p>
 
+<p>Sometimes it’s not possible for Cassandra nodes to broadcast addresses that will work for each and every client; for instance, they might broadcast private IPs because most clients are in the same network, but a particular client could be on another network and go through a router. For such cases, you can configure a custom address translator that will perform additional address translation based on configured mapping.</p>
+
+<pre><code class="language-yaml">storageType: cassandra
+cassandra:
+  clusterName: &quot;test&quot;
+  contactPoints: ["node1.cassandra.reaper.io", "node2.cassandra.reaper.io"]
+  keyspace: reaper_db
+  jmxAddressTranslator:
+    type: multiIpPerNode
+    ipTranslations:
+      - from: "10.10.10.111"
+        to: "node1.cassandra.reaper.io"
+      - from: "10.10.10.112"
+        to: "node2.cassandra.reaper.io"
+</code></pre>
+
+<p>When running multi region clusters in AWS, set type to <code>ec2MultiRegion</code> in order to use the EC2MultiRegionAddressTranslator from the Datastax Java Driver.</p>
+
                         </div>
 
                     </div>

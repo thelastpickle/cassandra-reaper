@@ -68,7 +68,7 @@ import javax.validation.constraints.NotNull;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.datastax.driver.core.VersionNumber;
-import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
+import com.datastax.driver.core.policies.AddressTranslator;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
@@ -150,12 +150,12 @@ final class JmxProxyImpl implements JmxProxy {
   }
 
   /**
-   * @see #connect(String, int, Optional, EC2MultiRegionAddressTranslator, int, MetricRegistry, Cryptograph)
+   * @see #connect(String, int, Optional, AddressTranslator, int, MetricRegistry, Cryptograph)
    */
   static JmxProxy connect(
       String host,
       Optional<JmxCredentials> jmxCredentials,
-      final EC2MultiRegionAddressTranslator addressTranslator,
+      final AddressTranslator addressTranslator,
       int connectionTimeout,
       MetricRegistry metricRegistry,
       Cryptograph cryptograph)
@@ -190,7 +190,7 @@ final class JmxProxyImpl implements JmxProxy {
       String originalHost,
       int port,
       Optional<JmxCredentials> jmxCredentials,
-      final EC2MultiRegionAddressTranslator addressTranslator,
+      final AddressTranslator addressTranslator,
       int connectionTimeout,
       MetricRegistry metricRegistry,
       Cryptograph cryptograph) throws ReaperException, InterruptedException {

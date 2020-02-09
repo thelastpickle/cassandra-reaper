@@ -54,3 +54,22 @@ When operating Reaper in a production environment, it is recommended that:
 * The `NetworkTopologyStrategy` should be used for the replication strategy of the keyspace. This is because `LOCAL_*` requests will fail if the `SimpleNetworkingStrategy` is used in an environment where there is more than one data center defined.
 
 Schema initialization and migration will be done automatically upon startup.
+
+Sometimes it’s not possible for Cassandra nodes to broadcast addresses that will work for each and every client; for instance, they might broadcast private IPs because most clients are in the same network, but a particular client could be on another network and go through a router. For such cases, you can configure a custom address translator that will perform additional address translation based on configured mapping.
+
+```yaml
+storageType: cassandra
+cassandra:
+  clusterName: "test"
+  contactPoints: ["node1.cassandra.reaper.io", "node2.cassandra.reaper.io"]
+  keyspace: reaper_db
+  jmxAddressTranslator:
+    type: multiIpPerNode
+    ipTranslations:
+      - from: "10.10.10.111"
+        to: "node1.cassandra.reaper.io"
+      - from: "10.10.10.112"
+        to: "node2.cassandra.reaper.io"
+```
+
+When running multi region clusters in AWS, set type to `ec2MultiRegion` in order to use the EC2MultiRegionAddressTranslator from the Datastax Java Driver. 

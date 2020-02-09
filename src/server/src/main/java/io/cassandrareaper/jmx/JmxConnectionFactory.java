@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
+import com.datastax.driver.core.policies.AddressTranslator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -55,7 +55,7 @@ public class JmxConnectionFactory {
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
   private Map<String, JmxCredentials> jmxCredentials;
-  private EC2MultiRegionAddressTranslator addressTranslator;
+  private AddressTranslator addressTranslator;
   private final Set<String> accessibleDatacenters = Sets.newHashSet();
 
   public JmxConnectionFactory(AppContext context, Cryptograph cryptograph) {
@@ -158,7 +158,7 @@ public class JmxConnectionFactory {
     this.jmxPorts = jmxPorts;
   }
 
-  public final void setAddressTranslator(EC2MultiRegionAddressTranslator addressTranslator) {
+  public final void setAddressTranslator(AddressTranslator addressTranslator) {
     this.addressTranslator = addressTranslator;
   }
 
