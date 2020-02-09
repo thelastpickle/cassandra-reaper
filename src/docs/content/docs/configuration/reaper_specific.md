@@ -411,6 +411,26 @@ When running multi region clusters in AWS, turn this setting to `true` in order 
 
 <br/>
 
+### `jmxAddressTranslator`
+
+_**Since 2.1.0**_
+
+Sometimes it’s not possible for Cassandra nodes to broadcast addresses that will work for each and every client; for instance, they might broadcast private IPs because most clients are in the same network, but a particular client could be on another network and go through a router. For such cases, you can configure a custom address translator that will perform additional address translation based on configured mapping.
+
+```yaml
+jmxAddressTranslator:
+  type: multiIpPerNode
+  ipTranslations:
+    - from: "10.10.10.111"
+      to: "node1.cassandra.reaper.io"
+    - from: "10.10.10.112"
+      to: "node2.cassandra.reaper.io"
+```
+
+When running multi region clusters in AWS, set type to `ec2MultiRegion` in order to use the EC2MultiRegionAddressTranslator from the Datastax Java Driver. This will allow translating the public address that the nodes broadcast to the private IP address that is used to expose JMX.
+
+<br/>
+
 ### `accessControl`
 
 Settings to activate and configure authentication for the web UI.

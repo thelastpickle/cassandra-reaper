@@ -61,6 +61,7 @@ import javax.servlet.FilterRegistration;
 import com.codahale.metrics.InstrumentedScheduledExecutorService;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.datastax.driver.core.policies.AddressTranslator;
 import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
@@ -322,6 +323,10 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       }
       if (config.useAddressTranslator()) {
         context.jmxConnectionFactory.setAddressTranslator(new EC2MultiRegionAddressTranslator());
+      }
+      if (config.getJmxAddressTranslator().isPresent()) {
+        AddressTranslator addressTranslator = config.getJmxAddressTranslator().get().build();
+        context.jmxConnectionFactory.setAddressTranslator(addressTranslator);
       }
     }
 
