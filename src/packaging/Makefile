@@ -29,6 +29,7 @@ prepare:
 	mkdir -p build/lib/systemd/system/
 	cp resource/cassandra-reaper.yaml build/etc/cassandra-reaper/
 	cp resource/cassandra-reaper*.yaml build/etc/cassandra-reaper/configs
+	cp resource/cassandra-reaper-ssl.properties build/etc/cassandra-reaper/configs
 	cp ../server/target/cassandra-reaper-$(VERSION).jar build/usr/share/cassandra-reaper/
 	cp bin/* build/usr/local/bin/
 	cp etc/bash_completion.d/spreaper build/etc/bash_completion.d/
