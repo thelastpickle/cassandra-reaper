@@ -14,7 +14,23 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-REAPER_JAR=$(find . -maxdepth 4 -regex '.*/cassandra-reaper-.*[0-9rT]\.jar')
+set -e
+
+find_reaper_jar() {
+    local target_path
+    target_path="$1"
+
+    find -L "$target_path" \
+        -maxdepth 4 \
+        -regex '.*/cassandra-reaper-.*[0-9rT]\.jar' || true
+}
+
+# Do not search from '/' as it prints many permission errors (even for
+# root user), notably for '/proc', '/run', etc.
+# Also it can potentially take a huge amount of time.
+if [ "$(pwd -P)" != "/" ]; then
+    REAPER_JAR=$(find_reaper_jar ".")
+fi
 
 if [ $REAPER_JAR ]; then
     echo "Using reaper in target"
@@ -22,18 +38,27 @@ if [ $REAPER_JAR ]; then
 fi
 
 if [ -z "$CLASS_PATH" ]; then
-  echo "Looking for reaper in /usr/local/share/"
-  CLASS_PATH="$(find -L /usr/local/share -maxdepth 4 -regex '.*/cassandra-reaper-.*[0-9rT]\.jar'):$(find -L /usr/share -maxdepth 4 -regex '.*/cassandra-reaper-.*[0-9rT]\.jar')"
+    echo "Looking for reaper under /usr"
+    CLASS_PATH=""
+    CLASS_PATH+=:$(find_reaper_jar "/usr/local/share")
+    CLASS_PATH+=:$(find_reaper_jar "/usr/share")
 fi
 
 if [ $# -eq 0 ]; then
-    if [ -e /usr/local/etc/cassandra-reaper/cassandra-reaper.yaml ]; then
-        CONFIG_PATH="/usr/local/etc/cassandra-reaper/cassandra-reaper.yaml"
-    else
+    CONFIG_PATH="/usr/local/etc/cassandra-reaper/cassandra-reaper.yaml"
+    if [ ! -e "$CONFIG_PATH" ]; then
         CONFIG_PATH="/etc/cassandra-reaper/cassandra-reaper.yaml"
     fi
 else
     CONFIG_PATH="$@"
+fi
+
+SSL_CONFIG_PATH="/etc/cassandra-reaper/cassandra-reaper-ssl.properties"
+if [ -r "$SSL_CONFIG_PATH" ]; then
+    echo "Loading SSL configuration from $SSL_CONFIG_PATH"
+    # The `sed` expression below removes empty lines and comments
+    # (i.e. lines starting with '#' character).
+    mapfile -t JVM_OPTS <<< "$(cat "$SSL_CONFIG_PATH" | sed '/^\(#.*\)*$/d')"
 fi
 
 # Use JAVA_HOME if set, otherwise look for java in PATH
@@ -59,10 +84,12 @@ fi
 
 
 JVM_OPTS=(
-    # it is safe and performant to disable assertions in production environments (ie replace `-ea` with `-da`)
+    # it is safe and performant to disable assertions in production
+    # environments (ie replace `-ea` with `-da`)
     -ea
     -Xms2G
     -Xmx2G
+    ${JVM_OPTS[@]}
     # Prefer binding to IPv4 network intefaces (when net.ipv6.bindv6only=1). See
     # http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6342561 (short version:
     # comment out this entry to enable IPv6 support).
