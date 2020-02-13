@@ -397,14 +397,14 @@ public final class RepairManagerTest {
             .tables(TABLES)
             .build(UUIDs.timeBased());
 
-    when(context.storage.updateRepairRun(any())).thenReturn(true);
+    when(context.storage.updateRepairRun(any(), any())).thenReturn(true);
 
     intensity = 0.1;
     RepairRun updated = context.repairManager.updateRepairRunIntensity(run, intensity);
 
     Assertions.assertThat(updated.getId()).isEqualTo(run.getId());
     Assertions.assertThat(updated.getIntensity()).isEqualTo(intensity);
-    Mockito.verify(context.storage, Mockito.times(1)).updateRepairRun(any());
+    Mockito.verify(context.storage, Mockito.times(1)).updateRepairRun(any(), any());
   }
 
   private static class NotEmptyList implements ArgumentMatcher<Collection<RepairSegment>> {

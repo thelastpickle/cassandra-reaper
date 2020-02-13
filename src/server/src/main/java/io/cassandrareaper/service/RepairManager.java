@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -342,7 +343,7 @@ public final class RepairManager implements AutoCloseable {
 
   public RepairRun updateRepairRunIntensity(RepairRun repairRun, Double intensity) throws ReaperException {
     RepairRun updatedRun = repairRun.with().intensity(intensity).build(repairRun.getId());
-    if (!context.storage.updateRepairRun(updatedRun)) {
+    if (!context.storage.updateRepairRun(updatedRun, Optional.of(false))) {
       throw new ReaperException("failed updating repair run " + updatedRun.getId());
     }
     return updatedRun;

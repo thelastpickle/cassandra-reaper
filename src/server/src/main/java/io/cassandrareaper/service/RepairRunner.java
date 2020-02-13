@@ -613,7 +613,9 @@ final class RepairRunner implements Runnable {
             "Will not update lastEvent of run that has already terminated. The message was: " + "\"{}\"",
             newEvent);
       } else {
-        context.storage.updateRepairRun(repairRun.get().with().lastEvent(newEvent).build(repairRunId));
+        context.storage.updateRepairRun(
+            repairRun.get().with().lastEvent(newEvent).build(repairRunId),
+            Optional.of(false));
         LOG.info(newEvent);
       }
     }
@@ -644,7 +646,7 @@ final class RepairRunner implements Runnable {
           .tables(RepairUnitService.create(context).getTablesToRepair(cluster, repairUnit))
           .build(repairRun.getId());
 
-      context.storage.updateRepairRun(newRepairRun);
+      context.storage.updateRepairRun(newRepairRun, Optional.of(false));
       return newRepairRun;
     }
     return repairRun;
