@@ -614,10 +614,11 @@ public final class RepairRunResource {
   @GET
   @Path("/cluster/{cluster_name}")
   public Response getRepairRunsForCluster(
-      @PathParam("cluster_name") String clusterName) {
+      @PathParam("cluster_name") String clusterName,
+      @QueryParam("limit") Optional<Integer> limit) {
 
     LOG.debug("get repair run for cluster called with: cluster_name = {}", clusterName);
-    final Collection<RepairRun> repairRuns = context.storage.getRepairRunsForCluster(clusterName, Optional.empty());
+    final Collection<RepairRun> repairRuns = context.storage.getRepairRunsForCluster(clusterName, limit);
     final Collection<RepairRunStatus> repairRunViews = new ArrayList<>();
     for (final RepairRun repairRun : repairRuns) {
       repairRunViews.add(getRepairRunStatus(repairRun));
@@ -656,7 +657,8 @@ public final class RepairRunResource {
   public Response listRepairRuns(
       @QueryParam("state") Optional<String> state,
       @QueryParam("cluster_name") Optional<String> cluster,
-      @QueryParam("keyspace_name") Optional<String> keyspace) {
+      @QueryParam("keyspace_name") Optional<String> keyspace,
+      @QueryParam("limit") Optional<Integer> limit) {
 
     try {
       final Set desiredStates = splitStateParam(state);
@@ -670,7 +672,7 @@ public final class RepairRunResource {
 
       List<RepairRunStatus> runStatuses = Lists.newArrayList();
       for (final Cluster clstr : clusters) {
-        Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(clstr.getName(), Optional.empty());
+        Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(clstr.getName(), limit);
 
         runStatuses.addAll(
             (List<RepairRunStatus>) getRunStatuses(runs, desiredStates)

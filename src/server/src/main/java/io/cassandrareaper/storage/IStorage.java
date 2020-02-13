@@ -61,6 +61,8 @@ public interface IStorage {
 
   RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments);
 
+  boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState);
+
   boolean updateRepairRun(RepairRun repairRun);
 
   Optional<RepairRun> getRepairRun(UUID id);
@@ -104,7 +106,7 @@ public interface IStorage {
 
   Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName);
 
-  SortedSet<UUID> getRepairRunIdsForCluster(String clusterName);
+  SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit);
 
   int getSegmentAmountForRepairRun(UUID runId);
 

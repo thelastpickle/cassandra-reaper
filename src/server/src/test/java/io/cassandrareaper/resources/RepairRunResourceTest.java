@@ -238,8 +238,8 @@ public final class RepairRunResourceTest {
 
     assertEquals(1, context.storage.getClusters().size());
     assertEquals(1, context.storage.getRepairRunsForCluster(clustername, Optional.of(2)).size());
-    assertEquals(1, context.storage.getRepairRunIdsForCluster(clustername).size());
-    UUID runId = context.storage.getRepairRunIdsForCluster(clustername).iterator().next();
+    assertEquals(1, context.storage.getRepairRunIdsForCluster(clustername, Optional.empty()).size());
+    UUID runId = context.storage.getRepairRunIdsForCluster(clustername, Optional.empty()).iterator().next();
     RepairRun run = context.storage.getRepairRun(runId).get();
     final RepairUnit unit = context.storage.getRepairUnit(run.getRepairUnitId());
     assertEquals(RepairRun.RunState.NOT_STARTED, run.getRunState());

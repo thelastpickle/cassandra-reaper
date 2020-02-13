@@ -324,7 +324,8 @@ const repairList = CreateReactClass({
   },
 
   _handleTimer: function() {
-     this.props.repairRunSubject.onNext({ clusterName: this.state.currentCluster });
+      numberOfElementsToDisplay: 10,
+     this.props.repairRunSubject.onNext({ clusterName: this.state.currentCluster, limit: this.state.numberOfElementsToDisplay });
   },
 
   updateWindowDimensions: function() {

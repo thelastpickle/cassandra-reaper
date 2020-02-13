@@ -125,7 +125,7 @@ public final class MemoryStorage implements IStorage {
   @Override
   public Cluster deleteCluster(String clusterName) {
     getRepairSchedulesForCluster(clusterName).forEach(schedule -> deleteRepairSchedule(schedule.getId()));
-    getRepairRunIdsForCluster(clusterName).forEach(runId -> deleteRepairRun(runId));
+    getRepairRunIdsForCluster(clusterName, Optional.empty()).forEach(runId -> deleteRepairRun(runId));
 
     getEventSubscriptions(clusterName)
         .stream()
@@ -153,6 +153,11 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public boolean updateRepairRun(RepairRun repairRun) {
+    return updateRepairRun(repairRun, Optional.of(true));
+  }
+
+  @Override
+  public boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState) {
     if (!getRepairRun(repairRun.getId()).isPresent()) {
       return false;
     } else {
@@ -368,7 +373,7 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
-  public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName) {
+  public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
     SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int)(u0.timestamp() - u1.timestamp()));
     for (RepairRun repairRun : repairRuns.values()) {
       if (repairRun.getClusterName().equalsIgnoreCase(clusterName)) {

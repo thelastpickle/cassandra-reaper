@@ -144,7 +144,7 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   @Override
   public Cluster deleteCluster(String clusterName) {
     getRepairSchedulesForCluster(clusterName).forEach(schedule -> deleteRepairSchedule(schedule.getId()));
-    getRepairRunIdsForCluster(clusterName).forEach(runId -> deleteRepairRun(runId));
+    getRepairRunIdsForCluster(clusterName, Optional.empty()).forEach(runId -> deleteRepairRun(runId));
 
     getEventSubscriptions(clusterName)
         .stream()
@@ -345,6 +345,11 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
 
   @Override
   public boolean updateRepairRun(RepairRun repairRun) {
+    return updateRepairRun(repairRun, Optional.of(true));
+  }
+
+  @Override
+  public boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState) {
     boolean result = false;
     try (Handle h = jdbi.open()) {
       int rowsAdded = getPostgresStorage(h).updateRepairRun(repairRun);
@@ -480,7 +485,7 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName) {
+  public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
     SortedSet<UUID> result = Sets.newTreeSet(Collections.reverseOrder());
     try (Handle h = jdbi.open()) {
       for (Long l : getPostgresStorage(h).getRepairRunIdsForCluster(clusterName)) {
