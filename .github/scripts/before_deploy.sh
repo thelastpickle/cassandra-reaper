@@ -19,7 +19,7 @@ set -xe
 mkdir -p src/packages
 
 export VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-if [ "${GITHUB_REF}" = "refs/heads/alex/gh-actions2" ]
+if [ "${GITHUB_REF}" = "refs/heads/master" ]
 then
     mkdir -p cassandra-reaper-master/server/target
     cp -R src/packaging/bin cassandra-reaper-master/
