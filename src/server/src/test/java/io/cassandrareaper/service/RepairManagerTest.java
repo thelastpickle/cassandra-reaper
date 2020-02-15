@@ -125,7 +125,7 @@ public final class RepairManagerTest {
     context.repairManager.resumeRunningRepairRuns();
 
     // Check that abortSegments was invoked is at least one segment, meaning abortion occurs
-    Mockito.verify(context.repairManager, Mockito.times(1)).abortSegments(Mockito.argThat(new NotEmptyList()), any());
+    Mockito.verify(context.repairManager, Mockito.times(2)).abortSegments(Mockito.argThat(new NotEmptyList()), any());
   }
 
   /**
@@ -202,7 +202,7 @@ public final class RepairManagerTest {
     context.repairManager.resumeRunningRepairRuns();
 
     // Check that abortSegments was invoked with an empty list, meaning no abortion occurs
-    Mockito.verify(context.repairManager, Mockito.times(1)).abortSegments(Mockito.argThat(new EmptyList()), any());
+    Mockito.verify(context.repairManager, Mockito.times(2)).abortSegments(Mockito.argThat(new EmptyList()), any());
   }
 
   /**
@@ -349,7 +349,7 @@ public final class RepairManagerTest {
     context.repairManager.resumeRunningRepairRuns();
 
     // Check that abortSegments was invoked with an non empty list, meaning abortion occurs
-    Mockito.verify(context.repairManager, Mockito.times(1)).abortSegments(Mockito.argThat(new NotEmptyList()), any());
+    Mockito.verify(context.repairManager, Mockito.times(2)).abortSegments(Mockito.argThat(new NotEmptyList()), any());
   }
 
   @Test
