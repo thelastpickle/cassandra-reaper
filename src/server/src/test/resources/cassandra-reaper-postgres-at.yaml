@@ -64,7 +64,7 @@ cryptograph:
 postgres:
   driverClass: org.postgresql.Driver
   user: postgres
-  password:
+  password: postgres
   url: jdbc:postgresql://127.0.0.1/reaper
 
 metrics:
