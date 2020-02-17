@@ -164,7 +164,7 @@ jobs:
         image: postgres:9.4
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ''
+          POSTGRES_PASSWORD: postgres
           # this replaces the manual reaper creation
           POSTGRES_DB: reaper
         ports:
@@ -329,7 +329,7 @@ jobs:
         image: postgres:9.4
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ''
+          POSTGRES_PASSWORD: postgres
           # this replaces the manual reaper creation
           POSTGRES_DB: reaper
         ports:
