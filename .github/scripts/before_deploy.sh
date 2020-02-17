@@ -27,7 +27,7 @@ then
     cp -R src/packaging/resource cassandra-reaper-master/
     # docker-compose based build stopped working so we fell back to raw fpm
     sudo apt-get install ruby ruby-dev build-essential rpm -y
-    sudo gem install --no-ri --no-rdoc fpm
+    sudo gem install --no-document fpm
     cd src/packaging
     make all
     sudo mv reaper_*_amd64.deb ../packages/
@@ -51,7 +51,7 @@ then
     cp src/server/target/cassandra-reaper-*.jar cassandra-reaper-${VERSION}/server/target
     cp -R src/packaging/resource cassandra-reaper-${VERSION}/
     sudo apt-get install ruby ruby-dev build-essential rpm -y
-    sudo gem install --no-ri --no-rdoc fpm
+    sudo gem install --no-document fpm
     cd src/packaging
     make all
     sudo mv reaper_*_amd64.deb ../packages/
