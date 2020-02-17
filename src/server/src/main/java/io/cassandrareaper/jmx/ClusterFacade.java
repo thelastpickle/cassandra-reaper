@@ -74,6 +74,12 @@ import org.slf4j.LoggerFactory;
 
 
 public final class ClusterFacade {
+
+  /**
+   * Depth of metrics_node_v3 partitions in minutes
+   */
+  private static final int METRICS_PARTITIONING_TIME_MINS = 10;
+
   private static final Logger LOG = LoggerFactory.getLogger(ClusterFacade.class);
 
   private static final long CLUSTER_VERSIONS_TTL_SECONDS
@@ -456,7 +462,7 @@ public final class ClusterFacade {
       return listCompactionStatsDirect(node);
     } else {
       // We don't have access to the node through JMX, so we'll get data from the database
-      LOG.info("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
+      LOG.debug("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
 
       String compactionsJson = ((IDistributedStorage)context.storage)
           .listOperations(node.getClusterName(), OpType.OP_COMPACTION, node.getHostname());
@@ -535,13 +541,14 @@ public final class ClusterFacade {
         return convertToMetricsHistogram(
             MetricsProxy.convertToGenericMetrics(metricsProxy.collectLatencyMetrics(), node));
       } else {
+        // We look for metrics in the last two time based partitions to make sure we get a result
         return convertToMetricsHistogram(((IDistributedStorage)context.storage)
             .getMetrics(
                 node.getClusterName(),
                 Optional.of(node.getHostname()),
                 "org.apache.cassandra.metrics",
                 "ClientRequest",
-                DateTime.now().minusMinutes(1).getMillis()));
+                DateTime.now().minusMinutes(METRICS_PARTITIONING_TIME_MINS + 1).getMillis()));
       }
     } catch (JMException | InterruptedException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", node, e);
@@ -727,7 +734,7 @@ public final class ClusterFacade {
       return listStreamsDirect(node);
     } else {
       // We don't have access to the node through JMX, so we'll get data from the database
-      LOG.info("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
+      LOG.debug("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
 
       String streamsJson = ((IDistributedStorage) context.storage)
           .listOperations(node.getClusterName(), OpType.OP_STREAMING, node.getHostname());

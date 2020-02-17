@@ -41,6 +41,7 @@ import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.cassandra.DateTimeCodec;
 import io.cassandrareaper.storage.cassandra.Migration016;
 import io.cassandrareaper.storage.cassandra.Migration021;
+import io.cassandrareaper.storage.cassandra.Migration024;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -113,6 +114,7 @@ import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 
 public final class CassandraStorage implements IStorage, IDistributedStorage {
 
+  private static final int METRICS_PARTITIONING_TIME_MINS = 10;
   private static final int LEAD_DURATION = 600;
   /* Simple stmts */
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
@@ -120,7 +122,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private static final String SELECT_REPAIR_UNIT = "SELECT * FROM repair_unit_v1";
   private static final String SELECT_LEADERS = "SELECT * FROM leader";
   private static final String SELECT_RUNNING_REAPERS = "SELECT reaper_instance_id FROM running_reapers";
-  private static final DateTimeFormatter HOURLY_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHH");
+  private static final DateTimeFormatter TIME_BUCKET_FORMATTER = DateTimeFormat.forPattern("yyyyMMddHHmm");
   private static final Logger LOG = LoggerFactory.getLogger(CassandraStorage.class);
   private static final AtomicBoolean UNINITIALISED = new AtomicBoolean(true);
 
@@ -275,6 +277,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         Migration016.migrate(session, config.getCassandraFactory().getKeyspace());
         // Switch metrics table to TWCS if possible, this is intentionally executed every startup
         Migration021.migrate(session, config.getCassandraFactory().getKeyspace());
+        // Switch metrics table to TWCS if possible, this is intentionally executed every startup
+        Migration024.migrate(session, config.getCassandraFactory().getKeyspace());
       } else {
         LOG.info(
             String.format("Keyspace %s already at schema version %d", session.getLoggedKeyspace(), currentVersion));
@@ -485,7 +489,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     storeMetricsPrepStmt
         = session
             .prepare(
-                "INSERT INTO node_metrics_v2 (cluster, metric_domain, metric_type, time_bucket, "
+                "INSERT INTO node_metrics_v3 (cluster, metric_domain, metric_type, time_bucket, "
                     + "host, metric_scope, metric_name, ts, metric_attribute, value) "
                     + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     getMetricsForHostPrepStmt
@@ -493,15 +497,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             .prepare(
                 "SELECT cluster, metric_domain, metric_type, time_bucket, host, "
                     + "metric_scope, metric_name, ts, metric_attribute, value "
-                    + "FROM node_metrics_v2 "
+                    + "FROM node_metrics_v3 "
                     + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ? and host = ?");
-    getMetricsForClusterPrepStmt
-      = session
-            .prepare(
-                "SELECT cluster, metric_domain, metric_type, time_bucket, host, "
-                    + "metric_scope, metric_name, ts, metric_attribute, value "
-                    + "FROM node_metrics_v2 "
-                    + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ?");
   }
 
   private void prepareOperationsStatements() {
@@ -1792,8 +1789,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     // Compute the hourly buckets since the requested lower bound timestamp
     while (startTime < now) {
-      timeBuckets.add(DateTime.now().withMillis(startTime).toString(HOURLY_FORMATTER));
-      startTime += 3600000;
+      timeBuckets.add(DateTime.now().withMillis(startTime).toString(TIME_BUCKET_FORMATTER).substring(0, 11) + "0");
+      startTime += 600000;
     }
 
     for (String timeBucket:timeBuckets) {
@@ -1806,30 +1803,22 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                 clusterName,
                 timeBucket,
                 host.get())));
-      } else {
-        futures.add(
-            session.executeAsync(
-                getMetricsForClusterPrepStmt.bind(
-                    metricDomain, metricType, clusterName, timeBucket)));
       }
     }
 
     for (ResultSetFuture future : futures) {
       for (Row row : future.getUninterruptibly()) {
-        // Filtering on the timestamp lower bound since it's not filtered in cluster wide metrics requests
-        if (row.getTimestamp("ts").getTime() >= since) {
-          metrics.add(
-              GenericMetric.builder()
-                  .withClusterName(row.getString("cluster"))
-                  .withHost(row.getString("host"))
-                  .withMetricType(row.getString("metric_type"))
-                  .withMetricScope(row.getString("metric_scope"))
-                  .withMetricName(row.getString("metric_name"))
-                  .withMetricAttribute(row.getString("metric_attribute"))
-                  .withTs(new DateTime(row.getTimestamp("ts")))
-                  .withValue(row.getDouble("value"))
-                  .build());
-        }
+        metrics.add(
+            GenericMetric.builder()
+                .withClusterName(row.getString("cluster"))
+                .withHost(row.getString("host"))
+                .withMetricType(row.getString("metric_type"))
+                .withMetricScope(row.getString("metric_scope"))
+                .withMetricName(row.getString("metric_name"))
+                .withMetricAttribute(row.getString("metric_attribute"))
+                .withTs(new DateTime(row.getTimestamp("ts")))
+                .withValue(row.getDouble("value"))
+                .build());
       }
     }
 
@@ -1844,13 +1833,27 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             metric.getClusterName(),
             metric.getMetricDomain(),
             metric.getMetricType(),
-            metric.getTs().toString(HOURLY_FORMATTER),
+            computeMetricsPartition(metric.getTs()).toString(TIME_BUCKET_FORMATTER),
             metric.getHost(),
             metric.getMetricScope(),
             metric.getMetricName(),
-            metric.getTs().toDate(),
+            computeMetricsPartition(metric.getTs()),
             metric.getMetricAttribute(),
             metric.getValue()));
+  }
+
+  /**
+   * Truncates a metric date time to the closest partition based on the definesd partition sizes
+   * @param metricTime the time of the metric
+   * @return the time truncated to the closest partition
+   */
+  private DateTime computeMetricsPartition(DateTime metricTime) {
+    return metricTime
+        .withMinuteOfHour(
+            (metricTime.getMinuteOfHour() / METRICS_PARTITIONING_TIME_MINS)
+                * METRICS_PARTITIONING_TIME_MINS)
+        .withSecondOfMinute(0)
+        .withMillisOfSecond(0);
   }
 
   @Override
@@ -1862,7 +1865,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         insertOperationsPrepStmt.bind(
             clusterName,
             operationType.getName(),
-            DateTime.now().toString(HOURLY_FORMATTER),
+            DateTime.now().toString(TIME_BUCKET_FORMATTER),
             host,
             DateTime.now().toDate(),
             operationsJson));
@@ -1873,7 +1876,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     ResultSet operations
         = session.execute(
             listOperationsForNodePrepStmt.bind(
-                clusterName, operationType.getName(), DateTime.now().toString(HOURLY_FORMATTER), host));
+                clusterName, operationType.getName(), DateTime.now().toString(TIME_BUCKET_FORMATTER), host));
     return operations.isExhausted()
         ? "[]"
         : operations.one().getString("data");

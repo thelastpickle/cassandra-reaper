@@ -54,6 +54,7 @@ public final class Heart implements AutoCloseable {
   private static final long DEFAULT_MAX_FREQUENCY = TimeUnit.SECONDS.toMillis(30);
 
   private final AtomicLong lastBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
+  private final AtomicLong lastMetricBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
   private final ForkJoinPool forkJoinPool = new ForkJoinPool(64);
   private final AppContext context;
   private final MetricsService metricsService;
@@ -153,7 +154,15 @@ public final class Heart implements AutoCloseable {
 
           if (context.config.getDatacenterAvailability() == DatacenterAvailability.SIDECAR) {
             // In sidecar mode we store metrics in the db on a regular basis
-            metricsService.grabAndStoreGenericMetrics();
+
+            if (lastMetricBeat.get() + maxBeatFrequencyMillis <= System.currentTimeMillis()) {
+              metricsService.grabAndStoreGenericMetrics();
+              lastMetricBeat.set(System.currentTimeMillis());
+            } else {
+              LOG.trace("Not storing metrics yet... Last beat was {} and now is {}",
+                  lastMetricBeat.get(),
+                  System.currentTimeMillis());
+            }
             metricsService.grabAndStoreCompactionStats();
             metricsService.grabAndStoreActiveStreams();
           }
