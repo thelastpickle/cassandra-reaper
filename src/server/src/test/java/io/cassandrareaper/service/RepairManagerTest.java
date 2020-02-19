@@ -119,13 +119,13 @@ public final class RepairManagerTest {
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
-    when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
+    when(context.storage.getSegmentsWithStartedOrRunningState(any())).thenReturn(Arrays.asList(segment));
     when(((IDistributedStorage) context.storage).getLeaders()).thenReturn(Collections.emptyList());
 
     context.repairManager.resumeRunningRepairRuns();
 
     // Check that abortSegments was invoked is at least one segment, meaning abortion occurs
-    Mockito.verify(context.repairManager, Mockito.times(2)).abortSegments(Mockito.argThat(new NotEmptyList()), any());
+    Mockito.verify(context.repairManager, Mockito.times(1)).abortSegments(Mockito.argThat(new NotEmptyList()), any());
   }
 
   /**
@@ -196,13 +196,13 @@ public final class RepairManagerTest {
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
-    when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
+    when(context.storage.getSegmentsWithStartedOrRunningState(any())).thenReturn(Arrays.asList(segment));
     when(((IDistributedStorage) context.storage).getLeaders()).thenReturn(Arrays.asList(segment.getId()));
 
     context.repairManager.resumeRunningRepairRuns();
 
     // Check that abortSegments was invoked with an empty list, meaning no abortion occurs
-    Mockito.verify(context.repairManager, Mockito.times(2)).abortSegments(Mockito.argThat(new EmptyList()), any());
+    Mockito.verify(context.repairManager, Mockito.times(1)).abortSegments(Mockito.argThat(new EmptyList()), any());
   }
 
   /**
@@ -344,12 +344,12 @@ public final class RepairManagerTest {
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
-    when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
+    when(context.storage.getSegmentsWithStartedOrRunningState(any())).thenReturn(Arrays.asList(segment));
 
     context.repairManager.resumeRunningRepairRuns();
 
     // Check that abortSegments was invoked with an non empty list, meaning abortion occurs
-    Mockito.verify(context.repairManager, Mockito.times(2)).abortSegments(Mockito.argThat(new NotEmptyList()), any());
+    Mockito.verify(context.repairManager, Mockito.times(1)).abortSegments(Mockito.argThat(new NotEmptyList()), any());
   }
 
   @Test

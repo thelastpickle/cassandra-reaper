@@ -706,8 +706,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       UUID repairRunId = segment.getRunId();
       // this only checks whether any segments from this repair are running,
       //   so `nodesReadyForNewRepair(..)` should always also be called with this method
-      segments = Sets.newHashSet(context.storage.getSegmentsWithState(repairRunId, RepairSegment.State.RUNNING));
-      segments.addAll(context.storage.getSegmentsWithState(repairRunId, RepairSegment.State.STARTED));
+      segments = context.storage.getSegmentsWithStartedOrRunningState(repairRunId);
     }
 
     for (RepairSegment seg : segments) {

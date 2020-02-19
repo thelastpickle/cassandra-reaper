@@ -473,6 +473,14 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
+  public Collection<RepairSegment> getSegmentsWithStartedOrRunningState(UUID runId) {
+    try (Handle h = jdbi.open()) {
+      return getPostgresStorage(h).getRepairSegmentsForRunWithStates2(
+          UuidUtil.toSequenceId(runId), RepairSegment.State.STARTED, RepairSegment.State.RUNNING);
+    }
+  }
+
+  @Override
   public Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName) {
     try (Handle h = jdbi.open()) {
       return getPostgresStorage(h).getRunningRepairsForCluster(clusterName);

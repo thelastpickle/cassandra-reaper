@@ -155,13 +155,10 @@ public final class RepairManager implements AutoCloseable {
   private void abortAllRunningSegmentsWithNoLeader(Collection<RepairRun> runningRepairRuns) {
     runningRepairRuns
         .forEach((repairRun) -> {
-          Collection<RepairSegment> runningSegments
-              = context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
-          Collection<RepairSegment> startedSegments
-              = context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.STARTED);
+          Collection<RepairSegment> abortSegments
+              = context.storage.getSegmentsWithStartedOrRunningState(repairRun.getId());
 
-          abortSegmentsWithNoLeader(repairRun, runningSegments);
-          abortSegmentsWithNoLeader(repairRun, startedSegments);
+          abortSegmentsWithNoLeader(repairRun, abortSegments);
         });
   }
 
@@ -191,13 +188,10 @@ public final class RepairManager implements AutoCloseable {
           .filter((pausedRepairRun) -> repairRunners.containsKey(pausedRepairRun.getId()))
           .forEach((pausedRepairRun) -> {
             // Abort all running and started segments for paused repair runs
-            Collection<RepairSegment> runningSegments
-                = context.storage.getSegmentsWithState(pausedRepairRun.getId(), RepairSegment.State.RUNNING);
-            Collection<RepairSegment> startedSegments
-                = context.storage.getSegmentsWithState(pausedRepairRun.getId(), RepairSegment.State.STARTED);
+            Collection<RepairSegment> abortSegments
+                = context.storage.getSegmentsWithStartedOrRunningState(pausedRepairRun.getId());
 
-            abortSegments(runningSegments, pausedRepairRun);
-            abortSegments(startedSegments, pausedRepairRun);
+            abortSegments(abortSegments, pausedRepairRun);
           });
     } finally {
       repairRunnersLock.unlock();

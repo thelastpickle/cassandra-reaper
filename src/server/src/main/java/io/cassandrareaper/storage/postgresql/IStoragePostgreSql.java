@@ -138,6 +138,8 @@ public interface IStoragePostgreSql {
       + " FROM repair_segment WHERE run_id = :runId";
   String SQL_GET_REPAIR_SEGMENTS_FOR_RUN_WITH_STATE = "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS
       + " FROM repair_segment WHERE " + "run_id = :runId AND state = :state";
+  String SQL_GET_REPAIR_SEGMENTS_FOR_RUN_WITH_STATES2 = "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS
+      + " FROM repair_segment WHERE " + "run_id = :runId AND (state = :state1 OR state = :state2)";
   String SQL_GET_RUNNING_REPAIRS_FOR_CLUSTER
       = "SELECT start_token, end_token, token_ranges, keyspace_name, column_families, repair_parallelism, tables "
           + "FROM repair_segment "
@@ -524,6 +526,13 @@ public interface IStoragePostgreSql {
   Collection<RepairSegment> getRepairSegmentsForRunWithState(
       @Bind("runId") long runId,
       @Bind("state") RepairSegment.State state);
+
+  @SqlQuery(SQL_GET_REPAIR_SEGMENTS_FOR_RUN_WITH_STATES2)
+  @Mapper(RepairSegmentMapper.class)
+  Collection<RepairSegment> getRepairSegmentsForRunWithStates2(
+      @Bind("runId") long runId,
+      @Bind("state1") RepairSegment.State state1,
+      @Bind("state2") RepairSegment.State state2);
 
   @SqlQuery(SQL_GET_RUNNING_REPAIRS_FOR_CLUSTER)
   @Mapper(RepairParametersMapper.class)

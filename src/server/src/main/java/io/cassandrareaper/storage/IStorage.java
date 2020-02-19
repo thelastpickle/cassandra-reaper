@@ -102,6 +102,8 @@ public interface IStorage {
 
   Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState);
 
+  Collection<RepairSegment> getSegmentsWithStartedOrRunningState(UUID runId);
+
   Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName);
 
   SortedSet<UUID> getRepairRunIdsForCluster(String clusterName);
