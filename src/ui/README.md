@@ -35,7 +35,17 @@ The dev-server can be started as follows:
 $ npm run start
 ```
 
-Afterwards you should be able to access the server under the following url: [http://localhost:8000/webpack-dev-server/](http://localhost:8000/webpack-dev-server/)
+You can then access the server under the following url: [http://localhost:8000/webpack-dev-server/](http://localhost:8000/webpack-dev-server/)
+
+By default the UI dev-server is configured to communicate with an instance of Reaper running on the local host.
+
+##### You can use a remote Reaper host for development
+
+If you want the UI to a remote host that is running an instance of Reaper, prefix the dev-server command with `REAPER_HOST=<remote_host_ip>`. For example:
+
+```bash
+$ REAPER_HOST="34.217.27.26" npm run start
+```
 
 
 Make sure to enable cross-origin requests to the reaper server by starting it with the `-DenableCrossOrigin` jvm parameter.  

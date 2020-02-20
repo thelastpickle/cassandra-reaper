@@ -48,7 +48,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "minimize": "webpack -p --progress --colors --devtool none",
     "zip": "zip -jr release.zip build",
-    "start": "node server.js"
+    "start": "node server.js --env.project=$REAPER_HOST"
   },
   "dependencies": {
     "core-js": "^2.6.11",

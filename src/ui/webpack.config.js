@@ -26,10 +26,14 @@ var _commonDeps = [
 
 // include hot reload deps in dev mode
 const isDev = process.argv.indexOf('-d') !== -1 || process.env.BUILD_DEV;
-if(isDev) {
+if (isDev) {
+  console.log('Running in development mode!');
   _commonDeps.push("webpack-dev-server/client?http://0.0.0.0:8000"); // WebpackDevServer host and port
   _commonDeps.push("webpack/hot/only-dev-server");
 }
+
+const reaperHost = process.env.REAPER_HOST || '127.0.0.1';
+console.log(`Reaper remote host is '${reaperHost}'`);
 
 module.exports = {
   entry: {
@@ -159,6 +163,10 @@ module.exports = {
     }),
     new webpack.HotModuleReplacementPlugin(),
     new webpack.NoEmitOnErrorsPlugin(),
+    new webpack.DefinePlugin({
+      'GLOBAL_REAPER_HOST': JSON.stringify(reaperHost),
+      'GLOBAL_IS_DEV': isDev === "1" ? true : false,
+    }),
   ],
   optimization: {
     splitChunks: {
