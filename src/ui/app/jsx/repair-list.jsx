@@ -17,6 +17,7 @@
 import React from "react";
 import CreateReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
+import Select from 'react-select';
 import moment from "moment";
 import {RowDeleteMixin, RowAbortMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender, CFsCountListRender} from "jsx/mixin";
 import ProgressBar from 'react-bootstrap/lib/ProgressBar';
@@ -268,16 +269,18 @@ const repairList = CreateReactClass({
     updateIntensitySubject: PropTypes.object.isRequired,
     currentCluster: PropTypes.string.isRequired,
     changeCurrentCluster: PropTypes.func.isRequired
-
   },
 
   getInitialState: function() {
     return {repairs: null, deleteResultMsg: null, clusterNames:[],
-      currentCluster:this.props.currentCluster, 
+      currentCluster:this.props.currentCluster,
+      currentClusterSelectValue: {value: 'all', label: 'all'},
       runningCollapsed: false, doneCollapsed: false,
       modalShow: false, repairRunId: '',
       height: 0, width: 0,
-      numberOfElementsToDisplay: 10};
+      numberOfElementsToDisplay: 10,
+      numberOfElementsToDisplaySelectValue: {value: 10, label: '10'},
+    };
   },
 
   componentWillMount: function() {
@@ -316,18 +319,23 @@ const repairList = CreateReactClass({
     this.setState({ width: window.innerWidth, height: window.innerHeight });
   },
 
-  _handleChange: function(e) {
-    var v = e.target.value;
-    var n = e.target.id.substring(3); // strip in_ prefix
+  _handleSelectOnChange: function(valueContext, actionContext) {
+    const nameRef = actionContext.name.split("_")[1];
+    const nameSelectValueRef = `${nameRef}SelectValue`;
 
-    // update state
-    const state = this.state;
-    state[n] = v;
-    this.replaceState(state);
+    let newSelectValue = {};
+    let newValueRef = "";
 
-    // validate
-    const valid = state.currentCluster;
-    this.setState({submitEnabled: valid});
+    if (valueContext) {
+        newSelectValue = valueContext;
+        newValueRef = valueContext.value;
+    }
+
+    let newState = {};
+    newState[nameRef] = newValueRef;
+    newState[nameSelectValueRef] = newSelectValue;
+
+    this.setState(newState);
     this.props.changeCurrentCluster(this.state.currentCluster);
     console.log("changed cluster to " + this.state.currentCluster);
   },
@@ -411,25 +419,38 @@ const repairList = CreateReactClass({
       <option key={name} value={name}>{name}</option>
     );
 
+    let selectClusterItems = this.state.clusterNames.sort().map(name => {
+        { return { value: name, label: name}; }
+    });
+
+    selectClusterItems.unshift({value: 'all', label: 'all'});
+
     const clusterFilter = <form className="form-horizontal form-condensed">
             <div className="form-group">
               <label htmlFor="in_currentCluster" className="col-sm-3 control-label">Filter cluster:</label>
               <div className="col-sm-7 col-md-5 col-lg-3">
-                <select className="form-control" id="in_currentCluster"
-                  onChange={this._handleChange} value={this.state.currentCluster}>
-                  <option key="all" value="all">All</option>
-                  {clusterItems}
-                </select>
+                <Select
+                    id="in_currentCluster"
+                    name="in_currentCluster"
+                    options={selectClusterItems}
+                    value={this.state.currentClusterSelectValue}
+                    onChange={this._handleSelectOnChange}
+                />
               </div>
               <label htmlFor="in_numberOfElementsToDisplay" className="col-sm-1 control-label">Display:</label>
               <div className="col-sm-5 col-md-3 col-lg-1">
-                <select className="form-control" id="in_numberOfElementsToDisplay"
-                  onChange={this._handleChange} value={this.state.numberOfElementsToDisplay}>
-                  <option key="10" value="10">Last 10</option>
-                  <option key="25" value="25">Last 25</option>
-                  <option key="50" value="50">Last 50</option>
-                  <option key="100" value="100">Last 100</option>
-                </select>
+                <Select
+                    id="in_numberOfElementsToDisplay"
+                    name="in_numberOfElementsToDisplay"
+                    options={[
+                        {value: 10, label: "10"},
+                        {value: 25, label: "25"},
+                        {value: 50, label: "50"},
+                        {value: 100, label: "100"},
+                    ]}
+                    value={this.state.numberOfElementsToDisplaySelectValue}
+                    onChange={this._handleSelectOnChange}
+                />
               </div>
             </div>
     </form>
