@@ -70,15 +70,19 @@ aliases:
                   cp src/ci/jmxremote.password ~/.local/jmxremote.password
                   touch ~/.local/jmxremote.blank.password
                   chmod 400 ~/.local/jmxremote*.password
-                  cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
-                  sudo chmod 777 /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
-                  echo "cassandra     readwrite" >> /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
-                  cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
-                  # Second possible location for the file
-                  cat /usr/local/openjdk-8/jre/lib/management/jmxremote.access
-                  sudo chmod 777 /usr/local/openjdk-8/jre/lib/management/jmxremote.access
-                  echo "cassandra     readwrite" >> /usr/local/openjdk-8/jre/lib/management/jmxremote.access
-                  cat /usr/local/openjdk-8/jre/lib/management/jmxremote.access
+                  if [ -f "usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access" ]
+                  then
+                    cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+                    sudo chmod 777 /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+                    echo "cassandra     readwrite" >> /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+                    cat /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/management/jmxremote.access
+                  else
+                    # Second possible location for the file
+                    cat /usr/local/openjdk-8/jre/lib/management/jmxremote.access
+                    sudo chmod 777 /usr/local/openjdk-8/jre/lib/management/jmxremote.access
+                    echo "cassandra     readwrite" >> /usr/local/openjdk-8/jre/lib/management/jmxremote.access
+                    cat /usr/local/openjdk-8/jre/lib/management/jmxremote.access
+                  fi
                 fi
                 ccm create test -v $CASSANDRA_VERSION
                 ccm populate --vnodes -n $NODES_PER_DC:$NODES_PER_DC
