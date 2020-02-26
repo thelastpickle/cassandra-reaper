@@ -23,7 +23,7 @@ hangingRepairTimeoutMins: 1
 storageType: cassandra
 incrementalRepair: false
 blacklistTwcsTables: true
-jmxConnectionTimeoutInSeconds: 300
+jmxConnectionTimeoutInSeconds: 10
 activateQueryLogger: true
 datacenterAvailability: SIDECAR
 enforcedLocalNode: 127.0.0.1

@@ -24,7 +24,7 @@ hangingRepairTimeoutMins: 1
 storageType: database
 incrementalRepair: false
 blacklistTwcsTables: true
-jmxConnectionTimeoutInSeconds: 300
+jmxConnectionTimeoutInSeconds: 10
 datacenterAvailability: LOCAL
 
 logging:
