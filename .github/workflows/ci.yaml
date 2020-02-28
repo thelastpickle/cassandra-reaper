@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        cassandra-version: [1.2.19, 2.0.17, 2.1.20, 2.2.13, 3.0.17, 3.11.4, 'github:apache/trunk']
+        cassandra-version: [1.2.19, 2.0.17, 2.1.20, 2.2.13, 3.0.17, 3.11.4, 4.0-alpha3]
         storage-type: [local]
         test-type: [ccm]
         include:
@@ -139,7 +139,7 @@ jobs:
           architecture: 'x64'
  
       - name: Install CCM
-        run: pip install pyyaml ccm
+        run: pip install pyyaml git+https://github.com/riptano/ccm
  
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
@@ -234,7 +234,7 @@ jobs:
           architecture: 'x64'
  
       - name: Install CCM
-        run: pip install pyyaml ccm
+        run: pip install pyyaml git+https://github.com/riptano/ccm
  
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
@@ -258,7 +258,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        cassandra-version: [2.1.20, 2.2.13, 3.0.17, 3.11.4, 'github:apache/trunk']
+        cassandra-version: [2.1.20, 2.2.13, 3.0.17, 3.11.4, 4.0-alpha3]
         storage-type: [cassandra]
         test-type: [ccm]
         cucumber-options: ['--tags ~@cassandra_4_0_onwards']
@@ -304,7 +304,7 @@ jobs:
           architecture: 'x64'
  
       - name: Install CCM
-        run: pip install pyyaml ccm
+        run: pip install pyyaml git+https://github.com/riptano/ccm
  
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
@@ -338,7 +338,7 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     strategy:
       matrix:
-        cassandra-version: [2.1.20, 2.2.13, 3.0.17, 3.11.3, 'github:apache/trunk']
+        cassandra-version: [2.1.20, 2.2.13, 3.0.17, 3.11.3, 4.0-alpha3]
         storage-type: [cassandra, postgresql]
         test-type: [sidecar]
         grim-max: [1]
@@ -353,7 +353,7 @@ jobs:
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
           - cassandra-version: 3.11.3
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
-          - cassandra-version: 'github:apache/trunk'
+          - cassandra-version: 4.0-alpha3
             cucumber-options: '--tags @sidecar'
         # sidecar test including postgres should only run with C* 3.11.3, so we exclude all other
         exclude:
@@ -364,7 +364,7 @@ jobs:
           - storage-type: postgresql
             cassandra-version: 3.0.17
           - storage-type: postgresql
-            cassandra-version: 'github:apache/trunk'
+            cassandra-version: 4.0-alpha3
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -407,7 +407,7 @@ jobs:
           architecture: 'x64'
  
       - name: Install CCM
-        run: pip install pyyaml ccm
+        run: pip install pyyaml git+https://github.com/riptano/ccm
  
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
@@ -431,7 +431,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        cassandra-version: [2.1.20, 2.2.13, 3.0.17, 3.11.4, 'github:apache/trunk']
+        cassandra-version: [2.1.20, 2.2.13, 3.0.17, 3.11.4, 4.0-alpha3]
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [2]
@@ -488,7 +488,7 @@ jobs:
           architecture: 'x64'
  
       - name: Install CCM
-        run: pip install pyyaml ccm
+        run: pip install pyyaml git+https://github.com/riptano/ccm
  
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
@@ -512,7 +512,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        cassandra-version: [2.1.20, 2.2.13, 3.0.17, 3.11.4, 'github:apache/trunk']
+        cassandra-version: [2.1.20, 2.2.13, 3.0.17, 3.11.4, 4.0-alpha3]
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [4]
@@ -569,7 +569,7 @@ jobs:
           architecture: 'x64'
  
       - name: Install CCM
-        run: pip install pyyaml ccm
+        run: pip install pyyaml git+https://github.com/riptano/ccm
  
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
