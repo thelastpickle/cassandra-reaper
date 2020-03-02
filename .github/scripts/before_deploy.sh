@@ -19,7 +19,7 @@ set -xe
 mkdir -p src/packages
 
 export VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-if [ "${GITHUB_REF}" = "refs/heads/alex/gh-actions2" ]
+if [ "${GITHUB_REF}" = "refs/heads/master" ]
 then
     mkdir -p cassandra-reaper-master/server/target
     cp -R src/packaging/bin cassandra-reaper-master/
@@ -44,7 +44,7 @@ then
     docker tag cassandra-reaper:latest $REPO:$GIT_HASH
     #docker push $REPO:$GIT_HASH
 fi
-if [[ ${GITHUB_REF} =~ ^[0-9]{1}\.[0-9]{1}\.[0-9]{1}$ ]]
+if [[ ${GITHUB_REF} == "refs/tags"* ]]
 then
     mkdir -p cassandra-reaper-${VERSION}/server/target
     cp -R src/packaging/bin cassandra-reaper-${VERSION}/
