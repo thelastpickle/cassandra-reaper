@@ -1,5 +1,9 @@
 ## Change Log
 
+### 2.0.3 (2020/03/02 06:12 +00:00)
+- [7774e4e](https://github.com/thelastpickle/cassandra-reaper/commit/7774e4eeaaac5af0598887ee62713882b65d3906) Fix large partitions in the metrics v2 table for the sidecar (@adejanovski)
+- [05e5f32](https://github.com/thelastpickle/cassandra-reaper/commit/05e5f3256fffed8005fe96647b1d482a815982eb) Avoid aborting repair segments too early. (@smarsching)
+
 ### 2.0.2 (2020/01/13 06:37 +00:00)
 - [16b0db9](https://github.com/thelastpickle/cassandra-reaper/commit/16b0db9ebae0c75ef86c5213f2629a00b0812eb8) Remove the keyspace from the initial Cassandra migration script (@adejanovski)
 - [256682f](https://github.com/thelastpickle/cassandra-reaper/commit/256682fbf7829e5a5a38080a1756aa6a146a3e40) Add cluster deletion support to spreaper (@adejanovski)
