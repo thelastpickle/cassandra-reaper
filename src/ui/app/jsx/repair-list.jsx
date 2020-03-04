@@ -272,12 +272,18 @@ const repairList = CreateReactClass({
   },
 
   getInitialState: function() {
-    return {repairs: null, deleteResultMsg: null, clusterNames:[],
+    return {
+      repairs: null,
+      deleteResultMsg: null,
+      clusterNames:[],
       currentCluster:this.props.currentCluster,
       currentClusterSelectValue: {value: 'all', label: 'all'},
-      runningCollapsed: false, doneCollapsed: false,
-      modalShow: false, repairRunId: '',
-      height: 0, width: 0,
+      runningCollapsed: false,
+      doneCollapsed: false,
+      modalShow: false,
+      repairRunId: '',
+      height: 0,
+      width: 0,
       numberOfElementsToDisplay: 10,
       numberOfElementsToDisplaySelectValue: {value: 10, label: '10'},
     };
@@ -337,7 +343,6 @@ const repairList = CreateReactClass({
 
     this.setState(newState);
     this.props.changeCurrentCluster(this.state.currentCluster);
-    console.log("changed cluster to " + this.state.currentCluster);
   },
 
   _toggleRunningDisplay: function() {
