@@ -275,8 +275,8 @@ const repairList = CreateReactClass({
     return {
       repairs: null,
       deleteResultMsg: null,
-      clusterNames:[],
-      currentCluster:this.props.currentCluster,
+      clusterNames: [],
+      currentCluster: this.props.currentCluster,
       currentClusterSelectValue: {value: 'all', label: 'all'},
       runningCollapsed: false,
       doneCollapsed: false,
@@ -419,10 +419,6 @@ const repairList = CreateReactClass({
                 </tbody>
             );
     }
-
-    const clusterItems = this.state.clusterNames.sort().map(name =>
-      <option key={name} value={name}>{name}</option>
-    );
 
     let selectClusterItems = this.state.clusterNames.sort().map(name => {
         { return { value: name, label: name}; }

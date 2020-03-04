@@ -135,6 +135,7 @@ const snapshotForm = CreateReactClass({
       clusterName: this.state.clusterName, 
       owner: this.state.owner,
       name: this.state.name,
+      keyspace: "",
     };
     if (this.state.keyspace) {
       snapshot["keyspace"] = this.state.keyspace;
@@ -263,7 +264,7 @@ const snapshotForm = CreateReactClass({
                   isClearable
                   isSearchable
                   options={this.state.keyspaceOptions}
-                  placeholder="Add a keyspace"
+                  placeholder="select a keyspace otherwise all keyspaces are selected"
                   onChange={this._handleKeyspaceSelectOnChange}
                   className={{tagInputField: keyspaceInputStyle}}
                 />

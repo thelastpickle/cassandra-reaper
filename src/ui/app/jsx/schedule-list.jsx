@@ -170,7 +170,7 @@ const scheduleList = CreateReactClass({
       deleteResultMsg: null,
       clusterNames: [],
       currentClusterSelectValue: {value: 'all', label: 'all'},
-      currentCluster:this.props.currentCluster
+      currentCluster: this.props.currentCluster
     };
   },
 
@@ -226,10 +226,6 @@ const scheduleList = CreateReactClass({
         return 1;
       return 0;
     }
-
-    const clusterItems = this.state.clusterNames.sort().map(name =>
-      <option key={name} value={name}>{name}</option>
-    );
 
     let selectClusterItems = this.state.clusterNames.sort().map(name => {
         { return { value: name, label: name}; }
