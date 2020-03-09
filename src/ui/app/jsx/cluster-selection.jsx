@@ -16,6 +16,7 @@
 
 import React from "react";
 import CreateReactClass from 'create-react-class';
+import Select from 'react-select';
 import { selectClusterSubject, clusterSelected, clusterNames, getClusterStatusSubject } from "observable";
 
 const clusterSelection = CreateReactClass({
@@ -25,21 +26,23 @@ const clusterSelection = CreateReactClass({
 
   getInitialState: function() {
     return {
-      clusterNames: [], currentCluster: null
+      clusterNames: [],
+      currentCluster: null,
     };
   },
 
   componentWillMount: function() {
     const currentCluster: string = $.urlParam('currentCluster');
-    if(currentCluster && currentCluster != "null") {
+
+    if (currentCluster !== "null") {
       this.setState({currentCluster: currentCluster});
     }
 
     this._clusterNamesSubscription = clusterNames.subscribeOnNext(obs => {
       obs.subscribeOnNext(names => {
-        if(!this.state.currentCluster) {
+        if (!this.state.currentCluster) {
           // pre-select cluster
-          if(names.length > 0) {
+          if (names.length) {
             this.setState({currentCluster: names[0]});
             selectClusterSubject.onNext(names[0]);
           }
@@ -58,25 +61,27 @@ const clusterSelection = CreateReactClass({
       this._clusterSelectedSubscription.dispose();
   },
 
-  _handleClusterChange: function(e) {
-    var v = e.target.value;
-    selectClusterSubject.onNext(v);
+  _handleSelectOnChange: function(valueContext, actionContext) {
+      selectClusterSubject.onNext(valueContext.value);
   },
 
   render: function() {
-
-    const clusterItems = this.state.clusterNames.sort().map(name =>
-      <option key={name} value={name}>{name}</option>
-    );
+    const selectClusterItems = this.state.clusterNames.sort().map(name => {
+      { return { value: name, label: name}; }
+    });
 
     const clusterFilter = <form className="form-horizontal form-condensed">
             <div className="form-group">
               <label htmlFor="in_clusterName" className="col-sm-3 control-label">Filter cluster :</label>
               <div className="col-sm-9 col-md-7 col-lg-5">
-                <select className="form-control" id="in_currentCluster"
-                  onChange={this._handleClusterChange} value={this.state.currentCluster}>
-                  {clusterItems}
-                </select>
+                <Select
+                  id="in_clusterName"
+                  name="in_clusterName"
+                  options={selectClusterItems}
+                  onChange={this._handleSelectOnChange}
+                  value={{ value: this.state.currentCluster, label: this.state.currentCluster}}
+                  placeholder="Select a cluster"
+                />
               </div>
             </div>
     </form>
