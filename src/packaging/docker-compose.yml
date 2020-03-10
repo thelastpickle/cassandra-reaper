@@ -13,15 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version: '2.1'
+version: '2.3'
 
 services:
   cassandra-common:
     image: cassandra:3.11
     env_file:
       - ./docker-services/cassandra/cassandra.env
-    mem_limit: 4g
-    memswap_limit: 4g
+    mem_limit: 1g
+    memswap_limit: 1g
     mem_swappiness: 0
     ports:
       - "7000:7000"
