@@ -118,6 +118,14 @@ The `nodetool` Docker Compose service can be used to check on the Cassandra node
 docker-compose run nodetool status
 ```
 
+You can alternatively attach directly to the Cassandra container and run `nodetool status` from within it. 
+
+First, find the Cassandra container with `docker ps | grep cassandra`. 
+
+Then attach to the container with `docker exec -it <container-id> /bin/bash`.
+
+Now that you have a bash shell in the container, you can run `nodetool -u reaperUser -pwf /etc/cassandra/jmxremote.password`.
+
 Once the Cassandra node is online and accepting CQL connections, create the required `reaper_db` Cassandra keyspace to allow Reaper to save its cluster and scheduling data.
 
 By default, the `reaper_db` keyspace is created using a replication factor of 1. To change this replication factor, provide the intended replication factor as an optional argument:
@@ -193,7 +201,8 @@ For the **SSL encrypted** environment use:
 docker-compose run nodetool-ssl status
 ```
 
-When adding the Cassandra node to the Reaper UI, the above commands can be used to find the node IP address.
+When adding the Cassandra node to the Reaper UI with the IP address, the above commands can be used to find the node IP address.
+You can also add the Cassandra node to the Reaper UI by hostname. The container's hostname is the docker-compose service name.
 
 A `cqlsh` Docker Compose service is included as well for both the default and SSL encrypted environments to allow the creation of user tables in Cassandra.
 
