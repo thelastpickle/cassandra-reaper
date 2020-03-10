@@ -98,11 +98,14 @@ const subscriptionForm = CreateReactClass({
       description: this.state.description,
       nodes: this.state.nodes,
       events: this.state.events_selection.join(","),
-      exportSse: this.state.export_sse
+      exportSse: this.state.export_sse,
     };
-    if(this.state.export_logger) sub.exportFileLogger = this.state.export_logger;
-    if(this.state.export_http) sub.exportHttpEndpoint = this.state.export_http;
-    if(this.state.nodes) sub.nodes = this.state.nodes;
+    if (this.state.export_logger) {
+      sub[exportFileLogger] = this.state.export_logger;
+    }
+    if (this.state.export_http) {
+      sub[exportHttpEndpoint] = this.state.export_http;
+    }
 
     this.props.addSubscriptionSubject.onNext(sub);
   },

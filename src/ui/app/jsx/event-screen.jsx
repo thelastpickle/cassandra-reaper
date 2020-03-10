@@ -25,7 +25,7 @@ import DiagEventsSubscriptionForm from "jsx/event-subscription-form";
 import DiagEventsSubscriptionList from "jsx/event-subscription-list";
 import DiagEventsList from "jsx/event-list";
 import {getUrlPrefix} from "jsx/mixin";
-import URL_PREFIX from "jsx/uicommon";
+
 
 const eventScreen = CreateReactClass({
 
@@ -63,8 +63,8 @@ const eventScreen = CreateReactClass({
         this.state.activeEventSource.close();
       }
 
-      const URL_PREFIX = getUrlPrefix(window.top.location.pathname);
-      const source = new EventSource(`${URL_PREFIX}/diag_event/sse_listen/${subscription.id}`);
+      const urlPrefix = getUrlPrefix(window.top.location.pathname);
+      const source = new EventSource(`${urlPrefix}/diag_event/sse_listen/${subscription.id}`);
       const diagnosticEvents = this.props.diagnosticEvents;
       source.onmessage = function(event) {
         if(event.name === "ping") {

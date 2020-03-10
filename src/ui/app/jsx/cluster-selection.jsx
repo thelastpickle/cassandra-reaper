@@ -17,7 +17,7 @@
 import React from "react";
 import CreateReactClass from 'create-react-class';
 import Select from 'react-select';
-import { selectClusterSubject, clusterSelected, clusterNames, getClusterStatusSubject } from "observable";
+import { selectClusterSubject, clusterSelected, clusterNames } from "observable";
 
 const clusterSelection = CreateReactClass({
 

@@ -159,8 +159,7 @@ export const humanFileSize = function(bytes, si) {
 export const getUrlPrefix = function(location) {
   const contextPath = location.includes('/webui') ? location.substring(0, location.indexOf("/webui")) : '';
   // GLOBAL_* variables are defined and assigned in webpack. See webpack.config.js
-  const URL_PREFIX = GLOBAL_IS_DEV ? `http://${GLOBAL_REAPER_HOST}:8080` : contextPath;
-  return URL_PREFIX;
+  return (GLOBAL_IS_DEV ? `http://${GLOBAL_REAPER_HOST}:8080` : contextPath);
 }
 
 export const toast = function(notificationSystem, message, type, uid) {
