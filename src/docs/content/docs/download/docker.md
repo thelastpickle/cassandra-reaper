@@ -118,11 +118,11 @@ The `nodetool` Docker Compose service can be used to check on the Cassandra node
 docker-compose run nodetool status
 ```
 
-You can alternatively attach directly to the Cassandra container and run `nodetool status` from within it. 
+You can alternatively attach directly to the Cassandra container and run `nodetool status` from within it by running:
 
-First, find the Cassandra container with `docker ps | grep cassandra`. 
-
-Then attach to the container with `docker exec -it <container-id> /bin/bash`.
+```bash
+docker-compose exec cassandra /bin/bash
+```
 
 Now that you have a bash shell in the container, you can run `nodetool -u reaperUser -pwf /etc/cassandra/jmxremote.password`.
 
