@@ -30,5 +30,5 @@ Description: Software to run automated (anti-entropy) repairs of Cassandra clust
 
 Package: cassandra-reaper-cli
 Architecture: all
-Depends: python-requests
+Depends: python3-requests
 Description: Python based CLI tool for calling the Reaper service
