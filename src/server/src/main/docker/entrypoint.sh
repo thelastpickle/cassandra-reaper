@@ -25,7 +25,7 @@ if [ "$1" = 'cassandra-reaper' ]; then
     /usr/local/bin/configure-metrics.sh
     exec java \
             ${JAVA_OPTS} \
-            -jar /usr/local/lib/cassandra-reaper.jar server \
+            -cp "/usr/local/lib/*" io.cassandrareaper.ReaperApplication server \
             /etc/cassandra-reaper.yml
 fi
 

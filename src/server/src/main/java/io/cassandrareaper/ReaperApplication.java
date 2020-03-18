@@ -330,6 +330,13 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       }
     }
 
+    if (config.getJmxmp() != null) {
+      if (config.getJmxmp().isEnabled()) {
+        LOG.info("JMXMP enabled");
+      }
+      context.jmxConnectionFactory.setJmxmp(config.getJmxmp());
+    }
+
     JmxCredentials jmxAuth = config.getJmxAuth();
     if (jmxAuth != null) {
       LOG.debug("using specified JMX credentials for authentication");
