@@ -18,6 +18,7 @@
 package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.AppContext;
+import io.cassandrareaper.ReaperApplicationConfiguration.Jmxmp;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
@@ -54,6 +55,7 @@ public class JmxConnectionFactory {
   private final Cryptograph cryptograph;
   private Map<String, Integer> jmxPorts;
   private JmxCredentials jmxAuth;
+  private Jmxmp jmxmp;
   private Map<String, JmxCredentials> jmxCredentials;
   private AddressTranslator addressTranslator;
   private final Set<String> accessibleDatacenters = Sets.newHashSet();
@@ -97,7 +99,7 @@ public class JmxConnectionFactory {
     try {
       JmxConnectionProvider provider = new JmxConnectionProvider(
               host, jmxCredentials, context.config.getJmxConnectionTimeoutInSeconds(),
-              this.metricRegistry, cryptograph);
+              this.metricRegistry, cryptograph, this.jmxmp);
       JMX_CONNECTIONS.computeIfAbsent(host, provider::apply);
       JmxProxy proxy = JMX_CONNECTIONS.get(host);
       if (!proxy.isConnectionAlive()) {
@@ -162,6 +164,14 @@ public class JmxConnectionFactory {
     this.addressTranslator = addressTranslator;
   }
 
+  public Jmxmp getJmxmp() {
+    return jmxmp;
+  }
+
+  public void setJmxmp(Jmxmp jmxmp) {
+    this.jmxmp = jmxmp;
+  }
+
   public final HostConnectionCounters getHostConnectionCounters() {
     return hostConnectionCounters;
   }
@@ -197,18 +207,21 @@ public class JmxConnectionFactory {
     private final int connectionTimeout;
     private final MetricRegistry metricRegistry;
     private final Cryptograph cryptograph;
+    private final Jmxmp jmxmp;
 
     JmxConnectionProvider(
             String host,
             Optional<JmxCredentials> jmxCredentials,
             int connectionTimeout,
             MetricRegistry metricRegistry,
-            Cryptograph cryptograph) {
+            Cryptograph cryptograph,
+            Jmxmp jmxmp) {
       this.host = host;
       this.jmxCredentials = jmxCredentials;
       this.connectionTimeout = connectionTimeout;
       this.metricRegistry = metricRegistry;
       this.cryptograph = cryptograph;
+      this.jmxmp = jmxmp;
     }
 
     @Override
@@ -216,7 +229,7 @@ public class JmxConnectionFactory {
       Preconditions.checkArgument(host.equals(this.host));
       try {
         JmxProxy proxy = JmxProxyImpl.connect(
-                host, jmxCredentials, addressTranslator, connectionTimeout, metricRegistry, cryptograph);
+                host, jmxCredentials, addressTranslator, connectionTimeout, metricRegistry, cryptograph, jmxmp);
         if (hostConnectionCounters.getSuccessfulConnections(host) <= 0) {
           accessibleDatacenters.add(EndpointSnitchInfoProxy.create(proxy).getDataCenter());
         }
