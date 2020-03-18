@@ -24,6 +24,7 @@ import com.google.common.base.Preconditions;
 
 public final class JmxAddresses {
   private static final String JMX_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
+  private static final String JMXMP_URL = "service:jmx:jmxmp://%s:%d/";
 
   private JmxAddresses() {
 
@@ -37,10 +38,15 @@ public final class JmxAddresses {
 
   public static JMXServiceURL getJmxServiceUrl(String host, int port)
         throws MalformedURLException {
+    return getJmxServiceUrl(host, port, false);
+  }
+
+  public static JMXServiceURL getJmxServiceUrl(String host, int port, boolean jmxmp)
+        throws MalformedURLException {
     Preconditions.checkNotNull(host);
     Preconditions.checkArgument(port > 0);
     String effectiveHost = isNumericIPv6Address(host) ? wrapIPv6BracesIfNeed(host) : host;
-    return new JMXServiceURL(String.format(JMX_URL, effectiveHost, port));
+    return new JMXServiceURL(String.format(jmxmp ? JMXMP_URL : JMX_URL, effectiveHost, port));
   }
 
   private static String wrapIPv6BracesIfNeed(String address) {

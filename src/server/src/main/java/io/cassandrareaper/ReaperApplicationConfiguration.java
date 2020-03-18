@@ -102,6 +102,9 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Map<String, Integer> jmxPorts;
 
   @JsonProperty
+  private Jmxmp jmxmp = new Jmxmp();
+
+  @JsonProperty
   private Map<String, JmxCredentials> jmxCredentials;
 
   @JsonProperty
@@ -172,6 +175,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   @Nullable
   private CryptographFactory cryptograph;
+
+  public Jmxmp getJmxmp() {
+    return jmxmp;
+  }
+
+  public void setJmxmp(Jmxmp jmxmp) {
+    this.jmxmp = jmxmp;
+  }
 
   public int getSegmentCount() {
     return segmentCount == null ? 0 : segmentCount;
@@ -642,5 +653,22 @@ public final class ReaperApplicationConfiguration extends Configuration {
     }
 
 
+  }
+
+  public static final class Jmxmp {
+
+    @JsonProperty
+    private Boolean ssl = false;
+
+    @JsonProperty
+    private Boolean enabled = false;
+
+    public Boolean useSsl() {
+      return ssl;
+    }
+
+    public Boolean isEnabled() {
+      return enabled;
+    }
   }
 }

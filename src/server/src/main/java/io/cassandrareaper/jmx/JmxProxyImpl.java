@@ -17,6 +17,7 @@
 
 package io.cassandrareaper.jmx;
 
+import io.cassandrareaper.ReaperApplicationConfiguration.Jmxmp;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
@@ -31,6 +32,7 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMISocketFactory;
+import java.security.Security;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -63,6 +65,9 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.validation.constraints.NotNull;
 
 import com.codahale.metrics.Gauge;
@@ -118,6 +123,7 @@ final class JmxProxyImpl implements JmxProxy {
   private final Optional<StreamManagerMBean> smProxy;
   private final DiagnosticEventPersistenceMBean diagEventProxy;
   private final LastEventIdBroadcasterMBean lastEventIdProxy;
+  private final Jmxmp jmxmp;
 
   private JmxProxyImpl(
       String host,
@@ -131,7 +137,8 @@ final class JmxProxyImpl implements JmxProxy {
       MetricRegistry metricRegistry,
       Optional<StreamManagerMBean> smProxy,
       DiagnosticEventPersistenceMBean diagEventProxy,
-      LastEventIdBroadcasterMBean lastEventIdProxy) {
+      LastEventIdBroadcasterMBean lastEventIdProxy,
+      Jmxmp jmxmp) {
 
     this.host = host;
     this.hostBeforeTranslation = hostBeforeTranslation;
@@ -146,6 +153,7 @@ final class JmxProxyImpl implements JmxProxy {
     this.lastEventIdProxy = lastEventIdProxy;
     this.metricRegistry = metricRegistry;
     this.smProxy = smProxy;
+    this.jmxmp = jmxmp;
     registerConnectionsGauge();
   }
 
@@ -158,7 +166,8 @@ final class JmxProxyImpl implements JmxProxy {
       final AddressTranslator addressTranslator,
       int connectionTimeout,
       MetricRegistry metricRegistry,
-      Cryptograph cryptograph)
+      Cryptograph cryptograph,
+      Jmxmp jmxmp)
       throws ReaperException, InterruptedException {
 
     if (host == null) {
@@ -174,7 +183,8 @@ final class JmxProxyImpl implements JmxProxy {
         addressTranslator,
         connectionTimeout,
         metricRegistry,
-        cryptograph);
+        cryptograph,
+        jmxmp);
   }
 
   /**
@@ -193,7 +203,8 @@ final class JmxProxyImpl implements JmxProxy {
       final AddressTranslator addressTranslator,
       int connectionTimeout,
       MetricRegistry metricRegistry,
-      Cryptograph cryptograph) throws ReaperException, InterruptedException {
+      Cryptograph cryptograph,
+      Jmxmp jmxmp) throws ReaperException, InterruptedException {
 
     JMXServiceURL jmxUrl;
     String host = originalHost;
@@ -205,19 +216,29 @@ final class JmxProxyImpl implements JmxProxy {
 
     try {
       LOG.debug("Connecting to {}...", host);
-      jmxUrl = JmxAddresses.getJmxServiceUrl(host, port);
+      jmxUrl = JmxAddresses.getJmxServiceUrl(host, port, jmxmp.isEnabled());
     } catch (MalformedURLException e) {
       LOG.error(String.format("Failed to prepare the JMX connection to %s:%s", host, port));
       throw new ReaperException("Failure during preparations for JMX connection", e);
     }
     try {
       final Map<String, Object> env = new HashMap<>();
-      if (jmxCredentials.isPresent()) {
-        String jmxPassword = cryptograph.decrypt(jmxCredentials.get().getPassword());
-        String[] creds = {jmxCredentials.get().getUsername(), jmxPassword};
+      if (jmxmp.useSsl() && jmxCredentials.isPresent()) {
+        String[] creds = { jmxCredentials.get().getUsername(), jmxCredentials.get().getPassword() };
         env.put(JMXConnector.CREDENTIALS, creds);
+        LOG.debug("Use SSL with profile 'TLS SASL/PLAIN' with JMXMP");
+        Security.addProvider(new com.sun.security.sasl.Provider());
+        env.put("jmx.remote.profiles", "TLS SASL/PLAIN");
+        env.put("jmx.remote.sasl.callback.handler",
+            new UserPasswordCallbackHandler(jmxCredentials.get().getUsername(), jmxCredentials.get().getPassword()));
+      } else {
+        if (jmxCredentials.isPresent()) {
+          String jmxPassword = cryptograph.decrypt(jmxCredentials.get().getPassword());
+          String[] creds = {jmxCredentials.get().getUsername(), jmxPassword};
+          env.put(JMXConnector.CREDENTIALS, creds);
+        }
+        env.put("com.sun.jndi.rmi.factory.socket", getRmiClientSocketFactory());
       }
-      env.put("com.sun.jndi.rmi.factory.socket", getRmiClientSocketFactory());
       JMXConnector jmxConn = connectWithTimeout(jmxUrl, connectionTimeout, TimeUnit.SECONDS, env);
       MBeanServerConnection mbeanServerConn = jmxConn.getMBeanServerConnection();
 
@@ -250,7 +271,8 @@ final class JmxProxyImpl implements JmxProxy {
               metricRegistry,
               smProxy,
               JMX.newMBeanProxy(mbeanServerConn, ObjectNames.DIAGNOSTICS_EVENTS, DiagnosticEventPersistenceMBean.class),
-              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.LAST_EVENT_ID, LastEventIdBroadcasterMBean.class));
+              JMX.newMBeanProxy(mbeanServerConn, ObjectNames.LAST_EVENT_ID, LastEventIdBroadcasterMBean.class),
+              jmxmp);
 
       // registering listeners throws bunch of exceptions, so do it here rather than in the constructor
       mbeanServerConn.addNotificationListener(ObjectNames.STORAGE_SERVICE, proxy, null, null);
@@ -1027,6 +1049,31 @@ final class JmxProxyImpl implements JmxProxy {
 
       } catch (MalformedObjectNameException e) {
         throw new IllegalStateException("Failure during preparations for JMX connection", e);
+      }
+    }
+  }
+
+  static class UserPasswordCallbackHandler implements javax.security.auth.callback.CallbackHandler {
+    private String username;
+    private char[] password;
+
+    UserPasswordCallbackHandler(String user, String password) {
+      this.username = user;
+      this.password = password == null ? null : password.toCharArray();
+    }
+
+    public void handle(javax.security.auth.callback.Callback[] callbacks)
+            throws IOException, javax.security.auth.callback.UnsupportedCallbackException {
+      for (int i = 0; i < callbacks.length; i++) {
+        if (callbacks[i] instanceof PasswordCallback) {
+          PasswordCallback pcb = (PasswordCallback) callbacks[i];
+          pcb.setPassword(password);
+        } else if (callbacks[i] instanceof javax.security.auth.callback.NameCallback) {
+          NameCallback ncb = (NameCallback) callbacks[i];
+          ncb.setName(username);
+        } else {
+          throw new UnsupportedCallbackException(callbacks[i]);
+        }
       }
     }
   }
