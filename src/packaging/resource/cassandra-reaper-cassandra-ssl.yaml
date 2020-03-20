@@ -78,7 +78,7 @@ logging:
       logFormat: "%-6level [%d] [%t] %logger{5} - %msg %n"
       threshold: WARN
     - type: file
-      logFormat: "%-6level [%t] %logger{5} - %msg %n"
+      logFormat: "%-6level [%d] [%t] %logger{5} - %msg %n"
       currentLogFilename: /var/log/cassandra-reaper/reaper.log
       archivedLogFilenamePattern: /var/log/cassandra-reaper/reaper-%d.log.gz
       archivedFileCount: 99
