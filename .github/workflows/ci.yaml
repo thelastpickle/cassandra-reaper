@@ -95,12 +95,12 @@ jobs:
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
           - cassandra-version: 3.0.17
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
-          - cassandra-version: 2.11.4
+          - cassandra-version: 3.11.4
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
     steps:
       - name: Checkout
         uses: actions/checkout@v1
- 
+
       - name: Setup Maven Cache
         uses: actions/cache@v1
         with:
@@ -108,7 +108,7 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
- 
+
       - name: Setup CCM Cache
         uses: actions/cache@v1
         with:
@@ -116,28 +116,28 @@ jobs:
           key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
           restore-keys: |
             ${{ runner.os }}-ccm-
- 
+
       - name: Setup Java
         uses: actions/setup-java@v1
         with:
           java-version: '8.0.192'
           java-package: jdk
           architecture: x64
- 
+
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
- 
+
       - name: Setup bower
         run: npm install -g bower
- 
+
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
           python-version: '3.x'
           architecture: 'x64'
- 
+
       - name: Install CCM
         run: pip install pyyaml git+https://github.com/riptano/ccm
  
@@ -147,7 +147,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
- 
+
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh
         env:
@@ -195,7 +195,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v1
- 
+
       - name: Setup Maven Cache
         uses: actions/cache@v1
         with:
@@ -203,7 +203,7 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
- 
+
       - name: Setup CCM Cache
         uses: actions/cache@v1
         with:
@@ -211,28 +211,28 @@ jobs:
           key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
           restore-keys: |
             ${{ runner.os }}-ccm-
- 
+
       - name: Setup Java
         uses: actions/setup-java@v1
         with:
           java-version: '8.0.192'
           java-package: jdk
           architecture: x64
- 
+
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
- 
+
       - name: Setup bower
         run: npm install -g bower
- 
+
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
           python-version: '3.x'
           architecture: 'x64'
- 
+
       - name: Install CCM
         run: pip install pyyaml git+https://github.com/riptano/ccm
  
@@ -242,7 +242,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
- 
+
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh
         env:
@@ -265,7 +265,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v1
- 
+
       - name: Setup Maven Cache
         uses: actions/cache@v1
         with:
@@ -273,7 +273,7 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
- 
+
       - name: Setup CCM Cache
         uses: actions/cache@v1
         with:
@@ -281,28 +281,28 @@ jobs:
           key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
           restore-keys: |
             ${{ runner.os }}-ccm-
- 
+
       - name: Setup Java
         uses: actions/setup-java@v1
         with:
           java-version: '8.0.192'
           java-package: jdk
           architecture: x64
- 
+
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
- 
+
       - name: Setup bower
         run: npm install -g bower
- 
+
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
           python-version: '3.x'
           architecture: 'x64'
- 
+
       - name: Install CCM
         run: pip install pyyaml git+https://github.com/riptano/ccm
  
@@ -312,7 +312,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
- 
+
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh
         env:
@@ -320,8 +320,84 @@ jobs:
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+  its-elassandra:
+    needs: build
+    name: Elassandra Backend
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-type: [elassandra]
+        storage-type: [elassandra]
+        elassandra-version: ['6.2.3.26']
+        grim-min: [1]
+        grim-max: [1]
+        cucumber-options: ['--tags ~@cassandra_4_0_onwards --tags ~@sidecar']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Setup Maven Cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Setup CCM Cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.ccm/repository
+          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
+          restore-keys: |
+            ${{ runner.os }}-ccm-
+
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: '8.0.192'
+          java-package: jdk
+          architecture: x64
+
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+
+      - name: Setup bower
+        run: npm install -g bower
+
+      - name: Install ECM
+        run: |
+          wget -O ecm-ccm-elassandra.zip https://github.com/strapdata/ecm/archive/ccm-elassandra.zip
+          unzip ecm-ccm-elassandra.zip && cd ecm-ccm-elassandra && sudo ./setup.py install
+
+      - name: Download Elassandra
+        run: |
+          wget -O elassandra-${ELASSANDRA_VERSION}.tar.gz https://github.com/strapdata/elassandra/releases/download/v${ELASSANDRA_VERSION}/elassandra-${ELASSANDRA_VERSION}.tar.gz
+        env:
+          ELASSANDRA_VERSION: ${{ matrix.elassandra-version }}
+
+      - name: Setup ECM Cluster
+        run: ./.github/scripts/configure-ccm.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          ELASSANDRA_VERSION: ${{ matrix.elassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+
+      - name: Run Tests
+        run: |
+          ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          GRIM_MAX: ${{ matrix.grim-max }}
+          GRIM_MIN: ${{ matrix.grim-min }}
+
   its-sidecar:
-    needs: [its-ccm-local, its-pgsql, its-ccm-cass]
+    needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Sidecar
     runs-on: ubuntu-latest
     services:
@@ -368,7 +444,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v1
- 
+
       - name: Setup Maven Cache
         uses: actions/cache@v1
         with:
@@ -376,7 +452,7 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
- 
+
       - name: Setup CCM Cache
         uses: actions/cache@v1
         with:
@@ -384,28 +460,28 @@ jobs:
           key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
           restore-keys: |
             ${{ runner.os }}-ccm-
- 
+
       - name: Setup Java
         uses: actions/setup-java@v1
         with:
           java-version: '8.0.192'
           java-package: jdk
           architecture: x64
- 
+
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
- 
+
       - name: Setup bower
         run: npm install -g bower
- 
+
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
           python-version: '3.x'
           architecture: 'x64'
- 
+
       - name: Install CCM
         run: pip install pyyaml git+https://github.com/riptano/ccm
  
@@ -415,7 +491,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
- 
+
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
         env:
@@ -426,7 +502,7 @@ jobs:
           GRIM_MIN: ${{ matrix.grim-min }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
   its-distributed:
-    needs: [its-ccm-local, its-pgsql, its-ccm-cass]
+    needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Distributed tests
     runs-on: ubuntu-latest
     strategy:
@@ -449,7 +525,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v1
- 
+
       - name: Setup Maven Cache
         uses: actions/cache@v1
         with:
@@ -457,7 +533,7 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
- 
+
       - name: Setup CCM Cache
         uses: actions/cache@v1
         with:
@@ -465,28 +541,28 @@ jobs:
           key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
           restore-keys: |
             ${{ runner.os }}-ccm-
- 
+
       - name: Setup Java
         uses: actions/setup-java@v1
         with:
           java-version: '8.0.192'
           java-package: jdk
           architecture: x64
- 
+
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
- 
+
       - name: Setup bower
         run: npm install -g bower
- 
+
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
           python-version: '3.x'
           architecture: 'x64'
- 
+
       - name: Install CCM
         run: pip install pyyaml git+https://github.com/riptano/ccm
  
@@ -496,7 +572,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
- 
+
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
         env:
@@ -507,7 +583,7 @@ jobs:
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
   its-flapping:
-    needs: [its-ccm-local, its-pgsql, its-ccm-cass]
+    needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Flapping reapers
     runs-on: ubuntu-latest
     strategy:
@@ -530,7 +606,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v1
- 
+
       - name: Setup Maven Cache
         uses: actions/cache@v1
         with:
@@ -538,7 +614,7 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
- 
+
       - name: Setup CCM Cache
         uses: actions/cache@v1
         with:
@@ -546,28 +622,28 @@ jobs:
           key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
           restore-keys: |
             ${{ runner.os }}-ccm-
- 
+
       - name: Setup Java
         uses: actions/setup-java@v1
         with:
           java-version: '8.0.192'
           java-package: jdk
           architecture: x64
- 
+
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
- 
+
       - name: Setup bower
         run: npm install -g bower
- 
+
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
           python-version: '3.x'
           architecture: 'x64'
- 
+
       - name: Install CCM
         run: pip install pyyaml git+https://github.com/riptano/ccm
  
@@ -577,7 +653,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
- 
+
       - name: Run Tests
         run: |
           ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
@@ -588,10 +664,85 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
+  its-elassandra-distributed:
+    needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    name: Distributed tests with Elassandra
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-type: [elassandra]
+        storage-type: [elassandra]
+        elassandra-version: ['6.2.3.26']
+        grim-min: [2]
+        grim-max: [4]
+        cucumber-options: ['--tags ~@cassandra_4_0_onwards --tags ~@sidecar']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Setup Maven Cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Setup CCM Cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.ccm/repository
+          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
+          restore-keys: |
+            ${{ runner.os }}-ccm-
+
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: '8.0.192'
+          java-package: jdk
+          architecture: x64
+
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+
+      - name: Setup bower
+        run: npm install -g bower
+
+      - name: Install ECM
+        run: |
+          wget -O ecm-ccm-elassandra.zip https://github.com/strapdata/ecm/archive/ccm-elassandra.zip
+          unzip ecm-ccm-elassandra.zip && cd ecm-ccm-elassandra && sudo ./setup.py install
+
+      - name: Download Elassandra
+        run: |
+          wget -O elassandra-${ELASSANDRA_VERSION}.tar.gz https://github.com/strapdata/elassandra/releases/download/v${ELASSANDRA_VERSION}/elassandra-${ELASSANDRA_VERSION}.tar.gz
+        env:
+          ELASSANDRA_VERSION: ${{ matrix.elassandra-version }}
+
+      - name: Setup ECM Cluster
+        run: ./.github/scripts/configure-ccm.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          ELASSANDRA_VERSION: ${{ matrix.elassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+
+      - name: Run Tests
+        run: |
+          ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          GRIM_MAX: ${{ matrix.grim-max }}
+          GRIM_MIN: ${{ matrix.grim-min }}
 
   release:
     name: Release Reaper
-    needs: [its-distributed, its-flapping, its-sidecar]
+    needs: [its-distributed, its-flapping, its-sidecar, its-elassandra-distributed]
     if: startsWith(github.ref, 'refs/heads/master') || startsWith(github.ref, 'refs/tag')
     runs-on: ubuntu-latest
     steps:
@@ -644,13 +795,13 @@ jobs:
       - name: Build Reaper
         run: |
           MAVEN_OPTS="-Xmx384m" mvn -B install -DskipTests
-      
+
       - name: Build packages
         env:
           DOCKER_USER: ${{ secrets.DOCKERHUB_USER }}
           DOCKER_PASS: ${{ secrets.DOCKERHUB_PASSWORD }}
         run: ./.github/scripts/before_deploy.sh
-      
+
       - name: Upload deb package to Bintray
         run: |
           REPO=reaper-deb
@@ -660,7 +811,7 @@ jobs:
           then
             REPO=reaper-deb-beta
             PACKAGE=cassandra-reaper-beta
-          fi  
+          fi
 
           releaseFile=$(ls src/packages/*.deb |grep ${VERSION})
           targetName=reaper_${VERSION}_amd64.deb
@@ -672,18 +823,18 @@ jobs:
             https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${targetName}
           echo "Publishing release in Bintray"
           curl -X POST -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${VERSION}/publish
-      
+
       - name: Upload rpm package to Bintray
         run: |
           REPO=reaper-rpm
           PACKAGE=cassandra-reaper
-          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)          
+          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
           RPM_VERSION=$(echo "${VERSION}" | sed "s/-/_/")
           if [ "${GITHUB_REF}" = "refs/heads/master" ]
           then
             REPO=reaper-rpm-beta
             PACKAGE=cassandra-reaper-beta
-          fi  
+          fi
 
           releaseFile=$(ls src/packages/*.rpm)
           targetName=reaper-${RPM_VERSION}-1.x86_64.rpm
@@ -700,12 +851,12 @@ jobs:
         run: |
           REPO=reaper-tarball
           PACKAGE=cassandra-reaper
-          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)          
+          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
           if [ "${GITHUB_REF}" = "refs/heads/master" ]
           then
             REPO=reaper-tarball-beta
             PACKAGE=cassandra-reaper-beta
-          fi  
+          fi
 
           releaseFile=$(ls src/packages/*.tar.gz |grep ${VERSION})
           targetName=cassandra-reaper-${VERSION}.tar.gz
@@ -724,16 +875,16 @@ jobs:
         env:
           GHR_PATH: src/packages
           GITHUB_TOKEN: ${{ secrets.GITHUB_SECRET }}
-      
+
       - name: Upload maven artifacts to Bintray
         run: |
           REPO=reaper-maven
           PACKAGE=io.cassandrareaper:cassandra-reaper
-          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)          
+          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
           if [ "${GITHUB_REF}" = "refs/heads/master" ]
           then
             REPO=reaper-maven-beta
-          fi  
+          fi
 
           jarFile=cassandra-reaper-${VERSION}.jar
           releaseFile=$(ls src/server/target/${jarFile})
@@ -741,7 +892,7 @@ jobs:
           javadocFile=cassandra-reaper-${VERSION}-javadoc.jar
           echo "uploading ${releaseFile} to Bintray"
           echo "Upload url : https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/io/cassandrareaper/cassandra-reaper/${VERSION}"
-          
+
           # Upload the main jar
           curl -T src/server/target/${jarFile} \
             -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \

@@ -46,7 +46,7 @@ case "${TEST_TYPE}" in
         echo "ERROR: Environment variable TEST_TYPE is unspecified."
         exit 1
         ;;
-    "ccm"|"upgrade")
+    "ccm"|"upgrade"|"elassandra")
         mkdir -p ~/.local
         cp ./.github/files/jmxremote.password ~/.local/jmxremote.password
         chmod 400 ~/.local/jmxremote.password
@@ -54,7 +54,11 @@ case "${TEST_TYPE}" in
         echo "cassandra     readwrite" >> /usr/lib/jvm/zulu-8-azure-amd64/jre/lib/management/jmxremote.access
         sudo chmod 777 /opt/hostedtoolcache/jdk/8.0.192/x64/jre/lib/management/jmxremote.access
         echo "cassandra     readwrite" >> /opt/hostedtoolcache/jdk/8.0.192/x64/jre/lib/management/jmxremote.access
-        ccm create test -v $CASSANDRA_VERSION
+        if [[ ! -z $ELASSANDRA_VERSION ]]; then
+          ccm create test -v file:elassandra-${ELASSANDRA_VERSION}.tar.gz
+        else
+          ccm create test -v $CASSANDRA_VERSION
+        fi
         # use "2:0" to ensure the first datacenter name is "dc1" instead of "datacenter1", so to be compatible with CircleCI tests
         ccm populate --vnodes -n 2:0 > /dev/null
         for i in `seq 1 2` ; do
