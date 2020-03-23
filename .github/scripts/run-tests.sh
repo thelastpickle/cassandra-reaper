@@ -35,8 +35,9 @@ case "${TEST_TYPE}" in
 
         mvn -B install -DskipTests
         ;;
-    "ccm")
+    "ccm"|"elassandra")
         mvn --version -B
+        ps uax | grep cass
         ccm start -v --no-wait --skip-wait-other-notice || true
         sleep 30
         ccm status
@@ -56,7 +57,7 @@ case "${TEST_TYPE}" in
                 mvn -B package -DskipTests
                 mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperPostgresIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
                 ;;
-            "cassandra")
+            "cassandra"|"elassandra")
                 ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
                 mvn -B package -DskipTests
                 mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
