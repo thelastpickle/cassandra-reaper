@@ -297,7 +297,10 @@ final class RepairRunner implements Runnable {
   private void updateClusterNodeList() throws ReaperException {
     Set<String> liveNodes  = ImmutableSet.copyOf(clusterFacade.getLiveNodes(cluster));
     Cluster cluster = context.storage.getCluster(clusterName);
-    if (!cluster.getSeedHosts().equals(liveNodes) && !liveNodes.isEmpty()) {
+    // Note that the seed hosts only get updated if enableDynamicSeedList is true. This is
+    // consistent with the logic in ClusterResource.findClusterWithSeedHost.
+    if (context.config.getEnableDynamicSeedList() && !cluster.getSeedHosts().equals(liveNodes)
+            && !liveNodes.isEmpty()) {
       // Updating storage only if the seed lists has changed
       LOG.info("Updating the seed list for cluster {} as topology changed since the last repair.", clusterName);
       context.storage.updateCluster(cluster.with().withSeedHosts(liveNodes).build());
