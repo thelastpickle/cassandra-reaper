@@ -104,10 +104,10 @@ export const DeleteStatusMessageMixin = {
 export const CFsListRender = CreateReactClass({
     render: function() {
         return (
-            <div className="ReactTags__tags">
-              <div className="ReactTags__selected">
+            <div>
+              <div>
                 {this.props.list.map(function(listValue){
-                    return <span className="ReactTags__tag" key={listValue}>{listValue}</span>;
+                    return <span key={listValue}>{listValue}</span>;
                 })}
               </div>
             </div>
@@ -118,8 +118,8 @@ export const CFsListRender = CreateReactClass({
 export const CFsCountListRender = CreateReactClass({
   render: function() {
       return (
-          <div className="ReactTags__tags">
-            <div className="ReactTags__selected">
+          <div>
+            <div>
               <OverlayTrigger
                 key={this.props.id}
                 placement="top"

@@ -61,74 +61,6 @@ td[data-toggle='collapse'] {
 		transform: rotate(360deg);
 	}
 }
-div {
-	&.ReactTags__tags {
-		position: relative;
-	}
-	&.ReactTags__tagInput {
-		width: 200px;
-		//Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-		border-radius: 2px;
-		display: inline-block;
-		input.ReactTags__tagInputField {
-			height: 31px;
-			margin: 0;
-			font-size: 12px;
-			width: 100%;
-			border: 1px solid $color_gallery_approx;
-			&:focus {
-				height: 31px;
-				margin: 0;
-				font-size: 12px;
-				width: 100%;
-				border: 1px solid $color_gallery_approx;
-			}
-		}
-	}
-	&.ReactTags__selected {
-		span.ReactTags__tag {
-			border: 1px solid $color_alto_approx;
-			background: $color_gallery_approx;
-			font-size: 12px;
-			display: inline-block;
-			padding: 5px;
-			margin: 0 5px;
-			//Instead of the line below you could use @include border-radius($radius, $vertical-radius)
-			border-radius: 2px;
-		}
-		a.ReactTags__remove {
-			color: $color_silver_chalice_approx;
-			margin-left: 5px;
-			cursor: pointer;
-		}
-	}
-	&.ReactTags__suggestions {
-		position: absolute;
-		z-index: 10000;
-		ul {
-			list-style-type: none;
-			//Instead of the line below you could use @include box-shadow($shadow-1, $shadow-2, $shadow-3, $shadow-4, $shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9, $shadow-10)
-			box-shadow: .05em .01em .5em $black_20;
-			background: $white;
-			width: 200px;
-			li.ReactTags__activeSuggestion {
-				background: $color_spindle_approx;
-				cursor: pointer;
-			}
-		}
-		li {
-			border-bottom: 1px solid $color_alto_approx;
-			padding: 5px 10px;
-			margin: 0;
-			color: #888;
-			mark {
-				text-decoration: underline;
-				background: none;
-				font-weight: 600;
-			}
-		}
-	}
-}
 .form-control-hidden {
 	display: none;
 }
@@ -229,7 +161,3 @@ body {
 
 $font-size: 16px;
 $input-height: 2.5em; // at 16px, this an even 40px
-
-div.ReactTags__selected span.ReactTags__tag {
-	background: transparent;
-}
