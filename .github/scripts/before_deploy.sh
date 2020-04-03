@@ -44,7 +44,7 @@ then
     docker tag cassandra-reaper:latest $REPO:$GIT_HASH
     #docker push $REPO:$GIT_HASH
 fi
-if [[ ${GITHUB_REF} =~ ^[0-9]{1}\.[0-9]{1}\.[0-9]{1}$ ]]
+if [[ ${GITHUB_REF} == "refs/tags"* ]]
 then
     mkdir -p cassandra-reaper-${VERSION}/server/target
     cp -R src/packaging/bin cassandra-reaper-${VERSION}/
