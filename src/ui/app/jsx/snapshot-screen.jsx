@@ -159,6 +159,7 @@ const SnapshotScreen = CreateReactClass({
       <Select
           id="in_currentCluster"
           name="in_currentCluster"
+          classNamePrefix="select"
           isClearable={true}
           placeholder={"Select a cluster ..."}
           options={selectClusterItems}

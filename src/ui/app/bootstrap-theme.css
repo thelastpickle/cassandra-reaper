@@ -323,4 +323,12 @@ body {
   border: 1px solid var(--brand-primary);
 }
 
+.select__control {
+  border-radius: 0px !important;
+}
+
+.select__option {
+  color: var(--gray-light) !important;
+}
+
 /*# sourceMappingURL=bootstrap-theme.css.map */

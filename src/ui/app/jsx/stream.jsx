@@ -37,6 +37,7 @@ const Stream = CreateReactClass({
         return (
             <Select
                 name="tableList"
+                classNamePrefix="select"
                 value={selectValues}
                 isMulti
                 isClearable={false}

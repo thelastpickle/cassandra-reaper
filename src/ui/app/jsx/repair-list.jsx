@@ -433,6 +433,7 @@ const repairList = CreateReactClass({
                 <Select
                     id="in_currentCluster"
                     name="in_currentCluster"
+                    classNamePrefix="select"
                     options={selectClusterItems}
                     value={this.state.currentClusterSelectValue}
                     onChange={this._handleSelectOnChange}
@@ -443,6 +444,7 @@ const repairList = CreateReactClass({
                 <Select
                     id="in_numberOfElementsToDisplay"
                     name="in_numberOfElementsToDisplay"
+                    classNamePrefix="select"
                     options={[
                         {value: 10, label: "10"},
                         {value: 25, label: "25"},

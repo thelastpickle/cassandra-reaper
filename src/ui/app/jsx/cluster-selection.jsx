@@ -77,6 +77,7 @@ const clusterSelection = CreateReactClass({
                 <Select
                   id="in_clusterName"
                   name="in_clusterName"
+                  classNamePrefix="select"
                   options={selectClusterItems}
                   onChange={this._handleSelectOnChange}
                   value={{ value: this.state.currentCluster, label: this.state.currentCluster}}

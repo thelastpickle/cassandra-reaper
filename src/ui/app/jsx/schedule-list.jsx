@@ -240,6 +240,7 @@ const scheduleList = CreateReactClass({
                 <Select
                     id="in_currentCluster"
                     name="in_currentCluster"
+                    classNamePrefix="select"
                     options={selectClusterItems}
                     value={this.state.currentClusterSelectValue}
                     onChange={this._handleSelectOnChange}

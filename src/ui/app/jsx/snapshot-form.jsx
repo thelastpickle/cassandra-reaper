@@ -240,6 +240,7 @@ const snapshotForm = CreateReactClass({
                 <Select
                   id="in_clusterName"
                   name="in_clusterName"
+                  classNamePrefix="select"
                   options={clusterNameOptions}
                   placeholder={clusterNamePlaceholder}
                   onChange={this._handleSelectOnChange}
@@ -261,12 +262,12 @@ const snapshotForm = CreateReactClass({
                 <Select
                   id="in_keyspace"
                   name="in_keyspace"
+                  classNamePrefix="select"
                   isClearable
                   isSearchable
                   options={this.state.keyspaceOptions}
                   placeholder="select a keyspace otherwise all keyspaces are selected"
                   onChange={this._handleKeyspaceSelectOnChange}
-                  className={{tagInputField: keyspaceInputStyle}}
                 />
               </div>
             </div>

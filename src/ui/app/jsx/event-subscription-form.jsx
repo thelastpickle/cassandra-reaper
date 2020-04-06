@@ -256,13 +256,13 @@ const subscriptionForm = CreateReactClass({
                   <Select
                     id="in_nodes"
                     name="in_nodes"
+                    classNamePrefix="select"
                     isClearable
                     isSearchable
                     isMulti
                     placeholder="Add a node"
                     options={this.state.nodeOptions}
                     onChange={this._handleSelectOnChange}
-                    className={{tagInputField: 'form-control'}}
                   />
                 </div>
               </div>
