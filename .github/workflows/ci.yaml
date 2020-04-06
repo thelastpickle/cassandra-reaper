@@ -17,13 +17,12 @@ name: CI
 
 on:
   push:
-    paths-ignore:
-      - "untagged-.**"
-      - "master-snapshot.**"
-#  pull_request:
-#    paths-ignore:
-#      - "untagged-.**"
-#      - "master-snapshot.**"
+    branches:
+      - master
+  pull_request:
+  release:
+    types:
+      - published
 
 jobs:
   build:
