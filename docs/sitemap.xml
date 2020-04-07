@@ -83,7 +83,15 @@
   </url>
   
   <url>
+    <loc>http://cassandra-reaper.io/docs/metrics/dashboards/</loc>
+  </url>
+  
+  <url>
     <loc>http://cassandra-reaper.io/docs/metrics/graphite/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/docs/metrics/prometheus/</loc>
   </url>
   
   <url>

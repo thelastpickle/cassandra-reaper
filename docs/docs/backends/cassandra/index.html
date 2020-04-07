@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.40.3" />
+  <meta name="generator" content="Hugo 0.29" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -250,7 +250,11 @@
     </a>
     <ul class="sub">
         
+        <li><a href="/docs/metrics/dashboards/"> Dashboards </a> </li>
+        
         <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
+        
+        <li><a href="/docs/metrics/prometheus/"> Prometheus </a> </li>
         
     </ul>
     
@@ -376,15 +380,15 @@ cassandra:
 <pre><code class="language-yaml">storageType: cassandra
 cassandra:
   clusterName: &quot;test&quot;
-  contactPoints: ["node1.cassandra.reaper.io", "node2.cassandra.reaper.io"]
+  contactPoints: [&quot;node1.cassandra.reaper.io&quot;, &quot;node2.cassandra.reaper.io&quot;]
   keyspace: reaper_db
   jmxAddressTranslator:
     type: multiIpPerNode
     ipTranslations:
-      - from: "10.10.10.111"
-        to: "node1.cassandra.reaper.io"
-      - from: "10.10.10.112"
-        to: "node2.cassandra.reaper.io"
+      - from: &quot;10.10.10.111&quot;
+        to: &quot;node1.cassandra.reaper.io&quot;
+      - from: &quot;10.10.10.112&quot;
+        to: &quot;node2.cassandra.reaper.io&quot;
 </code></pre>
 
 <p>When running multi region clusters in AWS, set type to <code>ec2MultiRegion</code> in order to use the EC2MultiRegionAddressTranslator from the Datastax Java Driver.</p>

@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.40.3" />
+  <meta name="generator" content="Hugo 0.29" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -250,7 +250,11 @@
     </a>
     <ul class="sub">
         
+        <li><a href="/docs/metrics/dashboards/"> Dashboards </a> </li>
+        
         <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
+        
+        <li><a href="/docs/metrics/prometheus/"> Prometheus </a> </li>
         
     </ul>
     
@@ -427,6 +431,13 @@ docker run \
 <pre><code class="language-bash">docker-compose run nodetool status
 </code></pre>
 
+<p>You can alternatively attach directly to the Cassandra container and run <code>nodetool status</code> from within it by running:</p>
+
+<pre><code class="language-bash">docker-compose exec cassandra /bin/bash
+</code></pre>
+
+<p>Now that you have a bash shell in the container, you can run <code>nodetool -u reaperUser -pwf /etc/cassandra/jmxremote.password</code>.</p>
+
 <p>Once the Cassandra node is online and accepting CQL connections, create the required <code>reaper_db</code> Cassandra keyspace to allow Reaper to save its cluster and scheduling data.</p>
 
 <p>By default, the <code>reaper_db</code> keyspace is created using a replication factor of 1. To change this replication factor, provide the intended replication factor as an optional argument:</p>
@@ -491,7 +502,8 @@ docker run \
 <pre><code class="language-bash">docker-compose run nodetool-ssl status
 </code></pre>
 
-<p>When adding the Cassandra node to the Reaper UI, the above commands can be used to find the node IP address.</p>
+<p>When adding the Cassandra node to the Reaper UI with the IP address, the above commands can be used to find the node IP address.
+You can also add the Cassandra node to the Reaper UI by hostname. The container&rsquo;s hostname is the docker-compose service name.</p>
 
 <p>A <code>cqlsh</code> Docker Compose service is included as well for both the default and SSL encrypted environments to allow the creation of user tables in Cassandra.</p>
 

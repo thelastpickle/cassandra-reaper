@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.40.3" />
+  <meta name="generator" content="Hugo 0.29" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -250,7 +250,11 @@
     </a>
     <ul class="sub">
         
+        <li><a href="/docs/metrics/dashboards/"> Dashboards </a> </li>
+        
         <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
+        
+        <li><a href="/docs/metrics/prometheus/"> Prometheus </a> </li>
         
     </ul>
     
@@ -337,6 +341,7 @@
   timeBeforeFirstSchedule: PT5M
   scheduleSpreadPeriod: PT6H
   excludedKeyspaces: [myTTLKeyspace, ...]
+  excludedClusters: [myCluster, ...]
 </code></pre>
 
 <p>Definitions for the above sub-settings are as follows.</p>
@@ -386,6 +391,14 @@
 <p>Type: <em>Array</em> (comma separated <em>Strings</em>)</p>
 
 <p>The Keyspaces that are to be excluded from the repair schedule.</p>
+
+<p><br/></p>
+
+<h4 id="excludedclusters"><code>excludedClusters</code></h4>
+
+<p>Type: <em>Array</em> (comma separated <em>Strings</em>)</p>
+
+<p>The Clusters that are to be excluded from the repair schedule.</p>
 
 <p><br/></p>
 
@@ -721,18 +734,19 @@ blocking in cause some thread is waiting for I/O, like calling a Cassandra clust
 
 <p><br/></p>
 
-<h3 id="jmxAddressTranslator"><code>jmxAddressTranslator</code></h3>
+<h3 id="jmxaddresstranslator"><code>jmxAddressTranslator</code></h3>
 
-<p><em><strong>Since 2.1.0</strong></em>
-Sometimes it’s not possible for Cassandra nodes to broadcast addresses that will work for each and every client; for instance, they might broadcast private IPs because most clients are in the same network, but a particular client could be on another network and go through a router. For such cases, you can configure a custom address translator that will perform additional address translation based on configured mapping.</p>
+<p><em><strong>Since 2.1.0</strong></em></p>
 
-<pre><code>jmxAddressTranslator:
+<p>Sometimes it’s not possible for Cassandra nodes to broadcast addresses that will work for each and every client; for instance, they might broadcast private IPs because most clients are in the same network, but a particular client could be on another network and go through a router. For such cases, you can configure a custom address translator that will perform additional address translation based on configured mapping.</p>
+
+<pre><code class="language-yaml">jmxAddressTranslator:
   type: multiIpPerNode
   ipTranslations:
-    - from: "10.10.10.111"
-      to: "node1.cassandra.reaper.io"
-    - from: "10.10.10.112"
-      to: "node2.cassandra.reaper.io"
+    - from: &quot;10.10.10.111&quot;
+      to: &quot;node1.cassandra.reaper.io&quot;
+    - from: &quot;10.10.10.112&quot;
+      to: &quot;node2.cassandra.reaper.io&quot;
 </code></pre>
 
 <p>When running multi region clusters in AWS, set type to <code>ec2MultiRegion</code> in order to use the EC2MultiRegionAddressTranslator from the Datastax Java Driver. This will allow translating the public address that the nodes broadcast to the private IP address that is used to expose JMX.</p>
@@ -765,6 +779,76 @@ No more than four threads are allowed by Cassandra.</p>
 <p>Default: <em>20</em></p>
 
 <p>Reaper will prevent repair from overwhelming the cluster when lots of SSTables are streamed, by pausing segment processing if there are more than a specific number of pending compactions. Adjust this setting if you have a lot of tables in the cluster and the total number of pending compactions is usually high.</p>
+
+<p><br/></p>
+
+<h3 id="cryptograph"><code>cryptograph</code></h3>
+
+<p>Optional settings to configure how confidential text (ie: passwords) are encyrpted/decrypted.</p>
+
+<pre><code>cryptograph:
+  type: symmetric
+  systemPropertySecret: SOME_SYSTEM_PROPERTY_KEY
+</code></pre>
+
+<h3 id="type"><code>type</code></h3>
+
+<p>The encryption technique used when encrypting, decrypting, or validating confidential text.  Symmetric encryption is the default.</p>
+
+<h3 id="algorithm"><code>algorithm</code></h3>
+
+<p>Type: <em>String</em></p>
+
+<p>Default: PBKDF2WithHmacSHA512</p>
+
+<p>The optional standard name of the requested secret-key algorithm. See the SecretKeyFactory section in the Java Cryptography Architecture Standard Algorithm Name Documentation for information about standard algorithm names.</p>
+
+<h3 id="cipher"><code>cipher</code></h3>
+
+<p>Type: <em>String</em></p>
+
+<p>Default: AES/CBC/PKCS5Padding</p>
+
+<p>The optional name of the transformation, e.g., AES/CBC/PKCS5Padding. See the Cipher section in the Java Cryptography Architecture Standard Algorithm Name Documentation for information about standard transformation names.</p>
+
+<h3 id="ciphertype"><code>cipherType</code></h3>
+
+<p>Type: <em>String</em></p>
+
+<p>Default: AES</p>
+
+<p>The optional name of the secret-key algorithm to be associated with the given key material. See Appendix A in the Java Cryptography Architecture Reference Guide for information about standard algorithm names.</p>
+
+<h3 id="iterationcount"><code>iterationCount</code></h3>
+
+<p>Type: Integer</p>
+
+<p>Default: 1024</p>
+
+<p>The optional number of times the password is hashed.</p>
+
+<h3 id="keystrength"><code>keyStrength</code></h3>
+
+<p>Type: Integer</p>
+
+<p>Default: 256</p>
+
+<p>The optional length in bits of the derived symmetric key</p>
+
+<h3 id="salt"><code>salt</code></h3>
+
+<p>Type: <em>String</em></p>
+
+<p>Default: deadbeef</p>
+
+<p>The optional salt used for creating the PBEKeySpec</p>
+
+<h3 id="systempropertysecret"><code>systemPropertySecret</code></h3>
+
+<p>Type: <em>String</em></p>
+
+<p>The key of a system property that holds the shared secret for the symmetric encryption.  If encrypted text is required, then this key and its value need to be defined in the environment before reaper can be started.<br />
+<code>export SOME_SYSTEM_PROPERTY_KEY=mysharedsecret</code></p>
 
                         </div>
 

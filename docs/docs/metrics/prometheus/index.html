@@ -57,13 +57,14 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs/configuration//" />
+  <meta property="og:url" content="/docs/metrics/prometheus//" />
   <meta property="og:image" content="" />
 
 </head>
 
 
   <body>
+
     <div id="all">
 
         <header>
@@ -157,10 +158,12 @@
 
 
         <div id="content">
+
+            
+
             <div class="container">
                 <div class="row">
-                    
-                    <div class = "col-md-3">
+                    <div class="col-md-3">
                         <ul class="sidebar-menu">
     
     
@@ -316,39 +319,114 @@
     
 </ul>
                     </div>
-                    <div class="col-md-9" id="blog-listing-medium">
 
-                        
+                    <div class="col-md-9">
+                        <div>
+                          
 
-<h1 id="configuration">Configuration</h1>
+<h2 id="prometheus">Prometheus</h2>
 
-<p>An example testing configuration YAML file can be found from within this project repository:
-<a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/resource/cassandra-reaper-cassandra.yaml">src/server/src/test/resources/cassandra-reaper.yaml</a>.</p>
+<p>Reaper exposes all its metrics in a Prometheus-ready format under the <code>/prometheusMetrics</code> endpoint on the admin port.</p>
 
-<p>The configuration file structure is provided by Dropwizard, and help on configuring the server, database connection, or logging, can be found on the <a href="http://www.dropwizard.io/1.1.0/docs/manual/configuration.html">Dropwizard Configuration Reference</a></p>
+<p>It&rsquo;s fairly straightforward to configure Prometheus to grab them. The config can look something like:</p>
 
-<p>The configuration is broken into the following sections:</p>
+<pre><code class="language-yaml">scrape_configs:
+  - job_name: 'reaper'
+    metrics_path: '/prometheusMetrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['host.docker.internal:8081']
+</code></pre>
 
 <ul>
-<li><a href="http://cassandra-reaper.io/docs/configuration/reaper_specific/">Reaper Specific</a> - Provides details on settings specific to Reaper.</li>
-<li><a href="http://cassandra-reaper.io/docs/configuration/backend_specific/">Backend Specific</a> - Provides details on settings specific to the different backends that can be used with Reaper; Cassandra, H2 and Postgres.</li>
-<li><a href="http://cassandra-reaper.io/docs/configuration/docker_vars/">Docker Variables</a> - Provides details on the Docker Variables that can be used to configure Reaper.</li>
+<li>The <code>host.docker.internal</code> tells a Prometheus instance running inside a docker container to connect to the host&rsquo;s <code>8081</code> port where Raper runs from a JAR.</li>
 </ul>
 
-<p>Note that Cassandra backend configuration relies on the <a href="https://github.com/composable-systems/dropwizard-cassandra">Dropwizard-Cassandra</a> module.</p>
+<h3 id="metric-relabelling">Metric Relabelling</h3>
 
+<p>Reaper doesn&rsquo;t do anything with the metrics. For practical purposes, it might be useful to relabel them. Here&rsquo;s an example of relabeling the metric tracking a repair progress.</p>
+
+<p>There are actually two kinds of this metric:</p>
+
+<pre><code>#1 io_cassandrareaper_service_RepairRunner_repairProgress_[cluster]_7c326d904ba811eaa7a0634758da0ae9 0.0
+#2 io_cassandrareaper_service_RepairRunner_repairProgress_[cluster]_[keyspace]_7c326d904ba811eaa7a0634758da0ae9 0.0
+</code></pre>
+
+<p>The difference is that #1 does not include the keyspace name. One way to handle this is to first drop #1 and then do relabeling only on #2.</p>
+
+<p>To drop #1, we can use the following item in the <code>metric_relabel_configs</code> list:</p>
+
+<pre><code class="language-yaml">metric_relabel_configs:
+  - source_labels: [__name__]
+    regex: &quot;io_cassandrareaper_service_RepairRunner_repairProgress_([^_]+)_([^_]+)$&quot;
+    action: drop 
+</code></pre>
+
+<ul>
+<li>We pick <code>__name__</code> as the <code>source_label</code>, meaning we try to match the <code>regex</code> against the whole name of the metric.</li>
+<li>We match for two groups after <code>repairProgress_</code> that are made of 1 or more characters that are not an <code>_</code>.</li>
+</ul>
+
+<p>Then, we can add the following:</p>
+
+<pre><code class="language-yaml">  - source_labels: [__name__]
+    regex: &quot;io_cassandrareaper_service_RepairRunner_repairProgress_(.*)_(.*)_(.*)&quot;
+    target_label: cluster
+    replacement: '${1}'
+  - source_labels: [__name__]
+    regex: &quot;io_cassandrareaper_service_RepairRunner_repairProgress_(.*)_(.*)_(.*)&quot;
+    target_label: keyspace
+    replacement: '${2}'
+  - source_labels: [__name__]
+    regex: &quot;io_cassandrareaper_service_RepairRunner_repairProgress_(.*)_(.*)_(.*)&quot;
+    target_label: runid
+    replacement: '${3}'
+</code></pre>
+
+<ul>
+<li>Once again, we match against the whole metric name.</li>
+<li>Each of the 3 items matches the same pattern that ends with three <code>_</code>-separated strings.</li>
+<li>However, each of the items adds a different label to the metric as specified by <code>target_label</code>.</li>
+<li>Finally, the <code>replacement</code> defines which matched group from <code>regex</code> to use as a value for the new label.</li>
+</ul>
+
+<p>With this setup, a metric that looks like:</p>
+
+<pre><code>io_cassandrareaper_service_RepairRunner_repairProgress_testcluster_tlpstress_7c326d904ba811eaa7a0634758da0ae9
+</code></pre>
+
+<p>Will get new labels:</p>
+
+<pre><code>io_cassandrareaper_service_RepairRunner_repairProgress_testcluster_tlpstress_7c326d904ba811eaa7a0634758da0ae9{cluster=&quot;testcluster&quot;, keyspace=&quot;tlpstress&quot;, run_id=&quot;7c326d904ba811eaa7a0634758da0ae9&quot;}
+</code></pre>
+
+<p>One last thing we might want to do is to modify the metric name itself. Not only we&rsquo;ll not have redundant information in our metrics, but we&rsquo;ll make querying for these metrics more convenient.</p>
+
+<p>To rename the metric, we use the same relabeling config, but target the <code>__name__</code> itself:</p>
+
+<pre><code class="language-yaml">  - source_labels: [__name__]
+    regex: &quot;io_cassandrareaper_service_RepairRunner_repairProgress_.*&quot;
+    target_label: __name__
+    replacement: &quot;io_cassandrareaper_service_RepairRunner_repairProgress&quot;
+</code></pre>
+
+<p>With this in place, our final metric will look like this:</p>
+
+<pre><code>io_cassandrareaper_service_RepairRunner_repairProgress{cluster=&quot;testcluster&quot;, keyspace=&quot;tlpstress&quot;, run_id=&quot;7c326d904ba811eaa7a0634758da0ae9&quot;}
+</code></pre>
+
+<p>Now, when building dashboards to monitor Reaper, we can simply query for <code>io_cassandrareaper_service_RepairRunner_repairProgress</code> and use the labels fro grouping etc.</p>
+
+                        </div>
 
                     </div>
-                    
-
-                    
-
-
-                    
 
                 </div>
                 
+
             </div>
+            
+
             
         </div>
         

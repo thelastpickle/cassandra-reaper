@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.40.3" />
+  <meta name="generator" content="Hugo 0.29" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -250,7 +250,11 @@
     </a>
     <ul class="sub">
         
+        <li><a href="/docs/metrics/dashboards/"> Dashboards </a> </li>
+        
         <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
+        
+        <li><a href="/docs/metrics/prometheus/"> Prometheus </a> </li>
         
     </ul>
     
@@ -411,6 +415,22 @@ This operation expects that a call was previously made to <code>/login</code> an
 <ul>
 <li><em>seedHost</em>: Host name or IP address of the added Cassandra
 clusters seed host.</li>
+<li><em>jmxPort</em>: A custom port that reaper will use to JMX into the Cluster.  Defaults to 7199.  (Optional)</li>
+</ul></li>
+<li>Adds a new cluster to the service, and returns the newly added cluster object, if the operation was successful. If the cluster is already registered, the list of host will be updated to match the current topology.</li>
+</ul></li>
+
+<li><p><strong>POST    /cluster/auth</strong></p>
+
+<ul>
+<li>Expected query parameters:
+
+<ul>
+<li><em>seedHost</em>: Host name or IP address of the added Cassandra
+clusters seed host.</li>
+<li><em>jmxPort</em>: A custom port that reaper will use to JMX into the Cluster.  Defaults to 7199.  (Optional)</li>
+<li><em>jmxUsername</em>: JMX Username specific to the Cluster.  Defaults to what is defined in <a href="http://cassandra-reaper.io/docs/configuration/reaper_specific/">configuration</a>.  (Optional)</li>
+<li><em>jmxUsername</em>: JMX Password specific to the Cluster.  Defaults to what is defined in <a href="http://cassandra-reaper.io/docs/configuration/reaper_specific/">configuration</a>.  (Optional)</li>
 </ul></li>
 <li>Adds a new cluster to the service, and returns the newly added cluster object, if the operation was successful. If the cluster is already registered, the list of host will be updated to match the current topology.
 <br />
@@ -424,9 +444,24 @@ clusters seed host.</li>
 
 <ul>
 <li><em>seedHost</em>: New host name or IP address used as Cassandra cluster seed.</li>
+<li><em>jmxPort</em>: A custom port that reaper will use to JMX into the Cluster.  Defaults to 7199.  (Optional)</li>
 </ul></li>
-<li>Modifies a cluster&rsquo;s seed host. Comes in handy when the previous seed has left the cluster.
-<br />
+<li>Adds a new cluster or modifies an existing cluster&rsquo;s seed host. Comes in handy when the previous seed has left the cluster.
+<br /></li>
+</ul></li>
+
+<li><p><strong>PUT     /cluster/auth/{cluster_name}</strong></p>
+
+<ul>
+<li>Expected query parameters:
+
+<ul>
+<li><em>seedHost</em>: New host name or IP address used as Cassandra cluster seed.</li>
+<li><em>jmxPort</em>: A custom port that reaper will use to JMX into the Cluster.  Defaults to 7199.  (Optional)</li>
+<li><em>jmxUsername</em>: JMX Username specific to the Cluster.  Defaults to what is defined in <a href="http://cassandra-reaper.io/docs/configuration/reaper_specific/">configuration</a>.  (Optional)</li>
+<li><em>jmxUsername</em>: JMX Password specific to the Cluster.  Defaults to what is defined in <a href="http://cassandra-reaper.io/docs/configuration/reaper_specific/">configuration</a>.  (Optional)</li>
+</ul></li>
+<li>Adds a new cluster or modifies an existing cluster&rsquo;s seed host. Comes in handy when the previous seed has left the cluster.
 <br /></li>
 </ul></li>
 
@@ -453,7 +488,9 @@ or the request will fail. Delete repair runs and schedules first before calling 
 <li>Optional query parameters:
 
 <ul>
-<li><em>state</em>: Comma separated list of repair run state names. Only names found in <code>io.cassandrareaper.core.RunState</code> are accepted.</li>
+<li><em>state</em>: Comma separated list of repair run state names. Only names found in <code>io.cassandrareaper.core.RunState</code> are accepted. (Optional)</li>
+<li><em>cluster_name</em>: Name of the Cassandra cluster. (Optional)</li>
+<li><em>keyspace_name</em>: The name of the table keyspace. (Optional)</li>
 </ul></li>
 <li>Returns a list of repair runs, optionally fetching only the ones with <em>state</em> state.
 <br />
@@ -572,7 +609,7 @@ Repair run and all the related repair segments will be deleted from the database
 <ul>
 <li><em>clusterName</em>: Filter the returned schedule list based on the given
 cluster name. (Optional)</li>
-<li><em>keyspaceName</em>: Filter the returned schedule list based on the given
+<li><em>keyspace</em>: Filter the returned schedule list based on the given
 keyspace name. (Optional)</li>
 </ul></li>
 <li>Returns all repair schedules present in the Reaper
@@ -609,7 +646,7 @@ keyspace name. (Optional)</li>
 <li><em>tables</em>: The name of the targeted tables (column families) as comma separated list.
         If no tables given, then the whole keyspace is targeted. (Optional)</li>
 <li><em>owner</em>: Owner name for the schedule. This could be any string identifying the owner.</li>
-<li><em>segmentCount</em>: Defines the amount of segments to create for scheduled repair runs. (Optional)</li>
+<li><em>segmentCountPerNode</em>: Defines the amount of segments per node to create for scheduled repair runs. (Optional)</li>
 <li><em>repairParallelism</em>: Defines the used repair parallelism for scheduled repair runs. (Optional)</li>
 <li><em>intensity</em>: Defines the repair intensity for scheduled repair runs. (Optional)</li>
 <li><em>incrementalRepair</em>: Defines if incremental repair should be done. <a href="Optional">true/false</a></li>
@@ -623,7 +660,14 @@ keyspace name. (Optional)</li>
 <li><em>blacklistedTables</em> : The name of the tables that should not be repaired. Cannot be used in conjunction with the tables parameter. (Optional)</li>
 <li><em>repairThreadCount</em> : Since Cassandra 2.2, repairs can be performed with up to 4 threads in order to parallelize the work on different token ranges. (Optional)</li>
 </ul></li>
-<li>Create and activate a scheduled repair.
+<li>Create and activate a scheduled repair.</li>
+</ul></li>
+
+<li><p><strong>POST    /repair_schedule/start/{id}</strong></p>
+
+<ul>
+<li>Expected query parameters: <em>None</em></li>
+<li>Force start a repair from a schedule.
 <br />
 <br /></li>
 </ul></li>
@@ -644,8 +688,9 @@ Delete all the related repair runs before calling this endpoint.
 <li><p><strong>PUT /repair_schedule/{id}</strong></p>
 
 <ul>
-<li>Expected query parameters: <em>None</em></li>
-<li>Returns the repair schedule objects for the given cluster.
+<li>Expected query parameters:</li>
+<li><em>state</em>: &ldquo;PAUSED&rdquo; or &ldquo;ACTIVE&rdquo;.</li>
+<li>Enables or disables the repair schedule.
 
 <br /></li>
 </ul></li>
@@ -720,6 +765,21 @@ Delete all the related repair runs before calling this endpoint.
 <li><em>snapshot_name</em>: name to use for the snapshot. (Optional)</li>
 </ul></li>
 <li>Create a snapshot on a specific host.</li>
+</ul></li>
+</ul>
+
+<h2 id="crypto-resource">Crypto Resource</h2>
+
+<ul>
+<li><strong>GET /crypto/encrypt/{text}</strong>
+
+<ul>
+<li>Expected query parameters:
+
+<ul>
+<li><em>text</em>: The text to encrypt.</li>
+</ul></li>
+<li>Encrypt text when cryptograph settings are configured in the reaper yaml.</li>
 </ul></li>
 </ul>
 
