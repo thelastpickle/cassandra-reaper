@@ -11,22 +11,12 @@ env:
   MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
 
 jobs:
-  automate-project-columns:
+  assign_one_project:
     runs-on: ubuntu-latest
+    name: Assign to TLP OSS Project
     steps:
-      - uses: alex-page/github-project-automation-plus@v0.2.2
-        with:
-          project: TLP OSS
-          column: Call me maybe
-          repo-token: ${{ secrets.MY_GITHUB_TOKEN }}
-
-#jobs:
-#  assign_one_project:
-#    runs-on: ubuntu-latest
-#    name: Assign to TLP OSS Project
-#    steps:
-#    - name: Assign NEW issues and NEW pull requests to project 1
-#      uses: srggrs/assign-one-project-github-action@1.2.0
-#      with:
-#        project: 'https://github.com/orgs/thelastpickle/projects/1'
+    - name: Assign NEW issues and NEW pull requests to project 1
+      uses: srggrs/assign-one-project-github-action@1.2.0
+      with:
+        project: 'https://github.com/orgs/thelastpickle/projects/1'
 #        column_name: 'Call me maybe'
