@@ -41,11 +41,13 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.fest.assertions.api.Assertions;
+import org.joda.time.DateTime;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -103,15 +105,32 @@ public final class RepairManagerTest {
 
     final RepairRun run = RepairRun.builder(clusterName, cf.getId())
             .intensity(intensity)
-            .segmentCount(1)
+            .segmentCount(3)
             .repairParallelism(RepairParallelism.PARALLEL)
             .tables(TABLES)
             .build(UUIDs.timeBased());
 
-    final RepairSegment segment = RepairSegment.builder(
+    final RepairSegment runningSegment = RepairSegment.builder(
                 Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())
+            .withState(RepairSegment.State.RUNNING)
+            .withStartTime(DateTime.now())
+            .build();
+
+    final RepairSegment startedSegment = RepairSegment.builder(
+                Segment.builder().withTokenRange(new RingRange("1", "2")).build(), cf.getId())
+            .withRunId(run.getId())
+            .withId(UUIDs.timeBased())
+            .withState(RepairSegment.State.STARTED)
+            .withStartTime(DateTime.now())
+            .build();
+
+    final RepairSegment notStartedSegment = RepairSegment.builder(
+                Segment.builder().withTokenRange(new RingRange("2", "3")).build(), cf.getId())
+            .withRunId(run.getId())
+            .withId(UUIDs.timeBased())
+            .withState(RepairSegment.State.NOT_STARTED)
             .build();
 
     context.repairManager.repairRunners.put(run.getId(), mock(RepairRunner.class));
@@ -119,13 +138,16 @@ public final class RepairManagerTest {
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
-    when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
+    when(context.storage.getSegmentsWithState(any(), eq(RepairSegment.State.STARTED)))
+        .thenReturn(Arrays.asList(startedSegment));
+    when(context.storage.getSegmentsWithState(any(), eq(RepairSegment.State.RUNNING)))
+        .thenReturn(Arrays.asList(runningSegment));
     when(((IDistributedStorage) context.storage).getLeaders()).thenReturn(Collections.emptyList());
 
     context.repairManager.resumeRunningRepairRuns();
 
     // Check that abortSegments was invoked is at least one segment, meaning abortion occurs
-    Mockito.verify(context.repairManager, Mockito.times(1)).abortSegments(Mockito.argThat(new NotEmptyList()), any());
+    Mockito.verify(context.repairManager, Mockito.times(2)).abortSegments(Mockito.argThat(new NotEmptyList()), any());
   }
 
   /**
@@ -187,22 +209,23 @@ public final class RepairManagerTest {
                 Segment.builder().withTokenRange(new RingRange("-1", "1")).build(), cf.getId())
             .withRunId(run.getId())
             .withId(UUIDs.timeBased())
+            .withState(RepairSegment.State.RUNNING)
+            .withStartTime(DateTime.now())
             .build();
 
     context.repairManager.repairRunners.put(run.getId(), mock(RepairRunner.class));
 
     Mockito.doNothing().when(context.repairManager).abortSegments(any(), any());
-    Mockito.doNothing().when(context.repairManager).abortSegments(any(), any());
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
-    when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
+    when(context.storage.getSegmentsWithState(any(), eq(RepairSegment.State.RUNNING))).thenReturn(Arrays.asList(segment));
     when(((IDistributedStorage) context.storage).getLeaders()).thenReturn(Arrays.asList(segment.getId()));
 
     context.repairManager.resumeRunningRepairRuns();
 
     // Check that abortSegments was invoked with an empty list, meaning no abortion occurs
-    Mockito.verify(context.repairManager, Mockito.times(1)).abortSegments(Mockito.argThat(new EmptyList()), any());
+    Mockito.verify(context.repairManager, Mockito.times(2)).abortSegments(Mockito.argThat(new EmptyList()), any());
   }
 
   /**
@@ -344,7 +367,7 @@ public final class RepairManagerTest {
     Mockito.doReturn(run).when(context.repairManager).startRepairRun(run);
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
-    when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
+    when(context.storage.getSegmentsWithState(any(), eq(RepairSegment.State.RUNNING))).thenReturn(Arrays.asList(segment));
 
     context.repairManager.resumeRunningRepairRuns();
 

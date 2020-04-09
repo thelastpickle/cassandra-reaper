@@ -160,6 +160,14 @@ public final class RepairManager implements AutoCloseable {
 
           abortSegmentsWithNoLeader(repairRun, runningSegments);
         });
+
+    runningRepairRuns
+        .forEach((repairRun) -> {
+          Collection<RepairSegment> startedSegments
+              = context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.STARTED);
+
+          abortSegmentsWithNoLeader(repairRun, startedSegments);
+        });
   }
 
   private void resumeUnkownRunningRepairRuns(Collection<RepairRun> runningRepairRuns) throws ReaperException {
