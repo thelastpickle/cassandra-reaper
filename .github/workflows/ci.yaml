@@ -331,7 +331,7 @@ jobs:
         elassandra-version: ['6.2.3.26']
         grim-min: [1]
         grim-max: [1]
-        cucumber-options: ['--tags ~@cassandra_4_0_onwards --tags ~@sidecar']
+        cucumber-options: ['--tags ~@cassandra_4_0_onwards']
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -675,7 +675,7 @@ jobs:
         elassandra-version: ['6.2.3.26']
         grim-min: [2]
         grim-max: [4]
-        cucumber-options: ['--tags ~@cassandra_4_0_onwards --tags ~@sidecar']
+        cucumber-options: ['--tags ~@cassandra_4_0_onwards']
     steps:
       - name: Checkout
         uses: actions/checkout@v1

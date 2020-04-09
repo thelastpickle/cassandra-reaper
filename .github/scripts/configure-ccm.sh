@@ -64,6 +64,9 @@ case "${TEST_TYPE}" in
         for i in `seq 1 2` ; do
           sed -i 's/LOCAL_JMX=yes/LOCAL_JMX=no/' ~/.ccm/test/node$i/conf/cassandra-env.sh
           sed -i 's/etc\/cassandra\/jmxremote.password/home\/runner\/.local\/jmxremote.password/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+          # relevant for elassandra, ensure the node's dc name matches the client
+          sed -i 's/DC1/dc1/' ~/.ccm/test/node$i/conf/cassandra-rackdc.properties
+          sed -i 's/PropertyFileSnitch/GossipingPropertyFileSnitch/' ~/.ccm/test/node$i/conf/cassandra.yaml
           configure_ccm $i
         done
         ;;

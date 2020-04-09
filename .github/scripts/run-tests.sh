@@ -39,9 +39,9 @@ case "${TEST_TYPE}" in
         mvn --version -B
         ps uax | grep cass
         ccm start -v --no-wait --skip-wait-other-notice || true
-        sleep 30
+        echo "${TEST_TYPE}" | grep -q ccm && sleep 30 || sleep 120
         ccm status
-
+        ccm node1 nodetool -- -u cassandra -pw cassandrapassword status
         case "${STORAGE_TYPE}" in
             "")
                 echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
