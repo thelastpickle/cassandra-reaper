@@ -19,4 +19,4 @@ jobs:
       uses: srggrs/assign-one-project-github-action@1.2.0
       with:
         project: 'https://github.com/orgs/thelastpickle/projects/1'
-#        column_name: 'Call me maybe'
+        column_name: To do
