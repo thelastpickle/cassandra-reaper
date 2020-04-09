@@ -1,0 +1,23 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Auto Assign to OSS project
+
+on:
+  issues:
+    types: opened
+  pull_request:
+    types: opened
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_SECRET }}
+
+jobs:
+  assign_one_project:
+    runs-on: ubuntu-latest
+    name: Assign to TLP OSS Project
+    steps:
+    - name: Assign NEW issues and NEW pull requests to project 1
+      uses: srggrs/assign-one-project-github-action@1.2.0
+      if: github.event.action == 'opened'
+      with:
+        project: 'https://github.com/orgs/thelastpickle/projects/1'
+        column_name: 'Call me maybe'
