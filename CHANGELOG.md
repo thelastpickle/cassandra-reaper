@@ -1,5 +1,10 @@
 ## Change Log
 
+### 2.0.4 (2020/04/10 12:43 +00:00)
+- [5acb462](https://github.com/thelastpickle/cassandra-reaper/commit/5acb462bcc326e733d10a8247c4a32fc0a3fdf09) Add Elassandra integration tests and fix typo in version number (@rzvoncek)
+- [64b786c](https://github.com/thelastpickle/cassandra-reaper/commit/64b786cbd81ad25b65e56872862ba75cf7672663) Treat started segments as running when aborting. (@smarsching)
+- [818c43b](https://github.com/thelastpickle/cassandra-reaper/commit/818c43b4c0cb14e252fe7602c8c4b19ee56125d4) Add timestamps to the file logger (@michaelsembwever)
+
 ### 2.0.3 (2020/03/02 06:12 +00:00)
 - [7774e4e](https://github.com/thelastpickle/cassandra-reaper/commit/7774e4eeaaac5af0598887ee62713882b65d3906) Fix large partitions in the metrics v2 table for the sidecar (@adejanovski)
 - [05e5f32](https://github.com/thelastpickle/cassandra-reaper/commit/05e5f3256fffed8005fe96647b1d482a815982eb) Avoid aborting repair segments too early. (@smarsching)
