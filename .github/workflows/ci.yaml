@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Setup Maven Cache
         uses: actions/cache@v1
@@ -98,7 +98,7 @@ jobs:
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Setup Maven Cache
         uses: actions/cache@v1
@@ -193,7 +193,7 @@ jobs:
             grim-max: 4
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Setup Maven Cache
         uses: actions/cache@v1
@@ -263,7 +263,7 @@ jobs:
         cucumber-options: ['--tags ~@cassandra_4_0_onwards']
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Setup Maven Cache
         uses: actions/cache@v1
@@ -333,7 +333,7 @@ jobs:
         cucumber-options: ['--tags ~@cassandra_4_0_onwards']
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Setup Maven Cache
         uses: actions/cache@v1
@@ -442,7 +442,7 @@ jobs:
             cassandra-version: 'github:apache/trunk'
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Setup Maven Cache
         uses: actions/cache@v1
@@ -523,7 +523,7 @@ jobs:
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Setup Maven Cache
         uses: actions/cache@v1
@@ -604,7 +604,7 @@ jobs:
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Setup Maven Cache
         uses: actions/cache@v1
@@ -677,7 +677,7 @@ jobs:
         cucumber-options: ['--tags ~@cassandra_4_0_onwards']
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Setup Maven Cache
         uses: actions/cache@v1
@@ -746,7 +746,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Setup Maven Cache
         uses: actions/cache@v1
