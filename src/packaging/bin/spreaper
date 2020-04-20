@@ -20,10 +20,8 @@ import getpass
 import json
 import logging
 import os
-import subprocess
 import urllib
 from urllib.parse import urlparse
-from urllib.parse import urljoin
 
 import sys
 import requests
@@ -79,7 +77,7 @@ class ReaperCaller(object):
         elif http_method == 'POST':
             r = requests.post(the_url, params=params, cookies=cookies, headers=HEADERS)
         elif http_method == 'POST_FORM':
-            r = requests.post(the_url, data=params)
+            r = requests.post(the_url, data=params, cookies=cookies, headers=HEADERS)
         elif http_method == 'PUT':
             r = requests.put(the_url, params=params, cookies=cookies, headers=HEADERS)
         elif http_method == 'DELETE':
@@ -442,8 +440,9 @@ class ReaperCLI(object):
     def get_password():
         password = None
         # Use the password from the file if it exists or prompt the user for it
-        if (os.path.exists(os.path.expanduser('~/.reaper/credentials'))):
-            password = file(os.path.expanduser('~/.reaper/credentials'),'rU').readline().rstrip("\r\n")
+        if os.path.exists(os.path.expanduser('~/.reaper/credentials')):
+            with open(os.path.expanduser('~/.reaper/credentials'), 'r') as f:
+                password = f.readline().rstrip("\r\n")
         else:
             password = getpass.getpass()
         
@@ -454,8 +453,9 @@ class ReaperCLI(object):
         jwt = None
         if args.jwt == None:
             # Use the password from the file if it exists or prompt the user for it
-            if (os.path.exists(os.path.expanduser('~/.reaper/jwt'))):
-                jwt = file(os.path.expanduser('~/.reaper/jwt'),'rU').readline().rstrip("\r\n")
+            if os.path.exists(os.path.expanduser('~/.reaper/jwt')):
+                with open(os.path.expanduser('~/.reaper/jwt'), 'r') as f:
+                    jwt = f.readline().rstrip("\r\n")
         else:
             jwt = args.jwt
         
@@ -688,10 +688,12 @@ class ReaperCLI(object):
             "Register a cluster.",
             extra_arguments=_arguments_for_add_cluster
         )
-        printq("# Registering Cassandra cluster with seed host: {0} and jmx port : {1}".format(args.seed_host, args.jmx_port))
-        payload = {'seedHost':args.seed_host, 'jmxPort':args.jmx_port, 'jmxUsername':args.jmx_username, 'jmxPassword':args.jmx_password}
-        cluster_data = reaper.postFormData("cluster/auth", 
-                            payload=payload)
+        printq("# Registering Cassandra cluster with seed host: {0} and jmx port: {1}".format(args.seed_host, args.jmx_port))
+        payload = {'seedHost': args.seed_host,
+                   'jmxPort': args.jmx_port,
+                   'jmxUsername': args.jmx_username,
+                   'jmxPassword': args.jmx_password}
+        cluster_data = reaper.postFormData("cluster/auth", payload=payload)
         printq("# Registration succeeded:")
         print(json.dumps(json.loads(cluster_data), indent=2, sort_keys=True))
 
