@@ -88,6 +88,11 @@ ADD configure-webui-authentication.sh /usr/local/bin/configure-webui-authenticat
 ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
 ADD spreaper /usr/local/bin/spreaper
 
+
+# get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper.yml: Interrupted system call` unknown error
+RUN touch /etc/cassandra-reaper.yml
+
+
 RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
     mkdir -p /var/lib/cassandra-reaper && \
     mkdir -p /etc/cassandra-reaper/shiro && \
