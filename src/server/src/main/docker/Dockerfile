@@ -37,6 +37,7 @@ ENV REAPER_SEGMENT_COUNT=200 \
     REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS=PT10M \
     REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE=PT5M \
     REAPER_AUTO_SCHEDULING_SCHEDULE_SPREAD_PERIOD=PT6H \
+    REAPER_AUTO_SCHEDULING_EXCLUDED_CLUSTERS="[]" \
     REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES="[]" \
     REAPER_JMX_PORTS="{}" \
     REAPER_JMX_AUTH_USERNAME="" \
@@ -76,9 +77,9 @@ ENV REAPER_SEGMENT_COUNT=200 \
 
 # used to run spreaper cli
 RUN apk add --update \
-    python \
-    py-pip \
-  && pip install requests \
+    python3 \
+    py3-pip \
+  && pip3 install requests \
   && rm -rf /var/cache/apk/*
 
 
