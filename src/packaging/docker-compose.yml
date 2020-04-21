@@ -167,3 +167,10 @@ services:
       - ./docker-services/reaper-in-memory/reaper-in-memory.env
     links:
       - cassandra
+
+  register-clusters:
+    image: cassandra-reaper:latest
+    links:
+      - cassandra
+      - reaper-in-memory
+    command: ["register-clusters", "cassandra:7199", "reaper-in-memory", "8080"]

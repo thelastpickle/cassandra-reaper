@@ -29,6 +29,7 @@ The Docker environment variables listed in this section map directly to Reaper s
 <code class="codeLarge">REAPER_INCREMENTAL_REPAIR</code> | [incrementalRepair]({{< relref "reaper_specific.md#incrementalrepair" >}}) | false
 <code class="codeLarge">REAPER_JMX_AUTH_PASSWORD</code> | [password]({{< relref "reaper_specific.md#password" >}}) |
 <code class="codeLarge">REAPER_JMX_AUTH_USERNAME</code> | [username]({{< relref "reaper_specific.md#username" >}}) |
+<code class="codeLarge">REAPER_JMX_CREDENTIALS</code> | [jmxCredentials]({{< relref "reaper_specific.md#jmxcredentials" >}}) |
 <code class="codeLarge">REAPER_JMX_CONNECTION_TIMEOUT_IN_SECONDS</code> | [jmxConnectionTimeoutInSeconds]({{< relref "reaper_specific.md#jmxconnectiontimeoutinseconds" >}}) | 20
 <code class="codeLarge">REAPER_JMX_PORTS</code> | [jmxPorts]({{< relref "reaper_specific.md#jmxports" >}}) | {}
 <code class="codeLarge">REAPER_LOGGING_APPENDERS_CONSOLE_LOG_FORMAT</code> | [logFormat]({{< relref "reaper_specific.md#logformat" >}}) | "%-6level [%d] [%t] %logger{5} - %msg %n"
