@@ -209,7 +209,7 @@ The cluster name must match the one defined in the cassandra.yaml file (in the e
 Adding a new cluster with specific credentials requires to add the seed node in the following format : `host@cluster`
 To match the example above, it could be something like : `10.0.10.5@clusterProduction1`
 
-
+When passed in as an environment variable, Reaper expects a comma-separated list of `user:password@cluster`.
 
 ### `jmxConnectionTimeoutInSeconds`
 
