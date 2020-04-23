@@ -377,6 +377,18 @@ git push origin 1.4 master --atomic
 <li>Forward port (without carrying the changes) the release to master. Use the following commands: <code>git checkout master; git merge &lt;release-branch&gt; -s ours; git push</code></li>
 </ul>
 
+<h1 id="releasing-docs">Releasing Docs</h1>
+
+<p>The <a href="http://cassandra-reaper.io/">cassandra-reaper.io</a> pages are not updated automatically when doing a release. Deploying new docs is a manual process for now. To do the deploy:</p>
+
+<ul>
+<li>Ensure you&rsquo;re on <code>master</code> branch that&rsquo;s up to date with the upstream repo.</li>
+<li>Navigate to the <code>src/docs</code>.</li>
+<li>Run <code>make build</code>.</li>
+<li>Commit changes in the <code>docs</code> folder (relative to the root of the repository).</li>
+<li>Open a PR with the changes <s>or ninja push to master</s>.</li>
+</ul>
+
                         </div>
 
                     </div>
