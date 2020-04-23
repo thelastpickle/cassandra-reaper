@@ -54,3 +54,12 @@ Cutting a release involves the following steps.
 - On the GitHub release page, edit the description to include the changelog from above for the latest version.
 - Forward port (without carrying the changes) the release to master. Use the following commands: `git checkout master; git merge <release-branch> -s ours; git push`
 
+# Releasing Docs
+
+The [cassandra-reaper.io](http://cassandra-reaper.io/) pages are not updated automatically when doing a release. Deploying new docs is a manual process for now. To do the deploy:
+
+- Ensure you're on `master` branch that's up to date with the upstream repo.
+- Navigate to the `src/docs`.
+- Run `make build`.
+- Commit changes in the `docs` folder (relative to the root of the repository).
+- Open a PR with the changes <s>or ninja push to master</s>.
