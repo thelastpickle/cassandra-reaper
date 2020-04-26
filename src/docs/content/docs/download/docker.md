@@ -95,6 +95,31 @@ The Docker Compose services available allow for orchestration of an environment 
 
 In addition to the environment using Reaper's default settings, Docker Compose services are provided that allow orchestration of an environment in which the connections between Reaper and Cassandra are SSL encrypted. The services which create this environment contain a `-ssl` suffix in their name.
 
+It is also possible to automate registering the Cassandra cluster with Reaper and making Reaper start repairing non-system keyspaces automatically. To register a cluster, run the Reaper image with the `register-cluster` command:
+
+```yaml
+  register-clusters:
+    image: cassandra-reaper:latest
+    links:
+      - cassandra
+      - reaper-in-memory
+    command: ["register-clusters", "cassandra:7199", "reaper-in-memory", "8080"]
+``` 
+
+The `register-clusters` arguments are:
+
+- `cassandra:7199` - host and (JMX) port of a node in the cluster we want to register.
+- `reaper-in-memory` - hostname of the Reaper instance.
+- `8080` - the port on which Reaper listens on.
+
+To make Reaper automatically start repairs, make sure the following environment variables are set:
+
+```bash
+REAPER_AUTO_SCHEDULING_ENABLED="True"
+REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE="PT1M"
+REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS="PT1M"
+```
+
 All available Docker Compose services can be found in the [docker-compose.yml](https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/docker-compose.yml) file.
 
 

@@ -412,6 +412,31 @@ docker run \
 
 <p>In addition to the environment using Reaper&rsquo;s default settings, Docker Compose services are provided that allow orchestration of an environment in which the connections between Reaper and Cassandra are SSL encrypted. The services which create this environment contain a <code>-ssl</code> suffix in their name.</p>
 
+<p>It is also possible to automate registering the Cassandra cluster with Reaper and making Reaper start repairing non-system keyspaces automatically. To register a cluster, run the Reaper image with the <code>register-cluster</code> command:</p>
+
+<pre><code class="language-yaml">  register-clusters:
+    image: cassandra-reaper:latest
+    links:
+      - cassandra
+      - reaper-in-memory
+    command: [&quot;register-clusters&quot;, &quot;cassandra:7199&quot;, &quot;reaper-in-memory&quot;, &quot;8080&quot;]
+</code></pre>
+
+<p>The <code>register-clusters</code> arguments are:</p>
+
+<ul>
+<li><code>cassandra:7199</code> - host and (JMX) port of a node in the cluster we want to register.</li>
+<li><code>reaper-in-memory</code> - hostname of the Reaper instance.</li>
+<li><code>8080</code> - the port on which Reaper listens on.</li>
+</ul>
+
+<p>To make Reaper automatically start repairs, make sure the following environment variables are set:</p>
+
+<pre><code class="language-bash">REAPER_AUTO_SCHEDULING_ENABLED=&quot;True&quot;
+REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE=&quot;PT1M&quot;
+REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS=&quot;PT1M&quot;
+</code></pre>
+
 <p>All available Docker Compose services can be found in the <a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/docker-compose.yml">docker-compose.yml</a> file.</p>
 
 <h3 id="default-settings-environment">Default Settings Environment</h3>
