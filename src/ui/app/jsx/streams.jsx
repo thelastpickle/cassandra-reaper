@@ -16,7 +16,7 @@
 import React from "react";
 import CreateReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
-import Table from 'react-bootstrap/Table';
+import Table from 'react-bootstrap/lib/Table';
 import Stream from 'jsx/stream';
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
 import $ from "jquery";

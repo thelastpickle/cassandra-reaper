@@ -17,8 +17,8 @@ import React from "react";
 import CreateReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import Select from 'react-select';
-import ProgressBar from 'react-bootstrap/ProgressBar';
-import Table from 'react-bootstrap/Table';
+import ProgressBar from 'react-bootstrap/lib/ProgressBar';
+import Table from 'react-bootstrap/lib/Table';
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
 
 const Stream = CreateReactClass({

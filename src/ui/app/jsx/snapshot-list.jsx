@@ -19,12 +19,12 @@ import PropTypes from 'prop-types';
 import moment from "moment";
 import {CFsListRender, getUrlPrefix, humanFileSize, toast} from "jsx/mixin";
 import NodeStatus from "jsx/node-status";
-import ProgressBar from 'react-bootstrap/ProgressBar';
-import Button from 'react-bootstrap/Button';
-import Modal from 'react-bootstrap/Modal';
+import ProgressBar from 'react-bootstrap/lib/ProgressBar';
+import Button from 'react-bootstrap/lib/Button';
+import Modal from 'react-bootstrap/lib/Modal';
 import snapshotScreen from "./snapshot-screen";
-import Popover from 'react-bootstrap/Popover';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Popover from 'react-bootstrap/lib/Popover';
+import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger';
 var NotificationSystem = require('react-notification-system');
 
 const TableRow = CreateReactClass({

@@ -178,7 +178,7 @@ module.exports = {
     new webpack.NoEmitOnErrorsPlugin(),
     new webpack.DefinePlugin({
       'GLOBAL_REAPER_HOST': JSON.stringify(reaperHost),
-      'GLOBAL_IS_DEV': isDev === "1" ? true : false,
+      'GLOBAL_IS_DEV': isDev,
     }),
   ],
   optimization: {

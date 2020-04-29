@@ -19,9 +19,9 @@ import CreateReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import NodeStatus from "jsx/node-status";
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix} from "jsx/mixin";
-import Modal from 'react-bootstrap/Modal';
-import ProgressBar from 'react-bootstrap/ProgressBar';
-import Badge from 'react-bootstrap/Badge';
+import Modal from 'react-bootstrap/lib/Modal';
+import ProgressBar from 'react-bootstrap/lib/ProgressBar';
+import Badge from 'react-bootstrap/lib/Badge';
 import $ from "jquery";
 var NotificationSystem = require('react-notification-system');
 
@@ -168,12 +168,13 @@ const Cluster = CreateReactClass({
       <div className="panel panel-default" style={clusterDisplayStyle}>
         <div className="panel-body">
           <div className="row">
+            <div className="col-lg-12">
+              <a className="btn btn-lg btn-default" href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name}</h4></a><br/><br/>  
+            </div>
+          </div>
+          
+          <div className="row">
             <div className="col-lg-2">
-              <div className="row">
-                <div className="col-lg-8">
-                  <a className="btn btn-lg btn-default" href={'repair.html?currentCluster=' + this.props.name}><h4>{this.props.name}</h4></a>
-                </div>
-              </div>
               <div className="font-bold">Nodes: <span className="badge">{nbNodes}</span></div>
               <div className="font-bold">Total load: <span className="badge">{humanFileSize(totalLoad,1024)}</span></div>
               <div className="font-bold">Running repairs: {runningRepairsBadge}</div>

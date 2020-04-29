@@ -16,9 +16,9 @@
 import React from "react";
 import CreateReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
-import Table from 'react-bootstrap/Table';
+import Table from 'react-bootstrap/lib/Table';
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
-import ProgressBar from 'react-bootstrap/ProgressBar';
+import ProgressBar from 'react-bootstrap/lib/ProgressBar';
 import $ from "jquery";
 
 const ActiveCompactions = CreateReactClass({
