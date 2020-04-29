@@ -20,7 +20,6 @@ import moment from "moment";
 import {CFsListRender, getUrlPrefix, humanFileSize, toast} from "jsx/mixin";
 import NodeStatus from "jsx/node-status";
 import ProgressBar from 'react-bootstrap/lib/ProgressBar';
-import Button from 'react-bootstrap/lib/Button';
 import Modal from 'react-bootstrap/lib/Modal';
 import snapshotScreen from "./snapshot-screen";
 import Popover from 'react-bootstrap/lib/Popover';

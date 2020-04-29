@@ -16,7 +16,6 @@
 
 import React from "react";
 import CreateReactClass from 'create-react-class';
-import Button from 'react-bootstrap/lib/Button';
 import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger';
 import Tooltip from 'react-bootstrap/lib/Tooltip';
 
@@ -102,40 +101,57 @@ export const DeleteStatusMessageMixin = {
 };
 
 export const CFsListRender = CreateReactClass({
-    render: function() {
-        return (
-            <div>
-              <div>
-                {this.props.list.map(function(listValue){
-                    return <span key={listValue}>{listValue}</span>;
-                })}
-              </div>
-            </div>
-        )
-    }
+  render: function() {
+    return (
+      <div>
+        <div>
+          <p>
+            {
+              this.props.list.map(function(listValue) {
+                return (<span className="text-span-label" key={listValue}>{listValue}</span>);
+              })
+            }
+          </p>
+        </div>
+      </div>
+    )
+  }
 });
 
 export const CFsCountListRender = CreateReactClass({
   render: function() {
-      return (
-        <div>
-          <OverlayTrigger
-            placement="top"
-            overlay={
-              <Tooltip id={this.props.id + '-tooltip'}>
-                {this.props.list.sort().map(function(table){
+    const cfCountListLabel = (
+      <span className="text-span-label">
+        {this.props.list.length > 0 ? this.props.list.length : "All" } table{this.props.list.length === 1 ? "" : "s"}
+      </span>
+    );
+
+    let cfCountList = cfCountListLabel;
+
+    if (this.props.list.length) {
+      cfCountList = (
+        <OverlayTrigger
+          placement="top"
+          overlay={
+            <Tooltip id={this.props.id + '-tooltip'}>
+              {
+                this.props.list.sort().map(function(table) {
                   return <div key={table}>{table}</div>;
                 })
-                }
-              </Tooltip>
-            }
-          >
-            <Button variant="secondary" className="btn btn-xs repairs-done-accented-value">
-              {this.props.list.length > 0 ? this.props.list.length : "All" } table{this.props.list.length === 1 ? "" : "s"}
-            </Button>
-          </OverlayTrigger>
-        </div>
-      )
+              }
+            </Tooltip>
+          }
+        >
+          {cfCountListLabel}
+        </OverlayTrigger>
+      );
+    }
+
+    return (
+      <div>
+        {cfCountList}
+      </div>
+    )
   }
 });
 

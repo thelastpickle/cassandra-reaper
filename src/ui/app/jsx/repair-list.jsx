@@ -34,7 +34,7 @@ const TableRow = CreateReactClass({
   },
 
   segmentsButton: function(id) {
-    return <Button className="btn btn-xs btn-info" onClick={() => this._viewSegments(id)}>View segments</Button>
+    return <button className="btn btn-xs btn-info" onClick={() => this._viewSegments(id)}>View segments</button>
   },
 
   render: function() {

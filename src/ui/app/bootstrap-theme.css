@@ -34,6 +34,17 @@
   color: var(--btn-warning-bg);
 }
 
+.btn-static {
+  pointer-events: none;
+}
+
+.text-span-label {
+  margin: 5px;
+  padding: 5px;
+  color: var(--text-color);
+  background-color: var(--dropdown-header-color);
+}
+
 .btn-sm,
 .btn-xs {
   font-size: var(--font-size-small);
