@@ -28,7 +28,7 @@ const ActiveCompactions = CreateReactClass({
     },
 
     getInitialState() {
-      return {activeCompactions: [], scheduler: {}};
+      return {pendingCompactions: 0, activeCompactions: [], scheduler: {}};
     },
 
     UNSAFE_componentWillMount: function() {
@@ -48,9 +48,13 @@ const ActiveCompactions = CreateReactClass({
         dataType: 'json',
         complete: function(data) {
           try {
-            this.component.setState({activeCompactions: data.responseJSON});
+            this.component.setState({
+                pendingCompactions: data.responseJSON.pendingCompactions,
+                activeCompactions: data.responseJSON.activeCompactions
+            });
           } catch(error) {
-            this.component.setState({activeCompactions: []});
+            this.component.setState({pendingCompactions:-1, activeCompactions: []});
+            console.error('Error occurred while retrieving compaction stats:', error);
           }
         },
         error: function(data) {
@@ -104,8 +108,11 @@ const ActiveCompactions = CreateReactClass({
           </tr>
         )
       ;
+
+      const pendingCompactionsCnt = this.state.pendingCompactions;
   
-      return (<div className="col-lg-12"> 
+      return (<div className="col-lg-12">
+              <div> Pending Tasks: {pendingCompactionsCnt} </div>
               <Table striped bordered condensed hover>
                 {compactionsHeader}
                 <tbody>

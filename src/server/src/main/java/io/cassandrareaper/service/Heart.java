@@ -150,7 +150,7 @@ final class Heart implements AutoCloseable {
           if (context.config.getDatacenterAvailability() == DatacenterAvailability.SIDECAR) {
             // In sidecar mode we store metrics in the db on a regular basis
             metricsService.grabAndStoreGenericMetrics();
-            metricsService.grabAndStoreActiveCompactions();
+            metricsService.grabAndStoreCompactionStats();
             metricsService.grabAndStoreActiveStreams();
           }
         } catch (ExecutionException | InterruptedException | RuntimeException
