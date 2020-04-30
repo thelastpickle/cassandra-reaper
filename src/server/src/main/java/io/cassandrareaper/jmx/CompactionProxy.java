@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.management.JMException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ReflectionException;
 
@@ -93,4 +94,14 @@ public final class CompactionProxy {
     }
     return activeCompactions;
   }
+
+  public Integer getPendingCompactions() {
+    try {
+      return proxy.getPendingCompactions();
+    } catch (JMException e) {
+      LOG.warn(String.format("Could not fetch pending compactions from %s", proxy.getHost()));
+      return -1;
+    }
+  }
+
 }

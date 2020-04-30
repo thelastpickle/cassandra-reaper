@@ -21,7 +21,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.Compaction;
+import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.JmxStat;
@@ -439,20 +439,20 @@ public final class ClusterFacade {
    * List running compactions on a specific node either through JMX or through the backend.
    *
    * @param node the node to get the compactions from.
-   * @return a list of compactions
+   * @return a number of pending compactions and a list of compactions
    * @throws MalformedObjectNameException ¯\_(ツ)_/¯
    * @throws ReflectionException ¯\_(ツ)_/¯
    * @throws ReaperException any runtime exception we catch in the process
    * @throws InterruptedException in case the JMX connection gets interrupted
    * @throws IOException errors in parsing JSON encoded compaction objects
    */
-  public List<Compaction> listActiveCompactions(Node node)
+  public CompactionStats listActiveCompactions(Node node)
       throws MalformedObjectNameException, ReflectionException, ReaperException, InterruptedException {
 
     String nodeDc = getDatacenter(node);
     if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
       // We have direct JMX access to the node
-      return listActiveCompactionsDirect(node);
+      return listCompactionStatsDirect(node);
     } else {
       // We don't have access to the node through JMX, so we'll get data from the database
       LOG.info("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
@@ -460,7 +460,7 @@ public final class ClusterFacade {
       String compactionsJson = ((IDistributedStorage)context.storage)
           .listOperations(node.getClusterName(), OpType.OP_COMPACTION, node.getHostname());
 
-      return parseJson(compactionsJson, new TypeReference<List<Compaction>>(){});
+      return parseJson(compactionsJson, new TypeReference<CompactionStats>(){});
     }
   }
 
@@ -468,16 +468,20 @@ public final class ClusterFacade {
    * List running compactions on a specific node by connecting directly to it through JMX.
    *
    * @param node the node to get the compactions from.
-   * @return a list of compactions
+   * @return number of pending compactions and a list of active compactions
    * @throws MalformedObjectNameException ¯\_(ツ)_/¯
    * @throws ReflectionException ¯\_(ツ)_/¯
    * @throws ReaperException any runtime exception we catch in the process
    * @throws InterruptedException in case the JMX connection gets interrupted
    */
-  public List<Compaction> listActiveCompactionsDirect(Node node)
+  public CompactionStats listCompactionStatsDirect(Node node)
       throws ReaperException, MalformedObjectNameException, ReflectionException {
 
-    return CompactionProxy.create(connect(node), context.metricRegistry).listActiveCompactions();
+    CompactionProxy compactionProxy = CompactionProxy.create(connect(node), context.metricRegistry);
+    return CompactionStats.builder()
+        .withPending(compactionProxy.getPendingCompactions())
+        .withActive(compactionProxy.listActiveCompactions())
+        .build();
   }
 
   /**

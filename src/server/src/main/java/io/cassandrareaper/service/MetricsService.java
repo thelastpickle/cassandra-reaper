@@ -20,7 +20,7 @@ package io.cassandrareaper.service;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.Compaction;
+import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.JmxStat;
@@ -149,22 +149,22 @@ public final class MetricsService {
 
   }
 
-  void grabAndStoreActiveCompactions() throws JsonProcessingException, JMException, ReaperException {
+  void grabAndStoreCompactionStats() throws JsonProcessingException, JMException, ReaperException {
     Preconditions.checkState(
         context.config.isInSidecarMode(),
-        "grabAndStoreActiveCompactions() can only be called in sidecar");
+        "grabAndStoreCompactionStats() can only be called in sidecar");
 
     Node node = Node.builder().withHostname(context.getLocalNodeAddress()).build();
-    List<Compaction> activeCompactions = ClusterFacade.create(context).listActiveCompactionsDirect(node);
+    CompactionStats compactionStats = ClusterFacade.create(context).listCompactionStatsDirect(node);
 
     ((IDistributedStorage) context.storage)
         .storeOperations(
             localClusterName,
             OpType.OP_COMPACTION,
             context.getLocalNodeAddress(),
-            objectMapper.writeValueAsString(activeCompactions));
+            objectMapper.writeValueAsString(compactionStats));
 
-    LOG.debug("Grabbing and storing compactions for {}", context.getLocalNodeAddress());
+    LOG.debug("Grabbing and storing compaction stats for {}", context.getLocalNodeAddress());
   }
 
   void grabAndStoreActiveStreams() throws JsonProcessingException, ReaperException {
