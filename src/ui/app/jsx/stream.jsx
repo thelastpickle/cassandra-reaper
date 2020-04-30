@@ -35,7 +35,7 @@ const Stream = CreateReactClass({
     render: function() {
 
         const stream = this.props.stream;
-        const isActive = stream.completed ? false : true;
+        const isActive = stream.completed ? false : (stream.success ? true : false);
         const style = stream.success ? (stream.completed ? "success" : "info") : "danger";
         const state = stream.success ? (stream.completed ? "Done" : "Streaming") : "Error";
 
