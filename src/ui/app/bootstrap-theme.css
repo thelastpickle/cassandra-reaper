@@ -357,9 +357,8 @@ body {
   background-color: var(--body-bg) !important;
 }
 
-.progress-bar {
-  color: var(--text-color) !important;
-  background-color: var(--body-bg) !important;
+.progress {
+  white-space: nowrap;
 }
 
 .select__control {
