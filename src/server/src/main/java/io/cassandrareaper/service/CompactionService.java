@@ -19,12 +19,11 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
-import io.cassandrareaper.core.Compaction;
+import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.jmx.ClusterFacade;
 
-import java.util.List;
-
+import java.io.IOException;
 import javax.management.JMException;
 
 import org.slf4j.Logger;
@@ -45,10 +44,10 @@ public final class CompactionService {
     return new CompactionService(context);
   }
 
-  public List<Compaction> listActiveCompactions(Node host) throws ReaperException {
+  public CompactionStats listActiveCompactions(Node host) throws ReaperException {
     try {
       return ClusterFacade.create(context).listActiveCompactions(host);
-    } catch (JMException | RuntimeException | InterruptedException e) {
+    } catch (JMException | RuntimeException | InterruptedException | IOException e) {
       LOG.error("Failed listing compactions for host {}", host, e);
       throw new ReaperException(e);
     }
