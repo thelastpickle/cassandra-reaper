@@ -14,22 +14,24 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import Table from 'react-bootstrap/lib/Table';
 import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
 import ProgressBar from 'react-bootstrap/lib/ProgressBar';
 import $ from "jquery";
 
-const ActiveCompactions = React.createClass({
+const ActiveCompactions = CreateReactClass({
     propTypes: {
-      endpoint: React.PropTypes.string.isRequired,
-      clusterName: React.PropTypes.string.isRequired
+      endpoint: PropTypes.string.isRequired,
+      clusterName: PropTypes.string.isRequired
     },
 
     getInitialState() {
-      return {activeCompactions: [], scheduler: {}};
+      return {pendingCompactions: 0, activeCompactions: [], scheduler: {}};
     },
 
-    componentWillMount: function() {
+    UNSAFE_componentWillMount: function() {
       this._listActiveCompactions();
       this.setState({scheduler : setInterval(this._listActiveCompactions, 1000)});
     },
@@ -46,9 +48,13 @@ const ActiveCompactions = React.createClass({
         dataType: 'json',
         complete: function(data) {
           try {
-            this.component.setState({activeCompactions: data.responseJSON});
+            this.component.setState({
+                pendingCompactions: data.responseJSON.pendingCompactions,
+                activeCompactions: data.responseJSON.activeCompactions
+            });
           } catch(error) {
-            this.component.setState({activeCompactions: []});
+            this.component.setState({pendingCompactions:-1, activeCompactions: []});
+            console.error('Error occurred while retrieving compaction stats:', error);
           }
         },
         error: function(data) {
@@ -102,8 +108,11 @@ const ActiveCompactions = React.createClass({
           </tr>
         )
       ;
+
+      const pendingCompactionsCnt = this.state.pendingCompactions;
   
-      return (<div className="col-lg-12"> 
+      return (<div className="col-lg-12">
+              <div> Pending Tasks: {pendingCompactionsCnt} </div>
               <Table striped bordered condensed hover>
                 {compactionsHeader}
                 <tbody>

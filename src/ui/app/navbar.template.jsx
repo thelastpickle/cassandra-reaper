@@ -14,12 +14,14 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import Modal from 'react-bootstrap/lib/Modal';
 import Button from 'react-bootstrap/lib/Button';
 
-const NavBar = React.createClass({
+const NavBar = CreateReactClass({
   propTypes: {
-    switchTheme: React.PropTypes.func
+    switchTheme: PropTypes.func
   },
 
   getInitialState() {

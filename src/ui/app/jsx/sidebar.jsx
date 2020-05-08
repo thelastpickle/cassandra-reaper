@@ -15,19 +15,21 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import { clusterSelected } from '../observable.js';
 
-const sidebar = React.createClass({
+const sidebar = CreateReactClass({
   propTypes: {
-    logoutSubject: React.PropTypes.object.isRequired,
-    logoutResult: React.PropTypes.object.isRequired
+    logoutSubject: PropTypes.object.isRequired,
+    logoutResult: PropTypes.object.isRequired
   },
 
   getInitialState: function () {
     return {logoutResultMsg: null, currentCluster: null};
   },
 
-  componentWillMount: function () {
+  UNSAFE_componentWillMount: function () {
     this._logoutResultSubscription = this.props.logoutResult.subscribeOnNext(obs =>
         obs.subscribe(
         response => {

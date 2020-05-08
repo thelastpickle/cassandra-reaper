@@ -14,6 +14,9 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class'
+import PropTypes from 'prop-types';
+import Select from 'react-select';
 import moment from "moment";
 import ServerStatus from "jsx/server-status";
 import Sidebar from "jsx/sidebar";
@@ -23,23 +26,29 @@ import NavBar from "jsx/navbar";
 import {CFsListRender, getUrlPrefix, humanFileSize, toastPermanent} from "jsx/mixin";
 var NotificationSystem = require('react-notification-system');
 
-const SnapshotScreen = React.createClass({
+const SnapshotScreen = CreateReactClass({
   _notificationSystem: null,
   propTypes: {
-    clusterNames: React.PropTypes.object.isRequired,
-    currentCluster: React.PropTypes.string.isRequired,
-    switchTheme: React.PropTypes.func  
+    clusterNames: PropTypes.object.isRequired,
+    currentCluster: PropTypes.string.isRequired,
+    switchTheme: PropTypes.func
   },
 
   getInitialState: function() {
-    return {currentCluster:this.props.currentCluster=="undefined"?"all":this.props.currentCluster,
-            snapshots: {},  clusterNames:[],             
-            snapshotsSizeOnDisk:{}, snapshotsTrueSize:{},
-            totalSnapshotSizeOnDisk: 0, totalSnapshotTrueSize: 0,
-            refreshEnabled: !(this.props.currentCluster=='all')};
+    const currentClusterValue = !this.props.currentCluster ? "all" : this.props.currentCluster;
+    return {
+      currentCluster: currentClusterValue,
+      snapshots: {},
+      clusterNames: [],
+      snapshotsSizeOnDisk: {},
+      snapshotsTrueSize: {},
+      totalSnapshotSizeOnDisk: 0,
+      totalSnapshotTrueSize: 0,
+      refreshEnabled: !(currentClusterValue === "all")
+    };
   },
 
-  componentWillMount: function() {
+  UNSAFE_componentWillMount: function() {
     this._clusterNamesSubscription = this.props.clusterNames.subscribeOnNext(obs =>
       obs.subscribeOnNext(names => this.setState({clusterNames: names}))
     );
@@ -50,41 +59,41 @@ const SnapshotScreen = React.createClass({
   },
 
   componentDidMount: function() {
-    if(this.state.currentCluster!='all'){
+    if (this.state.currentCluster !== "all") {
         this._listSnapshots(this.state.currentCluster);
     }
     this._notificationSystem = this.refs.notificationSystem;
   },
 
   changeCurrentCluster : function(clusterName){
-    this.setState({currentCluster: clusterName,
-        refreshEnabled: !(clusterName=='all')});
+    this.setState({
+      currentCluster: clusterName,
+      refreshEnabled: !(clusterName === "all")
+    });
   },
 
-  _handleChange: function(e) {
-    var v = e.target.value;
-    var n = e.target.id.substring(3); // strip in_ prefix
+  _handleSelectOnChange: function(valueContext, actionContext) {
+    let newCurrentClusterValue = "all";
 
-    // update state
-    const state = this.state;
-    state[n] = v;
-    this.replaceState(state);
+    if (valueContext) {
+        newCurrentClusterValue = valueContext.value;
+    }
 
-    // validate
-    const valid = state.currentCluster;
-    this.changeCurrentCluster(this.state.currentCluster);
-    if (this.state.currentCluster != 'all') {
-      this.setState({refreshEnabled: true});
-      this._listSnapshots(this.state.currentCluster);
-    } else {
-      this.setState({refreshEnabled: false});
+    this.changeCurrentCluster(newCurrentClusterValue);
+
+    if (newCurrentClusterValue !== "all") {
+      this._listSnapshots(newCurrentClusterValue);
     }
   },
 
-  _listSnapshots: function() {
+  _handleRefreshClick: function() {
+    this._listSnapshots(this.state.currentCluster);
+  },
+
+  _listSnapshots: function(currentClusterValue) {
     this.setState({communicating: true});
     $.ajax({
-          url: getUrlPrefix(window.top.location.pathname) + '/snapshot/cluster/' + encodeURIComponent(this.state.currentCluster),
+          url: getUrlPrefix(window.top.location.pathname) + '/snapshot/cluster/' + encodeURIComponent(currentClusterValue),
           method: 'GET',
           component: this,
           success: function(data) {
@@ -104,7 +113,7 @@ const SnapshotScreen = React.createClass({
               
               }))
             });
-            
+
             this.component.setState({snapshotsSizeOnDisk:snapshotSizeOnDisk, snapshotsTrueSize:snapshotTrueSize,
                   totalSnapshotSizeOnDisk: 0, totalSnapshotTrueSize: 0});
           },
@@ -112,7 +121,7 @@ const SnapshotScreen = React.createClass({
             this.component.setState({communicating: false});
           },
           error: function(data) {
-            toastPermanent(this.component._notificationSystem, "Error : " + data.responseText, "error", this.component.state.currentCluster);
+            toastPermanent(this.component._notificationSystem, "Error : " + data.responseText, "error", currentClusterValue);
           }
       });
   },
@@ -126,7 +135,7 @@ const SnapshotScreen = React.createClass({
         display: "inline-block" 
     }
 
-    if (this.state.communicating==true) {
+    if (this.state.communicating) {
         progressStyle = {
             display: "inline-block"
         }
@@ -139,25 +148,29 @@ const SnapshotScreen = React.createClass({
     marginBottom: 0
   };
 
-  const clusterItems = this.state.clusterNames.sort().map(name =>
-    <option key={name} value={name}>{name}</option>
-  );
+  const selectClusterItems = this.state.clusterNames.sort().map(name => {
+      { return { value: name, label: name}; }
+  });
 
   const clusterFilter = <form className="form-horizontal form-condensed">
   <div className="form-group">
     <label htmlFor="in_currentCluster" className="col-sm-3 control-label">Filter cluster:</label>
     <div className="col-sm-7 col-md-5 col-lg-3">
-      <select className="form-control" id="in_currentCluster"
-        onChange={this._handleChange} value={this.state.currentCluster}>
-        <option key="all" value="all">Select a cluster...</option>
-        {clusterItems}
-      </select>
+      <Select
+          id="in_currentCluster"
+          name="in_currentCluster"
+          classNamePrefix="select"
+          isClearable={true}
+          placeholder={"Select a cluster ..."}
+          options={selectClusterItems}
+          onChange={this._handleSelectOnChange}
+      />
     </div>
     <div className="col-sm-5 col-md-3 col-lg-1">
     <button type="button" className="btn btn-success" style={refreshStyle}
-        onClick={this._listSnapshots} disabled={!this.state.refreshEnabled}>Refresh</button>
+        onClick={this._handleRefreshClick} disabled={!this.state.refreshEnabled}>Refresh</button>
     <button type="button" className="btn btn-success" style={progressStyle}
-        disabled="true">Refreshing...</button>
+        disabled={true}>Refreshing...</button>
     </div>
   </div>
 </form>

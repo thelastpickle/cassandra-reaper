@@ -15,6 +15,8 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import ServerStatus from "jsx/server-status";
 import Sidebar from "jsx/sidebar";
 import NavBar from "jsx/navbar";
@@ -23,37 +25,37 @@ import DiagEventsSubscriptionForm from "jsx/event-subscription-form";
 import DiagEventsSubscriptionList from "jsx/event-subscription-list";
 import DiagEventsList from "jsx/event-list";
 import {getUrlPrefix} from "jsx/mixin";
-import URL_PREFIX from "jsx/uicommon";
 
-const eventScreen = React.createClass({
+
+const eventScreen = CreateReactClass({
 
   propTypes: {
-    currentCluster: React.PropTypes.string.isRequired,
-    clusterNames: React.PropTypes.object.isRequired,
-    getClusterStatusSubject: React.PropTypes.object.isRequired,
-    clusterSelected: React.PropTypes.object.isRequired,
+    currentCluster: PropTypes.string.isRequired,
+    clusterNames: PropTypes.object.isRequired,
+    getClusterStatusSubject: PropTypes.object.isRequired,
+    clusterSelected: PropTypes.object.isRequired,
     // side-bar
-    logoutSubject: React.PropTypes.object.isRequired,
-    logoutResult: React.PropTypes.object.isRequired,
+    logoutSubject: PropTypes.object.isRequired,
+    logoutResult: PropTypes.object.isRequired,
     // event-subscription-form
-    clusterStatusResult: React.PropTypes.object.isRequired,
-    addSubscriptionSubject: React.PropTypes.object.isRequired,
-    addSubscriptionResult: React.PropTypes.object.isRequired,
+    clusterStatusResult: PropTypes.object.isRequired,
+    addSubscriptionSubject: PropTypes.object.isRequired,
+    addSubscriptionResult: PropTypes.object.isRequired,
     // event-subscription-list
-    eventSubscriptions: React.PropTypes.object.isRequired,
-    deleteSubscriptionSubject: React.PropTypes.object.isRequired,
-    deleteResult: React.PropTypes.object.isRequired,
+    eventSubscriptions: PropTypes.object.isRequired,
+    deleteSubscriptionSubject: PropTypes.object.isRequired,
+    deleteResult: PropTypes.object.isRequired,
     // event-list
-    diagnosticEvents: React.PropTypes.object.isRequired,
-    listenSubscriptionSubject: React.PropTypes.object.isRequired,
-    switchTheme: React.PropTypes.func
+    diagnosticEvents: PropTypes.object.isRequired,
+    listenSubscriptionSubject: PropTypes.object.isRequired,
+    switchTheme: PropTypes.func
   },
 
   getInitialState: function() {
     return {activeSubscription: null, activeEventSource: null};
   },
 
-  componentWillMount: function() {
+  UNSAFE_componentWillMount: function() {
 
     this._listenSubscription = this.props.listenSubscriptionSubject.subscribeOnNext(subscription => {
 
@@ -61,8 +63,8 @@ const eventScreen = React.createClass({
         this.state.activeEventSource.close();
       }
 
-      const URL_PREFIX = getUrlPrefix(window.top.location.pathname);
-      const source = new EventSource(`${URL_PREFIX}/diag_event/sse_listen/${subscription.id}`);
+      const urlPrefix = getUrlPrefix(window.top.location.pathname);
+      const source = new EventSource(`${urlPrefix}/diag_event/sse_listen/${subscription.id}`);
       const diagnosticEvents = this.props.diagnosticEvents;
       source.onmessage = function(event) {
         if(event.name === "ping") {

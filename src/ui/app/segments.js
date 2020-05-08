@@ -38,12 +38,13 @@ jQuery(document).ready(function($){
 
 
   let repairRunId: string = $.urlParam('repairRunId');
-  if(!repairRunId) {
+
+  if (!repairRunId) {
     repairRunId = '0';
   }
 
   ReactDOM.render(
-    React.createElement(SegmentList, {repairRunId, logoutSubject: logoutSubject, logoutResult: logoutResult, }),
+    React.createElement(SegmentList, {repairRunId, logoutSubject: logoutSubject, logoutResult: logoutResult}),
     document.getElementById('wrapper')
   );
 });

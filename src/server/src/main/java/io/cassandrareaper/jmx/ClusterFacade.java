@@ -22,6 +22,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Compaction;
+import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.JmxStat;
@@ -439,20 +440,20 @@ public final class ClusterFacade {
    * List running compactions on a specific node either through JMX or through the backend.
    *
    * @param node the node to get the compactions from.
-   * @return a list of compactions
+   * @return a number of pending compactions and a list of compactions
    * @throws MalformedObjectNameException ¯\_(ツ)_/¯
    * @throws ReflectionException ¯\_(ツ)_/¯
    * @throws ReaperException any runtime exception we catch in the process
    * @throws InterruptedException in case the JMX connection gets interrupted
    * @throws IOException errors in parsing JSON encoded compaction objects
    */
-  public List<Compaction> listActiveCompactions(Node node)
-      throws MalformedObjectNameException, ReflectionException, ReaperException, InterruptedException {
+  public CompactionStats listActiveCompactions(Node node)
+      throws MalformedObjectNameException, ReflectionException, ReaperException, InterruptedException, IOException {
 
     String nodeDc = getDatacenter(node);
     if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
       // We have direct JMX access to the node
-      return listActiveCompactionsDirect(node);
+      return listCompactionStatsDirect(node);
     } else {
       // We don't have access to the node through JMX, so we'll get data from the database
       LOG.info("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
@@ -460,7 +461,7 @@ public final class ClusterFacade {
       String compactionsJson = ((IDistributedStorage)context.storage)
           .listOperations(node.getClusterName(), OpType.OP_COMPACTION, node.getHostname());
 
-      return parseJson(compactionsJson, new TypeReference<List<Compaction>>(){});
+      return parseCompactionStats(compactionsJson);
     }
   }
 
@@ -468,16 +469,20 @@ public final class ClusterFacade {
    * List running compactions on a specific node by connecting directly to it through JMX.
    *
    * @param node the node to get the compactions from.
-   * @return a list of compactions
+   * @return number of pending compactions and a list of active compactions
    * @throws MalformedObjectNameException ¯\_(ツ)_/¯
    * @throws ReflectionException ¯\_(ツ)_/¯
    * @throws ReaperException any runtime exception we catch in the process
    * @throws InterruptedException in case the JMX connection gets interrupted
    */
-  public List<Compaction> listActiveCompactionsDirect(Node node)
+  public CompactionStats listCompactionStatsDirect(Node node)
       throws ReaperException, MalformedObjectNameException, ReflectionException {
 
-    return CompactionProxy.create(connect(node), context.metricRegistry).listActiveCompactions();
+    CompactionProxy compactionProxy = CompactionProxy.create(connect(node), context.metricRegistry);
+    return CompactionStats.builder()
+        .withPendingCompactions(compactionProxy.getPendingCompactions())
+        .withActiveCompactions(compactionProxy.listActiveCompactions())
+        .build();
   }
 
   /**
@@ -715,7 +720,7 @@ public final class ClusterFacade {
    * @throws IOException errors in parsing JSON encoded compaction objects
    */
   public List<StreamSession> listActiveStreams(Node node)
-      throws ReaperException, InterruptedException {
+      throws ReaperException, InterruptedException, IOException {
     String nodeDc = getDatacenter(node);
     if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
       // We have direct JMX access to the node
@@ -753,16 +758,38 @@ public final class ClusterFacade {
     return connect(cluster).getRangeToEndpointMap(keyspace);
   }
 
-  public static List<StreamSession> parseStreamSessionJson(String json) {
+  public static List<StreamSession> parseStreamSessionJson(String json) throws IOException {
     return parseJson(json, new TypeReference<List<StreamSession>>(){});
   }
 
-  private static <T> T parseJson(String json, TypeReference<T> ref) {
+  /**
+   * Parse the a JSON payload describing compactions.
+   * First we try to parse the more recent CompactionStats object.
+   * If that doesn't work, we try to parse the older List[Compaction] object. We do this because the storage
+   * might still have this payload, for example during Repaer version upgrade.
+   * @param json the payload to parse
+   * @return CompactionStats in both cases, possibly with pending compactions of -1 if storage had just the older list
+   * @throws IOException if parsing the JSON breaks
+   */
+  public static CompactionStats parseCompactionStats(String json) throws IOException {
+    try {
+      return parseJson(json, new TypeReference<CompactionStats>(){});
+    } catch (IOException e) {
+      // it can be that the storage had old format of compaction info, so we try to parse that
+      List<Compaction> compactions = parseJson(json, new TypeReference<List<Compaction>>() {});
+      return CompactionStats.builder()
+          .withPendingCompactions(-1)
+          .withActiveCompactions(compactions)
+          .build();
+    }
+  }
+
+  private static <T> T parseJson(String json, TypeReference<T> ref) throws IOException {
     try {
       return new ObjectMapper().readValue(json, ref);
     } catch (IOException e) {
-      LOG.error("error parsing json", e);
-      throw new RuntimeException(e);
+      LOG.error("Error parsing json", e);
+      throw e;
     }
   }
 

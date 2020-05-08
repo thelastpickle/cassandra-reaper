@@ -21,6 +21,8 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Compaction;
+import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.StreamSession;
 
 import java.io.IOException;
@@ -29,7 +31,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -112,4 +116,49 @@ public class ClusterFacadeTest {
 
     assertEquals("6b9d35b0-bab6-11e9-8e34-4d2f1172e8bc", list.get(0).getPlanId());
   }
+
+  @Test
+  public void parseListCompactionTest() throws IOException {
+    final ObjectMapper objectMapper = new ObjectMapper();
+    Compaction compaction = Compaction.builder()
+        .withId("foo")
+        .withKeyspace("ks")
+        .withTable("t")
+        .withProgress(64L)
+        .withTotal(128L)
+        .withType("Validation")
+        .withUnit("unit")
+        .build();
+    String compactionsJson = objectMapper.writeValueAsString(ImmutableList.of(compaction));
+    CompactionStats compactionStats = ClusterFacade.parseCompactionStats(compactionsJson);
+    assertEquals(-1L, compactionStats.getPendingCompactions().longValue());
+  }
+
+  @Test
+  public void parseCompactionStatsTest() throws IOException {
+    final ObjectMapper objectMapper = new ObjectMapper();
+    Compaction compaction = Compaction.builder()
+        .withId("foo")
+        .withKeyspace("ks")
+        .withTable("t")
+        .withProgress(64L)
+        .withTotal(128L)
+        .withType("Validation")
+        .withUnit("unit")
+        .build();
+    CompactionStats originalCompactionStats = CompactionStats.builder()
+        .withActiveCompactions(ImmutableList.of(compaction))
+        .withPendingCompactions(42)
+        .build();
+    String compactionJson = objectMapper.writeValueAsString(originalCompactionStats);
+    CompactionStats compactionStats = ClusterFacade.parseCompactionStats(compactionJson);
+    assertEquals(42L, compactionStats.getPendingCompactions().longValue());
+  }
+
+  @Test(expected = IOException.class)
+  public void parseCompactionStatsErrorTest() throws IOException {
+    String compactionJson = "{\"json\": \"thats_not_compactionstats\"}";
+    ClusterFacade.parseCompactionStats(compactionJson);
+  }
+
 }

@@ -15,7 +15,7 @@
 //  limitations under the License.
 
 import React from "react";
-import Button from 'react-bootstrap/lib/Button';
+import CreateReactClass from 'create-react-class';
 import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger';
 import Tooltip from 'react-bootstrap/lib/Tooltip';
 
@@ -79,7 +79,7 @@ export const StatusUpdateMixin = {
 
 export const DeleteStatusMessageMixin = {
 
-  componentWillMount: function() {
+  UNSAFE_componentWillMount: function() {
     this._deleteResultSubscription = this.props.deleteResult.subscribeOnNext(obs =>
       obs.subscribe(
         r => this.setState({deleteResultMsg: null}),
@@ -100,42 +100,58 @@ export const DeleteStatusMessageMixin = {
 
 };
 
-export const CFsListRender = React.createClass({
-    render: function() {
-        return (
-            <div className="ReactTags__tags">
-              <div className="ReactTags__selected">
-                {this.props.list.map(function(listValue){
-                    return <span className="ReactTags__tag" key={listValue}>{listValue}</span>;
-                })}
-              </div>
-            </div>
-        )
-    }
+export const CFsListRender = CreateReactClass({
+  render: function() {
+    return (
+      <div>
+        <div>
+          <p>
+            {
+              this.props.list.map(function(listValue) {
+                return (<span className="text-span-label" key={listValue}>{listValue}</span>);
+              })
+            }
+          </p>
+        </div>
+      </div>
+    )
+  }
 });
 
-export const CFsCountListRender = React.createClass({
+export const CFsCountListRender = CreateReactClass({
   render: function() {
-      return (
-          <div className="ReactTags__tags">
-            <div className="ReactTags__selected">
-              <OverlayTrigger
-                key={this.props.id}
-                placement="top"
-                overlay={
-                  <Tooltip id={`tooltip-bottom`}>
-                    {this.props.list.sort().map(function(table){
-                      return <div>{table}</div>;
-                    })
-                    }
-                  </Tooltip>
-                }
-              >
-                <Button variant="secondary" className="btn btn-xs">{this.props.list.length>0?this.props.list.length:"All"} table{this.props.list.length==1?"":"s"}</Button>
-              </OverlayTrigger>
-            </div>
-          </div>
-      )
+    const cfCountListLabel = (
+      <span className="text-span-label">
+        {this.props.list.length > 0 ? this.props.list.length : "All" } table{this.props.list.length === 1 ? "" : "s"}
+      </span>
+    );
+
+    let cfCountList = cfCountListLabel;
+
+    if (this.props.list.length) {
+      cfCountList = (
+        <OverlayTrigger
+          placement="top"
+          overlay={
+            <Tooltip id={this.props.id + '-tooltip'}>
+              {
+                this.props.list.sort().map(function(table) {
+                  return <div key={table}>{table}</div>;
+                })
+              }
+            </Tooltip>
+          }
+        >
+          {cfCountListLabel}
+        </OverlayTrigger>
+      );
+    }
+
+    return (
+      <div>
+        {cfCountList}
+      </div>
+    )
   }
 });
 
@@ -156,10 +172,9 @@ export const humanFileSize = function(bytes, si) {
 }
 
 export const getUrlPrefix = function(location) {
-  const isDev = location.includes('webpack-dev-server');
   const contextPath = location.includes('/webui') ? location.substring(0, location.indexOf("/webui")) : '';
-  const URL_PREFIX = isDev ? 'http://127.0.0.1:8080' : contextPath;
-  return URL_PREFIX;
+  // GLOBAL_* variables are defined and assigned in webpack. See webpack.config.js
+  return (GLOBAL_IS_DEV ? `http://${GLOBAL_REAPER_HOST}:8080` : contextPath);
 }
 
 export const toast = function(notificationSystem, message, type, uid) {

@@ -14,33 +14,28 @@
 //  limitations under the License.
 
 import React from "react";
+import CreateReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
+import Select from 'react-select';
 import ProgressBar from 'react-bootstrap/lib/ProgressBar';
 import Table from 'react-bootstrap/lib/Table';
-import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
-import { WithContext as ReactTags } from 'react-tag-input';
+import {DeleteStatusMessageMixin, CFsCountListRender, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
 
-const Stream = React.createClass({
+const Stream = CreateReactClass({
     propTypes: {
-        planId: React.PropTypes.string.isRequired,
-        direction: React.PropTypes.string.isRequired,
-        stream: React.PropTypes.object.isRequired
+        planId: PropTypes.string.isRequired,
+        direction: PropTypes.string.isRequired,
+        stream: PropTypes.object.isRequired
     },
 
     getInitialState() {
         return {communicating: false, collapsed: true};
     },
 
-    _tableTags: function(tables) {
-        const tags = tables.reduce((sum, item) => sum.concat({id: item, text: item}), [])
-        return (
-            <ReactTags tags={tags} readOnly={true} />
-        );
-    },
-
     render: function() {
 
         const stream = this.props.stream;
-        const isActive = stream.completed ? false : true;
+        const isActive = stream.completed ? false : (stream.success ? true : false);
         const style = stream.success ? (stream.completed ? "success" : "info") : "danger";
         const state = stream.success ? (stream.completed ? "Done" : "Streaming") : "Error";
 
@@ -60,8 +55,6 @@ const Stream = React.createClass({
             var directionText = "To: ";
         };
 
-        const tableTags = this._tableTags(tables)
-
         const peerWidth = {
             width: "10%"
         }
@@ -79,7 +72,7 @@ const Stream = React.createClass({
             <tr>
                 <td style={peerWidth}> <strong>{directionText} </strong> {stream.peer} </td>
                 <td style={planWidth}> <strong>PlanId: </strong> {this.props.planId} </td>
-                <td style={tableWidth}> <strong>Tables: </strong> {tableTags} </td>
+                <td style={tableWidth}> <CFsCountListRender list={tables} /> </td>
                 <td style={barWidth}> <ProgressBar now={progress} active={isActive} label={label} bsStyle={style} key={stream.id} /> </td>
             </tr>
         );
