@@ -57,6 +57,8 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -127,6 +129,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final VersionNumber version;
   private final UUID reaperInstanceId;
+
+  private final AtomicReference<Collection<Cluster>> clustersCache = new AtomicReference(Collections.EMPTY_SET);
+  private final AtomicLong clustersCacheAge = new AtomicLong(0);
 
   private final LoadingCache<UUID, RepairUnit> repairUnits = CacheBuilder.newBuilder()
       .build(new CacheLoader<UUID, RepairUnit>() {
@@ -518,15 +523,20 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public Collection<Cluster> getClusters() {
-    Collection<Cluster> clusters = Lists.<Cluster>newArrayList();
-    for (Row row : session.execute(new SimpleStatement(SELECT_CLUSTER).setIdempotent(Boolean.TRUE))) {
-      try {
-        clusters.add(parseCluster(row));
-      } catch (IOException ex) {
-        LOG.error("Failed parsing cluster {}", row.getString("name"), ex);
+    // cache the clusters list for ten seconds
+    if (System.currentTimeMillis() - clustersCacheAge.get() > TimeUnit.SECONDS.toMillis(10)) {
+      clustersCacheAge.set(System.currentTimeMillis());
+      Collection<Cluster> clusters = Lists.<Cluster>newArrayList();
+      for (Row row : session.execute(new SimpleStatement(SELECT_CLUSTER).setIdempotent(Boolean.TRUE))) {
+        try {
+          clusters.add(parseCluster(row));
+        } catch (IOException ex) {
+          LOG.error("Failed parsing cluster {}", row.getString("name"), ex);
+        }
       }
+      clustersCache.set(Collections.unmodifiableCollection(clusters));
     }
-    return clusters;
+    return clustersCache.get();
   }
 
   @Override
