@@ -41,6 +41,7 @@ public final class AppContext {
 
   public final UUID reaperInstanceId = UUID.randomUUID();
   public final AtomicBoolean isRunning = new AtomicBoolean(true);
+  public final AtomicBoolean isDistributed = new AtomicBoolean(false);
   public IStorage storage;
   public RepairManager repairManager;
   public SchedulingManager schedulingManager;

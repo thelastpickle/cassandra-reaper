@@ -50,24 +50,22 @@ public final class HeartTest {
   private static final int REPAIR_TIMEOUT_S = 60;
   private static final int RETRY_DELAY_S = 10;
 
-  @Test
+  @Test(expected = AssertionError.class)
   public void testBeat_nullStorage() throws ReaperException, InterruptedException {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     try (Heart heart = Heart.create(context)) {
       heart.beat();
-      Assertions.assertThat(heart.isCurrentlyUpdatingNodeMetrics().get()).isFalse();
     }
   }
 
-  @Test
+  @Test(expected = AssertionError.class)
   public void testBeat_memoryStorage() throws ReaperException, InterruptedException {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.storage = new MemoryStorage();
     try (Heart heart = Heart.create(context)) {
       heart.beat();
-      Assertions.assertThat(heart.isCurrentlyUpdatingNodeMetrics().get()).isFalse();
     }
   }
 
@@ -81,7 +79,6 @@ public final class HeartTest {
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
-      heart.beatMetrics();
       Awaitility.await().until(() -> {
         try {
           Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
@@ -109,7 +106,6 @@ public final class HeartTest {
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
-      heart.beatMetrics();
       Awaitility.await().until(() -> {
         try {
           Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
@@ -136,8 +132,8 @@ public final class HeartTest {
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph());
 
     try (Heart heart = Heart.create(context)) {
+      context.isDistributed.set(true);
       heart.beat();
-      heart.beatMetrics();
       Thread.sleep(500);
     }
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
@@ -167,8 +163,8 @@ public final class HeartTest {
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph());
 
     try (Heart heart = Heart.create(context)) {
+      context.isDistributed.set(true);
       heart.beat();
-      heart.beatMetrics();
       Thread.sleep(500);
     }
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
@@ -202,8 +198,8 @@ public final class HeartTest {
         .thenReturn(Collections.emptyList());
 
     try (Heart heart = Heart.create(context)) {
+      context.isDistributed.set(true);
       heart.beat();
-      heart.beatMetrics();
       Thread.sleep(500);
     }
 
@@ -254,8 +250,8 @@ public final class HeartTest {
     Mockito.when(context.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(hostConnectionCounters);
 
     try (Heart heart = Heart.create(context)) {
+      context.isDistributed.set(true);
       heart.beat();
-      heart.beatMetrics();
       Thread.sleep(500);
     }
 
@@ -312,8 +308,8 @@ public final class HeartTest {
     Mockito.when(context.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(nodeProxy);
 
     try (Heart heart = Heart.create(context)) {
+      context.isDistributed.set(true);
       heart.beat();
-      heart.beatMetrics();
       Thread.sleep(500);
     }
 
@@ -376,12 +372,11 @@ public final class HeartTest {
         });
 
     try (Heart heart = Heart.create(context, TimeUnit.SECONDS.toMillis(2))) {
+      context.isDistributed.set(true);
       heart.beat();
-      heart.beatMetrics();
       Assertions.assertThat(heart.isCurrentlyUpdatingNodeMetrics().get()).isTrue();
       Thread.sleep(2100);
       heart.beat();
-      heart.beatMetrics();
       Thread.sleep(500);
     }
 
