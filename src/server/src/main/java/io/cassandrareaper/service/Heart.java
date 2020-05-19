@@ -47,7 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-final class Heart implements AutoCloseable {
+public final class Heart implements AutoCloseable {
 
   private static final AtomicBoolean GAUGES_REGISTERED = new AtomicBoolean(false);
   private static final Logger LOG = LoggerFactory.getLogger(Heart.class);
@@ -66,7 +66,7 @@ final class Heart implements AutoCloseable {
     this.metricsService = MetricsService.create(context);
   }
 
-  static Heart create(AppContext context) throws ReaperException {
+  public static Heart create(AppContext context) throws ReaperException {
     return new Heart(context, DEFAULT_MAX_FREQUENCY);
   }
 
@@ -75,18 +75,18 @@ final class Heart implements AutoCloseable {
     return new Heart(context, maxBeatFrequencyMillis);
   }
 
-  synchronized void beat() {
-    if (context.storage instanceof IDistributedStorage
-        && lastBeat.get() + maxBeatFrequencyMillis < System.currentTimeMillis()) {
+  public synchronized void beat() {
+    assert context.storage instanceof IDistributedStorage : "only valid with IDistributedStorage backend";
 
+    if (lastBeat.get() + maxBeatFrequencyMillis < System.currentTimeMillis()) {
       lastBeat.set(System.currentTimeMillis());
       ((IDistributedStorage) context.storage).saveHeartbeat();
-    }
-  }
 
-  synchronized void beatMetrics() {
-    if (context.storage instanceof IDistributedStorage
-            && context.config.getDatacenterAvailability().isInCollocatedMode()) {
+      if (!context.isDistributed.get() && 1 < ((IDistributedStorage) context.storage).countRunningReapers()) {
+        context.isDistributed.set(true);
+      }
+    }
+    if (context.isDistributed.get() && context.config.getDatacenterAvailability().isInCollocatedMode()) {
       updateRequestedNodeMetrics();
     }
   }
@@ -107,8 +107,12 @@ final class Heart implements AutoCloseable {
   }
 
   private void updateRequestedNodeMetrics() {
-    Preconditions.checkArgument(context.storage instanceof IDistributedStorage);
-    //IDistributedStorage storage = ((IDistributedStorage) context.storage);
+    Preconditions.checkState(context.isDistributed.get(), "Only valid with multiple Reaper instances");
+
+    Preconditions.checkState(
+        context.config.getDatacenterAvailability().isInCollocatedMode(),
+        "metrics are fetched directly in ALL mode");
+
     registerGauges();
 
     if (!updatingNodeMetrics.getAndSet(true)) {

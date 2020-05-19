@@ -134,7 +134,9 @@ public final class DiagEventSubscriptionService {
   }
 
   private synchronized void updateEnabledEvents() {
-    updateEnabledEvents(Collections.emptySet());
+    if (context.isDistributed.get()) {
+      updateEnabledEvents(Collections.emptySet());
+    }
   }
 
   private synchronized void updateEnabledEvents(Set<String> filterByNode) {
