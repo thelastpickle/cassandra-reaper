@@ -40,9 +40,9 @@ then
     export REPO=thelastpickle/cassandra-reaper
     mvn -B -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
     docker tag cassandra-reaper:latest $REPO:master
-    #docker push $REPO:master
+    docker push $REPO:master
     docker tag cassandra-reaper:latest $REPO:$GIT_HASH
-    #docker push $REPO:$GIT_HASH
+    docker push $REPO:$GIT_HASH
 fi
 if [[ ${GITHUB_REF} == "refs/tags"* ]]
 then
@@ -63,7 +63,7 @@ then
     export REPO=thelastpickle/cassandra-reaper
     mvn -B -pl src/server/ docker:build -Ddocker.directory=src/server/src/main/docker
     docker tag cassandra-reaper:latest $REPO:latest
-    #docker push $REPO:latest
+    docker push $REPO:latest
     docker tag cassandra-reaper:latest $REPO:$VERSION
-    #docker push $REPO:$VERSION
+    docker push $REPO:$VERSION
 fi
