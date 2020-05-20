@@ -873,7 +873,7 @@ jobs:
         if: github.event_name == 'release' && github.event.action == 'published'
         env:
           GHR_PATH: src/packages
-          GITHUB_TOKEN: ${{ secrets.GITHUB_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload maven artifacts to Bintray
         run: |
