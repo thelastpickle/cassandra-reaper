@@ -42,15 +42,152 @@ For more information on the value of forward merging, and the principles of "mer
 
 # Cutting Releases
 
-Cutting a release involves the following steps.
+Cutting a release involves the following steps. You will see these terms referenced by the steps.
 
-- Check with the community if the codebase is ready for the release, this includes checking any outstanding issues or pull requests in progress.
-- For a major release, create the release branch off master. Release branches follow the naming: `1.0`, `1.1`, `1.2`, `1.3`, etc.
-- Check that the release branch has green build status on both Travis and CircleCI.
-- Update `CHANGELOG.md` using [github-change](https://github.com/lalitkapoor/github-changes) and the following command (editing and removing non-pertinent commits): `github-changes -o thelastpickle -r cassandra-reaper --use-commit-body -a -f changelog.tmp -b <sha-of-release> -v`
-- Create the release tag using the maven-release-plugin and the following command: `mvn release:prepare -Dtag=<release-version-number>`
-- Do not run `mvn release:perform`, as Travis will do the build and deployment of the released version tag.
-- Monitor the Travis build for the released version tag, ensuring the build succeeds through to the deployment task. This is the last task in the job.
-- On the GitHub release page, edit the description to include the changelog from above for the latest version.
-- Forward port (without carrying the changes) the release to master. Use the following commands: `git checkout master; git merge <release-branch> -s ours; git push`
+* `<RELEASE_BRANCH>` - The major version of the release branch you will be releasing from. e.g. `3.0`.
+* `<RELEASE_VERSION>` - The version of release you want to create. e.g. `3.0.7`.
 
+Where you see the term, substitute it for the value that applies to the release.
+
+### 1. Check if the code base is ready for release
+
+Check with the community if the codebase is ready for the release. This includes checking any outstanding issues or pull requests in progress.
+
+### 2. Change to the major release branch
+
+If you are cutting a new major release, you will need to create a new major release branch. Otherwise, you can simply change to the major release branch you want to release from.
+
+#### Create a new major release branch
+
+Run the following commands **only** if you are cutting a new major release. In this case, you will need to create a release branch off the `master` branch. Release branches follow the format: `1.0`, `1.1`, `1.2`, `1.3`, etc.
+
+```shell script
+$ git checkout master
+$ git pull --rebase --prune
+$ git checkout -b <RELEASE_BRANCH>
+$ git push origin <RELEASE_BRANCH>
+```
+
+#### Change to the major release branch
+
+Run the following command **only** if you are cutting a release from an existing major release branch. In this case, all you need to do is change to the major release branch.
+
+```shell script
+$ git checkout <RELEASE_BRANCH>
+```
+
+### 3. Check the build status
+
+Check the [build](https://github.com/thelastpickle/cassandra-reaper/actions?query=workflow%3ACI) for the major release branch you are creating the release from. It must have a green status before a release can be made. You can check this in GitHub actions.
+
+{{< screenshot src="/img/cutting_releases_step_3.png" />}}
+
+### 4. Update the change log
+
+Generate the changes to append to _CHANGELOG.md_. You will need to do this using [github-changes](https://github.com/lalitkapoor/github-changes). If this is your first time cutting a release you will probably need to install it. The [install instructions](https://github.com/lalitkapoor/github-changes#installation) are on its GitHub landing page.
+
+Run the following [github-changes](https://github.com/lalitkapoor/github-changes) command to get the list of changes for the release branch.
+
+```shell script
+$ github-changes \
+    -o thelastpickle \
+    -r cassandra-reaper \
+    --use-commit-body \
+    -f changelog.tmp \
+    -k <GITHUB_PERSONAL_ACCESS_TOKEN> \
+    -b <COMMIT_SHA> \
+    -v
+```
+
+Where:
+* `<GITHUB_PERSONAL_ACCESS_TOKEN>` - Your [GitHub Personal Access Token](https://github.blog/2013-05-16-personal-api-tokens/). There is documentation on [GitHub help](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) if you need to create one.
+* `<COMMIT_SHA>` - The SHA of the latest commit on the branch you want to release.
+
+The above command will write the changes for the release branch to a file named _changelog.tmp_. Use the following commands to extract the most recent set of changes that will go into this release. Remember to substitute `<RELEASE_VERSION>` on the first line below with the release version number.
+
+```shell script
+$ RELEASE_VERSION=<RELEASE_VERSION>
+$ BLOCK_START=$(grep -n -m 1 "###" changelog.tmp | cut -d':' -f1)
+$ BLOCK_END=$(grep -n -m 2 "###" changelog.tmp | cut -d':' -f1 | tail -n 1)
+$ head -n $((${BLOCK_END}-1)) changelog.tmp \
+    | tail -n $((${BLOCK_END}-${BLOCK_START})) \
+    | sed "s/^###\ upcoming/###\ ${RELEASE_VERSION}/g"
+```
+
+Copy the entries generated by the previous command and paste them in the _CHANGELOG.md_ file on the release branch. Specifically, paste the entries in between the `## Change Log` and the first release heading denoted by the `###`. Commit the updated _CHANGELOG.md_ to the branch with the specified comment and push to the remote repository.
+
+```shell script
+$ git add CHANGELOG.md
+$ git commit -m "Updated changelog for <RELEASE_VERSION>"
+$ git push origin <RELEASE_BRANCH>
+```
+
+### 5. Change the project version number
+
+The project version number makes up the name of a binary generated for the release. You will need to update it using Maven.
+
+```shell script
+$ mvn -B versions:set "-DnewVersion=<RELEASE_VERSION>"
+```
+
+Commit the changes to the branch with the specified comment and push to the remote repository.
+
+```shell script
+$ git add pom.xml
+$ git add src/server/pom.xml
+$ git commit -m "Release <RELEASE_VERSION>"
+$ git push origin <RELEASE_BRANCH>
+```
+
+### 6. Create the release tag
+
+Tag the release branch with the release version and push it to the remote repository. No CI build will launch when you run the following commands. This is because there is no trigger for CI to run when tags are pushed to the remote repository. 
+
+```shell script
+$ git tag <RELEASE_VERSION>
+$ git push origin <RELEASE_VERSION>
+```
+
+### 7. Create the GitHub release
+
+Navigate to the repository's [GitHub Tags](https://github.com/thelastpickle/cassandra-reaper/tags) page. Create a new release from the tag you created in the previous step.
+
+{{< screenshot src="/img/cutting_releases_step_7-01.png" />}}
+
+This will take you to a page where you can draft the release. Fill out the release form.
+* Add the `<RELEASE_VERSION>` to the Release title field.
+* Add the change entries you pasted into the _CHANGELOG.md_ in Step 4 to the Release description field.
+
+Then click the **Publish release** button.
+
+**WARNING**: This will trigger GitHub Actions to build and publish the release binaries!
+
+{{< screenshot src="/img/cutting_releases_step_7-02.png" />}}
+
+Monitor the [GitHub Actions](https://github.com/thelastpickle/cassandra-reaper/actions?query=workflow%3ACI+event%3Arelease) to confirm the release is successful.
+
+### 8. Forward merge release changes to `master`
+
+Apply the commits in the release to the `master` branch. To do this, you will need to know the SHA of each commit. You can get these from the _CHANGELOG.md_.
+
+```shell script
+$ BLOCK_START=$(grep -n -m 1 "###" CHANGELOG.md | cut -d':' -f1)
+$ BLOCK_END=$(grep -n -m 2 "###" CHANGELOG.md | cut -d':' -f1 | tail -n 1)
+$ head -n $((${BLOCK_END}-1)) CHANGELOG.md | tail -n $((${BLOCK_END}-${BLOCK_START}-1)) | sed 's/^.*\/\([a-f0-9]*\).*/\1/g'
+```
+
+Prepare to merge the commits into the `master` branch
+
+```shell script
+$ git checkout master
+$ git merge <RELEASE_BRANCH> -s ours
+```
+
+Cherry-pick each `SHA` in the above list of commits one at a time. Make any manual adjustments required as you apply each commit to the `master` branch. Push the changes to the remote repository.
+
+```shell script
+$ git cherry-pick -n <SHA>
+
+$ git commit -a --amend
+$ git push origin master
+```
