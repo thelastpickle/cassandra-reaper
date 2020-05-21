@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="en" class="js csstransforms3d">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="Hugo 0.69.2" />
+    <meta name="description" content="Cassandra Reaper documentation">
+
+
+    <link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon" />
+    <title>Development :: Reaper: Easy Repair Management for Apache Cassandra</title>
+
+    
+    <link href="/css/nucleus.css?1590085034" rel="stylesheet">
+    <link href="/css/fontawesome-all.min.css?1590085034" rel="stylesheet">
+    <link href="/css/hybrid.css?1590085034" rel="stylesheet">
+    <link href="/css/featherlight.min.css?1590085034" rel="stylesheet">
+    <link href="/css/perfect-scrollbar.min.css?1590085034" rel="stylesheet">
+    <link href="/css/auto-complete.css?1590085034" rel="stylesheet">
+    <link href="/css/atom-one-dark-reasonable.css?1590085034" rel="stylesheet">
+    <link href="/css/theme.css?1590085034" rel="stylesheet">
+    <link href="/css/hugo-theme.css?1590085034" rel="stylesheet">
+    
+      <link href="/css/theme-mine.css?1590085034" rel="stylesheet">
+    
+
+    <script src="/js/jquery-3.3.1.min.js?1590085034"></script>
+
+    <style>
+      :root #header + #content > #left > #rlblock_left{
+          display:none !important;
+      }
+      
+        :not(pre) > code + span.copy-to-clipboard {
+            display: none;
+        }
+      
+    </style>
+    
+  </head>
+  <body class="" data-url="/development/">
+    <nav id="sidebar" class="">
+
+
+
+  <div id="header-wrapper">
+    <div id="header">
+      <a href="/"><img src="/img/logo.png"  alt="Reaper logo"></a>
+    </div>
+    
+        <div class="searchbox">
+    <label for="search-by"><i class="fas fa-search"></i></label>
+    <input data-search-input id="search-by" type="search" placeholder="Search...">
+    <span data-search-clear=""><i class="fas fa-times"></i></span>
+</div>
+
+<script type="text/javascript" src="/js/lunr.min.js?1590085034"></script>
+<script type="text/javascript" src="/js/auto-complete.js?1590085034"></script>
+<script type="text/javascript">
+    
+        var baseurl = "http:\/\/cassandra-reaper.io\/";
+    
+</script>
+<script type="text/javascript" src="/js/search.js?1590085034"></script>
+
+    
+  </div>
+
+    <div class="highlightable">
+    <ul class="topics">
+
+        
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/install/" title="Build and Install" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/install/">
+          Build and Install
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/install/install/" title="Package Install Guide" class="dd-item ">
+        <a href="/install/install/">
+        Package Install and Setup
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/install/docker/" title="Docker Setup Guide" class="dd-item ">
+        <a href="/install/docker/">
+        Docker Build and Setup
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/install/upgrade/" title="Upgrade Guide" class="dd-item ">
+        <a href="/install/upgrade/">
+        Upgrade Guide
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/install/building/" title="Build from Source Guide" class="dd-item ">
+        <a href="/install/building/">
+        Build from Source
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/concepts/" title="Core Concepts" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/concepts/">
+          Core Concepts
+          
+      </a>
+      
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/backends/" title="Backends" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/backends/">
+          Backends
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/backends/memory/" title="In-Memory Backend" class="dd-item ">
+        <a href="/backends/memory/">
+        In-Memory
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/backends/h2/" title="H2 Backend" class="dd-item ">
+        <a href="/backends/h2/">
+        H2
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/backends/postgres/" title="Postgres Backend" class="dd-item ">
+        <a href="/backends/postgres/">
+        Postgres
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/backends/cassandra/" title="Cassandra Backend" class="dd-item ">
+        <a href="/backends/cassandra/">
+        Cassandra
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/configuration/" title="Configuration Reference" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/configuration/">
+          Configuration
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/configuration/reaper_specific/" title="Reaper Specific Settings" class="dd-item ">
+        <a href="/configuration/reaper_specific/">
+        Reaper Specific Settings
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/configuration/backend_specific/" title="Backend Specific Settings" class="dd-item ">
+        <a href="/configuration/backend_specific/">
+        Backend Specific Settings
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/configuration/docker_vars/" title="Docker Variables" class="dd-item ">
+        <a href="/configuration/docker_vars/">
+        Docker Variables
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/configuration/authentication/" title="Authentication" class="dd-item ">
+        <a href="/configuration/authentication/">
+        Authentication
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/metrics/" title="Metrics" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/metrics/">
+          Metrics
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/metrics/graphite/" title="Graphite Reporter" class="dd-item ">
+        <a href="/metrics/graphite/">
+        Graphite Reporter
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/usage/" title="Using Reaper" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/usage/">
+          Using Reaper
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/add_cluster/" title="Adding a Cluster" class="dd-item ">
+        <a href="/usage/add_cluster/">
+        Adding a Cluster
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/health/" title="Checking a Cluster&#39;s Health" class="dd-item ">
+        <a href="/usage/health/">
+        Checking a Cluster&#39;s Health
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/single/" title="Running a Cluster Repair" class="dd-item ">
+        <a href="/usage/single/">
+        Running a Cluster Repair
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/schedule/" title="Scheduling a Cluster Repair" class="dd-item ">
+        <a href="/usage/schedule/">
+        Scheduling a Cluster Repair
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/multi_dc_non-distributed/" title="Operating Multiple DCs with a Single Reaper" class="dd-item ">
+        <a href="/usage/multi_dc_non-distributed/">
+        Multi DCs with One Reaper
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/multi_dc_distributed/" title="perating Multiple DCs using Multiple Reaper" class="dd-item ">
+        <a href="/usage/multi_dc_distributed/">
+        Multi DCs with Multi Reapers
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/sidecar_mode/" title="Sidecar Mode" class="dd-item ">
+        <a href="/usage/sidecar_mode/">
+        Sidecar Mode
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/cassandra-diagnostics/" title="Cassandra Diagnostic Events" class="dd-item ">
+        <a href="/usage/cassandra-diagnostics/">
+        Cassandra Diagnostic Events
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/development/" title="Development" class="dd-item 
+        parent
+        active
+        
+        ">
+      <a href="/development/">
+          Development
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/development/api/" title="REST API" class="dd-item ">
+        <a href="/development/api/">
+        REST API
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+         
+    </ul>
+
+    
+    
+      <section id="shortcuts">
+        <h3>More</h3>
+        <ul>
+          
+              <li> 
+                  <a class="padding" href="http://cassandra-reaper.io/downloads"><i class='fas fa-download'></i> Downloads</a>
+              </li>
+          
+              <li> 
+                  <a class="padding" href="https://github.com/thelastpickle/cassandra-reaper"><i class='fab fa-fw fa-github'></i> GitHub repo</a>
+              </li>
+          
+              <li> 
+                  <a class="padding" href="http://cassandra-reaper.io/community"><i class='fas fa-comments'></i> Community</a>
+              </li>
+          
+              <li> 
+                  <a class="padding" href="http://cassandra-reaper.io/faq"><i class='fas fa-question-circle'></i> FAQ</a>
+              </li>
+          
+        </ul>
+      </section>
+    
+
+    
+    <section id="footer">
+      <p>Built with <a href="https://github.com/matcornic/hugo-theme-learn"><i class="fas fa-heart"></i></a> from <a href="https://getgrav.org">Grav</a> and <a href="https://gohugo.io/">Hugo</a></p>
+
+    </section>
+  </div>
+</nav>
+
+
+
+
+
+        <section id="body">
+        <div id="overlay"></div>
+        <div class="padding highlightable">
+              
+              <div>
+                <div id="top-bar">
+                
+                
+                <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+                    <span id="sidebar-toggle-span">
+                        <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                          <i class="fas fa-bars"></i>
+                        </a>
+                    </span>
+                  
+                  <span id="toc-menu"><i class="fas fa-list-alt"></i></span>
+                  
+                  <span class="links">
+                 
+                 
+                    
+          
+          
+            
+            
+          
+          
+            <a href='/'>Cassandra Reaper</a> > Development
+          
+         
+          
+        
+                 
+                  </span>
+                </div>
+                
+                    <div class="progress">
+    <div class="wrapper">
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#forward-merging">Forward Merging</a></li>
+    <li><a href="#cutting-releases">Cutting Releases</a>
+      <ul>
+        <li><a href="#1-check-if-the-code-base-is-ready-for-release">1. Check if the code base is ready for release</a></li>
+        <li><a href="#2-change-to-the-major-release-branch">2. Change to the major release branch</a></li>
+        <li><a href="#3-check-the-build-status">3. Check the build status</a></li>
+        <li><a href="#4-update-the-change-log">4. Update the change log</a></li>
+        <li><a href="#5-change-the-project-version-number">5. Change the project version number</a></li>
+        <li><a href="#6-create-the-release-tag">6. Create the release tag</a></li>
+        <li><a href="#7-create-the-github-release">7. Create the GitHub release</a></li>
+        <li><a href="#8-forward-merge-release-changes-to-master">8. Forward merge release changes to <code>master</code></a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</div>
+
+                
+              </div>
+            </div>
+            
+        <div id="head-tags">
+        
+        </div>
+        
+        <div id="body-inner">
+          
+            <h1>
+              
+              Development
+            </h1>
+          
+
+        
+
+
+
+
+	<h2 id="forward-merging">Forward Merging</h2>
+<p>Reaper practices forward merging commits.</p>
+<p>Fixes and improvements required to release branches are first committed to those branches. These changes are merged forward onto master afterwards.</p>
+<p>An example where a bugfix developed and approved for the release branch 1.4 is to be merged;</p>
+<pre><code># first rebase the work one last time off the latest 1.4 branch
+git checkout bob/1.4_bugfix
+git rebase 1.4
+git push
+
+# switch to the 1.4 branch and fast-forward merge in the fix
+git checkout 1.4
+git merge bob/1.4_bugfix # take note of the sha of the fast-forward merge commit that just happened
+
+# switch to master
+git checkout master
+# create the empty merge commit
+git merge 1.4 -s ours
+# cherry-pick the change using the sha noted above, and make any manual adjustments required against the master branch
+git cherry-pick -n &lt;sha&gt;
+# commit amend the forward ported changes into the merge commit
+git commit -a --amend
+
+# push both 1.4 and master branches at the same time
+git push origin 1.4 master --atomic
+</code></pre><p>For more information on the value of forward merging, and the principles of &ldquo;merge down, copy up&rdquo; and the &ldquo;tofu scale: firm above, soft below&rdquo;, see</p>
+<ul>
+<li><a href="https://www.perforce.com/perforce/conferences/us/2005/presentations/Wingerd.pdf">https://www.perforce.com/perforce/conferences/us/2005/presentations/Wingerd.pdf</a></li>
+<li><a href="https://www.youtube.com/watch?v=AJ-CpGsCpM0">https://www.youtube.com/watch?v=AJ-CpGsCpM0</a></li>
+</ul>
+<h2 id="cutting-releases">Cutting Releases</h2>
+<p>Cutting a release involves the following steps. You will see these terms referenced by the steps.</p>
+<ul>
+<li><code>&lt;RELEASE_BRANCH&gt;</code> - The major version of the release branch you will be releasing from. e.g. <code>3.0</code>.</li>
+<li><code>&lt;RELEASE_VERSION&gt;</code> - The version of release you want to create. e.g. <code>3.0.7</code>.</li>
+</ul>
+<p>Where you see the term, substitute it for the value that applies to the release.</p>
+<h3 id="1-check-if-the-code-base-is-ready-for-release">1. Check if the code base is ready for release</h3>
+<p>Check with the community if the codebase is ready for the release. This includes checking any outstanding issues or pull requests in progress.</p>
+<h3 id="2-change-to-the-major-release-branch">2. Change to the major release branch</h3>
+<p>If you are cutting a new major release, you will need to create a new major release branch. Otherwise, you can simply change to the major release branch you want to release from.</p>
+<h4 id="create-a-new-major-release-branch">Create a new major release branch</h4>
+<p>Run the following commands <strong>only</strong> if you are cutting a new major release. In this case, you will need to create a release branch off the <code>master</code> branch. Release branches follow the format: <code>1.0</code>, <code>1.1</code>, <code>1.2</code>, <code>1.3</code>, etc.</p>
+<pre><code>git checkout master
+git pull --rebase --prune
+git checkout -b &lt;RELEASE_BRANCH&gt;
+git push origin &lt;RELEASE_BRANCH&gt;
+</code></pre><h4 id="change-to-the-major-release-branch">Change to the major release branch</h4>
+<p>Run the following command <strong>only</strong> if you are cutting a release from an existing major release branch. In this case, all you need to do is change to the major release branch.</p>
+<pre><code>git checkout &lt;RELEASE_BRANCH&gt;
+</code></pre><h3 id="3-check-the-build-status">3. Check the build status</h3>
+<p>Check the <a href="https://github.com/thelastpickle/cassandra-reaper/actions?query=workflow%3ACI">build</a> for the major release branch you are creating the release from. It must have a green status before a release can be made. You can check this in GitHub actions.</p>
+<div class = "row">
+    <div class = "col-md-6">
+        <a data-fancybox="gallery" href="/img/cutting_releases_step_3.png">
+        <img src="/img/cutting_releases_step_3.png" class="img-responsive">
+        </a>
+    </div>
+    <div>
+        <h4></h4>
+
+        
+    </div>
+
+</div>
+
+
+
+
+
+
+
+<h3 id="4-update-the-change-log">4. Update the change log</h3>
+<p>Generate the changes to append to <em>CHANGELOG.md</em>. You will need to do this using <a href="https://github.com/lalitkapoor/github-changes">github-changes</a>. If this is your first time cutting a release you will probably need to install it. The <a href="https://github.com/lalitkapoor/github-changes#installation">install instructions</a> are on its GitHub landing page.</p>
+<p>Run the following <a href="https://github.com/lalitkapoor/github-changes">github-changes</a> command to get the list of changes for the release branch.</p>
+<pre><code>github-changes \
+    -o thelastpickle \
+    -r cassandra-reaper \
+    --use-commit-body \
+    -f changelog.tmp \
+    -k &lt;GITHUB_PERSONAL_ACCESS_TOKEN&gt; \
+    -b &lt;COMMIT_SHA&gt; \
+    -v
+</code></pre><p>Where:</p>
+<ul>
+<li><code>&lt;GITHUB_PERSONAL_ACCESS_TOKEN&gt;</code> - Your <a href="https://github.blog/2013-05-16-personal-api-tokens/">GitHub Personal Access Token</a>. There is documentation on <a href="https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line">GitHub help</a> if you need to create one.</li>
+<li><code>&lt;COMMIT_SHA&gt;</code> - The SHA of the latest commit on the branch you want to release.</li>
+</ul>
+<p>The above command will write the changes for the release branch to a file named <em>changelog.tmp</em>. Use the following commands to extract the most recent set of changes that will go into this release. Remember to substitute <code>&lt;RELEASE_VERSION&gt;</code> on the first line below with the release version number.</p>
+<pre><code>RELEASE_VERSION=&lt;RELEASE_VERSION&gt;
+
+BLOCK_START=$(grep -n -m 1 &quot;###&quot; changelog.tmp \
+    | cut -d':' -f1)
+
+BLOCK_END=$(grep -n -m 2 &quot;###&quot; changelog.tmp \
+    | cut -d':' -f1 | tail -n 1)
+
+head -n $((${BLOCK_END}-1)) changelog.tmp \
+    | tail -n $((${BLOCK_END}-${BLOCK_START})) \
+    | sed &quot;s/^###\ upcoming/###\ ${RELEASE_VERSION}/g&quot;
+</code></pre><p>Copy the entries generated by the previous command and paste them in the <em>CHANGELOG.md</em> file on the release branch. Specifically, paste the entries in between the <code>## Change Log</code> and the first release heading denoted by the <code>###</code>. Commit the updated <em>CHANGELOG.md</em> to the branch with the specified comment and push to the remote repository.</p>
+<pre><code>git add CHANGELOG.md
+git commit -m &quot;Updated changelog for &lt;RELEASE_VERSION&gt;&quot;
+git push origin &lt;RELEASE_BRANCH&gt;
+</code></pre><h3 id="5-change-the-project-version-number">5. Change the project version number</h3>
+<p>The project version number makes up the name of a binary generated for the release. You will need to update it using Maven.</p>
+<pre><code>mvn -B versions:set &quot;-DnewVersion=&lt;RELEASE_VERSION&gt;&quot;
+</code></pre><p>Commit the changes to the branch with the specified comment and push to the remote repository.</p>
+<pre><code>git add pom.xml
+git add src/server/pom.xml
+git commit -m &quot;Release &lt;RELEASE_VERSION&gt;&quot;
+git push origin &lt;RELEASE_BRANCH&gt;
+</code></pre><h3 id="6-create-the-release-tag">6. Create the release tag</h3>
+<p>Tag the release branch with the release version and push it to the remote repository. No CI build will launch when you run the following commands. This is because there is no trigger for CI to run when tags are pushed to the remote repository.</p>
+<pre><code>git tag &lt;RELEASE_VERSION&gt;
+git push origin &lt;RELEASE_VERSION&gt;
+</code></pre><h3 id="7-create-the-github-release">7. Create the GitHub release</h3>
+<p>Navigate to the repository&rsquo;s <a href="https://github.com/thelastpickle/cassandra-reaper/tags">GitHub Tags</a> page. Create a new release from the tag you created in the previous step.</p>
+<div class = "row">
+    <div class = "col-md-6">
+        <a data-fancybox="gallery" href="/img/cutting_releases_step_7-01.png">
+        <img src="/img/cutting_releases_step_7-01.png" class="img-responsive">
+        </a>
+    </div>
+    <div>
+        <h4></h4>
+
+        
+    </div>
+
+</div>
+
+
+
+
+
+
+
+<p>This will take you to a page where you can draft the release. Fill out the release form.</p>
+<ul>
+<li>Add the <code>&lt;RELEASE_VERSION&gt;</code> to the Release title field.</li>
+<li>Add the change entries you pasted into the <em>CHANGELOG.md</em> in Step 4 to the Release description field.</li>
+</ul>
+<p>Then click the <strong>Publish release</strong> button.</p>
+<p><strong>WARNING</strong>: This will trigger GitHub Actions to build and publish the release binaries!</p>
+<div class = "row">
+    <div class = "col-md-6">
+        <a data-fancybox="gallery" href="/img/cutting_releases_step_7-02.png">
+        <img src="/img/cutting_releases_step_7-02.png" class="img-responsive">
+        </a>
+    </div>
+    <div>
+        <h4></h4>
+
+        
+    </div>
+
+</div>
+
+
+
+
+
+
+
+<p>Monitor the <a href="https://github.com/thelastpickle/cassandra-reaper/actions?query=workflow%3ACI+event%3Arelease">GitHub Actions</a> to confirm the release is successful.</p>
+<h3 id="8-forward-merge-release-changes-to-master">8. Forward merge release changes to <code>master</code></h3>
+<p>Apply the commits in the release to the <code>master</code> branch. To do this, you will need to know the SHA of each commit. You can get these from the <em>CHANGELOG.md</em>.</p>
+<pre><code>BLOCK_START=$(grep -n -m 1 &quot;###&quot; CHANGELOG.md \
+    | cut -d':' -f1)
+
+BLOCK_END=$(grep -n -m 2 &quot;###&quot; CHANGELOG.md \
+    | cut -d':' -f1 | tail -n 1)
+
+head -n $((${BLOCK_END}-1)) CHANGELOG.md \
+    | tail -n $((${BLOCK_END}-${BLOCK_START}-1)) \
+    | sed 's/^.*\/\([a-f0-9]*\).*/\1/g'
+</code></pre><p>Prepare to merge the commits into the <code>master</code> branch</p>
+<pre><code>git checkout master
+git merge &lt;RELEASE_BRANCH&gt; -s ours
+</code></pre><p>Cherry-pick each <code>SHA</code> in the above list of commits one at a time. Make any manual adjustments required as you apply each commit to the <code>master</code> branch. Push the changes to the remote repository.</p>
+<pre><code>git cherry-pick -n &lt;SHA&gt;
+
+git commit -a --amend
+git push origin master
+</code></pre>
+
+
+
+
+<footer class=" footline" >
+	
+</footer>
+
+        
+        </div> 
+        
+
+      </div>
+
+    <div id="navigation">
+        
+        
+        
+        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+        
+        
+
+
+	 
+	 
+    </div>
+
+    </section>
+    
+    <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
+      <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
+    </div>
+    <script src="/js/clipboard.min.js?1590085034"></script>
+    <script src="/js/perfect-scrollbar.min.js?1590085034"></script>
+    <script src="/js/perfect-scrollbar.jquery.min.js?1590085034"></script>
+    <script src="/js/jquery.sticky.js?1590085034"></script>
+    <script src="/js/featherlight.min.js?1590085034"></script>
+    <script src="/js/highlight.pack.js?1590085034"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="/js/modernizr.custom-3.6.0.js?1590085034"></script>
+    <script src="/js/learn.js?1590085034"></script>
+    <script src="/js/hugo-learn.js?1590085034"></script>
+
+    <link href="/mermaid/mermaid.css?1590085034" rel="stylesheet" />
+    <script src="/mermaid/mermaid.js?1590085034"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+    
+
+  </body>
+</html>

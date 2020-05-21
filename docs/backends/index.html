@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en" class="js csstransforms3d">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="Hugo 0.69.2" />
+    <meta name="description" content="Cassandra Reaper documentation">
+
+
+    <link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon" />
+    <title>Backends :: Reaper: Easy Repair Management for Apache Cassandra</title>
+
+    
+    <link href="/css/nucleus.css?1590085034" rel="stylesheet">
+    <link href="/css/fontawesome-all.min.css?1590085034" rel="stylesheet">
+    <link href="/css/hybrid.css?1590085034" rel="stylesheet">
+    <link href="/css/featherlight.min.css?1590085034" rel="stylesheet">
+    <link href="/css/perfect-scrollbar.min.css?1590085034" rel="stylesheet">
+    <link href="/css/auto-complete.css?1590085034" rel="stylesheet">
+    <link href="/css/atom-one-dark-reasonable.css?1590085034" rel="stylesheet">
+    <link href="/css/theme.css?1590085034" rel="stylesheet">
+    <link href="/css/hugo-theme.css?1590085034" rel="stylesheet">
+    
+      <link href="/css/theme-mine.css?1590085034" rel="stylesheet">
+    
+
+    <script src="/js/jquery-3.3.1.min.js?1590085034"></script>
+
+    <style>
+      :root #header + #content > #left > #rlblock_left{
+          display:none !important;
+      }
+      
+        :not(pre) > code + span.copy-to-clipboard {
+            display: none;
+        }
+      
+    </style>
+    
+  </head>
+  <body class="" data-url="/backends/">
+    <nav id="sidebar" class="">
+
+
+
+  <div id="header-wrapper">
+    <div id="header">
+      <a href="/"><img src="/img/logo.png"  alt="Reaper logo"></a>
+    </div>
+    
+        <div class="searchbox">
+    <label for="search-by"><i class="fas fa-search"></i></label>
+    <input data-search-input id="search-by" type="search" placeholder="Search...">
+    <span data-search-clear=""><i class="fas fa-times"></i></span>
+</div>
+
+<script type="text/javascript" src="/js/lunr.min.js?1590085034"></script>
+<script type="text/javascript" src="/js/auto-complete.js?1590085034"></script>
+<script type="text/javascript">
+    
+        var baseurl = "http:\/\/cassandra-reaper.io\/";
+    
+</script>
+<script type="text/javascript" src="/js/search.js?1590085034"></script>
+
+    
+  </div>
+
+    <div class="highlightable">
+    <ul class="topics">
+
+        
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/install/" title="Build and Install" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/install/">
+          Build and Install
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/install/install/" title="Package Install Guide" class="dd-item ">
+        <a href="/install/install/">
+        Package Install and Setup
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/install/docker/" title="Docker Setup Guide" class="dd-item ">
+        <a href="/install/docker/">
+        Docker Build and Setup
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/install/upgrade/" title="Upgrade Guide" class="dd-item ">
+        <a href="/install/upgrade/">
+        Upgrade Guide
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/install/building/" title="Build from Source Guide" class="dd-item ">
+        <a href="/install/building/">
+        Build from Source
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/concepts/" title="Core Concepts" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/concepts/">
+          Core Concepts
+          
+      </a>
+      
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/backends/" title="Backends" class="dd-item 
+        parent
+        active
+        
+        ">
+      <a href="/backends/">
+          Backends
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/backends/memory/" title="In-Memory Backend" class="dd-item ">
+        <a href="/backends/memory/">
+        In-Memory
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/backends/h2/" title="H2 Backend" class="dd-item ">
+        <a href="/backends/h2/">
+        H2
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/backends/postgres/" title="Postgres Backend" class="dd-item ">
+        <a href="/backends/postgres/">
+        Postgres
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/backends/cassandra/" title="Cassandra Backend" class="dd-item ">
+        <a href="/backends/cassandra/">
+        Cassandra
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/configuration/" title="Configuration Reference" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/configuration/">
+          Configuration
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/configuration/reaper_specific/" title="Reaper Specific Settings" class="dd-item ">
+        <a href="/configuration/reaper_specific/">
+        Reaper Specific Settings
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/configuration/backend_specific/" title="Backend Specific Settings" class="dd-item ">
+        <a href="/configuration/backend_specific/">
+        Backend Specific Settings
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/configuration/docker_vars/" title="Docker Variables" class="dd-item ">
+        <a href="/configuration/docker_vars/">
+        Docker Variables
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/configuration/authentication/" title="Authentication" class="dd-item ">
+        <a href="/configuration/authentication/">
+        Authentication
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/metrics/" title="Metrics" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/metrics/">
+          Metrics
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/metrics/graphite/" title="Graphite Reporter" class="dd-item ">
+        <a href="/metrics/graphite/">
+        Graphite Reporter
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/usage/" title="Using Reaper" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/usage/">
+          Using Reaper
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/add_cluster/" title="Adding a Cluster" class="dd-item ">
+        <a href="/usage/add_cluster/">
+        Adding a Cluster
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/health/" title="Checking a Cluster&#39;s Health" class="dd-item ">
+        <a href="/usage/health/">
+        Checking a Cluster&#39;s Health
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/single/" title="Running a Cluster Repair" class="dd-item ">
+        <a href="/usage/single/">
+        Running a Cluster Repair
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/schedule/" title="Scheduling a Cluster Repair" class="dd-item ">
+        <a href="/usage/schedule/">
+        Scheduling a Cluster Repair
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/multi_dc_non-distributed/" title="Operating Multiple DCs with a Single Reaper" class="dd-item ">
+        <a href="/usage/multi_dc_non-distributed/">
+        Multi DCs with One Reaper
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/multi_dc_distributed/" title="perating Multiple DCs using Multiple Reaper" class="dd-item ">
+        <a href="/usage/multi_dc_distributed/">
+        Multi DCs with Multi Reapers
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/sidecar_mode/" title="Sidecar Mode" class="dd-item ">
+        <a href="/usage/sidecar_mode/">
+        Sidecar Mode
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/cassandra-diagnostics/" title="Cassandra Diagnostic Events" class="dd-item ">
+        <a href="/usage/cassandra-diagnostics/">
+        Cassandra Diagnostic Events
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/development/" title="Development" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/development/">
+          Development
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/development/api/" title="REST API" class="dd-item ">
+        <a href="/development/api/">
+        REST API
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+         
+    </ul>
+
+    
+    
+      <section id="shortcuts">
+        <h3>More</h3>
+        <ul>
+          
+              <li> 
+                  <a class="padding" href="http://cassandra-reaper.io/downloads"><i class='fas fa-download'></i> Downloads</a>
+              </li>
+          
+              <li> 
+                  <a class="padding" href="https://github.com/thelastpickle/cassandra-reaper"><i class='fab fa-fw fa-github'></i> GitHub repo</a>
+              </li>
+          
+              <li> 
+                  <a class="padding" href="http://cassandra-reaper.io/community"><i class='fas fa-comments'></i> Community</a>
+              </li>
+          
+              <li> 
+                  <a class="padding" href="http://cassandra-reaper.io/faq"><i class='fas fa-question-circle'></i> FAQ</a>
+              </li>
+          
+        </ul>
+      </section>
+    
+
+    
+    <section id="footer">
+      <p>Built with <a href="https://github.com/matcornic/hugo-theme-learn"><i class="fas fa-heart"></i></a> from <a href="https://getgrav.org">Grav</a> and <a href="https://gohugo.io/">Hugo</a></p>
+
+    </section>
+  </div>
+</nav>
+
+
+
+
+
+        <section id="body">
+        <div id="overlay"></div>
+        <div class="padding highlightable">
+              
+              <div>
+                <div id="top-bar">
+                
+                
+                <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+                    <span id="sidebar-toggle-span">
+                        <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                          <i class="fas fa-bars"></i>
+                        </a>
+                    </span>
+                  
+                  <span id="toc-menu"><i class="fas fa-list-alt"></i></span>
+                  
+                  <span class="links">
+                 
+                 
+                    
+          
+          
+            
+            
+          
+          
+            <a href='/'>Cassandra Reaper</a> > Backends
+          
+         
+          
+        
+                 
+                  </span>
+                </div>
+                
+                    <div class="progress">
+    <div class="wrapper">
+<nav id="TableOfContents"></nav>
+    </div>
+</div>
+
+                
+              </div>
+            </div>
+            
+        <div id="head-tags">
+        
+        </div>
+        
+        <div id="body-inner">
+          
+            <h1>
+              
+              Backends
+            </h1>
+          
+
+        
+
+
+
+
+	<p>Cassandra Reaper can be used with either an ephemeral memory storage or persistent database. For persistent scalable database storage, a Cassandra cluster can be set up to back Reaper. To use a Cassandra cluster as the backed storage for Reaper set <code>storageType</code> to a value of <strong>cassandra</strong> in the Reaper configuration file. Alternatively, a relational database storage; either H2 or Postgres can be set up to back Reaper. To use one of the relational database options as the backed storage for Reaper set <code>storageType</code> to a value of either <strong>h2</strong> or <strong>postrges</strong> in the Reaper configuration file.</p>
+<p>Further information on the available storage options is provided in the following section.</p>
+<ul>
+<li><a href="/backends/memory/">In-Memory</a></li>
+<li><a href="/backends/cassandra/">Cassanda</a></li>
+<li><a href="/backends/postgres/">PostgresQL</a></li>
+<li><a href="/backends/h2/">H2</a></li>
+</ul>
+<p>Sample YAML files are available in the <em><a href="https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource">src/packaging/resource</a></em> directory for each of the above storage options:</p>
+<ul>
+<li>cassandra-reaper-memory.yaml</li>
+<li>cassandra-reaper-cassandra.yaml</li>
+<li>cassandra-reaper-postgres.yaml</li>
+<li>cassandra-reaper-h2.yaml</li>
+</ul>
+<p>For configuring other aspects of the service, see the available configuration options in the <a href="../configuration">Configuration Reference</a>.</p>
+
+
+
+
+
+<footer class=" footline" >
+	
+</footer>
+
+        
+        </div> 
+        
+
+      </div>
+
+    <div id="navigation">
+        
+        
+        
+        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+        
+        
+
+
+	 
+	 
+    </div>
+
+    </section>
+    
+    <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
+      <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
+    </div>
+    <script src="/js/clipboard.min.js?1590085034"></script>
+    <script src="/js/perfect-scrollbar.min.js?1590085034"></script>
+    <script src="/js/perfect-scrollbar.jquery.min.js?1590085034"></script>
+    <script src="/js/jquery.sticky.js?1590085034"></script>
+    <script src="/js/featherlight.min.js?1590085034"></script>
+    <script src="/js/highlight.pack.js?1590085034"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="/js/modernizr.custom-3.6.0.js?1590085034"></script>
+    <script src="/js/learn.js?1590085034"></script>
+    <script src="/js/hugo-learn.js?1590085034"></script>
+
+    <link href="/mermaid/mermaid.css?1590085034" rel="stylesheet" />
+    <script src="/mermaid/mermaid.js?1590085034"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+    
+
+  </body>
+</html>

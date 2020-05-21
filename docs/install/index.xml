@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Build and Install on Reaper: Easy Repair Management for Apache Cassandra</title>
+    <link>http://cassandra-reaper.io/install/</link>
+    <description>Recent content in Build and Install on Reaper: Easy Repair Management for Apache Cassandra</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="http://cassandra-reaper.io/install/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Package Install Guide</title>
+      <link>http://cassandra-reaper.io/install/install/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/install/install/</guid>
+      <description>After modifying the resource/cassandra-reaper.yaml config file, Reaper can be started using the following command line:
+java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml Once started, the UI can be accessed through: http://127.0.0.1:8080/webui/
+Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool bin/spreaper
+Installing and Running as a Service We provide prebuilt packages for reaper on the Bintray.
+RPM Install (CentOS, Fedora, RHEK) Grab the RPM from GitHub and install using the rpm command:</description>
+    </item>
+    
+    <item>
+      <title>Docker Setup Guide</title>
+      <link>http://cassandra-reaper.io/install/docker/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/install/docker/</guid>
+      <description>Docker and Docker Compose will need to be installed in order to use the commands in this section.
+Building Reaper Docker Image Prerequisite The generation of the Docker image requires that the JAR file be built and placed in the src/packages directory. If the JAR package is missing from the directory then it can built using either the steps in the Docker package build section (above), or in the Building from Source section.</description>
+    </item>
+    
+    <item>
+      <title>Upgrade Guide</title>
+      <link>http://cassandra-reaper.io/install/upgrade/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/install/upgrade/</guid>
+      <description>Upgrading from 1.2.0/1.2.1 to 1.2.2 We unfortunately had to break schema migrations for upgrades to 1.2.2 from 1.2.0 and 1.2.1. Here is the upgrade procedure for each Reaper backend:
+Cassandra  Stop all Reaper instances Run the following DDL statement on the backend cluster :  ALTER TABLE reaper_db.repair_unit_v1 DROP repair_thread_count;  Upgrade Reaper to 1.2.2 and start it  Note: by doing so the number of threads for each existing schedule will revert back to 0, which will be translated to a single repair thread.</description>
+    </item>
+    
+    <item>
+      <title>Build from Source Guide</title>
+      <link>http://cassandra-reaper.io/install/building/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/install/building/</guid>
+      <description>Building Install Packages Debian packages and RPMs can be built from this project using Make, for example:
+make deb make rpm Building JARs from source To build and run tests use the following command:
+mvn clean package You can skip the tests if you just want to build using the following command:
+mvn clean package -DskipTests Building Docker Image from source See the Docker section for more details.
+Building Using Docker To simplify the build toolchain it&amp;rsquo;s possible to build everything using Docker itself.</description>
+    </item>
+    
+  </channel>
+</rss>

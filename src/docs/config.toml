@@ -15,7 +15,7 @@
 baseURL = "http://cassandra-reaper.io/"
 languageCode = "en-us"
 title = "Reaper: Easy Repair Management for Apache Cassandra"
-theme = "hugo-universal-theme"
+theme = "hugo-theme-learn-2.4.0"
 
 googleAnalytics = "UA-104925477-1"
 publishDir = "../../docs"
@@ -23,28 +23,40 @@ publishDir = "../../docs"
 
 [menu]
 
-[[menu.main]]
-    name = "Documentation"
-    url = "/docs/"
+[[menu.shortcuts]]
+name = "<i class='fas fa-download'></i> Downloads"
+url = "downloads"
+weight = 1
 
-[[menu.main]]
-    name = "Downloads"
-    url = "/docs/download/"
+[[menu.shortcuts]]
+name = "<i class='fab fa-fw fa-github'></i> GitHub repo"
+url = "https://github.com/thelastpickle/cassandra-reaper"
+weight = 5
 
-[[menu.main]]
-    name = "FAQ"
-    url = "/faq/"
+[[menu.shortcuts]]
+name = "<i class='fas fa-comments'></i> Community"
+url = "community"
+weight = 10
 
-[[menu.main]]
-    name = "View on GitHub"
-    url = "https://github.com/thelastpickle/cassandra-reaper"
+[[menu.shortcuts]]
+name = "<i class='fas fa-question-circle'></i> FAQ"
+url = "faq"
+weight = 15
 
 
 [params]
+    editURL = ""
+    author = ""
+    description = "Cassandra Reaper documentation"
+    showVisitedLinks = false
+    disableSearch = false
+    disableAssetsBusting = false
+    disableInlineCopyToClipBoard = true
+    disableShortcutsTitle = false
+    disableLanguageSwitchingButton = false
+    disableNextPrev = true
+    ordersectionsby = "weight"
+    themeVariant = "mine"
 
-[params.carousel]
-    enable = true
-
-
-[params.features]
-    enable = true
+[outputs]
+    home = [ "HTML", "RSS", "JSON"]

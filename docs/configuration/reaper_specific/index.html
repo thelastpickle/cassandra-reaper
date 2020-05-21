@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="en" class="js csstransforms3d">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="Hugo 0.69.2" />
+    <meta name="description" content="Cassandra Reaper documentation">
+
+
+    <link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon" />
+    <title>Reaper Specific Settings :: Reaper: Easy Repair Management for Apache Cassandra</title>
+
+    
+    <link href="/css/nucleus.css?1590085034" rel="stylesheet">
+    <link href="/css/fontawesome-all.min.css?1590085034" rel="stylesheet">
+    <link href="/css/hybrid.css?1590085034" rel="stylesheet">
+    <link href="/css/featherlight.min.css?1590085034" rel="stylesheet">
+    <link href="/css/perfect-scrollbar.min.css?1590085034" rel="stylesheet">
+    <link href="/css/auto-complete.css?1590085034" rel="stylesheet">
+    <link href="/css/atom-one-dark-reasonable.css?1590085034" rel="stylesheet">
+    <link href="/css/theme.css?1590085034" rel="stylesheet">
+    <link href="/css/hugo-theme.css?1590085034" rel="stylesheet">
+    
+      <link href="/css/theme-mine.css?1590085034" rel="stylesheet">
+    
+
+    <script src="/js/jquery-3.3.1.min.js?1590085034"></script>
+
+    <style>
+      :root #header + #content > #left > #rlblock_left{
+          display:none !important;
+      }
+      
+        :not(pre) > code + span.copy-to-clipboard {
+            display: none;
+        }
+      
+    </style>
+    
+  </head>
+  <body class="" data-url="/configuration/reaper_specific/">
+    <nav id="sidebar" class="">
+
+
+
+  <div id="header-wrapper">
+    <div id="header">
+      <a href="/"><img src="/img/logo.png"  alt="Reaper logo"></a>
+    </div>
+    
+        <div class="searchbox">
+    <label for="search-by"><i class="fas fa-search"></i></label>
+    <input data-search-input id="search-by" type="search" placeholder="Search...">
+    <span data-search-clear=""><i class="fas fa-times"></i></span>
+</div>
+
+<script type="text/javascript" src="/js/lunr.min.js?1590085034"></script>
+<script type="text/javascript" src="/js/auto-complete.js?1590085034"></script>
+<script type="text/javascript">
+    
+        var baseurl = "http:\/\/cassandra-reaper.io\/";
+    
+</script>
+<script type="text/javascript" src="/js/search.js?1590085034"></script>
+
+    
+  </div>
+
+    <div class="highlightable">
+    <ul class="topics">
+
+        
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/install/" title="Build and Install" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/install/">
+          Build and Install
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/install/install/" title="Package Install Guide" class="dd-item ">
+        <a href="/install/install/">
+        Package Install and Setup
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/install/docker/" title="Docker Setup Guide" class="dd-item ">
+        <a href="/install/docker/">
+        Docker Build and Setup
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/install/upgrade/" title="Upgrade Guide" class="dd-item ">
+        <a href="/install/upgrade/">
+        Upgrade Guide
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/install/building/" title="Build from Source Guide" class="dd-item ">
+        <a href="/install/building/">
+        Build from Source
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/concepts/" title="Core Concepts" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/concepts/">
+          Core Concepts
+          
+      </a>
+      
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/backends/" title="Backends" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/backends/">
+          Backends
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/backends/memory/" title="In-Memory Backend" class="dd-item ">
+        <a href="/backends/memory/">
+        In-Memory
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/backends/h2/" title="H2 Backend" class="dd-item ">
+        <a href="/backends/h2/">
+        H2
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/backends/postgres/" title="Postgres Backend" class="dd-item ">
+        <a href="/backends/postgres/">
+        Postgres
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/backends/cassandra/" title="Cassandra Backend" class="dd-item ">
+        <a href="/backends/cassandra/">
+        Cassandra
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/configuration/" title="Configuration Reference" class="dd-item 
+        parent
+        
+        
+        ">
+      <a href="/configuration/">
+          Configuration
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/configuration/reaper_specific/" title="Reaper Specific Settings" class="dd-item active">
+        <a href="/configuration/reaper_specific/">
+        Reaper Specific Settings
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/configuration/backend_specific/" title="Backend Specific Settings" class="dd-item ">
+        <a href="/configuration/backend_specific/">
+        Backend Specific Settings
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/configuration/docker_vars/" title="Docker Variables" class="dd-item ">
+        <a href="/configuration/docker_vars/">
+        Docker Variables
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/configuration/authentication/" title="Authentication" class="dd-item ">
+        <a href="/configuration/authentication/">
+        Authentication
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/metrics/" title="Metrics" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/metrics/">
+          Metrics
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/metrics/graphite/" title="Graphite Reporter" class="dd-item ">
+        <a href="/metrics/graphite/">
+        Graphite Reporter
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/usage/" title="Using Reaper" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/usage/">
+          Using Reaper
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/add_cluster/" title="Adding a Cluster" class="dd-item ">
+        <a href="/usage/add_cluster/">
+        Adding a Cluster
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/health/" title="Checking a Cluster&#39;s Health" class="dd-item ">
+        <a href="/usage/health/">
+        Checking a Cluster&#39;s Health
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/single/" title="Running a Cluster Repair" class="dd-item ">
+        <a href="/usage/single/">
+        Running a Cluster Repair
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/schedule/" title="Scheduling a Cluster Repair" class="dd-item ">
+        <a href="/usage/schedule/">
+        Scheduling a Cluster Repair
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/multi_dc_non-distributed/" title="Operating Multiple DCs with a Single Reaper" class="dd-item ">
+        <a href="/usage/multi_dc_non-distributed/">
+        Multi DCs with One Reaper
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/multi_dc_distributed/" title="perating Multiple DCs using Multiple Reaper" class="dd-item ">
+        <a href="/usage/multi_dc_distributed/">
+        Multi DCs with Multi Reapers
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/sidecar_mode/" title="Sidecar Mode" class="dd-item ">
+        <a href="/usage/sidecar_mode/">
+        Sidecar Mode
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/usage/cassandra-diagnostics/" title="Cassandra Diagnostic Events" class="dd-item ">
+        <a href="/usage/cassandra-diagnostics/">
+        Cassandra Diagnostic Events
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+          
+
+
+ 
+  
+    
+    <li data-nav-id="/development/" title="Development" class="dd-item 
+        
+        
+        
+        ">
+      <a href="/development/">
+          Development
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+          
+        
+          
+            
+            
+
+
+ 
+  
+    
+      <li data-nav-id="/development/api/" title="REST API" class="dd-item ">
+        <a href="/development/api/">
+        REST API
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+              
+    </li>
+  
+ 
+
+          
+         
+    </ul>
+
+    
+    
+      <section id="shortcuts">
+        <h3>More</h3>
+        <ul>
+          
+              <li> 
+                  <a class="padding" href="http://cassandra-reaper.io/downloads"><i class='fas fa-download'></i> Downloads</a>
+              </li>
+          
+              <li> 
+                  <a class="padding" href="https://github.com/thelastpickle/cassandra-reaper"><i class='fab fa-fw fa-github'></i> GitHub repo</a>
+              </li>
+          
+              <li> 
+                  <a class="padding" href="http://cassandra-reaper.io/community"><i class='fas fa-comments'></i> Community</a>
+              </li>
+          
+              <li> 
+                  <a class="padding" href="http://cassandra-reaper.io/faq"><i class='fas fa-question-circle'></i> FAQ</a>
+              </li>
+          
+        </ul>
+      </section>
+    
+
+    
+    <section id="footer">
+      <p>Built with <a href="https://github.com/matcornic/hugo-theme-learn"><i class="fas fa-heart"></i></a> from <a href="https://getgrav.org">Grav</a> and <a href="https://gohugo.io/">Hugo</a></p>
+
+    </section>
+  </div>
+</nav>
+
+
+
+
+
+        <section id="body">
+        <div id="overlay"></div>
+        <div class="padding highlightable">
+              
+              <div>
+                <div id="top-bar">
+                
+                
+                <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+                    <span id="sidebar-toggle-span">
+                        <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                          <i class="fas fa-bars"></i>
+                        </a>
+                    </span>
+                  
+                  <span id="toc-menu"><i class="fas fa-list-alt"></i></span>
+                  
+                  <span class="links">
+                 
+                 
+                    
+          
+          
+            
+            
+          
+          
+            
+            
+          
+          
+            <a href='/'>Cassandra Reaper</a> > <a href='/configuration/'>Configuration Reference</a> > Reaper Specific Settings
+          
+         
+          
+         
+          
+        
+                 
+                  </span>
+                </div>
+                
+                    <div class="progress">
+    <div class="wrapper">
+<nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#autoscheduling"><code>autoScheduling</code></a></li>
+        <li><a href="#datacenteravailability"><code>datacenterAvailability</code></a></li>
+        <li><a href="#enablecrossorigin"><code>enableCrossOrigin</code></a></li>
+        <li><a href="#enabledynamicseedlist"><code>enableDynamicSeedList</code></a></li>
+        <li><a href="#hangingrepairtimeoutmins"><code>hangingRepairTimeoutMins</code></a></li>
+        <li><a href="#incrementalrepair"><code>incrementalRepair</code></a></li>
+        <li><a href="#blacklisttwcstables"><code>blacklistTwcsTables</code></a></li>
+        <li><a href="#jmxauth"><code>jmxAuth</code></a></li>
+        <li><a href="#jmxcredentials"><code>jmxCredentials</code></a></li>
+        <li><a href="#jmxconnectiontimeoutinseconds"><code>jmxConnectionTimeoutInSeconds</code></a></li>
+        <li><a href="#jmxports"><code>jmxPorts</code></a></li>
+        <li><a href="#logging"><code>logging</code></a></li>
+        <li><a href="#metrics"><code>metrics</code></a></li>
+        <li><a href="#repairintensity"><code>repairIntensity</code></a></li>
+        <li><a href="#repairmanagerschedulingintervalseconds"><code>repairManagerSchedulingIntervalSeconds</code></a></li>
+        <li><a href="#repairparallelism"><code>repairParallelism</code></a></li>
+        <li><a href="#repairrunthreadcount"><code>repairRunThreadCount</code></a></li>
+        <li><a href="#scheduledaysbetween"><code>scheduleDaysBetween</code></a></li>
+        <li><a href="#segmentcountpernode"><code>segmentCountPerNode</code></a></li>
+        <li><a href="#server"><code>server</code></a></li>
+        <li><a href="#storagetype"><code>storageType</code></a></li>
+        <li><a href="#useaddresstranslator"><code>useAddressTranslator</code></a></li>
+        <li><a href="#accesscontrol"><code>accessControl</code></a></li>
+        <li><a href="#repairthreadcount"><code>repairThreadCount</code></a></li>
+        <li><a href="#maxpendingcompactions"><code>maxPendingCompactions</code></a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+    </div>
+</div>
+
+                
+              </div>
+            </div>
+            
+        <div id="head-tags">
+        
+        </div>
+        
+        <div id="body-inner">
+          
+            <h1>
+              
+              Reaper Specific Settings
+            </h1>
+          
+
+        
+
+
+
+<p>Configuration settings in the <em>cassandra-reaper.yaml</em> that are specific to Reaper</p>
+<!-- raw HTML omitted -->
+<h3 id="autoscheduling"><code>autoScheduling</code></h3>
+<p>Optional setting to automatically setup repair schedules for all non-system keyspaces in a cluster. If enabled, adding a new cluster will automatically setup a schedule repair  for each keyspace. Cluster keyspaces are monitored based on a configurable frequency, so that adding or removing a keyspace will result in adding / removing the corresponding scheduled repairs.</p>
+<pre><code>autoScheduling:
+  enabled: true
+  initialDelayPeriod: PT15S
+  periodBetweenPolls: PT10M
+  timeBeforeFirstSchedule: PT5M
+  scheduleSpreadPeriod: PT6H
+  excludedKeyspaces: [myTTLKeyspace, ...]
+</code></pre>
+<p>Definitions for the above sub-settings are as follows.</p>
+<h4 id="enabled"><code>enabled</code></h4>
+<p>Type: <em>Boolean</em></p>
+<p>Default: <em>false</em></p>
+<p>Enables or disables <code>autoScheduling</code>.</p>
+<h4 id="initialdelayperiod"><code>initialDelayPeriod</code></h4>
+<p>Type: <em>String</em></p>
+<p>Default: <em>PT15S</em> (15 seconds)</p>
+<p>The amount of delay time before the schedule period starts.</p>
+<h4 id="periodbetweenpolls"><code>periodBetweenPolls</code></h4>
+<p>Type: <em>String</em></p>
+<p>Default: <em>PT10M</em> (10 minutes)</p>
+<p>The interval time to wait before checking whether to start a repair task.</p>
+<h4 id="timebeforefirstschedule"><code>timeBeforeFirstSchedule</code></h4>
+<p>Type: <em>String</em></p>
+<p>Default: <em>PT5M</em> (5 minutes)</p>
+<p>Grace period before the first repair in the schedule is started.</p>
+<h4 id="schedulespreadperiod"><code>scheduleSpreadPeriod</code></h4>
+<p>Type: <em>String</em></p>
+<p>Default: <em>PT6H</em> (6 hours)</p>
+<p>The time spacing between each of the repair schedules that is to be carried out.</p>
+<h4 id="excludedkeyspaces"><code>excludedKeyspaces</code></h4>
+<p>Type: <em>Array</em> (comma separated <em>Strings</em>)</p>
+<p>The Keyspaces that are to be excluded from the repair schedule.</p>
+<!-- raw HTML omitted -->
+<h3 id="datacenteravailability"><code>datacenterAvailability</code></h3>
+<p>Type: <em>String</em></p>
+<p>Default: <em>ALL</em></p>
+<p>Indicates to Reaper its deployment in relation to cluster data center network locality. The value must be either <strong>ALL</strong>, <strong>LOCAL</strong>, <strong>EACH</strong> or <strong>SIDECAR</strong>. Note that this setting controls the behavior for metrics collection.</p>
+<p>By default, Apache Cassandra restricts JMX communications to localhost only. In this setup, only the <strong>SIDECAR</strong> value is suitable.</p>
+<p>For security reasons, it is possible that Reaper will have access limited to nodes in a single datacenter via JMX (multi region clusters for example). In this case, it is possible to deploy an operate an instance of Reaper in each datacenter where each instance only has access via JMX (with or without authentication) to the nodes in its local datacenter. In addition, Reaper will check the number of pending compactions and actively running repairs on all replicas prior to processing a segment.</p>
+<p><strong>ALL</strong> - requires Reaper to have access via JMX to all nodes across all datacenters. In this mode Reaper can be backed by all available storage types.</p>
+<p><strong>LOCAL</strong> - requires Reaper to have access via JMX to all nodes only in the same datacenter local to Reaper. A single Reaper instance can operate in this mode and trigger repairs from within its local data center. In this case, can be backed by all available storage types and repairs to any remote datacenters are be handled internally by Cassandra. A Reaper instance can be deployed to each datacenter and be configured to operate in this mode. In this case, Reaper can use either of Apache Cassandra or Postgres as its storage.</p>
+<p>Further information can be found in the <a href="../../usage/multi_dc">Operating with a Multi DC Cluster</a> section.</p>
+<p><strong>EACH</strong> - requires a minimum of one Reaper instance operating in each datacenter. Each Reaper instance is required to have access via JMX to all nodes only in its local datacenter. When operating in this mode, Reaper can use either of Apache Cassandra or Postgres as its storage. In addition, metrics from nodes in remote datacenters must be collected through the storage backend. If any metric is unavailable, the segment will be postponed for later processing.</p>
+<p>Further information can be found in the <a href="../../usage/multi_dc">Operating with a Multi DC Cluster</a> section.</p>
+<p><strong>SIDECAR</strong> - requires one reaper instance for each node in the cluster.
+Each Reaper instance is required to have access via JMX to its local node.
+When operating in this mode, Reaper can use either of Apache Cassandra or Postgres as its storage.</p>
+<p>Further information can be found in the <a href="../../usage/sidecar_mode">Sidecar Mode</a> section.</p>
+<!-- raw HTML omitted -->
+<h3 id="enablecrossorigin"><code>enableCrossOrigin</code></h3>
+<p>Type: <em>Boolean</em></p>
+<p>Default: <em>true</em></p>
+<p>Optional setting which can be used to enable the CORS headers for running an external GUI application, like <a href="https://github.com/spodkowinski/cassandra-reaper-ui">this project</a>. When enabled it will allow REST requests incoming from other origins than the domain that hosts Reaper.</p>
+<!-- raw HTML omitted -->
+<h3 id="enabledynamicseedlist"><code>enableDynamicSeedList</code></h3>
+<p>Type: <em>Boolean</em></p>
+<p>Default: <em>true</em></p>
+<p>Allow Reaper to add all nodes in the cluster as contact points when adding a new cluster, instead of just adding the provided node.</p>
+<!-- raw HTML omitted -->
+<h3 id="hangingrepairtimeoutmins"><code>hangingRepairTimeoutMins</code></h3>
+<p>Type: <em>Integer</em></p>
+<p>The amount of time in minutes to wait for a single repair to finish. If this timeout is reached,
+the repair segment in question will be cancelled, if possible, and then scheduled for later
+repair again within the same repair run process.</p>
+<!-- raw HTML omitted -->
+<h3 id="incrementalrepair"><code>incrementalRepair</code></h3>
+<p>Type: <em>Boolean</em></p>
+<p>Default: <em>false</em></p>
+<p>Sets the default repair type unless specifically defined for each run. Note that this is only supported with the PARALLEL repairParallelism setting. For more details in incremental repair, please refer to the following article.http://www.datastax.com/dev/blog/more-efficient-repairs</p>
+<p><em>Note</em>: It is recommended to avoid using incremental repair before Cassandra 4.0 as subtle bugs can lead to overstreaming and cluster instabililty.</p>
+<!-- raw HTML omitted -->
+<h3 id="blacklisttwcstables"><code>blacklistTwcsTables</code></h3>
+<p>Type: <em>Boolean</em></p>
+<p>Default: <em>false</em></p>
+<p>Disables repairs of any tables that use either the <code>TimeWindowCompactionStrategy</code> or <code>DateTieredCompactionStrategy</code>. This automatic blacklisting is not stored in schedules or repairs. It is applied when repairs are triggered and visible in the UI for running repairs. Not storing which tables are TWCS/DTCS ensures changes to a table&rsquo;s compaction strategy are honored on every new repair.</p>
+<p><em>Note</em>: It is recommended to enable this option as repairing these tables, when they contain TTL&rsquo;d data, causes overlaps between partitions across the configured time windows the sstables reside in. This leads to an increased disk usage as the older sstables are unable to be expired despite only containing TTL&rsquo;s data. Repairing DTCS tables has additional issues and is generally not recommended.</p>
+<!-- raw HTML omitted -->
+<h3 id="jmxauth"><code>jmxAuth</code></h3>
+<p>Optional setting to allow Reaper to establish JMX connections to Cassandra clusters using password based JMX authentication.</p>
+<pre><code>jmxAuth:
+  username: cassandra
+  password: cassandra
+
+  #### `username`
+</code></pre>
+<h4 id="username"><code>username</code></h4>
+<p>Type: <em>String</em></p>
+<p>Cassandra JMX username.</p>
+<h4 id="password"><code>password</code></h4>
+<p>Type: <em>String</em></p>
+<p>Cassandra JMX password.</p>
+<!-- raw HTML omitted -->
+<h3 id="jmxcredentials"><code>jmxCredentials</code></h3>
+<p><em><strong>Since 1.1.0</strong></em>
+Optional setting to allow Reaper to establish JMX connections to Cassandra clusters with specific credentials per cluster.</p>
+<pre><code>jmxCredentials:
+  clusterProduction1:
+    username: user1
+    password: password1
+  clusterProduction2:
+    username: user2
+    password: password2
+</code></pre>
+<p>This setting can be used in conjunction with the <code>jmxAuth</code> to override the credentials for specific clusters only.
+The cluster name must match the one defined in the cassandra.yaml file (in the example above, <code>clusterProduction1</code> and <code>clusterProduction2</code>).</p>
+<p>Adding a new cluster with specific credentials requires to add the seed node in the following format : <code>host@cluster</code>
+To match the example above, it could be something like : <code>10.0.10.5@clusterProduction1</code></p>
+<h3 id="jmxconnectiontimeoutinseconds"><code>jmxConnectionTimeoutInSeconds</code></h3>
+<p>Type: <em>Integer</em></p>
+<p>Default: <em>20</em></p>
+<p>Controls the timeout for establishing JMX connections. The value should be low enough to avoid stalling simple operations in multi region clusters, but high enough to allow connections under normal conditions.</p>
+<!-- raw HTML omitted -->
+<h3 id="jmxports"><code>jmxPorts</code></h3>
+<p>Type: <em>Object</em></p>
+<p>Optional mapping of custom JMX ports to use for individual hosts. The used default JMX port value is 7199. <a href="https://github.com/pcmanus/ccm">CCM</a> users will find IP and port number to add in <code>~/.ccm/&lt;cluster&gt;/*/node.conf</code> or by running <code>ccm &lt;node&gt; show</code>.</p>
+<pre><code>jmxPorts:
+  127.0.0.1: 7100
+  127.0.0.2: 7200
+  127.0.0.3: 7300
+</code></pre>
+<!-- raw HTML omitted -->
+<h3 id="logging"><code>logging</code></h3>
+<p>Settings to configure Reaper logging.</p>
+<pre><code>logging:
+  level: INFO
+  loggers:
+    io.dropwizard: WARN
+    org.eclipse.jetty: WARN
+  appenders:
+    - type: console
+      logFormat: &quot;%-6level [%d] [%t] %logger{5} - %msg %n&quot;
+      threshold: WARN
+    - type: file
+      logFormat: &quot;%-6level [%t] %logger{5} - %msg %n&quot;
+      currentLogFilename: /var/log/cassandra-reaper/reaper.log
+      archivedLogFilenamePattern: /var/log/cassandra-reaper/reaper-%d.log.gz
+      archivedFileCount: 99
+</code></pre>
+<p>Definitions for some of the above sub-settings are as follows.</p>
+<h4 id="level"><code>level</code></h4>
+<p>Type: <em>String</em></p>
+<p>Global log level to filter to. Where the level order is <strong>ALL</strong> &lt; <strong>DEBUG</strong> &lt; <strong>INFO</strong> &lt; <strong>WARN</strong> &lt; <strong>ERROR</strong> &lt; <strong>FATAL</strong> &lt; <strong>OFF</strong>. See the <a href="https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/Level.html">log4j</a> documentation for further information.</p>
+<h4 id="loggers"><code>loggers</code></h4>
+<p>Type: <em>Object</em></p>
+<p>Key value pair containing the logger class name as the key and other sub-settings as its value.</p>
+<h4 id="logformat"><code>logFormat</code></h4>
+<p>Type: <em>String</em></p>
+<p>The output format of an entry in the log.</p>
+<h4 id="threshold"><code>threshold</code></h4>
+<p>Type: <em>String</em></p>
+<p>The log level to filter the console messages to. Where the level order is <strong>ALL</strong> &lt; <strong>DEBUG</strong> &lt; <strong>INFO</strong> &lt; <strong>WARN</strong> &lt; <strong>ERROR</strong> &lt; <strong>FATAL</strong> &lt; <strong>OFF</strong>. See the <a href="https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/Level.html">log4j</a> documentation for further information.</p>
+<h4 id="archivedfilecount"><code>archivedFileCount</code></h4>
+<p>Type: <em>Integer</em></p>
+<p>The number of archive log files stored in the log rotation sliding window. That is the number of archived (compressed) log files kept at one point in time. If there are <code>archivedFileCount</code> number of archived log files and the current (uncompressed) log file is archived, the oldest archived log file is deleted.</p>
+<!-- raw HTML omitted -->
+<h3 id="metrics"><code>metrics</code></h3>
+<p>Type: <em>Object</em></p>
+<p>Configuration parameters for sending metrics to a reporting system via the <a href="http://www.dropwizard.io/1.1.4/docs/manual/configuration.html#metrics">Dropwizard interface</a>. Cassandra Reaper ships the Graphite and DataDog reporters by default.</p>
+<p>Further information on metrics configuration can be found in the <a href="../../metrics">Metrics</a> section.</p>
+<!-- raw HTML omitted -->
+<h3 id="repairintensity"><code>repairIntensity</code></h3>
+<p>Type: <em>Float</em> (value between 0.0 and 1.0, but must never be 0.0.)</p>
+<p>Repair intensity defines the amount of time to sleep between triggering each repair segment while running a repair run. When intensity is 1.0, it means that Reaper doesn&rsquo;t sleep at all before triggering next segment, and otherwise the sleep time is defined by how much time it took to repair the last segment divided by the intensity value. 0.5 means half of the time is spent sleeping, and half running. Intensity 0.75 means that 25% of the total time is used sleeping and 75% running. This value can also be overwritten per repair run when invoking repairs.</p>
+<!-- raw HTML omitted -->
+<h3 id="repairmanagerschedulingintervalseconds"><code>repairManagerSchedulingIntervalSeconds</code></h3>
+<p>Type: <em>Integer</em></p>
+<p>Default: <em>30</em></p>
+<p>Controls the pace at which the Repair Manager will schedule processing of the next segment. Reducing this value from its default value of 30s to a lower value can speed up fast repairs by orders of magnitude.</p>
+<!-- raw HTML omitted -->
+<h3 id="repairparallelism"><code>repairParallelism</code></h3>
+<p>Type: <em>String</em></p>
+<p>Type of parallelism to apply by default to repair runs. The value must be either <strong>SEQUENTIAL</strong>, <strong>PARALLEL</strong>, or <strong>DATACENTER_AWARE</strong>.</p>
+<p><strong>SEQUENTIAL</strong> - one replica at a time, validation compaction performed on snapshots</p>
+<p><strong>PARALLEL</strong> - all replicas at the same time, no snapshot</p>
+<p><strong>DATACENTER_AWARE</strong> - one replica in each DC at the same time, with snapshots. If this value is used in clusters older than 2.0.12, Reaper will fall back into using <strong>SEQUENTIAL</strong> for those clusters.</p>
+<!-- raw HTML omitted -->
+<h3 id="repairrunthreadcount"><code>repairRunThreadCount</code></h3>
+<p>Type: <em>Integer</em></p>
+<p>The amount of threads to use for handling the Reaper tasks. Have this big enough not to cause
+blocking in cause some thread is waiting for I/O, like calling a Cassandra cluster through JMX.</p>
+<!-- raw HTML omitted -->
+<h3 id="scheduledaysbetween"><code>scheduleDaysBetween</code></h3>
+<p>Type: <em>Integer</em></p>
+<p>Default: <em>7</em></p>
+<p>Defines the amount of days to wait between scheduling new repairs. The value configured here is the default for new repair schedules, but you can also define it separately for each new schedule. Using value 0 for continuous repairs is also supported.</p>
+<!-- raw HTML omitted -->
+<h3 id="segmentcountpernode"><code>segmentCountPerNode</code></h3>
+<p>Type: <em>Integer</em></p>
+<p>Default: <em>16</em></p>
+<p>Defines the default amount of repair segments to create for newly registered Cassandra repair runs, for each node in the cluster. When running a repair run by Reaper, each segment is repaired separately by the Reaper process, until all the segments in a token ring are repaired. The count might be slightly off the defined value, as clusters residing in multiple data centers require additional small token ranges in addition to the expected. This value can be overwritten when executing a repair run via Reaper.</p>
+<p>In a 10 nodes cluster, setting a value of 20 segments per node will generate a repair run that splits the work into 200 token subranges. This number can vary due to vnodes (before 1.2.0, Reaper cannot create a segment with multiple token ranges, so the number of segments will be at least the total number of vnodes in the cluster). As Reaper tries to size segments evenly, the presence of very small token ranges can lead to have more segments than expected.</p>
+<!-- raw HTML omitted -->
+<h3 id="server"><code>server</code></h3>
+<p>Settings to configure the application UI server.</p>
+<pre><code>server:
+  type: default
+  applicationConnectors:
+    - type: http
+      port: 8080
+      bindHost: 0.0.0.0
+  adminConnectors:
+    - type: http
+      port: 8081
+      bindHost: 0.0.0.0
+  requestLog:
+    appenders: []
+</code></pre>
+<p>Reaper provides two separate UIs; the application UI which is configured via the <code>applicationConnectors</code> settings and the administration UI which is configured via the <code>adminConnectors</code> settings. The application UI provides functionality to create/manage cluster schedules, and the administration UI provides tools for monitoring and debugging the Reaper system.</p>
+<h4 id="port"><code>port</code></h4>
+<p>For the <code>applicationConnectors</code> this setting will be the port number used to access the application UI. For the <code>adminConnectors</code> this setting will be the port number to access the administration UI.</p>
+<p>Note that the port numbers for each must be different values when bound to the same host.</p>
+<h4 id="bindhost"><code>bindHost</code></h4>
+<p>For the <code>applicationConnectors</code> this setting will be the host address used to access the application UI. For the <code>adminConnectors</code> this setting will be the host address used to access the administration UI.</p>
+<p>Note that to bind the service to all interfaces use value <strong>0.0.0.0</strong> or leave the value for the setting this blank. A value of <strong>*</strong> is an invalid value for this setting.</p>
+<!-- raw HTML omitted -->
+<h3 id="storagetype"><code>storageType</code></h3>
+<p>Type: <em>String</em></p>
+<p>The storage type to use in which Reaper will store its control data. The value must be either <strong>cassandra</strong>, <strong>h2</strong>, <strong>memory</strong>, or <strong>postgres</strong>. If the recommended (persistent) storage type <strong>cassandra</strong>, <strong>h2</strong>, or <strong>postgres</strong> is being used, the database client parameters must be specified in the respective <code>cassandra</code>, <code>h2</code>, or <code>postgres</code> section in the configuration file. See the example settings in provided the <em><a href="https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource">src/packaging/resources</a></em> directory of the repository.</p>
+<!-- raw HTML omitted -->
+<h3 id="useaddresstranslator"><code>useAddressTranslator</code></h3>
+<p>Type: <em>Boolean</em></p>
+<p>Default: <em>false</em></p>
+<p>When running multi region clusters in AWS, turn this setting to <code>true</code> in order to use the EC2MultiRegionAddressTranslator from the Datastax Java Driver. This will allow translating the public address that the nodes broadcast to the private IP address that is used to expose JMX.</p>
+<!-- raw HTML omitted -->
+<h3 id="accesscontrol"><code>accessControl</code></h3>
+<p>Settings to activate and configure authentication for the web UI.
+Deleting or commenting that block from the yaml file will turn off authentication.</p>
+<pre><code>accessControl:
+  sessionTimeout: PT10M
+  shiro:
+    iniConfigs: [&quot;file:/path/to/shiro.ini&quot;]
+</code></pre><h3 id="repairthreadcount"><code>repairThreadCount</code></h3>
+<p>Type: <em>Integer</em></p>
+<p>Since Cassandra 2.2, repairs are multithreaded in order to process several token ranges concurrently and speed up the process.
+This setting allows to set a default for automatic repair schedules.
+No more than four threads are allowed by Cassandra.</p>
+<h3 id="maxpendingcompactions"><code>maxPendingCompactions</code></h3>
+<p>Type: <em>Integer</em></p>
+<p>Default: <em>20</em></p>
+<p>Reaper will prevent repair from overwhelming the cluster when lots of SSTables are streamed, by pausing segment processing if there are more than a specific number of pending compactions. Adjust this setting if you have a lot of tables in the cluster and the total number of pending compactions is usually high.</p>
+
+
+<footer class=" footline" >
+	
+</footer>
+
+
+        
+        </div> 
+        
+
+      </div>
+
+    <div id="navigation">
+        
+        
+        
+        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+        
+        
+
+
+	 
+	 
+    </div>
+
+    </section>
+    
+    <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
+      <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
+    </div>
+    <script src="/js/clipboard.min.js?1590085034"></script>
+    <script src="/js/perfect-scrollbar.min.js?1590085034"></script>
+    <script src="/js/perfect-scrollbar.jquery.min.js?1590085034"></script>
+    <script src="/js/jquery.sticky.js?1590085034"></script>
+    <script src="/js/featherlight.min.js?1590085034"></script>
+    <script src="/js/highlight.pack.js?1590085034"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="/js/modernizr.custom-3.6.0.js?1590085034"></script>
+    <script src="/js/learn.js?1590085034"></script>
+    <script src="/js/hugo-learn.js?1590085034"></script>
+
+    <link href="/mermaid/mermaid.css?1590085034" rel="stylesheet" />
+    <script src="/mermaid/mermaid.js?1590085034"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+    
+
+  </body>
+</html>
+

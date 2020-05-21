@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Development on Reaper: Easy Repair Management for Apache Cassandra</title>
+    <link>http://cassandra-reaper.io/development/</link>
+    <description>Recent content in Development on Reaper: Easy Repair Management for Apache Cassandra</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="http://cassandra-reaper.io/development/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>REST API</title>
+      <link>http://cassandra-reaper.io/development/api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/development/api/</guid>
+      <description>Source code for all the REST resources can be found from package io.cassandrareaper.resources.
+Login Resource  POST /login  Expected form parameters:  username: User to login with as defined in Shiro settings (default user is admin) password: Password to authenticate with through Shiro (default password of user admin is: admin) rememberMe: Boolean to have the Web UI remember the username   Endpoint for logging in to Reaper    Shiro JWT Provider  GET /jwt  Expected query parameters: None Returns a JWT to use in all REST calls when authentication is turned on in Reaper.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,8 +1,11 @@
-# Frequently Asked Questions
++++
+title = "Frequently Asked Questions"
+menuTitle = "Frequently Asked Questions"
+weight = 150
++++
 
 
 ### Why use Reaper instead of noddetool + cron?
-
 
 While it's possible to set up crontab to call nodetool, it requires staggering the crons to ensure overlap is kept to a minimum.  Reaper is able to intelligently schedule repairs to avoid putting too much load on the cluster, avoiding impacting performance.  Reaper also offers a simple UI to schedule repairs as granularly as needed.
 
