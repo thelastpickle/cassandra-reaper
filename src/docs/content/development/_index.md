@@ -1,13 +1,13 @@
 +++
-title = "Development Resources"
-menuTitle = "Development Resources"
+title = "Developer Resources"
+menuTitle = "Developer Resources"
 weight = 200
 +++
 
 
 In this section you will find information about:
 
-* [Building Reaper](building) from source.
-* [Forward merging](merging) commits on a release branch to `master`.
-* [Cutting a release](releases).
+* How to [build Reaper](building) from source.
+* How to [forward merge](merging) commits on a release branch to `master`.
+* How to [cut a release](releases).
 * The server [REST API](api).
