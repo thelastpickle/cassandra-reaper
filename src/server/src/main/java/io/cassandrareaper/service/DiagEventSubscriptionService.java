@@ -84,6 +84,7 @@ public final class DiagEventSubscriptionService {
   private final AppContext context;
   private final HttpClient httpClient;
   private final ScheduledExecutorService scheduler;
+  private final AtomicLong lastUpdateCheck = new AtomicLong(0);
 
   private Set<DiagEventSubscription> subsAlwaysActive;
 
@@ -134,7 +135,15 @@ public final class DiagEventSubscriptionService {
   }
 
   private synchronized void updateEnabledEvents() {
-    updateEnabledEvents(Collections.emptySet());
+    if (context.isDistributed.get()) {
+      if (!BROADCASTERS.isEmpty() || null == subsAlwaysActive || !subsAlwaysActive.isEmpty()
+          // when there are no broadcasters and no known subscriptions, only check for updated events once per minute
+          || (System.currentTimeMillis() - lastUpdateCheck.get()) > TimeUnit.MINUTES.toMillis(1)) {
+
+        lastUpdateCheck.set(System.currentTimeMillis());
+        updateEnabledEvents(Collections.emptySet());
+      }
+    }
   }
 
   private synchronized void updateEnabledEvents(Set<String> filterByNode) {

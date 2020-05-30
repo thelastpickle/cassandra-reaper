@@ -579,14 +579,17 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
   private Optional<NodeMetrics> maybeGetRemoteNodeMetrics(String node, String nodeDc) {
     Preconditions.checkState(context.storage instanceof IDistributedStorage);
-    return ((IDistributedStorage)context.storage).countRunningReapers() > 1
-        || context.config.getEnforcedLocalNode().isPresent()
+
+    return context.isDistributed.get() || context.config.getEnforcedLocalNode().isPresent()
         ? getRemoteNodeMetrics(node, nodeDc)
         : Optional.empty();
   }
 
   private Optional<NodeMetrics> getRemoteNodeMetrics(String node, String nodeDc) {
+    Preconditions.checkState(context.storage instanceof IDistributedStorage);
     Preconditions.checkState(context.config.getDatacenterAvailability().isInCollocatedMode());
+    Preconditions.checkState(context.isDistributed.get() || context.config.getEnforcedLocalNode().isPresent());
+
     IDistributedStorage storage = ((IDistributedStorage) context.storage);
     Optional<NodeMetrics> result = storage.getNodeMetrics(repairRunner.getRepairRunId(), node);
     if (!result.isPresent() || result.get().isRequested()) {
@@ -1233,9 +1236,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   private int countRunningReapers() {
-    return context.storage instanceof IDistributedStorage
-        ? ((IDistributedStorage) context.storage).countRunningReapers()
-        : 1;
+    return context.isDistributed.get() ? ((IDistributedStorage) context.storage).countRunningReapers() : 1;
   }
 
   private class BusyHostsInitializer extends LazyInitializer<Set<String>> {

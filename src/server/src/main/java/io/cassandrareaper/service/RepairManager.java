@@ -61,7 +61,6 @@ public final class RepairManager implements AutoCloseable {
 
   private final AppContext context;
   private final ClusterFacade clusterFacade;
-  private final Heart heart;
   private final ListeningScheduledExecutorService executor;
   private final long repairTimeoutMillis;
   private final long retryDelayMillis;
@@ -77,7 +76,6 @@ public final class RepairManager implements AutoCloseable {
 
     this.context = context;
     this.clusterFacade = clusterFacade;
-    this.heart = Heart.create(context);
     this.repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
     this.retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
 
@@ -132,21 +130,12 @@ public final class RepairManager implements AutoCloseable {
    */
   public void resumeRunningRepairRuns() throws ReaperException {
     try {
-      heart.beat();
       Collection<RepairRun> runningRepairRuns = context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING);
       Collection<RepairRun> pausedRepairRuns = context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED);
       abortAllRunningSegmentsWithNoLeader(runningRepairRuns);
       abortAllRunningSegmentsInKnownPausedRepairRuns(pausedRepairRuns);
       resumeUnkownRunningRepairRuns(runningRepairRuns);
       resumeUnknownPausedRepairRuns(pausedRepairRuns);
-    } catch (RuntimeException e) {
-      throw new ReaperException(e);
-    }
-  }
-
-  public void handleMetricsRequests() throws ReaperException {
-    try {
-      heart.beatMetrics();
     } catch (RuntimeException e) {
       throw new ReaperException(e);
     }
@@ -463,7 +452,6 @@ public final class RepairManager implements AutoCloseable {
 
   @Override
   public void close() {
-    heart.close();
     executor.shutdownNow();
   }
 }
