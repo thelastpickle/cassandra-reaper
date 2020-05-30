@@ -40,6 +40,7 @@ import io.cassandrareaper.resources.auth.LoginResource;
 import io.cassandrareaper.resources.auth.ShiroExceptionMapper;
 import io.cassandrareaper.resources.auth.ShiroJwtProvider;
 import io.cassandrareaper.service.AutoSchedulingManager;
+import io.cassandrareaper.service.Heart;
 import io.cassandrareaper.service.PurgeService;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
@@ -271,17 +272,18 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
             context.metricRegistry);
 
     if (context.storage instanceof IDistributedStorage) {
-      // Allowing multiple Reaper instances to work concurrently requires
-      // us to poll the database for running repairs regularly
-      // only with Cassandra storage
+      // SIDECAR mode must be distributed. ALL|EACH|LOCAL are lazy: we wait until we see multiple reaper instances
+      context.isDistributed
+          .compareAndSet(false, DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability());
+
+      // Allowing multiple Reaper instances require concurrent database polls for repair and metrics statuses
       scheduleRepairManager(scheduler);
-      scheduleHandleMetricsRequest(scheduler);
-    } else {
-      // Storage is different than Cassandra, assuming we have a single instance
-      context.repairManager.resumeRunningRepairRuns();
+      scheduleHeartbeat(scheduler);
     }
 
+    context.repairManager.resumeRunningRepairRuns();
     schedulePurge(scheduler);
+
     LOG.info("Initialization complete!");
     LOG.warn("Reaper is ready to get things done!");
   }
@@ -408,29 +410,33 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   private void scheduleRepairManager(ScheduledExecutorService scheduler) {
     scheduler.scheduleWithFixedDelay(
         () -> {
-          try {
-            context.repairManager.resumeRunningRepairRuns();
-          } catch (ReaperException | RuntimeException e) {
-            // test-pollution: grim_reaper trashes this log error
-            //if (!Boolean.getBoolean("grim.reaper.running")) {
-            LOG.error("Couldn't resume running repair runs", e);
-            //}
+          if (context.isDistributed.get()) {
+            try {
+              context.repairManager.resumeRunningRepairRuns();
+            } catch (ReaperException | RuntimeException e) {
+              // test-pollution: grim_reaper trashes this log error
+              //if (!Boolean.getBoolean("grim.reaper.running")) {
+              LOG.error("Couldn't resume running repair runs", e);
+              //}
+            }
           }
         },
-        0,
+        10,
         10,
         TimeUnit.SECONDS);
   }
 
-  private void scheduleHandleMetricsRequest(ScheduledExecutorService scheduler) {
-    scheduler.scheduleWithFixedDelay(
+  private void scheduleHeartbeat(ScheduledExecutorService scheduler) throws ReaperException {
+    final Heart heart = Heart.create(context);
+
+    scheduler.scheduleAtFixedRate(
         () -> {
           try {
-            context.repairManager.handleMetricsRequests();
-          } catch (ReaperException | RuntimeException e) {
+            heart.beat();
+          } catch (RuntimeException e) {
             // test-pollution: grim_reaper trashes this log error
             //if (!Boolean.getBoolean("grim.reaper.running")) {
-            LOG.error("Couldn't handle metrics requests", e);
+            LOG.error("Couldn't heartbeat", e);
             //}
           }
         },
