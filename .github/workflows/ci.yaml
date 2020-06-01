@@ -20,6 +20,9 @@ on:
     paths-ignore:
       - "untagged-.**"
       - "master-snapshot.**"
+  release:
+    types:
+      - published
 #  pull_request:
 #    paths-ignore:
 #      - "untagged-.**"
