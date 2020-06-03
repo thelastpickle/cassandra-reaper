@@ -40,7 +40,7 @@ import systems.composable.dropwizard.cassandra.CassandraFactory;
 
 public final class ReaperApplicationConfiguration extends Configuration {
 
-  private static final int DEFAULT_SEGMENT_COUNT_PER_NODE = 16;
+  private static final int DEFAULT_SEGMENT_COUNT_PER_NODE = 64;
   private static final Integer DEFAULT_MAX_PENDING_COMPACTIONS = 20;
 
   @JsonProperty
