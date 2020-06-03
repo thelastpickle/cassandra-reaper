@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-segmentCount: ${REAPER_SEGMENT_COUNT}
+segmentCountPerNode: ${REAPER_SEGMENT_COUNT_PER_NODE}
 repairParallelism: ${REAPER_REPAIR_PARALELLISM}
 repairIntensity: ${REAPER_REPAIR_INTENSITY}
 scheduleDaysBetween: ${REAPER_SCHEDULE_DAYS_BETWEEN}
