@@ -43,7 +43,7 @@ The Docker environment variables listed in this section map directly to Reaper s
 <code class="codeLarge">REAPER_REPAIR_PARALELLISM</code> | [repairParallelism]({{< relref "reaper_specific.md#repairparallelism" >}}) | DATACENTER_AWARE
 <code class="codeLarge">REAPER_REPAIR_RUN_THREADS</code> | [repairRunThreadCount]({{< relref "reaper_specific.md#repairrunthreadcount" >}}) | 15
 <code class="codeLarge">REAPER_SCHEDULE_DAYS_BETWEEN</code> | [scheduleDaysBetween]({{< relref "reaper_specific.md#scheduledaysbetween" >}}) | 7
-<code class="codeLarge">REAPER_SEGMENT_COUNT</code> | [segmentCount]({{< relref "reaper_specific.md#segmentcount" >}}) | 200
+<code class="codeLarge">REAPER_SEGMENT_COUNT_PER_NODE</code> | [segmentCountPerNode]({{< relref "reaper_specific.md#segmentcount" >}}) | 200
 <code class="codeLarge">REAPER_SERVER_ADMIN_BIND_HOST</code> | [bindHost]({{< relref "reaper_specific.md#bindhost" >}}) | 0.0.0.0
 <code class="codeLarge">REAPER_SERVER_ADMIN_PORT</code> | [port]({{< relref "reaper_specific.md#port" >}}) | 8081
 <code class="codeLarge">REAPER_SERVER_APP_BIND_HOST</code> | [bindHost]({{< relref "reaper_specific.md#bindhost" >}}) | 0.0.0.0
