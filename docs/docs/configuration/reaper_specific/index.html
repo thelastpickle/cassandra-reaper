@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.40.3" />
+  <meta name="generator" content="Hugo 0.69.2" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -318,18 +318,11 @@
 
                     <div class="col-md-9">
                         <div>
-                          
-
-<h1 id="reaper-specific-settings">Reaper Specific Settings</h1>
-
+                          <h1 id="reaper-specific-settings">Reaper Specific Settings</h1>
 <p>Configuration settings in the <em>cassandra-reaper.yaml</em> that are specific to Reaper</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="autoscheduling"><code>autoScheduling</code></h3>
-
 <p>Optional setting to automatically setup repair schedules for all non-system keyspaces in a cluster. If enabled, adding a new cluster will automatically setup a schedule repair  for each keyspace. Cluster keyspaces are monitored based on a configurable frequency, so that adding or removing a keyspace will result in adding / removing the corresponding scheduled repairs.</p>
-
 <pre><code>autoScheduling:
   enabled: true
   initialDelayPeriod: PT15S
@@ -338,171 +331,93 @@
   scheduleSpreadPeriod: PT6H
   excludedKeyspaces: [myTTLKeyspace, ...]
 </code></pre>
-
 <p>Definitions for the above sub-settings are as follows.</p>
-
 <h4 id="enabled"><code>enabled</code></h4>
-
 <p>Type: <em>Boolean</em></p>
-
 <p>Default: <em>false</em></p>
-
 <p>Enables or disables <code>autoScheduling</code>.</p>
-
 <h4 id="initialdelayperiod"><code>initialDelayPeriod</code></h4>
-
 <p>Type: <em>String</em></p>
-
 <p>Default: <em>PT15S</em> (15 seconds)</p>
-
 <p>The amount of delay time before the schedule period starts.</p>
-
 <h4 id="periodbetweenpolls"><code>periodBetweenPolls</code></h4>
-
 <p>Type: <em>String</em></p>
-
 <p>Default: <em>PT10M</em> (10 minutes)</p>
-
 <p>The interval time to wait before checking whether to start a repair task.</p>
-
 <h4 id="timebeforefirstschedule"><code>timeBeforeFirstSchedule</code></h4>
-
 <p>Type: <em>String</em></p>
-
 <p>Default: <em>PT5M</em> (5 minutes)</p>
-
 <p>Grace period before the first repair in the schedule is started.</p>
-
 <h4 id="schedulespreadperiod"><code>scheduleSpreadPeriod</code></h4>
-
 <p>Type: <em>String</em></p>
-
 <p>Default: <em>PT6H</em> (6 hours)</p>
-
 <p>The time spacing between each of the repair schedules that is to be carried out.</p>
-
 <h4 id="excludedkeyspaces"><code>excludedKeyspaces</code></h4>
-
 <p>Type: <em>Array</em> (comma separated <em>Strings</em>)</p>
-
 <p>The Keyspaces that are to be excluded from the repair schedule.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="datacenteravailability"><code>datacenterAvailability</code></h3>
-
 <p>Type: <em>String</em></p>
-
 <p>Default: <em>ALL</em></p>
-
 <p>Indicates to Reaper its deployment in relation to cluster data center network locality. The value must be either <strong>ALL</strong>, <strong>LOCAL</strong>, <strong>EACH</strong> or <strong>SIDECAR</strong>. Note that this setting controls the behavior for metrics collection.</p>
-
 <p>By default, Apache Cassandra restricts JMX communications to localhost only. In this setup, only the <strong>SIDECAR</strong> value is suitable.</p>
-
 <p>For security reasons, it is possible that Reaper will have access limited to nodes in a single datacenter via JMX (multi region clusters for example). In this case, it is possible to deploy an operate an instance of Reaper in each datacenter where each instance only has access via JMX (with or without authentication) to the nodes in its local datacenter. In addition, Reaper will check the number of pending compactions and actively running repairs on all replicas prior to processing a segment.</p>
-
 <p><strong>ALL</strong> - requires Reaper to have access via JMX to all nodes across all datacenters. In this mode Reaper can be backed by all available storage types.</p>
-
 <p><strong>LOCAL</strong> - requires Reaper to have access via JMX to all nodes only in the same datacenter local to Reaper. A single Reaper instance can operate in this mode and trigger repairs from within its local data center. In this case, can be backed by all available storage types and repairs to any remote datacenters are be handled internally by Cassandra. A Reaper instance can be deployed to each datacenter and be configured to operate in this mode. In this case, Reaper can use either of Apache Cassandra or Postgres as its storage.</p>
-
 <p>Further information can be found in the <a href="../../usage/multi_dc">Operating with a Multi DC Cluster</a> section.</p>
-
 <p><strong>EACH</strong> - requires a minimum of one Reaper instance operating in each datacenter. Each Reaper instance is required to have access via JMX to all nodes only in its local datacenter. When operating in this mode, Reaper can use either of Apache Cassandra or Postgres as its storage. In addition, metrics from nodes in remote datacenters must be collected through the storage backend. If any metric is unavailable, the segment will be postponed for later processing.</p>
-
 <p>Further information can be found in the <a href="../../usage/multi_dc">Operating with a Multi DC Cluster</a> section.</p>
-
 <p><strong>SIDECAR</strong> - requires one reaper instance for each node in the cluster.
 Each Reaper instance is required to have access via JMX to its local node.
 When operating in this mode, Reaper can use either of Apache Cassandra or Postgres as its storage.</p>
-
 <p>Further information can be found in the <a href="../../usage/sidecar_mode">Sidecar Mode</a> section.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="enablecrossorigin"><code>enableCrossOrigin</code></h3>
-
 <p>Type: <em>Boolean</em></p>
-
 <p>Default: <em>true</em></p>
-
 <p>Optional setting which can be used to enable the CORS headers for running an external GUI application, like <a href="https://github.com/spodkowinski/cassandra-reaper-ui">this project</a>. When enabled it will allow REST requests incoming from other origins than the domain that hosts Reaper.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="enabledynamicseedlist"><code>enableDynamicSeedList</code></h3>
-
 <p>Type: <em>Boolean</em></p>
-
 <p>Default: <em>true</em></p>
-
 <p>Allow Reaper to add all nodes in the cluster as contact points when adding a new cluster, instead of just adding the provided node.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="hangingrepairtimeoutmins"><code>hangingRepairTimeoutMins</code></h3>
-
 <p>Type: <em>Integer</em></p>
-
 <p>The amount of time in minutes to wait for a single repair to finish. If this timeout is reached,
 the repair segment in question will be cancelled, if possible, and then scheduled for later
 repair again within the same repair run process.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="incrementalrepair"><code>incrementalRepair</code></h3>
-
 <p>Type: <em>Boolean</em></p>
-
 <p>Default: <em>false</em></p>
-
-<p>Sets the default repair type unless specifically defined for each run. Note that this is only supported with the PARALLEL repairParallelism setting. For more details in incremental repair, please refer to the following article.<a href="http://www.datastax.com/dev/blog/more-efficient-repairs">http://www.datastax.com/dev/blog/more-efficient-repairs</a></p>
-
+<p>Sets the default repair type unless specifically defined for each run. Note that this is only supported with the PARALLEL repairParallelism setting. For more details in incremental repair, please refer to the following article.http://www.datastax.com/dev/blog/more-efficient-repairs</p>
 <p><em>Note</em>: It is recommended to avoid using incremental repair before Cassandra 4.0 as subtle bugs can lead to overstreaming and cluster instabililty.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="blacklisttwcstables"><code>blacklistTwcsTables</code></h3>
-
 <p>Type: <em>Boolean</em></p>
-
 <p>Default: <em>false</em></p>
-
 <p>Disables repairs of any tables that use either the <code>TimeWindowCompactionStrategy</code> or <code>DateTieredCompactionStrategy</code>. This automatic blacklisting is not stored in schedules or repairs. It is applied when repairs are triggered and visible in the UI for running repairs. Not storing which tables are TWCS/DTCS ensures changes to a table&rsquo;s compaction strategy are honored on every new repair.</p>
-
 <p><em>Note</em>: It is recommended to enable this option as repairing these tables, when they contain TTL&rsquo;d data, causes overlaps between partitions across the configured time windows the sstables reside in. This leads to an increased disk usage as the older sstables are unable to be expired despite only containing TTL&rsquo;s data. Repairing DTCS tables has additional issues and is generally not recommended.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="jmxauth"><code>jmxAuth</code></h3>
-
 <p>Optional setting to allow Reaper to establish JMX connections to Cassandra clusters using password based JMX authentication.</p>
-
 <pre><code>jmxAuth:
   username: cassandra
   password: cassandra
 
   #### `username`
 </code></pre>
-
 <h4 id="username"><code>username</code></h4>
-
 <p>Type: <em>String</em></p>
-
 <p>Cassandra JMX username.</p>
-
 <h4 id="password"><code>password</code></h4>
-
 <p>Type: <em>String</em></p>
-
 <p>Cassandra JMX password.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="jmxcredentials"><code>jmxCredentials</code></h3>
-
 <p><em><strong>Since 1.1.0</strong></em>
 Optional setting to allow Reaper to establish JMX connections to Cassandra clusters with specific credentials per cluster.</p>
-
 <pre><code>jmxCredentials:
   clusterProduction1:
     username: user1
@@ -511,41 +426,26 @@ Optional setting to allow Reaper to establish JMX connections to Cassandra clust
     username: user2
     password: password2
 </code></pre>
-
 <p>This setting can be used in conjunction with the <code>jmxAuth</code> to override the credentials for specific clusters only.
 The cluster name must match the one defined in the cassandra.yaml file (in the example above, <code>clusterProduction1</code> and <code>clusterProduction2</code>).</p>
-
 <p>Adding a new cluster with specific credentials requires to add the seed node in the following format : <code>host@cluster</code>
 To match the example above, it could be something like : <code>10.0.10.5@clusterProduction1</code></p>
-
 <h3 id="jmxconnectiontimeoutinseconds"><code>jmxConnectionTimeoutInSeconds</code></h3>
-
 <p>Type: <em>Integer</em></p>
-
 <p>Default: <em>20</em></p>
-
 <p>Controls the timeout for establishing JMX connections. The value should be low enough to avoid stalling simple operations in multi region clusters, but high enough to allow connections under normal conditions.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="jmxports"><code>jmxPorts</code></h3>
-
 <p>Type: <em>Object</em></p>
-
 <p>Optional mapping of custom JMX ports to use for individual hosts. The used default JMX port value is 7199. <a href="https://github.com/pcmanus/ccm">CCM</a> users will find IP and port number to add in <code>~/.ccm/&lt;cluster&gt;/*/node.conf</code> or by running <code>ccm &lt;node&gt; show</code>.</p>
-
 <pre><code>jmxPorts:
   127.0.0.1: 7100
   127.0.0.2: 7200
   127.0.0.3: 7300
 </code></pre>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="logging"><code>logging</code></h3>
-
 <p>Settings to configure Reaper logging.</p>
-
 <pre><code>logging:
   level: INFO
   loggers:
@@ -561,118 +461,62 @@ To match the example above, it could be something like : <code>10.0.10.5@cluster
       archivedLogFilenamePattern: /var/log/cassandra-reaper/reaper-%d.log.gz
       archivedFileCount: 99
 </code></pre>
-
 <p>Definitions for some of the above sub-settings are as follows.</p>
-
 <h4 id="level"><code>level</code></h4>
-
 <p>Type: <em>String</em></p>
-
 <p>Global log level to filter to. Where the level order is <strong>ALL</strong> &lt; <strong>DEBUG</strong> &lt; <strong>INFO</strong> &lt; <strong>WARN</strong> &lt; <strong>ERROR</strong> &lt; <strong>FATAL</strong> &lt; <strong>OFF</strong>. See the <a href="https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/Level.html">log4j</a> documentation for further information.</p>
-
 <h4 id="loggers"><code>loggers</code></h4>
-
 <p>Type: <em>Object</em></p>
-
 <p>Key value pair containing the logger class name as the key and other sub-settings as its value.</p>
-
 <h4 id="logformat"><code>logFormat</code></h4>
-
 <p>Type: <em>String</em></p>
-
 <p>The output format of an entry in the log.</p>
-
 <h4 id="threshold"><code>threshold</code></h4>
-
 <p>Type: <em>String</em></p>
-
 <p>The log level to filter the console messages to. Where the level order is <strong>ALL</strong> &lt; <strong>DEBUG</strong> &lt; <strong>INFO</strong> &lt; <strong>WARN</strong> &lt; <strong>ERROR</strong> &lt; <strong>FATAL</strong> &lt; <strong>OFF</strong>. See the <a href="https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/Level.html">log4j</a> documentation for further information.</p>
-
 <h4 id="archivedfilecount"><code>archivedFileCount</code></h4>
-
 <p>Type: <em>Integer</em></p>
-
 <p>The number of archive log files stored in the log rotation sliding window. That is the number of archived (compressed) log files kept at one point in time. If there are <code>archivedFileCount</code> number of archived log files and the current (uncompressed) log file is archived, the oldest archived log file is deleted.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="metrics"><code>metrics</code></h3>
-
 <p>Type: <em>Object</em></p>
-
 <p>Configuration parameters for sending metrics to a reporting system via the <a href="http://www.dropwizard.io/1.1.4/docs/manual/configuration.html#metrics">Dropwizard interface</a>. Cassandra Reaper ships the Graphite and DataDog reporters by default.</p>
-
 <p>Further information on metrics configuration can be found in the <a href="../../metrics">Metrics</a> section.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="repairintensity"><code>repairIntensity</code></h3>
-
 <p>Type: <em>Float</em> (value between 0.0 and 1.0, but must never be 0.0.)</p>
-
 <p>Repair intensity defines the amount of time to sleep between triggering each repair segment while running a repair run. When intensity is 1.0, it means that Reaper doesn&rsquo;t sleep at all before triggering next segment, and otherwise the sleep time is defined by how much time it took to repair the last segment divided by the intensity value. 0.5 means half of the time is spent sleeping, and half running. Intensity 0.75 means that 25% of the total time is used sleeping and 75% running. This value can also be overwritten per repair run when invoking repairs.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="repairmanagerschedulingintervalseconds"><code>repairManagerSchedulingIntervalSeconds</code></h3>
-
 <p>Type: <em>Integer</em></p>
-
 <p>Default: <em>30</em></p>
-
 <p>Controls the pace at which the Repair Manager will schedule processing of the next segment. Reducing this value from its default value of 30s to a lower value can speed up fast repairs by orders of magnitude.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="repairparallelism"><code>repairParallelism</code></h3>
-
 <p>Type: <em>String</em></p>
-
 <p>Type of parallelism to apply by default to repair runs. The value must be either <strong>SEQUENTIAL</strong>, <strong>PARALLEL</strong>, or <strong>DATACENTER_AWARE</strong>.</p>
-
 <p><strong>SEQUENTIAL</strong> - one replica at a time, validation compaction performed on snapshots</p>
-
 <p><strong>PARALLEL</strong> - all replicas at the same time, no snapshot</p>
-
 <p><strong>DATACENTER_AWARE</strong> - one replica in each DC at the same time, with snapshots. If this value is used in clusters older than 2.0.12, Reaper will fall back into using <strong>SEQUENTIAL</strong> for those clusters.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="repairrunthreadcount"><code>repairRunThreadCount</code></h3>
-
 <p>Type: <em>Integer</em></p>
-
 <p>The amount of threads to use for handling the Reaper tasks. Have this big enough not to cause
 blocking in cause some thread is waiting for I/O, like calling a Cassandra cluster through JMX.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="scheduledaysbetween"><code>scheduleDaysBetween</code></h3>
-
 <p>Type: <em>Integer</em></p>
-
 <p>Default: <em>7</em></p>
-
 <p>Defines the amount of days to wait between scheduling new repairs. The value configured here is the default for new repair schedules, but you can also define it separately for each new schedule. Using value 0 for continuous repairs is also supported.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="segmentcountpernode"><code>segmentCountPerNode</code></h3>
-
 <p>Type: <em>Integer</em></p>
-
 <p>Default: <em>16</em></p>
-
 <p>Defines the default amount of repair segments to create for newly registered Cassandra repair runs, for each node in the cluster. When running a repair run by Reaper, each segment is repaired separately by the Reaper process, until all the segments in a token ring are repaired. The count might be slightly off the defined value, as clusters residing in multiple data centers require additional small token ranges in addition to the expected. This value can be overwritten when executing a repair run via Reaper.</p>
-
 <p>In a 10 nodes cluster, setting a value of 20 segments per node will generate a repair run that splits the work into 200 token subranges. This number can vary due to vnodes (before 1.2.0, Reaper cannot create a segment with multiple token ranges, so the number of segments will be at least the total number of vnodes in the cluster). As Reaper tries to size segments evenly, the presence of very small token ranges can lead to have more segments than expected.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="server"><code>server</code></h3>
-
 <p>Settings to configure the application UI server.</p>
-
 <pre><code>server:
   type: default
   applicationConnectors:
@@ -686,66 +530,38 @@ blocking in cause some thread is waiting for I/O, like calling a Cassandra clust
   requestLog:
     appenders: []
 </code></pre>
-
 <p>Reaper provides two separate UIs; the application UI which is configured via the <code>applicationConnectors</code> settings and the administration UI which is configured via the <code>adminConnectors</code> settings. The application UI provides functionality to create/manage cluster schedules, and the administration UI provides tools for monitoring and debugging the Reaper system.</p>
-
 <h4 id="port"><code>port</code></h4>
-
 <p>For the <code>applicationConnectors</code> this setting will be the port number used to access the application UI. For the <code>adminConnectors</code> this setting will be the port number to access the administration UI.</p>
-
 <p>Note that the port numbers for each must be different values when bound to the same host.</p>
-
 <h4 id="bindhost"><code>bindHost</code></h4>
-
 <p>For the <code>applicationConnectors</code> this setting will be the host address used to access the application UI. For the <code>adminConnectors</code> this setting will be the host address used to access the administration UI.</p>
-
 <p>Note that to bind the service to all interfaces use value <strong>0.0.0.0</strong> or leave the value for the setting this blank. A value of <strong>*</strong> is an invalid value for this setting.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="storagetype"><code>storageType</code></h3>
-
 <p>Type: <em>String</em></p>
-
 <p>The storage type to use in which Reaper will store its control data. The value must be either <strong>cassandra</strong>, <strong>h2</strong>, <strong>memory</strong>, or <strong>postgres</strong>. If the recommended (persistent) storage type <strong>cassandra</strong>, <strong>h2</strong>, or <strong>postgres</strong> is being used, the database client parameters must be specified in the respective <code>cassandra</code>, <code>h2</code>, or <code>postgres</code> section in the configuration file. See the example settings in provided the <em><a href="https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource">src/packaging/resources</a></em> directory of the repository.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="useaddresstranslator"><code>useAddressTranslator</code></h3>
-
 <p>Type: <em>Boolean</em></p>
-
 <p>Default: <em>false</em></p>
-
 <p>When running multi region clusters in AWS, turn this setting to <code>true</code> in order to use the EC2MultiRegionAddressTranslator from the Datastax Java Driver. This will allow translating the public address that the nodes broadcast to the private IP address that is used to expose JMX.</p>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
 <h3 id="accesscontrol"><code>accessControl</code></h3>
-
 <p>Settings to activate and configure authentication for the web UI.
 Deleting or commenting that block from the yaml file will turn off authentication.</p>
-
 <pre><code>accessControl:
   sessionTimeout: PT10M
   shiro:
     iniConfigs: [&quot;file:/path/to/shiro.ini&quot;]
-</code></pre>
-
-<h3 id="repairthreadcount"><code>repairThreadCount</code></h3>
-
+</code></pre><h3 id="repairthreadcount"><code>repairThreadCount</code></h3>
 <p>Type: <em>Integer</em></p>
-
 <p>Since Cassandra 2.2, repairs are multithreaded in order to process several token ranges concurrently and speed up the process.
 This setting allows to set a default for automatic repair schedules.
 No more than four threads are allowed by Cassandra.</p>
-
 <h3 id="maxpendingcompactions"><code>maxPendingCompactions</code></h3>
-
 <p>Type: <em>Integer</em></p>
-
 <p>Default: <em>20</em></p>
-
 <p>Reaper will prevent repair from overwhelming the cluster when lots of SSTables are streamed, by pausing segment processing if there are more than a specific number of pending compactions. Adjust this setting if you have a lot of tables in the cluster and the total number of pending compactions is usually high.</p>
 
                         </div>
@@ -808,14 +624,17 @@ No more than four threads are allowed by Cassandra.</p>
     
 
     
-<script>
-(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-ga('create', 'UA-104925477-1', 'auto');
-ga('send', 'pageview');
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-104925477-1', 'auto');
+	
+	ga('send', 'pageview');
+}
 </script>
 
 

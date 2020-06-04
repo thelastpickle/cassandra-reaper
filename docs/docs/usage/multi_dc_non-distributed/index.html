@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.40.3" />
+  <meta name="generator" content="Hugo 0.69.2" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -318,21 +318,12 @@
 
                     <div class="col-md-9">
                         <div>
-                          
-
-<h1 id="operating-multiple-dcs-with-a-single-reaper">Operating Multiple DCs with a Single Reaper</h1>
-
+                          <h1 id="operating-multiple-dcs-with-a-single-reaper">Operating Multiple DCs with a Single Reaper</h1>
 <p>Reaper can operate clusters which has a multi datacenter deployment. The <code>datacenterAvailability</code> setting in the Reaper YAML file indicates to Reaper its deployment in relation to cluster data center network locality.</p>
-
 <h2 id="single-reaper-instance-with-jmx-accessible-for-all-dcs">Single Reaper instance with JMX accessible for all DCs</h2>
-
 <p>In the case where the JMX port is accessible (with or without authentication) from the running Reaper instance for all nodes in all DCs, it is possible to have a single instance of Reaper handle one or multiple clusters by using the following setting in the configuration yaml file :</p>
-
 <pre><code>datacenterAvailability: ALL
-</code></pre>
-
-<p>This setup works with all backends : Apache Cassandra, Memory, H2 and Postgres.</p>
-
+</code></pre><p>This setup works with all backends : Apache Cassandra, Memory, H2 and Postgres.</p>
 <div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/singlereaper-multidc-all.png">
@@ -353,26 +344,15 @@
 
 
 
-
 <p>Reaper must be able to access the JMX port (7199 by default) and port 9042 if the cluster is also used as Cassandra backend, on the local DC.</p>
-
 <p>The keyspaces must be replicated using NetworkTopologyStrategy (NTS) and have replicas at least on the DC Reaper can access through JMX. Repairing the remote DC will be handled internally by Cassandra.</p>
-
 <p><strong>Note : multiple instances of Reaper can be running at once with this setting only when using the Apache Cassandra backend. See distributed mode for more details.</strong></p>
-
 <h2 id="single-reaper-instance-with-jmx-accessible-for-limited-dcs">Single Reaper instance with JMX accessible for limited DCs</h2>
-
 <p>In the case where the JMX port is accessible (with or without authentication) from the running Reaper instance for all nodes in only some of the DCs, it is possible to have a single instance of Reaper handle one or multiple clusters by using the following setting in the configuration yaml file :</p>
-
 <pre><code>datacenterAvailability: LOCAL
-</code></pre>
-
-<p>Be aware that this setup will not allow to handle backpressure for those remote DCs as JMX metrics (pending compactions, running repairs) from those remote nodes are not made available to Reaper.</p>
-
+</code></pre><p>Be aware that this setup will not allow to handle backpressure for those remote DCs as JMX metrics (pending compactions, running repairs) from those remote nodes are not made available to Reaper.</p>
 <p>If multiple clusters are registered in Reaper it is required that Reaper can access all nodes in at least one data center in each of the registered clusters.</p>
-
 <p>This setup works with all backends : Apache Cassandra, Memory, H2 and Postgres.</p>
-
 <div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/singlereaper-multidc-local.png">
@@ -393,11 +373,8 @@
 
 
 
-
 <p>Reaper must be able to access the JMX port (7199 by default) and port 9042 if the cluster is also used as Cassandra backend, on the local DC.</p>
-
 <p>The keyspaces must be replicated using NetworkTopologyStrategy (NTS) and have replicas at least on the DC Reaper can access through JMX. Repairing the remote DC will be handled internally by Cassandra.</p>
-
 <p><strong>Note : multiple instances of Reaper can be running at once with this settings only using when the Apache Cassandra backend. See distributed mode for more details.</strong></p>
 
                         </div>
@@ -460,14 +437,17 @@
     
 
     
-<script>
-(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-ga('create', 'UA-104925477-1', 'auto');
-ga('send', 'pageview');
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-104925477-1', 'auto');
+	
+	ga('send', 'pageview');
+}
 </script>
 
 

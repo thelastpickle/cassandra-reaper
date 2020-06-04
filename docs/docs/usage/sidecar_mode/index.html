@@ -57,7 +57,7 @@
   
   <meta property="og:title" content="" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="/docs/download/install//" />
+  <meta property="og:url" content="/docs/usage/sidecar_mode//" />
   <meta property="og:image" content="" />
 
 </head>
@@ -318,75 +318,40 @@
 
                     <div class="col-md-9">
                         <div>
-                          <h1 id="running-reaper">Running Reaper</h1>
-<p>After modifying the <code>resource/cassandra-reaper.yaml</code> config file, Reaper can be started using the following command line :</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml
-</code></pre></div><p>Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/</p>
-<p>Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool <code>bin/spreaper</code></p>
-<h2 id="installing-and-running-as-a-service">Installing and Running as a Service</h2>
-<p>We provide prebuilt packages for reaper on the <a href="https://bintray.com/thelastpickle">Bintray</a>.</p>
-<h3 id="rpm-install-centos-fedora-rhek">RPM Install (CentOS, Fedora, RHEK)</h3>
-<p>Grab the RPM from GitHub and install using the <code>rpm</code> command:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo rpm -ivh reaper-*.*.*.x86_64.rpm
-</code></pre></div><h4 id="using-yum-stable-releases">Using yum (stable releases)</h4>
-<p>1/ Run the following to get a generated .repo file:</p>
-<pre><code>wget https://bintray.com/thelastpickle/reaper-rpm/rpm -O bintray-thelastpickle-reaper-rpm.repo
-</code></pre><p>or - Copy this text into a &lsquo;bintray-thelastpickle-reaper-rpm.repo&rsquo; file on your Linux machine:</p>
-<pre><code>#bintraybintray-thelastpickle-reaper-rpm - packages by thelastpickle from Bintray
-[bintraybintray-thelastpickle-reaper-rpm]
-name=bintray-thelastpickle-reaper-rpm
-baseurl=https://dl.bintray.com/thelastpickle/reaper-rpm
-gpgcheck=0
-repo_gpgcheck=0
-enabled=1
-</code></pre><p>2/ Run the following command :</p>
-<pre><code>sudo mv bintray-thelastpickle-reaper-rpm.repo /etc/yum.repos.d/
-</code></pre><p>3/ Install reaper :</p>
-<pre><code>sudo yum install reaper
-</code></pre><h4 id="using-yum-development-builds">Using yum (development builds)</h4>
-<p>1/ Run the following to get a generated .repo file:</p>
-<pre><code>wget https://bintray.com/thelastpickle/reaper-rpm-beta/rpm -O bintray-thelastpickle-reaper-rpm-beta.repo
-</code></pre><p>or - Copy this text into a &lsquo;bintray-thelastpickle-reaper-rpm-beta.repo&rsquo; file on your Linux machine:</p>
-<pre><code>#bintraybintray-thelastpickle-reaper-rpm-beta - packages by thelastpickle from Bintray
-[bintraybintray-thelastpickle-reaper-rpm-beta]
-name=bintray-thelastpickle-reaper-rpm-beta
-baseurl=https://dl.bintray.com/thelastpickle/reaper-rpm-beta
-gpgcheck=0
-repo_gpgcheck=0
-enabled=1
-</code></pre><p>2/ Run the following command :</p>
-<pre><code>sudo mv bintray-thelastpickle-reaper-rpm-beta.repo /etc/yum.repos.d/
-</code></pre><p>3/ Install reaper :</p>
-<pre><code>sudo yum install reaper
-</code></pre><h3 id="deb-debian-based-distros-like-ubuntu">DEB (Debian based distros like Ubuntu)</h3>
-<p>After downloading the DEB package, install using the <code>dpkg</code> command:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo dpkg -i reaper_*.*.*_amd64.deb
-</code></pre></div><h4 id="using-apt-get-stable-releases">Using apt-get (stable releases)</h4>
-<p>1/ Using the command line, add the following to your /etc/apt/sources.list system config file:</p>
-<pre><code>echo &quot;deb https://dl.bintray.com/thelastpickle/reaper-deb wheezy main&quot; | sudo tee -a /etc/apt/sources.list
-</code></pre><p>Or, add the repository URLs using the &ldquo;Software Sources&rdquo; admin UI:</p>
-<pre><code>deb https://dl.bintray.com/thelastpickle/reaper-deb wheezy main
-</code></pre><p>2/ Install the public key:</p>
-<pre><code>sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 2895100917357435
-</code></pre><p>3/ Install reaper :</p>
-<pre><code>sudo apt-get update
-sudo apt-get install reaper
-</code></pre><h4 id="using-apt-get-development-builds">Using apt-get (development builds)</h4>
-<p>1/ Using the command line, add the following to your /etc/apt/sources.list system config file:</p>
-<pre><code>echo &quot;deb https://dl.bintray.com/thelastpickle/reaper-deb-beta wheezy main&quot; | sudo tee -a /etc/apt/sources.list
-</code></pre><p>Or, add the repository URLs using the &ldquo;Software Sources&rdquo; admin UI:</p>
-<pre><code>deb https://dl.bintray.com/thelastpickle/reaper-deb-beta wheezy main
-</code></pre><p>2/ Install the public key:</p>
-<pre><code>sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 2895100917357435
-</code></pre><p>3/ Install reaper :</p>
-<pre><code>sudo apt-get update
-sudo apt-get install reaper
-</code></pre><h2 id="service-configuration">Service Configuration</h2>
-<p>The yaml file used by the service is located at <code>/etc/cassandra-reaper/cassandra-reaper.yaml</code> and alternate config templates can be found under <code>/etc/cassandra-reaper/configs</code>.
-It is recommended to create a new file with your specific configuration and symlink it as <code>/etc/cassandra-reaper/cassandra-reaper.yaml</code> to avoid your configuration from being overwritten during upgrades.<br>
-Adapt the config file to suit your setup and then run <code>sudo service cassandra-reaper start</code>.</p>
-<p>Log files can be found at <code>/var/log/cassandra-reaper.log</code> and <code>/var/log/cassandra-reaper.err</code>.</p>
-<p>Stop the service by running : <code>sudo service cassandra-reaper stop</code></p>
+                          <h1 id="sidecar-mode">Sidecar Mode</h1>
+<p>Sidecar Mode is a way of deploying Cassandra Reaper with one reaper instance for each node in the cluster.
+The name &ldquo;Sidecar&rdquo; comes from <a href="https://github.com/microsoftdocs/architecture-center/blob/master/docs/patterns/sidecar.md">the Sidecar Pattern</a> which describes a mechanism for co-locating an auxiliary service with its supported application.
+See also  <a href="https://www.usenix.org/conference/hotcloud16/workshop-program/presentation/burns">Design Patterns for Container-based Distributed Systems</a>.
+It is a pattern that is often used in Kubernetes, where the main application and the sidecar application are deployed as separate containers in the same pod.</p>
+<p>In Sidecar Mode, each Cassandra node process is deployed alongside a Reaper process; Cassandra is the parent application and Reaper is the sidecar.</p>
+<h2 id="advantages">Advantages</h2>
+<ul>
+<li><em>Security</em>: Each Reaper process only needs local JMX access. No need to configure remote JMX access and JMX authentication.</li>
+<li><em>Kubernetes Friendly</em>: Sidecar mode is very easy to setup if your Cassandra Cluster is deployed using a container orchestration system, such as Kubernetes.</li>
+</ul>
+<h2 id="guidance">Guidance</h2>
+<ul>
+<li><em>Deploy one Reaper cluster per Cassandra cluster</em>: Sidecar mode has been designed to allow you to easily deploy a separate, highly available Reaper service for each of your Cassandra clusters. You currently cannot use a Sidecar Mode Reaper service to manage multiple clusters.</li>
+<li><em>Deploy Reaper in a sidecar container alongside Cassandra</em>: If you are using Kubernetes to deploy Cassandra and Reaper, put the Reaper process in the same Pod as Cassandra, in a sidecar container. See <a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-overview/">Pods that run multiple containers that need to work together</a></li>
+<li><em>Use Spreaper and the REST API for Reaper administration (use the WebUI for reporting)</em>: If you have automated the deployment of Reaper in Sidecar Mode alongside a Cassandra Cluster (described above). Clusters in sidecar mode are self registered into Reaper, and you can turn on auto-scheduling to fully automate Reaper setup.</li>
+<li><em>Use or write an operator</em>: For example, you could write a <a href="https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/">Kubernetes Custom Resource Definition</a> (e.g. a <code>Cassandra</code> resource) which contains configuration fields for the Cassandra database and fields with which you can define the Reaper repair settings.
+Then write an accompanying <a href="https://coreos.com/operators/">Kubernetes Operator</a> which watches for changes to those resources and reconciles the declared (desired) configuration with the actual state of the Cassandra cluster and its Reaper service.</li>
+</ul>
+<h2 id="caveats">Caveats</h2>
+<ul>
+<li><em>One Reaper cluster per Cassandra Cluster</em>: Sidecar Mode is designed to be used in situations where you deploy a separate Reaper cluster for every Cassandra cluster.
+If you prefer to deploy a single Reaper cluster to manage multiple Cassandra clusters then Sidecar Mode may not be suitable for you.</li>
+<li><em>Container orchestration (Kubernetes) preferred</em>: Following on from the &ldquo;one-reaper-per-cluster&rdquo; caveat (above) it is also worth noting that it is easiest to deploy Reaper in Sidecar Mode if your Cassandra cluster is managed by a container orchestration system, such as Kubernetes.
+Kubernetes ensures that the Reaper process starts and dies with the Cassandra process.
+Kubernetes also ensures that the Reaper process shares a network namespace with the Cassandra process so that it (and only it) can access the JMX service.</li>
+<li><em>High Resource Usage</em>: In Sidecar Mode you will be deploying an additional Java process alongside each Cassandra process.
+If your underlying infrastructure has limited resources, then Sidecar Mode may not be suitable for you.</li>
+<li><em>WebUI Session Affinity</em>: In Sidecar Mode, you will be able to connect to the Web based administration pages of any Reaper process in the cluster.
+But even once you have logged into the Web UI of one Reaper process, you will not be able to log into the Web UI on other Reaper processes.
+The Web UI session information is not stored in the underlying Cassandra Backend database.
+You will need to setup a loadbalancer / service that ensures that all Web UI traffic from a particular client is directed to a particular Reaper process.</li>
+<li><em>Snapshot support</em>: In Sidecar Mode, snapshot are not supported as Reaper currently tries to connect to all nodes directly for that feature. Asynchronous orchestration of such tasks is planned for a future release.</li>
+</ul>
 
                         </div>
 
