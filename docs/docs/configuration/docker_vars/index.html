@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.40.3" />
+  <meta name="generator" content="Hugo 0.69.2" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -318,348 +318,28 @@
 
                     <div class="col-md-9">
                         <div>
-                          
-
-<h1 id="docker-variables">Docker Variables</h1>
-
+                          <h1 id="docker-variables">Docker Variables</h1>
 <p>The Reaper Docker container has been designed to be highly configurable. Many of the environment variables map directly or indirectly to a settings in the <em>cassandra-reaper.yaml</em> configuration file.</p>
-
 <h2 id="direct-mapping-to-reaper-specific-configuration-settings">Direct Mapping to Reaper Specific Configuration Settings</h2>
-
 <p>The Docker environment variables listed in this section map directly to Reaper specific settings in the <em>cassandra-reaper.yaml</em> configuration file. The following table below lists the Docker environment variables, their associated Reaper specific setting in the <em>cassandra-reaper.yaml</em> configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.</p>
-
-<table>
-<thead>
-<tr>
-<th><h4>Environment Variable</h4></th>
-<th><h4>Configuration Setting</h4></th>
-<th><h4>Default Value</h4></th>
-</tr>
-</thead>
-
-<tbody>
-<tr>
-<td><code class="codeLarge">REAPER_AUTO_SCHEDULING_ENABLED</code></td>
-<td><a href="/docs/configuration/reaper_specific/#enabled">enabled</a></td>
-<td>false</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES</code></td>
-<td><a href="/docs/configuration/reaper_specific/#excludedkeyspaces">excludedKeyspaces</a></td>
-<td>[]</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_AUTO_SCHEDULING_INITIAL_DELAY_PERIOD</code></td>
-<td><a href="/docs/configuration/reaper_specific/#initialdelayperiod">initialDelayPeriod</a></td>
-<td>PT15S</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS</code></td>
-<td><a href="/docs/configuration/reaper_specific/#periodbetweenpolls">periodBetweenPolls</a></td>
-<td>PT10M</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_AUTO_SCHEDULING_SCHEDULE_SPREAD_PERIOD</code></td>
-<td><a href="/docs/configuration/reaper_specific/#schedulespreadperiod">scheduleSpreadPeriod</a></td>
-<td>PT6H</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE</code></td>
-<td><a href="/docs/configuration/reaper_specific/#timebeforefirstschedule">timeBeforeFirstSchedule</a></td>
-<td>PT5M</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_DATACENTER_AVAILABILITY</code></td>
-<td><a href="/docs/configuration/reaper_specific/#datacenteravailability">datacenterAvailability</a></td>
-<td>ALL</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_ENABLE_CROSS_ORIGIN</code></td>
-<td><a href="/docs/configuration/reaper_specific/#enablecrossorigin">enableCrossOrigin</a></td>
-<td>true</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_ENABLE_DYNAMIC_SEED_LIST</code></td>
-<td><a href="/docs/configuration/reaper_specific/#enabledynamicseedlist">enableDynamicSeedList</a></td>
-<td>true</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_HANGING_REPAIR_TIMEOUT_MINS</code></td>
-<td><a href="/docs/configuration/reaper_specific/#hangingrepairtimeoutmins">hangingRepairTimeoutMins</a></td>
-<td>30</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_INCREMENTAL_REPAIR</code></td>
-<td><a href="/docs/configuration/reaper_specific/#incrementalrepair">incrementalRepair</a></td>
-<td>false</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_JMX_AUTH_PASSWORD</code></td>
-<td><a href="/docs/configuration/reaper_specific/#password">password</a></td>
-<td></td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_JMX_AUTH_USERNAME</code></td>
-<td><a href="/docs/configuration/reaper_specific/#username">username</a></td>
-<td></td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_JMX_CONNECTION_TIMEOUT_IN_SECONDS</code></td>
-<td><a href="/docs/configuration/reaper_specific/#jmxconnectiontimeoutinseconds">jmxConnectionTimeoutInSeconds</a></td>
-<td>20</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_JMX_PORTS</code></td>
-<td><a href="/docs/configuration/reaper_specific/#jmxports">jmxPorts</a></td>
-<td>{}</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_LOGGING_APPENDERS_CONSOLE_LOG_FORMAT</code></td>
-<td><a href="/docs/configuration/reaper_specific/#logformat">logFormat</a></td>
-<td>&rdquo;%-6level [%d] [%t] %logger{5} - %msg %n&rdquo;</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_LOGGING_APPENDERS_CONSOLE_THRESHOLD</code></td>
-<td><a href="/docs/configuration/reaper_specific/#threshold">threshold</a></td>
-<td>WARN</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_LOGGING_LOGGERS</code></td>
-<td><a href="/docs/configuration/reaper_specific/#loggers">loggers</a></td>
-<td>{}</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_LOGGING_ROOT_LEVEL</code></td>
-<td><a href="/docs/configuration/reaper_specific/#level">level</a></td>
-<td>INFO</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_METRICS_FREQUENCY</code></td>
-<td><a href="/docs/configuration/reaper_specific/#fequency">fequency</a></td>
-<td>1 minute</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_METRICS_REPORTERS</code></td>
-<td><a href="/docs/configuration/reaper_specific/#reporters">reporters</a></td>
-<td>[]</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_REPAIR_INTENSITY</code></td>
-<td><a href="/docs/configuration/reaper_specific/#repairintensity">repairIntensity</a></td>
-<td>0.9</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_REPAIR_MANAGER_SCHEDULING_INTERVAL_SECONDS</code></td>
-<td><a href="/docs/configuration/reaper_specific/#repairmanagerschedulingintervalseconds">repairManagerSchedulingIntervalSeconds</a></td>
-<td>30</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_REPAIR_PARALELLISM</code></td>
-<td><a href="/docs/configuration/reaper_specific/#repairparallelism">repairParallelism</a></td>
-<td>DATACENTER_AWARE</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_REPAIR_RUN_THREADS</code></td>
-<td><a href="/docs/configuration/reaper_specific/#repairrunthreadcount">repairRunThreadCount</a></td>
-<td>15</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_SCHEDULE_DAYS_BETWEEN</code></td>
-<td><a href="/docs/configuration/reaper_specific/#scheduledaysbetween">scheduleDaysBetween</a></td>
-<td>7</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_SEGMENT_COUNT</code></td>
-<td><a href="/docs/configuration/reaper_specific/#segmentcount">segmentCount</a></td>
-<td>200</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_SERVER_ADMIN_BIND_HOST</code></td>
-<td><a href="/docs/configuration/reaper_specific/#bindhost">bindHost</a></td>
-<td>0.0.0.0</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_SERVER_ADMIN_PORT</code></td>
-<td><a href="/docs/configuration/reaper_specific/#port">port</a></td>
-<td>8081</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_SERVER_APP_BIND_HOST</code></td>
-<td><a href="/docs/configuration/reaper_specific/#bindhost">bindHost</a></td>
-<td>0.0.0.0</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_SERVER_APP_PORT</code></td>
-<td><a href="/docs/configuration/reaper_specific/#port">port</a></td>
-<td>8080</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_STORAGE_TYPE</code></td>
-<td><a href="/docs/configuration/reaper_specific/#storagetype">storageType</a></td>
-<td>memory</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_USE_ADDRESS_TRANSLATOR</code></td>
-<td><a href="/docs/configuration/reaper_specific/#useaddresstranslator">useAddressTranslator</a></td>
-<td>false</td>
-</tr>
-</tbody>
-</table>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
 <p><strong>Note:</strong></p>
-
 <p>Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with the YAML parameter names:</p>
-
-<table>
-<thead>
-<tr>
-<th><h4>Pre Reaper 1.0</h4></th>
-<th><h4>Post Reaper 1.0</h4></th>
-</tr>
-</thead>
-
-<tbody>
-<tr>
-<td><code>REAPER_ENABLE_CORS</code></td>
-<td><code>REAPER_ENABLE_CROSS_ORIGIN</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_ENABLE_DYNAMIC_SEEDS</code></td>
-<td><code>REAPER_ENABLE_DYNAMIC_SEED_LIST</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_AUTO_SCHEDULE_ENABLED</code></td>
-<td><code>REAPER_AUTO_SCHEDULING_ENABLED</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_AUTO_SCHEDULE_INITIAL_DELAY_PERIOD</code></td>
-<td><code>REAPER_AUTO_SCHEDULING_INITIAL_DELAY_PERIOD</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_AUTO_SCHEDULE_PERIOD_BETWEEN_POLLS</code></td>
-<td><code>REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_AUTO_SCHEDULE_TIME_BETWEEN_FIRST_SCHEDULE</code></td>
-<td><code>REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_AUTO_SCHEDULE_EXCLUDED_KEYSPACES</code></td>
-<td><code>REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_JMX_USERNAME</code></td>
-<td><code>REAPER_JMX_AUTH_USERNAME</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_JMX_PASSWORD</code></td>
-<td><code>REAPER_JMX_AUTH_PASSWORD</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_LOGGERS</code></td>
-<td><code>REAPER_LOGGING_LOGGERS</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_LOGGING_FORMAT</code></td>
-<td><code>REAPER_LOGGING_APPENDERS_CONSOLE_LOG_FORMAT</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_APP_PORT</code></td>
-<td><code>REAPER_SERVER_APP_PORT</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_APP_BIND_HOST</code></td>
-<td><code>REAPER_SERVER_APP_BIND_HOST</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_ADMIN_PORT</code></td>
-<td><code>REAPER_SERVER_ADMIN_PORT</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_ADMIN_BIND_HOST</code></td>
-<td><code>REAPER_SERVER_ADMIN_BIND_HOST</code></td>
-</tr>
-
-<tr>
-<td><code>REAPER_ACTIVATE_QUERY_LOGGER</code></td>
-<td><code>REAPER_CASS_ACTIVATE_QUERY_LOGGER</code></td>
-</tr>
-</tbody>
-</table>
-
+<!-- raw HTML omitted -->
 <h2 id="associated-reaper-specific-configuration-settings">Associated Reaper Specific Configuration Settings</h2>
-
 <p>The following Docker environment variables have no direct mapping to a setting in the <em>cassandra-reaper.yaml</em> configuration file. However, they do affect the content contained in the file that is Reaper specific.</p>
-
-<p></br></p>
-
-<h4 id="reaper-metrics-enabled"><code>REAPER_METRICS_ENABLED</code></h4>
-
+<!-- raw HTML omitted -->
+<h4 id="reaper_metrics_enabled"><code>REAPER_METRICS_ENABLED</code></h4>
 <p>Type: <em>Boolean</em></p>
-
 <p>Default: <em>false</em></p>
-
 <p>Allows the sending of Reaper metrics to a metrics reporting system such as Graphite. If enabled, the other associated environment variables <code>REAPER_METRICS_FREQUENCY</code> and <code>REAPER_METRICS_REPORTERS</code> must be set to appropriate values in order for metrics reporting to function correctly.</p>
-
 <h2 id="metrics-reporter-definition-syntax">Metrics reporter definition syntax</h2>
-
-<h4 id="reaper-metrics-reporters"><code>REAPER_METRICS_REPORTERS</code></h4>
-
+<h4 id="reaper_metrics_reporters"><code>REAPER_METRICS_REPORTERS</code></h4>
 <p>Type: <em>List</em></p>
-
 <p>Default: <em>[]</em></p>
-
 <p>Defines the metrics reporters, using a JSON syntax instead of a YAML one.
 To activate graphite metrics reporting, run the container with the following sample arguments :</p>
-
 <pre><code>docker run \
     -p 8080:8080 \
     -p 8081:8081 \
@@ -667,201 +347,38 @@ To activate graphite metrics reporting, run the container with the following sam
     -e &quot;REAPER_METRICS_FREQUENCY=10 second&quot; \
     -e &quot;REAPER_METRICS_REPORTERS=[{type: graphite, host: my.graphite.host.com, port: 2003, prefix: my.prefix}]&quot; \
     thelastpickle/cassandra-reaper:master
-</code></pre>
-
-<h2 id="direct-mapping-to-cassandra-backend-specific-configuration-settings">Direct Mapping to Cassandra Backend Specific Configuration Settings</h2>
-
+</code></pre><h2 id="direct-mapping-to-cassandra-backend-specific-configuration-settings">Direct Mapping to Cassandra Backend Specific Configuration Settings</h2>
 <p>The Docker environment variables listed in this section map directly to Cassandra backend specific settings in the <em>cassandra-reaper.yaml</em> configuration file. The following table below lists the Docker environment variables, their associated Cassandra backend specific setting in the <em>cassandra-reaper.yaml</em> configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.</p>
-
 <p>In order for the Cassandra backend to be used, <code>REAPER_STORAGE_TYPE</code> must be set to <code>cassandra</code>.</p>
-
-<p><br/></p>
-
-<table>
-<thead>
-<tr>
-<th><h4>Environment Variable</h4></th>
-<th><h4>Configuration Setting</h4></th>
-<th><h4>Default Value</h4></th>
-</tr>
-</thead>
-
-<tbody>
-<tr>
-<td><code class="codeLarge">REAPER_CASS_ACTIVATE_QUERY_LOGGER</code></td>
-<td><a href="/docs/configuration/backend_specific/#activatequerylogger">activateQueryLogger</a></td>
-<td>false</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_CASS_CLUSTER_NAME</code></td>
-<td><a href="/docs/configuration/backend_specific/#clustername">clusterName</a></td>
-<td>clustername</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_CASS_CONTACT_POINTS</code></td>
-<td><a href="/docs/configuration/backend_specific/#contactpoints">contactPoints</a></td>
-<td>[]</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_CASS_PORT</code></td>
-<td><a href="/docs/configuration/backend_specific/#port">port</a></td>
-<td>[]</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_CASS_KEYSPACE</code></td>
-<td><a href="/docs/configuration/backend_specific/#keyspace">keyspace</a></td>
-<td>cassandra-reaper</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_CASS_LOCAL_DC</code></td>
-<td><a href="/docs/configuration/backend_specific/#localdc">localDC</a></td>
-<td></td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_CASS_AUTH_USERNAME</code></td>
-<td><a href="/docs/configuration/backend_specific/#username">username</a></td>
-<td>cassandra</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_CASS_AUTH_PASSWORD</code></td>
-<td><a href="/docs/configuration/backend_specific/#password">password</a></td>
-<td>cassandra</td>
-</tr>
-</tbody>
-</table>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
 <p><strong>Note:</strong></p>
-
 <p>Some variable names and defaults have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Cassandra Backend specific variable name changes have occurred in an effort to match closely with our YAML parameter names:</p>
-
-<table>
-<thead>
-<tr>
-<th><h4>Pre Reaper 1.0</h4></th>
-<th><h4>Post Reaper 1.0</h4></th>
-</tr>
-</thead>
-
-<tbody>
-<tr>
-<td><code>REAPER_ACTIVATE_QUERY_LOGGER</code></td>
-<td><code>REAPER_CASS_ACTIVATE_QUERY_LOGGER</code></td>
-</tr>
-</tbody>
-</table>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
 <p>The following default values have changed:</p>
-
-<table>
-<thead>
-<tr>
-<th><h4>Environment Variable</h4></th>
-<th><h4>Previous Default</h4></th>
-<th><h4>New Default</h4></th>
-</tr>
-</thead>
-
-<tbody>
-<tr>
-<td><code>REAPER_CASS_KEYSPACE</code></td>
-<td><em>cassandra-reaper</em></td>
-<td><em>reaper_db</em></td>
-</tr>
-</tbody>
-</table>
-
+<!-- raw HTML omitted -->
 <h2 id="associated-cassandra-backend-specific-configuration-settings">Associated Cassandra Backend Specific Configuration Settings</h2>
-
 <p>The following Docker environment variables have no direct mapping to a setting in the <em>cassandra-reaper.yaml</em> configuration file. However, the do affect the content contained in the file that is Cassandra backend specific.</p>
-
-<p></br></p>
-
-<h4 id="reaper-cass-auth-enabled"><code>REAPER_CASS_AUTH_ENABLED</code></h4>
-
+<!-- raw HTML omitted -->
+<h4 id="reaper_cass_auth_enabled"><code>REAPER_CASS_AUTH_ENABLED</code></h4>
 <p>Type: <em>Boolean</em></p>
-
 <p>Default: <em>false</em></p>
-
 <p>Allows Reaper to send authentication credentials when establishing a connection with Cassandra via the native protocol. When enabled, authentication credentials must be specified by setting values for <code>REAPER_CASS_AUTH_USERNAME</code> and <code>REAPER_CASS_AUTH_PASSWORD</code>.</p>
-
-<p></br></p>
-
-<h4 id="reaper-cass-native-protocol-ssl-encryption-enabled"><code>REAPER_CASS_NATIVE_PROTOCOL_SSL_ENCRYPTION_ENABLED</code></h4>
-
+<!-- raw HTML omitted -->
+<h4 id="reaper_cass_native_protocol_ssl_encryption_enabled"><code>REAPER_CASS_NATIVE_PROTOCOL_SSL_ENCRYPTION_ENABLED</code></h4>
 <p>Type: <em>Boolean</em></p>
-
 <p>Default: <em>false</em></p>
-
 <p>Allows Reaper to establish an encrypted connection when establishing a connection with Cassandra via the native protocol.</p>
-
 <h2 id="direct-mapping-to-h2-or-postgres-backend-configuration-settings">Direct Mapping to H2 or Postgres Backend Configuration Settings</h2>
-
 <p>The Docker environment variables listed in this section map directly to H2/Postgres backend specific settings in the <em>cassandra-reaper.yaml</em> configuration file. The following table below lists the Docker environment variables, their associated H2/Postgres backend specific setting in the <em>cassandra-reaper.yaml</em> configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.</p>
-
 <p>In order to use the following settings, <code>REAPER_STORAGE_TYPE</code> must be set to <code>h2</code> or <code>postgres</code>.</p>
-
-<table>
-<thead>
-<tr>
-<th><h4>Environment Variable</h4></th>
-<th><h4>Configuration Setting</h4></th>
-<th><h4>Default Value</h4></th>
-</tr>
-</thead>
-
-<tbody>
-<tr>
-<td><code class="codeLarge">REAPER_DB_URL</code></td>
-<td><a href="/docs/configuration/backend_specific/#url">url</a></td>
-<td>jdbc:h2:/var/lib/cassandra-reaper/db;MODE=PostgreSQL</td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_DB_USERNAME</code></td>
-<td><a href="/docs/configuration/backend_specific/#user">user</a></td>
-<td></td>
-</tr>
-
-<tr>
-<td><code class="codeLarge">REAPER_DB_PASSWORD</code></td>
-<td><a href="/docs/configuration/backend_specific/#password-1">password</a></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-
-<p><br/></p>
-
+<!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
 <p><strong>Note:</strong></p>
-
 <p>Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with the YAML parameter names:</p>
-
-<table>
-<thead>
-<tr>
-<th><h4>Pre Reaper 1.0</h4></th>
-<th><h4>Post Reaper 1.0</h4></th>
-</tr>
-</thead>
-
-<tbody>
-<tr>
-<td><code>REAPER_DB_DRIVER_CLASS</code></td>
-<td>N/A - The associated parameter has been deprecated</td>
-</tr>
-</tbody>
-</table>
+<!-- raw HTML omitted -->
 
                         </div>
 
@@ -923,14 +440,17 @@ To activate graphite metrics reporting, run the container with the following sam
     
 
     
-<script>
-(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-ga('create', 'UA-104925477-1', 'auto');
-ga('send', 'pageview');
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-104925477-1', 'auto');
+	
+	ga('send', 'pageview');
+}
 </script>
 
 
