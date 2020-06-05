@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
@@ -132,25 +132,24 @@
   
   <url>
     <loc>http://cassandra-reaper.io/faq/</loc>
+    <priority>0</priority>
   </url>
   
   <url>
     <loc>http://cassandra-reaper.io/quickstart/</loc>
+    <priority>0</priority>
   </url>
   
   <url>
     <loc>http://cassandra-reaper.io/categories/</loc>
-    <priority>0</priority>
   </url>
   
   <url>
     <loc>http://cassandra-reaper.io/</loc>
-    <priority>0</priority>
   </url>
   
   <url>
     <loc>http://cassandra-reaper.io/tags/</loc>
-    <priority>0</priority>
   </url>
   
 </urlset>

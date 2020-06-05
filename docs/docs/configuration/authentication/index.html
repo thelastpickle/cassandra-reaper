@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.29" />
+  <meta name="generator" content="Hugo 0.69.2" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -322,85 +322,57 @@
 
                     <div class="col-md-9">
                         <div>
-                          
-
-<h1 id="authentication">Authentication</h1>
-
+                          <h1 id="authentication">Authentication</h1>
 <p>Authentication is activated in Reaper by default. It relies on <a href="https://shiro.apache.org/">Apache Shiro</a>, which allows to store users and password in files, databases or connect through LDAP and Active Directory out of the box. The default authentication uses the dummy username and password as found in the default <a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/server/src/main/resources/shiro.ini">shiro.ini</a>. It is expected you override this in a production environment.</p>
-
 <p>This default Shiro authentication configuration is referenced via the  following block in the Reaper yaml file :</p>
-
-<pre><code class="language-ini">accessControl:
-  sessionTimeout: PT10M
-  shiro:
-    iniConfigs: [&quot;classpath:shiro.ini&quot;]
-</code></pre>
-
-<h2 id="default-settings">Default settings</h2>
-
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#a6e22e">accessControl:</span>
+  <span style="color:#a6e22e">sessionTimeout: PT10M</span>
+  <span style="color:#a6e22e">shiro:</span>
+    <span style="color:#a6e22e">iniConfigs: [&#34;classpath:shiro.ini&#34;]</span>
+</code></pre></div><h2 id="default-settings">Default settings</h2>
 <p>As of Reaper 1.4.0, authentication is enabled by default and credentials are:</p>
-
 <ul>
 <li>Username: <strong>admin</strong></li>
 <li>Password: <strong>admin</strong></li>
 </ul>
-
 <h2 id="with-clear-passwords">With clear passwords</h2>
-
 <p>Copy the default <code>shiro.ini</code> file and adapt it overriding the &ldquo;users&rdquo; section :</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#a6e22e">…</span>
 
-<pre><code class="language-ini">…
+<span style="color:#66d9ef">[users]</span>
+<span style="color:#a6e22e">user1</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">password1</span>
+<span style="color:#a6e22e">user2</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">password2</span>
 
-[users]
-user1 = password1
-user2 = password2
-
-…
-</code></pre>
-
-<h2 id="with-encrypted-passwords">With encrypted passwords</h2>
-
+<span style="color:#a6e22e">…</span>
+</code></pre></div><h2 id="with-encrypted-passwords">With encrypted passwords</h2>
 <p>Based on <a href="https://shiro.apache.org/configuration.html#Configuration-EncryptingPasswords">Shiro&rsquo;s document on Encrypting passwords</a> :</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#66d9ef">[main]</span>
+<span style="color:#a6e22e">authc</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">org.apache.shiro.web.filter.authc.PassThruAuthenticationFilter</span>
+<span style="color:#a6e22e">authc.loginUrl</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">/webui/login.html</span>
+<span style="color:#a6e22e">sha256Matcher</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">org.apache.shiro.authc.credential.Sha256CredentialsMatcher</span>
+<span style="color:#a6e22e">iniRealm.credentialsMatcher</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">$sha256Matcher</span>
 
-<pre><code class="language-ini">[main]
-authc = org.apache.shiro.web.filter.authc.PassThruAuthenticationFilter
-authc.loginUrl = /webui/login.html
-sha256Matcher = org.apache.shiro.authc.credential.Sha256CredentialsMatcher
-iniRealm.credentialsMatcher = $sha256Matcher
+<span style="color:#66d9ef">[users]</span>
+<span style="color:#a6e22e">john</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">807A09440428C0A8AEF58BD3ECE32938B0D76E638119E47619756F5C2C20FF3A</span>
 
-[users]
-john = 807A09440428C0A8AEF58BD3ECE32938B0D76E638119E47619756F5C2C20FF3A
-
-…
-</code></pre>
-
-<p>To generate a password, you case use for example :</p>
-
+<span style="color:#a6e22e">…</span>
+</code></pre></div><p>To generate a password, you case use for example :</p>
 <ul>
 <li>From the command line :</li>
 </ul>
-
-<pre><code class="language-shell">echo -n &quot;Hello World&quot; | shasum -a 256
-echo -n &quot;Hello World&quot; | sha256sum
-</code></pre>
-
-<ul>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">echo -n <span style="color:#e6db74">&#34;Hello World&#34;</span> | shasum -a <span style="color:#ae81ff">256</span>
+echo -n <span style="color:#e6db74">&#34;Hello World&#34;</span> | sha256sum
+</code></pre></div><ul>
 <li>Or some language of your choice  (like Python here) :</li>
 </ul>
-
-<pre><code class="language-python">import hashlib
-hash_object = hashlib.sha256(b'Hello World')
-hex_dig = hash_object.hexdigest()
-print(hex_dig)
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> hashlib
+hash_object <span style="color:#f92672">=</span> hashlib<span style="color:#f92672">.</span>sha256(<span style="color:#e6db74">b</span><span style="color:#e6db74">&#39;Hello World&#39;</span>)
+hex_dig <span style="color:#f92672">=</span> hash_object<span style="color:#f92672">.</span>hexdigest()
+<span style="color:#66d9ef">print</span>(hex_dig)
 a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e
-</code></pre>
-
-<h2 id="with-ldap-accounts">With LDAP accounts</h2>
-
+</code></pre></div><h2 id="with-ldap-accounts">With LDAP accounts</h2>
 <p>Based on <a href="https://shiro.apache.org/static/1.2.4/apidocs/org/apache/shiro/realm/ldap/JndiLdapContextFactory.html">Shiro&rsquo;s LDAP realm usage</a>.</p>
-
 <p>An example configuration for LDAP authentication exists (commented out) in the default shiro.ini :</p>
-
 <pre><code>
 # Example LDAP realm, see https://shiro.apache.org/static/1.2.4/apidocs/org/apache/shiro/realm/ldap/JndiLdapContextFactory.html
 ldapRealm = org.apache.shiro.realm.ldap.JndiLdapRealm
@@ -411,27 +383,18 @@ ldapRealm.contextFactory.url = ldap://ldapHost:389
 ;ldapRealm.contextFactory.systemPassword = secret
 ;ldapRealm.contextFactory.environment[java.naming.security.credentials] = ldap_password
 
-</code></pre>
-
-<h2 id="accessing-reaper-via-the-command-line-spreaper">Accessing Reaper via the command line <code>spreaper</code></h2>
-
+</code></pre><h2 id="accessing-reaper-via-the-command-line-spreaper">Accessing Reaper via the command line <code>spreaper</code></h2>
 <p>In order to interact with Reaper through <code>spreaper</code> when Shiro authentication is activated, you will first need to login as follows:</p>
-
 <pre><code>$ ./spreaper login admin
 Password: *****
 # Logging in...
 You are now authenticated to Reaper.
 # JWT saved
 
-</code></pre>
-
-<p>The JWT will be saved in <code>~/.reaper/jwt</code> and automatically used by Reaper for any other call.
+</code></pre><p>The JWT will be saved in <code>~/.reaper/jwt</code> and automatically used by Reaper for any other call.
 Pre-existing tokens can be passed to spreaper using <code>--jwt &lt;token&gt;</code> with any call.</p>
-
 <h2 id="accessing-reaper-via-the-rest-api">Accessing Reaper via the REST API</h2>
-
 <p>The RESTful endpoints to Reaper can also be authenticated using JWT (Java Web Token).</p>
-
 <p>A token can be generated from the <code>/jwt</code> url by passing the Session ID cookie retrieved from the <code>/login</code> endpoint.
 Logging in through <code>/login</code> is described in the <a href="/docs/api/">REST Api page</a>.</p>
 
@@ -495,14 +458,17 @@ Logging in through <code>/login</code> is described in the <a href="/docs/api/">
     
 
     
-<script>
-(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-ga('create', 'UA-104925477-1', 'auto');
-ga('send', 'pageview');
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-104925477-1', 'auto');
+	
+	ga('send', 'pageview');
+}
 </script>
 
 

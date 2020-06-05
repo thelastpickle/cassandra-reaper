@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.29" />
+  <meta name="generator" content="Hugo 0.69.2" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -322,44 +322,25 @@
 
                     <div class="col-md-9">
                         <div>
-                          
-
-<h1 id="core-concepts">Core Concepts</h1>
-
+                          <h1 id="core-concepts">Core Concepts</h1>
 <h2 id="segments">Segments</h2>
-
 <p>Reaper splits repair runs in segments. A segment is a subrange of tokens that fits entirely in one of the cluster token ranges. The minimum number of segments for a repair run is the number of token ranges in the cluster. With a 3 nodes cluster using 256 vnodes per node, a repair run will have at least 768 segments. If necessary, each repair can define a higher number of segments than the number of token ranges.</p>
-
 <p><strong>As of Reaper 1.2.0 and Apache Cassandra 2.2, token ranges that have the same replicas can be consolidated into a single segment.</strong> If the total number of requested segments is lower than the number of vnodes, Reaper will try to group token ranges so that each segment has the appropriate number of tokens.
 In Cassandra 2.2, one repair session will be started for each subrange of the segment, so the gain will be the reduction of overhead in Reaper. Starting with 3.0, Cassandra will generate a single repair session for all the subranges that share the same replicas, which then further reduces the overhead of vnodes in Cassandra.</p>
-
 <h2 id="back-pressure">Back-pressure</h2>
-
 <p>Reaper will associate each segment with its replicas, and run repairs sequentially on only one of the replicas. If a repair is already running on one of the replicas or if there are more than 20 pending compactions, Reaper will postpone the segment for future processing and try to repair the next segment.</p>
-
 <h2 id="concurrency-and-multithreading">Concurrency and Multithreading</h2>
-
 <p>Being a multi threaded service, Reaper will compute how many concurrent repair sessions can run on the cluster and adjust its thread pool accordingly. To that end, it will check the number of nodes in the cluster and the RF (Replication Factor) of the repaired keyspace. On a three node cluster with RF=3, only one segment can be repaired at a time. On a six node cluster with RF=3, two segments can be repaired at the same time.</p>
-
 <p>The maximum number of concurrent repairs is 15 by default and can be modified in the YAML configuration (<em>cassandra-reaper.yaml</em>) file.</p>
-
 <p>Since Cassandra 2.2, repairs are multithreaded in order to process several token ranges concurrently and speed up the process. No more than four threads are authorized by Cassandra. The number of repair threads can be set differently for each repair run/schedule.
 This setting will be ignored for clusters running an older version of Apache Cassandra.</p>
-
 <h2 id="timeout">Timeout</h2>
-
 <p>By default, each segment must complete within 30 minutes. Reaper subscribes to the repair service notifications of Cassandra to monitor completion, and if a segment takes more than 30 minutes it gets cancelled and postponed. This means that if a repair job is subject to frequent segment cancellation, it is necessary to either split it up into more segments or raise the timeout over its default value.</p>
-
 <h2 id="pause-and-resume">Pause and Resume</h2>
-
 <p>Pausing a repair will force the termination of all running segments. Once the job is resumed, cancelled segments will be fully processed once again from the beginning.</p>
-
 <h2 id="intensity">Intensity</h2>
-
 <p>Intensity controls the eagerness by which Reaper triggers repair segments. The Reaper will use the duration of the previous repair segment to compute how much time to wait before triggering the next one. The idea behind this is that long segments mean a lot of data mismatch, and thus a lot of streaming and compaction. Intensity allows reaper to adequately back off and give the cluster time to handle the load caused by the repair.</p>
-
 <h2 id="scheduling-interval">Scheduling Interval</h2>
-
 <p>Reaper polls for new segments to process at a fixed interval. By default the interval is set to 30 seconds and this value can be modified in the Reaper configuration YAML file.</p>
 
                         </div>
@@ -422,14 +403,17 @@ This setting will be ignored for clusters running an older version of Apache Cas
     
 
     
-<script>
-(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-ga('create', 'UA-104925477-1', 'auto');
-ga('send', 'pageview');
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-104925477-1', 'auto');
+	
+	ga('send', 'pageview');
+}
 </script>
 
 

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Reaper: Easy Repair Management for Apache Cassandra</title>
@@ -17,8 +17,8 @@
       
       <guid>http://cassandra-reaper.io/docs/download/building/</guid>
       <description>Building Install Packages Debian packages and RPMs can be built from this project using Make, for example:
-make deb make rpm  Building JARs from source To build use the following command:
-mvn clean package  Building Docker Image from source See the Docker section for more details.
+make deb make rpm Building JARs from source To build use the following command:
+mvn clean package Building Docker Image from source See the Docker section for more details.
 Building Using Docker To simplify the build toolchain it&amp;rsquo;s possible to build everything using Docker itself. This is the process used to build the release binary artifacts from jar files to debian packages.</description>
     </item>
     
@@ -39,9 +39,10 @@ Building Reaper Docker Image Prerequisite The generation of the Docker image req
       
       <guid>http://cassandra-reaper.io/docs/download/install/</guid>
       <description>Running Reaper After modifying the resource/cassandra-reaper.yaml config file, Reaper can be started using the following command line :
-java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml  Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
+java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
 Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool bin/spreaper
-Installing and Running as a Service We provide prebuilt packages for reaper on the Bintray.</description>
+Installing and Running as a Service We provide prebuilt packages for reaper on the Bintray.
+RPM Install (CentOS, Fedora, RHEK) Grab the RPM from GitHub and install using the rpm command:</description>
     </item>
     
   </channel>

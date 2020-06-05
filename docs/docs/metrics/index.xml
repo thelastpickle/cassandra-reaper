@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Reaper: Easy Repair Management for Apache Cassandra</title>
@@ -28,7 +28,7 @@ Repair progress One of the simplest things to visualize is repair progress. We c
       
       <guid>http://cassandra-reaper.io/docs/metrics/graphite/</guid>
       <description>Graphite Reporter Reaper can be configured to periodically report metrics to a Graphite host. This can be done using the following properties in the Reaper configuration YAML file.
-Metrics: frequency: 1 minute reporters: - type: graphite host: &amp;lt;host_address&amp;gt; port: &amp;lt;port_number&amp;gt; prefix: &amp;lt;prefix&amp;gt;  Where:
+Metrics: frequency: 1 minute reporters: - type: graphite host: &amp;lt;host_address&amp;gt; port: &amp;lt;port_number&amp;gt; prefix: &amp;lt;prefix&amp;gt; Where:
  host_address is hostname of the Graphite server to report to. port_number is port of the Graphite server to report to. prefix is prefix for Metric key names that are reported to the Graphite server.</description>
     </item>
     
@@ -40,7 +40,7 @@ Metrics: frequency: 1 minute reporters: - type: graphite host: &amp;lt;host_addr
       <guid>http://cassandra-reaper.io/docs/metrics/prometheus/</guid>
       <description>Prometheus Reaper exposes all its metrics in a Prometheus-ready format under the /prometheusMetrics endpoint on the admin port.
 It&amp;rsquo;s fairly straightforward to configure Prometheus to grab them. The config can look something like:
-scrape_configs: - job_name: &#39;reaper&#39; metrics_path: &#39;/prometheusMetrics&#39; scrape_interval: 5s static_configs: - targets: [&#39;host.docker.internal:8081&#39;]   The host.docker.internal tells a Prometheus instance running inside a docker container to connect to the host&amp;rsquo;s 8081 port where Raper runs from a JAR.</description>
+scrape_configs: - job_name: &amp;#39;reaper&amp;#39; metrics_path: &amp;#39;/prometheusMetrics&amp;#39; scrape_interval: 5s static_configs: - targets: [&amp;#39;host.docker.internal:8081&amp;#39;]  The host.docker.internal tells a Prometheus instance running inside a docker container to connect to the host&amp;rsquo;s 8081 port where Raper runs from a JAR.  Metric Relabelling Reaper doesn&amp;rsquo;t do anything with the metrics.</description>
     </item>
     
   </channel>
