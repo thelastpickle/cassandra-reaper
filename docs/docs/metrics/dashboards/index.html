@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.29" />
+  <meta name="generator" content="Hugo 0.69.2" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -322,28 +322,15 @@
 
                     <div class="col-md-9">
                         <div>
-                          
-
-<h2 id="dashboards">Dashboards</h2>
-
+                          <h2 id="dashboards">Dashboards</h2>
 <p>There are many ways of visualising the metrics Reaper exposes. Here is just a few examples to get you started.</p>
-
 <p>We are going to use Grafana to visualize metrics fetched from a Prometheus backed. We will also assume the metrics were <a href="../prometheus">relabeled</a>.</p>
-
 <h3 id="repair-progress">Repair progress</h3>
-
 <p>One of the simplest things to visualize is repair progress. We can do that using a simple <code>Gauge</code>, where we use use the following query:</p>
-
 <pre><code>io_cassandrareaper_service_RepairRunner_repairProgress
-</code></pre>
-
-<p>To make the panel more pretty, we can enter the following in the <code>Legend</code> field:</p>
-
+</code></pre><p>To make the panel more pretty, we can enter the following in the <code>Legend</code> field:</p>
 <pre><code>{{cluster}} - {{keyspace}}
-</code></pre>
-
-<p>With two keyspaces doing repairs, we should see two dials, one for each keyspace:</p>
-
+</code></pre><p>With two keyspaces doing repairs, we should see two dials, one for each keyspace:</p>
 <div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/simple_gauge.png">
@@ -364,9 +351,7 @@
 
 
 
-
 <p>We can now switch the <code>Gauge</code> visualisation for a <code>Stat</code> one, which will give us the repair progress, but also a small graph showing the progress over time:</p>
-
 <div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/simple_stat.png">
@@ -387,14 +372,9 @@
 
 
 
-
 <p>To monitor the repair progress in terms of the number of repaired segments, we can use the following query:</p>
-
 <pre><code>io_cassandrareaper_service_RepairRunner_segmentsDone
-</code></pre>
-
-<p>Again, we put this query into the <code>Stat</code> panel, but we also select <code>Last</code> for the <code>Calc</code> field in the <code>Display</code> part of the <code>Visualization</code> tab. We should get a chart that looks like this:</p>
-
+</code></pre><p>Again, we put this query into the <code>Stat</code> panel, but we also select <code>Last</code> for the <code>Calc</code> field in the <code>Display</code> part of the <code>Visualization</code> tab. We should get a chart that looks like this:</p>
 <div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/segments_done.png">
@@ -415,18 +395,11 @@
 
 
 
-
 <h3 id="segment-duration">Segment duration</h3>
-
 <p>When monitoring repairs, we would like to know how much time it takes to repair a segment. As a rule of thumb, we would like each segment to take 10 to 15 minutes. This indicates the segments are big enough to not waste the overhead of a repair session and minimise over-streaming, while not being too large to risk streaming timeouts.</p>
-
 <p>To check segment durations, we will use the <code>SegmentRunner_runRepair</code> metric. This metric is a timer covering the duration from the moment a <code>SegmentRunner</code> wakes up to repair a segment until the segment finishes. In this case, we will use a <code>Graph</code> and feed it the following querry:</p>
-
 <pre><code>io_cassandrareaper_service_SegmentRunner_repairing{quantile=&quot;0.5&quot;}
-</code></pre>
-
-<p>Unlike previous examples, here we add a filter to explicitly pick the <code>0.5</code>th percentile because we are interested in the majority of the segments, not just the longest ones. Reaper already gives us this duration in seconds, so we pick <code>Seconds (s)</code> as a <code>Unit</code> for the <code>Left Y</code> axis in the <code>Axes</code> section of the Visualization tab. We should end up with a graph that looks like this:</p>
-
+</code></pre><p>Unlike previous examples, here we add a filter to explicitly pick the <code>0.5</code>th percentile because we are interested in the majority of the segments, not just the longest ones. Reaper already gives us this duration in seconds, so we pick <code>Seconds (s)</code> as a <code>Unit</code> for the <code>Left Y</code> axis in the <code>Axes</code> section of the Visualization tab. We should end up with a graph that looks like this:</p>
 <div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/segments_duration.png">
@@ -447,22 +420,13 @@
 
 
 
-
 <p>We see our segments are taking ~30 seconds, which is way below the desired ~10 minutes. We should tweak our repairs to use less segments.</p>
-
 <h3 id="segments-per-hour">Segments per hour</h3>
-
 <p>For the last two graphs, we&rsquo;ll try something harder. We&rsquo;ll try to plot the number of segments repaired per hour.</p>
-
 <p>We create another <code>Graph</code> panel and feed it a query like this:</p>
-
 <pre><code>(increase(io_cassandrareaper_service_RepairRunner_segmentsDone[1h]))
-</code></pre>
-
-<p>The above simply means we ask Prometheus to give us the increase of the given metric in a 1 hour window.</p>
-
+</code></pre><p>The above simply means we ask Prometheus to give us the increase of the given metric in a 1 hour window.</p>
 <p>Next, we enter <code>1h</code> as a <code>Min step</code> in the query tab (it&rsquo;s next to the <code>Legend</code> field), and we set <code>24h</code> as a <code>Relative time</code>. In the <code>Visualization</code> tab, we select to draw <code>Bars</code> and turn on stacking. We should end up with a graph like this:</p>
-
 <div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/segments_per_hour.png">
@@ -483,13 +447,9 @@
 
 
 
-
 <p>Note that the panel now says it tracks the last 24 hours in the top right corner - this is because of the relative time we selected. Also, even though it&rsquo;s not obvious from the graph, Grafana will draw a bar only after that hour passes. In other words, you might need to wait a bit before you start to see your bars.</p>
-
 <h3 id="segments-in-the-last-hour">Segments in the last hour</h3>
-
 <p>Finally, we can also plot the number of segments repaired in the last hour only. We use the same query, <code>min step</code> and <code>Relative time</code> as before, but this time we put it into a <code>Bar Gauge</code> with a vertical orientation. We should see this:</p>
-
 <div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/segments_last_hour.png">
@@ -571,14 +531,17 @@
     
 
     
-<script>
-(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-ga('create', 'UA-104925477-1', 'auto');
-ga('send', 'pageview');
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-104925477-1', 'auto');
+	
+	ga('send', 'pageview');
+}
 </script>
 
 
