@@ -1,5 +1,15 @@
 ## Change Log
 
+### 2.0.5 (2020/06/19 06:56 +00:00)
+- [14800fb](https://github.com/thelastpickle/cassandra-reaper/commit/14800fbc827a4bab95b60da0b69c9d56b348f565) Change default number of segments per node to a value that will avoid timeouts in most cases. (@adejanovski)
+- [9c51d5b](https://github.com/thelastpickle/cassandra-reaper/commit/9c51d5b8bfa1e49ca0543bb1812bb911a9959f37) Update documentation for the segment count per node docker var (@adejanovski)
+- [db59386](https://github.com/thelastpickle/cassandra-reaper/commit/db593864087a9e6be2e1d0186a97c79c1d4e1a6a) ISSUE #900: CI config updates (@ossarga)
+- [43ee000](https://github.com/thelastpickle/cassandra-reaper/commit/43ee000959ce38d77148df6b5c4fac3bee202e64) Use checkou@v2 in the GHA workflows (@rzvoncek)
+- [e1b4aa1](https://github.com/thelastpickle/cassandra-reaper/commit/e1b4aa189bffbccad9c6ebcdd388133f77fc614b) Fix broken Elassandra tests (@rzvoncek)
+- [21a993a](https://github.com/thelastpickle/cassandra-reaper/commit/21a993ac16bf2aeb24ce27ba2779f3a740b85a9d) ISSUE #900: CI config updates (@ossarga)
+- [64bf301](https://github.com/thelastpickle/cassandra-reaper/commit/64bf30172cf1ec9cf2ebe1ca5f54708e5543e30b) Follow symlinks when searching for reaper jar. (@Bo98)
+- [6bddbfc](https://github.com/thelastpickle/cassandra-reaper/commit/6bddbfc4a719813d26a45f57989db1657c287357) Prepare next bug fix release (@adejanovski)
+
 ### 2.0.4 (2020/04/10 12:43 +00:00)
 - [5acb462](https://github.com/thelastpickle/cassandra-reaper/commit/5acb462bcc326e733d10a8247c4a32fc0a3fdf09) Add Elassandra integration tests and fix typo in version number (@rzvoncek)
 - [64b786c](https://github.com/thelastpickle/cassandra-reaper/commit/64b786cbd81ad25b65e56872862ba75cf7672663) Treat started segments as running when aborting. (@smarsching)
