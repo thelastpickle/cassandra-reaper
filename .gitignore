@@ -3,6 +3,8 @@
 pom.xml.versionsBackup
 target/
 dependency-reduced-pom.xml
+changelog.tmp
+*.releaseBackup
 
 # Stuff from various IDE's and editors
 *.iml

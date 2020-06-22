@@ -118,7 +118,7 @@
     <developer>
       <id>ossarga</id>
       <name>Anthony Grasso</name>
-      <url>http://thelastpickle.com</url>
+      <url>https://github.com/ossarga</url>
     </developer>
   </developers>
 
@@ -193,8 +193,10 @@
                 <exclude>**/*.access</exclude>
                 <exclude>**/*.password</exclude>
                 <exclude>**/*.txt</exclude>
+                <exclude>**/*.releaseBackup</exclude>
                 <exclude>src/packaging/debian/compat</exclude>
                 <exclude>src/packaging/debian/changelog</exclude>
+                <exclude>changelog.tmp</exclude>
               </excludes>
             </configuration>
             <executions>
