@@ -168,7 +168,7 @@
 
                         <div>
                           <h1 id="frequently-asked-questions">Frequently Asked Questions</h1>
-<h3 id="why-use-reaper-instead-of-noddetool--cron">Why use Reaper instead of noddetool + cron?</h3>
+<h3 id="why-use-reaper-instead-of-noddetool--cron">Why use Reaper instead of nodetool + cron?</h3>
 <p>While it&rsquo;s possible to set up crontab to call nodetool, it requires staggering the crons to ensure overlap is kept to a minimum.  Reaper is able to intelligently schedule repairs to avoid putting too much load on the cluster, avoiding impacting performance.  Reaper also offers a simple UI to schedule repairs as granularly as needed.</p>
 <h3 id="do-i-need-to-do-repairs-if-im-not-deleting-data">Do I need to do repairs if I&rsquo;m not deleting data?</h3>
 <p>Yes!  Repair is a necessary anti-entropy mechanism that keeps your cluster consistent.  Without repair, queries at LOCAL_ONE could return incorrect results.</p>
