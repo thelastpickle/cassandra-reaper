@@ -50,8 +50,6 @@ case "${TEST_TYPE}" in
         mkdir -p ~/.local
         cp ./.github/files/jmxremote.password ~/.local/jmxremote.password
         chmod 400 ~/.local/jmxremote.password
-        sudo chmod 777 /usr/lib/jvm/zulu-8-azure-amd64/jre/lib/management/jmxremote.access
-        echo "cassandra     readwrite" >> /usr/lib/jvm/zulu-8-azure-amd64/jre/lib/management/jmxremote.access
         sudo chmod 777 /opt/hostedtoolcache/jdk/8.0.192/x64/jre/lib/management/jmxremote.access
         echo "cassandra     readwrite" >> /opt/hostedtoolcache/jdk/8.0.192/x64/jre/lib/management/jmxremote.access
         if [[ ! -z $ELASSANDRA_VERSION ]]; then
