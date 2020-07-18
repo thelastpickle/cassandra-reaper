@@ -26,9 +26,12 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
+import io.cassandrareaper.jmx.JmxProxy;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +45,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -61,14 +65,21 @@ public final class RepairRunService {
 
   private final AppContext context;
   private final RepairUnitService repairUnitService;
+  private final ClusterFacade clusterFacade;
 
-  private RepairRunService(AppContext context) {
+  private RepairRunService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier) {
     this.context = context;
     this.repairUnitService = RepairUnitService.create(context);
+    this.clusterFacade = clusterFacadeSupplier.get();
+  }
+
+  @VisibleForTesting
+  static RepairRunService create(AppContext context, Supplier<ClusterFacade> supplier) throws ReaperException {
+    return new RepairRunService(context, supplier);
   }
 
   public static RepairRunService create(AppContext context) {
-    return new RepairRunService(context);
+    return new RepairRunService(context, () -> ClusterFacade.create(context));
   }
 
   /**
@@ -135,7 +146,8 @@ public final class RepairRunService {
    * @throws ReaperException when fails to discover seeds for the cluster or fails to connect to any
    *     of the nodes in the Cluster.
    */
-  private List<Segment> generateSegments(
+  @VisibleForTesting
+  List<Segment> generateSegments(
       Cluster targetCluster, int segmentCount, int segmentCountPerNode, RepairUnit repairUnit)
       throws ReaperException {
 
@@ -153,7 +165,6 @@ public final class RepairRunService {
     }
 
     try {
-      ClusterFacade clusterFacade = ClusterFacade.create(context);
       List<BigInteger> tokens = clusterFacade.getTokens(targetCluster);
       Map<List<String>, List<String>> rangeToEndpoint
           = clusterFacade.getRangeToEndpointMap(targetCluster, repairUnit.getKeyspaceName());
@@ -185,7 +196,45 @@ public final class RepairRunService {
       LOG.error(errMsg);
       throw new ReaperException(errMsg);
     }
-    return segments;
+
+    // Compute replicas per DC for each segment
+    List<Segment> segmentsWithReplicas = Lists.newArrayList();
+    for (Segment segment:segments) {
+      segmentsWithReplicas.add(
+          Segment.builder()
+                 .withBaseRange(segment.getBaseRange())
+                 .withTokenRanges(segment.getTokenRanges())
+                 .withReplicas(getDCsByNodeForRepairSegment(targetCluster, segment, repairUnit.getKeyspaceName()))
+                 .build());
+    }
+
+    return segmentsWithReplicas;
+  }
+
+  private Map<String, String> getDCsByNodeForRepairSegment(
+      Cluster cluster,
+      Segment segment,
+      String keyspace) throws ReaperException {
+
+    final int maxAttempts = 2;
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        JmxProxy jmxConnection = clusterFacade.connect(cluster);
+        // when hosts are coming up or going down, this method can throw an UndeclaredThrowableException
+        Collection<String> nodes = clusterFacade.tokenRangeToEndpoint(cluster, keyspace, segment);
+        Map<String, String> dcByNode = Maps.newHashMap();
+        nodes.forEach(node -> dcByNode.put(node, EndpointSnitchInfoProxy.create(jmxConnection).getDataCenter(node)));
+        return dcByNode;
+      } catch (RuntimeException e) {
+        if (attempt < maxAttempts - 1) {
+          LOG.warn("Failed getting replicas for token range {}. Attempt {} of {}",
+              segment.getBaseRange(), attempt + 1, maxAttempts, e);
+        }
+      }
+    }
+
+    throw new ReaperException(String.format("Failed getting replicas for token range (%s, %s)",
+        segment.getBaseRange().getStart(), segment.getBaseRange().getEnd()));
   }
 
   static int computeGlobalSegmentCount(
@@ -292,6 +341,7 @@ public final class RepairRunService {
                                 .withTokenRanges(Arrays.asList(range.getValue()))
                                 .build(),
                             repairUnit.getId())
+                        .withReplicas(Collections.emptyMap())
                         .withCoordinatorHost(range.getKey())));
 
     return repairSegmentBuilders;
@@ -310,7 +360,7 @@ public final class RepairRunService {
 
     try {
       rangeToEndpoint
-          = ClusterFacade.create(context)
+          = clusterFacade
               .getRangeToEndpointMap(targetCluster, repairUnit.getKeyspaceName());
     } catch (ReaperException e) {
       LOG.error("couldn't connect to any host: {}, will try next one", e);
@@ -334,8 +384,7 @@ public final class RepairRunService {
     Set<String> knownTables;
 
     knownTables
-        = ClusterFacade
-            .create(context)
+        = clusterFacade
             .getTablesForKeyspace(cluster, keyspace)
             .stream()
             .map(Table::getName)
@@ -363,7 +412,7 @@ public final class RepairRunService {
 
     Set<String> nodesInCluster;
 
-    nodesInCluster = ClusterFacade.create(context).getEndpointToHostId(cluster).keySet();
+    nodesInCluster = clusterFacade.getEndpointToHostId(cluster).keySet();
     if (nodesInCluster.isEmpty()) {
       LOG.debug("no nodes found in cluster {}", cluster.getName());
       throw new IllegalArgumentException("no nodes found in cluster");
