@@ -38,6 +38,7 @@ public class PostgresRepairSegment {
   private final DateTime startTime;
   private final DateTime endTime;
   private final String tokenRangesTxt;
+  private final String replicasTxt;
 
   public PostgresRepairSegment(RepairSegment original) {
     runId = original.getRunId();
@@ -50,6 +51,7 @@ public class PostgresRepairSegment {
     startTime = original.getStartTime();
     endTime = original.getEndTime();
     tokenRangesTxt = JsonParseUtils.writeTokenRangesTxt(original.getTokenRange().getTokenRanges());
+    replicasTxt = JsonParseUtils.writeReplicas(original.getReplicas());
   }
 
   public UUID getId() {
@@ -98,5 +100,9 @@ public class PostgresRepairSegment {
 
   public BigInteger getEndToken() {
     return tokenRange.getBaseRange().getEnd();
+  }
+
+  public String getReplicasTxt() {
+    return replicasTxt;
   }
 }

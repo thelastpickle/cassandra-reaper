@@ -43,6 +43,7 @@ import java.math.BigInteger;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -55,6 +56,7 @@ import java.util.concurrent.Future;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import jersey.repackaged.com.google.common.collect.Maps;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.progress.ProgressEventType;
@@ -106,6 +108,8 @@ public final class SegmentRunnerTest {
                 .nodes(Sets.newHashSet("127.0.0.1"))
                 .repairThreadCount(1));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = context.storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -116,12 +120,13 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
 
     context.storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
@@ -220,6 +225,8 @@ public final class SegmentRunnerTest {
                 .nodes(Sets.newHashSet("127.0.0.1"))
                 .repairThreadCount(1));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -230,12 +237,13 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
 
     storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
@@ -369,6 +377,8 @@ public final class SegmentRunnerTest {
                 .nodes(Sets.newHashSet("127.0.0.1"))
                 .repairThreadCount(1));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -379,12 +389,13 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
 
     storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
@@ -509,6 +520,8 @@ public final class SegmentRunnerTest {
                 .nodes(Sets.newHashSet("127.0.0.1"))
                 .repairThreadCount(1));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -519,12 +532,13 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
 
     storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
@@ -645,6 +659,8 @@ public final class SegmentRunnerTest {
                 .nodes(Sets.newHashSet("127.0.0.1"))
                 .repairThreadCount(1));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -655,12 +671,13 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
 
     storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
@@ -782,6 +799,8 @@ public final class SegmentRunnerTest {
                 .nodes(Sets.newHashSet("127.0.0.1"))
                 .repairThreadCount(1));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -792,12 +811,13 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
 
     storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
@@ -920,6 +940,8 @@ public final class SegmentRunnerTest {
                 .nodes(Sets.newHashSet("127.0.0.1"))
                 .repairThreadCount(1));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -930,12 +952,13 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
 
     storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
@@ -1119,7 +1142,7 @@ public final class SegmentRunnerTest {
     Mockito.when(((CassandraStorage) context.storage).getCluster(any()))
         .thenReturn(Cluster.builder()
           .withName("test")
-          .withPartitioner("murmur3")
+          .withPartitioner("Murmur3Partitioner")
           .withSeedHosts(ImmutableSet.of("test"))
           .withJmxPort(7199)
           .build());

@@ -122,13 +122,13 @@ public interface IStoragePostgreSql {
   //
   String SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID
       = "repair_unit_id, run_id, start_token, end_token, state, coordinator_host, start_time, "
-          + "end_time, fail_count, token_ranges";
+          + "end_time, fail_count, token_ranges, replicas";
   String SQL_REPAIR_SEGMENT_ALL_FIELDS = "repair_segment.id, " + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID;
   String SQL_INSERT_REPAIR_SEGMENT = "INSERT INTO repair_segment ("
           + SQL_REPAIR_SEGMENT_ALL_FIELDS_NO_ID
           + ") VALUES "
           + "(:repairUnitId, :runId, :startToken, :endToken, :state, :coordinatorHost, :startTime, "
-          + ":endTime, :failCount, :tokenRangesTxt)";
+          + ":endTime, :failCount, :tokenRangesTxt, :replicasTxt)";
   String SQL_UPDATE_REPAIR_SEGMENT = "UPDATE repair_segment SET repair_unit_id = :repairUnitId, run_id = :runId, "
           + "start_token = :startToken, end_token = :endToken, state = :state, "
           + "coordinator_host = :coordinatorHost, start_time = :startTime, end_time = :endTime, "
@@ -139,7 +139,8 @@ public interface IStoragePostgreSql {
   String SQL_GET_REPAIR_SEGMENTS_FOR_RUN_WITH_STATE = "SELECT " + SQL_REPAIR_SEGMENT_ALL_FIELDS
       + " FROM repair_segment WHERE " + "run_id = :runId AND state = :state";
   String SQL_GET_RUNNING_REPAIRS_FOR_CLUSTER
-      = "SELECT start_token, end_token, token_ranges, keyspace_name, column_families, repair_parallelism, tables "
+      = "SELECT start_token, end_token, token_ranges, keyspace_name, column_families, "
+          + "repair_parallelism, tables, replicas "
           + "FROM repair_segment "
           + "JOIN repair_run ON run_id = repair_run.id "
           + "JOIN repair_unit ON repair_run.repair_unit_id = repair_unit.id "

@@ -23,6 +23,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
@@ -36,6 +37,7 @@ public final class Segment {
 
   RingRange baseRange;
   List<RingRange> tokenRanges;
+  Map<String, String> replicas;
 
   private Segment(Builder builder) {
     this.tokenRanges = builder.tokenRanges;
@@ -43,6 +45,7 @@ public final class Segment {
     if (builder.baseRange != null) {
       this.baseRange = builder.baseRange;
     }
+    this.replicas = builder.replicas;
   }
 
   public RingRange getBaseRange() {
@@ -62,6 +65,10 @@ public final class Segment {
     return tokens;
   }
 
+  public Map<String, String> getReplicas() {
+    return this.replicas;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -70,6 +77,7 @@ public final class Segment {
   public static final class Builder {
     private List<RingRange> tokenRanges;
     private RingRange baseRange;
+    private Map<String, String> replicas;
 
     private Builder() {}
 
@@ -85,6 +93,11 @@ public final class Segment {
 
     public Builder withBaseRange(RingRange baseRange) {
       this.baseRange = baseRange;
+      return this;
+    }
+
+    public Builder withReplicas(Map<String, String> replicas) {
+      this.replicas = replicas;
       return this;
     }
 

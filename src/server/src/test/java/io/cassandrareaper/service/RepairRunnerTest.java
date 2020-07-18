@@ -60,7 +60,6 @@ import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.assertj.core.util.Maps;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.Before;
@@ -89,6 +88,9 @@ public final class RepairRunnerTest {
             .withSeedHosts(ImmutableSet.of("127.0.0.1"))
             .withState(Cluster.State.ACTIVE)
             .build();
+  private Map<String, String> replicas = ImmutableMap.of(
+      "127.0.0.1", "dc1"
+  );
 
   @Before
   public void setUp() throws Exception {
@@ -109,7 +111,6 @@ public final class RepairRunnerTest {
     final IStorage storage = new MemoryStorage();
 
     storage.addCluster(cluster);
-
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
             .clusterName(cluster.getName())
@@ -121,6 +122,7 @@ public final class RepairRunnerTest {
             .blacklistedTables(BLACKLISTED_TABLES)
             .repairThreadCount(REPAIR_THREAD_COUNT));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
+
     RepairRun run = storage.addRepairRun(
             RepairRun.builder(cluster.getName(), cf.getId())
                 .intensity(INTENSITY)
@@ -129,7 +131,10 @@ public final class RepairRunnerTest {
                 .tables(TABLES),
             Collections.singleton(
                 RepairSegment.builder(
-                    Segment.builder().withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100"))).build(),
+                    Segment.builder()
+                           .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100")))
+                           .withReplicas(replicas)
+                           .build(),
                     cf.getId())));
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
@@ -277,7 +282,10 @@ public final class RepairRunnerTest {
                 .tables(TABLES),
             Collections.singleton(
                 RepairSegment.builder(
-                    Segment.builder().withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100"))).build(),
+                    Segment.builder()
+                           .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100")))
+                           .withReplicas(replicas)
+                           .build(),
                     cf.getId())));
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
@@ -397,7 +405,9 @@ public final class RepairRunnerTest {
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
     final Set<String> NODES = Sets.newHashSet("127.0.0.1");
-    final Map<String, String> NODES_MAP = Maps.newHashMap("node1", "127.0.0.1");
+    final Map<String, String> NODES_MAP = ImmutableMap.of(
+        "127.0.0.1", "dc1"
+        );
     final Set<String> DATACENTERS = Collections.emptySet();
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
     final long TIME_RUN = 41L;
@@ -411,9 +421,7 @@ public final class RepairRunnerTest {
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
-
     storage.addCluster(cluster);
-
     UUID cf = storage.addRepairUnit(
         RepairUnit.builder()
             .clusterName(cluster.getName())
@@ -438,6 +446,7 @@ public final class RepairRunnerTest {
                 RepairSegment.builder(
                         Segment.builder()
                             .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100")))
+                            .withReplicas(replicas)
                             .build(),
                         cf)
                     .withState(RepairSegment.State.RUNNING)
@@ -446,6 +455,7 @@ public final class RepairRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(new BigInteger("100"), new BigInteger("200")))
+                        .withReplicas(replicas)
                         .build(),
                     cf)));
 

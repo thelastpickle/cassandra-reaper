@@ -27,6 +27,7 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
+import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.RepairRunnerTest;
@@ -34,6 +35,7 @@ import io.cassandrareaper.storage.MemoryStorage;
 
 import java.math.BigInteger;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +54,7 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -138,7 +141,7 @@ public final class RepairRunResourceTest {
     uriInfo = mock(UriInfo.class);
     when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(SAMPLE_URI));
 
-    proxy = mock(JmxProxy.class);
+    proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getClusterName()).thenReturn(clustername);
     when(proxy.getCassandraVersion()).thenReturn("3.11.4");
     when(proxy.getPartitioner()).thenReturn(PARTITIONER);
@@ -162,6 +165,15 @@ public final class RepairRunResourceTest {
             any(),
             any(Integer.class)))
         .thenReturn(1);
+
+    EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+    when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+    try {
+      when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+    } catch (UnknownHostException ex) {
+      throw new AssertionError(ex);
+    }
+    JmxProxyTest.mockGetEndpointSnitchInfoMBean(proxy, endpointSnitchInfoMBean);
 
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(context.jmxConnectionFactory.connectAny(Mockito.anyCollection())).thenReturn(proxy);

@@ -175,6 +175,7 @@ const SegmentList = CreateReactClass({
                                 <th>Fail count</th>
                                 <th>State</th>
                                 <th>Host</th>
+                                <th>Replicas</th>
                                 <th>Started</th>
                                 <th></th>
                             </tr>
@@ -204,6 +205,7 @@ const SegmentList = CreateReactClass({
                                 <th>Fail count</th>
                                 <th>State</th>
                                 <th>Host</th>
+                                <th>Replicas</th>
                                 <th>Started</th>
                                 <th>Ended</th>
                                 <th>Duration</th>
@@ -233,6 +235,7 @@ const SegmentList = CreateReactClass({
                                 <th>Start token</th>
                                 <th>End token</th>
                                 <th>Fail count</th>
+                                <th>Replicas</th>
                                 <th>State</th>
                             </tr>
                         </thead>
@@ -362,12 +365,14 @@ const Segment = CreateReactClass({
     },
 
     render: function() {
+        var replicas = Object.keys(this.props.segment.replicas).map(replica => replica + " (" + this.props.segment.replicas[replica] + ")");
         if (this.props.segment.state === 'NOT_STARTED') {
             return  <tr>
                 <td>{this.props.segment.id}</td>
                 <td>{this.props.segment.tokenRange.baseRange.start}</td>
                 <td>{this.props.segment.tokenRange.baseRange.end}</td>
                 <td>{this.props.segment.failCount}</td>
+                <td><CFsListRender list={replicas} /></td>
                 <td className="table-data-label-primary">{this.props.segment.state}</td>
             </tr>
         } else if (this.props.segment.state === 'RUNNING' || this.props.segment.state === 'STARTED') {
@@ -378,6 +383,7 @@ const Segment = CreateReactClass({
                 <td>{this.props.segment.failCount}</td>
                 <td className='table-data-label-warning'>{this.props.segment.state}</td>
                 <td>{this.props.segment.coordinatorHost}</td>
+                <td><CFsListRender list={replicas} /></td>
                 <td>{moment(this.props.segment.startTime).format("LLL")}</td>
                 <td><Button className='btn-xs btn-danger' onClick={() => this._abortSegment()}>Abort</Button></td>
             </tr>
@@ -389,6 +395,7 @@ const Segment = CreateReactClass({
                 <td>{this.props.segment.failCount}</td>
                 <td className='table-data-label-success'>{this.props.segment.state}</td>
                 <td>{this.props.segment.coordinatorHost}</td>
+                <td><CFsListRender list={replicas} /></td>
                 <td>{moment(this.props.segment.startTime).format("LLL")}</td>
                 <td>{moment(this.props.segment.endTime).format("LLL")}</td>
                 <td>{moment.duration(moment(this.props.segment.endTime).diff(moment(this.props.segment.startTime))).humanize()}</td>

@@ -18,6 +18,7 @@
 package io.cassandrareaper.core;
 
 import java.math.BigInteger;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -42,6 +43,7 @@ public final class RepairSegment {
   private final String coordinatorHost;
   private final DateTime startTime;
   private final DateTime endTime;
+  private final Map<String, String> replicas;
 
   private RepairSegment(Builder builder, @Nullable UUID id) {
     this.id = id;
@@ -53,6 +55,7 @@ public final class RepairSegment {
     this.coordinatorHost = builder.coordinatorHost;
     this.startTime = builder.startTime;
     this.endTime = builder.endTime;
+    this.replicas = builder.replicas;
   }
 
   public static Builder builder(Segment tokenRange, UUID repairUnitId) {
@@ -108,6 +111,11 @@ public final class RepairSegment {
     return endTime;
   }
 
+  @Nullable
+  public Map<String, String> getReplicas() {
+    return replicas;
+  }
+
   public Builder with() {
     return new Builder(this);
   }
@@ -149,6 +157,7 @@ public final class RepairSegment {
     private String coordinatorHost;
     private DateTime startTime;
     private DateTime endTime;
+    private Map<String, String> replicas;
 
     private Builder() {}
 
@@ -159,6 +168,7 @@ public final class RepairSegment {
       this.tokenRange = tokenRange;
       this.failCount = 0;
       this.state = State.NOT_STARTED;
+      this.replicas = tokenRange.getReplicas();
     }
 
     private Builder(RepairSegment original) {
@@ -171,6 +181,7 @@ public final class RepairSegment {
       coordinatorHost = original.coordinatorHost;
       startTime = original.startTime;
       endTime = original.endTime;
+      replicas = original.replicas;
     }
 
     public Builder withRunId(UUID runId) {
@@ -222,6 +233,11 @@ public final class RepairSegment {
 
     public Builder withId(@Nullable UUID segmentId) {
       this.id = segmentId;
+      return this;
+    }
+
+    public Builder withReplicas(Map<String, String> replicas) {
+      this.replicas = replicas;
       return this;
     }
 
