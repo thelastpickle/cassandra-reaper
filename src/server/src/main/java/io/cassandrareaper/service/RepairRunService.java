@@ -328,6 +328,7 @@ public final class RepairRunService {
                                 .withTokenRanges(Arrays.asList(range.getValue()))
                                 .build(),
                             repairUnit.getId())
+                        .withReplicas(Maps.newHashMap())
                         .withCoordinatorHost(range.getKey())));
 
     return repairSegmentBuilders;

@@ -436,8 +436,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     insertRepairSegmentIncrementalPrepStmt = session
         .prepare(
             "INSERT INTO repair_run"
-                + "(id,segment_id,repair_unit_id,start_token,end_token,segment_state,coordinator_host,fail_count)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
+                + "(id,segment_id,repair_unit_id,start_token,end_token,"
+                + "segment_state,coordinator_host,fail_count,replicas)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
     updateRepairSegmentPrepStmt = session
         .prepare(
@@ -756,7 +757,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               segment.getEndToken(),
               segment.getState().ordinal(),
               segment.getCoordinatorHost(),
-              segment.getFailCount()));
+              segment.getFailCount(),
+              segment.getReplicas()));
       } else {
         try {
           repairRunBatch.add(
