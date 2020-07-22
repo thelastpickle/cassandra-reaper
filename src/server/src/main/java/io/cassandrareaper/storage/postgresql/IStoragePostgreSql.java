@@ -148,20 +148,20 @@ public interface IStoragePostgreSql {
   String SQL_GET_NEXT_FREE_REPAIR_SEGMENT = "SELECT "
           + SQL_REPAIR_SEGMENT_ALL_FIELDS
           + " FROM repair_segment WHERE run_id = :runId "
-          + "AND state = 0 ORDER BY random() LIMIT 1";
+          + "AND state = 0 ORDER BY random()";
   String SQL_GET_NEXT_FREE_REPAIR_SEGMENT_IN_NON_WRAPPING_RANGE = "SELECT "
           + SQL_REPAIR_SEGMENT_ALL_FIELDS
           + " FROM repair_segment WHERE "
           + "run_id = :runId AND state = 0 AND start_token < end_token AND "
           + "(start_token >= :startToken AND end_token <= :endToken) "
-          + "ORDER BY random() LIMIT 1";
+          + "ORDER BY random()";
   String SQL_GET_NEXT_FREE_REPAIR_SEGMENT_IN_WRAPPING_RANGE = "SELECT "
           + SQL_REPAIR_SEGMENT_ALL_FIELDS
           + " FROM repair_segment WHERE "
           + "run_id = :runId AND state = 0 AND "
           + "((start_token < end_token AND (start_token >= :startToken OR end_token <= :endToken)) OR "
           + "(start_token >= :startToken AND end_token <= :endToken)) "
-          + "ORDER BY random() LIMIT 1";
+          + "ORDER BY random()";
   String SQL_DELETE_REPAIR_SEGMENTS_FOR_RUN = "DELETE FROM repair_segment WHERE run_id = :runId";
 
   // RepairSchedule
@@ -398,6 +398,39 @@ public interface IStoragePostgreSql {
 
   String SQL_PURGE_OLD_NODE_OPERATIONS = "DELETE from node_operations WHERE ts < :expirationTime";
 
+  String SQL_INSERT_NODE_LOCK = "INSERT INTO running_repairs (repair_id, node, last_heartbeat, reaper_instance_host,"
+      + "  reaper_instance_id, segment_id) "
+      + "values(:repairId, :node, now(), :reaperInstanceHost, :reaperInstanceId, :segmentId)";
+
+  String SQL_UPDATE_NODE_LOCK = "UPDATE running_repairs "
+      + " SET "
+      + "reaper_instance_id = :reaperInstanceId, reaper_instance_host = :reaperInstanceHost, last_heartbeat = now(),"
+      + "segment_id = :segmentId"
+      + " WHERE "
+      + "repair_id = :repairId AND node = :node AND last_heartbeat < :expirationTime";
+
+  String SQL_RENEW_NODE_LOCK = "UPDATE running_repairs "
+      + " SET "
+      + "reaper_instance_id = :reaperInstanceId, reaper_instance_host = :reaperInstanceHost, last_heartbeat = now()"
+      + " WHERE "
+      + "repair_id = :repairId AND node = :node AND reaper_instance_id = :reaperInstanceId"
+      + " AND segment_id = :segmentId";
+
+  String SQL_RELEASE_NODE_LOCK = "DELETE FROM running_repairs"
+      + " WHERE "
+      + "repair_id = :repairId AND node = :node AND reaper_instance_id = :reaperInstanceId"
+      + " AND segment_id = :segmentId";
+
+  String SQL_FORCE_RELEASE_NODE_LOCK = "DELETE FROM running_repairs WHERE repair_id = :repairId and node = :node";
+
+  String SQL_SELECT_LOCKED_SEGMENTS = "SELECT segment_id FROM running_repairs "
+      + " WHERE "
+      + " last_heartbeat >= :expirationTime";
+
+  String SQL_SELECT_LOCKED_NODES = "SELECT node FROM running_repairs "
+      + " WHERE "
+      + " last_heartbeat >= :expirationTime";
+
   static String[] parseStringArray(Object obj) {
     String[] values = null;
     if (obj instanceof String[]) {
@@ -533,19 +566,19 @@ public interface IStoragePostgreSql {
 
   @SqlQuery(SQL_GET_NEXT_FREE_REPAIR_SEGMENT)
   @Mapper(RepairSegmentMapper.class)
-  RepairSegment getNextFreeRepairSegment(
+  Collection<RepairSegment> getNextFreeRepairSegment(
       @Bind("runId") long runId);
 
   @SqlQuery(SQL_GET_NEXT_FREE_REPAIR_SEGMENT_IN_NON_WRAPPING_RANGE)
   @Mapper(RepairSegmentMapper.class)
-  RepairSegment getNextFreeRepairSegmentInNonWrappingRange(
+  Collection<RepairSegment> getNextFreeRepairSegmentInNonWrappingRange(
       @Bind("runId") long runId,
       @Bind("startToken") BigInteger startToken,
       @Bind("endToken") BigInteger endToken);
 
   @SqlQuery(SQL_GET_NEXT_FREE_REPAIR_SEGMENT_IN_WRAPPING_RANGE)
   @Mapper(RepairSegmentMapper.class)
-  RepairSegment getNextFreeRepairSegmentInWrappingRange(
+  Collection<RepairSegment> getNextFreeRepairSegmentInWrappingRange(
       @Bind("runId") long runId,
       @Bind("startToken") BigInteger startToken,
       @Bind("endToken") BigInteger endToken);
@@ -831,6 +864,58 @@ public interface IStoragePostgreSql {
 
   @SqlUpdate(SQL_PURGE_OLD_NODE_OPERATIONS)
   int purgeOldNodeOperations(
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlUpdate(SQL_INSERT_NODE_LOCK)
+  int insertNodeLock(
+      @Bind("repairId") UUID repairId,
+      @Bind("node") String node,
+      @Bind("reaperInstanceId") UUID reaperInstanceId,
+      @Bind("reaperInstanceHost") String reaperInstanceHost,
+      @Bind("segmentId") UUID segmentId
+  );
+
+  @SqlUpdate(SQL_UPDATE_NODE_LOCK)
+  int updateNodeLock(
+      @Bind("repairId") UUID repairId,
+      @Bind("node") String node,
+      @Bind("reaperInstanceId") UUID reaperInstanceId,
+      @Bind("reaperInstanceHost") String reaperInstanceHost,
+      @Bind("segmentId") UUID segmentId,
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlUpdate(SQL_RENEW_NODE_LOCK)
+  int renewNodeLock(
+      @Bind("repairId") UUID repairId,
+      @Bind("node") String node,
+      @Bind("reaperInstanceId") UUID reaperInstanceId,
+      @Bind("reaperInstanceHost") String reaperInstanceHost,
+      @Bind("segmentId") UUID segmentId
+  );
+
+  @SqlUpdate(SQL_RELEASE_NODE_LOCK)
+  int releaseNodeLock(
+      @Bind("repairId") UUID repairId,
+      @Bind("node") String node,
+      @Bind("segmentId") UUID segmentId,
+      @Bind("reaperInstanceId") UUID reaperInstanceId
+  );
+
+  @SqlUpdate(SQL_FORCE_RELEASE_NODE_LOCK)
+  int forceReleaseNodeLock(
+      @Bind("repairId") UUID repairId,
+      @Bind("node") String node
+  );
+
+  @SqlQuery(SQL_SELECT_LOCKED_NODES)
+  List<String> getLockedNodes(
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlQuery(SQL_SELECT_LOCKED_SEGMENTS)
+  List<Long> getLockedSegments(
       @Bind("expirationTime") Instant expirationTime
   );
 }

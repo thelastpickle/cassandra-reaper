@@ -38,3 +38,4 @@ src/packaging/data
 src/packaging/ssl-stores
 /src/server/nbproject/
 src/ui/theming/bootstrap/node_modules
+.vscode

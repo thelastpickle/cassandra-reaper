@@ -40,6 +40,7 @@ import javax.management.JMException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -62,7 +63,7 @@ public final class MetricsService {
 
   private final AppContext context;
   private final ClusterFacade clusterFacade;
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
   private final String localClusterName;
 
   private MetricsService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier) throws ReaperException {
@@ -78,6 +79,8 @@ public final class MetricsService {
     } else {
       localClusterName = null;
     }
+    objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new Jdk8Module());
   }
 
   @VisibleForTesting

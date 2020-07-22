@@ -174,7 +174,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         .addMapping("/prometheusMetrics");
 
     int repairThreads = config.getRepairRunThreadCount();
-    LOG.info("initializing runner thread pool with {} threads", repairThreads);
+    int maxParallelRepairs = config.getMaxParallelRepairs();
+    LOG.info("initializing runner thread pool with {} threads and {} repair runners",
+        repairThreads, maxParallelRepairs);
 
     tryInitializeStorage(config, environment);
 
@@ -189,7 +191,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         config.getHangingRepairTimeoutMins(),
         TimeUnit.MINUTES,
         config.getRepairManagerSchedulingIntervalSeconds(),
-        TimeUnit.SECONDS);
+        TimeUnit.SECONDS,
+        maxParallelRepairs);
 
     // Enable cross-origin requests for using external GUI applications.
     if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {

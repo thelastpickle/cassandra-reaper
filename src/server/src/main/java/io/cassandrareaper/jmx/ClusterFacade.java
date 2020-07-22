@@ -62,6 +62,7 @@ import javax.management.ReflectionException;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
@@ -456,8 +457,10 @@ public final class ClusterFacade {
   public CompactionStats listActiveCompactions(Node node)
       throws MalformedObjectNameException, ReflectionException, ReaperException, InterruptedException, IOException {
 
+    LOG.debug("Listing active compactions for node {}", node);
     String nodeDc = getDatacenter(node);
     if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
+      LOG.debug("Yay!! Node {} in DC {} is accessible through JMX", node.getHostname(), nodeDc);
       // We have direct JMX access to the node
       return listCompactionStatsDirect(node);
     } else {
@@ -486,7 +489,7 @@ public final class ClusterFacade {
 
     CompactionProxy compactionProxy = CompactionProxy.create(connect(node), context.metricRegistry);
     return CompactionStats.builder()
-        .withPendingCompactions(compactionProxy.getPendingCompactions())
+        .withPendingCompactions(Optional.of(compactionProxy.getPendingCompactions()))
         .withActiveCompactions(compactionProxy.listActiveCompactions())
         .build();
   }
@@ -681,7 +684,7 @@ public final class ClusterFacade {
    */
   public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspaces) throws ReaperException {
     Preconditions.checkArgument(!context.config.isInSidecarMode(), "Snapshots aren't yet supported in sidecar mode");
-    LOG.info("Taking snapshot for node {} and keyspace {}", host, keyspaces);
+    LOG.debug("Taking snapshot for node {} and keyspace {}", host, keyspaces);
     return Pair.of(host, SnapshotProxy.create(connect(host)).takeSnapshot(snapshotName, keyspaces));
   }
 
@@ -779,13 +782,19 @@ public final class ClusterFacade {
    * @throws IOException if parsing the JSON breaks
    */
   public static CompactionStats parseCompactionStats(String json) throws IOException {
+    if (json.isEmpty()) {
+      return CompactionStats.builder()
+          .withPendingCompactions(Optional.empty())
+          .withActiveCompactions(Collections.emptyList())
+          .build();
+    }
     try {
       return parseJson(json, new TypeReference<CompactionStats>(){});
     } catch (IOException e) {
       // it can be that the storage had old format of compaction info, so we try to parse that
       List<Compaction> compactions = parseJson(json, new TypeReference<List<Compaction>>() {});
       return CompactionStats.builder()
-          .withPendingCompactions(-1)
+          .withPendingCompactions(Optional.empty())
           .withActiveCompactions(compactions)
           .build();
     }
@@ -793,7 +802,9 @@ public final class ClusterFacade {
 
   private static <T> T parseJson(String json, TypeReference<T> ref) throws IOException {
     try {
-      return new ObjectMapper().readValue(json, ref);
+      ObjectMapper mapper = new ObjectMapper();
+      mapper.registerModule(new Jdk8Module());
+      return mapper.readValue(json, ref);
     } catch (IOException e) {
       LOG.error("Error parsing json", e);
       throw e;

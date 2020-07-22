@@ -25,6 +25,7 @@ import io.cassandrareaper.service.RingRange;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -45,6 +46,23 @@ public interface IDistributedStorage {
 
   void releaseLead(UUID leaderId);
 
+  boolean lockRunningRepairsForNodes(
+      UUID repairId,
+      UUID segmentId,
+      Set<String> replicas);
+
+  boolean renewRunningRepairsForNodes(
+      UUID repairId,
+      UUID segmentId,
+      Set<String> replicas);
+
+  boolean releaseRunningRepairsForNodes(
+      UUID repairId,
+      UUID segmentId,
+      Set<String> replicas);
+
+  Set<UUID> getLockedSegmentsForRun(UUID runId);
+
   int countRunningReapers();
 
   void saveHeartbeat();
@@ -61,12 +79,11 @@ public interface IDistributedStorage {
    * Gets the next free segment from the backend that is both within the parallel range and the local node ranges.
    *
    * @param runId id of the repair run
-   * @param parallelRange list of ranges that can run in parallel
    * @param ranges list of ranges we're looking a segment for
    * @return an optional repair segment to process
    */
-  Optional<RepairSegment> getNextFreeSegmentForRanges(
-      UUID runId, Optional<RingRange> parallelRange, List<RingRange> ranges);
+  List<RepairSegment> getNextFreeSegmentsForRanges(
+      UUID runId, List<RingRange> ranges);
 
   List<GenericMetric> getMetrics(
       String clusterName,
@@ -95,4 +112,12 @@ public interface IDistributedStorage {
    * Purges old node operation info from the database (no-op for databases w/ TTL)
    */
   void purgeNodeOperations();
+
+  /**
+   * Update the repair segment without a lock as it couldn't be grabbed.
+   *
+   * @param newRepairSegment repair segment to update
+   * @return true if the segment was updated, false otherwise
+   */
+  boolean updateRepairSegmentUnsafe(RepairSegment newRepairSegment);
 }
