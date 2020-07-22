@@ -27,7 +27,6 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairParameters;
-import io.cassandrareaper.service.RingRange;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,6 +40,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Preconditions;
@@ -323,28 +323,11 @@ public final class MemoryStorage implements IStorage {
     return repairSegmentsByRunId.get(runId).values();
   }
 
-  private Optional<RepairSegment> getNextFreeSegment(UUID runId) {
-    for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
-      if (segment.getState() == RepairSegment.State.NOT_STARTED) {
-        return Optional.of(segment);
-      }
-    }
-    return Optional.empty();
-  }
-
   @Override
-  public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range) {
-    if (range.isPresent()) {
-      for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
-        if (segment.getState() == RepairSegment.State.NOT_STARTED
-            && range.get().encloses(segment.getTokenRange().getBaseRange())) {
-          return Optional.of(segment);
-        }
-      }
-    } else {
-      return getNextFreeSegment(runId);
-    }
-    return Optional.empty();
+  public List<RepairSegment> getNextFreeSegments(UUID runId) {
+    return repairSegmentsByRunId.get(runId).values().stream()
+                                                    .filter(seg -> seg.getState() == RepairSegment.State.NOT_STARTED)
+                                                    .collect(Collectors.toList());
   }
 
   @Override

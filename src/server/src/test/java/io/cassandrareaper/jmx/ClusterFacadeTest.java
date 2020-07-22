@@ -30,8 +30,10 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
@@ -131,12 +133,13 @@ public class ClusterFacadeTest {
         .build();
     String compactionsJson = objectMapper.writeValueAsString(ImmutableList.of(compaction));
     CompactionStats compactionStats = ClusterFacade.parseCompactionStats(compactionsJson);
-    assertEquals(-1L, compactionStats.getPendingCompactions().longValue());
+    assertFalse(compactionStats.getPendingCompactions().isPresent());
   }
 
   @Test
   public void parseCompactionStatsTest() throws IOException {
     final ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new Jdk8Module());
     Compaction compaction = Compaction.builder()
         .withId("foo")
         .withKeyspace("ks")
@@ -148,17 +151,24 @@ public class ClusterFacadeTest {
         .build();
     CompactionStats originalCompactionStats = CompactionStats.builder()
         .withActiveCompactions(ImmutableList.of(compaction))
-        .withPendingCompactions(42)
+        .withPendingCompactions(Optional.of(42))
         .build();
     String compactionJson = objectMapper.writeValueAsString(originalCompactionStats);
     CompactionStats compactionStats = ClusterFacade.parseCompactionStats(compactionJson);
-    assertEquals(42L, compactionStats.getPendingCompactions().longValue());
+    assertEquals(42L, compactionStats.getPendingCompactions().get().longValue());
   }
 
   @Test(expected = IOException.class)
   public void parseCompactionStatsErrorTest() throws IOException {
     String compactionJson = "{\"json\": \"thats_not_compactionstats\"}";
     ClusterFacade.parseCompactionStats(compactionJson);
+  }
+
+  @Test
+  public void parseEmptyCompactionStats() throws IOException {
+    String compactionJson = "";
+    CompactionStats compactionStats = ClusterFacade.parseCompactionStats(compactionJson);
+    assertFalse(compactionStats.getPendingCompactions().isPresent());
   }
 
 }

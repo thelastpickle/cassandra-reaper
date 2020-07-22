@@ -154,7 +154,8 @@ public final class HeartTest {
         REPAIR_TIMEOUT_S,
         TimeUnit.SECONDS,
         RETRY_DELAY_S,
-        TimeUnit.SECONDS);
+        TimeUnit.SECONDS,
+        1);
 
     context.repairManager.repairRunners.put(UUID.randomUUID(), Mockito.mock(RepairRunner.class));
     context.repairManager.repairRunners.put(UUID.randomUUID(), Mockito.mock(RepairRunner.class));
@@ -185,7 +186,8 @@ public final class HeartTest {
         REPAIR_TIMEOUT_S,
         TimeUnit.SECONDS,
         RETRY_DELAY_S,
-        TimeUnit.SECONDS);
+        TimeUnit.SECONDS,
+        1);
 
     context.repairManager.repairRunners.put(UUID.randomUUID(), Mockito.mock(RepairRunner.class));
     context.repairManager.repairRunners.put(UUID.randomUUID(), Mockito.mock(RepairRunner.class));
@@ -224,7 +226,8 @@ public final class HeartTest {
         REPAIR_TIMEOUT_S,
         TimeUnit.SECONDS,
         RETRY_DELAY_S,
-        TimeUnit.SECONDS);
+        TimeUnit.SECONDS,
+        1);
 
     context.repairManager.repairRunners.put(UUID.randomUUID(), Mockito.mock(RepairRunner.class));
     context.repairManager.repairRunners.put(UUID.randomUUID(), Mockito.mock(RepairRunner.class));
@@ -276,7 +279,8 @@ public final class HeartTest {
         REPAIR_TIMEOUT_S,
         TimeUnit.SECONDS,
         RETRY_DELAY_S,
-        TimeUnit.SECONDS);
+        TimeUnit.SECONDS,
+        1);
 
     context.repairManager.repairRunners.put(UUID.randomUUID(), Mockito.mock(RepairRunner.class));
     context.repairManager.repairRunners.put(UUID.randomUUID(), Mockito.mock(RepairRunner.class));
@@ -334,7 +338,8 @@ public final class HeartTest {
         REPAIR_TIMEOUT_S,
         TimeUnit.SECONDS,
         RETRY_DELAY_S,
-        TimeUnit.SECONDS);
+        TimeUnit.SECONDS,
+        1);
 
     context.repairManager.repairRunners.put(UUID.randomUUID(), Mockito.mock(RepairRunner.class));
     context.repairManager.repairRunners.put(UUID.randomUUID(), Mockito.mock(RepairRunner.class));

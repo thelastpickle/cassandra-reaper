@@ -411,7 +411,18 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public boolean updateRepairSegment(RepairSegment repairSegment) {
+  public boolean updateRepairSegment(RepairSegment segment) {
+
+    assert hasLeadOnSegment(segment)
+        || (hasLeadOnSegment(segment.getRunId())
+          && getRepairUnit(segment.getRepairUnitId()).getIncrementalRepair())
+        : "non-leader trying to update repair segment " + segment.getId() + " of run " + segment.getRunId();
+
+    return updateRepairSegmentUnsafe(segment);
+  }
+
+  @Override
+  public boolean updateRepairSegmentUnsafe(RepairSegment repairSegment) {
     boolean result = false;
     try (Handle h = jdbi.open()) {
       int rowsAdded = getPostgresStorage(h).updateRepairSegment(repairSegment);
@@ -440,32 +451,16 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
     }
   }
 
-  private Optional<RepairSegment> getNextFreeSegment(UUID runId) {
-    RepairSegment result;
-    try (Handle h = jdbi.open()) {
-      result = getPostgresStorage(h).getNextFreeRepairSegment(UuidUtil.toSequenceId(runId));
-    }
-    return Optional.ofNullable(result);
-  }
-
   @Override
-  public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range) {
-    if (range.isPresent()) {
-      RepairSegment result;
-      try (Handle h = jdbi.open()) {
-        IStoragePostgreSql storage = getPostgresStorage(h);
-        if (!range.get().isWrapping()) {
-          result = storage.getNextFreeRepairSegmentInNonWrappingRange(
-              UuidUtil.toSequenceId(runId), range.get().getStart(), range.get().getEnd());
-        } else {
-          result = storage.getNextFreeRepairSegmentInWrappingRange(
-              UuidUtil.toSequenceId(runId), range.get().getStart(), range.get().getEnd());
-        }
-      }
-      return Optional.ofNullable(result);
-    } else {
-      return getNextFreeSegment(runId);
-    }
+  public List<RepairSegment> getNextFreeSegments(UUID runId) {
+    List<RepairSegment> segments = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
+    Collections.shuffle(segments);
+
+    Set<String> lockedNodes = getLockedNodesForRun(runId);
+    List<RepairSegment> candidates = segments.stream()
+                                             .filter(seg -> segmentIsCandidate(seg, lockedNodes))
+                                             .collect(Collectors.toList());
+    return candidates;
   }
 
   @Override
@@ -790,6 +785,14 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
     }
   }
 
+  private boolean hasLeadOnSegment(RepairSegment segment) {
+    return renewRunningRepairsForNodes(segment.getRunId(), segment.getId(), segment.getReplicas().keySet());
+  }
+
+  private boolean hasLeadOnSegment(UUID leaderId) {
+    return renewLead(leaderId);
+  }
+
   @Override
   public void saveHeartbeat() {
     beat();
@@ -880,30 +883,34 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Optional<RepairSegment> getNextFreeSegmentForRanges(
+  public List<RepairSegment> getNextFreeSegmentsForRanges(
       UUID runId,
-      Optional<RingRange> parallelRange,
       List<RingRange> ranges) {
     List<RepairSegment> segments
         = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
+    Set<String> lockedNodes = getLockedNodesForRun(runId);
+    List<RepairSegment> candidates = segments.stream()
+                                             .filter(seg -> segmentIsCandidate(seg, lockedNodes))
+                                             .filter(seg -> segmentIsWithinRanges(seg, ranges))
+                                             .collect(Collectors.toList());
 
-    for (RepairSegment seg : segments) {
-      if (seg.getState().equals(RepairSegment.State.NOT_STARTED) && withinRange(seg, parallelRange)) {
-        for (RingRange range : ranges) {
-          if (segmentIsWithinRange(seg, range)) {
-            LOG.debug(
-                "Segment [{}, {}] is within range [{}, {}]",
-                seg.getStartToken(),
-                seg.getEndToken(),
-                range.getStart(),
-                range.getEnd());
-            return Optional.of(seg);
-          }
-        }
+    return candidates;
+  }
+
+  private boolean segmentIsCandidate(RepairSegment seg, Set<String> lockedNodes) {
+    return seg.getState().equals(RepairSegment.State.NOT_STARTED)
+        && Sets.intersection(lockedNodes, seg.getReplicas().keySet()).isEmpty();
+  }
+
+  private boolean segmentIsWithinRanges(RepairSegment seg, List<RingRange> ranges) {
+    for (RingRange range : ranges) {
+      if (segmentIsWithinRange(seg, range)) {
+        return true;
       }
     }
-    return Optional.empty();
+
+    return false;
   }
 
   @Override
@@ -1017,11 +1024,11 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
     if (null != jdbi) {
       try (Handle h = jdbi.open()) {
         String opString = getPostgresStorage(h).listOperations(clusterName, operationType.getName(), host);
-        return (opString != null) ? opString : "[]";
+        return (opString != null) ? opString : "";
       }
     }
     LOG.error("Failed retrieving node operations for cluster {}, node {}", clusterName, host);
-    return "[]";
+    return "";
   }
 
   @Override
@@ -1078,4 +1085,140 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   private static boolean withinRange(RepairSegment segment, Optional<RingRange> range) {
     return !range.isPresent() || segmentIsWithinRange(segment, range.get());
   }
+
+  @Override
+  public boolean lockRunningRepairsForNodes(UUID repairId, UUID segmentId, Set<String> replicas) {
+    if (null != jdbi) {
+      try (Handle h = jdbi.open()) {
+        h.begin();
+        // Initialize rows for each replicas in the lock table
+        for (String replica:replicas) {
+          try {
+            getPostgresStorage(h).insertNodeLock(
+                repairId,
+                replica,
+                reaperInstanceId,
+                AppContext.REAPER_INSTANCE_ADDRESS,
+                segmentId);
+          } catch (UnableToExecuteStatementException ex) {
+            if (JdbiExceptionUtil.isDuplicateKeyError(ex)) {
+              if (!updateLockForNode(repairId, segmentId, h, replica)) {
+                return false;
+              }
+            } else {
+              LOG.error("Failed taking lead on segment {}", segmentId, ex);
+              h.rollback();
+              return false;
+            }
+          }
+        }
+        h.commit();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean updateLockForNode(UUID repairId, UUID segmentId, Handle handle, String replica) {
+    try {
+      int rowsUpdated = getPostgresStorage(handle).updateNodeLock(
+          repairId,
+          replica,
+          reaperInstanceId,
+          AppContext.REAPER_INSTANCE_ADDRESS,
+          segmentId,
+          getExpirationTime(reaperTimeout));
+      if (rowsUpdated != 1) {
+        logAndRollback(segmentId, handle, replica);
+        return false;
+      } else {
+        return true;
+      }
+    } catch (UnableToExecuteStatementException ex) {
+      logAndRollback(segmentId, handle, replica);
+      return false;
+    }
+  }
+
+  private void logAndRollback(UUID segmentId, Handle handle, String replica) {
+    LOG.info("Failed to take lead on node {} for segment {}", replica, segmentId);
+    handle.rollback();
+  }
+
+  @Override
+  public boolean releaseRunningRepairsForNodes(UUID repairId, UUID segmentId, Set<String> replicas) {
+    if (null != jdbi) {
+      try (Handle h = jdbi.open()) {
+        for (String replica:replicas) {
+          try {
+            getPostgresStorage(h).releaseNodeLock(repairId, replica, segmentId, reaperInstanceId);
+          } catch (UnableToExecuteStatementException ex) {
+            LOG.error("Failed releasing lock on node {} for segment {}", replica, segmentId, ex);
+            return false;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public boolean renewRunningRepairsForNodes(UUID repairId, UUID segmentId, Set<String> replicas) {
+    if (null != jdbi) {
+      try (Handle h = jdbi.open()) {
+        h.begin();
+        for (String replica:replicas) {
+          try {
+            int rowsUpdated = getPostgresStorage(h).renewNodeLock(
+                repairId,
+                replica,
+                reaperInstanceId,
+                AppContext.REAPER_INSTANCE_ADDRESS,
+                segmentId);
+
+            if (rowsUpdated != 1) {
+              LOG.info("Failed renewing lead on segment {} for node {}", segmentId, replica);
+              h.rollback();
+              return false;
+            }
+          } catch (UnableToExecuteStatementException ex) {
+            LOG.error("Failed releasing lock on node {} for segment {}", replica, segmentId, ex);
+            h.rollback();
+            return false;
+          }
+        }
+        h.commit();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public Set<UUID> getLockedSegmentsForRun(UUID runId) {
+    if (null != jdbi) {
+      try (Handle h = jdbi.open()) {
+        List<Long> segmentSequenceIds = getPostgresStorage(h).getLockedSegments(getExpirationTime(leaderTimeout));
+        return segmentSequenceIds
+            .stream()
+            .map(id -> UuidUtil.fromSequenceId(id))
+            .collect(Collectors.toSet());
+      }
+    }
+    return Collections.emptySet();
+  }
+
+  public Set<String> getLockedNodesForRun(UUID runId) {
+    if (null != jdbi) {
+      try (Handle h = jdbi.open()) {
+        List<String> nodes = getPostgresStorage(h).getLockedNodes(getExpirationTime(leaderTimeout));
+        return nodes
+            .stream()
+            .collect(Collectors.toSet());
+      }
+    }
+    return Collections.emptySet();
+  }
+
+
 }

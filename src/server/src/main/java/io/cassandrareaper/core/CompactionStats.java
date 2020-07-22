@@ -17,13 +17,14 @@
 package io.cassandrareaper.core;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 @JsonDeserialize(builder = CompactionStats.Builder.class)
 public final class CompactionStats {
-  private Integer pendingCompactions;
+  private Optional<Integer> pendingCompactions;
   private List<Compaction> activeCompactions;
 
   private CompactionStats(Builder builder) {
@@ -31,7 +32,7 @@ public final class CompactionStats {
     this.activeCompactions = builder.activeCompactions;
   }
 
-  public Integer getPendingCompactions() {
+  public Optional<Integer> getPendingCompactions() {
     return pendingCompactions;
   }
 
@@ -45,12 +46,12 @@ public final class CompactionStats {
 
   @JsonPOJOBuilder(buildMethodName = "build", withPrefix = "with")
   public static final class Builder {
-    private Integer pendingCompactions;
+    private Optional<Integer> pendingCompactions;
     private List<Compaction> activeCompactions;
 
     private Builder() {}
 
-    public Builder withPendingCompactions(Integer pendingCompactions) {
+    public Builder withPendingCompactions(Optional<Integer> pendingCompactions) {
       this.pendingCompactions = pendingCompactions;
       return this;
     }
