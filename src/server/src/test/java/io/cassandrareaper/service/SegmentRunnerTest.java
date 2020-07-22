@@ -22,8 +22,8 @@ import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.Node;
-import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
@@ -1126,7 +1126,7 @@ public final class SegmentRunnerTest {
             TABLES,
             mock(RepairRunner.class));
 
-    Pair<String, Callable<Optional<NodeMetrics>>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc2");
+    Pair<String, Callable<Optional<CompactionStats>>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc2");
     assertFalse(result.getRight().call().isPresent());
     verify(jmxConnectionFactory, times(0)).connectAny(any(Collection.class));
     // Verify that we didn't call any method that is used in getRemoteNodeMetrics()
@@ -1180,12 +1180,10 @@ public final class SegmentRunnerTest {
             TABLES,
             mock(RepairRunner.class));
 
-    Pair<String, Callable<Optional<NodeMetrics>>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc1");
-    Optional<NodeMetrics> optional = result.getRight().call();
+    Pair<String, Callable<Optional<CompactionStats>>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc1");
+    Optional<CompactionStats> optional = result.getRight().call();
     assertTrue(optional.isPresent());
-    NodeMetrics metrics = optional.get();
-    assertEquals("test", metrics.getCluster());
-    assertEquals(3, metrics.getPendingCompactions());
-    assertTrue(metrics.hasRepairRunning());
+    CompactionStats metrics = optional.get();
+    assertEquals(3, metrics.getPendingCompactions().intValue());
   }
 }

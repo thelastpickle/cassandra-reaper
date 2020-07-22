@@ -202,6 +202,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement getDiagnosticEventPrepStmt;
   private PreparedStatement deleteDiagnosticEventPrepStmt;
   private PreparedStatement saveDiagnosticEventPrepStmt;
+  private PreparedStatement initRunningRepairsPrepStmt;
+  private PreparedStatement setRunningRepairsPrepStmt;
 
   public CassandraStorage(
       UUID reaperInstanceId,
@@ -559,6 +561,20 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                     + "metric_scope, metric_name, ts, metric_attribute, value "
                     + "FROM node_metrics_v3 "
                     + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ? and host = ?");
+    initRunningRepairsPrepStmt
+        = session
+            .prepare(
+                "INSERT INTO reaper_db.running_repairs(repair_id, node, running_segments)"
+                    + "values (?, ?, ?) IF NOT EXISTS")
+            .setIdempotent(true);
+    setRunningRepairsPrepStmt
+      = session
+        .prepare(
+            "UPDATE reaper_db.running_repairs USING TTL ?"
+            + " SET running_segments = ?"
+            + " WHERE repair_id = ? AND node = ? IF running_segments = ?")
+        .setIdempotent(false);
+
   }
 
   private void prepareOperationsStatements() {
@@ -1999,6 +2015,37 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public void purgeNodeOperations() {}
+
+  @Override
+  public boolean setRunningRepairsForNodes(
+      UUID repairId,
+      Set<String> replicas,
+      int currentRunningRepairs,
+      int newRunningRepairs) {
+    BatchStatement batch = new BatchStatement();
+    for (String replica:replicas) {
+      // Maybe initialize the row for each node for that repair
+      batch.add(initRunningRepairsPrepStmt.bind(repairId, replica, 0));
+    }
+    session.execute(batch);
+
+    // Attempt to lock all the nodes involved in the segment
+    batch = new BatchStatement();
+    for (String replica:replicas) {
+      batch.add(
+          setRunningRepairsPrepStmt.bind(LEAD_DURATION, newRunningRepairs, repairId, replica, currentRunningRepairs));
+    }
+
+    ResultSet results = session.execute(batch);
+    if (!results.wasApplied()) {
+      LOG.debug("Failed locking nodes for repair {} because segments are already running for some:", repairId);
+      for (Row row:results) {
+        LOG.debug("node {} had {} repair running", row.getString("node"), row.getInt("running_segments"));
+      }
+    }
+
+    return results.wasApplied();
+  }
 
   public enum CassandraMode {
     CASSANDRA,

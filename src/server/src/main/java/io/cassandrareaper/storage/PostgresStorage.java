@@ -1078,4 +1078,15 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   private static boolean withinRange(RepairSegment segment, Optional<RingRange> range) {
     return !range.isPresent() || segmentIsWithinRange(segment, range.get());
   }
+
+  @Override
+  public boolean setRunningRepairsForNodes(
+      UUID repairId,
+      Set<String> replicas,
+      int currentRunningRepairs,
+      int newRunningRepairs
+  ) {
+    // TODO Auto-generated method stub
+    return false;
+  }
 }
