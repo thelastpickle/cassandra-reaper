@@ -411,6 +411,11 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
+  public boolean updateRepairSegmentUnsafe(RepairSegment repairSegment) {
+    return updateRepairSegment(repairSegment);
+  }
+
+  @Override
   public boolean updateRepairSegment(RepairSegment repairSegment) {
     boolean result = false;
     try (Handle h = jdbi.open()) {
@@ -1078,4 +1083,109 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   private static boolean withinRange(RepairSegment segment, Optional<RingRange> range) {
     return !range.isPresent() || segmentIsWithinRange(segment, range.get());
   }
+
+  @Override
+  public boolean lockRunningRepairsForNodes(UUID repairId, UUID segmentId, Set<String> replicas) {
+    if (null != jdbi) {
+      try (Handle h = jdbi.open()) {
+        //h.begin();
+        // Initialize rows for each replicas in the lock table
+        for (String replica:replicas) {
+          try {
+            int rowsInserted = getPostgresStorage(h).insertNodeLock(
+                repairId,
+                replica,
+                reaperInstanceId,
+                AppContext.REAPER_INSTANCE_ADDRESS,
+                segmentId);
+          } catch (UnableToExecuteStatementException ex) {
+            if (JdbiExceptionUtil.isDuplicateKeyError(ex)) {
+              int rowsUpdated = getPostgresStorage(h).updateNodeLock(
+                  repairId,
+                  replica,
+                  reaperInstanceId,
+                  AppContext.REAPER_INSTANCE_ADDRESS,
+                  segmentId,
+                  getExpirationTime(reaperTimeout));
+              if (rowsUpdated != 1) {
+                LOG.info("Failed to take lead on node {} for segment {}", replica, segmentId);
+                //h.rollback();
+                return false;
+              }
+            } else {
+              LOG.error("Failed taking lead on segment {}", segmentId, ex);
+            }
+          }
+        }
+        //h.commit();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public boolean releaseRunningRepairsForNodes(UUID repairId, UUID segmentId, Set<String> replicas) {
+    if (null != jdbi) {
+      try (Handle h = jdbi.open()) {
+        for (String replica:replicas) {
+          try {
+            getPostgresStorage(h).releaseNodeLock(repairId, replica, segmentId, reaperInstanceId);
+          } catch (UnableToExecuteStatementException ex) {
+            LOG.error("Failed releasing lock on node {} for segment {}", replica, segmentId, ex);
+            return false;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public boolean renewRunningRepairsForNodes(UUID repairId, UUID segmentId, Set<String> replicas) {
+    if (null != jdbi) {
+      try (Handle h = jdbi.open()) {
+        h.begin();
+        for (String replica:replicas) {
+          try {
+            int rowsUpdated = getPostgresStorage(h).renewNodeLock(
+                repairId,
+                replica,
+                reaperInstanceId,
+                AppContext.REAPER_INSTANCE_ADDRESS,
+                segmentId);
+
+            if (rowsUpdated != 1) {
+              LOG.info("Failed renewing lead on segment {} for node {}", segmentId, replica);
+              h.rollback();
+              return false;
+            }
+          } catch (UnableToExecuteStatementException ex) {
+            LOG.error("Failed releasing lock on node {} for segment {}", replica, segmentId, ex);
+            h.rollback();
+            return false;
+          }
+        }
+        h.commit();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public Set<UUID> getLockedNodesForRun(UUID runId) {
+    if (null != jdbi) {
+      try (Handle h = jdbi.open()) {
+        List<Long> segmentSequenceIds = getPostgresStorage(h).getLockedNodes(getExpirationTime(leaderTimeout));
+        return segmentSequenceIds
+            .stream()
+            .map(id -> UuidUtil.fromSequenceId(id))
+            .collect(Collectors.toSet());
+      }
+    }
+    return Collections.emptySet();
+  }
+
+
 }

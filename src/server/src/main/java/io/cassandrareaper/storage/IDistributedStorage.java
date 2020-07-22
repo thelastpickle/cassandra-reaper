@@ -25,6 +25,7 @@ import io.cassandrareaper.service.RingRange;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -44,6 +45,23 @@ public interface IDistributedStorage {
   List<UUID> getLeaders();
 
   void releaseLead(UUID leaderId);
+
+  boolean lockRunningRepairsForNodes(
+      UUID repairId,
+      UUID segmentId,
+      Set<String> replicas);
+
+  boolean renewRunningRepairsForNodes(
+      UUID repairId,
+      UUID segmentId,
+      Set<String> replicas);
+
+  boolean releaseRunningRepairsForNodes(
+      UUID repairId,
+      UUID segmentId,
+      Set<String> replicas);
+
+  Set<UUID> getLockedNodesForRun(UUID runId);
 
   int countRunningReapers();
 

@@ -90,6 +90,8 @@ public interface IStorage {
 
   boolean updateRepairSegment(RepairSegment newRepairSegment);
 
+  boolean updateRepairSegmentUnsafe(RepairSegment newRepairSegment);
+
   Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId);
 
   Collection<RepairSegment> getRepairSegmentsForRun(UUID runId);

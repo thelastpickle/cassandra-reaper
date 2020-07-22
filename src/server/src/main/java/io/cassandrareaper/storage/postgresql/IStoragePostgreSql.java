@@ -398,6 +398,35 @@ public interface IStoragePostgreSql {
 
   String SQL_PURGE_OLD_NODE_OPERATIONS = "DELETE from node_operations WHERE ts < :expirationTime";
 
+  String SQL_INSERT_NODE_LOCK = "INSERT INTO running_repairs (repair_id, node, last_heartbeat, reaper_instance_host,"
+      + "  reaper_instance_id, segment_id) "
+      + "values(:repairId, :node, now(), :reaperInstanceHost, :reaperInstanceId, :segmentId)";
+
+  String SQL_UPDATE_NODE_LOCK = "UPDATE running_repairs "
+      + " SET "
+      + "reaper_instance_id = :reaperInstanceId, reaper_instance_host = :reaperInstanceHost, last_heartbeat = now(),"
+      + "segment_id = :segmentId"
+      + " WHERE "
+      + "repair_id = :repairId AND node = :node AND last_heartbeat < :expirationTime";
+
+  String SQL_RENEW_NODE_LOCK = "UPDATE running_repairs "
+      + " SET "
+      + "reaper_instance_id = :reaperInstanceId, reaper_instance_host = :reaperInstanceHost, last_heartbeat = now()"
+      + " WHERE "
+      + "repair_id = :repairId AND node = :node AND reaper_instance_id = :reaperInstanceId"
+      + " AND segment_id = :segmentId";
+
+  String SQL_RELEASE_NODE_LOCK = "DELETE FROM running_repairs"
+      + " WHERE "
+      + "repair_id = :repairId AND node = :node AND reaper_instance_id = :reaperInstanceId"
+      + " AND segment_id = :segmentId";
+
+  String SQL_FORCE_RELEASE_NODE_LOCK = "DELETE FROM running_repairs WHERE repair_id = :repairId and node = :node";
+
+  String SQL_SELECT_LOCKED_NODES = "SELECT segment_id FROM running_repairs "
+      + " WHERE "
+      + " last_heartbeat >= :expirationTime";
+
   static String[] parseStringArray(Object obj) {
     String[] values = null;
     if (obj instanceof String[]) {
@@ -831,6 +860,53 @@ public interface IStoragePostgreSql {
 
   @SqlUpdate(SQL_PURGE_OLD_NODE_OPERATIONS)
   int purgeOldNodeOperations(
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlUpdate(SQL_INSERT_NODE_LOCK)
+  int insertNodeLock(
+      @Bind("repairId") UUID repairId,
+      @Bind("node") String node,
+      @Bind("reaperInstanceId") UUID reaperInstanceId,
+      @Bind("reaperInstanceHost") String reaperInstanceHost,
+      @Bind("segmentId") UUID segmentId
+  );
+
+  @SqlUpdate(SQL_UPDATE_NODE_LOCK)
+  int updateNodeLock(
+      @Bind("repairId") UUID repairId,
+      @Bind("node") String node,
+      @Bind("reaperInstanceId") UUID reaperInstanceId,
+      @Bind("reaperInstanceHost") String reaperInstanceHost,
+      @Bind("segmentId") UUID segmentId,
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlUpdate(SQL_RENEW_NODE_LOCK)
+  int renewNodeLock(
+      @Bind("repairId") UUID repairId,
+      @Bind("node") String node,
+      @Bind("reaperInstanceId") UUID reaperInstanceId,
+      @Bind("reaperInstanceHost") String reaperInstanceHost,
+      @Bind("segmentId") UUID segmentId
+  );
+
+  @SqlUpdate(SQL_RELEASE_NODE_LOCK)
+  int releaseNodeLock(
+      @Bind("repairId") UUID repairId,
+      @Bind("node") String node,
+      @Bind("segmentId") UUID segmentId,
+      @Bind("reaperInstanceId") UUID reaperInstanceId
+  );
+
+  @SqlUpdate(SQL_FORCE_RELEASE_NODE_LOCK)
+  int forceReleaseNodeLock(
+      @Bind("repairId") UUID repairId,
+      @Bind("node") String node
+  );
+
+  @SqlQuery(SQL_SELECT_LOCKED_NODES)
+  List<Long> getLockedNodes(
       @Bind("expirationTime") Instant expirationTime
   );
 }

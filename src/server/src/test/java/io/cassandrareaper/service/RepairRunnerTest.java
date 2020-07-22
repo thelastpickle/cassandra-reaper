@@ -22,6 +22,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
@@ -36,6 +37,7 @@ import io.cassandrareaper.jmx.RepairStatusHandler;
 import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorage;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
 import java.util.Collections;
@@ -49,6 +51,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.management.JMException;
+import javax.management.MalformedObjectNameException;
+import javax.management.ReflectionException;
 
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableMap;
@@ -98,7 +104,7 @@ public final class RepairRunnerTest {
   }
 
   @Test
-  public void testHangingRepair() throws InterruptedException, ReaperException {
+  public void testHangingRepair() throws InterruptedException, ReaperException, JMException, IOException {
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
@@ -109,7 +115,6 @@ public final class RepairRunnerTest {
     final double INTENSITY = 0.5f;
     final int REPAIR_THREAD_COUNT = 1;
     final IStorage storage = new MemoryStorage();
-
     storage.addCluster(cluster);
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
@@ -122,7 +127,6 @@ public final class RepairRunnerTest {
             .blacklistedTables(BLACKLISTED_TABLES)
             .repairThreadCount(REPAIR_THREAD_COUNT));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
-
     RepairRun run = storage.addRepairRun(
             RepairRun.builder(cluster.getName(), cf.getId())
                 .intensity(INTENSITY)
@@ -217,6 +221,8 @@ public final class RepairRunnerTest {
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
+    when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
+        Collections.emptyList()).withPendingCompactions(0).build());
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
 
@@ -250,7 +256,8 @@ public final class RepairRunnerTest {
   }
 
   @Test
-  public void testHangingRepairNewAPI() throws InterruptedException, ReaperException {
+  public void testHangingRepairNewAPI() throws InterruptedException, ReaperException, MalformedObjectNameException,
+      ReflectionException, IOException {
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
@@ -261,9 +268,7 @@ public final class RepairRunnerTest {
     final double INTENSITY = 0.5f;
     final int REPAIR_THREAD_COUNT = 1;
     final IStorage storage = new MemoryStorage();
-
     storage.addCluster(cluster);
-
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
@@ -307,7 +312,6 @@ public final class RepairRunnerTest {
     }
     JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
     final AtomicInteger repairAttempts = new AtomicInteger(1);
-
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
@@ -369,6 +373,8 @@ public final class RepairRunnerTest {
         .thenReturn(Lists.newArrayList(NODES));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
+    when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
+        Collections.emptyList()).withPendingCompactions(0).build());
     context.repairManager
         = RepairManager.create(
             context,
@@ -400,7 +406,8 @@ public final class RepairRunnerTest {
   }
 
   @Test
-  public void testResumeRepair() throws InterruptedException, ReaperException {
+  public void testResumeRepair() throws InterruptedException, ReaperException, MalformedObjectNameException,
+      ReflectionException, IOException {
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
@@ -433,9 +440,7 @@ public final class RepairRunnerTest {
             .blacklistedTables(BLACKLISTED_TABLES)
             .repairThreadCount(REPAIR_THREAD_COUNT))
         .getId();
-
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
-
     RepairRun run = storage.addRepairRun(
             RepairRun.builder(cluster.getName(), cf)
                 .intensity(INTENSITY)
@@ -458,7 +463,6 @@ public final class RepairRunnerTest {
                         .withReplicas(replicas)
                         .build(),
                     cf)));
-
     final UUID RUN_ID = run.getId();
     final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
@@ -485,6 +489,8 @@ public final class RepairRunnerTest {
         .thenReturn((Map)ImmutableMap.of(
             Lists.newArrayList("0", "100"), Lists.newArrayList(NODES),
             Lists.newArrayList("100", "200"), Lists.newArrayList(NODES)));
+    when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
+        Collections.emptyList()).withPendingCompactions(0).build());
 
     context.repairManager = RepairManager.create(
         context,

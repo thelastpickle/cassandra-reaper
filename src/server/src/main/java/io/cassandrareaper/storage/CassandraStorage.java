@@ -202,6 +202,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement getDiagnosticEventPrepStmt;
   private PreparedStatement deleteDiagnosticEventPrepStmt;
   private PreparedStatement saveDiagnosticEventPrepStmt;
+  private PreparedStatement initRunningRepairsPrepStmt;
+  private PreparedStatement setRunningRepairsPrepStmt;
+  private PreparedStatement getRunningRepairsPrepStmt;
 
   public CassandraStorage(
       UUID reaperInstanceId,
@@ -562,6 +565,29 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                     + "metric_scope, metric_name, ts, metric_attribute, value "
                     + "FROM node_metrics_v3 "
                     + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ? and host = ?");
+    initRunningRepairsPrepStmt
+        = session
+            .prepare(
+                "INSERT INTO reaper_db.running_repairs(repair_id, node)"
+                    + "values (?, ?) IF NOT EXISTS")
+            .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
+            .setIdempotent(true);
+    setRunningRepairsPrepStmt
+      = session
+        .prepare(
+            "UPDATE reaper_db.running_repairs USING TTL ?"
+            + " SET reaper_instance_host = ?, reaper_instance_id = ?, segment_id = ?"
+            + " WHERE repair_id = ? AND node = ? IF reaper_instance_id = ?")
+        .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
+        .setIdempotent(false);
+
+    getRunningRepairsPrepStmt
+      = session
+      .prepare(
+          "select repair_id, node, reaper_instance_host, reaper_instance_id, segment_id"
+          + " FROM reaper_db.running_repairs"
+          + " WHERE repair_id = ?")
+      .setConsistencyLevel(ConsistencyLevel.QUORUM);
   }
 
   private void prepareOperationsStatements() {
@@ -1057,10 +1083,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public boolean updateRepairSegment(RepairSegment segment) {
 
-    assert hasLeadOnSegment(segment.getId())
+    assert hasLeadOnSegment(segment)
         || (hasLeadOnSegment(segment.getRunId())
           && getRepairUnit(segment.getRepairUnitId()).getIncrementalRepair())
         : "non-leader trying to update repair segment " + segment.getId() + " of run " + segment.getRunId();
+
+    return updateRepairSegmentUnsafe(segment);
+  }
+
+  @Override
+  public boolean updateRepairSegmentUnsafe(RepairSegment segment) {
 
     BatchStatement updateRepairSegmentBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
 
@@ -1093,8 +1125,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               segment.getId(),
               segment.hasEndTime() ? segment.getEndTime().toDate() : null));
 
-    } else if (State.STARTED == segment.getState()) {
-      updateRepairSegmentBatch.setConsistencyLevel(ConsistencyLevel.EACH_QUORUM);
     }
     session.execute(updateRepairSegmentBatch);
     return true;
@@ -1215,9 +1245,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         // legacy mode for Cassandra-2 backends
         : getRepairSegmentsByRunIdPrepStmt.bind(runId);
 
-    if (State.STARTED == segmentState) {
+    /*if (State.STARTED == segmentState) {
       statement = statement.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    }
+    }*/
     for (Row segmentRow : session.execute(statement)) {
       if (segmentRow.getInt("segment_state") == segmentState.ordinal()) {
         segments.add(createRepairSegmentFromRow(segmentRow));
@@ -1572,6 +1602,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       assert false : "Could not release lead on segment " + leaderId;
       LOG.error("Could not release lead on segment {}", leaderId);
     }
+  }
+
+  private boolean hasLeadOnSegment(RepairSegment segment) {
+    return renewRunningRepairsForNodes(segment.getRunId(), segment.getId(), segment.getReplicas().keySet());
   }
 
   private boolean hasLeadOnSegment(UUID leaderId) {
@@ -2009,9 +2043,135 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public void purgeNodeOperations() {}
 
+  @Override
+  public boolean lockRunningRepairsForNodes(
+      UUID repairId,
+      UUID segmentId,
+      Set<String> replicas) {
+    List<ResultSetFuture> futures = Lists.newArrayList();
+    for (String replica:replicas) {
+      // Maybe initialize the row for each node for that repair
+      futures.add(session.executeAsync(initRunningRepairsPrepStmt.bind(repairId, replica)));
+    }
+    try {
+      Futures.allAsList(futures).get();
+    } catch (InterruptedException | ExecutionException e) {
+      LOG.warn("Woah, that didn't feel right...", e);
+    }
+
+    // Attempt to lock all the nodes involved in the segment
+    BatchStatement batch = new BatchStatement();
+    for (String replica:replicas) {
+      batch.add(
+          setRunningRepairsPrepStmt.bind(
+              LEAD_DURATION,
+              AppContext.REAPER_INSTANCE_ADDRESS,
+              reaperInstanceId,
+              segmentId,
+              repairId,
+              replica,
+              null));
+    }
+
+    ResultSet results = session.execute(batch);
+    if (!results.wasApplied()) {
+      logFailedLead(results, repairId);
+    }
+
+    return results.wasApplied();
+  }
+
+  @Override
+  public boolean renewRunningRepairsForNodes(
+      UUID repairId,
+      UUID segmentId,
+      Set<String> replicas) {
+    // Attempt to renew lock on all the nodes involved in the segment
+    BatchStatement batch = new BatchStatement();
+    for (String replica:replicas) {
+      batch.add(
+          setRunningRepairsPrepStmt.bind(
+              LEAD_DURATION,
+              AppContext.REAPER_INSTANCE_ADDRESS,
+              reaperInstanceId,
+              segmentId,
+              repairId,
+              replica,
+              reaperInstanceId));
+    }
+
+    ResultSet results = session.execute(batch);
+    if (!results.wasApplied()) {
+      logFailedLead(results, repairId);
+    }
+
+    return results.wasApplied();
+  }
+
+  private void logFailedLead(ResultSet results, UUID repairId) {
+    LOG.debug("Failed taking/renewing lock for repair {} because segments are already running for some nodes.",
+        repairId);
+    for (Row row:results) {
+      LOG.debug("node {} is locked by {}/{} for segment {}",
+          row.getColumnDefinitions().contains("node")
+            ? row.getString("node")
+            : "unknown",
+          row.getColumnDefinitions().contains("reaper_instance_host")
+            ? row.getString("reaper_instance_host")
+            : "unknown",
+          row.getColumnDefinitions().contains("reaper_instance_id")
+            ? row.getUUID("reaper_instance_id")
+            : "unknown",
+          row.getColumnDefinitions().contains("segment_id")
+            ? row.getUUID("segment_id")
+            : "unknown"
+      );
+    }
+  }
+
+  @Override
+  public boolean releaseRunningRepairsForNodes(
+      UUID repairId,
+      UUID segmentId,
+      Set<String> replicas) {
+    // Attempt to release all the nodes involved in the segment
+    BatchStatement batch = new BatchStatement();
+    for (String replica:replicas) {
+      batch.add(
+          //reaperInstanceId, AppContext.REAPER_INSTANCE_ADDRESS
+          setRunningRepairsPrepStmt.bind(
+              LEAD_DURATION,
+              null,
+              null,
+              null,
+              repairId,
+              replica,
+              reaperInstanceId));
+    }
+
+    ResultSet results = session.execute(batch);
+    if (!results.wasApplied()) {
+      logFailedLead(results, repairId);
+    }
+
+    return results.wasApplied();
+  }
+
+  @Override
+  public Set<UUID> getLockedNodesForRun(UUID runId) {
+    ResultSet results
+        = session.execute(getRunningRepairsPrepStmt.bind(runId));
+
+    Set<UUID> lockedNodes = results.all()
+                                     .stream()
+                                     .filter(row -> row.getUUID("reaper_instance_id") != null)
+                                     .map(row -> row.getUUID("segment_id"))
+                                     .collect(Collectors.toSet());
+    return lockedNodes;
+  }
+
   public enum CassandraMode {
     CASSANDRA,
     ASTRA
   }
-
 }

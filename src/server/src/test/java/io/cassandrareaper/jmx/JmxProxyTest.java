@@ -25,6 +25,7 @@ import java.util.Random;
 import javax.management.MBeanServerConnection;
 
 import com.google.common.base.Preconditions;
+import org.apache.cassandra.db.compaction.CompactionManagerMBean;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.service.StorageServiceMBean;
 import org.apache.cassandra.streaming.StreamManagerMBean;
@@ -59,6 +60,11 @@ public final class JmxProxyTest {
   public static void mockGetEndpointSnitchInfoMBean(JmxProxy proxy, EndpointSnitchInfoMBean endpointSnitchInfoMBean) {
     Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
     Mockito.when(((JmxProxyImpl)proxy).getEndpointSnitchInfoMBean()).thenReturn(endpointSnitchInfoMBean);
+  }
+
+  public static void mockGetCompactionManagerMBean(JmxProxy proxy, CompactionManagerMBean compactionManagerMBean) {
+    Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
+    Mockito.when(((JmxProxyImpl)proxy).getCompactionManagerMBean()).thenReturn(compactionManagerMBean);
   }
 
   @Test
