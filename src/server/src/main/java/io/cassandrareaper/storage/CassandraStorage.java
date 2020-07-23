@@ -566,6 +566,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             .prepare(
                 "INSERT INTO reaper_db.running_repairs(repair_id, node, running_segments)"
                     + "values (?, ?, ?) IF NOT EXISTS")
+            .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
             .setIdempotent(true);
     setRunningRepairsPrepStmt
       = session
@@ -573,6 +574,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             "UPDATE reaper_db.running_repairs USING TTL ?"
             + " SET running_segments = ?"
             + " WHERE repair_id = ? AND node = ? IF running_segments = ?")
+        .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
         .setIdempotent(false);
 
   }
@@ -2022,15 +2024,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       Set<String> replicas,
       int currentRunningRepairs,
       int newRunningRepairs) {
-    BatchStatement batch = new BatchStatement();
+    List<ResultSetFuture> futures = Lists.newArrayList();
     for (String replica:replicas) {
       // Maybe initialize the row for each node for that repair
-      batch.add(initRunningRepairsPrepStmt.bind(repairId, replica, 0));
+      futures.add(session.executeAsync(initRunningRepairsPrepStmt.bind(repairId, replica, 0)));
     }
-    session.execute(batch);
+    try {
+      Futures.allAsList(futures).get();
+    } catch (InterruptedException | ExecutionException e) {
+      LOG.warn("Woah, that didn't feel right...", e);
+    }
 
     // Attempt to lock all the nodes involved in the segment
-    batch = new BatchStatement();
+    BatchStatement batch = new BatchStatement();
     for (String replica:replicas) {
       batch.add(
           setRunningRepairsPrepStmt.bind(LEAD_DURATION, newRunningRepairs, repairId, replica, currentRunningRepairs));

@@ -292,23 +292,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       }
 
       try (Timer.Context cxt1 = context.metricRegistry.timer(metricNameForRepairing(segment)).time()) {
-        boolean segmentsLocked = false;
         try {
           LOG.debug("Enter synchronized section with segment ID {}", segmentId);
           synchronized (condition) {
-            if (!(segmentsLocked = lockSegmentRunners())) {
-              // XXX – not expected to happen, STARTED run state should be "good" (opportunistic) enough
-              LOG.warn(
-                  "Cannot run segment {} as another Reaper holds the lock on repair run {}. Will try again later",
-                  segmentId,
-                  segment.getRunId());
-
-              return false;
-            }
-
             segment = segment
                     .with()
-                    .withState(RepairSegment.State.STARTED)
+                    .withState(RepairSegment.State.RUNNING)
                     .withCoordinatorHost(coordinator.getHost())
                     .withStartTime(DateTime.now())
                     .withId(segmentId)
@@ -329,8 +318,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                     repairUnit.getRepairThreadCount());
 
             if (0 != repairNo) {
-              releaseSegmentRunners();
-              segmentsLocked = false;
               processTriggeredSegment(segment, coordinator, repairNo);
             } else {
               LOG.info("Nothing to repair for segment {} in keyspace {}", segmentId, keyspace);
@@ -348,9 +335,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           }
         } finally {
           LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
-          if (segmentsLocked) {
-            releaseSegmentRunners();
-          }
         }
       }
     } catch (RuntimeException | ReaperException e) {
@@ -1074,41 +1058,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           repairSegment.getStartTime(),
           repairSegment.getEndTime());
       return 0;
-    }
-  }
-
-  private boolean lockSegmentRunners() {
-    if (this.repairUnit.getIncrementalRepair() || !context.config.getDatacenterAvailability().isInCollocatedMode()) {
-      return true;
-    }
-    UUID lockId = com.datastax.driver.core.utils.UUIDs.startOf(repairUnit.getClusterName().hashCode());
-    try (Timer.Context cx
-        = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "lockSegmentRunners")).time()) {
-
-      boolean result = context.storage instanceof IDistributedStorage
-          ? ((IDistributedStorage) context.storage).takeLead(
-              lockId,
-              LOCK_DURATION)
-          : true;
-
-      if (!result) {
-        context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "lockSegmentRunners", "failed")).inc();
-      }
-      return result;
-    }
-  }
-
-  private void releaseSegmentRunners() {
-    if (!this.repairUnit.getIncrementalRepair()
-        && releasedSegmentRunner.compareAndSet(false, true)
-        && context.config.getDatacenterAvailability().isInCollocatedMode()) {
-      UUID uuid = com.datastax.driver.core.utils.UUIDs.startOf(repairUnit.getClusterName().hashCode());
-      try (Timer.Context cx
-          = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "releaseSegmentRunners")).time()) {
-        if (context.storage instanceof IDistributedStorage) {
-          ((IDistributedStorage) context.storage).releaseLead(uuid);
-        }
-      }
     }
   }
 
