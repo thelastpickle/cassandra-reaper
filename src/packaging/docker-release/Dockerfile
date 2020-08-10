@@ -15,7 +15,7 @@
 FROM ubuntu:18.04
 
 RUN apt-get update \
-    && apt-get install -y curl git openjdk-8-jdk maven xz-utils
+    && apt-get install -y curl vim git openjdk-8-jdk maven xz-utils
 
 ENV JVM_DIR /usr/lib/jvm
 WORKDIR $JVM_DIR
