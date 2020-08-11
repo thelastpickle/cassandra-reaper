@@ -1080,13 +1080,22 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public boolean setRunningRepairsForNodes(
-      UUID repairId,
-      Set<String> replicas,
-      int currentRunningRepairs,
-      int newRunningRepairs
-  ) {
+  public boolean lockRunningRepairsForNodes(UUID repairId, Set<String> replicas) {
     // TODO Auto-generated method stub
     return false;
   }
+
+  @Override
+  public boolean releaseRunningRepairsForNodes(UUID repairId, Set<String> replicas) {
+    // TODO Auto-generated method stub
+    return false;
+  }
+
+  @Override
+  public boolean renewRunningRepairsForNodes(UUID repairId, Set<String> replicas) {
+    // TODO Auto-generated method stub
+    return false;
+  }
+
+
 }

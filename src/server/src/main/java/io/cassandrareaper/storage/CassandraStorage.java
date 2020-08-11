@@ -564,16 +564,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     initRunningRepairsPrepStmt
         = session
             .prepare(
-                "INSERT INTO reaper_db.running_repairs(repair_id, node, running_segments)"
-                    + "values (?, ?, ?) IF NOT EXISTS")
+                "INSERT INTO reaper_db.running_repairs(repair_id, node)"
+                    + "values (?, ?) IF NOT EXISTS")
             .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
             .setIdempotent(true);
     setRunningRepairsPrepStmt
       = session
         .prepare(
             "UPDATE reaper_db.running_repairs USING TTL ?"
-            + " SET running_segments = ?"
-            + " WHERE repair_id = ? AND node = ? IF running_segments = ?")
+            + " SET reaper_instance_host = ?, reaper_instance_id = ?"
+            + " WHERE repair_id = ? AND node = ? IF reaper_instance_id = ?")
         .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
         .setIdempotent(false);
 
@@ -1108,9 +1108,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               segment.getId(),
               segment.hasEndTime() ? segment.getEndTime().toDate() : null));
 
-    } else if (State.STARTED == segment.getState()) {
+    } /* else if (State.STARTED == segment.getState()) {
       updateRepairSegmentBatch.setConsistencyLevel(ConsistencyLevel.EACH_QUORUM);
-    }
+    }*/
     session.execute(updateRepairSegmentBatch);
     return true;
   }
@@ -1230,9 +1230,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         // legacy mode for Cassandra-2 backends
         : getRepairSegmentsByRunIdPrepStmt.bind(runId);
 
-    if (State.STARTED == segmentState) {
+    /*if (State.STARTED == segmentState) {
       statement = statement.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    }
+    }*/
     for (Row segmentRow : session.execute(statement)) {
       if (segmentRow.getInt("segment_state") == segmentState.ordinal()) {
         segments.add(createRepairSegmentFromRow(segmentRow));
@@ -2019,15 +2019,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public void purgeNodeOperations() {}
 
   @Override
-  public boolean setRunningRepairsForNodes(
+  public boolean lockRunningRepairsForNodes(
       UUID repairId,
-      Set<String> replicas,
-      int currentRunningRepairs,
-      int newRunningRepairs) {
+      Set<String> replicas) {
     List<ResultSetFuture> futures = Lists.newArrayList();
     for (String replica:replicas) {
       // Maybe initialize the row for each node for that repair
-      futures.add(session.executeAsync(initRunningRepairsPrepStmt.bind(repairId, replica, 0)));
+      futures.add(session.executeAsync(initRunningRepairsPrepStmt.bind(repairId, replica)));
     }
     try {
       Futures.allAsList(futures).get();
@@ -2039,14 +2037,84 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     BatchStatement batch = new BatchStatement();
     for (String replica:replicas) {
       batch.add(
-          setRunningRepairsPrepStmt.bind(LEAD_DURATION, newRunningRepairs, repairId, replica, currentRunningRepairs));
+          setRunningRepairsPrepStmt.bind(
+              LEAD_DURATION,
+              AppContext.REAPER_INSTANCE_ADDRESS,
+              reaperInstanceId,
+              repairId,
+              replica,
+              null));
     }
 
     ResultSet results = session.execute(batch);
     if (!results.wasApplied()) {
       LOG.debug("Failed locking nodes for repair {} because segments are already running for some:", repairId);
       for (Row row:results) {
-        LOG.debug("node {} had {} repair running", row.getString("node"), row.getInt("running_segments"));
+        LOG.debug("node {} is locked by {} ",
+            row.getString("node"),
+            row.getUUID("reaper_instance_id"));
+      }
+    }
+
+    return results.wasApplied();
+  }
+
+  @Override
+  public boolean renewRunningRepairsForNodes(
+      UUID repairId,
+      Set<String> replicas) {
+    // Attempt to renew lock on all the nodes involved in the segment
+    BatchStatement batch = new BatchStatement();
+    for (String replica:replicas) {
+      batch.add(
+          setRunningRepairsPrepStmt.bind(
+              LEAD_DURATION,
+              AppContext.REAPER_INSTANCE_ADDRESS,
+              reaperInstanceId,
+              repairId,
+              replica,
+              reaperInstanceId));
+    }
+
+    ResultSet results = session.execute(batch);
+    if (!results.wasApplied()) {
+      LOG.debug("Failed renewing lock for repair {} because segments are already running for some:", repairId);
+      for (Row row:results) {
+        LOG.debug("node {} is locked by {}/{} ",
+            row.getString("node"),
+            row.getString("reaper_instance_host"),
+            row.getUUID("reaper_instance_id"));
+      }
+    }
+
+    return results.wasApplied();
+  }
+
+  @Override
+  public boolean releaseRunningRepairsForNodes(
+      UUID repairId,
+      Set<String> replicas) {
+    // Attempt to release all the nodes involved in the segment
+    BatchStatement batch = new BatchStatement();
+    for (String replica:replicas) {
+      batch.add(
+          //reaperInstanceId, AppContext.REAPER_INSTANCE_ADDRESS
+          setRunningRepairsPrepStmt.bind(
+              LEAD_DURATION,
+              null,
+              null,
+              repairId,
+              replica,
+              reaperInstanceId));
+    }
+
+    ResultSet results = session.execute(batch);
+    if (!results.wasApplied()) {
+      LOG.debug("Failed locking nodes for repair {} because segments are already running for some:", repairId);
+      for (Row row:results) {
+        LOG.debug("node {} is locked by {}/{} ",
+            row.getString("node"),
+            row.getUUID("reaper_instance_id"));
       }
     }
 
@@ -2057,5 +2125,4 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     CASSANDRA,
     ASTRA
   }
-
 }

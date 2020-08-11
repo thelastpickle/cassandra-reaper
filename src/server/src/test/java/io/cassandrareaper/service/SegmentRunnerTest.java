@@ -156,7 +156,7 @@ public final class SegmentRunnerTest {
         .then(
             (invocation) -> {
               assertEquals(
-                  RepairSegment.State.STARTED,
+                  RepairSegment.State.RUNNING,
                   context.storage.getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(
@@ -276,7 +276,7 @@ public final class SegmentRunnerTest {
         .then(
             (invocation) -> {
               assertEquals(
-                  RepairSegment.State.STARTED,
+                  RepairSegment.State.RUNNING,
                   storage.getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(
@@ -430,7 +430,7 @@ public final class SegmentRunnerTest {
         .then(
             (invocation) -> {
               assertEquals(
-                  RepairSegment.State.STARTED,
+                  RepairSegment.State.RUNNING,
                   storage.getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(
@@ -573,7 +573,7 @@ public final class SegmentRunnerTest {
         .then(
             invocation -> {
               assertEquals(
-                  RepairSegment.State.STARTED,
+                  RepairSegment.State.RUNNING,
                   storage.getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(
@@ -712,7 +712,7 @@ public final class SegmentRunnerTest {
         .then(
             invocation -> {
               assertEquals(
-                  RepairSegment.State.STARTED,
+                  RepairSegment.State.RUNNING,
                   storage.getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(
@@ -852,7 +852,7 @@ public final class SegmentRunnerTest {
         .then(
             invocation -> {
               assertEquals(
-                  RepairSegment.State.STARTED,
+                  RepairSegment.State.RUNNING,
                   storage.getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(
@@ -993,7 +993,7 @@ public final class SegmentRunnerTest {
         .then(
             invocation -> {
               assertEquals(
-                  RepairSegment.State.STARTED,
+                  RepairSegment.State.RUNNING,
                   storage.getRepairSegment(runId, segmentId).get().getState());
 
               future.setValue(

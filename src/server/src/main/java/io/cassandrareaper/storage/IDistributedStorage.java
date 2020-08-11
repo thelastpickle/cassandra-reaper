@@ -46,11 +46,17 @@ public interface IDistributedStorage {
 
   void releaseLead(UUID leaderId);
 
-  boolean setRunningRepairsForNodes(
+  boolean lockRunningRepairsForNodes(
       UUID repairId,
-      Set<String> replicas,
-      int currentRunningRepairs,
-      int newRunningRepairs);
+      Set<String> replicas);
+
+  boolean renewRunningRepairsForNodes(
+      UUID repairId,
+      Set<String> replicas);
+
+  boolean releaseRunningRepairsForNodes(
+      UUID repairId,
+      Set<String> replicas);
 
   int countRunningReapers();
 

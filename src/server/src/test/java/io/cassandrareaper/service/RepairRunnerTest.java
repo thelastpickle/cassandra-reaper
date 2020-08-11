@@ -164,7 +164,7 @@ public final class RepairRunnerTest {
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
-              assertEquals(RepairSegment.State.STARTED, storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+              assertEquals(RepairSegment.State.RUNNING, storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
               final int repairNumber = repairAttempts.getAndIncrement();
               switch (repairNumber) {
                 case 1:
@@ -316,7 +316,7 @@ public final class RepairRunnerTest {
         .then(
             (invocation) -> {
               assertEquals(
-                  RepairSegment.State.STARTED,
+                  RepairSegment.State.RUNNING,
                   storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
               final int repairNumber = repairAttempts.getAndIncrement();
               switch (repairNumber) {
