@@ -204,6 +204,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement saveDiagnosticEventPrepStmt;
   private PreparedStatement initRunningRepairsPrepStmt;
   private PreparedStatement setRunningRepairsPrepStmt;
+  private PreparedStatement getRunningRepairsPrepStmt;
 
   public CassandraStorage(
       UUID reaperInstanceId,
@@ -576,6 +577,14 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             + " WHERE repair_id = ? AND node = ? IF reaper_instance_id = ?")
         .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
         .setIdempotent(false);
+
+    getRunningRepairsPrepStmt
+    = session
+      .prepare(
+          "select repair_id, node, reaper_instance_host, reaper_instance_id"
+          + " FROM reaper_db.running_repairs"
+          + " WHERE repair_id = ?")
+      .setSerialConsistencyLevel(ConsistencyLevel.QUORUM);
 
   }
 
@@ -2119,6 +2128,20 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     }
 
     return results.wasApplied();
+  }
+
+  @Override
+  public Set<String> getLockedNodesForRun(UUID runId) {
+    ResultSet results
+    = session.execute(
+        getRunningRepairsPrepStmt.bind(runId));
+
+    Set<String> lockedNodes = results.all()
+                                     .stream()
+                                     .filter(row -> row.getString("reaper_instance_id") != null)
+                                     .map(row -> row.getString("node"))
+                                     .collect(Collectors.toSet());
+    return lockedNodes;
   }
 
   public enum CassandraMode {

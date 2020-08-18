@@ -1116,26 +1116,27 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     try (Timer.Context cx
         = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "takeLead")).time()) {
 
-      boolean result = context.storage instanceof IDistributedStorage
-          ? ((IDistributedStorage) context.storage).takeLead(leaderElectionId)
-          : true;
+      if (repairUnit.getIncrementalRepair()) {
+        boolean result = context.storage instanceof IDistributedStorage
+            ? ((IDistributedStorage) context.storage).takeLead(leaderElectionId)
+            : true;
 
-      if (!result) {
-        context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "takeLead", "failed")).inc();
+        if (!result) {
+          context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "takeLead", "failed")).inc();
+        }
         return result;
+      } else {
+        boolean resultLock2 = context.storage instanceof IDistributedStorage
+            ? ((IDistributedStorage) context.storage).lockRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
+                segment.getReplicas().keySet())
+            : true;
+        if (!resultLock2) {
+          context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "takeLead", "failed")).inc();
+          releaseLead(segment);
+        }
+
+        return resultLock2;
       }
-
-      boolean resultLock2 = context.storage instanceof IDistributedStorage
-          ? ((IDistributedStorage) context.storage).lockRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-              segment.getReplicas().keySet())
-          : true;
-      if (!resultLock2) {
-        context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "takeLead", "failed")).inc();
-        releaseLead(segment);
-      }
-
-      return resultLock2;
-
     }
   }
 
@@ -1143,25 +1144,27 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     try (Timer.Context cx
         = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "renewLead")).time()) {
 
-      boolean result = context.storage instanceof IDistributedStorage
-          ? ((IDistributedStorage) context.storage).renewLead(leaderElectionId)
-          : true;
+      if (repairUnit.getIncrementalRepair()) {
+        boolean result = context.storage instanceof IDistributedStorage
+            ? ((IDistributedStorage) context.storage).renewLead(leaderElectionId)
+            : true;
 
-      if (!result) {
-        context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "renewLead", "failed")).inc();
+        if (!result) {
+          context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "renewLead", "failed")).inc();
+        }
         return result;
-      }
+      } else {
+        boolean resultLock2 = context.storage instanceof IDistributedStorage
+            ? ((IDistributedStorage) context.storage).renewRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
+                segment.getReplicas().keySet())
+            : true;
+        if (!resultLock2) {
+          context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "renewLead", "failed")).inc();
+          releaseLead(segment);
+        }
 
-      boolean resultLock2 = context.storage instanceof IDistributedStorage
-          ? ((IDistributedStorage) context.storage).renewRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-              segment.getReplicas().keySet())
-          : true;
-      if (!resultLock2) {
-        context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "renewLead", "failed")).inc();
-        releaseLead(segment);
+        return resultLock2;
       }
-
-      return resultLock2;
     }
   }
 
@@ -1169,9 +1172,12 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     try (Timer.Context cx
         = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "releaseLead")).time()) {
       if (context.storage instanceof IDistributedStorage) {
-        ((IDistributedStorage) context.storage).releaseLead(leaderElectionId);
-        ((IDistributedStorage) context.storage).releaseRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-            segment.getReplicas().keySet());
+        if (repairUnit.getIncrementalRepair()) {
+          ((IDistributedStorage) context.storage).releaseLead(leaderElectionId);
+        } else {
+          ((IDistributedStorage) context.storage).releaseRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
+              segment.getReplicas().keySet());
+        }
       }
     }
   }

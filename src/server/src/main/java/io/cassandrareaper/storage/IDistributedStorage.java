@@ -58,6 +58,8 @@ public interface IDistributedStorage {
       UUID repairId,
       Set<String> replicas);
 
+  Set<String> getLockedNodesForRun(UUID runId);
+
   int countRunningReapers();
 
   void saveHeartbeat();

@@ -209,6 +209,44 @@ public final class RepairManager implements AutoCloseable {
   }
 
   private void abortSegmentsWithNoLeader(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
+    RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
+    if (repairUnit.getIncrementalRepair()) {
+      abortSegmentsWithNoLeaderIncremental(repairRun, runningSegments);
+    } else {
+      abortSegmentsWithNoLeaderNonIncremental(repairRun, runningSegments);
+    }
+  }
+
+  private void abortSegmentsWithNoLeaderIncremental(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(
+          "Checking leadership on the following segments : {}",
+          runningSegments.stream().map(seg -> seg.getId()).collect(Collectors.toList()));
+    }
+    try {
+      repairRunnersLock.lock();
+      if (context.storage instanceof IDistributedStorage || !repairRunners.containsKey(repairRun.getId())) {
+        // When multiple Reapers are in use, we can get stuck segments when one instance is rebooted
+        // Any segment in RUNNING or STARTED state but with no leader should be killed
+        List<UUID> leaders = context.storage instanceof IDistributedStorage
+                ? ((IDistributedStorage) context.storage).getLeaders()
+                : Collections.emptyList();
+
+        Collection<RepairSegment> orphanedSegments = runningSegments
+            .stream()
+            .filter(segment -> !leaders.contains(segment.getId()) && !leaders.contains(segment.getRunId()))
+            .collect(Collectors.toSet());
+
+        LOG.debug("No leader on the following segments : {}", orphanedSegments);
+        abortSegments(orphanedSegments, repairRun);
+      }
+    } finally {
+      repairRunnersLock.unlock();
+    }
+  }
+
+  private void abortSegmentsWithNoLeaderNonIncremental(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
 
     if (LOG.isDebugEnabled()) {
       LOG.debug(
