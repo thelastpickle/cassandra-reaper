@@ -303,7 +303,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
               return false;
             }
 
-            // ~double-locking-idiom, only applies to non-incremental and distributed storage
+            // ~double-checking idiom, only applies to non-incremental and distributed storage
             if (!repairUnit.getIncrementalRepair() && context.storage instanceof IDistributedStorage) {
               Map<String, String> dcByNode = getDCsByNodeForRepairSegment(coordinator, cluster, segment, keyspace);
               if (isRepairRunningOnNodes(segment, dcByNode, keyspace, cluster)) {
