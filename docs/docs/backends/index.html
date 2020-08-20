@@ -211,6 +211,8 @@
         
         <li><a href="/docs/backends/cassandra/"> Cassandra </a> </li>
         
+        <li><a href="/docs/backends/astra/"> Astra </a> </li>
+        
     </ul>
     
     </li>
@@ -319,13 +321,15 @@
                     <div class="col-md-9" id="blog-listing-medium">
 
                         <h1 id="backends">Backends</h1>
-<p>Cassandra Reaper can be used with either an ephemeral memory storage or persistent database. For persistent scalable database storage, a Cassandra cluster can be set up to back Reaper. To use a Cassandra cluster as the backed storage for Reaper set <code>storageType</code> to a value of <strong>cassandra</strong> in the Reaper configuration file. Alternatively, a relational database storage; either H2 or Postgres can be set up to back Reaper. To use one of the relational database options as the backed storage for Reaper set <code>storageType</code> to a value of either <strong>h2</strong> or <strong>postrges</strong> in the Reaper configuration file.</p>
+<p>Cassandra Reaper can be used with either an ephemeral memory storage or persistent database. For persistent scalable database storage, a Cassandra cluster can be set up to back Reaper. To use a Cassandra cluster as the backed storage for Reaper set <code>storageType</code> to a value of <strong>cassandra</strong> in the Reaper configuration file. <strong>Astra</strong> can also be used as storage backend by setting <code>storageType</code> to a value of <strong>astra</strong>. With purge settings tuned appropriately, Reaper&rsquo;s workload should fit perfectly into the free tier of Astra.
+Alternatively, a relational database storage; either H2 or Postgres can be set up to back Reaper. To use one of the relational database options as the backed storage for Reaper set <code>storageType</code> to a value of either <strong>h2</strong> or <strong>postrges</strong> in the Reaper configuration file.</p>
 <p>Further information on the available storage options is provided in the following section.</p>
 <ul>
 <li><a href="http://cassandra-reaper.io/docs/backends/memory/">In-Memory</a></li>
 <li><a href="http://cassandra-reaper.io/docs/backends/cassandra/">Cassanda</a></li>
 <li><a href="http://cassandra-reaper.io/docs/backends/postgres/">PostgresQL</a></li>
 <li><a href="http://cassandra-reaper.io/docs/backends/h2/">H2</a></li>
+<li><a href="http://cassandra-reaper.io/docs/backends/astra/">Astra</a></li>
 </ul>
 <p>Sample YAML files are available in the <em><a href="https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource">src/packaging/resource</a></em> directory for each of the above storage options:</p>
 <ul>
@@ -333,6 +337,7 @@
 <li>cassandra-reaper-cassandra.yaml</li>
 <li>cassandra-reaper-postgres.yaml</li>
 <li>cassandra-reaper-h2.yaml</li>
+<li>cassandra-reaper-astra.yaml</li>
 </ul>
 <p>For configuring other aspects of the service, see the available configuration options in the <a href="../configuration">Configuration Reference</a>.</p>
 
