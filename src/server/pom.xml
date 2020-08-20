@@ -150,7 +150,13 @@
         <dependency>
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
-            <version>3.7.1</version>
+            <version>3.10.1</version>
+            <exclusions>
+	            <exclusion>
+		            <groupId>com.fasterxml.jackson.core</groupId>
+	                <artifactId>jackson-databind</artifactId>
+	            </exclusion>
+	        </exclusions>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>

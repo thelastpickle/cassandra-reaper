@@ -1,6 +1,7 @@
 /*
  * Copyright 2016-2017 Spotify AB
  * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2020-2020 DataStax, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -205,7 +206,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public CassandraStorage(
       UUID reaperInstanceId,
       ReaperApplicationConfiguration config,
-      Environment environment) throws ReaperException {
+      Environment environment,
+      CassandraMode mode) throws ReaperException {
 
     this.reaperInstanceId = reaperInstanceId;
     CassandraFactory cassandraFactory = config.getCassandraFactory();
@@ -234,7 +236,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .min(VersionNumber::compareTo)
         .get();
 
-    initializeAndUpgradeSchema(cassandra, session, config, version);
+    initializeAndUpgradeSchema(cassandra, session, config, version, mode);
     prepareStatements();
   }
 
@@ -242,8 +244,22 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       com.datastax.driver.core.Cluster cassandra,
       Session session,
       ReaperApplicationConfiguration config,
-      VersionNumber version) throws ReaperException {
+      VersionNumber version,
+      CassandraMode mode) throws ReaperException {
 
+    if (mode.equals(CassandraMode.CASSANDRA)) {
+      initializeCassandraSchema(cassandra, session, config, version);
+    } else if (mode.equals(CassandraMode.ASTRA)) {
+      initializeAstraSchema(cassandra, session, config, version);
+    }
+  }
+
+  private static void initializeCassandraSchema(
+      com.datastax.driver.core.Cluster cassandra,
+      Session session,
+      ReaperApplicationConfiguration config,
+      VersionNumber version
+  ) {
     Preconditions.checkState(
             0 >= VersionNumber.parse("2.1").compareTo(version),
             "All Cassandra nodes in Reaper's backend storage must be running version 2.1+");
@@ -275,7 +291,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
         // We now only support migrations starting at version 15 (Reaper 1.2.2)
         int startVersion = database.getVersion() == 0 ? 15 : database.getVersion();
-        migrate(startVersion, migrationRepo, session);
+        migrate(startVersion, migrationRepo, session, CassandraMode.CASSANDRA);
         // some migration steps depend on the Cassandra version, so must be rerun every startup
         Migration016.migrate(session, config.getCassandraFactory().getKeyspace());
         // Switch metrics table to TWCS if possible, this is intentionally executed every startup
@@ -292,16 +308,45 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     }
   }
 
+  private static void initializeAstraSchema(
+      com.datastax.driver.core.Cluster cassandra,
+      Session session,
+      ReaperApplicationConfiguration config,
+      VersionNumber version
+  ) {
+    Preconditions.checkState(
+            0 >= VersionNumber.parse("2.1").compareTo(version),
+            "All Cassandra nodes in Reaper's backend storage must be running version 2.1+");
+
+    try (Database database = new Database(cassandra, config.getCassandraFactory().getKeyspace())) {
+
+      int currentVersion = database.getVersion();
+
+      MigrationRepository migrationRepo = new MigrationRepository("db/astra");
+      if (currentVersion < migrationRepo.getLatestVersion()) {
+        LOG.warn("Starting db migration from {} to {}…", currentVersion, migrationRepo.getLatestVersion());
+
+        int startVersion = database.getVersion();
+        migrate(startVersion, migrationRepo, session, CassandraMode.ASTRA);
+      } else {
+        LOG.info(
+            String.format("Keyspace %s already at schema version %d", session.getLoggedKeyspace(), currentVersion));
+      }
+    }
+  }
+
   private static void migrate(
       int dbVersion,
       MigrationRepository repository,
-      Session session) {
+      Session session,
+      CassandraMode mode) {
     Preconditions.checkState(dbVersion < repository.getLatestVersion());
 
     for (int i = dbVersion + 1 ; i <= repository.getLatestVersion(); ++i) {
       final int nextVersion = i;
+      String migrationRepoPath = mode.equals(CassandraMode.CASSANDRA) ? "db/cassandra" : "db/astra";
       // perform the migrations one at a time, so the MigrationXXX classes can be executed alongside the scripts
-      MigrationRepository migrationRepo = new MigrationRepository("db/cassandra") {
+      MigrationRepository migrationRepo = new MigrationRepository(migrationRepoPath) {
         @Override
         public int getLatestVersion() {
           return nextVersion;
@@ -1949,5 +1994,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public void purgeNodeOperations() {}
+
+  public enum CassandraMode {
+    CASSANDRA,
+    ASTRA
+  }
 
 }
