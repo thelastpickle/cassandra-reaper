@@ -1,6 +1,7 @@
 /*
  * Copyright 2014-2017 Spotify AB
  * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2020-2020 DataStax, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +68,7 @@ import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.client.HttpClientBuilder;
@@ -468,8 +470,11 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     if ("memory".equalsIgnoreCase(config.getStorageType())) {
       storage = new MemoryStorage();
-    } else if ("cassandra".equalsIgnoreCase(config.getStorageType())) {
-      storage = new CassandraStorage(context.reaperInstanceId, config, environment);
+    } else if (Lists.newArrayList("cassandra", "astra").contains(config.getStorageType())) {
+      CassandraStorage.CassandraMode mode = config.getStorageType().equals("cassandra")
+          ? CassandraStorage.CassandraMode.CASSANDRA
+          : CassandraStorage.CassandraMode.ASTRA;
+      storage = new CassandraStorage(context.reaperInstanceId, config, environment, mode);
     } else if ("postgres".equalsIgnoreCase(config.getStorageType())
         || "h2".equalsIgnoreCase(config.getStorageType())
         || "database".equalsIgnoreCase(config.getStorageType())) {
