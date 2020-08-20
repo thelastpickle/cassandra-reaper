@@ -214,6 +214,8 @@
         
         <li><a href="/docs/backends/cassandra/"> Cassandra </a> </li>
         
+        <li><a href="/docs/backends/astra/"> Astra </a> </li>
+        
     </ul>
     
     </li>
@@ -540,7 +542,7 @@ blocking in cause some thread is waiting for I/O, like calling a Cassandra clust
 <!-- raw HTML omitted -->
 <h3 id="storagetype"><code>storageType</code></h3>
 <p>Type: <em>String</em></p>
-<p>The storage type to use in which Reaper will store its control data. The value must be either <strong>cassandra</strong>, <strong>h2</strong>, <strong>memory</strong>, or <strong>postgres</strong>. If the recommended (persistent) storage type <strong>cassandra</strong>, <strong>h2</strong>, or <strong>postgres</strong> is being used, the database client parameters must be specified in the respective <code>cassandra</code>, <code>h2</code>, or <code>postgres</code> section in the configuration file. See the example settings in provided the <em><a href="https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource">src/packaging/resources</a></em> directory of the repository.</p>
+<p>The storage type to use in which Reaper will store its control data. The value must be either <strong>cassandra</strong>, <strong>astra</strong>, <strong>h2</strong>, <strong>memory</strong>, or <strong>postgres</strong>. If the recommended (persistent) storage type <strong>cassandra</strong>, <strong>h2</strong>, or <strong>postgres</strong> is being used, the database client parameters must be specified in the respective <code>cassandra</code>, <code>h2</code>, or <code>postgres</code> section in the configuration file. See the example settings in provided the <em><a href="https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource">src/packaging/resources</a></em> directory of the repository.</p>
 <!-- raw HTML omitted -->
 <h3 id="useaddresstranslator"><code>useAddressTranslator</code></h3>
 <p>Type: <em>Boolean</em></p>
