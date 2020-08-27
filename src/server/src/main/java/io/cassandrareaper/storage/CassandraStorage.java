@@ -1824,7 +1824,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       Preconditions.checkState(WriteType.CAS != type ||  ConsistencyLevel.SERIAL == cl);
 
       return null != stmt && !Objects.equals(Boolean.FALSE, stmt.isIdempotent())
-          ? WriteType.CAS == type ? RetryDecision.retry(ConsistencyLevel.ONE) : RetryDecision.retry(cl)
+          ? RetryDecision.retry(cl)
           : DefaultRetryPolicy.INSTANCE.onWriteTimeout(stmt, cl, type, required, received, retry);
     }
 

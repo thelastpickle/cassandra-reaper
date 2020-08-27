@@ -887,6 +887,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                 segmentId,
                 repairNumber);
           } else if (renewLead()) {
+            successOrFailedNotified.set(true);
             LOG.debug(
                 "repair session succeeded for segment with id '{}' and repair number '{}'",
                 segmentId,
@@ -900,10 +901,10 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                     .withId(segmentId)
                     .build());
 
-            successOrFailedNotified.set(true);
             // Since we can get out of order notifications,
             // we need to exit if we already got the COMPLETE notification.
             if (completeNotified.get()) {
+              LOG.debug("Complete was already notified for segment {}. Signaling the condition object...", segmentId);
               condition.signalAll();
               jmxProxy.removeRepairStatusHandler(repairNumber);
             }
@@ -946,12 +947,14 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             !completeNotified.get(),
             "illegal multiple 'COMPLETE', %s:%s", repairRunner.getRepairRunId(), segmentId);
 
+        completeNotified.set(true);
         LOG.debug(
             "repair session finished for segment with id '{}' and repair number '{}'",
             segmentId,
             repairNumber);
-        completeNotified.set(true);
+
         if (successOrFailedNotified.get()) {
+          LOG.debug("Success was already notified for segment {}. Signaling the condition object...", segmentId);
           condition.signalAll();
           jmxProxy.removeRepairStatusHandler(repairNumber);
         }
@@ -1014,6 +1017,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                   segmentId,
                   repairNumber);
             } else if (renewLead()) {
+              successOrFailedNotified.set(true);
               LOG.debug(
                   "repair session succeeded for segment with id '{}' and repair number '{}'",
                   segmentId,
@@ -1029,7 +1033,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
               // Since we can get out of order notifications,
               // we need to exit if we already got the COMPLETE notification.
-              successOrFailedNotified.set(true);
               if (completeNotified.get()) {
                 condition.signalAll();
                 jmxProxy.removeRepairStatusHandler(repairNumber);
@@ -1080,6 +1083,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         // regardless of succeeded or failed sessions.
         // Since we can get out of order notifications,
         // we won't exit unless we already got a SUCCESS or ERROR notification.
+        completeNotified.set(true);
         LOG.debug(
             "repair session finished for segment with id '{}' and repair number '{}'",
             segmentId,
