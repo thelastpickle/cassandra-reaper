@@ -35,7 +35,7 @@ set -ex
 
 CASSANDRA_KEYSTORE_PASSWORD=$1
 CASSANDRA_TRUSTSTORE_PASSWORD=$2
-
+WORKDIR=$PWD
 #
 # Use three separate stores:
 #   - The Cassandra Keystore that will contain the Cassandra private certificate.
@@ -47,8 +47,15 @@ CASSANDRA_KEYSTORE=${WORKDIR}/ssl-stores/cassandra-server-keystore.jks
 REAPER_KEYSTORE=${WORKDIR}/ssl-stores/reaper-server-keystore.jks
 GENERIC_TRUSTSTORE=${WORKDIR}/ssl-stores/generic-server-truststore.jks
 
-CA_CERT_CONFIG=${WORKDIR}/ca_cert.conf
+CA_CERT_CONFIG=${WORKDIR}/ca2_cert.conf
 ROOT_CA_CERT=${WORKDIR}/ssl-stores/ca-cert
+CA_KEY=${WORKDIR}/ca-key
+
+if [ -f "$CA_CERT_CONFIG" ] ; then
+    echo "$CA_CERT_CONFIG" exists, can continue
+else
+        exit;
+fi
 
 # Create the directory where the stores will go into if required.
 mkdir -p ${WORKDIR}/ssl-stores/
@@ -56,7 +63,7 @@ mkdir -p ${WORKDIR}/ssl-stores/
 # Check if there are any of the SSL stores exists and if so, prompt the user to delete them or exit
 set +x
 if [[ $(ls ${WORKDIR}/ssl-stores/*.jks | wc -l) -gt 0 ]]
-then
+ then
     echo
     echo "WARNING: If any of the following stores exist, they will need to be deleted to proceed with the generation of new SSL stores."
     echo " - ${CASSANDRA_KEYSTORE}"
@@ -73,7 +80,7 @@ then
         esac
     done
 
-fi
+ fi
 set -x
 
 for store_name in ${CASSANDRA_KEYSTORE} ${REAPER_KEYSTORE} ${GENERIC_TRUSTSTORE}
@@ -81,16 +88,25 @@ do
     rm -f ${store_name}
 done
 
+if [ -f "$CA_KEY" ] ; then
+    echo "$CA_KEY" exists, will not create
+else
+   openssl genrsa -out ${CA_KEY} 2048
+fi
+
+if [ -f "$ROOT_CA_CERT" ] ; then
+    echo "$ROOT_CA_CERT" exists, will not create
+else
+# Create the Root Certificate Authority (Root CA) from the Certificate Authority Configuration and verify contents.
+   openssl req -x509 -sha256 -new -nodes -key ca-key -out ${ROOT_CA_CERT} -config ${CA_CERT_CONFIG}
+fi
+
 set +x
 echo
 echo "Generic Certificate Authority configuration"
 cat ${CA_CERT_CONFIG}
-echo
 set -x
 
-# Create the Root Certificate Authority (Root CA) from the Certificate Authority Configuration and verify contents.
-openssl req -config ${CA_CERT_CONFIG} -new -x509 -keyout ca-key -out ${ROOT_CA_CERT}
-openssl x509 -in ${ROOT_CA_CERT} -text -noout
 
 # Generate public/private key pair and the key stores.
 keytool -genkeypair -keyalg RSA -alias cassandra \
