@@ -79,8 +79,7 @@ Based on [Shiro's LDAP realm usage](https://shiro.apache.org/static/1.2.4/apidoc
 
 An example configuration for LDAP authentication exists (commented out) in the default shiro.ini :
 
-```
-
+```ini
 # Example LDAP realm, see https://shiro.apache.org/static/1.2.4/apidocs/org/apache/shiro/realm/ldap/JndiLdapContextFactory.html
 ldapRealm = org.apache.shiro.realm.ldap.JndiLdapRealm
 ldapRealm.userDnTemplate = uid={0},ou=users,dc=cassandra-reaper,dc=io
@@ -89,7 +88,6 @@ ldapRealm.contextFactory.url = ldap://ldapHost:389
 ;ldapRealm.contextFactory.systemUsername = cn=Manager, dc=example, dc=com
 ;ldapRealm.contextFactory.systemPassword = secret
 ;ldapRealm.contextFactory.environment[java.naming.security.credentials] = ldap_password
-
 ```
 
 
@@ -97,13 +95,12 @@ ldapRealm.contextFactory.url = ldap://ldapHost:389
 
 In order to interact with Reaper through `spreaper` when Shiro authentication is activated, you will first need to login as follows:  
 
-```
-$ ./spreaper login admin
+```shell
+./spreaper login admin
 Password: *****
 # Logging in...
 You are now authenticated to Reaper.
 # JWT saved
-
 ```
 
 The JWT will be saved in `~/.reaper/jwt` and automatically used by Reaper for any other call.

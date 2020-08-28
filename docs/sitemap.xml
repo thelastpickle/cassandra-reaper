@@ -7,11 +7,11 @@
   </url>
   
   <url>
-    <loc>http://cassandra-reaper.io/install/</loc>
+    <loc>http://cassandra-reaper.io/</loc>
   </url>
   
   <url>
-    <loc>http://cassandra-reaper.io/</loc>
+    <loc>http://cassandra-reaper.io/concepts/</loc>
   </url>
   
   <url>
@@ -47,11 +47,11 @@
   </url>
   
   <url>
-    <loc>http://cassandra-reaper.io/concepts/</loc>
+    <loc>http://cassandra-reaper.io/install/docker/</loc>
   </url>
   
   <url>
-    <loc>http://cassandra-reaper.io/install/docker/</loc>
+    <loc>http://cassandra-reaper.io/install/</loc>
   </url>
   
   <url>
@@ -75,19 +75,19 @@
   </url>
   
   <url>
+    <loc>http://cassandra-reaper.io/usage/</loc>
+  </url>
+  
+  <url>
     <loc>http://cassandra-reaper.io/configuration/</loc>
   </url>
   
   <url>
-    <loc>http://cassandra-reaper.io/install/building/</loc>
+    <loc>http://cassandra-reaper.io/development/building/</loc>
   </url>
   
   <url>
-    <loc>http://cassandra-reaper.io/metrics/</loc>
-  </url>
-  
-  <url>
-    <loc>http://cassandra-reaper.io/usage/</loc>
+    <loc>http://cassandra-reaper.io/development/merging/</loc>
   </url>
   
   <url>
@@ -96,6 +96,10 @@
   
   <url>
     <loc>http://cassandra-reaper.io/usage/schedule/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/development/releases/</loc>
   </url>
   
   <url>
@@ -128,6 +132,10 @@
   
   <url>
     <loc>http://cassandra-reaper.io/faq/</loc>
+  </url>
+  
+  <url>
+    <loc>http://cassandra-reaper.io/metrics/</loc>
   </url>
   
   <url>

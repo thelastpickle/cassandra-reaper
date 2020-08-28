@@ -38,7 +38,7 @@ The Apache Cassandra backend is the only deployment that allows multiple Reaper 
 
 To run Reaper using the Cassandra backend, create a reaper_db keyspace with an appropriate placement strategy. This is installation specific, and names of the data centers in the cluster that will host the Reaper data must be specified. For example:
 
-```none
+```cql
 CREATE KEYSPACE reaper_db WITH replication = {'class': 'NetworkTopologyStrategy', '<data_center>': 3};
 ```
 

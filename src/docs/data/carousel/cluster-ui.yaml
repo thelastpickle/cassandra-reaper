@@ -1,8 +1,0 @@
-weight: 3
-title: "Quickly See Cluster Health"
-description: >
-  <ul class="list-style-none">
-    <li>Healthy nodes are green</li>
-    <li>Downed nodes are red</li>
-  </ul>
-image: "img/carousel/cluster-view.jpg"

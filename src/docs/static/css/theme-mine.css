@@ -1,25 +1,27 @@
 
 :root{
 
-    --MAIN-TEXT-color:#323232; /* Color of text by default */
-    --MAIN-TITLES-TEXT-color: #5e5e5e; /* Color of titles h2-h3-h4-h5 */
-    --MAIN-LINK-color:#1C90F3; /* Color of links */
-    --MAIN-LINK-HOVER-color:#167ad0; /* Color of hovered links */
+    --MAIN-TEXT-color:#3C4244; /* Color of text by default */
+    --MAIN-TITLES-TEXT-color: #3C4244; /* Color of titles h2-h3-h4-h5 */
+    --MAIN-LINK-color:#055992; /* Color of links */
+    --MAIN-LINK-HOVER-color:#FF9D2C; /* Color of hovered links */
     --MAIN-ANCHOR-color: #1C90F3; /* color of anchors on titles */
+    --MAIN-FONT-FAMILY: 'Muli', sans-serif !important;
 
-    --MENU-HEADER-BG-color:#0D1538; /* Background color of menu header */
-    --MENU-HEADER-BORDER-color:#33a1ff; /*Color of menu header border */
+    --MENU-HEADER-BG-color:#055992; /* Background color of menu header */
+    --MENU-HEADER-BORDER-color:#ACCFE8; /*Color of menu header border */
 
-    --MENU-SEARCH-BG-color:#167ad0; /* Search field background color (by default borders + icons) */
-    --MENU-SEARCH-BOX-color: #181A2B; /* Override search field border color */
-    --MENU-SEARCH-BOX-ICONS-color: #a1d2fd; /* Override search field icons color */
+    --MENU-SEARCH-BG-color:#3C4244; /* Search field background color (by default borders + icons) */
+    --MENU-SEARCH-BOX-color: #055992; /* Override search field border color */
+    --MENU-SEARCH-BOX-ICONS-color: #FFFFFF; /* Override search field icons color */
 
-    --MENU-SECTIONS-ACTIVE-BG-color:#20272b; /* Background color of the active section and its childs */
-    --MENU-SECTIONS-BG-color:#252c31; /* Background color of other sections */
-    --MENU-SECTIONS-LINK-color: #ccc; /* Color of links in menu */
-    --MENU-SECTIONS-LINK-HOVER-color: #e6e6e6;  /* Color of links in menu, when hovered */
-    --MENU-SECTION-ACTIVE-CATEGORY-color: #777; /* Color of active category text */
-    --MENU-SECTION-ACTIVE-CATEGORY-BG-color: #fff; /* Color of background for the active category (only) */
+    --MENU-SECTIONS-ACTIVE-BG-color:#3C4244; /* Background color of the active section and its childs */
+    --MENU-SECTIONS-BG-color:#1F2438; /* Background color of other sections */
+    --MENU-SECTIONS-HEADING-color: #FFFFFF;
+    --MENU-SECTIONS-LINK-color: #C8CBD3; /* Color of links in menu */
+    --MENU-SECTIONS-LINK-HOVER-color: #FF9D2C;  /* Color of links in menu, when hovered */
+    --MENU-SECTION-ACTIVE-CATEGORY-color: #1F2438; /* Color of active category text */
+    --MENU-SECTION-ACTIVE-CATEGORY-BG-color: #FFFFFF; /* Color of background for the active category (only) */
 
     --MENU-VISITED-color: #33a1ff; /* Color of 'page visited' icons in menu */
     --MENU-SECTION-HR-color: #20272b; /* Color of <hr> separator in menu */
@@ -28,6 +30,7 @@
 
 body {
     color: var(--MAIN-TEXT-color) !important;
+    font-family: var(--MAIN-FONT-FAMILY) !important;
 }
 
 textarea:focus, input[type="email"]:focus, input[type="number"]:focus, input[type="password"]:focus, input[type="search"]:focus, input[type="tel"]:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="color"]:focus, input[type="date"]:focus, input[type="datetime"]:focus, input[type="datetime-local"]:focus, input[type="month"]:focus, input[type="time"]:focus, input[type="week"]:focus, select[multiple=multiple]:focus {
@@ -35,8 +38,9 @@ textarea:focus, input[type="email"]:focus, input[type="number"]:focus, input[typ
     box-shadow: none;
 }
 
-h2, h3, h4, h5 {
+h1, h2, h3, h4, h5 {
     color: var(--MAIN-TITLES-TEXT-color) !important;
+    font-family: var(--MAIN-FONT-FAMILY) !important;
 }
 
 a {
@@ -66,26 +70,36 @@ a:hover {
     transition: width 0.5s ease;
     background-color: var(--MAIN-LINK-HOVER-color);
 }
+
 #body img {
     display: inline !important;
     margin-top: 0px !important;
     margin-bottom: 0px !important;
 }
+
 #sidebar {
     background-color: var(--MENU-SECTIONS-BG-color);
 }
+
+#sidebar h3 {
+    color: var(--MENU-SECTIONS-HEADING-color) !important;
+}
+
 #sidebar #header-wrapper {
     background: var(--MENU-HEADER-BG-color);
     color: var(--MENU-SEARCH-BOX-color);
     border-color: var(--MENU-HEADER-BORDER-color);
 }
+
 #sidebar .searchbox {
     border-color: var(--MENU-SEARCH-BOX-color);
     background: var(--MENU-SEARCH-BG-color);
 }
+
 #sidebar ul.topics > li.parent, #sidebar ul.topics > li.active {
     background: var(--MENU-SECTIONS-ACTIVE-BG-color);
 }
+
 #sidebar .searchbox * {
     color: var(--MENU-SEARCH-BOX-ICONS-color);
 }

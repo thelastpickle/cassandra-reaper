@@ -20,7 +20,7 @@ datacenterAvailability: ALL
 This setup works with all backends : Apache Cassandra, Memory, H2 and Postgres.
 
 
-{{< screenshot src="/img/singlereaper-multidc-all.png">}}
+{{< screenshot src="/img/singlereaper_multidc_all.png">}}
 
 {{< /screenshot >}}
 
@@ -45,7 +45,7 @@ If multiple clusters are registered in Reaper it is required that Reaper can acc
 This setup works with all backends : Apache Cassandra, Memory, H2 and Postgres.
 
 
-{{< screenshot src="/img/singlereaper-multidc-local.png">}}
+{{< screenshot src="/img/singlereaper_multidc_local.png">}}
 
 {{< /screenshot >}}
 

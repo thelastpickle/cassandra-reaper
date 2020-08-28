@@ -20,7 +20,7 @@ datacenterAvailability: ALL
 ```
 
 
-{{< screenshot src="/img/singlereaper-multidc-all.png">}}
+{{< screenshot src="/img/singlereaper_multidc_all.png">}}
 
 {{< /screenshot >}}
 
@@ -41,7 +41,7 @@ If multiple clusters are registered in Reaper it is required that some Reaper in
 `LOCAL` mode allows you to register multiple clusters in a distributed Reaper installation. `LOCAL` mode also allows you to prioritize repairs running according to their schedules over worrying about the load on remote and unaccessible datacenters and nodes.
 
 
-{{< screenshot src="/img/singlereaper-multidc-local.png">}}
+{{< screenshot src="/img/singlereaper_multidc_local.png">}}
 
 {{< /screenshot >}}
 
@@ -62,7 +62,7 @@ This setup prioritises handling backpressure on all nodes over running repairs. 
 
 There must be installed and running a Reaper instance in every datacenter of every registered Cassandra cluster. And every Reaper instance must have CQL access to the backend Cassandra cluster it uses as a backend.
 
-{{< screenshot src="/img/multireaper-multidc.png">}}
+{{< screenshot src="/img/multireaper_multidc.png">}}
 
 {{< /screenshot >}}
 
@@ -79,7 +79,7 @@ datacenterAvailability: SIDECAR
 
 There must be installed and running a Reaper instance on each Cassandra node in the cluster. And every Reaper instance must have CQL access to the backend Cassandra cluster it uses as a backend.
 
-{{< screenshot src="/img/sidecar-mode.png">}}
+{{< screenshot src="/img/sidecar_mode.png">}}
 
 {{< /screenshot >}}
 

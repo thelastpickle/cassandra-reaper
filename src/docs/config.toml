@@ -15,7 +15,7 @@
 baseURL = "http://cassandra-reaper.io/"
 languageCode = "en-us"
 title = "Reaper: Easy Repair Management for Apache Cassandra"
-theme = "hugo-theme-learn-2.4.0"
+theme = "hugo-theme-learn-2.5.0"
 
 googleAnalytics = "UA-104925477-1"
 publishDir = "../../docs"
@@ -51,7 +51,7 @@ weight = 15
     showVisitedLinks = false
     disableSearch = false
     disableAssetsBusting = false
-    disableInlineCopyToClipBoard = true
+    disableInlineCopyToClipBoard = false
     disableShortcutsTitle = false
     disableLanguageSwitchingButton = false
     disableNextPrev = true

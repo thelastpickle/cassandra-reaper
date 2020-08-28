@@ -57,4 +57,4 @@ ALTER TABLE "repair_segment" DROP COLUMN "token_ranges";
 
 ## Upgrading from 1.2.2 to 2.0.0
 
-@TODO: Add information about upgrading from 1.2.2 to 2.0.0
+You need to be running at least 1.2.2 before upgrading to 2.0.0.
