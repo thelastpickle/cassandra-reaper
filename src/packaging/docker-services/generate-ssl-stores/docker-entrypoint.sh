@@ -47,7 +47,7 @@ CASSANDRA_KEYSTORE=${WORKDIR}/ssl-stores/cassandra-server-keystore.jks
 REAPER_KEYSTORE=${WORKDIR}/ssl-stores/reaper-server-keystore.jks
 GENERIC_TRUSTSTORE=${WORKDIR}/ssl-stores/generic-server-truststore.jks
 
-CA_CERT_CONFIG=${WORKDIR}/ca2_cert.conf
+CA_CERT_CONFIG=${WORKDIR}/ca_cert.conf
 ROOT_CA_CERT=${WORKDIR}/ssl-stores/ca-cert
 CA_KEY=${WORKDIR}/ca-key
 
