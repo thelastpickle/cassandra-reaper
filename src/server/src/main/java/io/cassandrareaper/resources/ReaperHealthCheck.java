@@ -40,6 +40,14 @@ public final class ReaperHealthCheck extends com.codahale.metrics.health.HealthC
 
   @Override
   protected Result check() throws ReaperException {
+    if (context.config.isInKubernetesSidecarMode()) {
+      if (context.isRunning.get()) {
+        return Result.healthy();
+      } else {
+        return Result.unhealthy("Reaper is not running");
+      }
+    }
+
     if (context.storage.isStorageConnected()) {
       if (System.currentTimeMillis() > nextCheck) {
         nextCheck = System.currentTimeMillis() + HEALTH_CHECK_INTERVAL;

@@ -69,12 +69,16 @@ public final class MetricsService {
     this.context = context;
     this.clusterFacade = clusterFacadeSupplier.get();
     if (context.config.isInSidecarMode()) {
+      String clusterName = System.getenv("REAPER_LOCAL_CASS_CLUSTER");
+      if (clusterName == null) {
+        Node host = Node.builder()
+                .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1"))
+                .build();
 
-      Node host = Node.builder()
-            .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1"))
-            .build();
-
-      localClusterName = Cluster.toSymbolicName(clusterFacade.getClusterName(host));
+        localClusterName = Cluster.toSymbolicName(clusterFacade.getClusterName(host));
+      } else {
+        localClusterName = clusterName;
+      }
     } else {
       localClusterName = null;
     }

@@ -70,7 +70,11 @@ if [ "$1" = 'register-clusters' ]; then
   mkdir -p ~/.reaper
   echo "admin" > ~/.reaper/credentials
 
-  wait_for ${REAPER_HOST} ${REAPER_PORT}
+  if [ "SIDECAR" == "$REAPER_DATACENTER_AVAILABILITY" -a "true" == "$IS_K8S"]; then
+    echo "Running Reaper in sidecar mode in Kubernetes. Not waiting for Cassandra to be up."
+  else
+    wait_for ${REAPER_HOST} ${REAPER_PORT}
+  fi
 
   for SEED in $(echo "${REAPER_AUTO_SCHEDULING_SEEDS}" | sed "s/,/ /g"); do
     SEED_HOST=$(echo ${SEED} | cut -d':' -f1)

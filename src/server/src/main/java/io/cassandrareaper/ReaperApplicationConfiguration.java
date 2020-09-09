@@ -453,6 +453,10 @@ public final class ReaperApplicationConfiguration extends Configuration {
     return datacenterAvailability == DatacenterAvailability.SIDECAR;
   }
 
+  public Boolean isInKubernetesSidecarMode() {
+    return Boolean.parseBoolean(System.getenv("IS_K8S")) && isInSidecarMode();
+  }
+
   public Optional<String> getEnforcedLocalNode() {
     return enforcedLocalNode;
   }

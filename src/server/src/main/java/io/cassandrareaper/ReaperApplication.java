@@ -99,11 +99,13 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperApplication.class);
   private final AppContext context;
+  private final Initializer initializer;
 
   public ReaperApplication() {
     super();
     LOG.info("default ReaperApplication constructor called");
     this.context = new AppContext();
+    initializer = new Initializer(context);
   }
 
   @VisibleForTesting
@@ -111,6 +113,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     super();
     LOG.info("ReaperApplication constructor called with custom AppContext");
     this.context = context;
+    initializer = new Initializer(context);
   }
 
   public static void main(String[] args) throws Exception {
@@ -176,7 +179,11 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     int repairThreads = config.getRepairRunThreadCount();
     LOG.info("initializing runner thread pool with {} threads", repairThreads);
 
-    tryInitializeStorage(config, environment);
+  initializer.submit("InitializeStorage", () -> tryInitializeStorage(config, environment));
+
+    if (Boolean.parseBoolean(System.getenv("SCHEMA_ONLY"))) {
+      return;
+    }
 
     Cryptograph cryptograph = context.config == null || context.config.getCryptograph() == null
             ? new NoopCrypotograph() : context.config.getCryptograph().create();
@@ -248,26 +255,31 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     Thread.sleep(1000);
     context.schedulingManager = SchedulingManager.create(context);
-    context.schedulingManager.start();
+    initializer.submit("StartSchedulingManager", () -> context.schedulingManager.start());
 
     if (config.hasAutoSchedulingEnabled()) {
       LOG.debug("using specified configuration for auto scheduling: {}", config.getAutoScheduling());
       AutoSchedulingManager.start(context);
     }
 
-    initializeJmxSeedsForAllClusters();
-    maybeInitializeSidecarMode(addClusterResource);
+    initializer.submit("InitializeJmxSeeds", this::initializeJmxSeedsForAllClusters);
+    initializer.submit("InitializeSidecarMode", () -> maybeInitializeSidecarMode(addClusterResource));
+
     LOG.info("resuming pending repair runs");
 
-    Preconditions.checkState(
-        context.storage instanceof IDistributedStorage
-            || DatacenterAvailability.SIDECAR != context.config.getDatacenterAvailability(),
-        "Cassandra backend storage is the only one allowing SIDECAR datacenter availability modes.");
+    initializer.submit("CheckStorageForSIDECAR", () ->
+      Preconditions.checkState(
+              context.storage instanceof IDistributedStorage
+                      || DatacenterAvailability.SIDECAR != context.config.getDatacenterAvailability(),
+              "Cassandra backend storage is the only one allowing SIDECAR datacenter availability modes.")
+    );
 
-    Preconditions.checkState(
-        context.storage instanceof IDistributedStorage
-            || DatacenterAvailability.EACH != context.config.getDatacenterAvailability(),
-        "Cassandra backend storage is the only one allowing EACH datacenter availability modes.");
+    initializer.submit("CheckStorageForEACH", () ->
+      Preconditions.checkState(
+              context.storage instanceof IDistributedStorage
+                      || DatacenterAvailability.EACH != context.config.getDatacenterAvailability(),
+              "Cassandra backend storage is the only one allowing EACH datacenter availability modes.")
+    );
 
     ScheduledExecutorService scheduler = new InstrumentedScheduledExecutorService(
             environment.lifecycle().scheduledExecutorService("ReaperApplication-scheduler").threads(3).build(),
@@ -279,12 +291,12 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
           .compareAndSet(false, DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability());
 
       // Allowing multiple Reaper instances require concurrent database polls for repair and metrics statuses
-      scheduleRepairManager(scheduler);
-      scheduleHeartbeat(scheduler);
+      initializer.submit("ScheduleRepairManager", () -> scheduleRepairManager(scheduler));
+      initializer.submit("ScheduleHeartbeat", () -> scheduleHeartbeat(scheduler));
     }
 
-    context.repairManager.resumeRunningRepairRuns();
-    schedulePurge(scheduler);
+    initializer.submit("ResumeRunningRepairs", context.repairManager::resumeRunningRepairRuns);
+    initializer.submit("SchedulePurge", () -> schedulePurge(scheduler));
 
     LOG.info("Initialization complete!");
     LOG.warn("Reaper is ready to get things done!");
@@ -298,9 +310,12 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       while (true) {
         try {
           context.storage = initializeStorage(config, environment);
+          if (Boolean.parseBoolean(System.getenv("SCHEMA_ONLY"))) {
+            System.exit(0);
+          }
           break;
         } catch (RuntimeException e) {
-          LOG.error("Storage is not ready yet, trying again to connect shortly...", e);
+          LOG.info("Storage is not ready yet: {}", e.getMessage());
           storageFailures++;
           if (storageFailures > 60) {
             LOG.error("Too many failures when trying to connect storage. Exiting :'(");
