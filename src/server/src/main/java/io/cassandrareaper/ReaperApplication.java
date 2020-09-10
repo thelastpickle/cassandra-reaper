@@ -179,7 +179,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     int repairThreads = config.getRepairRunThreadCount();
     LOG.info("initializing runner thread pool with {} threads", repairThreads);
 
-  initializer.submit("InitializeStorage", () -> tryInitializeStorage(config, environment));
+    initializer.submit("InitializeStorage", () -> tryInitializeStorage(config, environment));
 
     if (Boolean.parseBoolean(System.getenv("SCHEMA_ONLY"))) {
       return;
@@ -268,17 +268,17 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.info("resuming pending repair runs");
 
     initializer.submit("CheckStorageForSIDECAR", () ->
-      Preconditions.checkState(
-              context.storage instanceof IDistributedStorage
-                      || DatacenterAvailability.SIDECAR != context.config.getDatacenterAvailability(),
-              "Cassandra backend storage is the only one allowing SIDECAR datacenter availability modes.")
+            Preconditions.checkState(
+                    context.storage instanceof IDistributedStorage
+                            || DatacenterAvailability.SIDECAR != context.config.getDatacenterAvailability(),
+                    "Cassandra backend storage is the only one allowing SIDECAR datacenter availability modes.")
     );
 
     initializer.submit("CheckStorageForEACH", () ->
-      Preconditions.checkState(
-              context.storage instanceof IDistributedStorage
-                      || DatacenterAvailability.EACH != context.config.getDatacenterAvailability(),
-              "Cassandra backend storage is the only one allowing EACH datacenter availability modes.")
+            Preconditions.checkState(
+                    context.storage instanceof IDistributedStorage
+                            || DatacenterAvailability.EACH != context.config.getDatacenterAvailability(),
+                    "Cassandra backend storage is the only one allowing EACH datacenter availability modes.")
     );
 
     ScheduledExecutorService scheduler = new InstrumentedScheduledExecutorService(
