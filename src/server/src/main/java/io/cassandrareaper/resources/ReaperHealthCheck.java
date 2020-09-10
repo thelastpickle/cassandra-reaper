@@ -41,6 +41,9 @@ public final class ReaperHealthCheck extends com.codahale.metrics.health.HealthC
   @Override
   protected Result check() throws ReaperException {
     if (context.config.isInKubernetesSidecarMode()) {
+      // If Reaper is running in Kubernetes as a sidecar, i.e., in the same pod as the
+      // cassandra container, then we do not want the health check to depend on Cassandra.
+      // See https://github.com/thelastpickle/cassandra-reaper/issues/956 for details.
       if (context.isRunning.get()) {
         return Result.healthy();
       } else {

@@ -8,17 +8,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
+/**
+ * The purpose of this class is to facilitate Reaper sidecar mode in Kubernetes. When
+ * running Reaper as a sidecar in Kubernetes, we do not want startup to block on things
+ * like connecting to the storage backend (see
+ * https://github.com/thelastpickle/cassandra-reaper/issues/956 for details). Initializer
+ * will instead execute tasks in a background thread. Tasks will be executed in the order
+ * in which they are submitted. If a task fails, later tasks are skipped and the
+ * {@link AppContext#isRunning} flag is set to false which will cause the health check to
+ * report unhealthy.
+ */
 public class Initializer {
-
-    private static class NamedTask {
-        String name;
-        InitializationTask task;
-
-        public NamedTask(String name, InitializationTask task) {
-            this.name = name;
-            this.task = task;
-        }
-    }
 
     private static final Logger LOG = LoggerFactory.getLogger(Initializer.class);
 
@@ -34,6 +34,17 @@ public class Initializer {
         this.context = context;
     }
 
+    /**
+     * When {@link ReaperApplicationConfiguration#isInKubernetesSidecarMode()} is true,
+     * tasks are executed in a background thread in the order submitted; otherwise, tasks
+     * are executing in the calling thread. If a task fails in the background thread, later
+     * tasks will not be executed.
+     *
+     * @param name The task name
+     * @param task The task to execute
+     * @throws ReaperException
+     * @throws InterruptedException
+     */
     public void submit(String name, InitializationTask task) throws ReaperException, InterruptedException {
         if (context.config.isInKubernetesSidecarMode()) {
             runInBackground(name, task);

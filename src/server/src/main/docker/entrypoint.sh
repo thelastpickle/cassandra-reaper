@@ -71,6 +71,11 @@ if [ "$1" = 'register-clusters' ]; then
   echo "admin" > ~/.reaper/credentials
 
   if [ "SIDECAR" == "$REAPER_DATACENTER_AVAILABILITY" -a "true" == "$IS_K8S"]; then
+    # In this type of deployment we assume that Reaper is running in the same pod as
+    # Cassandra. We do not want to wait for Cassandra to be up to start Reaper. Doing so
+    # may cause Reaper's liveness and readiness probes to fail which in turn will slow down
+    # the deployment. See https://github.com/thelastpickle/cassandra-reaper/issues/956 for
+    # details.
     echo "Running Reaper in sidecar mode in Kubernetes. Not waiting for Cassandra to be up."
   else
     wait_for ${REAPER_HOST} ${REAPER_PORT}
