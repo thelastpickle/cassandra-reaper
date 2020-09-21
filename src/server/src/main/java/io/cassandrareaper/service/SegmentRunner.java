@@ -802,6 +802,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         Preconditions.checkState(
             !successOrFailedNotified.get(),
             "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s", repairRunner.getRepairRunId(), segmentId);
+        successOrFailedNotified.set(true);
 
         try {
           if (segmentFailed.get()) {
@@ -931,6 +932,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
               "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s",
               repairRunner.getRepairRunId(),
               segmentId);
+          successOrFailedNotified.set(true);
 
           try {
             if (segmentFailed.get()) {
