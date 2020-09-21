@@ -48,17 +48,20 @@ public interface IDistributedStorage {
 
   boolean lockRunningRepairsForNodes(
       UUID repairId,
+      UUID segmentId,
       Set<String> replicas);
 
   boolean renewRunningRepairsForNodes(
       UUID repairId,
+      UUID segmentId,
       Set<String> replicas);
 
   boolean releaseRunningRepairsForNodes(
       UUID repairId,
+      UUID segmentId,
       Set<String> replicas);
 
-  Set<String> getLockedNodesForRun(UUID runId);
+  Set<UUID> getLockedNodesForRun(UUID runId);
 
   int countRunningReapers();
 

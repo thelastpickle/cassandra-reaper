@@ -197,7 +197,16 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   }
 
   static void postponeSegment(AppContext context, RepairSegment segment) {
-    postpone(context, segment, context.storage.getRepairUnit(segment.getRepairUnitId()));
+    LOG.info("Reset segment {}", segment.getId());
+    RepairUnit unit = context.storage.getRepairUnit(segment.getRepairUnitId());
+    context.storage.updateRepairSegmentUnsafe(
+        segment
+            .reset()
+            // set coordinator host to null only for full repairs
+            .withCoordinatorHost(unit.getIncrementalRepair() ? segment.getCoordinatorHost() : null)
+            .withFailCount(segment.getFailCount() + 1)
+            .withId(segment.getId())
+            .build());
   }
 
   private static void postpone(AppContext context, RepairSegment segment, RepairUnit repairUnit) {
@@ -292,11 +301,11 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       }
 
       try (Timer.Context cxt1 = context.metricRegistry.timer(metricNameForRepairing(segment)).time()) {
-        boolean segmentsLocked = false;
+        //boolean segmentsLocked = false;
         try {
           LOG.debug("Enter synchronized section with segment ID {}", segmentId);
           synchronized (condition) {
-            if (!(segmentsLocked = lockSegmentRunners())) {
+            /*if (!(segmentsLocked = lockSegmentRunners())) {
               // XXX – not expected to happen, STARTED run state should be "good" (opportunistic) enough
               LOG.warn(
                   "Cannot run segment {} as another Reaper holds the lock on repair run {}. Will try again later",
@@ -304,7 +313,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                   segment.getRunId());
 
               return false;
-            }
+            }*/
 
             segment = segment
                     .with()
@@ -329,8 +338,8 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                     repairUnit.getRepairThreadCount());
 
             if (0 != repairNo) {
-              releaseSegmentRunners();
-              segmentsLocked = false;
+              //releaseSegmentRunners();
+              //segmentsLocked = false;
               processTriggeredSegment(segment, coordinator, repairNo);
             } else {
               LOG.info("Nothing to repair for segment {} in keyspace {}", segmentId, keyspace);
@@ -348,9 +357,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           }
         } finally {
           LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
-          if (segmentsLocked) {
+          /*if (segmentsLocked) {
             releaseSegmentRunners();
-          }
+          }*/
         }
       }
     } catch (RuntimeException | ReaperException e) {
@@ -1128,7 +1137,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       } else {
         boolean resultLock2 = context.storage instanceof IDistributedStorage
             ? ((IDistributedStorage) context.storage).lockRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-                segment.getReplicas().keySet())
+                segment.getId(), segment.getReplicas().keySet())
             : true;
         if (!resultLock2) {
           context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "takeLead", "failed")).inc();
@@ -1156,7 +1165,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       } else {
         boolean resultLock2 = context.storage instanceof IDistributedStorage
             ? ((IDistributedStorage) context.storage).renewRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-                segment.getReplicas().keySet())
+                segment.getId(), segment.getReplicas().keySet())
             : true;
         if (!resultLock2) {
           context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "renewLead", "failed")).inc();
@@ -1176,7 +1185,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           ((IDistributedStorage) context.storage).releaseLead(leaderElectionId);
         } else {
           ((IDistributedStorage) context.storage).releaseRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
-              segment.getReplicas().keySet());
+              segment.getId(), segment.getReplicas().keySet());
         }
       }
     }

@@ -411,6 +411,11 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
+  public boolean updateRepairSegmentUnsafe(RepairSegment repairSegment) {
+    return updateRepairSegment(repairSegment);
+  }
+
+  @Override
   public boolean updateRepairSegment(RepairSegment repairSegment) {
     boolean result = false;
     try (Handle h = jdbi.open()) {
@@ -1080,21 +1085,27 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public boolean lockRunningRepairsForNodes(UUID repairId, Set<String> replicas) {
+  public boolean lockRunningRepairsForNodes(UUID repairId, UUID segmentId, Set<String> replicas) {
     // TODO Auto-generated method stub
     return false;
   }
 
   @Override
-  public boolean releaseRunningRepairsForNodes(UUID repairId, Set<String> replicas) {
+  public boolean releaseRunningRepairsForNodes(UUID repairId, UUID segmentId, Set<String> replicas) {
     // TODO Auto-generated method stub
     return false;
   }
 
   @Override
-  public boolean renewRunningRepairsForNodes(UUID repairId, Set<String> replicas) {
+  public boolean renewRunningRepairsForNodes(UUID repairId, UUID segmentId, Set<String> replicas) {
     // TODO Auto-generated method stub
     return false;
+  }
+
+  @Override
+  public Set<UUID> getLockedNodesForRun(UUID runId) {
+    // TODO Auto-generated method stub
+    return null;
   }
 
 

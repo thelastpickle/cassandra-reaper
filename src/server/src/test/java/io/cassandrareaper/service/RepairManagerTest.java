@@ -32,7 +32,9 @@ import io.cassandrareaper.storage.IStorage;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -120,7 +122,7 @@ public final class RepairManagerTest {
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
     when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
-    when(((IDistributedStorage) context.storage).getLeaders()).thenReturn(Collections.emptyList());
+    when(((IDistributedStorage) context.storage).getLockedNodesForRun(any())).thenReturn(Collections.emptySet());
 
     context.repairManager.resumeRunningRepairRuns();
 
@@ -197,7 +199,8 @@ public final class RepairManagerTest {
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
     when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
-    when(((IDistributedStorage) context.storage).getLeaders()).thenReturn(Arrays.asList(segment.getId()));
+    when(((IDistributedStorage) context.storage).getLockedNodesForRun(any())).thenReturn(
+        new HashSet<UUID>(Arrays.asList(segment.getId())));
 
     context.repairManager.resumeRunningRepairRuns();
 

@@ -20,6 +20,7 @@ CREATE TABLE running_repairs(
      node text,
      reaper_instance_host text,
      reaper_instance_id uuid,
+     segment_id uuid,
      PRIMARY KEY(repair_id, node))
 WITH CLUSTERING ORDER BY (node ASC)
  AND default_time_to_live = 300

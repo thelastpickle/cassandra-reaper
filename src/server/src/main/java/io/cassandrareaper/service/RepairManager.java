@@ -23,7 +23,6 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.Arrays;
@@ -32,6 +31,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -258,13 +258,13 @@ public final class RepairManager implements AutoCloseable {
       if (context.storage instanceof IDistributedStorage || !repairRunners.containsKey(repairRun.getId())) {
         // When multiple Reapers are in use, we can get stuck segments when one instance is rebooted
         // Any segment in RUNNING or STARTED state but with no leader should be killed
-        List<UUID> leaders = context.storage instanceof IDistributedStorage
-                ? ((IDistributedStorage) context.storage).getLeaders()
-                : Collections.emptyList();
+        Set<UUID> leaders = context.storage instanceof IDistributedStorage
+                ? ((IDistributedStorage) context.storage).getLockedNodesForRun(repairRun.getId())
+                : Collections.emptySet();
 
         Collection<RepairSegment> orphanedSegments = runningSegments
             .stream()
-            .filter(segment -> !leaders.contains(segment.getId()) && !leaders.contains(segment.getRunId()))
+            .filter(segment -> !leaders.contains(segment.getId()))
             .collect(Collectors.toSet());
 
         LOG.debug("No leader on the following segments : {}", orphanedSegments);
@@ -304,31 +304,7 @@ public final class RepairManager implements AutoCloseable {
     RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
     for (RepairSegment segment : runningSegments) {
       LOG.debug("Trying to abort stuck segment {} in repair run {}", segment.getId(), repairRun.getId());
-      UUID leaderElectionId = repairUnit.getIncrementalRepair() ? repairRun.getId() : segment.getId();
-      boolean tookLead;
-      if (tookLead = takeLead(context, leaderElectionId) || renewLead(context, leaderElectionId)) {
-        try {
-          // refresh segment once we're inside leader-election
-          segment = context.storage.getRepairSegment(repairRun.getId(), segment.getId()).get();
-          if (RepairSegment.State.RUNNING == segment.getState()) {
-            JmxProxy jmxProxy = ClusterFacade.create(context).connect(
-                      context.storage.getCluster(repairRun.getClusterName()),
-                      Arrays.asList(segment.getCoordinatorHost()));
-
-            SegmentRunner.abort(context, segment, jmxProxy);
-          }
-        } catch (ReaperException | NumberFormatException e) {
-          String msg = "Tried to abort repair on segment {} marked as RUNNING, but the "
-              + "host was down (so abortion won't be needed). Postponing the segment.";
-
-          LOG.debug(msg, segment.getId(), e);
-          SegmentRunner.postponeSegment(context, segment);
-        } finally {
-          if (tookLead) {
-            releaseLead(context, leaderElectionId);
-          }
-        }
-      }
+      SegmentRunner.postponeSegment(context, segment);
     }
   }
 
