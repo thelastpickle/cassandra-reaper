@@ -550,7 +550,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
               .withHostname(node)
           .build());
 
-      return Optional.of(activeCompactions);
+      return Optional.ofNullable(activeCompactions);
     });
   }
 
