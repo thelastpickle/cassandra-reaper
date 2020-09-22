@@ -117,7 +117,7 @@ import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private static final int METRICS_PARTITIONING_TIME_MINS = 10;
-  private static final int LEAD_DURATION = 600;
+  private static final int LEAD_DURATION = 90;
   private static final int MAX_RETURNED_REPAIR_RUNS = 1000;
   /* Simple stmts */
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
@@ -740,7 +740,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public RepairRun addRepairRun(Builder repairRun, Collection<RepairSegment.Builder> newSegments) {
     RepairRun newRepairRun = repairRun.build(UUIDs.timeBased());
-    BatchStatement repairRunBatch = new BatchStatement(BatchStatement.Type.UNLOGGED);
+    BatchStatement repairRunBatch = new BatchStatement();
     List<ResultSetFuture> futures = Lists.newArrayList();
     Boolean isIncremental = null;
 
@@ -1194,12 +1194,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range) {
+  public Optional<RepairSegment> getNextFreeSegment(UUID runId) {
     List<RepairSegment> segments = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
 
+    Set<String> lockedNodes = getLockedNodesForRun(runId);
     for (RepairSegment seg : segments) {
-      if (seg.getState().equals(State.NOT_STARTED) && withinRange(seg, range)) {
+      if (segmentIsCandidate(seg, lockedNodes)) {
         return Optional.of(seg);
       }
     }
@@ -1209,14 +1210,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public Optional<RepairSegment> getNextFreeSegmentForRanges(
       UUID runId,
-      Optional<RingRange> parallelRange,
       List<RingRange> ranges) {
     List<RepairSegment> segments
         = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
-
+    Set<String> lockedNodes = getLockedNodesForRun(runId);
     for (RepairSegment seg : segments) {
-      if (seg.getState().equals(State.NOT_STARTED) && withinRange(seg, parallelRange)) {
+      if (segmentIsCandidate(seg, lockedNodes)) {
         for (RingRange range : ranges) {
           if (segmentIsWithinRange(seg, range)) {
             LOG.debug(
@@ -1231,6 +1231,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       }
     }
     return Optional.empty();
+  }
+
+  private boolean segmentIsCandidate(RepairSegment seg, Set<String> lockedNodes) {
+    return seg.getState().equals(State.NOT_STARTED)
+        && Sets.intersection(lockedNodes, seg.getReplicas().keySet()).isEmpty();
   }
 
   @Override
@@ -2066,7 +2071,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     ResultSet results = session.execute(batch);
     if (!results.wasApplied()) {
-      logFailedLead(results, repairId);
+      logFailedLead(results, repairId, segmentId);
     }
 
     return results.wasApplied();
@@ -2093,15 +2098,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     ResultSet results = session.execute(batch);
     if (!results.wasApplied()) {
-      logFailedLead(results, repairId);
+      logFailedLead(results, repairId, segmentId);
     }
 
     return results.wasApplied();
   }
 
-  private void logFailedLead(ResultSet results, UUID repairId) {
-    LOG.debug("Failed taking/renewing lock for repair {} because segments are already running for some nodes.",
-        repairId);
+  private void logFailedLead(ResultSet results, UUID repairId, UUID segmentId) {
+    LOG.debug("Failed taking/renewing lock for repair {} and segment {} "
+        + "because segments are already running for some nodes.",
+        repairId, segmentId);
     for (Row row:results) {
       LOG.debug("node {} is locked by {}/{} for segment {}",
           row.getColumnDefinitions().contains("node")
@@ -2142,21 +2148,33 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     ResultSet results = session.execute(batch);
     if (!results.wasApplied()) {
-      logFailedLead(results, repairId);
+      logFailedLead(results, repairId, segmentId);
     }
 
     return results.wasApplied();
   }
 
   @Override
-  public Set<UUID> getLockedNodesForRun(UUID runId) {
+  public Set<UUID> getLockedSegmentsForRun(UUID runId) {
     ResultSet results
         = session.execute(getRunningRepairsPrepStmt.bind(runId));
 
-    Set<UUID> lockedNodes = results.all()
+    Set<UUID> lockedSegments = results.all()
                                      .stream()
                                      .filter(row -> row.getUUID("reaper_instance_id") != null)
                                      .map(row -> row.getUUID("segment_id"))
+                                     .collect(Collectors.toSet());
+    return lockedSegments;
+  }
+
+  public Set<String> getLockedNodesForRun(UUID runId) {
+    ResultSet results
+        = session.execute(getRunningRepairsPrepStmt.bind(runId));
+
+    Set<String> lockedNodes = results.all()
+                                     .stream()
+                                     .filter(row -> row.getUUID("reaper_instance_id") != null)
+                                     .map(row -> row.getString("node"))
                                      .collect(Collectors.toSet());
     return lockedNodes;
   }

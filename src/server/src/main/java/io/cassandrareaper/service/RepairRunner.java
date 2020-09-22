@@ -350,67 +350,28 @@ final class RepairRunner implements Runnable {
     // so that a rescheduling of this runner will happen.
     boolean repairStarted = false;
 
-    for (int rangeIndex = 0; rangeIndex < currentlyRunningSegments.length(); rangeIndex++) {
+    // We have an empty slot, so let's start new segment runner if possible.
+    // When in sidecar mode, filter on ranges that the local node is a replica for only.
+    LOG.info("Attempting to run new segment for range");
+    Optional<RepairSegment> nextRepairSegment
+        = context.config.isInSidecarMode()
+            ? ((IDistributedStorage) context.storage)
+                .getNextFreeSegmentForRanges(
+                    repairRunId, localEndpointRanges)
+            : context.storage.getNextFreeSegment(
+                repairRunId);
 
-      if (currentlyRunningSegments.get(rangeIndex) != null) {
-        anythingRunningStill = true;
+    if (!nextRepairSegment.isPresent()) {
+      LOG.debug("No repair segment available.");
 
-        // Just checking that no currently running segment runner is stuck.
-        RepairSegment supposedlyRunningSegment
-            = context.storage.getRepairSegment(repairRunId, currentlyRunningSegments.get(rangeIndex)).get();
-        DateTime startTime = supposedlyRunningSegment.getStartTime();
-        if (startTime != null && startTime.isBefore(DateTime.now().minusDays(1))) {
-          LOG.warn(
-              "Looks like segment #{} has been running more than a day. Start time: {}",
-              supposedlyRunningSegment.getId(),
-              supposedlyRunningSegment.getStartTime());
-        } else if (startTime != null && startTime.isBefore(DateTime.now().minusHours(1))) {
-          LOG.info(
-              "Looks like segment #{} has been running more than an hour. Start time: {}",
-              supposedlyRunningSegment.getId(),
-              supposedlyRunningSegment.getStartTime());
-        } else if (startTime != null && startTime.isBefore(DateTime.now().minusMinutes(2))) {
-          LOG.debug(
-              "Looks like segment #{} has been running more than two minutes. Start time: {}",
-              supposedlyRunningSegment.getId(),
-              supposedlyRunningSegment.getStartTime());
-        }
-        // No need to try starting new repair for already active slot.
-        continue;
-      }
-
-      // We have an empty slot, so let's start new segment runner if possible.
-      // When in sidecar mode, filter on ranges that the local node is a replica for only.
-      LOG.info("Running segment for range {}", parallelRanges.get(rangeIndex));
-      Optional<RepairSegment> nextRepairSegment
-          = context.config.isInSidecarMode()
-              ? ((IDistributedStorage) context.storage)
-                  .getNextFreeSegmentForRanges(
-                      repairRunId, Optional.of(parallelRanges.get(rangeIndex)), localEndpointRanges)
-              : context.storage.getNextFreeSegmentInRange(
-                  repairRunId, Optional.of(parallelRanges.get(rangeIndex)));
-
-      if (!nextRepairSegment.isPresent()) {
-        LOG.debug("No repair segment available for range {}", parallelRanges.get(rangeIndex));
-
-      } else {
-        LOG.info("Next segment to run : {}", nextRepairSegment.get().getId());
-        UUID segmentId = nextRepairSegment.get().getId();
-        boolean wasSet = currentlyRunningSegments.compareAndSet(rangeIndex, null, segmentId);
-        if (!wasSet) {
-          LOG.debug("Didn't set segment id `{}` to slot {} because it was busy", segmentId, rangeIndex);
-        } else {
-          LOG.debug("Did set segment id `{}` to slot {}", segmentId, rangeIndex);
-          scheduleRetry = repairSegment(
-                  rangeIndex,
-                  nextRepairSegment.get().getId(),
-                  nextRepairSegment.get().getTokenRange());
-          if (!scheduleRetry) {
-            break;
-          }
-          segmentsTotal = context.storage.getSegmentAmountForRepairRun(repairRunId);
-          repairStarted = true;
-        }
+    } else {
+      LOG.info("Next segment to run : {}", nextRepairSegment.get().getId());
+      scheduleRetry = repairSegment(
+              nextRepairSegment.get().getId(),
+              nextRepairSegment.get().getTokenRange());
+      if (scheduleRetry) {
+        segmentsTotal = context.storage.getSegmentAmountForRepairRun(repairRunId);
+        repairStarted = true;
       }
     }
 
@@ -442,7 +403,7 @@ final class RepairRunner implements Runnable {
    * @return Boolean indicating whether rescheduling next run is needed.
    * @throws ReaperException any runtime exception we caught in the execution
    */
-  private boolean repairSegment(final int rangeIndex, final UUID segmentId, Segment segment)
+  private boolean repairSegment(final UUID segmentId, Segment segment)
       throws InterruptedException, ReaperException {
 
     RepairRun repairRun;
@@ -526,13 +487,11 @@ final class RepairRunner implements Runnable {
           new FutureCallback<Object>() {
             @Override
             public void onSuccess(Object ignored) {
-              currentlyRunningSegments.set(rangeIndex, null);
               handleResult(segmentId);
             }
 
             @Override
             public void onFailure(Throwable throwable) {
-              currentlyRunningSegments.set(rangeIndex, null);
               LOG.error("Executing SegmentRunner failed", throwable);
             }
           });

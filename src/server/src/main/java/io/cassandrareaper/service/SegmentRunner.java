@@ -301,24 +301,16 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       }
 
       try (Timer.Context cxt1 = context.metricRegistry.timer(metricNameForRepairing(segment)).time()) {
-        //boolean segmentsLocked = false;
         try {
           LOG.debug("Enter synchronized section with segment ID {}", segmentId);
           synchronized (condition) {
-            /*if (!(segmentsLocked = lockSegmentRunners())) {
-              // XXX – not expected to happen, STARTED run state should be "good" (opportunistic) enough
-              LOG.warn(
-                  "Cannot run segment {} as another Reaper holds the lock on repair run {}. Will try again later",
-                  segmentId,
-                  segment.getRunId());
-
-              return false;
-            }*/
-
+            String coordinatorHost = context.config.getDatacenterAvailability() == DatacenterAvailability.SIDECAR
+                ? context.getLocalNodeAddress()
+                : coordinator.getHost();
             segment = segment
                     .with()
                     .withState(RepairSegment.State.STARTED)
-                    .withCoordinatorHost(coordinator.getHost())
+                    .withCoordinatorHost(coordinatorHost)
                     .withStartTime(DateTime.now())
                     .withId(segmentId)
                     .build();
@@ -357,9 +349,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
           }
         } finally {
           LOG.debug("Exiting synchronized section with segment ID {}", segmentId);
-          /*if (segmentsLocked) {
-            releaseSegmentRunners();
-          }*/
         }
       }
     } catch (RuntimeException | ReaperException e) {
@@ -739,6 +728,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             progress,
             jmxProxy);
       }
+
       // New repair API – Cassandra-2.2 onwards
       if (progress.isPresent()) {
         failOutsideSynchronizedBlock = handleJmxNotificationForCassandra22(
@@ -792,7 +782,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             break;
           }
         } catch (AssertionError er) {
-          // ignore. segment repair has since timed out.
+          LOG.debug("Failed processing START notification for segment {}", segmentId, er);
         }
         segmentFailed.set(true);
         break;
@@ -834,7 +824,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
             break;
           }
         } catch (AssertionError er) {
-          // ignore. segment repair has since timed out.
+          LOG.debug("Failed processing SUCCESS notification for segment {}", segmentId, er);
         }
         segmentFailed.set(true);
         break;

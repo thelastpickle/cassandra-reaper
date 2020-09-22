@@ -138,8 +138,8 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = context.storage.getNextFreeSegmentInRange(run.getId(),
-        Optional.empty()).get().getId();
+    final UUID segmentId = context.storage.getNextFreeSegment(
+        run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -257,7 +257,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
     AppContext context = new AppContext();
@@ -409,7 +409,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -555,7 +555,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -697,7 +697,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -840,7 +840,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -984,7 +984,7 @@ public final class SegmentRunnerTest {
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegment(run.getId()).get().getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();

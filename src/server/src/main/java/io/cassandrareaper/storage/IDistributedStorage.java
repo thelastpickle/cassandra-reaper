@@ -61,7 +61,7 @@ public interface IDistributedStorage {
       UUID segmentId,
       Set<String> replicas);
 
-  Set<UUID> getLockedNodesForRun(UUID runId);
+  Set<UUID> getLockedSegmentsForRun(UUID runId);
 
   int countRunningReapers();
 
@@ -79,12 +79,11 @@ public interface IDistributedStorage {
    * Gets the next free segment from the backend that is both within the parallel range and the local node ranges.
    *
    * @param runId id of the repair run
-   * @param parallelRange list of ranges that can run in parallel
    * @param ranges list of ranges we're looking a segment for
    * @return an optional repair segment to process
    */
   Optional<RepairSegment> getNextFreeSegmentForRanges(
-      UUID runId, Optional<RingRange> parallelRange, List<RingRange> ranges);
+      UUID runId, List<RingRange> ranges);
 
   List<GenericMetric> getMetrics(
       String clusterName,

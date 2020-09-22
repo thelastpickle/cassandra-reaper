@@ -141,7 +141,7 @@ public final class RepairRunnerTest {
                            .build(),
                     cf.getId())));
     final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
     context.storage = storage;
@@ -293,7 +293,7 @@ public final class RepairRunnerTest {
                            .build(),
                     cf.getId())));
     final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
     context.storage = storage;
@@ -464,7 +464,7 @@ public final class RepairRunnerTest {
                         .build(),
                     cf)));
     final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID SEGMENT_ID = storage.getNextFreeSegment(run.getId()).get().getId();
     assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
     final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());

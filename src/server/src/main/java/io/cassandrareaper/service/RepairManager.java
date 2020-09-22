@@ -259,7 +259,7 @@ public final class RepairManager implements AutoCloseable {
         // When multiple Reapers are in use, we can get stuck segments when one instance is rebooted
         // Any segment in RUNNING or STARTED state but with no leader should be killed
         Set<UUID> leaders = context.storage instanceof IDistributedStorage
-                ? ((IDistributedStorage) context.storage).getLockedNodesForRun(repairRun.getId())
+                ? ((IDistributedStorage) context.storage).getLockedSegmentsForRun(repairRun.getId())
                 : Collections.emptySet();
 
         Collection<RepairSegment> orphanedSegments = runningSegments

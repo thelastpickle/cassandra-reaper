@@ -27,7 +27,6 @@ import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairParameters;
-import io.cassandrareaper.service.RingRange;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -102,7 +101,7 @@ public interface IStorage {
    *      handled. When start = end, consider that as a range that covers the whole ring.
    * @return a segment enclosed by the range with state NOT_STARTED, or nothing.
    */
-  Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range);
+  Optional<RepairSegment> getNextFreeSegment(UUID runId);
 
   Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState);
 

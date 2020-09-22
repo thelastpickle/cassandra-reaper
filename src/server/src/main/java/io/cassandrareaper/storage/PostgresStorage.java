@@ -445,32 +445,13 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
     }
   }
 
-  private Optional<RepairSegment> getNextFreeSegment(UUID runId) {
+  @Override
+  public Optional<RepairSegment> getNextFreeSegment(UUID runId) {
     RepairSegment result;
     try (Handle h = jdbi.open()) {
       result = getPostgresStorage(h).getNextFreeRepairSegment(UuidUtil.toSequenceId(runId));
     }
     return Optional.ofNullable(result);
-  }
-
-  @Override
-  public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range) {
-    if (range.isPresent()) {
-      RepairSegment result;
-      try (Handle h = jdbi.open()) {
-        IStoragePostgreSql storage = getPostgresStorage(h);
-        if (!range.get().isWrapping()) {
-          result = storage.getNextFreeRepairSegmentInNonWrappingRange(
-              UuidUtil.toSequenceId(runId), range.get().getStart(), range.get().getEnd());
-        } else {
-          result = storage.getNextFreeRepairSegmentInWrappingRange(
-              UuidUtil.toSequenceId(runId), range.get().getStart(), range.get().getEnd());
-        }
-      }
-      return Optional.ofNullable(result);
-    } else {
-      return getNextFreeSegment(runId);
-    }
   }
 
   @Override
@@ -887,14 +868,13 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   @Override
   public Optional<RepairSegment> getNextFreeSegmentForRanges(
       UUID runId,
-      Optional<RingRange> parallelRange,
       List<RingRange> ranges) {
     List<RepairSegment> segments
         = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
 
     for (RepairSegment seg : segments) {
-      if (seg.getState().equals(RepairSegment.State.NOT_STARTED) && withinRange(seg, parallelRange)) {
+      if (seg.getState().equals(RepairSegment.State.NOT_STARTED)) {
         for (RingRange range : ranges) {
           if (segmentIsWithinRange(seg, range)) {
             LOG.debug(
@@ -1103,7 +1083,7 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Set<UUID> getLockedNodesForRun(UUID runId) {
+  public Set<UUID> getLockedSegmentsForRun(UUID runId) {
     // TODO Auto-generated method stub
     return null;
   }
