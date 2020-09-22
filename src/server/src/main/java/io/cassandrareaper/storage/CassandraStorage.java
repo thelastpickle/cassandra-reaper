@@ -2100,9 +2100,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   private void logFailedLead(ResultSet results, UUID repairId) {
-    LOG.debug("Failed renewing lock for repair {} because segments are already running for some nodes.", repairId);
+    LOG.debug("Failed taking/renewing lock for repair {} because segments are already running for some nodes.", repairId);
     for (Row row:results) {
-      LOG.debug("node is locked by {}/{} ",
+      LOG.debug("node {} is locked by {}/{} for segment {}",
           row.getColumnDefinitions().contains("node")
             ? row.getString("node")
             : "unknown",
@@ -2111,6 +2111,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             : "unknown",
           row.getColumnDefinitions().contains("reaper_instance_id")
             ? row.getUUID("reaper_instance_id")
+            : "unknown",
+          row.getColumnDefinitions().contains("segment_id")
+            ? row.getUUID("segment_id")
             : "unknown"
       );
     }
