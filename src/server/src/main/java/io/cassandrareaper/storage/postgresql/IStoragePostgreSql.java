@@ -148,20 +148,20 @@ public interface IStoragePostgreSql {
   String SQL_GET_NEXT_FREE_REPAIR_SEGMENT = "SELECT "
           + SQL_REPAIR_SEGMENT_ALL_FIELDS
           + " FROM repair_segment WHERE run_id = :runId "
-          + "AND state = 0 ORDER BY random() LIMIT 1";
+          + "AND state = 0 ORDER BY random()";
   String SQL_GET_NEXT_FREE_REPAIR_SEGMENT_IN_NON_WRAPPING_RANGE = "SELECT "
           + SQL_REPAIR_SEGMENT_ALL_FIELDS
           + " FROM repair_segment WHERE "
           + "run_id = :runId AND state = 0 AND start_token < end_token AND "
           + "(start_token >= :startToken AND end_token <= :endToken) "
-          + "ORDER BY random() LIMIT 1";
+          + "ORDER BY random()";
   String SQL_GET_NEXT_FREE_REPAIR_SEGMENT_IN_WRAPPING_RANGE = "SELECT "
           + SQL_REPAIR_SEGMENT_ALL_FIELDS
           + " FROM repair_segment WHERE "
           + "run_id = :runId AND state = 0 AND "
           + "((start_token < end_token AND (start_token >= :startToken OR end_token <= :endToken)) OR "
           + "(start_token >= :startToken AND end_token <= :endToken)) "
-          + "ORDER BY random() LIMIT 1";
+          + "ORDER BY random()";
   String SQL_DELETE_REPAIR_SEGMENTS_FOR_RUN = "DELETE FROM repair_segment WHERE run_id = :runId";
 
   // RepairSchedule
@@ -423,7 +423,11 @@ public interface IStoragePostgreSql {
 
   String SQL_FORCE_RELEASE_NODE_LOCK = "DELETE FROM running_repairs WHERE repair_id = :repairId and node = :node";
 
-  String SQL_SELECT_LOCKED_NODES = "SELECT segment_id FROM running_repairs "
+  String SQL_SELECT_LOCKED_SEGMENTS = "SELECT segment_id FROM running_repairs "
+      + " WHERE "
+      + " last_heartbeat >= :expirationTime";
+
+  String SQL_SELECT_LOCKED_NODES = "SELECT node FROM running_repairs "
       + " WHERE "
       + " last_heartbeat >= :expirationTime";
 
@@ -562,19 +566,19 @@ public interface IStoragePostgreSql {
 
   @SqlQuery(SQL_GET_NEXT_FREE_REPAIR_SEGMENT)
   @Mapper(RepairSegmentMapper.class)
-  RepairSegment getNextFreeRepairSegment(
+  Collection<RepairSegment> getNextFreeRepairSegment(
       @Bind("runId") long runId);
 
   @SqlQuery(SQL_GET_NEXT_FREE_REPAIR_SEGMENT_IN_NON_WRAPPING_RANGE)
   @Mapper(RepairSegmentMapper.class)
-  RepairSegment getNextFreeRepairSegmentInNonWrappingRange(
+  Collection<RepairSegment> getNextFreeRepairSegmentInNonWrappingRange(
       @Bind("runId") long runId,
       @Bind("startToken") BigInteger startToken,
       @Bind("endToken") BigInteger endToken);
 
   @SqlQuery(SQL_GET_NEXT_FREE_REPAIR_SEGMENT_IN_WRAPPING_RANGE)
   @Mapper(RepairSegmentMapper.class)
-  RepairSegment getNextFreeRepairSegmentInWrappingRange(
+  Collection<RepairSegment> getNextFreeRepairSegmentInWrappingRange(
       @Bind("runId") long runId,
       @Bind("startToken") BigInteger startToken,
       @Bind("endToken") BigInteger endToken);
@@ -906,7 +910,12 @@ public interface IStoragePostgreSql {
   );
 
   @SqlQuery(SQL_SELECT_LOCKED_NODES)
-  List<Long> getLockedNodes(
+  List<String> getLockedNodes(
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlQuery(SQL_SELECT_LOCKED_SEGMENTS)
+  List<Long> getLockedSegments(
       @Bind("expirationTime") Instant expirationTime
   );
 }

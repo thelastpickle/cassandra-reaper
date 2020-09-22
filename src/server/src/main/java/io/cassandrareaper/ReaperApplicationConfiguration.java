@@ -90,6 +90,10 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Integer repairRunThreadCount;
 
   @JsonProperty
+  @Nullable
+  private Integer maxParallelRepairs;
+
+  @JsonProperty
   @NotNull
   private Integer hangingRepairTimeoutMins;
 
@@ -254,6 +258,16 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setRepairRunThreadCount(int repairRunThreadCount) {
     this.repairRunThreadCount = repairRunThreadCount;
+  }
+
+  public int getMaxParallelRepairs() {
+    return maxParallelRepairs == null
+        ? 2
+        : maxParallelRepairs;
+  }
+
+  public void setMaxParallelRepairs(int maxParallelRepairs) {
+    this.maxParallelRepairs = maxParallelRepairs;
   }
 
   public String getStorageType() {

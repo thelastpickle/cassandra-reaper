@@ -88,7 +88,8 @@ public final class RepairManagerTest {
         500,
         TimeUnit.MILLISECONDS,
         1,
-        TimeUnit.MILLISECONDS);
+        TimeUnit.MILLISECONDS,
+        1);
 
     repairManager = Mockito.spy(repairManager);
     context.repairManager = repairManager;
@@ -122,7 +123,7 @@ public final class RepairManagerTest {
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.RUNNING)).thenReturn(Arrays.asList(run));
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
     when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
-    when(((IDistributedStorage) context.storage).getLockedNodesForRun(any())).thenReturn(Collections.emptySet());
+    when(((IDistributedStorage) context.storage).getLockedSegmentsForRun(any())).thenReturn(Collections.emptySet());
     when(context.storage.getRepairUnit(any(UUID.class))).thenReturn(cf);
 
     context.repairManager.resumeRunningRepairRuns();
@@ -164,7 +165,8 @@ public final class RepairManagerTest {
         500,
         TimeUnit.MILLISECONDS,
         1,
-        TimeUnit.MILLISECONDS);
+        TimeUnit.MILLISECONDS,
+        1);
 
     repairManager = Mockito.spy(repairManager);
     context.repairManager = repairManager;
@@ -201,7 +203,7 @@ public final class RepairManagerTest {
     when(context.storage.getRepairRunsWithState(RepairRun.RunState.PAUSED)).thenReturn(Collections.emptyList());
     when(context.storage.getSegmentsWithState(any(), any())).thenReturn(Arrays.asList(segment));
     when(context.storage.getRepairUnit(any(UUID.class))).thenReturn(cf);
-    when(((IDistributedStorage) context.storage).getLockedNodesForRun(any())).thenReturn(
+    when(((IDistributedStorage) context.storage).getLockedSegmentsForRun(any())).thenReturn(
         new HashSet<UUID>(Arrays.asList(segment.getId())));
 
     context.repairManager.resumeRunningRepairRuns();
@@ -243,7 +245,8 @@ public final class RepairManagerTest {
         500,
         TimeUnit.MILLISECONDS,
         1,
-        TimeUnit.MILLISECONDS);
+        TimeUnit.MILLISECONDS,
+        1);
 
     repairManager = Mockito.spy(repairManager);
     context.repairManager = repairManager;
@@ -319,7 +322,8 @@ public final class RepairManagerTest {
         500,
         TimeUnit.MILLISECONDS,
         1,
-        TimeUnit.MILLISECONDS);
+        TimeUnit.MILLISECONDS,
+        1);
 
     repairManager = Mockito.spy(repairManager);
     context.repairManager = repairManager;
@@ -377,7 +381,8 @@ public final class RepairManagerTest {
         500,
         TimeUnit.MILLISECONDS,
         1,
-        TimeUnit.MILLISECONDS);
+        TimeUnit.MILLISECONDS,
+        1);
 
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");

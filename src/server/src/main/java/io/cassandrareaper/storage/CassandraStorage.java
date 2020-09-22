@@ -117,7 +117,7 @@ import systems.composable.dropwizard.cassandra.retry.RetryPolicyFactory;
 public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   private static final int METRICS_PARTITIONING_TIME_MINS = 10;
-  private static final int LEAD_DURATION = 600;
+  private static final int LEAD_DURATION = 90;
   private static final int MAX_RETURNED_REPAIR_RUNS = 1000;
   /* Simple stmts */
   private static final String SELECT_CLUSTER = "SELECT * FROM cluster";
@@ -570,7 +570,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                 "INSERT INTO reaper_db.running_repairs(repair_id, node)"
                     + "values (?, ?) IF NOT EXISTS")
             .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
-            .setIdempotent(true);
+            .setConsistencyLevel(ConsistencyLevel.QUORUM)
+            .setIdempotent(false);
     setRunningRepairsPrepStmt
       = session
         .prepare(
@@ -578,6 +579,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             + " SET reaper_instance_host = ?, reaper_instance_id = ?, segment_id = ?"
             + " WHERE repair_id = ? AND node = ? IF reaper_instance_id = ?")
         .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
+        .setConsistencyLevel(ConsistencyLevel.QUORUM)
         .setIdempotent(false);
 
     getRunningRepairsPrepStmt
@@ -1166,6 +1168,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     if (tokenRanges.size() > 0) {
       segmentBuilder.withTokenRanges(tokenRanges);
+      if (null != segmentRow.getMap("replicas", String.class, String.class)) {
+        segmentBuilder = segmentBuilder.withReplicas(segmentRow.getMap("replicas", String.class, String.class));
+      }
     } else {
       // legacy path, for segments that don't have a token range list
       segmentBuilder.withTokenRange(
@@ -1197,43 +1202,46 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range) {
+  public List<RepairSegment> getNextFreeSegments(UUID runId) {
     List<RepairSegment> segments = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
 
-    for (RepairSegment seg : segments) {
-      if (seg.getState().equals(State.NOT_STARTED) && withinRange(seg, range)) {
-        return Optional.of(seg);
-      }
-    }
-    return Optional.empty();
+    Set<String> lockedNodes = getLockedNodesForRun(runId);
+    List<RepairSegment> candidates = segments.stream()
+                                             .filter(seg -> segmentIsCandidate(seg, lockedNodes))
+                                             .collect(Collectors.toList());
+    return candidates;
   }
 
   @Override
-  public Optional<RepairSegment> getNextFreeSegmentForRanges(
+  public List<RepairSegment> getNextFreeSegmentsForRanges(
       UUID runId,
-      Optional<RingRange> parallelRange,
       List<RingRange> ranges) {
     List<RepairSegment> segments
         = Lists.<RepairSegment>newArrayList(getRepairSegmentsForRun(runId));
     Collections.shuffle(segments);
+    Set<String> lockedNodes = getLockedNodesForRun(runId);
+    List<RepairSegment> candidates = segments.stream()
+                                             .filter(seg -> segmentIsCandidate(seg, lockedNodes))
+                                             .filter(seg -> segmentIsWithinRanges(seg, ranges))
+                                             .collect(Collectors.toList());
 
-    for (RepairSegment seg : segments) {
-      if (seg.getState().equals(State.NOT_STARTED) && withinRange(seg, parallelRange)) {
-        for (RingRange range : ranges) {
-          if (segmentIsWithinRange(seg, range)) {
-            LOG.debug(
-                "Segment [{}, {}] is within range [{}, {}]",
-                seg.getStartToken(),
-                seg.getEndToken(),
-                range.getStart(),
-                range.getEnd());
-            return Optional.of(seg);
-          }
-        }
+    return candidates;
+  }
+
+  private boolean segmentIsWithinRanges(RepairSegment seg, List<RingRange> ranges) {
+    for (RingRange range : ranges) {
+      if (segmentIsWithinRange(seg, range)) {
+        return true;
       }
     }
-    return Optional.empty();
+
+    return false;
+  }
+
+  private boolean segmentIsCandidate(RepairSegment seg, Set<String> lockedNodes) {
+    return seg.getState().equals(State.NOT_STARTED)
+        && Sets.intersection(lockedNodes, seg.getReplicas().keySet()).isEmpty();
   }
 
   @Override
@@ -2031,13 +2039,24 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public String listOperations(String clusterName, OpType operationType, String host) {
-    ResultSet operations
-        = session.execute(
+    List<ResultSetFuture> futures = Lists.newArrayList();
+    futures.add(session.executeAsync(
             listOperationsForNodePrepStmt.bind(
-                clusterName, operationType.getName(), DateTime.now().toString(TIME_BUCKET_FORMATTER), host));
-    return operations.isExhausted()
-        ? "[]"
-        : operations.one().getString("data");
+                clusterName, operationType.getName(), DateTime.now().toString(TIME_BUCKET_FORMATTER), host)));
+    futures.add(session.executeAsync(
+        listOperationsForNodePrepStmt.bind(
+            clusterName,
+            operationType.getName(),
+            DateTime.now().minusMinutes(1).toString(TIME_BUCKET_FORMATTER),
+            host)));
+    for (ResultSetFuture future:futures) {
+      ResultSet operations = future.getUninterruptibly();
+      for (Row row:operations) {
+        return row.getString("data");
+      }
+    }
+
+    return "";
   }
 
   @Override
@@ -2075,7 +2094,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     ResultSet results = session.execute(batch);
     if (!results.wasApplied()) {
-      logFailedLead(results, repairId);
+      logFailedLead(results, repairId, segmentId);
     }
 
     return results.wasApplied();
@@ -2102,15 +2121,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     ResultSet results = session.execute(batch);
     if (!results.wasApplied()) {
-      logFailedLead(results, repairId);
+      logFailedLead(results, repairId, segmentId);
     }
 
     return results.wasApplied();
   }
 
-  private void logFailedLead(ResultSet results, UUID repairId) {
-    LOG.debug("Failed taking/renewing lock for repair {} because segments are already running for some nodes.",
-        repairId);
+  private void logFailedLead(ResultSet results, UUID repairId, UUID segmentId) {
+    LOG.debug("Failed taking/renewing lock for repair {} and segment {} "
+        + "because segments are already running for some nodes.",
+        repairId, segmentId);
     for (Row row:results) {
       LOG.debug("node {} is locked by {}/{} for segment {}",
           row.getColumnDefinitions().contains("node")
@@ -2151,21 +2171,33 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     ResultSet results = session.execute(batch);
     if (!results.wasApplied()) {
-      logFailedLead(results, repairId);
+      logFailedLead(results, repairId, segmentId);
     }
 
     return results.wasApplied();
   }
 
   @Override
-  public Set<UUID> getLockedNodesForRun(UUID runId) {
+  public Set<UUID> getLockedSegmentsForRun(UUID runId) {
     ResultSet results
         = session.execute(getRunningRepairsPrepStmt.bind(runId));
 
-    Set<UUID> lockedNodes = results.all()
+    Set<UUID> lockedSegments = results.all()
                                      .stream()
                                      .filter(row -> row.getUUID("reaper_instance_id") != null)
                                      .map(row -> row.getUUID("segment_id"))
+                                     .collect(Collectors.toSet());
+    return lockedSegments;
+  }
+
+  public Set<String> getLockedNodesForRun(UUID runId) {
+    ResultSet results
+        = session.execute(getRunningRepairsPrepStmt.bind(runId));
+
+    Set<String> lockedNodes = results.all()
+                                     .stream()
+                                     .filter(row -> row.getUUID("reaper_instance_id") != null)
+                                     .map(row -> row.getString("node"))
                                      .collect(Collectors.toSet());
     return lockedNodes;
   }

@@ -121,7 +121,8 @@ public final class RepairRunResourceTest {
         REPAIR_TIMEOUT_S,
         TimeUnit.SECONDS,
         RETRY_DELAY_S,
-        TimeUnit.SECONDS);
+        TimeUnit.SECONDS,
+        1);
 
     context.storage = new MemoryStorage();
 

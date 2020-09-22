@@ -33,20 +33,12 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
         uses: actions/setup-java@v1
@@ -101,20 +93,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
         uses: actions/setup-java@v1
@@ -196,20 +181,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
         uses: actions/setup-java@v1
@@ -266,20 +244,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
         uses: actions/setup-java@v1
@@ -336,20 +307,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
         uses: actions/setup-java@v1
@@ -445,20 +409,12 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
         uses: actions/setup-java@v1
@@ -526,20 +482,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
         uses: actions/setup-java@v1
@@ -607,20 +556,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
         uses: actions/setup-java@v1
@@ -680,20 +622,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
         uses: actions/setup-java@v1
@@ -749,7 +684,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
