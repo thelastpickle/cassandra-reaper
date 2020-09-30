@@ -1124,6 +1124,8 @@ public final class SegmentRunnerTest {
     when(((IDistributedStorage) context.storage).getNodeMetrics(any(), any()))
         .thenReturn(Optional.empty());
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
+    Cluster cluster = Mockito.mock(Cluster.class);
+    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
     JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
     JmxProxy jmx = mock(JmxProxy.class);
     when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
