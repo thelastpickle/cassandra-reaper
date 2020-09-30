@@ -103,6 +103,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final double intensity;
   private final RepairParallelism validationParallelism;
   private final String clusterName;
+  private final Cluster cluster;
   private final RepairRunner repairRunner;
   private final RepairUnit repairUnit;
   private volatile int repairNo;
@@ -141,6 +142,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     this.intensity = intensity;
     this.validationParallelism = validationParallelism;
     this.clusterName = clusterName;
+    this.cluster = context.storage.getCluster(this.clusterName);
     this.repairUnit = repairUnit;
     this.repairRunner = repairRunner;
     this.segmentFailed = new AtomicBoolean(false);
@@ -542,10 +544,9 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
     return Pair.of(node, () -> {
       LOG.info("getMetricsForHost {} / {} / {}", node, localDc, nodeDc);
-
       CompactionStats activeCompactions = clusterFacade.listActiveCompactions(
           Node.builder()
-              .withCluster(Cluster.builder().withSeedHosts(Sets.newHashSet(node)).withName(this.clusterName).build())
+              .withCluster(cluster)
               .withHostname(node)
           .build());
 
