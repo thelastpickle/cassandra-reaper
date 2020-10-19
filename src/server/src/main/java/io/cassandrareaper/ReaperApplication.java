@@ -51,7 +51,11 @@ import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorage;
 import io.cassandrareaper.storage.PostgresStorage;
 
+
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
@@ -81,6 +85,8 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.dropwizard.samplebuilder.CustomMappingSampleBuilder;
+import io.prometheus.client.dropwizard.samplebuilder.MapperConfig;
 import io.prometheus.client.exporter.MetricsServlet;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.HttpClient;
@@ -166,7 +172,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     context.config = config;
     addSignalHandlers(); // SIGHUP, etc.
     context.metricRegistry = environment.metrics();
-    CollectorRegistry.defaultRegistry.register(new DropwizardExports(environment.metrics()));
+    CollectorRegistry.defaultRegistry.register(new DropwizardExports(environment.metrics(),
+        getCustomSampleMethodBuilder()));
 
     environment
         .admin()
@@ -288,6 +295,36 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     LOG.info("Initialization complete!");
     LOG.warn("Reaper is ready to get things done!");
+  }
+
+  private CustomMappingSampleBuilder getCustomSampleMethodBuilder() {
+    final List<MapperConfig> mapperConfigs = new ArrayList<>();
+    final Map<String,String> segmentMetricLabels = new HashMap<>();
+    segmentMetricLabels.put("cluster", "${0}");
+    segmentMetricLabels.put("keyspace", "${1}");
+    segmentMetricLabels.put("repairid", "${2}");
+    mapperConfigs.add(new MapperConfig("io.cassandrareaper.service.RepairRunner.segmentsDone.*.*.*",
+        "io.cassandrareaper.service.RepairRunner.segmentsDone", segmentMetricLabels));
+    mapperConfigs.add(new MapperConfig("io.cassandrareaper.service.RepairRunner.segmentsTotal.*.*.*",
+        "io.cassandrareaper.service.RepairRunner.segmentsTotal", segmentMetricLabels));
+
+    final Map<String,String> millisSinceLastRepairMetricLabels = new HashMap<>();
+    millisSinceLastRepairMetricLabels.put("cluster", "${0}");
+    millisSinceLastRepairMetricLabels.put("keyspace", "${1}");
+    millisSinceLastRepairMetricLabels.put("runid", "${2}");
+    mapperConfigs.add(new MapperConfig("io.cassandrareaper.service.RepairRunner.millisSinceLastRepair.*.*.*",
+        "io.cassandrareaper.service.RepairRunner.millisSinceLastRepair", millisSinceLastRepairMetricLabels));
+
+    final Map<String,String> millisSinceLastScheduleRepairMetricLabels = new HashMap<>();
+    millisSinceLastScheduleRepairMetricLabels.put("cluster", "${0}");
+    millisSinceLastScheduleRepairMetricLabels.put("keyspace", "${1}");
+    millisSinceLastScheduleRepairMetricLabels.put("scheduleid", "${2}");
+    mapperConfigs.add(new MapperConfig(
+        "io.cassandrareaper.service.RepairScheduleService.millisSinceLastRepairForSchedule.*.*.*",
+        "io.cassandrareaper.service.RepairScheduleService.millisSinceLastRepairForSchedule",
+        millisSinceLastScheduleRepairMetricLabels));
+
+    return new CustomMappingSampleBuilder(mapperConfigs);
   }
 
   private void tryInitializeStorage(ReaperApplicationConfiguration config, Environment environment)
