@@ -97,7 +97,7 @@ public final class ClusterRepairScheduler {
 
     scheduleCollection.forEach(
         repairSchedule -> {
-          context.storage.deleteRepairSchedule(repairSchedule.getId());
+          repairScheduleService.deleteRepairSchedule(repairSchedule.getId());
           LOG.info("Scheduled repair deleted: {}", repairSchedule);
         });
   }
