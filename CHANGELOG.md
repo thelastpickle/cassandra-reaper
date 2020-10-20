@@ -23,8 +23,8 @@
 - [5eee992](https://github.com/thelastpickle/cassandra-reaper/commit/5eee9924c27ea77b780a16782131858e5b609d1a) Re-enable docker hub image push during build (@adejanovski)
 - [2b7f847](https://github.com/thelastpickle/cassandra-reaper/commit/2b7f8474a99b962a0b1a5818cfe56654abcb5148) check is enableDynamicSeedList is set before updating seeds (@jsanda)
 - [8a28b2d](https://github.com/thelastpickle/cassandra-reaper/commit/8a28b2d618e5df4c149dff66ab7108bbbb63d28d) Add launcher SSL/TLS support (@plastikat)
-- [d39b7a2](https://github.com/thelastpickle/cassandra-reaper/commit/d39b7a24c2b5a75aa1b5228f17f5f91fe6f30f38) [python3] Migrated spreaper python file to python3 style
-- [305be59](https://github.com/thelastpickle/cassandra-reaper/commit/305be594f6118a57cec315439a6dfac9de43bdae) [python3] Fixed debian package for spreaper
+- [d39b7a2](https://github.com/thelastpickle/cassandra-reaper/commit/d39b7a24c2b5a75aa1b5228f17f5f91fe6f30f38) [python3] Migrated spreaper python file to python3 style (@albundy83)
+- [305be59](https://github.com/thelastpickle/cassandra-reaper/commit/305be594f6118a57cec315439a6dfac9de43bdae) [python3] Fixed debian package for spreaper (@albundy83)
 - [b970844](https://github.com/thelastpickle/cassandra-reaper/commit/b970844904c13dbd81e6240c57f8a0b41e5fbf35) add support of JAVA_HOME environment (@therb1)
 - [896b72b](https://github.com/thelastpickle/cassandra-reaper/commit/896b72bc84486c137c7883a56bfbbfb2cf3f8e50) refactor systemd service (@therb1)
 - [ad51839](https://github.com/thelastpickle/cassandra-reaper/commit/ad51839701333c8abffb7f8b23025a83a34a3cef) Add timestamps to the file logger (@michaelsembwever)
