@@ -47,9 +47,12 @@ public final class Migration025 {
         LOG.info("Converting {} table...", V1_TABLE);
         ResultSet results = session.execute("SELECT * FROM " + V1_TABLE);
         for (Row row:results) {
-          String state = session.execute("SELECT distinct state from repair_run where id = " + row.getUUID("id")).one()
-              .getString("state");
-          session.execute(v2_insert.bind(row.getString("cluster_name"), row.getUUID("id"), state));
+          ResultSet runResults = session.execute(
+              "SELECT distinct state from repair_run where id = " + row.getUUID("id"));
+          for (Row runRow:runResults) {
+            String state = runRow.getString("state");
+            session.execute(v2_insert.bind(row.getString("cluster_name"), row.getUUID("id"), state));
+          }
         }
         session.execute("DROP TABLE " + V1_TABLE);
       }
@@ -57,5 +60,4 @@ public final class Migration025 {
       LOG.error("Failed transferring rows to " + V2_TABLE, e);
     }
   }
-
 }
