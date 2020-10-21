@@ -211,7 +211,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     this.reaperInstanceId = reaperInstanceId;
     CassandraFactory cassandraFactory = config.getCassandraFactory();
-    overrideQueryOptions(cassandraFactory);
+    overrideQueryOptions(cassandraFactory, mode);
     overrideRetryPolicy(cassandraFactory);
     overridePoolingOptions(cassandraFactory);
 
@@ -1676,13 +1676,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
 
-  private static void overrideQueryOptions(CassandraFactory cassandraFactory) {
-    // all INSERT and DELETE stmt prepared in this class are idempoten
+  private static void overrideQueryOptions(CassandraFactory cassandraFactory, CassandraMode mode) {
+    // all INSERT and DELETE stmt prepared in this class are idempotent
+    ConsistencyLevel requiredCl = mode.equals(CassandraMode.ASTRA)
+        ? ConsistencyLevel.LOCAL_QUORUM
+        : ConsistencyLevel.LOCAL_ONE;
     if (cassandraFactory.getQueryOptions().isPresent()
         && ConsistencyLevel.LOCAL_ONE != cassandraFactory.getQueryOptions().get().getConsistencyLevel()) {
       LOG.warn("Customization of cassandra's queryOptions is not supported and will be overridden");
     }
-    cassandraFactory.setQueryOptions(java.util.Optional.of(new QueryOptions().setDefaultIdempotence(true)));
+    cassandraFactory.setQueryOptions(java.util.Optional.of(
+        new QueryOptions()
+          .setConsistencyLevel(requiredCl)
+          .setDefaultIdempotence(true)));
   }
 
   private static void overrideRetryPolicy(CassandraFactory cassandraFactory) {
