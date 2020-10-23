@@ -1,5 +1,10 @@
 ## Change Log
 
+### 2.1.1 (2020/10/22 15:25 +00:00)
+- [7c19b86](https://github.com/thelastpickle/cassandra-reaper/commit/7c19b86c6f6016bb5774a9bb7753b2dbf0438381) Fix Astra migrations with LWTs not being properly allowed. (@adejanovski)
+- [56985e8](https://github.com/thelastpickle/cassandra-reaper/commit/56985e8753b6d33b0bd6c43d23ebe9c911ab6544) Use explicit QUORUM on LWTs (@adejanovski)
+- [a7070a3](https://github.com/thelastpickle/cassandra-reaper/commit/a7070a32d56923e7ed240acfccdf4760f79e7276) Prevent migration 25 from failing if repairs are missing from the repair_run table. (@adejanovski)
+
 ### 2.1.0 (2020/10/15 14:22 +00:00)
 - [3e9aa88](https://github.com/thelastpickle/cassandra-reaper/commit/3e9aa886757887be48b138289a7e9b9b4b374c56) Fix race conditions when receiving COMPLETE/SUCCESS notifications if database updates are slow (@adejanovski)
 - [a9a39e8](https://github.com/thelastpickle/cassandra-reaper/commit/a9a39e8de09d92479f1515460c52625ce0760a6d) Support Astra as storage backend (@adejanovski)
