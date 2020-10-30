@@ -97,7 +97,8 @@ const repairForm = CreateReactClass({
       obs.subscribeOnNext(names => {
         let previousNames = this.state.clusterNames;
         this.setState({clusterNames: names});
-        if (names.length) {
+        if (names.length && !this.state.clusterName) {
+          // Set the cluster name in state if it's not set yet
           this.setState({clusterName: names[0]});
         }
         if (!previousNames.length) {
@@ -257,8 +258,10 @@ const repairForm = CreateReactClass({
     let stateValue = {};
 
     stateValue[stateName] = valueContext.value;
-    this.setState(stateValue);
+    this.setState(stateValue, ()=>this._handleSelectOnChangeCallback(stateName));
+  },
 
+  _handleSelectOnChangeCallback: function(stateName) {
     if (stateName === "clusterName") {
       this._getClusterStatus();
     }
