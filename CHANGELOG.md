@@ -1,8 +1,7 @@
 ## Change Log
 
-### upcoming (2020/11/03 04:41 +00:00)
+### 2.1.2 (2020/11/03 04:41 +00:00)
 - [f1c29f6](https://github.com/thelastpickle/cassandra-reaper/commit/f1c29f6d1de69428d819a186aae1ddd29a4c88db) [UI] Fix switching between clusters in the repair/schedule screens (@adejanovski)
-- [cdd0354](https://github.com/thelastpickle/cassandra-reaper/commit/cdd0354a6c9ef3210009f18e28fa82a8b8352bac) Prepare next patch release (@adejanovski)
 
 ### 2.1.1 (2020/10/22 15:25 +00:00)
 - [7c19b86](https://github.com/thelastpickle/cassandra-reaper/commit/7c19b86c6f6016bb5774a9bb7753b2dbf0438381) Fix Astra migrations with LWTs not being properly allowed. (@adejanovski)
