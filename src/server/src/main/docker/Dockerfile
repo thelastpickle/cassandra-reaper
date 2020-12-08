@@ -98,6 +98,8 @@ ADD spreaper /usr/local/bin/spreaper
 
 # get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper.yml: Interrupted system call` unknown error
 RUN touch /etc/cassandra-reaper.yml
+# get around `/usr/local/bin/configure-webui-authentication.sh: line 44: can't `create` /etc/shiro.ini: Interrupted system call` unknown error
+RUN touch /etc/shiro.ini
 
 
 RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
