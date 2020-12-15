@@ -18,6 +18,20 @@ echo "Starting Install step..."
 
 set -xe
 
+function set_java_home() {
+    major_version=$1
+    if [[ "$major_version" == "11" ]]; then
+        export CASSANDRA_USE_JDK11=true
+    else
+        export CASSANDRA_USE_JDK11=false
+    fi
+    for jdk in /opt/hostedtoolcache/Java_Adopt_jdk/${major_version}*/; 
+    do 
+        export JAVA_HOME="${jdk/}"x64/
+        echo "JAVA_HOME is set to $JAVA_HOME"
+    done
+}
+
 configure_ccm () {
   sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' ~/.ccm/test/node$1/conf/cassandra-env.sh
   sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="200M"/' ~/.ccm/test/node$1/conf/cassandra-env.sh
@@ -45,6 +59,8 @@ configure_ccm () {
   echo "JVM_OPTS=\"\$JVM_OPTS -Djava.rmi.server.hostname=127.0.0.$i\"" >> ~/.ccm/test/node$1/conf/cassandra-env.sh
 }
 
+set_java_home ${JDK_VERSION}
+
 case "${TEST_TYPE}" in
     "")
         echo "ERROR: Environment variable TEST_TYPE is unspecified."
@@ -54,8 +70,12 @@ case "${TEST_TYPE}" in
         mkdir -p ~/.local
         cp ./.github/files/jmxremote.password ~/.local/jmxremote.password
         chmod 400 ~/.local/jmxremote.password
-        sudo chmod 777 /opt/hostedtoolcache/Java_Adopt_jdk/8.0.192-12/x64/jre/lib/management/jmxremote.access
-        echo "cassandra     readwrite" >> /opt/hostedtoolcache/Java_Adopt_jdk/8.0.192-12/x64/jre/lib/management/jmxremote.access
+        # Our move to support jdk11 makes it possible to get either jdk 8.0.192 or jdk 8.0.292 which both require to be configured properly.
+        for jdk in /opt/hostedtoolcache/Java_Adopt_jdk/8*/; 
+        do 
+          sudo chmod 777 "${jdk/}"x64/jre/lib/management/jmxremote.access
+          echo "cassandra     readwrite" >> "${jdk/}"x64/jre/lib/management/jmxremote.access
+        done
         if [[ ! -z $ELASSANDRA_VERSION ]]; then
           ccm create test -v file:elassandra-${ELASSANDRA_VERSION}.tar.gz
         else
