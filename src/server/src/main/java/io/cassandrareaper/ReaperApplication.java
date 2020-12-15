@@ -86,7 +86,6 @@ import org.secnod.dropwizard.shiro.ShiroBundle;
 import org.secnod.dropwizard.shiro.ShiroConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.Signal;
 
 public final class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
@@ -155,7 +154,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     DateTimeZone.setDefault(DateTimeZone.UTC);
     checkConfiguration(config);
     context.config = config;
-    addSignalHandlers(); // SIGHUP, etc.
     context.metricRegistry = environment.metrics();
     CollectorRegistry.defaultRegistry.register(new DropwizardExports(environment.metrics()));
 
@@ -438,21 +436,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.debug("repairParallelism: {}", config.getRepairParallelism());
     LOG.debug("hangingRepairTimeoutMins: {}", config.getHangingRepairTimeoutMins());
     LOG.debug("jmxPorts: {}", config.getJmxPorts());
-  }
-
-  void reloadConfiguration() {
-    // TODO: reload configuration, but how?
-    LOG.warn("SIGHUP signal dropped, missing implementation for configuration reload");
-  }
-
-  private void addSignalHandlers() {
-    if (!System.getProperty("os.name").toLowerCase().contains("win")) {
-      LOG.debug("adding signal handler for SIGHUP");
-      Signal.handle(new Signal("HUP"), signal -> {
-        LOG.info("received SIGHUP signal: {}", signal);
-        reloadConfiguration();
-      });
-    }
   }
 
   private void initializeJmxSeedsForAllClusters() {
