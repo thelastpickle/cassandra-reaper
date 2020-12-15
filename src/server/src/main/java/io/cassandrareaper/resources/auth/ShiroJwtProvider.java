@@ -23,6 +23,7 @@ import io.cassandrareaper.storage.PostgresStorage;
 
 import java.io.IOException;
 import java.security.Key;
+import java.util.Base64;
 
 import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.HttpServletRequest;
@@ -30,7 +31,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-import javax.xml.bind.DatatypeConverter;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -65,6 +65,7 @@ public final class ShiroJwtProvider {
         txt = AppContext.REAPER_INSTANCE_ADDRESS;
       }
     }
-    return new SecretKeySpec(DatatypeConverter.parseBase64Binary(txt), SIG_ALG.getJcaName());
+
+    return new SecretKeySpec(Base64.getDecoder().decode(txt), SIG_ALG.getJcaName());
   }
 }

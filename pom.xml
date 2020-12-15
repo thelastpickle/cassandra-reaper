@@ -324,11 +324,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <version.jdk>1.8</version.jdk>
-        <!-- travis of July 2018 was still using _151 -->
-        <build.jdk.minimum>1.8.0-151</build.jdk.minimum>
+        <release.jdk>11</release.jdk>
+        <build.jdk.minimum>11</build.jdk.minimum>
         <!-- travis of July 2018 was still using maven-3.5.2 but our Docker image for building packages ships with 3.3.8 -->
-        <maven.version.minimum>3.3.8</maven.version.minimum>
+        <maven.version.minimum>3.6.3</maven.version.minimum>
         <surefireArgLine></surefireArgLine>
 
         <!--
