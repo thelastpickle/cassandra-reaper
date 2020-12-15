@@ -47,7 +47,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -96,7 +96,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -129,33 +129,41 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [1.2.19, 2.0.17, 2.1.22, 2.2.19, 3.0.25, 3.11.11, 4.0.0, 'github:apache/trunk']
+        cassandra-version: ["binary:1.2.19", "binary:2.0.17", 'binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
         storage-type: [local]
         test-type: [ccm]
         include:
           # don't run against the following C* versions when using cassandra storage type
-          - cassandra-version: 1.2.19
+          - cassandra-version: "binary:1.2.19"
             cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 2.0.17
+            jdk-version: '8'
+          - cassandra-version: "binary:2.0.17"
             cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 2.1.22
+            jdk-version: '8'
+          - cassandra-version: 'binary:2.1.22'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 2.2.19
+            jdk-version: '8'
+          - cassandra-version: 'binary:2.2.19'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 3.0.25
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.0.25'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 3.11.11
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.11.11'
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
             experimental: false
-          - cassandra-version: 4.0.0
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.1'
             experimental: false
+            jdk-version: '11'
           - cassandra-version: 'github:apache/trunk'
             experimental: true
+            jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -173,7 +181,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -200,6 +208,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh
@@ -208,6 +217,7 @@ jobs:
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - uses: codecov/codecov-action@v1
 
@@ -223,26 +233,32 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [2.1.22, 2.2.19, 3.0.25, 3.11.11, 4.0.0, 'github:apache/trunk']
+        cassandra-version: ['binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [ccm]
         include:
-          - cassandra-version: 2.1.22
+          - cassandra-version: 'binary:2.1.22'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 2.2.19
+            jdk-version: '8'
+          - cassandra-version: 'binary:2.2.19'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 3.0.25
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.0.25'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 3.11.11
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.11.11'
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
             experimental: false
-          - cassandra-version: 4.0.0
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.1'
             experimental: false
+            jdk-version: '11'
           - cassandra-version: 'github:apache/trunk'
             experimental: true
+            jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -260,7 +276,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -287,6 +303,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh
@@ -295,6 +312,7 @@ jobs:
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
       
       - uses: codecov/codecov-action@v1
 
@@ -332,7 +350,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -359,6 +377,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           ELASSANDRA_VERSION: ${{ matrix.elassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: |
@@ -370,6 +389,7 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - uses: codecov/codecov-action@v1
 
@@ -380,31 +400,37 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [2.1.22, 2.2.19, 3.0.25, 3.11.11, 4.0.0, 'github:apache/trunk']
+        cassandra-version: ['binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [sidecar]
         grim-max: [1]
         grim-min: [1]
         # all versions but trunk have the same cucumber options, but we can't declare that more effectively (yet)
         include:
-          - cassandra-version: 2.1.22
+          - cassandra-version: 'binary:2.1.22'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 2.2.19
+            jdk-version: '8'
+          - cassandra-version: 'binary:2.2.19'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 3.0.25
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.0.25'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 3.11.11
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.11.11'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
             experimental: false
-          - cassandra-version: 4.0.0
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.1'
             cucumber-options: '--tags @sidecar'
             experimental: false
+            jdk-version: '11'
           - cassandra-version: 'github:apache/trunk'
             cucumber-options: '--tags @sidecar'
             experimental: true
+            jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -421,7 +447,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -448,6 +474,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
@@ -458,6 +485,7 @@ jobs:
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - uses: codecov/codecov-action@v1
 
@@ -468,14 +496,14 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [4.0.0, 'github:apache/trunk']
+        cassandra-version: ['binary:4.0.1', 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [each]
         grim-max: [1]
         grim-min: [1]
         # Reduced scope to shorten the integration test times
         include:
-          - cassandra-version: 4.0.0
+          - cassandra-version: 'binary:4.0.1'
             cucumber-options: '--tags @sidecar'
             experimental: false
           - cassandra-version: 'github:apache/trunk'
@@ -497,7 +525,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -524,6 +552,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
@@ -534,6 +563,7 @@ jobs:
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - uses: codecov/codecov-action@v1
 
@@ -544,29 +574,35 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [2.1.22, 2.2.19, 3.0.25, 3.11.11, 4.0.0, 'github:apache/trunk']
+        cassandra-version: ['binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [2]
         grim-min: [2]
         include:
           # all versions but trunk need to exclude trunk tests
-          - cassandra-version: 2.1.22
+          - cassandra-version: 'binary:2.1.22'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 2.2.19
+            jdk-version: '8'
+          - cassandra-version: 'binary:2.2.19'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 3.0.25
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.0.25'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
-          - cassandra-version: 3.11.11
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.11.11'
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
             experimental: false
-          - cassandra-version: 4.0.0
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.1'
             experimental: false
+            jdk-version: '11'
           - cassandra-version: 'github:apache/trunk'
             experimental: true
+            jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -584,7 +620,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -611,6 +647,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
@@ -621,6 +658,7 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - uses: codecov/codecov-action@v1
 
@@ -632,7 +670,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [4.0.0, 'github:apache/trunk']
+        cassandra-version: ['binary:4.0.1', 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [4]
@@ -640,10 +678,12 @@ jobs:
         cucumber-options: ['--tags ~@diag_event_subscriptions']
         include:
           # all versions but trunk need to exclude trunk tests
-          - cassandra-version: 4.0.0
+          - cassandra-version: 'binary:4.0.1'
             experimental: true
+            jdk-version: '11'
           - cassandra-version: 'github:apache/trunk'
             experimental: true
+            jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -661,7 +701,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -688,6 +728,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: |
@@ -699,6 +740,7 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - uses: codecov/codecov-action@v1
 
@@ -731,7 +773,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -758,6 +800,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           ELASSANDRA_VERSION: ${{ matrix.elassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: |
@@ -769,6 +812,7 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - uses: codecov/codecov-action@v1
 
@@ -793,7 +837,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1

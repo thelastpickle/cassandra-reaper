@@ -32,7 +32,6 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
@@ -49,6 +48,7 @@ public final class SymmetricCryptograph implements Cryptograph {
   private static final String DEFAULT_PROPERTY_KEY_SECRET = "CASSANDRA_REAPER_PROPERTY_KEY_SECRET";
   private static final int DEFAULT_ITERATION_COUNT = 1024;
   private static final int DEFAULT_KEY_STRENGTH = 256;
+  private static final char[] HEX_CODE = "0123456789ABCDEF".toCharArray();
 
   private final String algorithm;
   private final String cipher;
@@ -132,7 +132,7 @@ public final class SymmetricCryptograph implements Cryptograph {
     encipher.init(Cipher.ENCRYPT_MODE, secretKey, ivspec);
     byte[] encryptedBytes = encipher.doFinal(plainText.getBytes());
 
-    return DatatypeConverter.printHexBinary(initVector) + DatatypeConverter.printHexBinary(encryptedBytes);
+    return printHexBinary(initVector) + printHexBinary(encryptedBytes);
   }
 
   private String decryptText(String key, String encryptedText) throws InvalidKeySpecException, NoSuchAlgorithmException,
@@ -190,6 +190,21 @@ public final class SymmetricCryptograph implements Cryptograph {
 
       return result;
     }
+  }
+
+  // migrated as is from JAXB as it's no longer part of Java 11 default install
+  public static String printHexBinary(byte[] data) {
+    StringBuilder builder = new StringBuilder(data.length * 2);
+    byte[] dataCopy = data;
+    int length = data.length;
+
+    for (int i = 0; i < length; ++i) {
+      byte bd = dataCopy[i];
+      builder.append(HEX_CODE[bd >> 4 & 15]);
+      builder.append(HEX_CODE[bd & 15]);
+    }
+
+    return builder.toString();
   }
 
   private byte[] subArray(byte[] array, int beginIndex, int endIndex) {
