@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Copyright 2017-2017 Spotify AB
 # Copyright 2017-2018 The Last Pickle Ltd
 #

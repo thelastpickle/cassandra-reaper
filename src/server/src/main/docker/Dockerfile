@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM openjdk:8-jre-alpine
+FROM adoptopenjdk/openjdk8:alpine
 
 ARG SHADED_JAR
 
@@ -80,6 +80,7 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
 RUN apk add --update \
     python3 \
     py3-pip \
+    bash \
   && pip3 install requests \
   && rm -rf /var/cache/apk/*
 
