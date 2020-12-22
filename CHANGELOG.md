@@ -1,5 +1,14 @@
 ## Change Log
 
+### 2.1.3 (2020/12/22 13:08 +00:00)
+- [3110511](https://github.com/thelastpickle/cassandra-reaper/commit/3110511ce32bc92141738851742ecce474ce0c56) Fix interrupted system call error for shiro initialization (@fatihafizoglu)
+- [0a8b915](https://github.com/thelastpickle/cassandra-reaper/commit/0a8b915021b158f17abce16b47594692883196e2) Remove redundant timeline.css (from older version of the package) (@burmanm)
+- [80e4b78](https://github.com/thelastpickle/cassandra-reaper/commit/80e4b7829b9d564ec95f6f2c94380f25774dbec0) Update Dockerfile to use maintained alpine JDK8 image and install bash to allow bashism in the configure-persistence.sh (@burmanm)
+- [fabedbb](https://github.com/thelastpickle/cassandra-reaper/commit/fabedbb44a6cc6f8679fc6a0a9c017b4286a7643) Fix dependency issues in bower, lock font-awesome to 4.6.3 (@burmanm)
+- [63a72ad](https://github.com/thelastpickle/cassandra-reaper/commit/63a72adceeedfca174817d871117d949c9943e0a) If enableDynamicSeeds is disabled, do not update the seeds list even when readding the same cluster (@burmanm)
+- [1fbf033](https://github.com/thelastpickle/cassandra-reaper/commit/1fbf033c91bdc4eccf3527898aff83c62ab39cc6) Move JMX auth credentials out of dockers reaper configuration and into configure-jmx-credentials script. This allows users to start reaper without configuring REAPER_JMX_AUTH_USERNAME and REAPER_JMX_AUTH_PASSWORD. (@van-vliet)
+- [24aa024](https://github.com/thelastpickle/cassandra-reaper/commit/24aa024f1222041129d37aab3173b6e8b941332e) Expose max pending compactions as configuration option in the docker image using environment variable. (@van-vliet)
+
 ### 2.1.2 (2020/11/03 04:41 +00:00)
 - [f1c29f6](https://github.com/thelastpickle/cassandra-reaper/commit/f1c29f6d1de69428d819a186aae1ddd29a4c88db) [UI] Fix switching between clusters in the repair/schedule screens (@adejanovski)
 
