@@ -37,17 +37,25 @@ public final class RepairSegmentMapper implements ResultSetMapper<RepairSegment>
         = new RingRange(rs.getBigDecimal("start_token").toBigInteger(), rs.getBigDecimal("end_token").toBigInteger());
 
     RepairSegment.Builder builder = RepairSegment.builder(
-                Segment.builder().withTokenRange(range).build(),
-                UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")))
-            .withRunId(UuidUtil.fromSequenceId(rs.getLong("run_id")))
-            .withState(RepairSegment.State.values()[rs.getInt("state")])
-            .withFailCount(rs.getInt("fail_count"))
-            .withTokenRange(
-                Segment.builder()
-                    .withTokenRanges(
-                        JsonParseUtils.parseRingRangeList(
-                            Optional.ofNullable(rs.getString("token_ranges"))))
-                    .build());
+        Segment.builder()
+            .withTokenRange(range)
+            .withReplicas(JsonParseUtils.parseReplicas(
+                Optional.ofNullable(rs.getString("replicas")))).build(),
+        UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")))
+        .withRunId(UuidUtil.fromSequenceId(rs.getLong("run_id")))
+        .withState(RepairSegment.State.values()[rs.getInt("state")])
+        .withFailCount(rs.getInt("fail_count"))
+        .withReplicas(JsonParseUtils.parseReplicas(
+            Optional.ofNullable(rs.getString("replicas"))))
+        .withTokenRange(
+            Segment.builder()
+                .withTokenRanges(
+                    JsonParseUtils.parseRingRangeList(
+                        Optional.ofNullable(rs.getString("token_ranges"))))
+                .withReplicas(JsonParseUtils.parseReplicas(
+                    Optional.ofNullable(rs.getString("replicas"))))
+                .build());
+
 
     if (null != rs.getString("coordinator_host")) {
       builder = builder.withCoordinatorHost(rs.getString("coordinator_host"));

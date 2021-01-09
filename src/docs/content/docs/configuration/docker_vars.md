@@ -53,6 +53,49 @@ The Docker environment variables listed in this section map directly to Reaper s
 
 <br/>
 
+## Using Address translator mapping
+
+The Docker environment variables listed in this section are those related to the feature address translator mapping.
+
+<h4>Environment Variable</h4> | <h4>Configuration Setting</h4> | <h4>Example Values</h4>
+--- | --- | ---
+<code class="codeLarge">REAPER_CASS_ADDRESS_TRANSLATOR_TYPE</code> | [addressTranslator]({{< relref "reaper_specific.md#addressTranslator" >}}) | ec2MultiRegion or multiIpPerNode 
+<code class="codeLarge">REAPER_CASS_ADDRESS_TRANSLATOR_MAPPING</code> | [addressTranslator]({{< relref "reaper_specific.md#addressTranslator" >}}) | host1:ip1,host2:ip2,host3:ip3
+<code class="codeLarge">JMX_ADDRESS_TRANSLATOR_TYPE</code> | [jmxAddressTranslator]({{< relref "reaper_specific.md#jmxAddressTranslator" >}}) | ec2MultiRegion or multiIpPerNode 
+<code class="codeLarge">JMX_ADDRESS_TRANSLATOR_MAPPING</code> | [jmxAddressTranslator]({{< relref "reaper_specific.md#jmxAddressTranslator" >}}) | host1:ip1,host2:ip2,host3:ip3
+
+Example :
+
+```
+REAPER_CASS_ADDRESS_TRANSLATOR_TYPE=multiIpPerNode
+REAPER_CASS_ADDRESS_TRANSLATOR_MAPPING=host1:ip1,host2:ip2
+```
+config bloc at the container startup file '/etc/cassandra-reaper.yml' :
+```
+ addressTranslator:
+    type: multiIpPerNode
+    ipTranslations:
+    - from: "host1"
+      to: "ip1"
+    - from: "host2"
+      to: "ip2"
+```
+and the same thing for the jmx mapping
+```
+JMX_ADDRESS_TRANSLATOR_TYPE=multiIpPerNode
+JMX_ADDRESS_TRANSLATOR_MAPPING=host1:ip1,host2:ip2
+```
+result
+```
+jmxAddressTranslator:
+  type: multiIpPerNode
+  ipTranslations:
+    - from: "host1"
+      to: "ip1"
+    - from: "host2"
+      to: "ip2"
+```
+<br/>
 **Note:**
 
 Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with the YAML parameter names:

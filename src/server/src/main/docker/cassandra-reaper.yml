@@ -16,6 +16,7 @@
 segmentCountPerNode: ${REAPER_SEGMENT_COUNT_PER_NODE}
 repairParallelism: ${REAPER_REPAIR_PARALELLISM}
 repairIntensity: ${REAPER_REPAIR_INTENSITY}
+maxPendingCompactions: ${REAPER_MAX_PENDING_COMPACTIONS}
 scheduleDaysBetween: ${REAPER_SCHEDULE_DAYS_BETWEEN}
 repairRunThreadCount: ${REAPER_REPAIR_RUN_THREADS}
 hangingRepairTimeoutMins: ${REAPER_HANGING_REPAIR_TIMEOUT_MINS}
@@ -49,10 +50,6 @@ autoScheduling:
   excludedClusters: ${REAPER_AUTO_SCHEDULING_EXCLUDED_CLUSTERS}
 
 jmxPorts: ${REAPER_JMX_PORTS}
-
-jmxAuth:
-  username: ${REAPER_JMX_AUTH_USERNAME}
-  password: ${REAPER_JMX_AUTH_PASSWORD}
 
 jmxmp:
   enabled: ${REAPER_JMXMP_ENABLED}

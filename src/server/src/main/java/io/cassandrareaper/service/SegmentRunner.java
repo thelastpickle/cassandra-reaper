@@ -305,7 +305,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
             // ~double-checking idiom, only applies to non-incremental and distributed storage
             if (!repairUnit.getIncrementalRepair() && context.storage instanceof IDistributedStorage) {
-              Map<String, String> dcByNode = getDCsByNodeForRepairSegment(coordinator, cluster, segment, keyspace);
+              Map<String, String> dcByNode = segment.getReplicas();
               if (isRepairRunningOnNodes(segment, dcByNode, keyspace, cluster)) {
                 LOG.warn(
                     "Post-lock, cannot run segment {} for repair {} at the moment. Will try again later",
@@ -499,7 +499,7 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
 
     if (RepairSegment.State.NOT_STARTED == segment.getState()) {
       try {
-        Map<String, String> dcByNode = getDCsByNodeForRepairSegment(coordinator, cluster, segment, keyspace);
+        Map<String, String> dcByNode = segment.getReplicas();
 
         return !isRepairRunningOnNodes(segment, dcByNode, keyspace, cluster)
             && nodesReadyForNewRepair(coordinator, segment, dcByNode, busyHosts);
@@ -741,19 +741,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     return !Collections.disjoint(
         clusterFacade.tokenRangeToEndpoint(cluster, keyspace, segment.getTokenRange()),
         nodes);
-  }
-
-  private Map<String, String> getDCsByNodeForRepairSegment(
-      JmxProxy coordinator,
-      Cluster cluster,
-      RepairSegment segment,
-      String keyspace) {
-
-    // when hosts are coming up or going down, this method can throw an UndeclaredThrowableException
-    Collection<String> nodes = clusterFacade.tokenRangeToEndpoint(cluster, keyspace, segment.getTokenRange());
-    Map<String, String> dcByNode = Maps.newHashMap();
-    nodes.forEach(node -> dcByNode.put(node, EndpointSnitchInfoProxy.create(coordinator).getDataCenter(node)));
-    return dcByNode;
   }
 
   private void storeNodeMetrics(NodeMetrics metrics) {

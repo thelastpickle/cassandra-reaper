@@ -13,13 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM openjdk:8-jre-alpine
+FROM adoptopenjdk/openjdk8:alpine
 
 ARG SHADED_JAR
 
 ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
     REAPER_REPAIR_PARALELLISM=DATACENTER_AWARE \
     REAPER_REPAIR_INTENSITY=0.9 \
+    REAPER_MAX_PENDING_COMPACTIONS=20 \
     REAPER_SCHEDULE_DAYS_BETWEEN=7 \
     REAPER_REPAIR_RUN_THREADS=15 \
     REAPER_HANGING_REPAIR_TIMEOUT_MINS=30 \
@@ -79,6 +80,7 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
 RUN apk add --update \
     python3 \
     py3-pip \
+    bash \
   && pip3 install requests \
   && rm -rf /var/cache/apk/*
 
@@ -96,6 +98,8 @@ ADD spreaper /usr/local/bin/spreaper
 
 # get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper.yml: Interrupted system call` unknown error
 RUN touch /etc/cassandra-reaper.yml
+# get around `/usr/local/bin/configure-webui-authentication.sh: line 44: can't `create` /etc/shiro.ini: Interrupted system call` unknown error
+RUN touch /etc/shiro.ini
 
 
 RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \

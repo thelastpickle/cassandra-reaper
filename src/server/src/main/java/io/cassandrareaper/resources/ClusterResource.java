@@ -260,14 +260,17 @@ public final class ClusterResource {
       LOG.debug("Attempting updating nodelist for cluster {}", existingCluster.get().getName());
       try {
         // the cluster is already managed by reaper. if nothing is changed return 204. then if updated return 200.
-        Cluster updatedCluster = updateClusterSeeds(existingCluster.get(), seedHost.get());
-        if (updatedCluster.getSeedHosts().equals(existingCluster.get().getSeedHosts())) {
-          LOG.debug("Nodelist of cluster {} is already up to date.", existingCluster.get().getName());
-          return Response.noContent().location(location).build();
-        } else {
-          LOG.info("Nodelist of cluster {} updated", existingCluster.get().getName());
-          return Response.ok().location(location).build();
+        if (context.config.getEnableDynamicSeedList()) {
+          Cluster updatedCluster = updateClusterSeeds(existingCluster.get(), seedHost.get());
+          if (updatedCluster.getSeedHosts().equals(existingCluster.get().getSeedHosts())) {
+            LOG.debug("Nodelist of cluster {} is already up to date.", existingCluster.get().getName());
+            return Response.noContent().location(location).build();
+          } else {
+            LOG.info("Nodelist of cluster {} updated", existingCluster.get().getName());
+            return Response.ok().location(location).build();
+          }
         }
+        return Response.noContent().location(location).build();
       } catch (ReaperException ex) {
         LOG.error("fail:", ex);
         return Response.serverError().entity(ex.getMessage()).build();

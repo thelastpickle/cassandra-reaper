@@ -211,7 +211,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
     this.reaperInstanceId = reaperInstanceId;
     CassandraFactory cassandraFactory = config.getCassandraFactory();
-    overrideQueryOptions(cassandraFactory);
+    overrideQueryOptions(cassandraFactory, mode);
     overrideRetryPolicy(cassandraFactory);
     overridePoolingOptions(cassandraFactory);
 
@@ -429,14 +429,16 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     insertRepairSegmentPrepStmt = session
         .prepare(
             "INSERT INTO repair_run"
-                + "(id,segment_id,repair_unit_id,start_token,end_token,segment_state,fail_count, token_ranges)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
+                + "(id,segment_id,repair_unit_id,start_token,end_token,"
+                + " segment_state,fail_count, token_ranges, replicas)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
     insertRepairSegmentIncrementalPrepStmt = session
         .prepare(
             "INSERT INTO repair_run"
-                + "(id,segment_id,repair_unit_id,start_token,end_token,segment_state,coordinator_host,fail_count)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)")
+                + "(id,segment_id,repair_unit_id,start_token,end_token,"
+                + "segment_state,coordinator_host,fail_count,replicas)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
     updateRepairSegmentPrepStmt = session
         .prepare(
@@ -450,12 +452,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     getRepairSegmentPrepStmt = session
             .prepare(
                 "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
-                    + "segment_start_time,segment_end_time,fail_count, token_ranges"
+                    + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas"
                     + " FROM repair_run WHERE id = ? and segment_id = ?")
             .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
     getRepairSegmentsByRunIdPrepStmt = session.prepare(
         "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
-            + "segment_end_time,fail_count, token_ranges FROM repair_run WHERE id = ?");
+            + "segment_end_time,fail_count, token_ranges, replicas FROM repair_run WHERE id = ?");
     getRepairSegmentCountByRunIdPrepStmt = session.prepare("SELECT count(*) FROM repair_run WHERE id = ?");
     insertRepairSchedulePrepStmt
         = session
@@ -506,7 +508,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       try {
         getRepairSegmentsByRunIdAndStatePrepStmt = session.prepare(
             "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
-                + "segment_start_time,segment_end_time,fail_count, token_ranges FROM repair_run "
+                + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas FROM repair_run "
                 + "WHERE id = ? AND segment_state = ? ALLOW FILTERING");
         getRepairSegmentCountByRunIdAndStatePrepStmt = session.prepare(
             "SELECT count(segment_id) FROM repair_run WHERE id = ? AND segment_state = ? ALLOW FILTERING");
@@ -524,12 +526,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     takeLeadPrepStmt = session
         .prepare(
             "INSERT INTO leader(leader_id, reaper_instance_id, reaper_instance_host, last_heartbeat)"
-                + "VALUES(?, ?, ?, " + timeUdf + "(now())) IF NOT EXISTS USING TTL ?");
+                + "VALUES(?, ?, ?, " + timeUdf + "(now())) IF NOT EXISTS USING TTL ?")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
     renewLeadPrepStmt = session
         .prepare(
             "UPDATE leader USING TTL ? SET reaper_instance_id = ?, reaper_instance_host = ?,"
-                + " last_heartbeat = " + timeUdf + "(now()) WHERE leader_id = ? IF reaper_instance_id = ?");
-    releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?");
+                + " last_heartbeat = " + timeUdf + "(now()) WHERE leader_id = ? IF reaper_instance_id = ?")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    releaseLeadPrepStmt = session.prepare("DELETE FROM leader WHERE leader_id = ? IF reaper_instance_id = ?")
+        .setConsistencyLevel(ConsistencyLevel.QUORUM);
   }
 
   private void prepareMetricStatements() {
@@ -755,7 +760,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               segment.getEndToken(),
               segment.getState().ordinal(),
               segment.getCoordinatorHost(),
-              segment.getFailCount()));
+              segment.getFailCount(),
+              segment.getReplicas()));
       } else {
         try {
           repairRunBatch.add(
@@ -767,7 +773,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                   segment.getEndToken(),
                   segment.getState().ordinal(),
                   segment.getFailCount(),
-                  objectMapper.writeValueAsString(segment.getTokenRange().getTokenRanges())));
+                  objectMapper.writeValueAsString(segment.getTokenRange().getTokenRanges()),
+                  segment.getReplicas()));
         } catch (JsonProcessingException e) {
           throw new IllegalStateException(e);
         }
@@ -1152,6 +1159,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     if (null != segmentRow.getTimestamp("segment_end_time")) {
       builder = builder.withEndTime(new DateTime(segmentRow.getTimestamp("segment_end_time")));
     }
+    if (null != segmentRow.getMap("replicas", String.class, String.class)) {
+      builder = builder.withReplicas(segmentRow.getMap("replicas", String.class, String.class));
+    }
+
     return builder.withId(segmentRow.getUUID("segment_id")).build();
   }
 
@@ -1676,13 +1687,19 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
 
-  private static void overrideQueryOptions(CassandraFactory cassandraFactory) {
-    // all INSERT and DELETE stmt prepared in this class are idempoten
+  private static void overrideQueryOptions(CassandraFactory cassandraFactory, CassandraMode mode) {
+    // all INSERT and DELETE stmt prepared in this class are idempotent
+    ConsistencyLevel requiredCl = mode.equals(CassandraMode.ASTRA)
+        ? ConsistencyLevel.LOCAL_QUORUM
+        : ConsistencyLevel.LOCAL_ONE;
     if (cassandraFactory.getQueryOptions().isPresent()
         && ConsistencyLevel.LOCAL_ONE != cassandraFactory.getQueryOptions().get().getConsistencyLevel()) {
       LOG.warn("Customization of cassandra's queryOptions is not supported and will be overridden");
     }
-    cassandraFactory.setQueryOptions(java.util.Optional.of(new QueryOptions().setDefaultIdempotence(true)));
+    cassandraFactory.setQueryOptions(java.util.Optional.of(
+        new QueryOptions()
+          .setConsistencyLevel(requiredCl)
+          .setDefaultIdempotence(true)));
   }
 
   private static void overrideRetryPolicy(CassandraFactory cassandraFactory) {

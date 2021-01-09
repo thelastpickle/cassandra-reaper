@@ -17,20 +17,45 @@
 
 package io.cassandrareaper.service;
 
+import io.cassandrareaper.AppContext;
+import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.crypto.NoopCrypotograph;
+import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.jmx.JmxConnectionFactory;
+import io.cassandrareaper.jmx.JmxProxy;
+import io.cassandrareaper.jmx.JmxProxyTest;
+import io.cassandrareaper.storage.IStorage;
+import io.cassandrareaper.storage.MemoryStorage;
 
+import java.math.BigInteger;
+import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Semaphore;
 
+import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.joda.time.DateTimeUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -184,5 +209,91 @@ public final class RepairRunServiceTest {
     assertEquals(replicasToRangeMap.get(Arrays.asList("node1", "node2", "node3")).size(), 3);
     assertEquals(replicasToRangeMap.get(Arrays.asList("node1")).size(), 1);
     assertEquals(replicasToRangeMap.get(Arrays.asList("node1", "node2")).size(), 2);
+  }
+
+  @Test
+  public void generateSegmentsTest() throws ReaperException {
+    Cluster cluster = Cluster.builder()
+        .withName("test_" + RandomStringUtils.randomAlphabetic(12))
+        .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2", "127.0.0.3"))
+        .withState(Cluster.State.ACTIVE)
+        .withPartitioner("Murmur3Partitioner")
+        .build();
+    final String KS_NAME = "reaper";
+    final Set<String> CF_NAMES = Sets.newHashSet("reaper");
+    final boolean INCREMENTAL_REPAIR = false;
+    final Set<String> NODES = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
+    final Set<String> DATACENTERS = Collections.emptySet();
+    final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
+    final long TIME_RUN = 41L;
+    final double INTENSITY = 0.5f;
+    final int REPAIR_THREAD_COUNT = 1;
+    final List<BigInteger> TOKENS = Lists.newArrayList(
+        BigInteger.valueOf(0L),
+        BigInteger.valueOf(100L),
+        BigInteger.valueOf(200L));
+    final IStorage storage = new MemoryStorage();
+
+    storage.addCluster(cluster);
+
+    RepairUnit cf = storage.addRepairUnit(
+            RepairUnit.builder()
+            .clusterName(cluster.getName())
+            .keyspaceName(KS_NAME)
+            .columnFamilies(CF_NAMES)
+            .incrementalRepair(INCREMENTAL_REPAIR)
+            .nodes(NODES)
+            .datacenters(DATACENTERS)
+            .blacklistedTables(BLACKLISTED_TABLES)
+            .repairThreadCount(REPAIR_THREAD_COUNT));
+    DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
+
+    AppContext context = new AppContext();
+    context.storage = storage;
+    context.config = new ReaperApplicationConfiguration();
+    final Semaphore mutex = new Semaphore(0);
+    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    when(jmx.getClusterName()).thenReturn(cluster.getName());
+    when(jmx.isConnectionAlive()).thenReturn(true);
+    when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
+    EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+    when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+    try {
+      when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+    } catch (UnknownHostException ex) {
+      throw new AssertionError(ex);
+    }
+    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    when(clusterFacade.connect(any(Cluster.class))).thenReturn(jmx);
+    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
+    when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
+        .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
+    when(clusterFacade.getCassandraVersion(any())).thenReturn("3.11.6");
+    when(clusterFacade.getTokens(any())).thenReturn(TOKENS);
+
+
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
+          @Override
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
+            return jmx;
+          }
+        };
+
+    RepairRunService repairRunService = RepairRunService.create(context, () -> clusterFacade);
+
+    RepairUnit unit = RepairUnit.builder()
+        .clusterName(cluster.getName())
+        .keyspaceName("test")
+        .blacklistedTables(Sets.newHashSet("table1"))
+        .incrementalRepair(false)
+        .repairThreadCount(4)
+        .build(UUIDs.timeBased());
+    List<Segment> segments = repairRunService.generateSegments(cluster, 10, 10, unit);
+    assertEquals(12, segments.size());
+    assertEquals(3, segments.get(0).getReplicas().keySet().size());
+    assertEquals("dc1", segments.get(0).getReplicas().get("127.0.0.1"));
   }
 }

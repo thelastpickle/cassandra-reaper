@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Copyright 2017-2017 Spotify AB
 # Copyright 2017-2018 The Last Pickle Ltd
 #
@@ -20,6 +20,20 @@ cat <<EOT >> /etc/cassandra-reaper.yml
 jmxAddressTranslator:
   type: ${JMX_ADDRESS_TRANSLATOR_TYPE}
 EOT
+fi
+
+if [ "multiIpPerNode" = "${JMX_ADDRESS_TRANSLATOR_TYPE}" ] && [ -n "$JMX_ADDRESS_TRANSLATOR_MAPPING" ]; then
+cat <<EOT >> /etc/cassandra-reaper.yml
+  ipTranslations:
+EOT
+IFS=',' read -ra mappings <<< "$JMX_ADDRESS_TRANSLATOR_MAPPING"
+for mapping in "${mappings[@]}"; do
+IFS=':' read -ra mapping <<< "$mapping"
+cat <<EOT >> /etc/cassandra-reaper.yml
+    - from: "${mapping[0]}"
+      to: "${mapping[1]}"
+EOT
+done
 fi
 
 case ${REAPER_STORAGE_TYPE} in
@@ -66,6 +80,21 @@ cat <<EOT >> /etc/cassandra-reaper.yml
     type: ${REAPER_CASS_ADDRESS_TRANSLATOR_TYPE}
 EOT
 fi
+
+if [ "multiIpPerNode" = "${REAPER_CASS_ADDRESS_TRANSLATOR_TYPE}" ] && [ -n "$REAPER_CASS_ADDRESS_TRANSLATOR_MAPPING" ]; then
+cat <<EOT >> /etc/cassandra-reaper.yml
+    ipTranslations:
+EOT
+IFS=',' read -ra mappings <<< "$REAPER_CASS_ADDRESS_TRANSLATOR_MAPPING"
+for mapping in "${mappings[@]}"; do
+IFS=':' read -ra mapping <<< "$mapping"
+cat <<EOT >> /etc/cassandra-reaper.yml
+    - from: "${mapping[0]}"
+      to: "${mapping[1]}"
+EOT
+done
+fi
+
 # END cassandra persistence options
 
     ;;
