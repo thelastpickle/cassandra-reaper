@@ -35,7 +35,10 @@ const loginForm = CreateReactClass({
       obs.subscribe(
         response => {
           this.setState({loginResultMsg: null});
-          window.location.href = "/webui/index.html"
+          var pathName = document.location.pathname;
+          var baseUrl = "<%= htmlWebpackPlugin.options.baseUrl %>".endsWith('/') ? "<%= htmlWebpackPlugin.options.baseUrl %>".substring(0,"<%= htmlWebpackPlugin.options.baseUrl %>".lastIndexOf('/')):"<%= htmlWebpackPlugin.options.baseUrl %>";
+          var contextPath = pathName.substring(0, pathName.indexOf(baseUrl));
+          window.location.href = contextPath + "/webui/index.html"
         },
         response => {
             this.setState({loginResultMsg: response.responseText});
