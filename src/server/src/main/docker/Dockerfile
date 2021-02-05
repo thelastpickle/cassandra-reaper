@@ -92,6 +92,7 @@ ADD configure-persistence.sh /usr/local/bin/configure-persistence.sh
 ADD configure-metrics.sh /usr/local/bin/configure-metrics.sh
 ADD configure-webui-authentication.sh /usr/local/bin/configure-webui-authentication.sh
 ADD configure-jmx-credentials.sh /usr/local/bin/configure-jmx-credentials.sh
+ADD configure-autoscheduling.sh /usr/local/bin/configure-autoscheduling.sh
 ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
 ADD spreaper /usr/local/bin/spreaper
 
@@ -114,6 +115,7 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/bin/configure-webui-authentication.sh \
         /usr/local/bin/configure-metrics.sh \
         /usr/local/bin/configure-jmx-credentials.sh \
+        /usr/local/bin/configure-autoscheduling.sh \
         /usr/local/bin/spreaper \
         /etc/shiro.ini && \
     chown -R reaper:reaper \
@@ -126,6 +128,7 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/bin/configure-webui-authentication.sh \
         /usr/local/bin/configure-metrics.sh \
         /usr/local/bin/configure-jmx-credentials.sh \
+        /usr/local/bin/configure-autoscheduling.sh \
         /usr/local/bin/spreaper
 
 VOLUME /var/lib/cassandra-reaper

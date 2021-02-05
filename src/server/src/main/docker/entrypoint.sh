@@ -40,6 +40,7 @@ if [ "$1" = 'cassandra-reaper' ]; then
     /usr/local/bin/configure-webui-authentication.sh
     /usr/local/bin/configure-metrics.sh
     /usr/local/bin/configure-jmx-credentials.sh
+    /usr/local/bin/configure-autoscheduling.sh
     exec java \
             ${JAVA_OPTS} \
             -cp "/usr/local/lib/*" io.cassandrareaper.ReaperApplication server \
