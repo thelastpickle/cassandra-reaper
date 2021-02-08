@@ -413,8 +413,8 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   @Override
   public boolean updateRepairSegment(RepairSegment segment) {
 
-    assert renewLead(segment.getId())
-        || (renewLead(segment.getRunId())
+    assert hasLeadOnSegment(segment)
+        || (hasLeadOnSegment(segment.getRunId())
           && getRepairUnit(segment.getRepairUnitId()).getIncrementalRepair())
         : "non-leader trying to update repair segment " + segment.getId() + " of run " + segment.getRunId();
 
@@ -799,6 +799,14 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
         }
       }
     }
+  }
+
+  private boolean hasLeadOnSegment(RepairSegment segment) {
+    return renewRunningRepairsForNodes(segment.getRunId(), segment.getId(), segment.getReplicas().keySet());
+  }
+
+  private boolean hasLeadOnSegment(UUID leaderId) {
+    return renewLead(leaderId);
   }
 
   @Override
