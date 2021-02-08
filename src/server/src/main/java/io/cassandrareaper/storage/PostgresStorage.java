@@ -411,12 +411,18 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public boolean updateRepairSegmentUnsafe(RepairSegment repairSegment) {
-    return updateRepairSegment(repairSegment);
+  public boolean updateRepairSegment(RepairSegment segment) {
+
+    assert renewLead(segment.getId())
+        || (renewLead(segment.getRunId())
+          && getRepairUnit(segment.getRepairUnitId()).getIncrementalRepair())
+        : "non-leader trying to update repair segment " + segment.getId() + " of run " + segment.getRunId();
+
+    return updateRepairSegmentUnsafe(segment);
   }
 
   @Override
-  public boolean updateRepairSegment(RepairSegment repairSegment) {
+  public boolean updateRepairSegmentUnsafe(RepairSegment repairSegment) {
     boolean result = false;
     try (Handle h = jdbi.open()) {
       int rowsAdded = getPostgresStorage(h).updateRepairSegment(repairSegment);

@@ -195,7 +195,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement saveSnapshotPrepStmt;
   private PreparedStatement storeMetricsPrepStmt;
   private PreparedStatement getMetricsForHostPrepStmt;
-  private PreparedStatement getMetricsForClusterPrepStmt;
   private PreparedStatement insertOperationsPrepStmt;
   private PreparedStatement listOperationsForNodePrepStmt;
   private PreparedStatement getDiagnosticEventsPrepStmt;
@@ -1124,7 +1123,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               segment.getRunId(),
               segment.getId(),
               segment.hasEndTime() ? segment.getEndTime().toDate() : null));
-
+    } else if (State.STARTED == segment.getState()) {
+      updateRepairSegmentBatch.setConsistencyLevel(ConsistencyLevel.EACH_QUORUM);
     }
     session.execute(updateRepairSegmentBatch);
     return true;
@@ -1245,9 +1245,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         // legacy mode for Cassandra-2 backends
         : getRepairSegmentsByRunIdPrepStmt.bind(runId);
 
-    /*if (State.STARTED == segmentState) {
+    if (State.STARTED == segmentState) {
       statement = statement.setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-    }*/
+    }
     for (Row segmentRow : session.execute(statement)) {
       if (segmentRow.getInt("segment_state") == segmentState.ordinal()) {
         segments.add(createRepairSegmentFromRow(segmentRow));
@@ -2049,7 +2049,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       UUID segmentId,
       Set<String> replicas) {
     List<ResultSetFuture> futures = Lists.newArrayList();
-    for (String replica:replicas) {
+    for (String replica : replicas) {
       // Maybe initialize the row for each node for that repair
       futures.add(session.executeAsync(initRunningRepairsPrepStmt.bind(repairId, replica)));
     }

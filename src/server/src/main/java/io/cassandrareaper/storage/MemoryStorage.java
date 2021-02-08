@@ -302,7 +302,7 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
-  public boolean updateRepairSegmentUnsafe(RepairSegment newRepairSegment) {
+  public boolean updateRepairSegment(RepairSegment newRepairSegment) {
     if (getRepairSegment(newRepairSegment.getRunId(), newRepairSegment.getId()) == null) {
       return false;
     } else {
@@ -311,11 +311,6 @@ public final class MemoryStorage implements IStorage {
       updatedSegment.put(newRepairSegment.getId(), newRepairSegment);
       return true;
     }
-  }
-
-  @Override
-  public boolean updateRepairSegment(RepairSegment newRepairSegment) {
-    return updateRepairSegmentUnsafe(newRepairSegment);
   }
 
   @Override

@@ -84,7 +84,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private static final Logger LOG = LoggerFactory.getLogger(SegmentRunner.class);
 
   private static final int MAX_TIMEOUT_EXTENSIONS = 10;
-  private static final int LOCK_DURATION = 30;
   private static final Pattern REPAIR_UUID_PATTERN
       = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
@@ -92,8 +91,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
       = Integer.getInteger(SegmentRunner.class.getName() + ".sleep_time_after_postpone_in_ms", 10000);
 
   private static final ExecutorService METRICS_GRABBER_EXECUTOR = Executors.newFixedThreadPool(10);
-  private static final long METRICS_POLL_INTERVAL_MS = TimeUnit.SECONDS.toMillis(5);
-  private static final long METRICS_MAX_WAIT_MS = TimeUnit.MINUTES.toMillis(2);
 
   private final AppContext context;
   private final UUID segmentId;
@@ -113,7 +110,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private final AtomicBoolean completeNotified = new AtomicBoolean(false);
   private final ClusterFacade clusterFacade;
   private final Set<String> tablesToRepair;
-  private final AtomicBoolean releasedSegmentRunner = new AtomicBoolean(false);
 
 
   private SegmentRunner(
@@ -201,14 +197,20 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   static void postponeSegment(AppContext context, RepairSegment segment) {
     LOG.info("Reset segment {}", segment.getId());
     RepairUnit unit = context.storage.getRepairUnit(segment.getRepairUnitId());
-    context.storage.updateRepairSegmentUnsafe(
-        segment
-            .reset()
-            // set coordinator host to null only for full repairs
-            .withCoordinatorHost(unit.getIncrementalRepair() ? segment.getCoordinatorHost() : null)
-            .withFailCount(segment.getFailCount() + 1)
-            .withId(segment.getId())
-            .build());
+    RepairSegment postponed
+        = segment
+          .reset()
+          // set coordinator host to null only for full repairs
+          .withCoordinatorHost(unit.getIncrementalRepair() ? segment.getCoordinatorHost() : null)
+          .withFailCount(segment.getFailCount() + 1)
+          .withId(segment.getId())
+          .build();
+
+    if ( context.storage instanceof IDistributedStorage ) {
+      ((IDistributedStorage)context.storage).updateRepairSegmentUnsafe(postponed);
+    } else {
+      context.storage.updateRepairSegment(postponed);
+    }
   }
 
   private static void postpone(AppContext context, RepairSegment segment, RepairUnit repairUnit) {
@@ -1075,66 +1077,25 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     }
   }
 
-  private boolean lockSegmentRunners() {
-    if (this.repairUnit.getIncrementalRepair() || !context.config.getDatacenterAvailability().isInCollocatedMode()) {
-      return true;
-    }
-    UUID lockId = com.datastax.driver.core.utils.UUIDs.startOf(repairUnit.getClusterName().hashCode());
-    try (Timer.Context cx
-        = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "lockSegmentRunners")).time()) {
-
-      boolean result = context.storage instanceof IDistributedStorage
-          ? ((IDistributedStorage) context.storage).takeLead(
-              lockId,
-              LOCK_DURATION)
-          : true;
-
-      if (!result) {
-        context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "lockSegmentRunners", "failed")).inc();
-      }
-      return result;
-    }
-  }
-
-  private void releaseSegmentRunners() {
-    if (!this.repairUnit.getIncrementalRepair()
-        && releasedSegmentRunner.compareAndSet(false, true)
-        && context.config.getDatacenterAvailability().isInCollocatedMode()) {
-      UUID uuid = com.datastax.driver.core.utils.UUIDs.startOf(repairUnit.getClusterName().hashCode());
-      try (Timer.Context cx
-          = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "releaseSegmentRunners")).time()) {
-        if (context.storage instanceof IDistributedStorage) {
-          ((IDistributedStorage) context.storage).releaseLead(uuid);
-        }
-      }
-    }
-  }
-
   private boolean takeLead(RepairSegment segment) {
     try (Timer.Context cx
         = context.metricRegistry.timer(MetricRegistry.name(SegmentRunner.class, "takeLead")).time()) {
 
+      boolean result = false;
       if (repairUnit.getIncrementalRepair()) {
-        boolean result = context.storage instanceof IDistributedStorage
+        result = context.storage instanceof IDistributedStorage
             ? ((IDistributedStorage) context.storage).takeLead(leaderElectionId)
             : true;
-
-        if (!result) {
-          context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "takeLead", "failed")).inc();
-        }
-        return result;
       } else {
-        boolean resultLock2 = context.storage instanceof IDistributedStorage
+        result = context.storage instanceof IDistributedStorage
             ? ((IDistributedStorage) context.storage).lockRunningRepairsForNodes(this.repairRunner.getRepairRunId(),
                 segment.getId(), segment.getReplicas().keySet())
             : true;
-        if (!resultLock2) {
-          context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "takeLead", "failed")).inc();
-          releaseLead(segment);
-        }
-
-        return resultLock2;
       }
+      if (!result) {
+        context.metricRegistry.counter(MetricRegistry.name(SegmentRunner.class, "takeLead", "failed")).inc();
+      }
+      return result;
     }
   }
 

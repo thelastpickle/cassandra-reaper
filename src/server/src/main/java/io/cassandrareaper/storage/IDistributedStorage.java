@@ -113,4 +113,12 @@ public interface IDistributedStorage {
    * Purges old node operation info from the database (no-op for databases w/ TTL)
    */
   void purgeNodeOperations();
+
+  /**
+   * Update the repair segment without a lock as it couldn't be grabbed.
+   *
+   * @param newRepairSegment repair segment to update
+   * @return true if the segment was updated, false otherwise
+   */
+  boolean updateRepairSegmentUnsafe(RepairSegment newRepairSegment);
 }
