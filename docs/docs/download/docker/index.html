@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.69.2" />
+  <meta name="generator" content="Hugo 0.79.0" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -252,7 +252,11 @@
     </a>
     <ul class="sub">
         
+        <li><a href="/docs/metrics/dashboards/"> Dashboards </a> </li>
+        
         <li><a href="/docs/metrics/graphite/"> Graphite Reporter </a> </li>
+        
+        <li><a href="/docs/metrics/prometheus/"> Prometheus </a> </li>
         
     </ul>
     
@@ -377,7 +381,24 @@ docker run <span style="color:#ae81ff">\
 <h2 id="using-docker-compose">Using Docker Compose</h2>
 <p>The Docker Compose services available allow for orchestration of an environment that uses Reaper&rsquo;s default settings. This provides a quick way to start Reaper and become familiar with its usage without the need of additional infrastructure. The environment created using Docker Compose comprises a single containerised Apache Cassandra node and a single containerised Reaper service.</p>
 <p>In addition to the environment using Reaper&rsquo;s default settings, Docker Compose services are provided that allow orchestration of an environment in which the connections between Reaper and Cassandra are SSL encrypted. The services which create this environment contain a <code>-ssl</code> suffix in their name.</p>
-<p>All available Docker Compose services can be found in the <a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/docker-compose.yml">docker-compose.yml</a> file.</p>
+<p>It is also possible to automate registering the Cassandra cluster with Reaper and making Reaper start repairing non-system keyspaces automatically. To register a cluster, run the Reaper image with the <code>register-cluster</code> command:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">  <span style="color:#f92672">register-clusters</span>:
+    <span style="color:#f92672">image</span>: <span style="color:#ae81ff">cassandra-reaper:latest</span>
+    <span style="color:#f92672">links</span>:
+      - <span style="color:#ae81ff">cassandra</span>
+      - <span style="color:#ae81ff">reaper-in-memory</span>
+    <span style="color:#f92672">command</span>: [<span style="color:#e6db74">&#34;register-clusters&#34;</span>, <span style="color:#e6db74">&#34;cassandra:7199&#34;</span>, <span style="color:#e6db74">&#34;reaper-in-memory&#34;</span>, <span style="color:#e6db74">&#34;8080&#34;</span>]
+</code></pre></div><p>The <code>register-clusters</code> arguments are:</p>
+<ul>
+<li><code>cassandra:7199</code> - host and (JMX) port of a node in the cluster we want to register.</li>
+<li><code>reaper-in-memory</code> - hostname of the Reaper instance.</li>
+<li><code>8080</code> - the port on which Reaper listens on.</li>
+</ul>
+<p>To make Reaper automatically start repairs, make sure the following environment variables are set:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">REAPER_AUTO_SCHEDULING_ENABLED<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;True&#34;</span>
+REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;PT1M&#34;</span>
+REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;PT1M&#34;</span>
+</code></pre></div><p>All available Docker Compose services can be found in the <a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/docker-compose.yml">docker-compose.yml</a> file.</p>
 <h3 id="default-settings-environment">Default Settings Environment</h3>
 <p>From the top level directory change to the <em>src/packaging</em> directory:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cd src/packaging
@@ -385,7 +406,10 @@ docker run <span style="color:#ae81ff">\
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker-compose up cassandra
 </code></pre></div><p>The <code>nodetool</code> Docker Compose service can be used to check on the Cassandra node&rsquo;s status:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker-compose run nodetool status
-</code></pre></div><p>Once the Cassandra node is online and accepting CQL connections, create the required <code>reaper_db</code> Cassandra keyspace to allow Reaper to save its cluster and scheduling data.</p>
+</code></pre></div><p>You can alternatively attach directly to the Cassandra container and run <code>nodetool status</code> from within it by running:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker-compose exec cassandra /bin/bash
+</code></pre></div><p>Now that you have a bash shell in the container, you can run <code>nodetool -u reaperUser -pwf /etc/cassandra/jmxremote.password</code>.</p>
+<p>Once the Cassandra node is online and accepting CQL connections, create the required <code>reaper_db</code> Cassandra keyspace to allow Reaper to save its cluster and scheduling data.</p>
 <p>By default, the <code>reaper_db</code> keyspace is created using a replication factor of 1. To change this replication factor, provide the intended replication factor as an optional argument:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker-compose run cqlsh-initialize-reaper_db <span style="color:#f92672">[</span>$REPLICATION_FACTOR<span style="color:#f92672">]</span>
 </code></pre></div><p>Wait a few moments for the <code>reaper_db</code> schema change to propagate, then start Reaper:</p>
@@ -412,7 +436,8 @@ docker run <span style="color:#ae81ff">\
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker-compose run nodetool status
 </code></pre></div><p>For the <strong>SSL encrypted</strong> environment use:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker-compose run nodetool-ssl status
-</code></pre></div><p>When adding the Cassandra node to the Reaper UI, the above commands can be used to find the node IP address.</p>
+</code></pre></div><p>When adding the Cassandra node to the Reaper UI with the IP address, the above commands can be used to find the node IP address.
+You can also add the Cassandra node to the Reaper UI by hostname. The container&rsquo;s hostname is the docker-compose service name.</p>
 <p>A <code>cqlsh</code> Docker Compose service is included as well for both the default and SSL encrypted environments to allow the creation of user tables in Cassandra.</p>
 <p>For the <strong>default</strong> environment use:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker-compose run cqlsh

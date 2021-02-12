@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.69.2" />
+  <meta name="generator" content="Hugo 0.79.0" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -327,12 +327,12 @@
                           <h2 id="prometheus">Prometheus</h2>
 <p>Reaper exposes all its metrics in a Prometheus-ready format under the <code>/prometheusMetrics</code> endpoint on the admin port.</p>
 <p>It&rsquo;s fairly straightforward to configure Prometheus to grab them. The config can look something like:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">scrape_configs</span>:
-  - <span style="color:#66d9ef">job_name</span>: <span style="color:#e6db74">&#39;reaper&#39;</span>
-    <span style="color:#66d9ef">metrics_path</span>: <span style="color:#e6db74">&#39;/prometheusMetrics&#39;</span>
-    <span style="color:#66d9ef">scrape_interval</span>: 5s
-    <span style="color:#66d9ef">static_configs</span>:
-      - <span style="color:#66d9ef">targets</span>: [<span style="color:#e6db74">&#39;host.docker.internal:8081&#39;</span>]
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">scrape_configs</span>:
+  - <span style="color:#f92672">job_name</span>: <span style="color:#e6db74">&#39;reaper&#39;</span>
+    <span style="color:#f92672">metrics_path</span>: <span style="color:#e6db74">&#39;/prometheusMetrics&#39;</span>
+    <span style="color:#f92672">scrape_interval</span>: <span style="color:#ae81ff">5s</span>
+    <span style="color:#f92672">static_configs</span>:
+      - <span style="color:#f92672">targets</span>: [<span style="color:#e6db74">&#39;host.docker.internal:8081&#39;</span>]
 </code></pre></div><ul>
 <li>The <code>host.docker.internal</code> tells a Prometheus instance running inside a docker container to connect to the host&rsquo;s <code>8081</code> port where Raper runs from a JAR.</li>
 </ul>
@@ -343,27 +343,27 @@
 #2 io_cassandrareaper_service_RepairRunner_repairProgress_[cluster]_[keyspace]_7c326d904ba811eaa7a0634758da0ae9 0.0
 </code></pre><p>The difference is that #1 does not include the keyspace name. One way to handle this is to first drop #1 and then do relabeling only on #2.</p>
 <p>To drop #1, we can use the following item in the <code>metric_relabel_configs</code> list:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">metric_relabel_configs</span>:
-  - <span style="color:#66d9ef">source_labels</span>: [__name__]
-    <span style="color:#66d9ef">regex</span>: <span style="color:#e6db74">&#34;io_cassandrareaper_service_RepairRunner_repairProgress_([^_]+)_([^_]+)$&#34;</span>
-    <span style="color:#66d9ef">action</span>: drop 
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">metric_relabel_configs</span>:
+  - <span style="color:#f92672">source_labels</span>: [<span style="color:#ae81ff">__name__]</span>
+    <span style="color:#f92672">regex</span>: <span style="color:#e6db74">&#34;io_cassandrareaper_service_RepairRunner_repairProgress_([^_]+)_([^_]+)$&#34;</span>
+    <span style="color:#f92672">action</span>: <span style="color:#ae81ff">drop </span>
 </code></pre></div><ul>
 <li>We pick <code>__name__</code> as the <code>source_label</code>, meaning we try to match the <code>regex</code> against the whole name of the metric.</li>
 <li>We match for two groups after <code>repairProgress_</code> that are made of 1 or more characters that are not an <code>_</code>.</li>
 </ul>
 <p>Then, we can add the following:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">  - <span style="color:#66d9ef">source_labels</span>: [__name__]
-    <span style="color:#66d9ef">regex</span>: <span style="color:#e6db74">&#34;io_cassandrareaper_service_RepairRunner_repairProgress_(.*)_(.*)_(.*)&#34;</span>
-    <span style="color:#66d9ef">target_label</span>: cluster
-    <span style="color:#66d9ef">replacement</span>: <span style="color:#e6db74">&#39;${1}&#39;</span>
-  - <span style="color:#66d9ef">source_labels</span>: [__name__]
-    <span style="color:#66d9ef">regex</span>: <span style="color:#e6db74">&#34;io_cassandrareaper_service_RepairRunner_repairProgress_(.*)_(.*)_(.*)&#34;</span>
-    <span style="color:#66d9ef">target_label</span>: keyspace
-    <span style="color:#66d9ef">replacement</span>: <span style="color:#e6db74">&#39;${2}&#39;</span>
-  - <span style="color:#66d9ef">source_labels</span>: [__name__]
-    <span style="color:#66d9ef">regex</span>: <span style="color:#e6db74">&#34;io_cassandrareaper_service_RepairRunner_repairProgress_(.*)_(.*)_(.*)&#34;</span>
-    <span style="color:#66d9ef">target_label</span>: runid
-    <span style="color:#66d9ef">replacement</span>: <span style="color:#e6db74">&#39;${3}&#39;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">  - <span style="color:#f92672">source_labels</span>: [<span style="color:#ae81ff">__name__]</span>
+    <span style="color:#f92672">regex</span>: <span style="color:#e6db74">&#34;io_cassandrareaper_service_RepairRunner_repairProgress_(.*)_(.*)_(.*)&#34;</span>
+    <span style="color:#f92672">target_label</span>: <span style="color:#ae81ff">cluster</span>
+    <span style="color:#f92672">replacement</span>: <span style="color:#e6db74">&#39;${1}&#39;</span>
+  - <span style="color:#f92672">source_labels</span>: [<span style="color:#ae81ff">__name__]</span>
+    <span style="color:#f92672">regex</span>: <span style="color:#e6db74">&#34;io_cassandrareaper_service_RepairRunner_repairProgress_(.*)_(.*)_(.*)&#34;</span>
+    <span style="color:#f92672">target_label</span>: <span style="color:#ae81ff">keyspace</span>
+    <span style="color:#f92672">replacement</span>: <span style="color:#e6db74">&#39;${2}&#39;</span>
+  - <span style="color:#f92672">source_labels</span>: [<span style="color:#ae81ff">__name__]</span>
+    <span style="color:#f92672">regex</span>: <span style="color:#e6db74">&#34;io_cassandrareaper_service_RepairRunner_repairProgress_(.*)_(.*)_(.*)&#34;</span>
+    <span style="color:#f92672">target_label</span>: <span style="color:#ae81ff">runid</span>
+    <span style="color:#f92672">replacement</span>: <span style="color:#e6db74">&#39;${3}&#39;</span>
 </code></pre></div><ul>
 <li>Once again, we match against the whole metric name.</li>
 <li>Each of the 3 items matches the same pattern that ends with three <code>_</code>-separated strings.</li>
@@ -376,10 +376,10 @@
 <pre><code>io_cassandrareaper_service_RepairRunner_repairProgress_testcluster_tlpstress_7c326d904ba811eaa7a0634758da0ae9{cluster=&quot;testcluster&quot;, keyspace=&quot;tlpstress&quot;, run_id=&quot;7c326d904ba811eaa7a0634758da0ae9&quot;}
 </code></pre><p>One last thing we might want to do is to modify the metric name itself. Not only we&rsquo;ll not have redundant information in our metrics, but we&rsquo;ll make querying for these metrics more convenient.</p>
 <p>To rename the metric, we use the same relabeling config, but target the <code>__name__</code> itself:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">  - <span style="color:#66d9ef">source_labels</span>: [__name__]
-    <span style="color:#66d9ef">regex</span>: <span style="color:#e6db74">&#34;io_cassandrareaper_service_RepairRunner_repairProgress_.*&#34;</span>
-    <span style="color:#66d9ef">target_label</span>: __name__
-    <span style="color:#66d9ef">replacement</span>: <span style="color:#e6db74">&#34;io_cassandrareaper_service_RepairRunner_repairProgress&#34;</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">  - <span style="color:#f92672">source_labels</span>: [<span style="color:#ae81ff">__name__]</span>
+    <span style="color:#f92672">regex</span>: <span style="color:#e6db74">&#34;io_cassandrareaper_service_RepairRunner_repairProgress_.*&#34;</span>
+    <span style="color:#f92672">target_label</span>: <span style="color:#ae81ff">__name__</span>
+    <span style="color:#f92672">replacement</span>: <span style="color:#e6db74">&#34;io_cassandrareaper_service_RepairRunner_repairProgress&#34;</span>
 </code></pre></div><p>With this in place, our final metric will look like this:</p>
 <pre><code>io_cassandrareaper_service_RepairRunner_repairProgress{cluster=&quot;testcluster&quot;, keyspace=&quot;tlpstress&quot;, run_id=&quot;7c326d904ba811eaa7a0634758da0ae9&quot;}
 </code></pre><p>Now, when building dashboards to monitor Reaper, we can simply query for <code>io_cassandrareaper_service_RepairRunner_repairProgress</code> and use the labels fro grouping etc.</p>

@@ -13,7 +13,7 @@
 
   
 
-  <meta name="generator" content="Hugo 0.69.2" />
+  <meta name="generator" content="Hugo 0.79.0" />
 
   <link href='//fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,500,700,800' rel='stylesheet' type='text/css'>
 
@@ -322,10 +322,10 @@
 
                         <h1 id="metrics-reporting">Metrics Reporting</h1>
 <p>Reaper metrics are provided via the <a href="http://www.dropwizard.io/1.1.4/docs/manual/configuration.html#metrics">Dropwizard Metrics</a> interface. The interface gives Reaper the ability to configure various metrics reporting systems. Metrics reporting can be configured in Reaper with the <strong>metrics</strong> property in the Reaper configuration YAML file. The <strong>metrics</strong> property has two fields; <strong>frequency</strong> and <strong>reporters</strong>. Specific metric reporters are defined in the <strong>reporters</strong> field as follows.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">metrics</span>:
-  <span style="color:#66d9ef">frequency</span>: <span style="color:#ae81ff">1</span> minute
-  <span style="color:#66d9ef">reporters</span>:
-    - <span style="color:#66d9ef">type</span>: &lt;type&gt;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">metrics</span>:
+  <span style="color:#f92672">frequency</span>: <span style="color:#ae81ff">1</span> <span style="color:#ae81ff">minute</span>
+  <span style="color:#f92672">reporters</span>:
+    - <span style="color:#f92672">type</span>: <span style="color:#ae81ff">&lt;type&gt;</span>
 </code></pre></div>
 
                     </div>
