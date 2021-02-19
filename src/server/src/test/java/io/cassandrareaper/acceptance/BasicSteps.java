@@ -1663,11 +1663,11 @@ public final class BasicSteps {
               }
 
               long readDroppedTotal = dropped.stream()
-                  .filter(drop -> "READ".equals(drop.getName()) || "READ_REQ".equals(drop.getName()))
+                  .filter(drop -> "READ".equals(drop.getName()))
                   .count();
 
               long readDroppedCount = dropped.stream()
-                  .filter(drop -> "READ".equals(drop.getName()) || "READ_REQ".equals(drop.getName()) )
+                  .filter(drop -> "READ".equals(drop.getName()))
                   .filter(drop -> drop.getCount() >= 0)
                   .count();
 
