@@ -273,6 +273,9 @@ final class RepairRunner implements Runnable {
         context.metricRegistry.register(
             metricNameForMillisSinceLastRepair,
             (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
+
+        context.metricRegistry.counter(
+          MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.DONE.toString())).inc();
       }
     }
   }
@@ -496,6 +499,9 @@ final class RepairRunner implements Runnable {
                   .endTime(DateTime.now())
                   .build(repairRunId));
 
+          context.metricRegistry.counter(
+            MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.ERROR.toString())).inc();
+
           killAndCleanupRunner();
         }
 
@@ -519,6 +525,9 @@ final class RepairRunner implements Runnable {
                       segment))
                   .endTime(DateTime.now())
                   .build(repairRunId));
+
+          context.metricRegistry.counter(
+            MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.ERROR.toString())).inc();
 
           killAndCleanupRunner();
         }
