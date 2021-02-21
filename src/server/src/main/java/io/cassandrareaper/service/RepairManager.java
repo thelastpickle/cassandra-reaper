@@ -424,6 +424,10 @@ public final class RepairManager implements AutoCloseable {
     if (!context.storage.updateRepairRun(updatedRun)) {
       throw new ReaperException("failed updating repair run " + updatedRun.getId());
     }
+
+    context.metricRegistry.counter(
+      MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.ABORTED.toString())).inc();
+
     return updatedRun;
   }
 
