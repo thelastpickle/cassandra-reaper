@@ -459,6 +459,17 @@ Default: *20*
 
 Reaper will prevent repair from overwhelming the cluster when lots of SSTables are streamed, by pausing segment processing if there are more than a specific number of pending compactions. Adjust this setting if you have a lot of tables in the cluster and the total number of pending compactions is usually high.
 
+### `maxParallelRepairs`
+
+_**Since 2.2.0**_
+
+Type: *Integer*
+
+Default: *2*
+
+Reaper allows concurrent segments from distinct repair runs running on the same nodes at the same time. In order to limit the repair load, it will only allow a limited number of repair runs to run concurrently (by default, two). Repair runs over the threshold will still start and be in `RUNNING` state, but their segments will be postposned as long as there are too many repairs being processed.  
+Setting this value too high could put a lot of pressure on clusters and negatively impact their performance. 
+
 <br/>
 
 ### `cryptograph`

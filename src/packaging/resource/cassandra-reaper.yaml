@@ -31,6 +31,7 @@ repairManagerSchedulingIntervalSeconds: 10
 activateQueryLogger: false
 jmxConnectionTimeoutInSeconds: 5
 useAddressTranslator: false
+maxParallelRepairs: 2
 # purgeRecordsAfterInDays: 30
 # numberOfRunsToKeepPerUnit: 10
 

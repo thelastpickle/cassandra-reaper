@@ -30,6 +30,7 @@ enableDynamicSeedList: true
 repairManagerSchedulingIntervalSeconds: 10
 jmxConnectionTimeoutInSeconds: 5
 useAddressTranslator: false
+maxParallelRepairs: 2
 # purgeRecordsAfterInDays: 30
 # numberOfRunsToKeepPerUnit: 10
 

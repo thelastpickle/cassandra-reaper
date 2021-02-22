@@ -31,9 +31,9 @@ repairManagerSchedulingIntervalSeconds: 10
 activateQueryLogger: false
 jmxConnectionTimeoutInSeconds: 5
 useAddressTranslator: false
+maxParallelRepairs: 2
 # purgeRecordsAfterInDays: 30
 # numberOfRunsToKeepPerUnit: 10
-enableConcurrentMigrations: false
 
 # datacenterAvailability has three possible values: ALL | LOCAL | EACH | SIDECAR
 # the correct value to use depends on whether jmx ports to C* nodes in remote datacenters are accessible
