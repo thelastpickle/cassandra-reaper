@@ -330,7 +330,32 @@
 <p>The Docker environment variables listed in this section map directly to Reaper specific settings in the <em>cassandra-reaper.yaml</em> configuration file. The following table below lists the Docker environment variables, their associated Reaper specific setting in the <em>cassandra-reaper.yaml</em> configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.</p>
 <!-- raw HTML omitted -->
 <!-- raw HTML omitted -->
-<p><strong>Note:</strong></p>
+<h2 id="using-address-translator-mapping">Using Address translator mapping</h2>
+<p>The Docker environment variables listed in this section are those related to the feature address translator mapping.</p>
+<!-- raw HTML omitted -->
+<p>Example :</p>
+<pre><code>REAPER_CASS_ADDRESS_TRANSLATOR_TYPE=multiIpPerNode
+REAPER_CASS_ADDRESS_TRANSLATOR_MAPPING=host1:ip1,host2:ip2
+</code></pre><p>config bloc at the container startup file &lsquo;/etc/cassandra-reaper.yml&rsquo; :</p>
+<pre><code> addressTranslator:
+    type: multiIpPerNode
+    ipTranslations:
+    - from: &quot;host1&quot;
+      to: &quot;ip1&quot;
+    - from: &quot;host2&quot;
+      to: &quot;ip2&quot;
+</code></pre><p>and the same thing for the jmx mapping</p>
+<pre><code>JMX_ADDRESS_TRANSLATOR_TYPE=multiIpPerNode
+JMX_ADDRESS_TRANSLATOR_MAPPING=host1:ip1,host2:ip2
+</code></pre><p>result</p>
+<pre><code>jmxAddressTranslator:
+  type: multiIpPerNode
+  ipTranslations:
+    - from: &quot;host1&quot;
+      to: &quot;ip1&quot;
+    - from: &quot;host2&quot;
+      to: &quot;ip2&quot;
+</code></pre><!-- raw HTML omitted -->
 <p>Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with the YAML parameter names:</p>
 <!-- raw HTML omitted -->
 <h2 id="associated-reaper-specific-configuration-settings">Associated Reaper Specific Configuration Settings</h2>
