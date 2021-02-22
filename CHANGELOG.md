@@ -1,5 +1,9 @@
 ## Change Log
 
+### 2.2.0 (2021/02/22 06:17 +00:00)
+- [26c710b](https://github.com/thelastpickle/cassandra-reaper/commit/26c710b2a32bea6add9a0ab25807c28ef942e490) New segment orchestration with concurrent repairs. (@adejanovski)
+- [bb797a3](https://github.com/thelastpickle/cassandra-reaper/commit/bb797a34f3ebbb452cb6dab7f2b90f2f3164d6fd) Fix the redirect for the custom ingress path, post Reaper UI login (@Jenishk56)
+
 ### 2.1.3 (2020/12/22 13:08 +00:00)
 - [3110511](https://github.com/thelastpickle/cassandra-reaper/commit/3110511ce32bc92141738851742ecce474ce0c56) Fix interrupted system call error for shiro initialization (@fatihafizoglu)
 - [0a8b915](https://github.com/thelastpickle/cassandra-reaper/commit/0a8b915021b158f17abce16b47594692883196e2) Remove redundant timeline.css (from older version of the package) (@burmanm)
