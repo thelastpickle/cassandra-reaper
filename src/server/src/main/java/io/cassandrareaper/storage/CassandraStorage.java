@@ -567,7 +567,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     initRunningRepairsPrepStmt
         = session
             .prepare(
-                "INSERT INTO reaper_db.running_repairs(repair_id, node)"
+                "INSERT INTO running_repairs(repair_id, node)"
                     + "values (?, ?) IF NOT EXISTS")
             .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
             .setConsistencyLevel(ConsistencyLevel.QUORUM)
@@ -575,7 +575,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     setRunningRepairsPrepStmt
       = session
         .prepare(
-            "UPDATE reaper_db.running_repairs USING TTL ?"
+            "UPDATE running_repairs USING TTL ?"
             + " SET reaper_instance_host = ?, reaper_instance_id = ?, segment_id = ?"
             + " WHERE repair_id = ? AND node = ? IF reaper_instance_id = ?")
         .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
@@ -586,7 +586,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       = session
       .prepare(
           "select repair_id, node, reaper_instance_host, reaper_instance_id, segment_id"
-          + " FROM reaper_db.running_repairs"
+          + " FROM running_repairs"
           + " WHERE repair_id = ?")
       .setConsistencyLevel(ConsistencyLevel.QUORUM);
   }

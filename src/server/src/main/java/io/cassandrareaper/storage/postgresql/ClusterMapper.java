@@ -69,6 +69,10 @@ public final class ClusterMapper implements ResultSetMapper<Cluster> {
         .withLastContact(lastContact)
         .withJmxPort(clusterProperties.getJmxPort());
 
+    if (null != clusterProperties.getJmxCredentials()) {
+      builder = builder.withJmxCredentials(clusterProperties.getJmxCredentials());
+    }
+
     if (null != rs.getString("partitioner")) {
       builder = builder.withPartitioner(rs.getString("partitioner"));
     }
