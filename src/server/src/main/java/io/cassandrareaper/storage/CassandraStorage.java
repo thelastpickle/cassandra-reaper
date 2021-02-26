@@ -201,7 +201,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement getDiagnosticEventPrepStmt;
   private PreparedStatement deleteDiagnosticEventPrepStmt;
   private PreparedStatement saveDiagnosticEventPrepStmt;
-  private PreparedStatement initRunningRepairsPrepStmt;
   private PreparedStatement setRunningRepairsPrepStmt;
   private PreparedStatement getRunningRepairsPrepStmt;
 
@@ -564,18 +563,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                     + "metric_scope, metric_name, ts, metric_attribute, value "
                     + "FROM node_metrics_v3 "
                     + "WHERE metric_domain = ? and metric_type = ? and cluster = ? and time_bucket = ? and host = ?");
-    initRunningRepairsPrepStmt
-        = session
-            .prepare(
-                "INSERT INTO reaper_db.running_repairs(repair_id, node)"
-                    + "values (?, ?) IF NOT EXISTS")
-            .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
-            .setConsistencyLevel(ConsistencyLevel.QUORUM)
-            .setIdempotent(false);
     setRunningRepairsPrepStmt
       = session
         .prepare(
-            "UPDATE reaper_db.running_repairs USING TTL ?"
+            "UPDATE running_repairs USING TTL ?"
             + " SET reaper_instance_host = ?, reaper_instance_id = ?, segment_id = ?"
             + " WHERE repair_id = ? AND node = ? IF reaper_instance_id = ?")
         .setSerialConsistencyLevel(ConsistencyLevel.SERIAL)
@@ -586,7 +577,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       = session
       .prepare(
           "select repair_id, node, reaper_instance_host, reaper_instance_id, segment_id"
-          + " FROM reaper_db.running_repairs"
+          + " FROM running_repairs"
           + " WHERE repair_id = ?")
       .setConsistencyLevel(ConsistencyLevel.QUORUM);
   }
@@ -2067,16 +2058,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       UUID repairId,
       UUID segmentId,
       Set<String> replicas) {
-    List<ResultSetFuture> futures = Lists.newArrayList();
-    for (String replica : replicas) {
-      // Maybe initialize the row for each node for that repair
-      futures.add(session.executeAsync(initRunningRepairsPrepStmt.bind(repairId, replica)));
-    }
-    try {
-      Futures.allAsList(futures).get();
-    } catch (InterruptedException | ExecutionException e) {
-      LOG.warn("Woah, that didn't feel right...", e);
-    }
 
     // Attempt to lock all the nodes involved in the segment
     BatchStatement batch = new BatchStatement();

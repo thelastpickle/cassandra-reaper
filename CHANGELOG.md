@@ -1,5 +1,9 @@
 ## Change Log
 
+### 2.2.1 (2021/02/24 14:14 +00:00)
+- [6beea94](https://github.com/thelastpickle/cassandra-reaper/commit/6beea94822642496338efd3cb336934787b57b15) Fix hardcoded keyspace names and bad pgsql cluster mapping (@adejanovski)
+- [5fc5677](https://github.com/thelastpickle/cassandra-reaper/commit/5fc567770a5acd08a3ee3420bc3d43a343ebe380) Further reduce the number of LWTs involved in segment orchestration (@adejanovski)
+
 ### 2.2.0 (2021/02/22 06:17 +00:00)
 - [26c710b](https://github.com/thelastpickle/cassandra-reaper/commit/26c710b2a32bea6add9a0ab25807c28ef942e490) New segment orchestration with concurrent repairs. (@adejanovski)
 - [bb797a3](https://github.com/thelastpickle/cassandra-reaper/commit/bb797a34f3ebbb452cb6dab7f2b90f2f3164d6fd) Fix the redirect for the custom ingress path, post Reaper UI login (@Jenishk56)
