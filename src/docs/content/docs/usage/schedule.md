@@ -39,4 +39,4 @@ Note that when choosing to add a new repair schedule, it is recommended to restr
 
 For example, if there are certain tables that contain valuable data or a business requirement for high consistency and high availability, they could be schedule to be repaired during low traffic periods.
 
-Note that scheduled repairs can be paused and deleted by users with access to the Reaper web interface. To add authentication security the web UI see the [authentication](../authentication) section for further information.
+Note that scheduled repairs can be paused and deleted by users with access to the Reaper web interface. To add authentication security the web UI see the [authentication](/docs/configuration/authentication) section for further information.
