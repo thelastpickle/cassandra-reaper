@@ -49,18 +49,18 @@ case "${TEST_TYPE}" in
                 ;;
             "local")
                 mvn -B package
-                mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperShiroIT
-                mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperIT
-                mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperH2IT
+                mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperShiroIT -Dcucumber.options="$CUCUMBER_OPTIONS"
+                mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperIT -Dcucumber.options="$CUCUMBER_OPTIONS"
+                mvn -B surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperH2IT -Dcucumber.options="$CUCUMBER_OPTIONS"
                 ;;
             "postgresql")
                 mvn -B package -DskipTests
-                mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperPostgresIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
+                mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperPostgresIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX} -Dcucumber.options="$CUCUMBER_OPTIONS"
                 ;;
             "cassandra"|"elassandra")
                 ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
                 mvn -B package -DskipTests
-                mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX}
+                mvn -B surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperCassandraIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX} -Dcucumber.options="$CUCUMBER_OPTIONS"
                 ;;
             *)
                 echo "Skipping, no actions for STORAGE_TYPE=${STORAGE_TYPE}."
@@ -81,11 +81,36 @@ case "${TEST_TYPE}" in
                 exit 1
                 ;;
             "postgresql")
-                mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperPostgresSidecarIT -Dcucumber.options="-t @sidecar"
+                mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperPostgresSidecarIT -Dcucumber.options="$CUCUMBER_OPTIONS"
                 ;;
             "cassandra")
                 ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
-                mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraSidecarIT -Dcucumber.options="-t @sidecar"
+                mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraSidecarIT -Dcucumber.options="$CUCUMBER_OPTIONS"
+                ;;
+            *)
+                echo "Skipping, no actions for STORAGE_TYPE=${STORAGE_TYPE}."
+                ;;
+        esac
+
+        ;;
+    "each")
+        mvn --version -B
+        mvn -B package -DskipTests
+        ccm start -v --no-wait --skip-wait-other-notice || true
+        sleep 30
+        ccm status
+
+        case "${STORAGE_TYPE}" in
+            "")
+                echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
+                exit 1
+                ;;
+            "postgresql")
+                mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperPostgresEachIT -Dcucumber.options="$CUCUMBER_OPTIONS"
+                ;;
+            "cassandra")
+                ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
+                mvn -B surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperCassandraEachIT -Dcucumber.options="$CUCUMBER_OPTIONS"
                 ;;
             *)
                 echo "Skipping, no actions for STORAGE_TYPE=${STORAGE_TYPE}."

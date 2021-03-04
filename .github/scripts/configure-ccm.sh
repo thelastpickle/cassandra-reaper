@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright 2021- DataStax Inc.
 # Copyright 2017-2019 The Last Pickle Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -73,6 +74,16 @@ case "${TEST_TYPE}" in
         # use "2:0" to ensure the first datacenter name is "dc1" instead of "datacenter1", so to be compatible with CircleCI tests
         ccm populate --vnodes -n 2:0 > /dev/null
         for i in `seq 1 2` ; do
+          sed -i 's/LOCAL_JMX=yes/LOCAL_JMX=no/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+          sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+          configure_ccm $i
+        done
+        ;;
+    "each")
+        ccm create test -v $CASSANDRA_VERSION > /dev/null
+        # use "2:0" to ensure the first datacenter name is "dc1" instead of "datacenter1", so to be compatible with CircleCI tests
+        ccm populate --vnodes -n 2:2 > /dev/null
+        for i in `seq 1 4` ; do
           sed -i 's/LOCAL_JMX=yes/LOCAL_JMX=no/' ~/.ccm/test/node$i/conf/cassandra-env.sh
           sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' ~/.ccm/test/node$i/conf/cassandra-env.sh
           configure_ccm $i
