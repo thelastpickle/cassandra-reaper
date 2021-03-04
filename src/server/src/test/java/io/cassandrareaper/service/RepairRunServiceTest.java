@@ -212,7 +212,7 @@ public final class RepairRunServiceTest {
   }
 
   @Test
-  public void generateSegmentsTest() throws ReaperException {
+  public void generateSegmentsTest() throws ReaperException, UnknownHostException {
     Cluster cluster = Cluster.builder()
         .withName("test_" + RandomStringUtils.randomAlphabetic(12))
         .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2", "127.0.0.3"))
