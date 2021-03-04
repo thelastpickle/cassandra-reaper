@@ -25,7 +25,6 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.ClusterProperties;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.GenericMetric;
-import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.Builder;
 import io.cassandrareaper.core.RepairRun.RunState;
@@ -97,7 +96,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.util.Duration;
 import org.apache.cassandra.repair.RepairParallelism;
@@ -1617,92 +1615,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             reaperInstanceId));
 
     return lwtResult.wasApplied();
-  }
-
-  @Override
-  public void storeNodeMetrics(UUID runId, NodeMetrics nodeMetrics) {
-    long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
-    storeNodeMetricsImpl(runId, nodeMetrics, minute);
-    storeNodeMetricsImpl(runId, nodeMetrics, minute + 1);
-    storeNodeMetricsImpl(runId, nodeMetrics, minute + 2);
-  }
-
-  private void storeNodeMetricsImpl(UUID runId, NodeMetrics nodeMetrics, long minute) {
-    session.executeAsync(
-        storeNodeMetricsPrepStmt.bind(
-            minute,
-            runId,
-            nodeMetrics.getNode(),
-            nodeMetrics.getDatacenter(),
-            nodeMetrics.getCluster(),
-            nodeMetrics.isRequested(),
-            nodeMetrics.getPendingCompactions(),
-            nodeMetrics.hasRepairRunning(),
-            nodeMetrics.getActiveAnticompactions()));
-  }
-
-  @Override
-  public Collection<NodeMetrics> getNodeMetrics(UUID runId) {
-    List<ResultSetFuture> futures = Lists.newArrayList();
-    long minuteBefore = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - 60_000);
-    long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
-    futures.add(session.executeAsync(getNodeMetricsPrepStmt.bind(minuteBefore, runId)));
-    futures.add(session.executeAsync(getNodeMetricsPrepStmt.bind(minute, runId)));
-    ListenableFuture<List<ResultSet>> results = Futures.successfulAsList(futures);
-    try {
-      Set<NodeMetrics> metrics = results.get()
-               .stream()
-               .map(result -> result.all())
-               .flatMap(Collection::stream)
-               .map(row -> createNodeMetrics(row))
-               .collect(Collectors.toSet());
-      return metrics;
-    } catch (InterruptedException | ExecutionException e) {
-      LOG.warn("Failed collecting metrics requests for run {}", runId, e);
-      return Collections.emptySet();
-    }
-  }
-
-  @Override
-  public Optional<NodeMetrics> getNodeMetrics(UUID runId, String node) {
-    List<ResultSetFuture> futures = Lists.newArrayList();
-    long minuteBefore = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - 60_000);
-    long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
-    futures.add(session.executeAsync(getNodeMetricsByNodePrepStmt.bind(minute, runId, node)));
-    futures.add(session.executeAsync(getNodeMetricsByNodePrepStmt.bind(minuteBefore, runId, node)));
-    ListenableFuture<List<ResultSet>> results = Futures.successfulAsList(futures);
-    try {
-      for (ResultSet result:results.get()) {
-        for (Row row:result) {
-          return Optional.of(createNodeMetrics(row));
-        }
-      }
-    } catch (InterruptedException | ExecutionException e) {
-      LOG.warn("Failed grabbing metrics for node {}. Will try again later.", node, e);
-    }
-    return Optional.empty();
-  }
-
-  @Override
-  public void deleteNodeMetrics(UUID runId, String node) {
-    long minute = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
-    LOG.info("Deleting metrics for node {}", node);
-    session.executeAsync(delNodeMetricsByNodePrepStmt.bind(minute, runId, node));
-  }
-
-  @Override
-  public void purgeNodeMetrics() {}
-
-  private static NodeMetrics createNodeMetrics(Row row) {
-    return NodeMetrics.builder()
-        .withNode(row.getString("node"))
-        .withDatacenter(row.getString("datacenter"))
-        .withCluster(row.getString("cluster"))
-        .withRequested(row.getBool("requested"))
-        .withPendingCompactions(row.getInt("pending_compactions"))
-        .withHasRepairRunning(row.getBool("has_repair_running"))
-        .withActiveAnticompactions(row.getInt("active_anticompactions"))
-        .build();
   }
 
   @Override

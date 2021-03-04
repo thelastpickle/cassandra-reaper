@@ -19,7 +19,6 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.core.GenericMetric;
-import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.storage.postgresql.IStoragePostgreSql;
 import io.cassandrareaper.storage.postgresql.UuidUtil;
 
@@ -35,7 +34,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -204,92 +202,6 @@ public class PostgresStorageTest {
     storage.saveHeartbeat();
     int numReapers = storage.countRunningReapers();
     Assertions.assertThat(numReapers).isEqualTo(1);
-  }
-
-  @Test
-  public void testNodeMetrics() {
-    DBI dbi = new DBI(DB_URL);
-    UUID reaperInstanceId = UUID.randomUUID();
-    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi);
-    Assertions.assertThat(storage.isStorageConnected()).isTrue();
-
-    Handle handle = dbi.open();
-    handle.execute("DELETE from node_metrics_v1");
-
-    UUID runId = UUID.randomUUID();
-
-    // test empty result set
-    ArrayList<NodeMetrics> emptyNmList = (ArrayList<NodeMetrics>) storage.getNodeMetrics(runId);
-    Assertions.assertThat(emptyNmList.size()).isEqualTo(0);
-
-    NodeMetrics originalNm = NodeMetrics.builder()
-        .withNode("fake_node")
-        .withCluster("fake_cluster")
-        .withDatacenter("NYDC")
-        .withHasRepairRunning(true)
-        .withPendingCompactions(4)
-        .withActiveAnticompactions(1)
-        .build();
-
-    storage.storeNodeMetrics(runId, originalNm);
-    ArrayList<NodeMetrics> nodeMetricsList = (ArrayList<NodeMetrics>) storage.getNodeMetrics(runId);
-    Assertions.assertThat(nodeMetricsList.size()).isEqualTo(1);
-
-    NodeMetrics fetchedNm = nodeMetricsList.get(0);
-    Assertions.assertThat(fetchedNm.getNode()).isEqualTo(originalNm.getNode());
-    Assertions.assertThat(fetchedNm.getCluster()).isEqualTo(originalNm.getCluster());
-    Assertions.assertThat(fetchedNm.getDatacenter()).isEqualTo(originalNm.getDatacenter());
-    Assertions.assertThat(fetchedNm.hasRepairRunning()).isEqualTo(originalNm.hasRepairRunning());
-    Assertions.assertThat(fetchedNm.getPendingCompactions()).isEqualTo(originalNm.getPendingCompactions());
-    Assertions.assertThat(fetchedNm.getActiveAnticompactions()).isEqualTo(originalNm.getActiveAnticompactions());
-  }
-
-  @Test
-  public void testNodeMetricsByNode() throws InterruptedException {
-    DBI dbi = new DBI(DB_URL);
-    UUID reaperInstanceId = UUID.randomUUID();
-    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi);
-    Assertions.assertThat(storage.isStorageConnected()).isTrue();
-
-    Handle handle = dbi.open();
-    handle.execute("DELETE from node_metrics_v1");
-
-    UUID runId = UUID.randomUUID();
-
-    NodeMetrics nmRequest = NodeMetrics.builder()
-        .withNode("fake_node1")
-        .withCluster("fake_cluster")
-        .withDatacenter("NYDC")
-        .withRequested(true)
-        .build();
-
-    NodeMetrics nm1 = NodeMetrics.builder()
-        .withNode("fake_node1")
-        .withCluster("fake_cluster")
-        .withDatacenter("NYDC")
-        .withHasRepairRunning(true)
-        .withPendingCompactions(4)
-        .withActiveAnticompactions(1)
-        .build();
-
-    // store a metric request and a metric response
-    storage.storeNodeMetrics(runId, nmRequest);
-    TimeUnit.MILLISECONDS.sleep(100);
-    storage.storeNodeMetrics(runId, nm1);
-
-    Optional<NodeMetrics> fetchedNm1Opt = storage.getNodeMetrics(runId, "fake_node1");
-    Assertions.assertThat(fetchedNm1Opt.isPresent()).isTrue();
-    NodeMetrics fetchedNm1 = fetchedNm1Opt.get();
-    Assertions.assertThat(fetchedNm1.getNode()).isEqualTo(nm1.getNode());
-    Assertions.assertThat(fetchedNm1.getCluster()).isEqualTo(nm1.getCluster());
-    Assertions.assertThat(fetchedNm1.getDatacenter()).isEqualTo(nm1.getDatacenter());
-    Assertions.assertThat(fetchedNm1.hasRepairRunning()).isEqualTo(nm1.hasRepairRunning());
-    Assertions.assertThat(fetchedNm1.getPendingCompactions()).isEqualTo(nm1.getPendingCompactions());
-    Assertions.assertThat(fetchedNm1.getActiveAnticompactions()).isEqualTo(nm1.getActiveAnticompactions());
-
-    // test that fetching a non-existent metric returns Optional.Empty()
-    Optional<NodeMetrics> fetchedNm2Opt = storage.getNodeMetrics(runId, "fake_node2");
-    Assertions.assertThat(fetchedNm2Opt.isPresent()).isFalse();
   }
 
   @Test
@@ -479,87 +391,5 @@ public class PostgresStorageTest {
         .execute();
 
     Assertions.assertThat(rowsUpdated).isEqualTo(1);  // should update b/c original entry has expired
-  }
-
-  @Test
-  public void testDeleteOldNodeMetrics() throws InterruptedException {
-    System.out.println("Testing metrics timeout (this will take a minute)...");
-    DBI dbi = new DBI(DB_URL);
-    UUID reaperInstanceId = UUID.randomUUID();
-    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi, 1, 1, 1, 1);
-    Assertions.assertThat(storage.isStorageConnected()).isTrue();
-
-    Handle handle = dbi.open();
-    handle.execute("DELETE from node_metrics_v1");
-
-    UUID runId = UUID.randomUUID();
-    NodeMetrics originalNm = NodeMetrics.builder()
-        .withNode("fake_node")
-        .withCluster("fake_cluster")
-        .withDatacenter("NYDC")
-        .withHasRepairRunning(true)
-        .withPendingCompactions(4)
-        .withActiveAnticompactions(1)
-        .build();
-    storage.storeNodeMetrics(runId, originalNm);
-
-    // first delete attempt shouldn't do anything because the entry hasn't passed its expiration time
-    storage.purgeNodeMetrics();
-    int numMetrics = handle.createQuery("SELECT COUNT(*) FROM node_metrics_v1")
-        .mapTo(Integer.class)
-        .first();
-    Assertions.assertThat(numMetrics).isEqualTo(1);
-
-    TimeUnit.SECONDS.sleep(61);
-
-    // second delete attempt should work because entry has passed its expiration time
-    storage.purgeNodeMetrics();
-    numMetrics = handle.createQuery("SELECT COUNT(*) FROM node_metrics_v1")
-        .mapTo(Integer.class)
-        .first();
-    Assertions.assertThat(numMetrics).isEqualTo(0);
-  }
-
-  @Test
-  public void testManualDeleteNodeMetrics() {
-    DBI dbi = new DBI(DB_URL);
-    UUID reaperInstanceId = UUID.randomUUID();
-    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi);
-    Assertions.assertThat(storage.isStorageConnected()).isTrue();
-
-    Handle handle = dbi.open();
-    handle.execute("DELETE from node_metrics_v1");
-
-    UUID runId = UUID.randomUUID();
-    NodeMetrics nm1 = NodeMetrics.builder()
-        .withNode("fake_node_1")
-        .withCluster("fake_cluster")
-        .withDatacenter("NYDC")
-        .withHasRepairRunning(true)
-        .withPendingCompactions(4)
-        .withActiveAnticompactions(1)
-        .build();
-    NodeMetrics nm2 = NodeMetrics.builder()
-        .withNode("fake_node2")
-        .withCluster("fake_cluster")
-        .withDatacenter("NYDC")
-        .withHasRepairRunning(true)
-        .withPendingCompactions(4)
-        .withActiveAnticompactions(1)
-        .build();
-    storage.storeNodeMetrics(runId, nm1);
-    storage.storeNodeMetrics(runId, nm2);
-
-    int numMetrics = handle.createQuery("SELECT COUNT(*) FROM node_metrics_v1")
-        .mapTo(Integer.class)
-        .first();
-    Assertions.assertThat(numMetrics).isEqualTo(2);
-
-    // delete metrics from table for fake_node_1 and verify delete succeeds
-    storage.deleteNodeMetrics(runId, "fake_node_1");
-    numMetrics = handle.createQuery("SELECT COUNT(*) FROM node_metrics_v1")
-        .mapTo(Integer.class)
-        .first();
-    Assertions.assertThat(numMetrics).isEqualTo(1);
   }
 }

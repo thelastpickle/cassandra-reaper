@@ -458,7 +458,7 @@ public final class ClusterFacade {
       throws MalformedObjectNameException, ReflectionException, ReaperException, InterruptedException, IOException {
 
     LOG.debug("Listing active compactions for node {}", node);
-    String nodeDc = getDatacenter(node);
+    String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
     if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
       LOG.debug("Yay!! Node {} in DC {} is accessible through JMX", node.getHostname(), nodeDc);
       // We have direct JMX access to the node
@@ -538,7 +538,7 @@ public final class ClusterFacade {
    */
   public List<MetricsHistogram> getClientRequestLatencies(Node node) throws ReaperException {
     try {
-      String nodeDc = getDatacenter(node);
+      String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
         MetricsProxy metricsProxy = MetricsProxy.create(connect(node));
         return convertToMetricsHistogram(
@@ -553,7 +553,7 @@ public final class ClusterFacade {
                 "ClientRequest",
                 DateTime.now().minusMinutes(METRICS_PARTITIONING_TIME_MINS + 1).getMillis()));
       }
-    } catch (JMException | InterruptedException | IOException e) {
+    } catch (JMException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", node, e);
       throw new ReaperException(e);
     }
@@ -568,7 +568,7 @@ public final class ClusterFacade {
    */
   public List<DroppedMessages> getDroppedMessages(Node node) throws ReaperException {
     try {
-      String nodeDc = getDatacenter(node);
+      String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
         MetricsProxy proxy = MetricsProxy.create(connect(node));
         return convertToDroppedMessages(MetricsProxy.convertToGenericMetrics(proxy.collectDroppedMessages(), node));
@@ -581,7 +581,7 @@ public final class ClusterFacade {
                 "DroppedMessage",
                 DateTime.now().minusMinutes(1).getMillis()));
       }
-    } catch (JMException | InterruptedException | IOException e) {
+    } catch (JMException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", node, e);
       throw new ReaperException(e);
     }
@@ -611,7 +611,7 @@ public final class ClusterFacade {
    */
   public List<ThreadPoolStat> getTpStats(Node node) throws ReaperException {
     try {
-      String nodeDc = getDatacenter(node);
+      String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
         MetricsProxy proxy = MetricsProxy.create(connect(node));
         return convertToThreadPoolStats(MetricsProxy.convertToGenericMetrics(proxy.collectTpStats(), node));
@@ -624,7 +624,7 @@ public final class ClusterFacade {
                 "ThreadPools",
                 DateTime.now().minusMinutes(1).getMillis()));
       }
-    } catch (JMException | InterruptedException | IOException e) {
+    } catch (JMException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", node, e);
       throw new ReaperException(e);
     }
@@ -697,11 +697,16 @@ public final class ClusterFacade {
    */
   public List<Snapshot> listSnapshots(Node host) throws ReaperException {
     try {
-      return SnapshotProxy.create(connect(host)).listSnapshots();
+      if (context.config.getDatacenterAvailability().isInCollocatedMode()
+          && context.jmxConnectionFactory.getHostConnectionCounters().getSuccessfulConnections(
+              host.getHostname()) >= 0) {
+        return SnapshotProxy.create(connect(host)).listSnapshots();
+      }
     } catch (UnsupportedOperationException unsupported) {
       LOG.debug("Listing snapshot is unsupported with Cassandra 2.0 and prior");
       throw unsupported;
     }
+    return Collections.emptyList();
   }
 
   /**
@@ -731,7 +736,7 @@ public final class ClusterFacade {
    */
   public List<StreamSession> listActiveStreams(Node node)
       throws ReaperException, InterruptedException, IOException {
-    String nodeDc = getDatacenter(node);
+    String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
     if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
       // We have direct JMX access to the node
       return listStreamsDirect(node);
@@ -741,8 +746,11 @@ public final class ClusterFacade {
 
       String streamsJson = ((IDistributedStorage) context.storage)
           .listOperations(node.getClusterName(), OpType.OP_STREAMING, node.getHostname());
+      if (streamsJson.length() > 0) {
+        return parseStreamSessionJson(streamsJson);
+      }
 
-      return parseStreamSessionJson(streamsJson);
+      return Collections.emptyList();
     }
   }
 

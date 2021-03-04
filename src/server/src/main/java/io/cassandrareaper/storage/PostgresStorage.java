@@ -21,7 +21,6 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.GenericMetric;
-import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -808,78 +807,6 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
     }
     LOG.warn("Failed to get running reaper count from storage");
     return 1;
-  }
-
-  @Override
-  public void storeNodeMetrics(UUID runId, NodeMetrics nodeMetrics) {
-    if (null != jdbi) {
-      try (Handle h = jdbi.open()) {
-        getPostgresStorage(h).storeNodeMetrics(
-            UuidUtil.toSequenceId(runId),
-            nodeMetrics.getNode(),
-            nodeMetrics.getCluster(),
-            nodeMetrics.getDatacenter(),
-            nodeMetrics.isRequested(),
-            nodeMetrics.getPendingCompactions(),
-            nodeMetrics.hasRepairRunning(),
-            nodeMetrics.getActiveAnticompactions()
-        );
-      }
-    }
-  }
-
-  @Override
-  public Collection<NodeMetrics> getNodeMetrics(UUID runId) {
-    if (null != jdbi) {
-      try (Handle h = jdbi.open()) {
-        Instant expirationTime = getExpirationTime(reaperTimeout);
-        return getPostgresStorage(h).getNodeMetrics(
-          UuidUtil.toSequenceId(runId),
-          expirationTime
-        );
-      }
-    }
-    return new ArrayList<>();
-  }
-
-  @Override
-  public Optional<NodeMetrics> getNodeMetrics(UUID runId, String node) {
-    if (null != jdbi) {
-      try (Handle h = jdbi.open()) {
-        Instant expirationTime = getExpirationTime(reaperTimeout);
-        NodeMetrics nm = getPostgresStorage(h).getNodeMetricsByNode(
-            UuidUtil.toSequenceId(runId),
-            expirationTime,
-            node
-        );
-        if (nm != null) {
-          return Optional.of(nm);
-        }
-      }
-    }
-    return Optional.empty();
-  }
-
-  @Override
-  public void deleteNodeMetrics(UUID runId, String node) {
-    if (null != jdbi) {
-      try (Handle h = jdbi.open()) {
-        getPostgresStorage(h).deleteNodeMetricsByNode(
-            UuidUtil.toSequenceId(runId),
-            node
-        );
-      }
-    }
-  }
-
-  @Override
-  public void purgeNodeMetrics() {
-    if (null != jdbi) {
-      try (Handle h = jdbi.open()) {
-        Instant expirationTime = getExpirationTime(reaperTimeout);
-        getPostgresStorage(h).purgeOldNodeMetrics(expirationTime);
-      }
-    }
   }
 
   @Override

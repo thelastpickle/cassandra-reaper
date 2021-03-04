@@ -19,6 +19,7 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 
+import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.Random;
 
@@ -33,12 +34,15 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
-
+import static org.mockito.ArgumentMatchers.any;
 public final class JmxProxyTest {
 
-  public static JmxProxy mockJmxProxyImpl() {
+  public static JmxProxy mockJmxProxyImpl() throws UnknownHostException {
     JmxProxyImpl impl = Mockito.mock(JmxProxyImpl.class);
     Mockito.when(impl.getUntranslatedHost()).thenReturn("test-host-" + new Random().nextInt());
+    EndpointSnitchInfoMBean endpointSnitchInfoMBean = Mockito.mock(EndpointSnitchInfoMBean.class);
+    Mockito.when(endpointSnitchInfoMBean.getDatacenter(any())).thenReturn("dc1");
+    Mockito.when(impl.getEndpointSnitchInfoMBean()).thenReturn(endpointSnitchInfoMBean);
     return impl;
   }
 

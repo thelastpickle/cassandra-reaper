@@ -1007,8 +1007,6 @@ public final class RepairRunnerTest {
           .repairParallelism(RepairParallelism.PARALLEL)
           .tables(TABLES).build(UUID.randomUUID());
 
-    when(((IDistributedStorage) context.storage).getNodeMetrics(any(), any()))
-        .thenReturn(Optional.empty());
     Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
     Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
     Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
@@ -1042,9 +1040,6 @@ public final class RepairRunnerTest {
     Pair<String, Callable<Optional<CompactionStats>>> result = repairRunner.getNodeMetrics("node-some", "dc1", "dc2");
     assertFalse(result.getRight().call().isPresent());
     verify(jmxConnectionFactory, times(0)).connectAny(any(Collection.class));
-    // Verify that we didn't call any method that is used in getRemoteNodeMetrics()
-    verify((CassandraStorage)context.storage, times(0)).storeNodeMetrics(any(), any());
-    verify((CassandraStorage)context.storage, times(0)).getNodeMetrics(any(), any());
   }
 
   @Test

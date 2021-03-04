@@ -144,7 +144,6 @@ public final class PurgeService {
         storage.purgeMetrics();
         storage.purgeNodeOperations();
       }
-      storage.purgeNodeMetrics();
     }
   }
 }
