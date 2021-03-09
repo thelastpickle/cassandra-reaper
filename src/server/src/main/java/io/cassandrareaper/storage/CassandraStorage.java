@@ -51,6 +51,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -1896,19 +1898,34 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public void storeMetric(GenericMetric metric) {
-    session.execute(
-        storeMetricsPrepStmt.bind(
-            metric.getClusterName(),
-            metric.getMetricDomain(),
-            metric.getMetricType(),
-            computeMetricsPartition(metric.getTs()).toString(TIME_BUCKET_FORMATTER),
-            metric.getHost(),
-            metric.getMetricScope(),
-            metric.getMetricName(),
-            computeMetricsPartition(metric.getTs()),
-            metric.getMetricAttribute(),
-            metric.getValue()));
+  public void storeMetrics(List<GenericMetric> metrics) {
+    Map<String, List<GenericMetric>> metricsPerPartition = metrics.stream()
+        .collect(Collectors.groupingBy(metric ->
+          metric.getClusterName()
+          + metric.getMetricDomain()
+          + metric.getMetricType()
+          + computeMetricsPartition(metric.getTs()).toString(TIME_BUCKET_FORMATTER)
+          + metric.getHost()
+          ));
+
+    for (Entry<String, List<GenericMetric>> metricPartition:metricsPerPartition.entrySet()) {
+      BatchStatement batch = new BatchStatement(BatchStatement.Type.UNLOGGED);
+      for (GenericMetric metric:metricPartition.getValue()) {
+        batch.add(
+            storeMetricsPrepStmt.bind(
+              metric.getClusterName(),
+              metric.getMetricDomain(),
+              metric.getMetricType(),
+              computeMetricsPartition(metric.getTs()).toString(TIME_BUCKET_FORMATTER),
+              metric.getHost(),
+              metric.getMetricScope(),
+              metric.getMetricName(),
+              computeMetricsPartition(metric.getTs()),
+              metric.getMetricAttribute(),
+              metric.getValue()));
+      }
+      session.execute(batch);
+    }
   }
 
   /**
