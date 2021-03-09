@@ -1,4 +1,4 @@
-### Cassandra Reaper UI
+### Reaper for Apache Cassandra UI
 
 #### Thanks to
 
@@ -7,7 +7,7 @@ This subdirectory is a fork of the original [cassandra-reaper-ui project](https:
 
 #### About
 
-Complimentary web UI for [Cassandra Reaper](https://github.com/thelastpickle/cassandra-reaper).
+Complimentary web UI for [Reaper for Apache Cassandra](https://github.com/thelastpickle/cassandra-reaper).
 
 #### Installation
 

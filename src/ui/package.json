@@ -1,7 +1,7 @@
 {
   "name": "cassandra-reaper-ui",
   "version": "0.2.0",
-  "description": "Interactive web UI for Cassandra Reaper",
+  "description": "Interactive web UI for Reaper for Apache Cassandra",
   "main": "index.js",
   "keywords": [
     "cassandra"

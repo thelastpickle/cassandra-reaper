@@ -351,9 +351,9 @@ def _parse_arguments(command, description, usage=None, extra_arguments=None):
 # === The actual CLI ========================================================================
 
 SPREAPER_DESCRIPTION = \
-    """Cassandra Reaper is a centralized, stateful, and highly configurable
+    """Reaper for Apache Cassandra is a centralized, stateful, and highly configurable
     tool for running Cassandra repairs for multi-site clusters.
-    This CLI tool is used to control the Cassandra Reaper service through
+    This CLI tool is used to control the Reaper for Apache Cassandra service through
     its REST API.
 
     First register your cluster with "add-cluster" command,
@@ -502,7 +502,7 @@ class ReaperCLI(object):
         printq("# Sending PING to Reaper...")
         answer = reaper.get("ping")
         printq("# [Reply] {}".format(answer))
-        printq("# Cassandra Reaper is answering in: {0}:{1}".format(args.reaper_host, args.reaper_port))
+        printq("# Reaper for Apache Cassandra is answering in: {0}:{1}".format(args.reaper_host, args.reaper_port))
 
     def list_clusters(self):
         reaper, args = ReaperCLI.prepare_reaper(

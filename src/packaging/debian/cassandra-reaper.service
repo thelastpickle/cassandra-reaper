@@ -13,7 +13,7 @@
 # limitations under the License.
 
 [Unit]
-Description=Cassandra Reaper
+Description=Reaper for Apache Cassandra
 Documentation=http://cassandra-reaper.io/
 Wants=remote-fs.target syslog.socket
 After=remote-fs.target syslog.socket

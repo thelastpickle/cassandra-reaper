@@ -69,7 +69,7 @@ const loginForm = CreateReactClass({
     const form = <div className="row">
       <div className="col-lg-12">
         <div className="col-lg-4">&nbsp;</div>
-        <div className="col-lg-4"><h2>Cassandra Reaper</h2></div>
+        <div className="col-lg-4"><h2>Reaper for Apache Cassandra</h2></div>
         <div className="col-lg-4">&nbsp;</div>
       </div>
       <div className="col-lg-12">
