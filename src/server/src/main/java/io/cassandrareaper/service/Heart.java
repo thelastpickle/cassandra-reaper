@@ -1,6 +1,7 @@
 /*
  * Copyright 2017-2017 Spotify AB
  * Copyright 2017-2019 The Last Pickle Ltd
+ * Copyright 2021-2021 DataStax, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +51,7 @@ public final class Heart implements AutoCloseable {
 
   private static final AtomicBoolean GAUGES_REGISTERED = new AtomicBoolean(false);
   private static final Logger LOG = LoggerFactory.getLogger(Heart.class);
-  private static final long DEFAULT_MAX_FREQUENCY = TimeUnit.SECONDS.toMillis(30);
+  private static final long DEFAULT_MAX_FREQUENCY = TimeUnit.SECONDS.toMillis(60);
 
   private final AtomicLong lastBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
   private final AtomicLong lastMetricBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));

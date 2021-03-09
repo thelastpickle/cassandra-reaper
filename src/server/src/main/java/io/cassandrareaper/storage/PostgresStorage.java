@@ -841,52 +841,54 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public void storeMetric(GenericMetric metric) {
+  public void storeMetrics(List<GenericMetric> metrics) {
     if (null != jdbi) {
       try (Handle h = jdbi.open()) {
-        Instant metricTs = Instant.ofEpochMilli(metric.getTs().getMillis());
-        IStoragePostgreSql storage = getPostgresStorage(h);
-        int rowsUpdated = storage.updateMetricSourceNodeTimestamp(
-            metric.getClusterName(),
-            metric.getHost(),
-            metricTs
-        );
-        if (rowsUpdated == 0) {
+        for (GenericMetric metric:metrics) {
+          Instant metricTs = Instant.ofEpochMilli(metric.getTs().getMillis());
+          IStoragePostgreSql storage = getPostgresStorage(h);
+          int rowsUpdated = storage.updateMetricSourceNodeTimestamp(
+              metric.getClusterName(),
+              metric.getHost(),
+              metricTs
+          );
+          if (rowsUpdated == 0) {
+            try {
+              storage.insertMetricSourceNode(metric.getClusterName(), metric.getHost(), metricTs);
+            } catch (UnableToExecuteStatementException e) {
+              if (!JdbiExceptionUtil.isDuplicateKeyError(e)) {
+                LOG.error("Unable to update GenericMetric source nodes table");
+                throw e;
+              }
+            }
+          }
+
           try {
-            storage.insertMetricSourceNode(metric.getClusterName(), metric.getHost(), metricTs);
+            storage.insertMetricType(
+                metric.getMetricDomain(),
+                metric.getMetricType(),
+                metric.getMetricScope(),
+                metric.getMetricName(),
+                metric.getMetricAttribute()
+            );
           } catch (UnableToExecuteStatementException e) {
             if (!JdbiExceptionUtil.isDuplicateKeyError(e)) {
-              LOG.error("Unable to update GenericMetric source nodes table");
+              LOG.error("Unable to update GenericMetric metric types table");
               throw e;
             }
           }
-        }
-
-        try {
-          storage.insertMetricType(
+          storage.insertMetric(
+              metric.getClusterName(),
+              metric.getHost(),
+              metricTs,
               metric.getMetricDomain(),
               metric.getMetricType(),
               metric.getMetricScope(),
               metric.getMetricName(),
-              metric.getMetricAttribute()
+              metric.getMetricAttribute(),
+              metric.getValue()
           );
-        } catch (UnableToExecuteStatementException e) {
-          if (!JdbiExceptionUtil.isDuplicateKeyError(e)) {
-            LOG.error("Unable to update GenericMetric metric types table");
-            throw e;
-          }
         }
-        storage.insertMetric(
-            metric.getClusterName(),
-            metric.getHost(),
-            metricTs,
-            metric.getMetricDomain(),
-            metric.getMetricType(),
-            metric.getMetricScope(),
-            metric.getMetricName(),
-            metric.getMetricAttribute(),
-            metric.getValue()
-        );
       }
     }
   }
