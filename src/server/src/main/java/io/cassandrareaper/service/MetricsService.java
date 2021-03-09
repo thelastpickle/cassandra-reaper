@@ -35,6 +35,7 @@ import io.cassandrareaper.storage.OpType;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 
 import javax.management.JMException;
 
@@ -127,20 +128,20 @@ public final class MetricsService {
     return metrics;
   }
 
-  void grabAndStoreGenericMetrics() throws ReaperException, InterruptedException, JMException {
+  void grabAndStoreGenericMetrics(Optional<Node> maybeNode) throws ReaperException, InterruptedException, JMException {
     Preconditions.checkState(
-        context.config.isInSidecarMode(),
-        "grabAndStoreGenericMetrics() can only be called in sidecar");
+        context.config.getDatacenterAvailability().isInCollocatedMode(),
+        "grabAndStoreGenericMetrics() can only be called in collocated mode");
 
-    Node node
-        = Node.builder()
-            .withHostname(context.getLocalNodeAddress())
-            .withCluster(
-                Cluster.builder()
-                    .withName(localClusterName)
-                    .withSeedHosts(ImmutableSet.of(context.getLocalNodeAddress()))
-                    .build())
-            .build();
+    Node node = maybeNode.orElseGet(() ->
+        Node.builder()
+          .withHostname(context.getLocalNodeAddress())
+          .withCluster(
+              Cluster.builder()
+                  .withName(localClusterName)
+                  .withSeedHosts(ImmutableSet.of(context.getLocalNodeAddress()))
+                  .build())
+          .build());
 
     List<GenericMetric> metrics
         = convertToGenericMetrics(ClusterFacade.create(context).collectMetrics(node, COLLECTED_METRICS), node);
@@ -148,43 +149,63 @@ public final class MetricsService {
     for (GenericMetric metric:metrics) {
       ((IDistributedStorage)context.storage).storeMetric(metric);
     }
-    LOG.debug("Grabbing and storing metrics for {}", context.getLocalNodeAddress());
+    LOG.debug("Grabbing and storing metrics for {}", node.getHostname());
 
   }
 
-  void grabAndStoreCompactionStats() throws JsonProcessingException, JMException, ReaperException {
+  void grabAndStoreCompactionStats(Optional<Node> maybeNode)
+    throws JsonProcessingException, JMException, ReaperException {
     Preconditions.checkState(
-        context.config.isInSidecarMode(),
+        context.config.getDatacenterAvailability().isInCollocatedMode(),
         "grabAndStoreCompactionStats() can only be called in sidecar");
 
-    Node node = Node.builder().withHostname(context.getLocalNodeAddress()).build();
+    Node node = maybeNode.orElseGet(() ->
+        Node.builder()
+          .withHostname(context.getLocalNodeAddress())
+          .withCluster(
+              Cluster.builder()
+                  .withName(localClusterName)
+                  .withSeedHosts(ImmutableSet.of(context.getLocalNodeAddress()))
+                  .build())
+          .build());
+
     CompactionStats compactionStats = ClusterFacade.create(context).listCompactionStatsDirect(node);
 
     ((IDistributedStorage) context.storage)
         .storeOperations(
-            localClusterName,
+            node.getClusterName(),
             OpType.OP_COMPACTION,
-            context.getLocalNodeAddress(),
+            node.getHostname(),
             objectMapper.writeValueAsString(compactionStats));
 
-    LOG.debug("Grabbing and storing compaction stats for {}", context.getLocalNodeAddress());
+    LOG.debug("Grabbing and storing compaction stats for {}", node.getHostname());
   }
 
-  void grabAndStoreActiveStreams() throws JsonProcessingException, ReaperException {
+  void grabAndStoreActiveStreams(Optional<Node> maybeNode) throws JsonProcessingException, ReaperException {
     Preconditions.checkState(
-        context.config.isInSidecarMode(),
+        context.config.getDatacenterAvailability().isInCollocatedMode(),
         "grabAndStoreActiveStreams() can only be called in sidecar");
 
-    Node node = Node.builder().withHostname(context.getLocalNodeAddress()).build();
+    Node node = maybeNode.orElseGet(() ->
+        Node.builder()
+          .withHostname(context.getLocalNodeAddress())
+          .withCluster(
+              Cluster.builder()
+                  .withName(localClusterName)
+                  .withSeedHosts(ImmutableSet.of(context.getLocalNodeAddress()))
+                  .build())
+          .build());
+
     List<StreamSession> activeStreams = ClusterFacade.create(context).listStreamsDirect(node);
 
     ((IDistributedStorage) context.storage)
         .storeOperations(
-            localClusterName,
-            OpType.OP_STREAMING,context.getLocalNodeAddress(),
+            node.getClusterName(),
+            OpType.OP_STREAMING,
+            node.getHostname(),
             objectMapper.writeValueAsString(activeStreams));
 
-    LOG.debug("Grabbing and storing streams for {}", context.getLocalNodeAddress());
+    LOG.debug("Grabbing and storing streams for {}", node.getHostname());
   }
 
 }

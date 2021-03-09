@@ -18,11 +18,9 @@
 package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.GenericMetric;
-import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.service.RingRange;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -67,14 +65,6 @@ public interface IDistributedStorage {
 
   void saveHeartbeat();
 
-  Collection<NodeMetrics> getNodeMetrics(UUID runId);
-
-  Optional<NodeMetrics> getNodeMetrics(UUID runId, String node);
-
-  void deleteNodeMetrics(UUID runId, String node);
-
-  void storeNodeMetrics(UUID runId, NodeMetrics nodeMetrics);
-
   /**
    * Gets the next free segment from the backend that is both within the parallel range and the local node ranges.
    *
@@ -97,11 +87,6 @@ public interface IDistributedStorage {
   void storeOperations(String clusterName, OpType operationType, String host, String operationsJson);
 
   String listOperations(String clusterName, OpType operationType, String host);
-
-  /**
-   * Purges old node metrics from the database (no-op for databases with TTL)
-   */
-  void purgeNodeMetrics();
 
   /**
    * Purges old metrics from the database (no-op for databases w/ TTL)

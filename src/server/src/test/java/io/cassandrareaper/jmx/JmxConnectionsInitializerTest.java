@@ -27,6 +27,7 @@ import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.PostgresStorage;
 
+import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.ImmutableSet;
@@ -45,10 +46,10 @@ public class JmxConnectionsInitializerTest {
    * @throws ReaperException
    */
   @Test
-  public void initializerDatacenterAvailabilityEachTest() throws ReaperException {
+  public void initializerDatacenterAvailabilityEachTest() throws ReaperException, UnknownHostException {
     AppContext context = new AppContext();
     final Cryptograph cryptographMock = mock(Cryptograph.class);
-    final JmxProxy jmxProxyMock = mock(JmxProxy.class);
+    final JmxProxy jmxProxyMock = JmxProxyTest.mockJmxProxyImpl();
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
@@ -83,10 +84,10 @@ public class JmxConnectionsInitializerTest {
    * @throws ReaperException
    */
   @Test
-  public void initializerDatacenterAvailabilityLocalTest() throws ReaperException {
+  public void initializerDatacenterAvailabilityLocalTest() throws ReaperException, UnknownHostException {
     AppContext context = new AppContext();
     final Cryptograph cryptographMock = mock(Cryptograph.class);
-    final JmxProxy jmxProxyMock = mock(JmxProxy.class);
+    final JmxProxy jmxProxyMock = JmxProxyTest.mockJmxProxyImpl();
     final AtomicInteger connectionAttempts = new AtomicInteger(0);
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {

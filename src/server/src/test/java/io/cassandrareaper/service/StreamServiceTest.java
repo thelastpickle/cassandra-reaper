@@ -19,15 +19,18 @@ package io.cassandrareaper.service;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.jmx.HostConnectionCounters;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
 
 import java.io.IOException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 
@@ -58,7 +61,8 @@ import static org.mockito.Mockito.when;
 public class StreamServiceTest {
 
   @Test
-  public void testListStreams() throws ReaperException, ClassNotFoundException, InterruptedException {
+  public void testListStreams()
+      throws ReaperException, ClassNotFoundException, InterruptedException, UnknownHostException {
     JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     StreamManagerMBean streamingManagerMBean = Mockito.mock(StreamManagerMBean.class);
     JmxProxyTest.mockGetStreamManagerMBean(proxy, streamingManagerMBean);
@@ -68,11 +72,13 @@ public class StreamServiceTest {
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
-    Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any());
+    Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
 
-    StreamService
+    // do the actual pullStreams() call, which should succeed
+    List<StreamSession> result = StreamService
         .create(() -> clusterFacadeSpy)
-        .listStreams(Node.builder().withHostname("127.0.0.1").build());
+        .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
+            .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
     verify(streamingManagerMBean, times(1)).getCurrentStreams();
   }
@@ -99,13 +105,17 @@ public class StreamServiceTest {
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
+    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
-    Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any());
+    Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
         .create(() -> clusterFacadeSpy)
-        .listStreams(Node.builder().withHostname("127.0.0.1").build());
+        .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
+            .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
     verify(streamingManagerMBean, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
@@ -133,13 +143,17 @@ public class StreamServiceTest {
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
+    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
-    Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any());
+    Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
         .create(() -> clusterFacadeSpy)
-        .listStreams(Node.builder().withHostname("127.0.0.1").build());
+        .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
+            .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
     verify(streamingManagerMBean, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
@@ -167,13 +181,17 @@ public class StreamServiceTest {
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
+    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
-    Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any());
+    Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
         .create(() -> clusterFacadeSpy)
-        .listStreams(Node.builder().withHostname("127.0.0.1").build());
+        .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
+            .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
     verify(streamingManagerMBean, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
@@ -201,13 +219,17 @@ public class StreamServiceTest {
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
+    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
-    Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any());
+    Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
         .create(() -> clusterFacadeSpy)
-        .listStreams(Node.builder().withHostname("127.0.0.1").build());
+        .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
+            .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
     verify(streamingManagerMBean, times(1)).getCurrentStreams();
     assertEquals(1, result.size());
@@ -232,13 +254,17 @@ public class StreamServiceTest {
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     when(cxt.jmxConnectionFactory.connectAny(Mockito.anyList())).thenReturn(proxy);
+    HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
+    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
+    when(connectionCounters.getSuccessfulConnections(any())).thenReturn(1);
     ClusterFacade clusterFacadeSpy = Mockito.spy(ClusterFacade.create(cxt));
-    Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any());
+    Mockito.doReturn("dc1").when(clusterFacadeSpy).getDatacenter(any(), any());
 
     // do the actual pullStreams() call, which should succeed
     List<StreamSession> result = StreamService
         .create(() -> clusterFacadeSpy)
-        .listStreams(Node.builder().withHostname("127.0.0.1").build());
+        .listStreams(Node.builder().withHostname("127.0.0.1").withCluster(Cluster.builder().withJmxPort(7199)
+            .withSeedHosts(ImmutableSet.of("127.0.0.1")).withName("test").build()).build());
 
     verify(streamingManagerMBean, times(1)).getCurrentStreams();
     assertEquals(1, result.size());

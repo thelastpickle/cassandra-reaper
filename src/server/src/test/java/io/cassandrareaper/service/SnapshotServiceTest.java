@@ -117,7 +117,7 @@ public final class SnapshotServiceTest {
         .listSnapshots(Node.builder().withHostname("127.0.0.1").build());
 
     Assertions.assertThat(result).isEmpty();
-    verify(storageMBean, times(1)).getSnapshotDetails();
+    verify(storageMBean, times(0)).getSnapshotDetails();
   }
 
   @Test
