@@ -56,7 +56,7 @@ ALTER TABLE reaper_db.repair_unit_v1 DROP repair_thread_count;
 ```
 java -cp /usr/share/cassandra-reaper/cassandra-reaper-1.2.*.jar org.h2.tools.Shell
 ```
-When asked, provide the JDBC URL from your Cassandra Reaper yaml file (for example : `jdbc:h2:~/reaper-db/db;MODE=PostgreSQL`), use the default `Driver` and leave username/password empty.
+When asked, provide the JDBC URL from your Reaper for Apache Cassandra yaml file (for example : `jdbc:h2:~/reaper-db/db;MODE=PostgreSQL`), use the default `Driver` and leave username/password empty.
 Then run the following statements:
 
 ```
