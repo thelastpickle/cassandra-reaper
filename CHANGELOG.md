@@ -1,5 +1,9 @@
 ## Change Log
 
+### 2.2.2 (2021/03/09 17:24 +00:00)
+- [9083694](https://github.com/thelastpickle/cassandra-reaper/commit/90836945d6cc3078f8239c3cc74c9be0c076977d) Fix EACH and LOCAL modes (@adejanovski)
+- [e200a03](https://github.com/thelastpickle/cassandra-reaper/commit/e200a033d1e8c3136dc6c12d9659ce30d96581f9) Add EACH integration tests for Cassandra and Postgres (@adejanovski)
+
 ### 2.2.1 (2021/02/24 14:14 +00:00)
 - [6beea94](https://github.com/thelastpickle/cassandra-reaper/commit/6beea94822642496338efd3cb336934787b57b15) Fix hardcoded keyspace names and bad pgsql cluster mapping (@adejanovski)
 - [5fc5677](https://github.com/thelastpickle/cassandra-reaper/commit/5fc567770a5acd08a3ee3420bc3d43a343ebe380) Further reduce the number of LWTs involved in segment orchestration (@adejanovski)
