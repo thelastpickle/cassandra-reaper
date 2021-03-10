@@ -357,7 +357,7 @@ Here is the upgrade procedure for each Reaper backend:</p>
 <li>Pointing to your current Reaper jar file (located in <code>/usr/share/cassandra-reaper</code> for packaged installs), run the following command :</li>
 </ul>
 <pre><code>java -cp /usr/share/cassandra-reaper/cassandra-reaper-1.2.*.jar org.h2.tools.Shell
-</code></pre><p>When asked, provide the JDBC URL from your Cassandra Reaper yaml file (for example : <code>jdbc:h2:~/reaper-db/db;MODE=PostgreSQL</code>), use the default <code>Driver</code> and leave username/password empty.
+</code></pre><p>When asked, provide the JDBC URL from your Reaper for Apache Cassandra yaml file (for example : <code>jdbc:h2:~/reaper-db/db;MODE=PostgreSQL</code>), use the default <code>Driver</code> and leave username/password empty.
 Then run the following statements:</p>
 <pre><code>ALTER TABLE REPAIR_UNIT DROP COLUMN repair_thread_count;
 ALTER TABLE REPAIR_SEGMENT DROP COLUMN TOKEN_RANGES;

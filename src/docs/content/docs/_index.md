@@ -2,7 +2,7 @@
 show_menu = true
 +++
 
-## Welcome to the Cassandra Reaper documentation!
+## Welcome to the Reaper for Apache Cassandra documentation!
 
 ### Overview
 

@@ -24,7 +24,7 @@
         <version>2.3.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <name>Cassandra Reaper server</name>
+    <name>Reaper for Apache Cassandra server</name>
     <artifactId>cassandra-reaper</artifactId>
     <packaging>jar</packaging>
 

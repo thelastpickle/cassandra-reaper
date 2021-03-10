@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Cassandra Reaper Configuration Example.
+# Reaper for Apache Cassandra Configuration Example.
 # This configuration is used mainly for testing.
 # See the README.md file for explanations of configuration keys.
 #

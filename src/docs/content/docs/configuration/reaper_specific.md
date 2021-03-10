@@ -291,7 +291,7 @@ The number of archive log files stored in the log rotation sliding window. That 
 
 Type: *Object*
 
-Configuration parameters for sending metrics to a reporting system via the [Dropwizard interface](http://www.dropwizard.io/1.1.4/docs/manual/configuration.html#metrics). Cassandra Reaper ships the Graphite and DataDog reporters by default.
+Configuration parameters for sending metrics to a reporting system via the [Dropwizard interface](http://www.dropwizard.io/1.1.4/docs/manual/configuration.html#metrics). Reaper for Apache Cassandra ships the Graphite and DataDog reporters by default.
 
 Further information on metrics configuration can be found in the [Metrics](../../metrics) section.
 

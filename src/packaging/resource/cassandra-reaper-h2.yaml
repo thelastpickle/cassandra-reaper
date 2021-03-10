@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Cassandra Reaper Configuration Example.
+# Reaper for Apache Cassandra Configuration Example.
 # See a bit more complete example in:
 # src/server/src/test/resources/cassandra-reaper.yaml
 segmentCountPerNode: 64
