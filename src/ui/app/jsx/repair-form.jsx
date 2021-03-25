@@ -185,7 +185,7 @@ const repairForm = CreateReactClass({
     }
 
     if (this.state.tables) repair.tables = this.state.tables;
-    if (this.state.segments) repair.segmentCount = this.state.segments;
+    if (this.state.segments) repair.segmentCountPerNode = this.state.segments;
     if (this.state.parallelism) repair.repairParallelism = this.state.parallelism;
     if (this.state.intensity) repair.intensity = this.state.intensity;
     if (this.state.cause) repair.cause = this.state.cause;

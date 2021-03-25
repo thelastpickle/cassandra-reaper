@@ -100,7 +100,7 @@ public final class RepairRunResource {
       @QueryParam("tables") Optional<String> tableNamesParam,
       @QueryParam("owner") Optional<String> owner,
       @QueryParam("cause") Optional<String> cause,
-      @QueryParam("segmentCount") Optional<Integer> segmentCountPerNode,
+      @QueryParam("segmentCountPerNode") Optional<Integer> segmentCountPerNode,
       @QueryParam("repairParallelism") Optional<String> repairParallelism,
       @QueryParam("intensity") Optional<String> intensityStr,
       @QueryParam("incrementalRepair") Optional<String> incrementalRepairStr,
