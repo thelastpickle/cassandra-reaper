@@ -20,7 +20,7 @@
 
     <groupId>io.cassandrareaper</groupId>
     <artifactId>cassandra-reaper-pom</artifactId>
-    <version>2.2.2</version>
+    <version>2.2.3</version>
     <packaging>pom</packaging>
 
     <name>Cassandra Reaper project</name>
