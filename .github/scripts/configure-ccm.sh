@@ -40,6 +40,8 @@ configure_ccm () {
   else
     sed -i 's/start_rpc: true/start_rpc: false/' ~/.ccm/test/node$1/conf/cassandra.yaml
   fi
+  # Fix for jmx connections randomly hanging
+  echo "JVM_OPTS=\"\$JVM_OPTS -Djava.rmi.server.hostname=127.0.0.$i\"" >> ~/.ccm/test/node$1/conf/cassandra-env.sh
 }
 
 case "${TEST_TYPE}" in
@@ -51,8 +53,8 @@ case "${TEST_TYPE}" in
         mkdir -p ~/.local
         cp ./.github/files/jmxremote.password ~/.local/jmxremote.password
         chmod 400 ~/.local/jmxremote.password
-        sudo chmod 777 /opt/hostedtoolcache/jdk/8.0.192/x64/jre/lib/management/jmxremote.access
-        echo "cassandra     readwrite" >> /opt/hostedtoolcache/jdk/8.0.192/x64/jre/lib/management/jmxremote.access
+        sudo chmod 777 /opt/hostedtoolcache/Java_Adopt_jdk/8.0.192-12/x64/jre/lib/management/jmxremote.access
+        echo "cassandra     readwrite" >> /opt/hostedtoolcache/Java_Adopt_jdk/8.0.192-12/x64/jre/lib/management/jmxremote.access
         if [[ ! -z $ELASSANDRA_VERSION ]]; then
           ccm create test -v file:elassandra-${ELASSANDRA_VERSION}.tar.gz
         else
