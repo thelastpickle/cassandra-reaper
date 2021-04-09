@@ -760,6 +760,15 @@ public final class RepairRunnerTest {
     return map;
   }
 
+  public static Map<List<String>, List<String>> scyllaThreeNodeClusterWithIps() {
+    Map<List<String>, List<String>> map = new HashMap<List<String>, List<String>>();
+    map = addRangeToMap(map, "", "0", "127.0.0.3", "127.0.0.1", "127.0.0.2");
+    map = addRangeToMap(map, "0", "100", "127.0.0.1", "127.0.0.2", "127.0.0.3");
+    map = addRangeToMap(map, "100", "200", "127.0.0.2", "127.0.0.3", "127.0.0.1");
+    map = addRangeToMap(map, "200", "", "127.0.0.3", "127.0.0.1", "127.0.0.2");
+    return map;
+  }
+
   public static Map<List<String>, List<String>> sixNodeCluster() {
     Map<List<String>, List<String>> map = new HashMap<List<String>, List<String>>();
     map = addRangeToMap(map, "0", "50", "a1", "a2", "a3");
