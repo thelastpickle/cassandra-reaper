@@ -846,72 +846,22 @@ jobs:
           DOCKER_PASS: ${{ secrets.DOCKERHUB_PASSWORD }}
         run: ./.github/scripts/before_deploy.sh
 
-      - name: Upload deb package to Bintray
+      - name: Locate deb and rpm packages for upload
         run: |
           REPO=reaper-deb
           PACKAGE=cassandra-reaper
           VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
           if [ "${GITHUB_REF}" = "refs/heads/master" ]
           then
-            REPO=reaper-deb-beta
-            PACKAGE=cassandra-reaper-beta
+            echo "BETA_RELEASE=yes" >> $GITHUB_ENV
+          else
+            echo "BETA_RELEASE=no" >> $GITHUB_ENV
           fi
 
-          releaseFile=$(ls src/packages/*.deb |grep ${VERSION})
-          targetName=reaper_${VERSION}_amd64.deb
-          echo "uploading ${releaseFile} to Bintray"
-          echo "Upload url : https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${targetName}"
-          curl -T ${releaseFile} \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Debian-Distribution:wheezy,jessie,stretch -H X-Bintray-Debian-Component:main -H X-Bintray-Debian-Architecture:i386,amd64 -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${targetName}
-          echo "Publishing release in Bintray"
-          curl -X POST -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${VERSION}/publish
-
-      - name: Upload rpm package to Bintray
-        run: |
-          REPO=reaper-rpm
-          PACKAGE=cassandra-reaper
-          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-          RPM_VERSION=$(echo "${VERSION}" | sed "s/-/_/")
-          if [ "${GITHUB_REF}" = "refs/heads/master" ]
-          then
-            REPO=reaper-rpm-beta
-            PACKAGE=cassandra-reaper-beta
-          fi
-
-          releaseFile=$(ls src/packages/*.rpm)
-          targetName=reaper-${RPM_VERSION}-1.x86_64.rpm
-          echo "uploading ${releaseFile} to Bintray"
-          echo "Upload url : https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${targetName}"
-          curl -T ${releaseFile} \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${targetName}
-          echo "Publishing release in Bintray"
-          curl -X POST -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${VERSION}/publish
-
-      - name: Upload tarball package to Bintray
-        run: |
-          REPO=reaper-tarball
-          PACKAGE=cassandra-reaper
-          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-          if [ "${GITHUB_REF}" = "refs/heads/master" ]
-          then
-            REPO=reaper-tarball-beta
-            PACKAGE=cassandra-reaper-beta
-          fi
-
-          releaseFile=$(ls src/packages/*.tar.gz |grep ${VERSION})
-          targetName=cassandra-reaper-${VERSION}.tar.gz
-          echo "uploading ${releaseFile} to Bintray"
-          echo "Upload url : https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${targetName}"
-          curl -T ${releaseFile} \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${targetName}
-          echo "Publishing release in Bintray"
-          curl -X POST -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${VERSION}/publish
+          debReleaseFile=$(ls src/packages/*.deb |grep ${VERSION})
+          rpmReleaseFile=$(ls src/packages/*.rpm)
+          echo "DEB_RELEASE_FILE=${releaseFile}" >> $GITHUB_ENV
+          echo "RPM_RELEASE_FILE=${releaseFile}" >> $GITHUB_ENV
 
       - name: Upload artifacts to GitHub Release
         uses: fnkr/github-action-ghr@v1
@@ -920,49 +870,65 @@ jobs:
           GHR_PATH: src/packages
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload maven artifacts to Bintray
-        run: |
-          REPO=reaper-maven
-          PACKAGE=io.cassandrareaper:cassandra-reaper
-          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-          if [ "${GITHUB_REF}" = "refs/heads/master" ]
-          then
-            REPO=reaper-maven-beta
-          fi
+      ## Stable releases
+      - name: Push Debian to Cloudsmith
+        id: push-deb
+        if: ${{ env.BETA_RELEASE == 'no' }}
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: 'push'
+          format: 'deb'
+          owner: 'thelastpickle'
+          repo: 'reaper'
+          distro: 'any-distro'
+          release: 'any-version'
+          republish: 'true'
+          file: ${{ env.DEB_RELEASE_FILE }}
 
-          jarFile=cassandra-reaper-${VERSION}.jar
-          releaseFile=$(ls src/server/target/${jarFile})
-          sourceFile=cassandra-reaper-${VERSION}-sources.jar
-          javadocFile=cassandra-reaper-${VERSION}-javadoc.jar
-          echo "uploading ${releaseFile} to Bintray"
-          echo "Upload url : https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/io/cassandrareaper/cassandra-reaper/${VERSION}"
+      - name: Push RPM to Cloudsmith
+        id: push-rpm
+        if: ${{ env.BETA_RELEASE == 'no' }}
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: "push"
+          format: "rpm"
+          owner: 'thelastpickle'
+          repo: 'reaper'
+          distro: 'any-distro'
+          release: 'any-version'
+          republish: 'true'
+          file: ${{ env.RPM_RELEASE_FILE }}
+      
+      ## Beta releases
+      - name: Push Debian Beta to Cloudsmith
+        id: push-beta-deb
+        if: ${{ env.BETA_RELEASE == 'yes' }}
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: 'push'
+          format: 'deb'
+          owner: 'thelastpickle'
+          repo: 'reaper-beta'
+          distro: 'any-distro'
+          release: 'any-version'
+          republish: 'true'
+          file: ${{ env.DEB_RELEASE_FILE }}
 
-          # Upload the main jar
-          curl -T src/server/target/${jarFile} \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/io/cassandrareaper/cassandra-reaper/${VERSION}/${jarFile}
-          # Upload the sources jar
-          curl -T src/server/target/${sourceFile} \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/io/cassandrareaper/cassandra-reaper/${VERSION}/${sourceFile}
-          # Upload the javadoc jar
-          curl -T src/server/target/${javadocFile} \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/io/cassandrareaper/cassandra-reaper/${VERSION}/${javadocFile}
-          # Upload the pom file
-          curl -T src/server/pom.xml \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/io/cassandrareaper/cassandra-reaper/${VERSION}/cassandra-reaper-${VERSION}.pom
-          # Upload the root pom file
-          curl -T pom.xml \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/io/cassandrareaper/cassandra-reaper/${VERSION}/cassandra-reaper-pom-${VERSION}.pom
-
-          # Publish the release
-          echo "Publishing release in Bintray"
-          curl -X POST -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${VERSION}/publish
+      - name: Push RPM Beta to Cloudsmith
+        id: push-beta-rpm
+        if: ${{ env.BETA_RELEASE == 'yes' }}
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: "push"
+          format: "rpm"
+          owner: 'thelastpickle'
+          repo: 'reaper-beta'
+          distro: 'any-distro'
+          release: 'any-version'
+          republish: 'true'
+          file: ${{ env.RPM_RELEASE_FILE }}
+      
