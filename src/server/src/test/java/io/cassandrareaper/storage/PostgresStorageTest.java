@@ -42,7 +42,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.ImmutableList;
 import com.ibatis.common.jdbc.ScriptRunner;
+
 import org.fest.assertions.api.Assertions;
 import org.h2.tools.Server;
 import org.joda.time.DateTime;
@@ -259,8 +261,7 @@ public class PostgresStorageTest {
         .withValue(14)
         .build();
 
-    storage.storeMetric(metric1);
-    storage.storeMetric(metric2);
+    storage.storeMetrics(ImmutableList.of(metric1, metric2));
 
     // verify that the two metrics above can be queried by cluster name
     Set<String> expectedMetrics = new HashSet<>();
@@ -316,7 +317,7 @@ public class PostgresStorageTest {
         .withMetricAttribute("fake_attribute")
         .withValue(12)
         .build();
-    storage.storeMetric(expiredMetric);
+    storage.storeMetrics(ImmutableList.of(expiredMetric));
 
     // verify that the metric was stored in the DB
     List<GenericMetric> retrievedMetrics = storage.getMetrics(

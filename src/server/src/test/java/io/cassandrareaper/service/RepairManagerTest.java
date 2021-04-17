@@ -25,6 +25,7 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
+import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
@@ -33,6 +34,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -40,14 +44,20 @@ import java.util.concurrent.TimeUnit;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.fest.assertions.api.Assertions;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -370,7 +380,7 @@ public final class RepairManagerTest {
 
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.storage = mock(IStorage.class);
+    context.storage = mock(CassandraStorage.class);
 
     context.storage
         .addCluster(Cluster.builder().withName(clusterName).withSeedHosts(ImmutableSet.of("127.0.0.1")).build());
@@ -420,6 +430,189 @@ public final class RepairManagerTest {
     Mockito.verify(context.storage, Mockito.times(1)).updateRepairRun(any(), any());
   }
 
+  @Test
+  public void countRepairRunnersPerClusterTest() throws ReaperException, InterruptedException {
+    AppContext context = new AppContext();
+    context.config = new ReaperApplicationConfiguration();
+    context.storage = mock(CassandraStorage.class);
+    doReturn(true).when(context.storage).updateRepairRun(any());
+    RepairManager repairManager = RepairManager.create(
+        context,
+        Executors.newScheduledThreadPool(1),
+        500,
+        TimeUnit.MILLISECONDS,
+        1,
+        TimeUnit.MILLISECONDS,
+        100);
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    String cluster1 = "cluster1";
+    String cluster2 = "cluster2";
+    doReturn(Cluster.builder().withName(cluster1).withSeedHosts(ImmutableSet.of("127.0.0.1")).build()).when(
+        context.storage).getCluster(eq(cluster1));
+    doReturn(Cluster.builder().withName(cluster2).withSeedHosts(ImmutableSet.of("127.0.0.2")).build()).when(
+        context.storage).getCluster(eq(cluster2));
+
+    Map<UUID, RepairRun> repairRuns = Maps.newConcurrentMap();
+    Map<UUID, RepairUnit> repairUnits = Maps.newConcurrentMap();
+
+    Random random = new Random();
+    // Create repairs for cluster1
+    int clust1 = 0;
+    for (clust1 = 0; clust1 < random.nextInt(10) + 2; clust1++) {
+      RepairUnit repairUnit = createRepairUnit(cluster1);
+      RepairRun repairRun = createRepairRun(context, clusterFacade, cluster1, repairUnit);
+      repairUnits.put(repairUnit.getId(), repairUnit);
+      repairRuns.put(repairRun.getId(), repairRun);
+    }
+
+    // Create repairs for cluster2
+    int clust2 = 0;
+    for (clust2 = 0; clust2 < random.nextInt(10) + 2; clust2++) {
+      RepairUnit repairUnit = createRepairUnit(cluster2);
+      RepairRun repairRun = createRepairRun(context, clusterFacade, cluster2, repairUnit);
+      repairUnits.put(repairUnit.getId(), repairUnit);
+      repairRuns.put(repairRun.getId(), repairRun);
+    }
+
+    when(context.storage.getRepairUnit(any(UUID.class))).thenAnswer(
+        new Answer<RepairUnit>() {
+          @Override
+          public RepairUnit answer(InvocationOnMock invocation) {
+            return repairUnits.get(invocation.getArgument(0));
+          }
+        });
+
+    when(context.storage.getRepairRun(any(UUID.class))).thenAnswer(
+        new Answer<Optional<RepairRun>>() {
+          @Override
+          public Optional<RepairRun> answer(InvocationOnMock invocation) {
+            return Optional.of(repairRuns.get(invocation.getArgument(0)));
+          }
+        });
+
+    repairRuns.entrySet().stream().forEach(run -> {
+      try {
+        repairManager.startRepairRun(run.getValue());
+      } catch (ReaperException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    });
+
+    assertEquals(clust1, repairManager.countRepairRunnersForCluster(cluster1));
+    assertEquals(clust2, repairManager.countRepairRunnersForCluster(cluster2));
+  }
+
+  @Test
+  public void limitRepairRunnersPerClusterTest() throws ReaperException, InterruptedException {
+    AppContext context = new AppContext();
+    context.config = new ReaperApplicationConfiguration();
+    context.storage = mock(CassandraStorage.class);
+    doReturn(true).when(context.storage).updateRepairRun(any());
+    RepairManager repairManager = RepairManager.create(
+        context,
+        Executors.newScheduledThreadPool(1),
+        500,
+        TimeUnit.MILLISECONDS,
+        1,
+        TimeUnit.MILLISECONDS,
+        2);
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    String cluster1 = "cluster1";
+    String cluster2 = "cluster2";
+    doReturn(Cluster.builder().withName(cluster1).withSeedHosts(ImmutableSet.of("127.0.0.1")).build()).when(
+        context.storage).getCluster(eq(cluster1));
+    doReturn(Cluster.builder().withName(cluster2).withSeedHosts(ImmutableSet.of("127.0.0.2")).build()).when(
+        context.storage).getCluster(eq(cluster2));
+
+    Map<UUID, RepairRun> repairRuns = Maps.newConcurrentMap();
+    Map<UUID, RepairUnit> repairUnits = Maps.newConcurrentMap();
+
+    Random random = new Random();
+    // Create repairs for cluster1
+    int clust1 = 0;
+    for (clust1 = 0; clust1 < random.nextInt(10) + 5; clust1++) {
+      RepairUnit repairUnit = createRepairUnit(cluster1);
+      RepairRun repairRun = createRepairRun(context, clusterFacade, cluster1, repairUnit);
+      repairUnits.put(repairUnit.getId(), repairUnit);
+      repairRuns.put(repairRun.getId(), repairRun);
+    }
+
+    // Create repairs for cluster2
+    int clust2 = 0;
+    for (clust2 = 0; clust2 < random.nextInt(10) + 5; clust2++) {
+      RepairUnit repairUnit = createRepairUnit(cluster2);
+      RepairRun repairRun = createRepairRun(context, clusterFacade, cluster2, repairUnit);
+      repairUnits.put(repairUnit.getId(), repairUnit);
+      repairRuns.put(repairRun.getId(), repairRun);
+    }
+
+    when(context.storage.getRepairUnit(any(UUID.class))).thenAnswer(
+        new Answer<RepairUnit>() {
+          @Override
+          public RepairUnit answer(InvocationOnMock invocation) {
+            return repairUnits.get(invocation.getArgument(0));
+          }
+        });
+
+    when(context.storage.getRepairRun(any(UUID.class))).thenAnswer(
+        new Answer<Optional<RepairRun>>() {
+          @Override
+          public Optional<RepairRun> answer(InvocationOnMock invocation) {
+            return Optional.of(repairRuns.get(invocation.getArgument(0)));
+          }
+        });
+
+    repairRuns.entrySet().stream().forEach(run -> {
+      try {
+        repairManager.startRepairRun(run.getValue());
+      } catch (ReaperException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    });
+
+    assertEquals(2, repairManager.countRepairRunnersForCluster(cluster1));
+    assertEquals(2, repairManager.countRepairRunnersForCluster(cluster2));
+  }
+
+  private RepairUnit createRepairUnit(String clusterName) {
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodes = Sets.newHashSet("127.0.0.1");
+    final Set<String> datacenters = Collections.emptySet();
+    final int repairThreadCount = 1;
+
+    final RepairUnit repairUnit = RepairUnit.builder()
+        .clusterName(clusterName)
+        .keyspaceName(ksName)
+        .columnFamilies(cfNames)
+        .incrementalRepair(incrementalRepair)
+        .nodes(nodes)
+        .datacenters(datacenters)
+        .repairThreadCount(repairThreadCount)
+        .build(UUIDs.timeBased());
+
+    return repairUnit;
+  }
+
+  private RepairRun createRepairRun(
+      AppContext context,
+      ClusterFacade clusterFacade,
+      String clusterName,
+      RepairUnit repairUnit) throws ReaperException {
+    double intensity = 0.5f;
+
+    final RepairRun run = RepairRun.builder(clusterName, repairUnit.getId())
+            .intensity(intensity)
+            .segmentCount(1)
+            .repairParallelism(RepairParallelism.PARALLEL)
+            .tables(TABLES)
+            .build(UUIDs.timeBased());
+    return run;
+  }
+
   private static class NotEmptyList implements ArgumentMatcher<Collection<RepairSegment>> {
     @Override
     public boolean matches(Collection<RepairSegment> segments) {
@@ -433,5 +626,4 @@ public final class RepairManagerTest {
       return segments.isEmpty();
     }
   }
-
 }

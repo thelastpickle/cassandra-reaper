@@ -146,9 +146,8 @@ public final class MetricsService {
     List<GenericMetric> metrics
         = convertToGenericMetrics(ClusterFacade.create(context).collectMetrics(node, COLLECTED_METRICS), node);
 
-    for (GenericMetric metric:metrics) {
-      ((IDistributedStorage)context.storage).storeMetric(metric);
-    }
+    ((IDistributedStorage)context.storage).storeMetrics(metrics);
+
     LOG.debug("Grabbing and storing metrics for {}", node.getHostname());
 
   }

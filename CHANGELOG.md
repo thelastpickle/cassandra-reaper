@@ -1,5 +1,9 @@
 ## Change Log
 
+### 2.2.4 (2021/04/09 07:33 +00:00)
+- [2430f1f](https://github.com/thelastpickle/cassandra-reaper/commit/2430f1f9831757e8299429e3f5cd4e02f0c3e904) Batch metric inserts by partition to reduce Reaper write throughput (@adejanovski)
+- [7765cbe](https://github.com/thelastpickle/cassandra-reaper/commit/7765cbe8aaca9b4e0595297dbaa59d4f517f0bdb) Limit repair runners per cluster instead of globally (@adejanovski)
+
 ### 2.2.3 (2021/03/26 08:28 +00:00)
 - [9a3d110](https://github.com/thelastpickle/cassandra-reaper/commit/9a3d11005b1f9991e51da5ee040a0ccae603c86a) Fix segment count per node not being correctly accounted for in schedules (@adejanovski)
 

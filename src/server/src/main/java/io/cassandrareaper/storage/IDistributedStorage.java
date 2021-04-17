@@ -82,7 +82,7 @@ public interface IDistributedStorage {
       String metricType,
       long since);
 
-  void storeMetric(GenericMetric metric);
+  void storeMetrics(List<GenericMetric> metric);
 
   void storeOperations(String clusterName, OpType operationType, String host, String operationsJson);
 
