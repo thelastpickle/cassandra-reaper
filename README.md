@@ -3,6 +3,8 @@ Reaper for Apache Cassandra
 
 [![Build Status](https://github.com/thelastpickle/cassandra-reaper/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/thelastpickle/cassandra-reaper/actions?query=branch%3Amaster)
 
+[![codecov](https://codecov.io/gh/thelastpickle/cassandra-reaper/branch/master/graph/badge.svg?token=8q1tX81waa)](https://codecov.io/gh/thelastpickle/cassandra-reaper)
+
 [![Hosted By: Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat-square)](https://cloudsmith.io/~thelastpickle/repos/reaper/packages/)
 
 Reaper is a centralized, stateful, and highly configurable tool for running Apache Cassandra repairs against single or multi-site clusters.

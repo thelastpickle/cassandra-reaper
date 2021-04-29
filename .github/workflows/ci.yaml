@@ -28,6 +28,8 @@ jobs:
   build:
     name: Build Reaper
     runs-on: ubuntu-20.04
+    env:
+      JACOCO_VERSION: 0.8.6
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -62,8 +64,17 @@ jobs:
 
       - name: Build Reaper
         run: |
-          MAVEN_OPTS="-Xmx384m" mvn -B install
-          mvn -B surefire:test -Dtest=ReaperShiroIT
+          MAVEN_OPTS="-Xmx384m" mvn -B org.jacoco:jacoco-maven-plugin:${{ env.JACOCO_VERSION }}:prepare-agent install org.jacoco:jacoco-maven-plugin:${{ env.JACOCO_VERSION }}:report
+          mv src/server/target/site/jacoco src/server/target/site/jacoco_ut    
+          mvn -B org.jacoco:jacoco-maven-plugin:${{ env.JACOCO_VERSION }}:prepare-agent surefire:test org.jacoco:jacoco-maven-plugin:${{ env.JACOCO_VERSION }}:report -Dtest=ReaperShiroIT
+      
+      - uses: codecov/codecov-action@v1
+
+      - name: Setup tmate session
+        if: "failure()"
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+
   its-ccm-local:
     name: H2 and Memory backends
     needs: build
@@ -139,6 +150,8 @@ jobs:
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+
+      - uses: codecov/codecov-action@v1
 
       - name: Setup tmate session
         if: "failure()"
@@ -241,6 +254,8 @@ jobs:
           GRIM_MIN: ${{ matrix.grim-min }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
 
+      - uses: codecov/codecov-action@v1
+
       - name: Setup tmate session
         if: "failure()"
         uses: mxschmitt/action-tmate@v3
@@ -308,6 +323,8 @@ jobs:
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+      
+      - uses: codecov/codecov-action@v1
 
       - name: Setup tmate session
         if: "failure()"
@@ -381,6 +398,8 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
+
+      - uses: codecov/codecov-action@v1
 
   its-sidecar:
     needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
@@ -480,6 +499,9 @@ jobs:
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+
+      - uses: codecov/codecov-action@v1
+
   its-each:
     needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Each DC Availability
@@ -566,6 +588,9 @@ jobs:
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+
+      - uses: codecov/codecov-action@v1
+
   its-distributed:
     needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Distributed tests
@@ -641,6 +666,10 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
+
+      - uses: codecov/codecov-action@v1
+
+
   its-flapping:
     needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Flapping reapers
@@ -717,6 +746,9 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
+
+      - uses: codecov/codecov-action@v1
+
   its-elassandra-distributed:
     needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Distributed tests with Elassandra
@@ -784,6 +816,8 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
+
+      - uses: codecov/codecov-action@v1
 
   release:
     name: Release Reaper
