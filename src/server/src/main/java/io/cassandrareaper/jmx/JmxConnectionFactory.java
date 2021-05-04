@@ -89,6 +89,9 @@ public class JmxConnectionFactory {
     if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
       host = host + ":" + jmxPorts.get(host);
       LOG.debug("Connecting to {} with specific port", host);
+    } else if (JmxAddresses.isNumericIPv6Address(host)) {
+      host = "[" + host + "]:" + node.getJmxPort();
+      LOG.debug("Connecting to ipv6 {} with custom port", host);
     } else {
       host = host + ":" + node.getJmxPort();
       LOG.debug("Connecting to {} with custom port", host);
