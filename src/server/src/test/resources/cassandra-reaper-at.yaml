@@ -27,6 +27,7 @@ blacklistTwcsTables: true
 enableDynamicSeedList: false
 jmxConnectionTimeoutInSeconds: 10
 datacenterAvailability: LOCAL
+percentRepairedCheckIntervalMinutes: 1
 
 logging:
   level: WARN

@@ -21,13 +21,16 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Cluster.State;
 import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.MemoryStorage;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -37,31 +40,33 @@ import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.internal.util.collections.Sets;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 
 public final class HeartTest {
 
   private static final int REPAIR_TIMEOUT_S = 60;
   private static final int RETRY_DELAY_S = 10;
 
-  @Test(expected = AssertionError.class)
-  public void testBeat_nullStorage() throws ReaperException, InterruptedException {
-    AppContext context = new AppContext();
-    context.config = new ReaperApplicationConfiguration();
-    try (Heart heart = Heart.create(context)) {
-      heart.beat();
-    }
-  }
-
-  @Test(expected = AssertionError.class)
+  @Test
   public void testBeat_memoryStorage() throws ReaperException, InterruptedException {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.storage = new MemoryStorage();
+    context.storage = Mockito.mock(MemoryStorage.class);
+    Cluster cluster = Cluster.builder()
+        .withName("test")
+        .withSeedHosts(Sets.newSet("127.0.0.1"))
+        .withJmxPort(7199)
+        .withPartitioner("Murmur3Partitioner")
+        .withState(State.ACTIVE)
+        .build();
+    Mockito.when(context.storage.getClusters()).thenReturn(Arrays.asList(cluster));
     try (Heart heart = Heart.create(context)) {
       heart.beat();
     }
+    Mockito.verify(context.storage, Mockito.times(1)).getClusters();
   }
 
   @Test
@@ -71,6 +76,16 @@ public final class HeartTest {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
     context.storage = Mockito.mock(CassandraStorage.class);
+    Cluster cluster = Cluster.builder()
+        .withName("test")
+        .withSeedHosts(Sets.newSet("127.0.0.1"))
+        .withJmxPort(7199)
+        .withPartitioner("Murmur3Partitioner")
+        .withState(State.ACTIVE)
+        .build();
+    Mockito.when(context.storage.getClusters()).thenReturn(Arrays.asList(cluster));
+    Mockito.when(
+      context.storage.getRepairSchedulesForCluster(any(), anyBoolean())).thenReturn(Collections.emptyList());
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
@@ -86,7 +101,9 @@ public final class HeartTest {
       Thread.sleep(500);
     }
 
-    Mockito.verify(context.storage, Mockito.times(0)).getClusters();
+    Mockito.verify(context.storage, Mockito.times(1)).getClusters();
+    // Percent repaired metrics will first check that incremental repair schedules exist
+    Mockito.verify(context.storage, Mockito.times(1)).getRepairSchedulesForCluster(any(), anyBoolean());
   }
 
   @Test
@@ -97,6 +114,15 @@ public final class HeartTest {
     context.config = new ReaperApplicationConfiguration();
     context.config.setDatacenterAvailability(ReaperApplicationConfiguration.DatacenterAvailability.ALL);
     context.storage = Mockito.mock(CassandraStorage.class);
+    Cluster cluster = Cluster.builder()
+        .withName("test")
+        .withSeedHosts(Sets.newSet("127.0.0.1"))
+        .withJmxPort(7199)
+        .withPartitioner("Murmur3Partitioner")
+        .withState(State.ACTIVE)
+        .build();
+    Mockito.when(context.storage.getClusters()).thenReturn(Arrays.asList(cluster));
+    Mockito.when(context.storage.getRepairSchedulesForCluster(any(), anyBoolean())).thenReturn(Collections.emptyList());
 
     try (Heart heart = Heart.create(context)) {
       heart.beat();
@@ -112,7 +138,9 @@ public final class HeartTest {
       Thread.sleep(500);
     }
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
-    Mockito.verify(context.storage, Mockito.times(0)).getClusters();
+    Mockito.verify(context.storage, Mockito.times(1)).getClusters();
+    // Percent repaired metrics will first check that incremental repair schedules exist
+    Mockito.verify(context.storage, Mockito.times(1)).getRepairSchedulesForCluster(any(), anyBoolean());
   }
 
   @Test
@@ -123,6 +151,7 @@ public final class HeartTest {
     context.config.setDatacenterAvailability(ReaperApplicationConfiguration.DatacenterAvailability.EACH);
     context.storage = Mockito.mock(CassandraStorage.class);
     context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph());
+    Mockito.when(context.storage.getRepairSchedulesForCluster(any(), anyBoolean())).thenReturn(Collections.emptyList());
 
     try (Heart heart = Heart.create(context)) {
       context.isDistributed.set(true);

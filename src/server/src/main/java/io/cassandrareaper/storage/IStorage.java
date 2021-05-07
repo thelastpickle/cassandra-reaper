@@ -19,6 +19,7 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
+import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -118,6 +119,8 @@ public interface IStorage {
 
   Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName);
 
+  Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental);
+
   Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName);
 
   Collection<RepairSchedule> getRepairSchedulesForClusterAndKeyspace(String clusterName, String keyspaceName);
@@ -154,4 +157,11 @@ public interface IStorage {
   DiagEventSubscription addEventSubscription(DiagEventSubscription subscription);
 
   boolean deleteEventSubscription(UUID id);
+
+  List<PercentRepairedMetric> getPercentRepairedMetrics(
+      String clusterName,
+      UUID repairScheduleId,
+      long since);
+
+  void storePercentRepairedMetric(PercentRepairedMetric metric);
 }

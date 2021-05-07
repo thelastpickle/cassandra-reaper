@@ -28,6 +28,7 @@ jmxConnectionTimeoutInSeconds: 10
 activateQueryLogger: true
 datacenterAvailability: EACH
 enableConcurrentMigrations: false
+percentRepairedCheckIntervalMinutes: 1
 
 logging:
   level: WARN

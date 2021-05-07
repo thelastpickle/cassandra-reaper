@@ -276,15 +276,14 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
             environment.lifecycle().scheduledExecutorService("ReaperApplication-scheduler").threads(3).build(),
             context.metricRegistry);
 
-    if (context.storage instanceof IDistributedStorage) {
-      // SIDECAR mode must be distributed. ALL|EACH|LOCAL are lazy: we wait until we see multiple reaper instances
-      context.isDistributed
-          .compareAndSet(false, DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability());
+    // SIDECAR mode must be distributed. ALL|EACH|LOCAL are lazy: we wait until we see multiple reaper instances
+    context.isDistributed
+        .compareAndSet(false, DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability());
 
-      // Allowing multiple Reaper instances require concurrent database polls for repair and metrics statuses
-      scheduleRepairManager(scheduler);
-      scheduleHeartbeat(scheduler);
-    }
+    // Allowing multiple Reaper instances require concurrent database polls for repair and metrics statuses
+    scheduleRepairManager(scheduler);
+    scheduleHeartbeat(scheduler);
+
 
     context.repairManager.resumeRunningRepairRuns();
     schedulePurge(scheduler);
