@@ -20,7 +20,11 @@ package io.cassandrareaper.jmx;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.JmxCredentials;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import java.util.Optional;
 
@@ -36,7 +40,7 @@ import static org.mockito.Mockito.mock;
 public class JmxConnectionFactoryTest {
 
   @Test
-  public void fetchingJmxCredentialsPrioritizesThoseInSotrageFirst() {
+  public void fetchingJmxCredentialsPrioritizesThoseInStorageFirst() {
     JmxCredentials globalYamlJmxAuth = JmxCredentials.builder()
             .withUsername("global").withPassword("foo1").build();
     JmxCredentials clusterYamlJmxAuth = JmxCredentials.builder()
@@ -106,4 +110,32 @@ public class JmxConnectionFactoryTest {
     assertFalse(jmxCredentials.isPresent());
   }
 
+  @Test
+  public void ensureIPv6HostCanBeUsed() {
+    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    String host = connectionFactory.determineHost(Node.builder()
+            .withHostname("cc43:a32a:604:20b8:8201:ef29:3c20:c1d2")
+            .build());
+    assertEquals("[cc43:a32a:604:20b8:8201:ef29:3c20:c1d2]:7199", host);
+  }
+
+  @Test
+  public void ensureJMXPortsHostCanBeUsed() {
+    Map<String, Integer> jmxPorts = new HashMap<String,Integer>();
+    jmxPorts.put("127.0.0.1", 7100);
+    jmxPorts.put("127.0.0.2", 7200);
+    jmxPorts.put("127.0.0.3", 7300);
+
+    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    connectionFactory.setJmxPorts(jmxPorts);
+    String host = connectionFactory.determineHost(Node.builder().withHostname("127.0.0.2").build());
+    assertEquals("127.0.0.2:7200", host);
+  }
+
+  @Test
+  public void ensureIPv4HostCanBeUsed() {
+    JmxConnectionFactory connectionFactory = new JmxConnectionFactory(mock(AppContext.class), mock(Cryptograph.class));
+    String host = connectionFactory.determineHost(Node.builder().withHostname("127.0.0.1").build());
+    assertEquals("127.0.0.1:7199", host);
+  }
 }
