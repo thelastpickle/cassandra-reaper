@@ -21,6 +21,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.NodeMetrics;
+import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -430,6 +431,26 @@ public interface IStoragePostgreSql {
   String SQL_SELECT_LOCKED_NODES = "SELECT node FROM running_repairs "
       + " WHERE "
       + " last_heartbeat >= :expirationTime";
+
+  String SQL_SELECT_PERCENT_REPAIRED = "SELECT cluster, repair_schedule_id, node, keyspace_name,"
+      + " table_name, percent_repaired, ts"
+      + " FROM percent_repaired_by_schedule"
+      + " WHERE cluster = :cluster AND repair_schedule_id = :repairScheduleId"
+      + " AND ts >= :since "
+      + " ORDER BY ts DESC";
+
+  String SQL_INSERT_PERCENT_REPAIRED = "INSERT INTO percent_repaired_by_schedule"
+      + " (cluster, repair_schedule_id, node, keyspace_name, table_name, percent_repaired, ts)"
+      + " values(:cluster, :repairScheduleId, :node, :keyspaceName, :tableName, :percentRepaired, current_timestamp)";
+
+  String SQL_UPDATE_PERCENT_REPAIRED = "UPDATE percent_repaired_by_schedule"
+      + " set keyspace_name = :keyspaceName, table_name = :tableName,"
+      + " percent_repaired = :percentRepaired, ts = current_timestamp"
+      + " WHERE cluster = :cluster AND repair_schedule_id = :repairScheduleId and node = :node";
+
+  String SQL_PURGE_PERCENT_REPAIRED = "DELETE FROM percent_repaired_by_schedule"
+      + " WHERE"
+      + " ts < :expirationTime";
 
   static String[] parseStringArray(Object obj) {
     String[] values = null;
@@ -916,6 +937,29 @@ public interface IStoragePostgreSql {
 
   @SqlQuery(SQL_SELECT_LOCKED_SEGMENTS)
   List<Long> getLockedSegments(
+      @Bind("expirationTime") Instant expirationTime
+  );
+
+  @SqlUpdate(SQL_INSERT_PERCENT_REPAIRED)
+  int insertPercentRepairedMetric(
+      @BindBean PercentRepairedMetric percentRepaired
+  );
+
+  @SqlUpdate(SQL_UPDATE_PERCENT_REPAIRED)
+  int updatePercentRepairedMetric(
+      @BindBean PercentRepairedMetric percentRepaired
+  );
+
+  @SqlQuery(SQL_SELECT_PERCENT_REPAIRED)
+  @Mapper(PercentRepairedMetricMapper.class)
+  Collection<PercentRepairedMetric> getPercentRepairedMetrics(
+      @Bind("cluster") String cluster,
+      @Bind("repairScheduleId") long repairScheduleId,
+      @Bind("since") Instant since
+  );
+
+  @SqlQuery(SQL_PURGE_PERCENT_REPAIRED)
+  void purgeOldPercentRepairMetrics(
       @Bind("expirationTime") Instant expirationTime
   );
 }

@@ -6,4 +6,4 @@ CREATE TABLE IF NOT EXISTS running_repairs (
   segment_id INT,
   last_heartbeat TIMESTAMP WITH TIME ZONE,
   PRIMARY KEY(repair_id, node)
-); 
+);

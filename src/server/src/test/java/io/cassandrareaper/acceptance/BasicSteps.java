@@ -168,7 +168,8 @@ public final class BasicSteps {
             throw new IllegalArgumentException("tests can't expect response body from DELETE request");
           }
           assertTrue(
-              "expected data not found from the response: " + expectedDataInResponseData.get(),
+              "expected data [" + expectedDataInResponseData.get() + "]  not found from the response: ["
+                  + responseEntity + "]",
               0 != responseEntity.length() && responseEntity.contains(expectedDataInResponseData.get()));
 
           LOG.debug("Data \"" + expectedDataInResponseData.get() + "\" was found from response data");
@@ -2031,5 +2032,30 @@ public final class BasicSteps {
     String csCls = CassandraStorage.class.getName();
     String pgCls = PostgresStorage.class.getName();
     return csCls.equals(storageClassname) || pgCls.equals(storageClassname);
+  }
+
+  @And("^percent repaired metrics get collected for the existing schedule$")
+  public void percentRepairedMetricsGetCollectedForTheExistingSchedule() {
+    synchronized (BasicSteps.class) {
+      CLIENTS.parallelStream().forEach(client -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(3, MINUTES).until(() -> {
+          try {
+            List<RepairScheduleStatus> schedules = client.getRepairSchedulesForCluster(TestContext.TEST_CLUSTER);
+            callAndExpect(
+                "GET",
+                "/repair_schedule/" + TestContext.TEST_CLUSTER + "/"
+                  + schedules.get(0).getId().toString() + "/percent_repaired",
+                Optional.empty(),
+                Optional.of(schedules.get(0).getId().toString()),
+                Response.Status.OK
+            );
+          } catch (AssertionError ex) {
+            LOG.warn(ex.getMessage());
+            return false;
+          }
+          return true;
+        });
+      });
+    }
   }
 }

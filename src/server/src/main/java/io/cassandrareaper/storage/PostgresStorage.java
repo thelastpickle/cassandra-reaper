@@ -21,6 +21,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.GenericMetric;
+import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -533,6 +534,13 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
+  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
+    return getRepairSchedulesForCluster(clusterName).stream()
+        .filter(schedule -> getRepairUnit(schedule.getRepairUnitId()).getIncrementalRepair() == incremental)
+        .collect(Collectors.toList());
+  }
+
+  @Override
   public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
     Collection<RepairSchedule> result;
     try (Handle h = jdbi.open()) {
@@ -935,6 +943,7 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
         Instant expirationTime = getExpirationTime(metricsTimeout);
         storage.purgeOldMetrics(expirationTime);
         storage.purgeOldSourceNodes(expirationTime);
+        storage.purgeOldPercentRepairMetrics(Instant.ofEpochMilli(DateTime.now().minusDays(1).getMillis()));
       }
     }
   }
@@ -1149,5 +1158,35 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
     return Collections.emptySet();
   }
 
+  @Override
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, long since) {
+    if (null != jdbi) {
+      try (Handle h = jdbi.open()) {
+        return getPostgresStorage(h).getPercentRepairedMetrics(
+            clusterName,
+            UuidUtil.toSequenceId(repairScheduleId),
+            Instant.ofEpochMilli(since)
+          ).stream().collect(Collectors.toList());
+      }
+    }
+    return Collections.emptyList();
+  }
 
+  @Override
+  public void storePercentRepairedMetric(PercentRepairedMetric metric) {
+    if (null != jdbi) {
+      try (Handle h = jdbi.open()) {
+        IStoragePostgreSql storage = getPostgresStorage(h);
+        try {
+          storage.insertPercentRepairedMetric(metric);
+        } catch (UnableToExecuteStatementException ex) {
+          if (JdbiExceptionUtil.isDuplicateKeyError(ex)) {
+            storage.updatePercentRepairedMetric(metric);
+          }
+        }
+      } catch (RuntimeException e) {
+        LOG.error("Failed inserting %repaired metrics", e);
+      }
+    }
+  }
 }

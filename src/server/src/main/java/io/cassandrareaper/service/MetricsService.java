@@ -26,6 +26,9 @@ import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.JmxStat;
 import io.cassandrareaper.core.MetricsHistogram;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.core.PercentRepairedMetric;
+import io.cassandrareaper.core.RepairSchedule;
+import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.StreamSession;
 import io.cassandrareaper.core.ThreadPoolStat;
 import io.cassandrareaper.jmx.ClusterFacade;
@@ -36,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.management.JMException;
 
@@ -62,15 +66,20 @@ public final class MetricsService {
     "org.apache.cassandra.metrics:type=DroppedMessage,*"
   };
 
+  private static final String PERCENT_REPAIRED_METRICS
+      = "org.apache.cassandra.metrics:type=ColumnFamily,keyspace=%s,scope=*,name=PercentRepaired"
+  ;
+
   private final AppContext context;
   private final ClusterFacade clusterFacade;
   private final ObjectMapper objectMapper;
   private final String localClusterName;
+  private final RepairUnitService repairUnitService;
 
   private MetricsService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier) throws ReaperException {
     this.context = context;
     this.clusterFacade = clusterFacadeSupplier.get();
-    if (context.config.isInSidecarMode()) {
+    if (Boolean.TRUE.equals(context.config.isInSidecarMode())) {
 
       Node host = Node.builder()
             .withHostname(context.config.getEnforcedLocalNode().orElse("127.0.0.1"))
@@ -82,6 +91,7 @@ public final class MetricsService {
     }
     objectMapper = new ObjectMapper();
     objectMapper.registerModule(new Jdk8Module());
+    this.repairUnitService = RepairUnitService.create(context);
   }
 
   @VisibleForTesting
@@ -133,15 +143,7 @@ public final class MetricsService {
         context.config.getDatacenterAvailability().isInCollocatedMode(),
         "grabAndStoreGenericMetrics() can only be called in collocated mode");
 
-    Node node = maybeNode.orElseGet(() ->
-        Node.builder()
-          .withHostname(context.getLocalNodeAddress())
-          .withCluster(
-              Cluster.builder()
-                  .withName(localClusterName)
-                  .withSeedHosts(ImmutableSet.of(context.getLocalNodeAddress()))
-                  .build())
-          .build());
+    Node node = getNode(maybeNode);
 
     List<GenericMetric> metrics
         = convertToGenericMetrics(ClusterFacade.create(context).collectMetrics(node, COLLECTED_METRICS), node);
@@ -158,15 +160,7 @@ public final class MetricsService {
         context.config.getDatacenterAvailability().isInCollocatedMode(),
         "grabAndStoreCompactionStats() can only be called in sidecar");
 
-    Node node = maybeNode.orElseGet(() ->
-        Node.builder()
-          .withHostname(context.getLocalNodeAddress())
-          .withCluster(
-              Cluster.builder()
-                  .withName(localClusterName)
-                  .withSeedHosts(ImmutableSet.of(context.getLocalNodeAddress()))
-                  .build())
-          .build());
+    Node node = getNode(maybeNode);
 
     CompactionStats compactionStats = ClusterFacade.create(context).listCompactionStatsDirect(node);
 
@@ -185,15 +179,7 @@ public final class MetricsService {
         context.config.getDatacenterAvailability().isInCollocatedMode(),
         "grabAndStoreActiveStreams() can only be called in sidecar");
 
-    Node node = maybeNode.orElseGet(() ->
-        Node.builder()
-          .withHostname(context.getLocalNodeAddress())
-          .withCluster(
-              Cluster.builder()
-                  .withName(localClusterName)
-                  .withSeedHosts(ImmutableSet.of(context.getLocalNodeAddress()))
-                  .build())
-          .build());
+    Node node = getNode(maybeNode);
 
     List<StreamSession> activeStreams = ClusterFacade.create(context).listStreamsDirect(node);
 
@@ -207,4 +193,49 @@ public final class MetricsService {
     LOG.debug("Grabbing and storing streams for {}", node.getHostname());
   }
 
+  private Node getNode(Optional<Node> maybeNode) {
+    return maybeNode.orElseGet(() ->
+        Node.builder()
+          .withHostname(context.getLocalNodeAddress())
+          .withCluster(
+              Cluster.builder()
+                  .withName(localClusterName)
+                  .withSeedHosts(ImmutableSet.of(context.getLocalNodeAddress()))
+                  .build())
+          .build());
+  }
+
+  public void grabAndStorePercentRepairedMetrics(Optional<Node> maybeNode, RepairSchedule sched)
+    throws ReaperException {
+    Node node = getNode(maybeNode);
+    RepairUnit repairUnit = context.storage.getRepairUnit(sched.getRepairUnitId());
+    Set<String> tables = this.repairUnitService.getTablesToRepair(node.getCluster().get(), repairUnit);
+
+    // Collect percent repaired metrics for all tables in the keyspace
+    List<GenericMetric> metrics
+        = convertToGenericMetrics(
+          ClusterFacade.create(context)
+            .collectMetrics(
+              node,
+              new String[]{String.format(PERCENT_REPAIRED_METRICS, repairUnit.getKeyspaceName())}),
+          node);
+    LOG.debug("Grabbed the following percent repaired metrics: {}", metrics);
+
+    // Metrics are filtered to retain only tables of interest, sorted and reduced to keep the smallest percent repaired
+    Optional<GenericMetric> percentRepairedForSchedule = metrics.stream()
+        .filter(metric -> tables.contains(metric.getMetricScope()))
+        .sorted((metric1, metric2) -> Double.valueOf(metric1.getValue()).compareTo(Double.valueOf(metric2.getValue())))
+        .reduce((metric1, metric2) -> metric1);
+    if (percentRepairedForSchedule.isPresent()) {
+      context.storage.storePercentRepairedMetric(
+          PercentRepairedMetric.builder()
+            .withCluster(repairUnit.getClusterName())
+            .withKeyspaceName(repairUnit.getKeyspaceName())
+            .withTableName(percentRepairedForSchedule.get().getMetricScope())
+            .withNode(node.getHostname())
+            .withRepairScheduleId(sched.getId())
+            .withPercentRepaired((int)percentRepairedForSchedule.get().getValue())
+            .build());
+    }
+  }
 }
