@@ -174,6 +174,9 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @DefaultValue("true")
   private Boolean enableConcurrentMigrations;
 
+  @JsonProperty
+  private Integer percentRepairedCheckIntervalMinutes;
+
   private HttpClientConfiguration httpClient = new HttpClientConfiguration();
 
   @JsonProperty
@@ -454,13 +457,13 @@ public final class ReaperApplicationConfiguration extends Configuration {
     this.purgeRecordsAfterInDays = purgeRecordsAfterInDays;
   }
 
-  public Integer getNumberOfRunsToKeepPerUnit() {
-    return numberOfRunsToKeepPerUnit == null ? 50 : numberOfRunsToKeepPerUnit;
+  public Integer getPercentRepairedCheckIntervalMinutes() {
+    return percentRepairedCheckIntervalMinutes == null ? 30 : percentRepairedCheckIntervalMinutes;
   }
 
-  @JsonProperty("numberOfRunsToKeepPerUnit")
-  public void setNumberOfRunsToKeepPerUnit(Integer numberOfRunsToKeepPerUnit) {
-    this.numberOfRunsToKeepPerUnit = numberOfRunsToKeepPerUnit;
+  @JsonProperty("percentRepairedCheckIntervalMinutes")
+  public void setpercentRepairedCheckIntervalMinutes(Integer percentRepairedCheckIntervalMinutes) {
+    this.percentRepairedCheckIntervalMinutes = percentRepairedCheckIntervalMinutes;
   }
 
   public Boolean isInSidecarMode() {
@@ -497,6 +500,15 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setEnableConcurrentMigrations(boolean enableConcurrentMigrations) {
     this.enableConcurrentMigrations = enableConcurrentMigrations;
+  }
+
+  public Integer getNumberOfRunsToKeepPerUnit() {
+    return numberOfRunsToKeepPerUnit == null ? 50 : numberOfRunsToKeepPerUnit;
+  }
+
+  @JsonProperty("numberOfRunsToKeepPerUnit")
+  public void setNumberOfRunsToKeepPerUnit(Integer numberOfRunsToKeepPerUnit) {
+    this.numberOfRunsToKeepPerUnit = numberOfRunsToKeepPerUnit;
   }
 
   public HttpClientConfiguration getHttpClientConfiguration() {

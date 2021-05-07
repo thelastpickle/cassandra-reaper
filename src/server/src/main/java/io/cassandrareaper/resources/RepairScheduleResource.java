@@ -192,7 +192,7 @@ public final class RepairScheduleResource {
 
       if (!parallelism.equals(RepairParallelism.PARALLEL) && incremental) {
         return Response.status(Response.Status.BAD_REQUEST)
-            .entity("Can't mix sequential repair and incremental repairs")
+            .entity("Incremental repairs only supports PARALLEL parallelism mode.")
             .build();
       }
 

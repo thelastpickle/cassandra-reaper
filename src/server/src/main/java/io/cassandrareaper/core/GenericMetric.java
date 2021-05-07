@@ -71,6 +71,10 @@ public final class GenericMetric {
     return metricDomain + ":type=" + metricType + ",scope=" + metricScope + ",name=" + metricName;
   }
 
+  public String toString() {
+    return metricDomain + ":type=" + metricType + ",scope=" + metricScope + ",name=" + metricName + ",value=" + value;
+  }
+
   public String getHost() {
     return host;
   }

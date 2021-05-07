@@ -25,6 +25,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.ClusterProperties;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.GenericMetric;
+import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairRun.Builder;
 import io.cassandrareaper.core.RepairRun.RunState;
@@ -203,6 +204,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement saveDiagnosticEventPrepStmt;
   private PreparedStatement setRunningRepairsPrepStmt;
   private PreparedStatement getRunningRepairsPrepStmt;
+  private PreparedStatement storePercentRepairedForSchedulePrepStmt;
+  private PreparedStatement getPercentRepairedForSchedulePrepStmt;
 
   public CassandraStorage(
       UUID reaperInstanceId,
@@ -580,6 +583,21 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
           + " FROM running_repairs"
           + " WHERE repair_id = ?")
       .setConsistencyLevel(ConsistencyLevel.QUORUM);
+
+    storePercentRepairedForSchedulePrepStmt
+      = session
+      .prepare(
+          "INSERT INTO percent_repaired_by_schedule"
+            + " (repair_schedule_id, time_bucket, node, keyspace_name, table_name, percent_repaired)"
+            + " values(?, ?, ?, ?, ?, ?)"
+      );
+
+    getPercentRepairedForSchedulePrepStmt
+      = session
+      .prepare(
+          "SELECT * FROM percent_repaired_by_schedule"
+            + " WHERE repair_schedule_id = ? AND time_bucket = ?"
+      );
   }
 
   private void prepareOperationsStatements() {
@@ -1372,6 +1390,13 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
+  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
+    return getRepairSchedulesForCluster(clusterName).stream()
+        .filter(schedule -> getRepairUnit(schedule.getRepairUnitId()).getIncrementalRepair() == incremental)
+        .collect(Collectors.toList());
+  }
+
+  @Override
   public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
     Collection<RepairSchedule> schedules = Lists.<RepairSchedule>newArrayList();
     ResultSet scheduleIds = session.execute(getRepairScheduleByClusterAndKsPrepStmt.bind(" ", keyspaceName));
@@ -2115,5 +2140,23 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   public enum CassandraMode {
     CASSANDRA,
     ASTRA
+  }
+
+  @Override
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, long since) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public void storePercentRepairedMetric(PercentRepairedMetric metric) {
+    session.execute(storePercentRepairedForSchedulePrepStmt.bind(
+        metric.getRepairScheduleId(),
+        DateTime.now().toString(TIME_BUCKET_FORMATTER).substring(0, 11) + "0",
+        metric.getNode(),
+        metric.getKeyspaceName(),
+        metric.getTableName(),
+        metric.getPercentRepaired())
+    );
   }
 }

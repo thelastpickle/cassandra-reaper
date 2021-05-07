@@ -22,13 +22,7 @@ import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.storage.postgresql.IStoragePostgreSql;
 import io.cassandrareaper.storage.postgresql.UuidUtil;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.io.Reader;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -43,9 +37,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableList;
-import com.ibatis.common.jdbc.ScriptRunner;
-
 import org.fest.assertions.api.Assertions;
+import org.flywaydb.core.Flyway;
 import org.h2.tools.Server;
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -55,7 +48,8 @@ import org.skife.jdbi.v2.Handle;
 
 public class PostgresStorageTest {
 
-  private static final String DB_URL = "jdbc:h2:mem:test_mem;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false";
+  private static final String DB_URL = "jdbc:h2:mem:test_mem;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;"
+      + "DATABASE_TO_UPPER=FALSE;CASE_INSENSITIVE_IDENTIFIERS=TRUE";
 
   @Before
   public void setUp() throws SQLException, IOException {
@@ -65,23 +59,16 @@ public class PostgresStorageTest {
     Handle handle = dbi.open();
     Connection conn = handle.getConnection();
 
-    // to suppress output of ScriptRunner
-    PrintStream tmp = new PrintStream(new OutputStream() {
-      @Override
-      public void write(int buff) throws IOException {
-        // do nothing
-      }
-    });
-    PrintStream console = System.out;
-    System.setOut(tmp);
 
-    String cwd = Paths.get("").toAbsolutePath().toString();
-    String path = cwd + "/../src/test/resources/db/postgres/V17_0_0__multi_instance.sql";
-    ScriptRunner scriptExecutor = new ScriptRunner(conn, false, true);
-    Reader reader = new BufferedReader(new FileReader(path));
-    scriptExecutor.runScript(reader);
-
-    System.setOut(console);
+    Flyway flyway = new Flyway();
+    flyway.setDataSource(
+        DB_URL,
+        "",
+        "");
+    flyway.setLocations("/db/h2");
+    flyway.setBaselineOnMigrate(true);
+    flyway.repair();
+    flyway.migrate();
   }
 
   @Test

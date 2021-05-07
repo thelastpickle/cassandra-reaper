@@ -21,6 +21,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.GenericMetric;
+import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -509,7 +510,12 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
     long insertedId;
     try (Handle h = jdbi.open()) {
-      insertedId = getPostgresStorage(h).insertRepairSchedule(repairSchedule.build(null));
+      RepairSchedule schedule = repairSchedule.build(null);
+      LOG.error("DateTimes {}, {}, {}",
+          schedule.getCreationTime(),
+          schedule.getNextActivation(),
+          schedule.getPauseTime());
+      insertedId = getPostgresStorage(h).insertRepairSchedule(schedule);
     }
     return repairSchedule.build(UuidUtil.fromSequenceId(insertedId));
   }
@@ -530,6 +536,13 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
       result = getPostgresStorage(h).getRepairSchedulesForCluster(clusterName);
     }
     return result;
+  }
+
+  @Override
+  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
+    return getRepairSchedulesForCluster(clusterName).stream()
+        .filter(schedule -> getRepairUnit(schedule.getRepairUnitId()).getIncrementalRepair() == incremental)
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -1147,6 +1160,18 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
       }
     }
     return Collections.emptySet();
+  }
+
+  @Override
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, long since) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public void storePercentRepairedMetric(PercentRepairedMetric metric) {
+    // TODO Auto-generated method stub
+
   }
 
 

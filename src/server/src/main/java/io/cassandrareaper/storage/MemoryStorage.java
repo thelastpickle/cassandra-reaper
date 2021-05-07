@@ -19,6 +19,7 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
+import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -49,12 +50,15 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implements the StorageAPI using transient Java classes.
  */
 public final class MemoryStorage implements IStorage {
 
+  private static final Logger LOG = LoggerFactory.getLogger(MemoryStorage.class);
   private final ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairRun> repairRuns = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairUnit> repairUnits = Maps.newConcurrentMap();
@@ -64,6 +68,7 @@ public final class MemoryStorage implements IStorage {
   private final ConcurrentMap<UUID, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
   private final ConcurrentMap<String, Snapshot> snapshots = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, DiagEventSubscription> subscriptionsById = Maps.newConcurrentMap();
+  private final ConcurrentMap<String, PercentRepairedMetric> percentRepairedMetrics = Maps.newConcurrentMap();
 
   @Override
   public boolean isStorageConnected() {
@@ -411,6 +416,13 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
+  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
+    return getRepairSchedulesForCluster(clusterName).stream()
+        .filter(schedule -> getRepairUnit(schedule.getRepairUnitId()).getIncrementalRepair() == incremental)
+        .collect(Collectors.toList());
+  }
+
+  @Override
   public Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName) {
     Collection<RepairSchedule> foundRepairSchedules = new ArrayList<>();
     for (RepairSchedule repairSchedule : repairSchedules.values()) {
@@ -557,5 +569,19 @@ public final class MemoryStorage implements IStorage {
   @Override
   public boolean deleteEventSubscription(UUID id) {
     return subscriptionsById.remove(id) != null;
+  }
+
+  @Override
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, long since) {
+    return percentRepairedMetrics.entrySet().stream()
+      .filter(entry -> entry.getKey().equals(clusterName + "-" + repairScheduleId))
+      .map(entry -> entry.getValue())
+      .collect(Collectors.toList());
+  }
+
+  @Override
+  public void storePercentRepairedMetric(PercentRepairedMetric metric) {
+    LOG.info("Storing percent repaired metric {}", metric);
+    percentRepairedMetrics.put(metric.getCluster() + "-" + metric.getRepairScheduleId(), metric);
   }
 }
