@@ -50,23 +50,23 @@ public final class HeartTest {
   private static final int REPAIR_TIMEOUT_S = 60;
   private static final int RETRY_DELAY_S = 10;
 
-  @Test(expected = AssertionError.class)
-  public void testBeat_nullStorage() throws ReaperException, InterruptedException {
-    AppContext context = new AppContext();
-    context.config = new ReaperApplicationConfiguration();
-    try (Heart heart = Heart.create(context)) {
-      heart.beat();
-    }
-  }
-
-  @Test(expected = AssertionError.class)
+  @Test
   public void testBeat_memoryStorage() throws ReaperException, InterruptedException {
     AppContext context = new AppContext();
     context.config = new ReaperApplicationConfiguration();
-    context.storage = new MemoryStorage();
+    context.storage = Mockito.mock(MemoryStorage.class);
+    Cluster cluster = Cluster.builder()
+        .withName("test")
+        .withSeedHosts(Sets.newSet("127.0.0.1"))
+        .withJmxPort(7199)
+        .withPartitioner("Murmur3Partitioner")
+        .withState(State.ACTIVE)
+        .build();
+    Mockito.when(context.storage.getClusters()).thenReturn(Arrays.asList(cluster));
     try (Heart heart = Heart.create(context)) {
       heart.beat();
     }
+    Mockito.verify(context.storage, Mockito.times(1)).getClusters();
   }
 
   @Test
