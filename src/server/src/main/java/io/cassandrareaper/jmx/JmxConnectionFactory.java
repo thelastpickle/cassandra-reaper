@@ -83,16 +83,24 @@ public class JmxConnectionFactory {
     }
   }
 
-  protected JmxProxy connectImpl(Node node) throws ReaperException, InterruptedException {
-    // use configured jmx port for host if provided
+  protected String determineHost(Node node) {
     String host = node.getHostname();
     if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
       host = host + ":" + jmxPorts.get(host);
       LOG.debug("Connecting to {} with specific port", host);
+    } else if (JmxAddresses.isNumericIPv6Address(host)) {
+      host = "[" + host + "]:" + node.getJmxPort();
+      LOG.debug("Connecting to ipv6 {} with custom port", host);
     } else {
       host = host + ":" + node.getJmxPort();
       LOG.debug("Connecting to {} with custom port", host);
     }
+    return host;
+  }
+
+  protected JmxProxy connectImpl(Node node) throws ReaperException, InterruptedException {
+    // use configured jmx port for host if provided
+    String host = determineHost(node);
 
     Optional<JmxCredentials> jmxCredentials = getJmxCredentialsForCluster(node.getCluster());
 
