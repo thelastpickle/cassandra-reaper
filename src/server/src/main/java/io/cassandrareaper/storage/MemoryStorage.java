@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -68,7 +69,8 @@ public final class MemoryStorage implements IStorage {
   private final ConcurrentMap<UUID, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
   private final ConcurrentMap<String, Snapshot> snapshots = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, DiagEventSubscription> subscriptionsById = Maps.newConcurrentMap();
-  private final ConcurrentMap<String, PercentRepairedMetric> percentRepairedMetrics = Maps.newConcurrentMap();
+  private final ConcurrentMap<String, Map<String, PercentRepairedMetric>> percentRepairedMetrics
+      = Maps.newConcurrentMap();
 
   @Override
   public boolean isStorageConnected() {
@@ -575,13 +577,22 @@ public final class MemoryStorage implements IStorage {
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, long since) {
     return percentRepairedMetrics.entrySet().stream()
       .filter(entry -> entry.getKey().equals(clusterName + "-" + repairScheduleId))
-      .map(entry -> entry.getValue())
+      .map(entry -> entry.getValue().entrySet())
+      .flatMap(Collection::stream)
+      .map(Entry::getValue)
       .collect(Collectors.toList());
   }
 
   @Override
   public void storePercentRepairedMetric(PercentRepairedMetric metric) {
-    LOG.info("Storing percent repaired metric {}", metric);
-    percentRepairedMetrics.put(metric.getCluster() + "-" + metric.getRepairScheduleId(), metric);
+    synchronized (this) {
+      String metricKey = metric.getCluster() + "-" + metric.getRepairScheduleId();
+      Map<String, PercentRepairedMetric> newValue = Maps.newHashMap();
+      if (percentRepairedMetrics.containsKey(metricKey)) {
+        newValue.putAll(percentRepairedMetrics.get(metricKey));
+      }
+      newValue.put(metric.getNode(), metric);
+      percentRepairedMetrics.put(metricKey, newValue);
+    }
   }
 }

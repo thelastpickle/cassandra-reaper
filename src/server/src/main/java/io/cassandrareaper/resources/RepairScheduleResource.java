@@ -20,6 +20,7 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.resources.view.RepairRunStatus;
@@ -553,5 +554,14 @@ public final class RepairScheduleResource {
           RepairRunStatus.dateTimeToIso8601(nextActivation));
     }
     return nextActivation;
+  }
+
+  @GET
+  @Path("/{clusterName}/{id}/percent_repaired")
+  public List<PercentRepairedMetric> getPercentRepairedMetricsForSchedule(
+      @PathParam("clusterName") String clusterName,
+      @PathParam("id") UUID repairScheduleId) throws IllegalArgumentException {
+    long since = DateTime.now().minusHours(1).getMillis();
+    return context.storage.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
   }
 }

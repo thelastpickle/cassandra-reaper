@@ -138,6 +138,7 @@ Feature: Using Reaper
     Then reaper has 1 scheduled repairs for cluster called "test"
     When reaper is upgraded to latest
     Then reaper has 1 scheduled repairs for cluster called "test"
+    And percent repaired metrics get collected for the existing schedule
     And deleting cluster called "test" fails
     When all added schedules are deleted for the last added cluster
     And the last added cluster is deleted

@@ -16,12 +16,14 @@
 -- Add a table to store the percent repaired metrics for incremental repair schedules
 
 CREATE TABLE percent_repaired_by_schedule(
+     cluster_name text,
      repair_schedule_id uuid,
      time_bucket text,
      node text,
      keyspace_name text,
      table_name text,
      percent_repaired int,
-     PRIMARY KEY((repair_schedule_id, time_bucket), node))
+     ts timestamp,
+     PRIMARY KEY((cluster_name, repair_schedule_id, time_bucket), node))
 WITH CLUSTERING ORDER BY (node ASC)
  AND default_time_to_live = 3600;

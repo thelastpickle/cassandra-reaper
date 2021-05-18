@@ -588,15 +588,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       = session
       .prepare(
           "INSERT INTO percent_repaired_by_schedule"
-            + " (repair_schedule_id, time_bucket, node, keyspace_name, table_name, percent_repaired)"
-            + " values(?, ?, ?, ?, ?, ?)"
+            + " (cluster_name, repair_schedule_id, time_bucket, node, keyspace_name, table_name, percent_repaired, ts)"
+            + " values(?, ?, ?, ?, ?, ?, ?, ?)"
       );
 
     getPercentRepairedForSchedulePrepStmt
       = session
       .prepare(
           "SELECT * FROM percent_repaired_by_schedule"
-            + " WHERE repair_schedule_id = ? AND time_bucket = ?"
+            + " WHERE cluster_name = ? and repair_schedule_id = ? AND time_bucket = ?"
       );
   }
 
@@ -2144,19 +2144,59 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, long since) {
-    // TODO Auto-generated method stub
-    return null;
+    List<PercentRepairedMetric> metrics = Lists.newArrayList();
+    List<ResultSetFuture> futures = Lists.newArrayList();
+    List<String> timeBuckets = Lists.newArrayList();
+    long now = DateTime.now().getMillis();
+    long startTime = since;
+
+    // Compute the ten minutes buckets since the requested lower bound timestamp
+    while (startTime <= now) {
+      timeBuckets.add(DateTime.now().withMillis(startTime).toString(TIME_BUCKET_FORMATTER).substring(0, 11) + "0");
+      startTime += 600000;
+    }
+
+    Collections.reverse(timeBuckets);
+
+    for (String timeBucket:timeBuckets) {
+      futures.add(session.executeAsync(
+          getPercentRepairedForSchedulePrepStmt.bind(
+              clusterName,
+              repairScheduleId,
+              timeBucket)));
+    }
+
+    for (ResultSetFuture future : futures) {
+      for (Row row : future.getUninterruptibly()) {
+        metrics.add(
+            PercentRepairedMetric.builder()
+                .withCluster(clusterName)
+                .withRepairScheduleId(row.getUUID("repair_schedule_id"))
+                .withKeyspaceName(row.getString("keyspace_name"))
+                .withTableName(row.getString("table_name"))
+                .withNode(row.getString("node"))
+                .withPercentRepaired(row.getInt("percent_repaired"))
+                .build());
+      }
+      if (!metrics.isEmpty()) {
+        break;
+      }
+    }
+
+    return metrics;
   }
 
   @Override
   public void storePercentRepairedMetric(PercentRepairedMetric metric) {
     session.execute(storePercentRepairedForSchedulePrepStmt.bind(
+        metric.getCluster(),
         metric.getRepairScheduleId(),
         DateTime.now().toString(TIME_BUCKET_FORMATTER).substring(0, 11) + "0",
         metric.getNode(),
         metric.getKeyspaceName(),
         metric.getTableName(),
-        metric.getPercentRepaired())
+        metric.getPercentRepaired(),
+        DateTime.now().toDate())
     );
   }
 }

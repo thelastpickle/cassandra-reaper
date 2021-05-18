@@ -510,12 +510,7 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   public RepairSchedule addRepairSchedule(RepairSchedule.Builder repairSchedule) {
     long insertedId;
     try (Handle h = jdbi.open()) {
-      RepairSchedule schedule = repairSchedule.build(null);
-      LOG.error("DateTimes {}, {}, {}",
-          schedule.getCreationTime(),
-          schedule.getNextActivation(),
-          schedule.getPauseTime());
-      insertedId = getPostgresStorage(h).insertRepairSchedule(schedule);
+      insertedId = getPostgresStorage(h).insertRepairSchedule(repairSchedule.build(null));
     }
     return repairSchedule.build(UuidUtil.fromSequenceId(insertedId));
   }
@@ -948,6 +943,7 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
         Instant expirationTime = getExpirationTime(metricsTimeout);
         storage.purgeOldMetrics(expirationTime);
         storage.purgeOldSourceNodes(expirationTime);
+        storage.purgeOldPercentRepairMetrics(Instant.ofEpochMilli(DateTime.now().minusDays(1).getMillis()));
       }
     }
   }
@@ -1164,15 +1160,33 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
 
   @Override
   public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, long since) {
-    // TODO Auto-generated method stub
-    return null;
+    if (null != jdbi) {
+      try (Handle h = jdbi.open()) {
+        return getPostgresStorage(h).getPercentRepairedMetrics(
+            clusterName,
+            UuidUtil.toSequenceId(repairScheduleId),
+            Instant.ofEpochMilli(since)
+          ).stream().collect(Collectors.toList());
+      }
+    }
+    return Collections.emptyList();
   }
 
   @Override
   public void storePercentRepairedMetric(PercentRepairedMetric metric) {
-    // TODO Auto-generated method stub
-
+    if (null != jdbi) {
+      try (Handle h = jdbi.open()) {
+        IStoragePostgreSql storage = getPostgresStorage(h);
+        try {
+          storage.insertPercentRepairedMetric(metric);
+        } catch (UnableToExecuteStatementException ex) {
+          if (JdbiExceptionUtil.isDuplicateKeyError(ex)) {
+            storage.updatePercentRepairedMetric(metric);
+          }
+        }
+      } catch (RuntimeException e) {
+        LOG.error("Failed inserting %repaired metrics", e);
+      }
+    }
   }
-
-
 }

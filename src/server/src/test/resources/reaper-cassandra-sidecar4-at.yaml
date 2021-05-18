@@ -30,6 +30,7 @@ enforcedLocalNode: 127.0.0.4
 enforcedLocalClusterName: test
 enforcedLocalDatacenter: dc2
 enableConcurrentMigrations: false
+percentRepairedCheckIntervalMinutes: 1
 
 logging:
   level: WARN

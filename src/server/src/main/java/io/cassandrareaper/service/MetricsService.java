@@ -210,6 +210,8 @@ public final class MetricsService {
     Node node = getNode(maybeNode);
     RepairUnit repairUnit = context.storage.getRepairUnit(sched.getRepairUnitId());
     Set<String> tables = this.repairUnitService.getTablesToRepair(node.getCluster().get(), repairUnit);
+
+    // Collect percent repaired metrics for all tables in the keyspace
     List<GenericMetric> metrics
         = convertToGenericMetrics(
           ClusterFacade.create(context)
@@ -217,13 +219,14 @@ public final class MetricsService {
               node,
               new String[]{String.format(PERCENT_REPAIRED_METRICS, repairUnit.getKeyspaceName())}),
           node);
-    LOG.debug("extracted metrics: {}", metrics);
+    LOG.debug("Grabbed the following percent repaired metrics: {}", metrics);
+
+    // Metrics are filtered to retain only tables of interest, sorted and reduced to keep the smallest percent repaired
     Optional<GenericMetric> percentRepairedForSchedule = metrics.stream()
         .filter(metric -> tables.contains(metric.getMetricScope()))
         .sorted((metric1, metric2) -> Double.valueOf(metric1.getValue()).compareTo(Double.valueOf(metric2.getValue())))
         .reduce((metric1, metric2) -> metric1);
     if (percentRepairedForSchedule.isPresent()) {
-      LOG.debug("filtered metrics: {}", percentRepairedForSchedule);
       context.storage.storePercentRepairedMetric(
           PercentRepairedMetric.builder()
             .withCluster(repairUnit.getClusterName())

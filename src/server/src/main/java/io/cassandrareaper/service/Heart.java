@@ -22,6 +22,7 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.jmx.ClusterFacade;
@@ -48,10 +49,6 @@ import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author adejanovski
- *
- */
 public final class Heart implements AutoCloseable {
 
   private static final AtomicBoolean GAUGES_REGISTERED = new AtomicBoolean(false);
@@ -219,11 +216,7 @@ public final class Heart implements AutoCloseable {
                 })
                 .map(hostname -> Node.builder()
                     .withHostname(hostname)
-                    .withCluster(
-                        Cluster.builder()
-                            .withName(cluster.getName())
-                            .withSeedHosts(ImmutableSet.of(hostname))
-                            .build())
+                    .withCluster(cluster)
                     .build())
                 .forEach(node -> {
                   try {
