@@ -22,7 +22,6 @@ import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
-import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.jmx.ClusterFacade;
@@ -45,7 +44,6 @@ import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
