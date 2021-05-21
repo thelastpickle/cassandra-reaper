@@ -2038,7 +2038,7 @@ public final class BasicSteps {
   public void percentRepairedMetricsGetCollectedForTheExistingSchedule() {
     synchronized (BasicSteps.class) {
       CLIENTS.parallelStream().forEach(client -> {
-        await().with().pollInterval(POLL_INTERVAL).atMost(3, MINUTES).until(() -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(5, MINUTES).until(() -> {
           try {
             List<RepairScheduleStatus> schedules = client.getRepairSchedulesForCluster(TestContext.TEST_CLUSTER);
             callAndExpect(

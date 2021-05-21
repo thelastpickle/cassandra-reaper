@@ -33,8 +33,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: master
 
       - name: Setup Maven Cache
         uses: actions/cache@v2
@@ -89,22 +87,20 @@ jobs:
         include:
           # don't run against the following C* versions when using cassandra storage type
           - cassandra-version: 1.2.19
-            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards'
+            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 2.0.17
-            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards'
+            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 2.1.22
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 2.2.19
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 3.0.24
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 3.11.10
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: master
 
       - name: Setup Maven Cache
         uses: actions/cache@v2
@@ -166,18 +162,6 @@ jobs:
     name: Postgres backend
     needs: build
     runs-on: ubuntu-20.04
-    services:
-      postgres:
-        image: postgres:9.4
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          # this replaces the manual reaper creation
-          POSTGRES_DB: reaper
-        ports:
-          - 5432:5432
-        # needed because the postgres container does not provide a healthcheck
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     strategy:
       matrix:
         cassandra-version: [3.11.10]
@@ -206,8 +190,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: master
 
       - name: Setup Maven Cache
         uses: actions/cache@v2
@@ -237,6 +219,10 @@ jobs:
         with:
           python-version: '3.x'
           architecture: 'x64'
+
+      - name: Setup postgres DB
+        run:
+          docker run --name posttest -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=reaper postgres:alpine -c max_connections=300
 
       - name: Install CCM
         run: |
@@ -276,12 +262,18 @@ jobs:
         cassandra-version: [2.1.22, 2.2.19, 3.0.24, 3.11.10, 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [ccm]
-        cucumber-options: ['--tags ~@cassandra_4_0_onwards']
+        include:
+          - cassandra-version: 2.1.22
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+          - cassandra-version: 2.2.19
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+          - cassandra-version: 3.0.24
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+          - cassandra-version: 3.11.10
+            cucumber-options: '--tags ~@cassandra_4_0_onwards'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: master
 
       - name: Setup Maven Cache
         uses: actions/cache@v2
@@ -354,8 +346,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: master
 
       - name: Setup Maven Cache
         uses: actions/cache@v2
@@ -415,18 +405,6 @@ jobs:
     needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Sidecar
     runs-on: ubuntu-20.04
-    services:
-      postgres:
-        image: postgres:9.4
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          # this replaces the manual reaper creation
-          POSTGRES_DB: reaper
-        ports:
-          - 5432:5432
-        # needed because the postgres container does not provide a healthcheck
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     strategy:
       matrix:
         cassandra-version: [2.1.22, 2.2.19, 3.0.24, 3.11.10, 'github:apache/trunk']
@@ -437,11 +415,11 @@ jobs:
         # all versions but trunk have the same cucumber options, but we can't declare that more effectively (yet)
         include:
           - cassandra-version: 2.1.22
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 2.2.19
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 3.0.24
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 3.11.10
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
           - cassandra-version: 'github:apache/trunk'
@@ -459,8 +437,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: master
 
       - name: Setup Maven Cache
         uses: actions/cache@v2
@@ -489,6 +465,10 @@ jobs:
         with:
           python-version: '3.x'
           architecture: 'x64'
+
+      - name: Setup postgres DB
+        run:
+          docker run --name posttest -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=reaper postgres:alpine -c max_connections=300
 
       - name: Install CCM
         run: |
@@ -550,8 +530,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: master
 
       - name: Setup Maven Cache
         uses: actions/cache@v2
@@ -619,18 +597,16 @@ jobs:
         include:
           # all versions but trunk need to exclude trunk tests
           - cassandra-version: 2.1.22
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 2.2.19
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 3.0.24
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 3.11.10
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: master
 
       - name: Setup Maven Cache
         uses: actions/cache@v2
@@ -700,18 +676,16 @@ jobs:
         include:
           # all versions but trunk need to exclude trunk tests
           - cassandra-version: 2.1.22
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 2.2.19
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 3.0.24
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 3.11.10
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: master
 
       - name: Setup Maven Cache
         uses: actions/cache@v2
@@ -782,8 +756,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: master
 
       - name: Setup Maven Cache
         uses: actions/cache@v2
@@ -847,8 +819,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: master
 
       - name: Setup Maven Cache
         uses: actions/cache@v2
