@@ -943,7 +943,7 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
         Instant expirationTime = getExpirationTime(metricsTimeout);
         storage.purgeOldMetrics(expirationTime);
         storage.purgeOldSourceNodes(expirationTime);
-        storage.purgeOldPercentRepairMetrics(Instant.ofEpochMilli(DateTime.now().minusDays(1).getMillis()));
+        storage.purgeOldPercentRepairMetrics(expirationTime);
       }
     }
   }

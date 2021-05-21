@@ -958,8 +958,8 @@ public interface IStoragePostgreSql {
       @Bind("since") Instant since
   );
 
-  @SqlQuery(SQL_PURGE_PERCENT_REPAIRED)
-  void purgeOldPercentRepairMetrics(
+  @SqlUpdate(SQL_PURGE_PERCENT_REPAIRED)
+  int purgeOldPercentRepairMetrics(
       @Bind("expirationTime") Instant expirationTime
   );
 }

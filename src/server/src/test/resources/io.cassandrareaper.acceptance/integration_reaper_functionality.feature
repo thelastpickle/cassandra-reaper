@@ -138,6 +138,25 @@ Feature: Using Reaper
     Then reaper has 1 scheduled repairs for cluster called "test"
     When reaper is upgraded to latest
     Then reaper has 1 scheduled repairs for cluster called "test"
+    And deleting cluster called "test" fails
+    When all added schedules are deleted for the last added cluster
+    And the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @all_nodes_reachable
+  @cassandra_3_11_onwards
+  Scenario Outline: Add a scheduled incremental repair and collect percent repaired metrics
+    Given that reaper <version> is running
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    And reaper has 0 scheduled repairs for cluster called "test"
+    When a new daily "incremental" repair schedule is added for "test" and keyspace "test_keyspace3"
+    Then reaper has 1 scheduled repairs for cluster called "test"
+    When reaper is upgraded to latest
+    Then reaper has 1 scheduled repairs for cluster called "test"
     And percent repaired metrics get collected for the existing schedule
     And deleting cluster called "test" fails
     When all added schedules are deleted for the last added cluster
