@@ -1,5 +1,8 @@
 ## Change Log
 
+### 2.2.5 (2021/06/03 08:50 +00:00)
+- [8f7a208](https://github.com/thelastpickle/cassandra-reaper/commit/8f7a20832d90376c584e5106d00aa3c8110a2afd) Fix IPv6 in JMX Connection Factory (@Rooks103)
+
 ### 2.2.4 (2021/04/09 07:33 +00:00)
 - [2430f1f](https://github.com/thelastpickle/cassandra-reaper/commit/2430f1f9831757e8299429e3f5cd4e02f0c3e904) Batch metric inserts by partition to reduce Reaper write throughput (@adejanovski)
 - [7765cbe](https://github.com/thelastpickle/cassandra-reaper/commit/7765cbe8aaca9b4e0595297dbaa59d4f517f0bdb) Limit repair runners per cluster instead of globally (@adejanovski)
