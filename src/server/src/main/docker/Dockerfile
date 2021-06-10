@@ -74,7 +74,8 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
     REAPER_SHIRO_INI="" \
     REAPER_JMXMP_ENABLED="false" \
     REAPER_JMXMP_SSL="false" \
-    JAVA_OPTS=""
+    JAVA_OPTS="" \
+    REAPER_MAX_PARALLEL_REPAIRS=2
 
 # used to run spreaper cli
 RUN apk add --update \

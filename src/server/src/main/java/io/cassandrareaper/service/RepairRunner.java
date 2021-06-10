@@ -46,7 +46,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.Gauge;
@@ -68,8 +67,6 @@ final class RepairRunner implements Runnable {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunner.class);
   private static final ExecutorService METRICS_GRABBER_EXECUTOR = Executors.newFixedThreadPool(10);
-  private static final long METRICS_POLL_INTERVAL_MS = TimeUnit.SECONDS.toMillis(5);
-  private static final long METRICS_MAX_WAIT_MS = TimeUnit.MINUTES.toMillis(2);
 
   private final AppContext context;
   private final ClusterFacade clusterFacade;
@@ -98,9 +95,7 @@ final class RepairRunner implements Runnable {
     this.cluster = context.storage.getCluster(repairRun.get().getClusterName());
     repairUnit = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
     this.clusterName = cluster.getName();
-    String keyspace = repairUnit.getKeyspaceName();
 
-    Collection<RepairSegment> repairSegments = context.storage.getRepairSegmentsForRun(repairRunId);
     localEndpointRanges = context.config.isInSidecarMode()
         ? clusterFacade.getRangesForLocalEndpoint(cluster, repairUnit.getKeyspaceName())
         : Collections.emptyList();
@@ -273,6 +268,9 @@ final class RepairRunner implements Runnable {
         context.metricRegistry.register(
             metricNameForMillisSinceLastRepair,
             (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
+
+        context.metricRegistry.counter(
+          MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.DONE.toString())).inc();
       }
     }
   }
@@ -496,6 +494,9 @@ final class RepairRunner implements Runnable {
                   .endTime(DateTime.now())
                   .build(repairRunId));
 
+          context.metricRegistry.counter(
+            MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.ERROR.toString())).inc();
+
           killAndCleanupRunner();
         }
 
@@ -519,6 +520,9 @@ final class RepairRunner implements Runnable {
                       segment))
                   .endTime(DateTime.now())
                   .build(repairRunId));
+
+          context.metricRegistry.counter(
+            MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.ERROR.toString())).inc();
 
           killAndCleanupRunner();
         }
@@ -679,5 +683,9 @@ final class RepairRunner implements Runnable {
       return newRepairRun;
     }
     return repairRun;
+  }
+
+  public Cluster getCluster() {
+    return this.cluster;
   }
 }

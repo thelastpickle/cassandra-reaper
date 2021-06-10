@@ -634,6 +634,7 @@
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
+              <version>2.14.1</version>
               <inherited>true</inherited>
               <configuration>
                   <systemPropertyVariables>
@@ -643,7 +644,7 @@
                     <io.cassandrareaper.service.SegmentRunner.sleep_time_after_postpone_in_ms>500</io.cassandrareaper.service.SegmentRunner.sleep_time_after_postpone_in_ms>
                   </systemPropertyVariables>
                   <!-- noverify is needed for ReaperTestJettyRunner.ParentLastURLClassLoader.ChildURLClassLoader.findClass(..) -->
-                  <argLine>-noverify</argLine>
+                  <argLine>${argLine} -noverify</argLine>
               </configuration>
             </plugin>
             <plugin>
@@ -684,6 +685,48 @@
                       </configuration>
                   </execution>
               </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.6</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <includes>
+                                        <include>**/*Steps.*</include>
+                                    </includes>
+                                </rule>
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <excludes>
+                                        <exclude>**/*Pages.*</exclude>
+                                        <exclude>**/*Page.*</exclude>
+                                    </excludes>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

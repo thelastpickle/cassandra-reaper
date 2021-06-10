@@ -193,8 +193,7 @@
                 <exclude>**/*.access</exclude>
                 <exclude>**/*.password</exclude>
                 <exclude>**/*.txt</exclude>
-                <exclude>src/packaging/debian/compat</exclude>
-                <exclude>src/packaging/debian/changelog</exclude>
+                <exclude>src/packaging/**</exclude>
               </excludes>
             </configuration>
             <executions>

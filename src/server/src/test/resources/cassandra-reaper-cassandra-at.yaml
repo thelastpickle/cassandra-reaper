@@ -27,6 +27,7 @@ blacklistTwcsTables: true
 jmxConnectionTimeoutInSeconds: 10
 activateQueryLogger: true
 datacenterAvailability: LOCAL
+percentRepairedCheckIntervalMinutes: 1
 
 logging:
   level: WARN

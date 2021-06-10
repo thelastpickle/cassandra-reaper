@@ -1,30 +1,26 @@
 Reaper for Apache Cassandra
 ============================
 
-[![Join the chat at https://gitter.im/thelastpickle/cassandra-reaper](https://badges.gitter.im/thelastpickle/cassandra-reaper.svg)](https://gitter.im/thelastpickle/cassandra-reaper?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://github.com/thelastpickle/cassandra-reaper/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/thelastpickle/cassandra-reaper/actions?query=branch%3Amaster)
 
-[![Build Status](https://travis-ci.org/thelastpickle/cassandra-reaper.svg?branch=master)](https://travis-ci.org/thelastpickle/cassandra-reaper/branches)
+[![codecov](https://codecov.io/gh/thelastpickle/cassandra-reaper/branch/master/graph/badge.svg?token=8q1tX81waa)](https://codecov.io/gh/thelastpickle/cassandra-reaper)
 
-*Note: This repo is a fork from the original Reaper project, created by the awesome folks at Spotify.  The WebUI has been merged in with support for incremental repairs added.* 
+[![Hosted By: Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat-square)](https://cloudsmith.io/~thelastpickle/repos/reaper/packages/)
 
-Reaper is a centralized, stateful, and highly configurable tool for running Apache Cassandra
-repairs against single or multi-site clusters.
+Reaper is a centralized, stateful, and highly configurable tool for running Apache Cassandra repairs against single or multi-site clusters.
 
-The current version supports running Apache Cassandra cluster repairs in a segmented manner, 
-opportunistically running multiple parallel repairs at the same time on different nodes
-within the cluster. Basic repair scheduling functionality is also supported.
+The current version supports running Apache Cassandra cluster repairs in a segmented manner,  opportunistically running multiple parallel repairs at the same time on different nodes within the cluster. Basic repair scheduling functionality is also supported.
 
 Reaper comes with a GUI, which if you're running in local mode can be at http://localhost:8080/webui/ 
 
-Please see the [Issues](https://github.com/thelastpickle/cassandra-reaper/issues) section for more
-information on planned development, and known issues.
+Please see the [Issues](https://github.com/thelastpickle/cassandra-reaper/issues) section for more information on planned development, and known issues.
 
 Documentation and Help
 ------------------------
 
 The full documentation is available at the [Reaper website](http://cassandra-reaper.io/).  The source for the site is located in this repo at `src/docs`.
 
-Have a question?  Please ask on the [reaper mailing list](https://groups.google.com/forum/#!forum/tlp-apache-cassandra-reaper-users)! 
+Have a question?  Join us on [the ASF Slack](https://the-asf.slack.com/) in the #cassandra-reaper channel.
 
 
 System Overview
@@ -48,3 +44,6 @@ Dependencies
 ------------
 
 For information on the packaged dependencies of Reaper for Apache Cassandra&reg; and their licenses, check out our [open source report](https://app.fossa.com/reports/5c4e445c-c3d5-4aa3-b34e-bc25e5ed21a2).
+
+
+*Note: This repo is a fork from the original Reaper project, created by the awesome folks at Spotify.*

@@ -1,6 +1,7 @@
 /*
  * Copyright 2017-2017 Spotify AB
  * Copyright 2017-2019 The Last Pickle Ltd
+ * Copyright 2021-2021 DataStax, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +23,7 @@ import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
+import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.storage.IDistributedStorage;
 
@@ -39,10 +41,9 @@ import javax.management.JMException;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,10 +51,12 @@ public final class Heart implements AutoCloseable {
 
   private static final AtomicBoolean GAUGES_REGISTERED = new AtomicBoolean(false);
   private static final Logger LOG = LoggerFactory.getLogger(Heart.class);
-  private static final long DEFAULT_MAX_FREQUENCY = TimeUnit.SECONDS.toMillis(30);
+  private static final long DEFAULT_MAX_FREQUENCY = TimeUnit.SECONDS.toMillis(60);
 
   private final AtomicLong lastBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
   private final AtomicLong lastMetricBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1));
+  private final AtomicLong lastPercentRepairedBeat = new AtomicLong(System.currentTimeMillis() - TimeUnit.HOURS
+      .toMillis(1));
   private final ForkJoinPool forkJoinPool = new ForkJoinPool(64);
   private final AppContext context;
   private final MetricsService metricsService;
@@ -75,19 +78,46 @@ public final class Heart implements AutoCloseable {
     return new Heart(context, maxBeatFrequencyMillis);
   }
 
+  /**
+   * Performs the following operations as part of regular heartbeats.
+   * - Store heart beat with timestamp in the running_reapers table (allows to count live reaper instances)
+   * - In distributed modes, stores metrics in the backend such as tpstats, latencies and pending compactions
+   *   as all instances can't reach all nodes through JMX (all dcAvailability modes but ALL).
+   *   This is done for all nodes in all clusters that are managed by the Reaper instance.
+   * - In sidecar mode, does the same as above but only for the local node
+   * - In all cases, stores min(%repaired) for all tables that are part of an incremental repair schedule
+   *
+   */
   public synchronized void beat() {
-    assert context.storage instanceof IDistributedStorage : "only valid with IDistributedStorage backend";
+    if ( context.storage instanceof IDistributedStorage ) {
+      if (lastBeat.get() + maxBeatFrequencyMillis < System.currentTimeMillis()) {
+        lastBeat.set(System.currentTimeMillis());
+        ((IDistributedStorage) context.storage).saveHeartbeat();
 
-    if (lastBeat.get() + maxBeatFrequencyMillis < System.currentTimeMillis()) {
-      lastBeat.set(System.currentTimeMillis());
-      ((IDistributedStorage) context.storage).saveHeartbeat();
-
-      if (!context.isDistributed.get() && 1 < ((IDistributedStorage) context.storage).countRunningReapers()) {
-        context.isDistributed.set(true);
+        if (!context.isDistributed.get() && 1 < ((IDistributedStorage) context.storage).countRunningReapers()) {
+          context.isDistributed.set(true);
+        }
       }
     }
-    if (context.isDistributed.get() && context.config.getDatacenterAvailability().isInCollocatedMode()) {
-      updateRequestedNodeMetrics();
+
+    if (isDistributedAndCollocated()) {
+      // Metrics are always collected in distributed mode (tpstats, latencies, compactions, streaming, %repaired, ...)
+      updateMetricsForCollocatedModes();
+    } else {
+      // In standalone/non collocated Reaper mode, only percent repaired metrics
+      // are collected for incremental repair schedules
+      if (!updatingNodeMetrics.getAndSet(true)) {
+        forkJoinPool.submit(() -> {
+          try (Timer.Context t0 = timer(context, "updatingNodeMetrics")) {
+            ClusterFacade clusterFacade = ClusterFacade.create(context);
+            Collection<Cluster> clusters = context.storage.getClusters();
+            updateMetricsForClusters(clusterFacade, clusters);
+          } finally {
+            assert updatingNodeMetrics.get();
+            updatingNodeMetrics.set(false);
+          }
+        });
+      }
     }
   }
 
@@ -106,7 +136,10 @@ public final class Heart implements AutoCloseable {
     }
   }
 
-  private void updateRequestedNodeMetrics() {
+  /**
+   * Update metrics in the storage backend for all collocated modes
+   */
+  private void updateMetricsForCollocatedModes() {
     Preconditions.checkState(context.isDistributed.get(), "Only valid with multiple Reaper instances");
 
     Preconditions.checkState(
@@ -118,56 +151,20 @@ public final class Heart implements AutoCloseable {
     if (!updatingNodeMetrics.getAndSet(true)) {
       forkJoinPool.submit(() -> {
         try (Timer.Context t0 = timer(context, "updatingNodeMetrics")) {
-          ClusterFacade clusterFacade = ClusterFacade.create(context);
-          Collection<Cluster> clusters = context.storage.getClusters();
-          forkJoinPool.submit(() -> {
-            clusters
-                .parallelStream()
-                .filter(cluster -> cluster.getState() == Cluster.State.ACTIVE)
-                .forEach(cluster -> {
-                  try {
-                    clusterFacade.getLiveNodes(cluster)
-                        .parallelStream()
-                        .filter(hostname -> {
-                          return context.jmxConnectionFactory
-                              .getHostConnectionCounters()
-                              .getSuccessfulConnections(hostname) >= 0;
-                        })
-                        .map(hostname -> Node.builder()
-                            .withHostname(hostname)
-                            .withCluster(
-                                Cluster.builder()
-                                    .withName(cluster.getName())
-                                    .withSeedHosts(ImmutableSet.of(hostname))
-                                    .build())
-                            .build())
-                        .forEach(node -> {
-                          try {
-                            metricsService.grabAndStoreCompactionStats(Optional.of(node));
-                            metricsService.grabAndStoreActiveStreams(Optional.of(node));
-                            if (lastMetricBeat.get() + maxBeatFrequencyMillis <= System.currentTimeMillis()) {
-                              metricsService.grabAndStoreGenericMetrics(Optional.of(node));
-                              lastMetricBeat.set(System.currentTimeMillis());
-                            }
-                          } catch (JMException | ReaperException | RuntimeException | IOException e) {
-                            LOG.error("Couldn't extract metrics for node {} in cluster {}",
-                                node.getHostname(), cluster.getName(), e);
-                          } catch (InterruptedException e) {
-                            LOG.error("Interrupted while extracting metrics for node {} in cluster {}",
-                                node.getHostname(), cluster.getName(), e);
-                          }
-                        });
-                  } catch (ReaperException e) {
-                    LOG.error("Couldn't list live nodes in cluster {}", cluster.getName(), e);
-                    e.printStackTrace();
-                  }
-                });
-          }).get();
-
-          if (context.config.getDatacenterAvailability() == DatacenterAvailability.SIDECAR) {
-            // In sidecar mode we store metrics in the db on a regular basis
-
-            if (lastMetricBeat.get() + maxBeatFrequencyMillis <= System.currentTimeMillis()) {
+          if (context.config.getDatacenterAvailability() != DatacenterAvailability.SIDECAR) {
+            // In distributed modes other than SIDECAR, metrics are grabbed for all accessible nodes
+            // in all managed clusters
+            ClusterFacade clusterFacade = ClusterFacade.create(context);
+            Collection<Cluster> clusters = context.storage.getClusters();
+            forkJoinPool.submit(() -> {
+              updateMetricsForClusters(clusterFacade, clusters);
+            }).get();
+          } else {
+            // In SIDECAR mode we grab metrics for the local node only
+            Collection<RepairSchedule> incrementalRepairSchedules
+                = context.storage.getRepairSchedulesForCluster(
+                  context.storage.getClusters().stream().findFirst().get().getName(), true);
+            if (canPerformBeat(lastMetricBeat, maxBeatFrequencyMillis)) {
               metricsService.grabAndStoreGenericMetrics(Optional.empty());
               lastMetricBeat.set(System.currentTimeMillis());
             } else {
@@ -175,6 +172,7 @@ public final class Heart implements AutoCloseable {
                   lastMetricBeat.get(),
                   System.currentTimeMillis());
             }
+            updatePercentRepairedForNode(Optional.empty(), incrementalRepairSchedules);
             metricsService.grabAndStoreCompactionStats(Optional.empty());
             metricsService.grabAndStoreActiveStreams(Optional.empty());
           }
@@ -186,6 +184,100 @@ public final class Heart implements AutoCloseable {
           updatingNodeMetrics.set(false);
         }
       });
+    }
+  }
+
+  /**
+   * Updates the metrics in all modes for a given list of clusters, including the non collocated ones.
+   * For non collocated modes, only percent repaired metrics will be extracted for existing incr repair schedules.
+   *
+   * @param clusterFacade A ClusterFacade object used to access the nodes via JMX.
+   * @param clusters Active clusters managed by Reaper
+   */
+  private void updateMetricsForClusters(
+      ClusterFacade clusterFacade,
+      Collection<Cluster> clusters
+  ) {
+    clusters
+        .parallelStream()
+        .filter(cluster -> cluster.getState() == Cluster.State.ACTIVE)
+        .forEach(cluster -> {
+          try {
+            Collection<RepairSchedule> incrementalRepairSchedules
+                = context.storage.getRepairSchedulesForCluster(cluster.getName(), true);
+            clusterFacade.getLiveNodes(cluster)
+                .parallelStream()
+                .filter(hostname -> {
+                  return context.jmxConnectionFactory
+                      .getHostConnectionCounters()
+                      .getSuccessfulConnections(hostname) >= 0;
+                })
+                .map(hostname -> Node.builder()
+                    .withHostname(hostname)
+                    .withCluster(cluster)
+                    .build())
+                .forEach(node -> {
+                  try {
+                    if (isDistributedAndCollocated()) {
+                      // All metrics but percent repaired should be extracted only in distributed/collocated modes
+                      updateMetricsForNode(node);
+                    }
+                    if (!incrementalRepairSchedules.isEmpty()) {
+                      // Percent repaired metrics are only collected when incr repair schedules exist
+                      updatePercentRepairedForNode(Optional.of(node), incrementalRepairSchedules);
+                    }
+                  } catch (JMException | ReaperException | RuntimeException | IOException e) {
+                    LOG.error("Couldn't extract metrics for node {} in cluster {}",
+                        node.getHostname(), cluster.getName(), e);
+                  } catch (InterruptedException e) {
+                    LOG.error("Interrupted while extracting metrics for node {} in cluster {}",
+                        node.getHostname(), cluster.getName(), e);
+                  }
+                });
+          } catch (ReaperException e) {
+            LOG.error("Couldn't list live nodes in cluster {}", cluster.getName(), e);
+            e.printStackTrace();
+          }
+        });
+  }
+
+  /**
+   * Retrieve percent repaired metrics for a specific node.
+   * Such metrics will only be retrieved if an incremental repair schedule exists.
+   *
+   * @param node An optional node to grab the metrics from (the local node if not provided)
+   * @param incrementalRepairSchedules a collection of incremental repair schedules
+   */
+  private void updatePercentRepairedForNode(
+      Optional<Node> node,
+      Collection<RepairSchedule> incrementalRepairSchedules
+  ) {
+    if (canPerformBeat(
+        lastPercentRepairedBeat,
+        TimeUnit.MINUTES.toMillis(context.config.getPercentRepairedCheckIntervalMinutes()))) {
+      incrementalRepairSchedules.stream().forEach(sched -> {
+        try {
+          metricsService.grabAndStorePercentRepairedMetrics(node, sched);
+        } catch (ReaperException e) {
+          if (node.isPresent()) {
+            LOG.error("Couldn't extract metrics for node {} in cluster {}", node.get().getHostname(),
+                node.get().getCluster().get().getName(), e);
+          } else {
+            LOG.error("Couldn't extract metrics for local node", e);
+          }
+        }
+      });
+      lastPercentRepairedBeat.set(System.currentTimeMillis());
+    }
+  }
+
+  private void updateMetricsForNode(Node node)
+      throws JsonProcessingException, JMException, ReaperException, InterruptedException {
+    metricsService.grabAndStoreCompactionStats(Optional.of(node));
+    metricsService.grabAndStoreActiveStreams(Optional.of(node));
+    if (canPerformBeat(lastMetricBeat, maxBeatFrequencyMillis)) {
+      metricsService.grabAndStoreGenericMetrics(Optional.of(node));
+      lastMetricBeat.set(System.currentTimeMillis());
     }
   }
 
@@ -212,5 +304,13 @@ public final class Heart implements AutoCloseable {
           MetricRegistry.name(Heart.class, "queuedSubmissionCount"),
           (Gauge<Integer>) () -> forkJoinPool.getQueuedSubmissionCount());
     }
+  }
+
+  private boolean canPerformBeat(AtomicLong lastBeat, long interval) {
+    return lastBeat.get() + interval <= System.currentTimeMillis();
+  }
+
+  private boolean isDistributedAndCollocated() {
+    return context.isDistributed.get() && context.config.getDatacenterAvailability().isInCollocatedMode();
   }
 }
