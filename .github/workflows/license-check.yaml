@@ -1,0 +1,17 @@
+name: Dependency and License Scan
+on:
+  push:
+    branches:
+      - master
+jobs:
+  scan-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Install Fossa CLI
+        run: |
+          curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | bash
+      - name: Scan for dependencies and licenses
+        run: |
+          FOSSA_API_KEY=${{ secrets.FOSSA_PUSH_ONLY_API_KEY }} fossa analyze
