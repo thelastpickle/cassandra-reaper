@@ -40,5 +40,10 @@ be used only for testing purposes.
 This project is built on top of Dropwizard:
 http://dropwizard.io/
 
+Dependencies
+------------
 
-*Note: This repo is a fork from the original Reaper project, created by the awesome folks at Spotify.* 
+For information on the packaged dependencies of Reaper for Apache Cassandra&reg; and their licenses, check out our [open source report](https://app.fossa.com/reports/5c4e445c-c3d5-4aa3-b34e-bc25e5ed21a2).
+
+
+*Note: This repo is a fork from the original Reaper project, created by the awesome folks at Spotify.*
