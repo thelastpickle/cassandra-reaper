@@ -204,8 +204,8 @@ public final class ClusterFacade {
    * @return a NodeStatus object with all nodes state
    * @throws ReaperException any runtime exception we catch
    */
-  public NodesStatus getNodesStatus(Cluster cluster, Collection<String> endpoints) throws ReaperException {
-    JmxProxy jmxProxy = connect(cluster, endpoints);
+  public NodesStatus getNodesStatus(Cluster cluster) throws ReaperException {
+    JmxProxy jmxProxy = connect(cluster);
     FailureDetectorProxy proxy = FailureDetectorProxy.create(jmxProxy);
     return new NodesStatus(jmxProxy.getHost(), proxy.getAllEndpointsState(), proxy.getSimpleStates());
   }
