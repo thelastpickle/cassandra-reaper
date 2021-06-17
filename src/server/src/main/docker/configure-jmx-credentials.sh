@@ -41,7 +41,6 @@ fi
 
 
 if [ ! -z "${REAPER_JMX_AUTH_USERNAME}" ]; then
-
 cat <<EOT >> /etc/cassandra-reaper.yml
 jmxAuth:
   username: ${REAPER_JMX_AUTH_USERNAME}
@@ -56,3 +55,4 @@ cryptograph:
   type: symmetric
   systemPropertySecret: ${CRYPTO_SYSTEM_PROPERTY_SECRET}
 EOT
+fi
