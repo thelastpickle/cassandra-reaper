@@ -532,7 +532,7 @@ public final class RepairScheduleResource {
         String msg = String.format("Repair schedule %s is not owned by %s", repairScheduleId, owner.get());
         return Response.status(Response.Status.CONFLICT).entity(msg).build();
       }
-      context.storage.deleteRepairSchedule(repairScheduleId);
+      repairScheduleService.deleteRepairSchedule(repairScheduleId);
       return Response.accepted().build();
     }
     return Response.status(Response.Status.NOT_FOUND)
