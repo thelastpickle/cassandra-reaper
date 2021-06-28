@@ -8,7 +8,7 @@ show_menu = true
 
 Reaper is an open source tool that aims to schedule and orchestrate repairs of Apache Cassandra clusters.
 
-It improves the existing nodetool repair process by
+It improves the existing nodetool repair process by:  
 
 * Splitting repair jobs into smaller tunable segments.
 * Handling back-pressure through monitoring running repairs and pending compactions.

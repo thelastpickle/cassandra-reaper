@@ -50,7 +50,7 @@ The Docker environment variables listed in this section map directly to Reaper s
 <code class="codeLarge">REAPER_SERVER_APP_PORT</code> | [port]({{< relref "reaper_specific.md#port" >}}) | 8080
 <code class="codeLarge">REAPER_STORAGE_TYPE</code> | [storageType]({{< relref "reaper_specific.md#storagetype" >}}) | memory
 <code class="codeLarge">REAPER_USE_ADDRESS_TRANSLATOR</code> | [useAddressTranslator]({{< relref "reaper_specific.md#useaddresstranslator" >}}) | false
-<code class="codeLarge">REAPER_MAX_PARALLEL_REPAIRS</code> | [maxParallelRepairs]({{< relref "reaper_specific.md#maxParallelRepairs" >}}) | false
+<code class="codeLarge">REAPER_MAX_PARALLEL_REPAIRS</code> | [maxParallelRepairs]({{< relref "reaper_specific.md#maxParallelRepairs" >}}) | 2
 
 <br/>
 
