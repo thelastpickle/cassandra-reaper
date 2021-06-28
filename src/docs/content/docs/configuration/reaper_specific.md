@@ -538,4 +538,3 @@ Type: *String*
 
 The key of a system property that holds the shared secret for the symmetric encryption.  If encrypted text is required, then this key and its value need to be defined in the environment before reaper can be started.  
 ```export SOME_SYSTEM_PROPERTY_KEY=mysharedsecret```
-

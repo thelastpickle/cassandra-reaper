@@ -45,11 +45,8 @@ import io.cassandrareaper.service.Heart;
 import io.cassandrareaper.service.PurgeService;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
-import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.IDistributedStorage;
-import io.cassandrareaper.storage.IStorage;
-import io.cassandrareaper.storage.MemoryStorage;
-import io.cassandrareaper.storage.PostgresStorage;
+import io.cassandrareaper.storage.InitializeStorage;
 
 import java.util.EnumSet;
 import java.util.Map;
@@ -68,26 +65,21 @@ import com.datastax.driver.core.policies.EC2MultiRegionAddressTranslator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
-import io.dropwizard.db.DataSourceFactory;
-import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.jetty.BiDiGzipHandler;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.MetricsServlet;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.flywaydb.core.Flyway;
 import org.joda.time.DateTimeZone;
 import org.secnod.dropwizard.shiro.ShiroBundle;
 import org.secnod.dropwizard.shiro.ShiroConfiguration;
@@ -129,6 +121,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
    */
   @Override
   public void initialize(Bootstrap<ReaperApplicationConfiguration> bootstrap) {
+    bootstrap.addCommand(new ReaperDbMigrationCommand("schema-migration", "Performs database schema migrations"));
     bootstrap.addBundle(new AssetsBundle("/assets/", "/webui", "index.html"));
     bootstrap.getObjectMapper().registerModule(new JavaTimeModule());
 
@@ -155,7 +148,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     bootstrap.setConfigurationSourceProvider(
         new SubstitutingSourceProvider(
             bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
-    bootstrap.getObjectMapper().registerModule(new JavaTimeModule());
   }
 
   @Override
@@ -290,30 +282,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
 
     LOG.info("Initialization complete!");
     LOG.warn("Reaper is ready to get things done!");
-  }
-
-  private void tryInitializeStorage(ReaperApplicationConfiguration config, Environment environment)
-      throws ReaperException, InterruptedException {
-    if (context.storage == null) {
-      LOG.info("initializing storage of type: {}", config.getStorageType());
-      int storageFailures = 0;
-      while (true) {
-        try {
-          context.storage = initializeStorage(config, environment);
-          break;
-        } catch (RuntimeException e) {
-          LOG.error("Storage is not ready yet, trying again to connect shortly...", e);
-          storageFailures++;
-          if (storageFailures > 60) {
-            LOG.error("Too many failures when trying to connect storage. Exiting :'(");
-            System.exit(1);
-          }
-          Thread.sleep(10000);
-        }
-      }
-    } else {
-      LOG.info("storage already given in context, not initializing a new one");
-    }
   }
 
   private void initializeJmx(ReaperApplicationConfiguration config, Cryptograph cryptograph) {
@@ -466,43 +434,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         TimeUnit.HOURS);
   }
 
-  private IStorage initializeStorage(ReaperApplicationConfiguration config, Environment environment)
-      throws ReaperException {
-    IStorage storage;
-
-    if ("memory".equalsIgnoreCase(config.getStorageType())) {
-      storage = new MemoryStorage();
-    } else if (Lists.newArrayList("cassandra", "astra").contains(config.getStorageType())) {
-      CassandraStorage.CassandraMode mode = config.getStorageType().equals("cassandra")
-          ? CassandraStorage.CassandraMode.CASSANDRA
-          : CassandraStorage.CassandraMode.ASTRA;
-      storage = new CassandraStorage(context.reaperInstanceId, config, environment, mode);
-    } else if ("postgres".equalsIgnoreCase(config.getStorageType())
-        || "h2".equalsIgnoreCase(config.getStorageType())
-        || "database".equalsIgnoreCase(config.getStorageType())) {
-      // create DBI instance
-      final DBIFactory factory = new DBIFactory();
-      if (StringUtils.isEmpty(config.getDataSourceFactory().getDriverClass())
-          && "postgres".equalsIgnoreCase(config.getStorageType())) {
-        config.getDataSourceFactory().setDriverClass("org.postgresql.Driver");
-      } else if (StringUtils.isEmpty(config.getDataSourceFactory().getDriverClass())
-          && "h2".equalsIgnoreCase(config.getStorageType())) {
-        config.getDataSourceFactory().setDriverClass("org.h2.Driver");
-      }
-      // instantiate store
-      storage = new PostgresStorage(
-          context.reaperInstanceId,
-          factory.build(environment, config.getDataSourceFactory(), "postgresql")
-      );
-      initDatabase(config);
-    } else {
-      LOG.error("invalid storageType: {}", config.getStorageType());
-      throw new ReaperException("invalid storage type: " + config.getStorageType());
-    }
-    Preconditions.checkState(storage.isStorageConnected(), "Failed to connect storage");
-    return storage;
-  }
-
   private void checkConfiguration(ReaperApplicationConfiguration config) {
     LOG.debug("repairIntensity: {}", config.getRepairIntensity());
     LOG.debug("incrementalRepair: {}", config.getIncrementalRepair());
@@ -528,30 +459,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     }
   }
 
-  private void initDatabase(ReaperApplicationConfiguration config) throws ReaperException {
-    Flyway flyway = new Flyway();
-    DataSourceFactory dsfactory = config.getDataSourceFactory();
-    flyway.setDataSource(
-        dsfactory.getUrl(),
-        dsfactory.getUser(),
-        dsfactory.getPassword());
-
-    if ("database".equals(config.getStorageType())) {
-      LOG.warn("!!!!!!!!!!    USAGE 'database' AS STORAGE TYPE IS NOW DEPRECATED   !!!!!!!!!!!!!!");
-      LOG.warn("!!!!!!!!!!    PLEASE USE EITHER 'postgres' OR 'h2' FROM NOW ON     !!!!!!!!!!!!!!");
-      if (config.getDataSourceFactory().getUrl().contains("h2")) {
-        flyway.setLocations("/db/h2");
-      } else {
-        flyway.setLocations("/db/postgres");
-      }
-    } else {
-      flyway.setLocations("/db/".concat(config.getStorageType().toLowerCase()));
-    }
-    flyway.setBaselineOnMigrate(true);
-    flyway.repair();
-    flyway.migrate();
-  }
-
   private void initializeJmxSeedsForAllClusters() {
     LOG.info("Initializing JMX seed list for all clusters...");
     try (JmxConnectionsInitializer jmxConnectionsIntializer = JmxConnectionsInitializer.create(context);
@@ -568,6 +475,30 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
           .forEach(cluster -> jmxConnectionsIntializer.on(cluster));
 
       LOG.info("Initialized JMX seed list for all clusters.");
+    }
+  }
+
+  private void tryInitializeStorage(ReaperApplicationConfiguration config, Environment environment)
+    throws ReaperException, InterruptedException {
+    if (context.storage == null) {
+      LOG.info("initializing storage of type: {}", config.getStorageType());
+      int storageFailures = 0;
+      while (true) {
+        try {
+          context.storage = InitializeStorage.initializeStorage(
+            config, environment, context.reaperInstanceId).initializeStorageBackend();
+          break;
+        } catch (RuntimeException e) {
+          LOG.error("Storage is not ready yet, trying again to connect shortly...", e);
+          storageFailures++;
+          if (storageFailures > 60) {
+            throw new ReaperException("Too many failures when trying to connect storage. Exiting :'(");
+          }
+          Thread.sleep(10000);
+        }
+      }
+    } else {
+      LOG.info("storage already given in context, not initializing a new one");
     }
   }
 }
