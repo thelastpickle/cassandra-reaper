@@ -23,6 +23,8 @@ import $ from "jquery";
 import DatePicker from "react-datepicker";
 import Moment from 'moment';
 import moment from "moment";
+import Modal from 'react-bootstrap/lib/Modal';
+import Button from 'react-bootstrap/lib/Button';
 
 Moment.locale(navigator.language);
 
@@ -42,6 +44,7 @@ const repairForm = CreateReactClass({
     return {
       formType: this.props.formType,
       addRepairResultMsg: null,
+      addRepairResultStatus: null,
       clusterNames: [],
       submitEnabled: false,
       clusterName: this.props.currentCluster === "all" ? this.props.clusterNames[0] : this.props.currentCluster,
@@ -82,14 +85,25 @@ const repairForm = CreateReactClass({
       datacentersList: [],
       datacentersSelectValues: [],
       datacentersSelectDisabled: false,
+      showModal: false,
+      force: "false",
     };
   },
 
   UNSAFE_componentWillMount: function() {
     this._repairResultSubscription = this.props.addRepairResult.subscribeOnNext(obs =>
       obs.subscribe(
-        r => this.setState({addRepairResultMsg: null}),
-        r => this.setState({addRepairResultMsg: r.responseText})
+        r => this.setState({
+          addRepairResultMsg: null,
+          addRepairResultStatus: r.status,
+          showModal: false,
+          force: "false",
+        }),
+        r => this.setState({
+          addRepairResultMsg: r.responseText,
+          addRepairResultStatus: r.status,
+          showModal: true,
+        })
       )
     );
 
@@ -199,6 +213,12 @@ const repairForm = CreateReactClass({
     if (this.state.datacenters) repair.datacenters = this.state.datacenters;
     if (this.state.blacklistedTables) repair.blacklistedTables = this.state.blacklistedTables;
     if (this.state.repairThreadCount && this.state.repairThreadCount > 0) repair.repairThreadCount = this.state.repairThreadCount;
+    if (this.state.force) {
+      repair.force = this.state.force;
+    }
+    else {
+      repair.force = "false";
+    }
 
     this.props.addRepairSubject.onNext({
       type: this.state.formType,
@@ -360,11 +380,48 @@ const repairForm = CreateReactClass({
     return uuid;
   },
 
+  _onForce(e){
+    this.setState({
+      force: "true",
+      addRepairResultMsg: null,
+      showModal: false }, () => this._onAdd(e));
+  },
+
+  _onClose(e){
+    this.setState({
+      force: "false",
+      addRepairResultMsg: null,
+      showModal: false
+    });
+  },
+
   render: function() {
 
     let addMsg = null;
     if(this.state.addRepairResultMsg) {
-      addMsg = <div className="alert alert-danger" role="alert">{this.state.addRepairResultMsg}</div>
+      if(this.state.addRepairResultStatus != 409) {
+        addMsg = <div className="alert alert-danger" role="alert">{this.state.addRepairResultMsg}</div>
+      }
+      else {
+        addMsg = (
+                <span>
+                <Modal show={this.state.showModal} onHide={this._onClose}>
+                  <Modal.Header closeButton>
+                    <Modal.Title>Scheduling conflict detected</Modal.Title>
+                  </Modal.Header>
+                  <Modal.Body>
+                    <p>{this.state.addRepairResultMsg}</p>
+                    <p>It is not reccommended to create overlapping repair schedules.</p>
+                    <p>For Cassandra 4.0 and later, you can force creating this schedule by clicking the "Force" button below.</p>
+                  </Modal.Body>
+                  <Modal.Footer>
+                    <Button variant="secondary" onClick={this._onClose}>Close</Button>
+                    <Button variant="primary" onClick={this._onForce}>Force</Button>
+                  </Modal.Footer>
+                </Modal>
+              </span>
+        );
+      }
     }
 
     const clusterNameOptions = this.state.clusterNames.sort().map(name => {

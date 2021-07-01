@@ -107,7 +107,8 @@ public final class RepairRunResource {
       @QueryParam("nodes") Optional<String> nodesToRepairParam,
       @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
       @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam,
-      @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam) {
+      @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam,
+      @QueryParam("force") Optional<String> forceParam) {
 
     try {
       final Response possibleFailedResponse
@@ -124,7 +125,8 @@ public final class RepairRunResource {
           nodesToRepairParam,
           datacentersToRepairParam,
           blacklistedTableNamesParam,
-          repairThreadCountParam);
+          repairThreadCountParam,
+          forceParam);
 
       if (null != possibleFailedResponse) {
         return possibleFailedResponse;
@@ -272,7 +274,8 @@ public final class RepairRunResource {
       Optional<String> nodesStr,
       Optional<String> datacentersStr,
       Optional<String> blacklistedTableNamesParam,
-      Optional<Integer> repairThreadCountStr) throws ReaperException {
+      Optional<Integer> repairThreadCountStr,
+      Optional<String> forceParam) throws ReaperException {
 
     if (!clusterName.isPresent()) {
       return createMissingArgumentResponse("clusterName");
@@ -346,6 +349,15 @@ public final class RepairRunResource {
     if (tableNamesParam.isPresent() && blacklistedTableNamesParam.isPresent()) {
       return Response.status(Response.Status.BAD_REQUEST)
           .entity("invalid to specify a table list and a blacklist")
+          .build();
+    }
+
+    if (forceParam.isPresent()
+        && (!forceParam.get().toUpperCase().contentEquals("TRUE")
+        && !forceParam.get().toUpperCase().contentEquals("FALSE"))) {
+
+      return Response.status(Response.Status.BAD_REQUEST)
+          .entity("invalid query parameter \"force\", expecting [True,False]")
           .build();
     }
 

@@ -77,10 +77,11 @@ public final class RepairScheduleService {
       String owner,
       int segmentCountPerNode,
       RepairParallelism repairParallelism,
-      Double intensity) {
+      Double intensity,
+      boolean force) {
 
     Preconditions.checkArgument(
-        !conflictingRepairSchedule(cluster, repairUnit.with()).isPresent(),
+        force || !conflictingRepairSchedule(cluster, repairUnit.with()).isPresent(),
         "A repair schedule already exists for cluster \"%s\", keyspace \"%s\", and column families: %s",
         cluster.getName(),
         repairUnit.getKeyspaceName(),

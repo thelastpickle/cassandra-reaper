@@ -236,7 +236,8 @@ public final class RepairRunResourceTest {
         nodes.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(nodes, ',')),
         Optional.<String>empty(),
         blacklistedTables.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(blacklistedTables, ',')),
-        Optional.of(repairThreadCount));
+        Optional.of(repairThreadCount),
+        Optional.<String>empty());
   }
 
   @Test
@@ -460,27 +461,6 @@ public final class RepairRunResourceTest {
   }
 
   @Test
-  public void testTriggerRunMissingArgument() {
-    RepairRunResource resource = new RepairRunResource(context);
-
-    Response response = addRepairRun(
-            resource,
-            uriInfo,
-            clustername,
-            null,
-            TABLES,
-            OWNER,
-            null,
-            SEGMENT_CNT,
-            NODES,
-            BLACKLISTED_TABLES,
-            REPAIR_THREAD_COUNT);
-
-    assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
-    assertTrue(response.getEntity() instanceof String);
-  }
-
-  @Test
   public void testPauseNotRunningRun() throws InterruptedException, ReaperException {
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
     RepairRunResource resource = new RepairRunResource(context);
@@ -545,5 +525,60 @@ public final class RepairRunResourceTest {
     assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), RepairRunResource.splitStateParam(stateParam));
     stateParam = Optional.of("PAUSED ,RUNNING");
     assertEquals(Sets.newHashSet("RUNNING", "PAUSED"), RepairRunResource.splitStateParam(stateParam));
+  }
+
+  private Response addRepairRunWithForceParam(
+      RepairRunResource resource,
+      UriInfo uriInfo,
+      String clusterName,
+      String keyspace,
+      Set<String> columnFamilies,
+      String owner,
+      String cause,
+      Integer segments,
+      Set<String> nodes,
+      Set<String> blacklistedTables,
+      Integer repairThreadCount,
+      String force) {
+
+    return resource.addRepairRun(
+        uriInfo,
+        Optional.ofNullable(clusterName),
+        Optional.ofNullable(keyspace),
+        columnFamilies.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(columnFamilies, ',')),
+        Optional.ofNullable(owner),
+        Optional.ofNullable(cause),
+        Optional.ofNullable(segments),
+        Optional.of(REPAIR_PARALLELISM.name()),
+        Optional.<String>empty(),
+        Optional.<String>empty(),
+        nodes.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(nodes, ',')),
+        Optional.<String>empty(),
+        blacklistedTables.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(blacklistedTables, ',')),
+        Optional.of(repairThreadCount),
+        Optional.of(force));
+  }
+
+  @Test
+  public void testAddRunMalformedForceParam() {
+    RepairRunResource resource = new RepairRunResource(context);
+
+    Response response = addRepairRunWithForceParam(
+            resource,
+            uriInfo,
+            clustername,
+            keyspace,
+            TABLES,
+            OWNER,
+            null,
+            SEGMENT_CNT,
+            NODES,
+            BLACKLISTED_TABLES,
+            REPAIR_THREAD_COUNT,
+            "foo");
+
+    assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+    assertTrue(response.getEntity() instanceof String);
+    assertEquals("invalid query parameter \"force\", expecting [True,False]", response.getEntity());
   }
 }
