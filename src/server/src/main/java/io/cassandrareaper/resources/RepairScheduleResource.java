@@ -245,7 +245,13 @@ public final class RepairScheduleResource {
       boolean force) {
 
     Optional<RepairSchedule> conflictingRepairSchedule
-        = repairScheduleService.conflictingRepairSchedule(cluster, unitBuilder);
+        = repairScheduleService.identicalRepairUnit(cluster, unitBuilder);
+
+    if (conflictingRepairSchedule.isPresent()) {
+      return Response.noContent().location(buildRepairScheduleUri(uriInfo, conflictingRepairSchedule.get())).build();
+    }
+
+    conflictingRepairSchedule = repairScheduleService.conflictingRepairSchedule(cluster, unitBuilder);
 
     if (conflictingRepairSchedule.isPresent()) {
       RepairSchedule existingSchedule = conflictingRepairSchedule.get();
@@ -272,7 +278,7 @@ public final class RepairScheduleResource {
       }
     }
 
-    RepairUnit unit = repairUnitService.getOrCreateRepairUnit(cluster, unitBuilder);
+    RepairUnit unit = repairUnitService.getOrCreateRepairUnit(cluster, unitBuilder, force);
 
     Preconditions
         .checkState(unit.getIncrementalRepair() == incremental, "%s!=%s", unit.getIncrementalRepair(), incremental);

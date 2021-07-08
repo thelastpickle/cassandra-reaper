@@ -95,7 +95,7 @@ const repairForm = CreateReactClass({
       obs.subscribe(
         r => this.setState({
           addRepairResultMsg: null,
-          addRepairResultStatus: r.status,
+          addRepairResultStatus: null,
           showModal: false,
           force: "false",
         }),
@@ -399,10 +399,7 @@ const repairForm = CreateReactClass({
 
     let addMsg = null;
     if(this.state.addRepairResultMsg) {
-      if(this.state.addRepairResultStatus != 409) {
-        addMsg = <div className="alert alert-danger" role="alert">{this.state.addRepairResultMsg}</div>
-      }
-      else {
+      if(this.state.addRepairResultStatus && this.state.addRepairResultStatus === 409) {
         addMsg = (
                 <span>
                 <Modal show={this.state.showModal} onHide={this._onClose}>
@@ -415,12 +412,15 @@ const repairForm = CreateReactClass({
                     <p>For Cassandra 4.0 and later, you can force creating this schedule by clicking the "Force" button below.</p>
                   </Modal.Body>
                   <Modal.Footer>
-                    <Button variant="secondary" onClick={this._onClose}>Close</Button>
+                    <Button variant="secondary" onClick={this._onClose}>Cancel</Button>
                     <Button variant="primary" onClick={this._onForce}>Force</Button>
                   </Modal.Footer>
                 </Modal>
               </span>
         );
+      }
+      else {
+        addMsg = <div className="alert alert-danger" role="alert">{this.state.addRepairResultMsg}</div>
       }
     }
 
