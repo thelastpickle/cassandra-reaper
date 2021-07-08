@@ -1,5 +1,15 @@
 ## Change Log
 
+### 2.3.0 (2021/07/08 14:52 +00:00)
+- [eafe0dd](https://github.com/thelastpickle/cassandra-reaper/commit/eafe0ddad4d30173d541a02b4fcdbf6c5acd19f5) Add support for scylla 4.4 repair
+- [e82d464](https://github.com/thelastpickle/cassandra-reaper/commit/e82d464b15299445791bf71a4e43b0d84a131d9e) Add schema migration startup mode (@adejanovski)
+- [54886ec](https://github.com/thelastpickle/cassandra-reaper/commit/54886ecf3a3fe7ded2606929e64365e18c5d7a6d) Allow crypto options to be configured in Docker image (@adejanovski)
+- [e2f64aa](https://github.com/thelastpickle/cassandra-reaper/commit/e2f64aad80d097715a4306d0d894d2eb54010eb4) Fix gossip state parsing for 4.0 rc1 (@adejanovski)
+- [cbe6c77](https://github.com/thelastpickle/cassandra-reaper/commit/cbe6c77f8ddafdaf6f21728dc8255e205ccf6348) Fix percent repaired metrics purge issues (@adejanovski)
+- [aeef47d](https://github.com/thelastpickle/cassandra-reaper/commit/aeef47d242179181c104677ab9d2269395249bb5) Add collection of percent repaired metrics for incremental repair schedules (@adejanovski)
+- [189a3c7](https://github.com/thelastpickle/cassandra-reaper/commit/189a3c764075179a4354db4a7a8dcedb140bf82d) Add code coverage with codecov (@adejanovski)
+- [af69101](https://github.com/thelastpickle/cassandra-reaper/commit/af69101486c8d36dc027f4e78615e8d185f84b9e) Add metrics of finished repairs to prometheus (@DzeryCZ)
+
 ### 2.2.5 (2021/06/03 08:50 +00:00)
 - [8f7a208](https://github.com/thelastpickle/cassandra-reaper/commit/8f7a20832d90376c584e5106d00aa3c8110a2afd) Fix IPv6 in JMX Connection Factory (@Rooks103)
 
