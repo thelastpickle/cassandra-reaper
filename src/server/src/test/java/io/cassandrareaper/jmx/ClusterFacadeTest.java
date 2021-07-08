@@ -30,6 +30,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +41,8 @@ import com.google.common.io.Resources;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import static io.cassandrareaper.service.RepairRunnerTest.scyllaThreeNodeClusterWithIps;
+import static io.cassandrareaper.service.RepairRunnerTest.threeNodeClusterWithIps;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -169,6 +172,23 @@ public class ClusterFacadeTest {
     String compactionJson = "";
     CompactionStats compactionStats = ClusterFacade.parseCompactionStats(compactionJson);
     assertFalse(compactionStats.getPendingCompactions().isPresent());
+  }
+
+  @Test
+  public void endpointCleanupCassandra() {
+    Map<List<String>, List<String>> endpoints = ClusterFacade.maybeCleanupEndpointFromScylla(threeNodeClusterWithIps());
+    for (Map.Entry<List<String>, List<String>> entry : endpoints.entrySet()) {
+      assertEquals(endpoints,threeNodeClusterWithIps());
+    }
+  }
+
+  @Test
+  public void endpointCleanupScylla() {
+    Map<List<String>, List<String>> endpoints
+            = ClusterFacade.maybeCleanupEndpointFromScylla(scyllaThreeNodeClusterWithIps());
+    for (Map.Entry<List<String>, List<String>> entry : endpoints.entrySet()) {
+      assertEquals(endpoints,threeNodeClusterWithIps());
+    }
   }
 
 }

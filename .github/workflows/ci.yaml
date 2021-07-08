@@ -70,6 +70,52 @@ jobs:
       
       - uses: codecov/codecov-action@v1
 
+  docker-tests:
+    name: Docker Image Tests
+    needs: build
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        storage-type: [cassandra]
+        test-type: [docker]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Maven Cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven2-
+
+
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt' # See 'Supported distributions' for available options
+          java-version: '8.0.192'
+
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+
+      - name: Setup bower
+        run: npm install -g bower
+
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.x'
+          architecture: 'x64'
+
+      - name: Run Tests
+        run: ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          
       - name: Setup tmate session
         if: "failure()"
         uses: mxschmitt/action-tmate@v3
@@ -402,7 +448,7 @@ jobs:
       - uses: codecov/codecov-action@v1
 
   its-sidecar:
-    needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Sidecar
     runs-on: ubuntu-20.04
     strategy:
@@ -495,7 +541,7 @@ jobs:
       - uses: codecov/codecov-action@v1
 
   its-each:
-    needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Each DC Availability
     runs-on: ubuntu-20.04
     services:
@@ -584,7 +630,7 @@ jobs:
       - uses: codecov/codecov-action@v1
 
   its-distributed:
-    needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Distributed tests
     runs-on: ubuntu-20.04
     strategy:
@@ -663,7 +709,7 @@ jobs:
 
 
   its-flapping:
-    needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Flapping reapers
     runs-on: ubuntu-20.04
     strategy:
@@ -742,7 +788,7 @@ jobs:
       - uses: codecov/codecov-action@v1
 
   its-elassandra-distributed:
-    needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Distributed tests with Elassandra
     runs-on: ubuntu-20.04
     strategy:

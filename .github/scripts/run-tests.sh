@@ -131,36 +131,35 @@ case "${TEST_TYPE}" in
         MAVEN_OPTS="-Xmx384m" mvn -B surefire:test -Dtest=ReaperCassandraIT
         ;;
     "docker")
+        sudo apt-get update
+        sudo apt-get install jq -y
+        mvn -B package -DskipTests
         docker-compose -f ./src/packaging/docker-build/docker-compose.yml build
         docker-compose -f ./src/packaging/docker-build/docker-compose.yml run build
-
-        # Need to change the permissions after building the packages using the Docker image because they
-        # are set to root and if left unchanged they will cause Maven to fail
-        sudo chown -R travis:travis ./src/server/target/
         mvn -B -f src/server/pom.xml docker:build -Ddocker.directory=src/server/src/main/docker -DskipTests
         docker images
 
-        # Generation of SSL stores - this can be done at any point in time prior to running setting up the SSL environment
-        docker-compose -f ./src/packaging/docker-compose.yml run generate-ssl-stores
+        # Clear out Cassandra data before starting a new cluster
+        sudo rm -vfr ./src/packaging/data/
 
-        # Test default environment then test SSL encrypted environment
-        for docker_env in "" "-ssl"
-        do
-            # Clear out Cassandra data before starting a new cluster
-            sudo rm -vfr ./src/packaging/data/
+        docker-compose -f ./src/packaging/docker-compose.yml up -d cassandra
+        sleep 30 && docker-compose -f ./src/packaging/docker-compose.yml run cqlsh-initialize-reaper_db
+        sleep 10 && docker-compose -f ./src/packaging/docker-compose.yml up -d reaper
+        docker ps -a
 
-            docker-compose -f ./src/packaging/docker-compose.yml up -d cassandra${docker_env}
-            sleep 30
-            docker-compose -f ./src/packaging/docker-compose.yml run cqlsh-initialize-reaper_db${docker_env}
-            sleep 10
-            docker-compose -f ./src/packaging/docker-compose.yml up -d reaper${docker_env}
-            sleep 30
-            docker ps -a
-
-            src/packaging/bin/spreaper add-cluster $(docker-compose -f ./src/packaging/docker-compose.yml run nodetool${docker_env} status | grep UN | tr -s ' ' | cut -d' ' -f2)
-            sleep 5
-            docker-compose -f ./src/packaging/docker-compose.yml down
-        done
+        # requests python package is needed to use spreaper
+        pip install requests
+        mkdir -p ~/.reaper
+        echo "admin" > ~/.reaper/credentials
+        sleep 30 && src/packaging/bin/spreaper login admin
+        src/packaging/bin/spreaper add-cluster $(docker-compose -f ./src/packaging/docker-compose.yml run nodetool status | grep UN | tr -s ' ' | cut -d' ' -f2) 7199 > cluster.json
+        cat cluster.json
+        cluster_name=$(cat cluster.json|grep -v "#" | jq -r '.name')
+        if [[ "$cluster_name" != "reaper-cluster" ]]; then
+            echo "Failed registering cluster in Reaper running in Docker"
+            exit 1
+        fi
+        sleep 5 && docker-compose -f ./src/packaging/docker-compose.yml down
         ;;
     *)
         echo "Skipping, no actions for TEST_TYPE=${TEST_TYPE}."

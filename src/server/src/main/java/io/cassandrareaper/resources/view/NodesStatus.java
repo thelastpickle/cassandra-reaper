@@ -64,6 +64,7 @@ public final class NodesStatus {
   private static final Pattern ENDPOINT_RELEASE_21_PATTERN = Pattern.compile("(RELEASE_VERSION)(:)([0-9.]+)");
   private static final Pattern ENDPOINT_SEVERITY_21_PATTERN = Pattern.compile("(SEVERITY)(:)([0-9.]+)");
   private static final Pattern ENDPOINT_HOSTID_21_PATTERN = Pattern.compile("(HOST_ID)(:)([0-9a-z-]+)");
+  private static final Pattern ENDPOINT_LOAD_SCYLLA_44_PATTERN = Pattern.compile("(LOAD)(:)([0-9eE.\\+]+)");
 
   private static final String NOT_AVAILABLE = "Not available";
 
@@ -114,7 +115,10 @@ public final class NodesStatus {
     // Cleanup hostnames from simpleStates keys
     Map<String, String> simpleStatesCopy = new HashMap<>();
     for (Map.Entry<String, String> entry: simpleStates.entrySet()) {
-      String entryKey = entry.getKey().substring(entry.getKey().indexOf('/'));
+      String entryKey = "/" + entry.getKey();
+      if (entry.getKey().indexOf('/') != -1) {
+        entryKey = entry.getKey().substring(entry.getKey().indexOf('/'));
+      }
       simpleStatesCopy.put(entryKey, entry.getValue());
     }
     simpleStates = simpleStatesCopy;
@@ -197,7 +201,8 @@ public final class NodesStatus {
         Arrays.asList(ENDPOINT_STATUS_40_PATTERN, ENDPOINT_STATUS_22_PATTERN, ENDPOINT_STATUS_21_PATTERN));
     ENDPOINT_DC_PATTERNS.addAll(Arrays.asList(ENDPOINT_DC_22_PATTERN, ENDPOINT_DC_21_PATTERN));
     ENDPOINT_RACK_PATTERNS.addAll(Arrays.asList(ENDPOINT_RACK_22_PATTERN, ENDPOINT_RACK_21_PATTERN));
-    ENDPOINT_LOAD_PATTERNS.addAll(Arrays.asList(ENDPOINT_LOAD_22_PATTERN, ENDPOINT_LOAD_21_PATTERN));
+    ENDPOINT_LOAD_PATTERNS.addAll(Arrays.asList(ENDPOINT_LOAD_22_PATTERN, ENDPOINT_LOAD_SCYLLA_44_PATTERN,
+            ENDPOINT_LOAD_21_PATTERN));
     ENDPOINT_RELEASE_PATTERNS.addAll(Arrays.asList(ENDPOINT_RELEASE_22_PATTERN, ENDPOINT_RELEASE_21_PATTERN));
     ENDPOINT_SEVERITY_PATTERNS.addAll(Arrays.asList(ENDPOINT_SEVERITY_22_PATTERN, ENDPOINT_SEVERITY_21_PATTERN));
     ENDPOINT_HOSTID_PATTERNS.addAll(Arrays.asList(ENDPOINT_HOSTID_22_PATTERN, ENDPOINT_HOSTID_21_PATTERN));

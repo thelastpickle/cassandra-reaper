@@ -68,6 +68,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -772,8 +773,41 @@ public final class ClusterFacade {
   private Map<List<String>, List<String>> getRangeToEndpointMapImpl(
       Cluster cluster,
       String keyspace) throws ReaperException {
+    JmxProxy jmxConnection = connect(cluster);
+    Map<List<String>, List<String>> endpointMap = jmxConnection.getRangeToEndpointMap(keyspace);
+    return maybeCleanupEndpointFromScylla(endpointMap);
+  }
 
-    return connect(cluster).getRangeToEndpointMap(keyspace);
+  /**
+   * The method makes the Scylla endpoint map compatible with the Cassandra ones
+   *
+   * @param endpointMap map of endpoint returned by jmx client
+   * @return a map of endpoints compatible with cassandra format
+   */
+  protected static Map<List<String>, List<String>>
+      maybeCleanupEndpointFromScylla(Map<List<String>, List<String>> endpointMap) {
+    Map<List<String>, List<String>> resultEndpointMap = Maps.newHashMap();
+
+    String firstToken = "";
+    String lastToken = "";
+    List<String> lastNode = Lists.newArrayList();
+    for (Entry<List<String>, List<String>> entry : endpointMap.entrySet()) {
+      String nodeStartToken = entry.getKey().get(0);
+      String nodeEndToken = entry.getKey().get(1);
+
+      if ("".equals(nodeStartToken)) {
+        lastToken = nodeEndToken;
+        lastNode = entry.getValue();
+      } else if ("".equals(nodeEndToken)) {
+        firstToken = nodeStartToken;
+      } else {
+        resultEndpointMap.put(entry.getKey(), entry.getValue());
+      }
+    }
+    if (!"".equals(firstToken) && !"".equals(lastToken)) {
+      resultEndpointMap.put(Lists.newArrayList(firstToken, lastToken), lastNode);
+    }
+    return resultEndpointMap;
   }
 
   public static List<StreamSession> parseStreamSessionJson(String json) throws IOException {
