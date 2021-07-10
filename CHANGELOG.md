@@ -1,5 +1,9 @@
 ## Change Log
 
+### 2.3.1 (2021/07/10 05:10 +00:00)
+- [0f3d451](https://github.com/thelastpickle/cassandra-reaper/commit/0f3d4516eb271ba4f8d3c3095e813450fc14c859) Allow schema upgrades with other Reaper instances possibly running (@adejanovski)
+- [d31f538](https://github.com/thelastpickle/cassandra-reaper/commit/d31f5384a2c8bf786f72ac069d87c2eff9e5d983) Fix endpoint state not returning in EACH mode due to seeds being shuffled (@adejanovski)
+
 ### 2.3.0 (2021/07/08 14:52 +00:00)
 - [eafe0dd](https://github.com/thelastpickle/cassandra-reaper/commit/eafe0ddad4d30173d541a02b4fcdbf6c5acd19f5) Add support for scylla 4.4 repair
 - [e82d464](https://github.com/thelastpickle/cassandra-reaper/commit/e82d464b15299445791bf71a4e43b0d84a131d9e) Add schema migration startup mode (@adejanovski)
