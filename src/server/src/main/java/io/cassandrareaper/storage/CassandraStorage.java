@@ -287,9 +287,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               .filter((reaperInstanceHost) -> !AppContext.REAPER_INSTANCE_ADDRESS.equals(reaperInstanceHost))
               .collect(Collectors.toList());
 
-          Preconditions.checkState(
-              otherRunningReapers.isEmpty(),
-              "Database migration can not happen with other reaper instances running. Found ",
+          LOG.warn(
+              "Database migration is happenning with other reaper instances possibly running. Found {}",
               StringUtils.join(otherRunningReapers));
         }
 
