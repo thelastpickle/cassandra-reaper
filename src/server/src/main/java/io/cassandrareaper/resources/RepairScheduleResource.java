@@ -102,7 +102,8 @@ public final class RepairScheduleResource {
       @QueryParam("nodes") Optional<String> nodesToRepairParam,
       @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
       @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam,
-      @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam) {
+      @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam,
+      @QueryParam("force") Optional<String> forceParam) {
 
     try {
       Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
@@ -118,7 +119,8 @@ public final class RepairScheduleResource {
           nodesToRepairParam,
           datacentersToRepairParam,
           blacklistedTableNamesParam,
-          repairThreadCountParam);
+          repairThreadCountParam,
+          forceParam);
 
       if (null != possibleFailResponse) {
         return possibleFailResponse;
@@ -197,6 +199,9 @@ public final class RepairScheduleResource {
             .build();
       }
 
+      // explicitly force a schedule even if the schedule conflicts
+      boolean force = (forceParam.isPresent() ? Boolean.parseBoolean(forceParam.get()) : false);
+
       RepairUnit.Builder unitBuilder = RepairUnit.builder()
           .clusterName(cluster.getName())
           .keyspaceName(keyspace.get())
@@ -217,7 +222,8 @@ public final class RepairScheduleResource {
           incremental,
           nextActivation,
           getSegmentCount(segmentCountPerNode),
-          getIntensity(intensityStr));
+          getIntensity(intensityStr),
+          force);
 
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -235,10 +241,17 @@ public final class RepairScheduleResource {
       boolean incremental,
       DateTime next,
       int segments,
-      Double intensity) {
+      Double intensity,
+      boolean force) {
 
     Optional<RepairSchedule> conflictingRepairSchedule
-        = repairScheduleService.conflictingRepairSchedule(cluster, unitBuilder);
+        = repairScheduleService.identicalRepairUnit(cluster, unitBuilder);
+
+    if (conflictingRepairSchedule.isPresent()) {
+      return Response.noContent().location(buildRepairScheduleUri(uriInfo, conflictingRepairSchedule.get())).build();
+    }
+
+    conflictingRepairSchedule = repairScheduleService.conflictingRepairSchedule(cluster, unitBuilder);
 
     if (conflictingRepairSchedule.isPresent()) {
       RepairSchedule existingSchedule = conflictingRepairSchedule.get();
@@ -250,29 +263,30 @@ public final class RepairScheduleResource {
         return Response.noContent().location(buildRepairScheduleUri(uriInfo, existingSchedule)).build();
       }
 
-      String msg = String.format(
-          "A repair schedule already exists for cluster \"%s\", keyspace \"%s\", and column families: %s",
-          cluster.getName(),
-          unitBuilder.keyspaceName,
-          unitBuilder.columnFamilies);
+      if (!force) {
+        String msg = String.format(
+            "A repair schedule already exists for cluster \"%s\", keyspace \"%s\", and column families: %s",
+            cluster.getName(),
+            unitBuilder.keyspaceName,
+            unitBuilder.columnFamilies);
 
-      return Response
-          .status(Response.Status.CONFLICT)
-          .location(buildRepairScheduleUri(uriInfo, existingSchedule))
-          .entity(msg)
-          .build();
-    } else {
-
-      RepairUnit unit = repairUnitService.getOrCreateRepairUnit(cluster, unitBuilder);
-
-      Preconditions
-          .checkState(unit.getIncrementalRepair() == incremental, "%s!=%s", unit.getIncrementalRepair(), incremental);
-
-      RepairSchedule newRepairSchedule = repairScheduleService
-          .storeNewRepairSchedule(cluster, unit, days, next, owner, segments, parallel, intensity);
-
-      return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule)).build();
+        return Response
+            .status(Response.Status.CONFLICT)
+            .location(buildRepairScheduleUri(uriInfo, existingSchedule))
+            .entity(msg)
+            .build();
+      }
     }
+
+    RepairUnit unit = repairUnitService.getOrCreateRepairUnit(cluster, unitBuilder, force);
+
+    Preconditions
+        .checkState(unit.getIncrementalRepair() == incremental, "%s!=%s", unit.getIncrementalRepair(), incremental);
+
+    RepairSchedule newRepairSchedule = repairScheduleService
+        .storeNewRepairSchedule(cluster, unit, days, next, owner, segments, parallel, intensity, force);
+
+    return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule)).build();
   }
 
   private int getDaysBetween(Optional<Integer> scheduleDaysBetween) {
