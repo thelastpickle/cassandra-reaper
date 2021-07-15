@@ -16,7 +16,7 @@
 package:
 	mvn -B clean package  -f ../../pom.xml -DskipTests
 
-prepare:
+prepare: package
 	echo "$(VERSION)..."
 	rm -Rf packages/*
 	rm -Rf build/*
