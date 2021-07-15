@@ -1,0 +1,17 @@
+version: 2
+updates:
+- package-ecosystem: maven
+  directory: "/"
+  schedule:
+    interval: weekly
+  ignore:
+  - dependency-name: io.prometheus:simpleclient_servlet
+    versions:
+    - 0.9.0
+  - dependency-name: io.prometheus:simpleclient
+    versions:
+    - 0.9.0
+  - dependency-name: org.apache.maven.plugins:maven-checkstyle-plugin
+    versions:
+    - 3.1.1
+  rebase-strategy: disabled
