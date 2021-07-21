@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Install Fossa CLI
         run: |
-          curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | bash
+          curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | bash -s -- -b .
       - name: Scan for dependencies and licenses
         run: |
-          FOSSA_API_KEY=${{ secrets.FOSSA_PUSH_ONLY_API_KEY }} fossa analyze
+          FOSSA_API_KEY=${{ secrets.FOSSA_PUSH_ONLY_API_KEY }} ./fossa analyze
