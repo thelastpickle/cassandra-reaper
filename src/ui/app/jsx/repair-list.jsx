@@ -235,6 +235,10 @@ const TableRowDetails = CreateReactClass({
                     <td>{this.props.row.repair_thread_count}</td>
                 </tr>
                 <tr>
+                    <td>Segment timeout (mins)</td>
+                    <td>{this.props.row.segment_timeout}</td>
+                </tr>
+                <tr>
                     <td>Nodes</td>
                     <td><CFsListRender list={this.props.row.nodes} /></td>
                 </tr>

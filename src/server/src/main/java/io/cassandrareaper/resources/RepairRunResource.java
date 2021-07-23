@@ -108,7 +108,8 @@ public final class RepairRunResource {
       @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
       @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam,
       @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam,
-      @QueryParam("force") Optional<String> forceParam) {
+      @QueryParam("force") Optional<String> forceParam,
+      @QueryParam("timeout") Optional<Integer> timeoutParam) {
 
     try {
       final Response possibleFailedResponse
@@ -126,7 +127,8 @@ public final class RepairRunResource {
           datacentersToRepairParam,
           blacklistedTableNamesParam,
           repairThreadCountParam,
-          forceParam);
+          forceParam,
+          timeoutParam);
 
       if (null != possibleFailedResponse) {
         return possibleFailedResponse;
@@ -198,6 +200,8 @@ public final class RepairRunResource {
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
 
+      int timeout = timeoutParam.orElse(context.config.getHangingRepairTimeoutMins());
+      boolean force = (forceParam.isPresent() ? Boolean.parseBoolean(forceParam.get()) : false);
 
       RepairUnit.Builder builder = RepairUnit.builder()
               .clusterName(cluster.getName())
@@ -207,10 +211,10 @@ public final class RepairRunResource {
               .nodes(nodesToRepair)
               .datacenters(datacentersToRepair)
               .blacklistedTables(blacklistedTableNames)
-              .repairThreadCount(repairThreadCountParam.orElse(context.config.getRepairThreadCount()));
+              .repairThreadCount(repairThreadCountParam.orElse(context.config.getRepairThreadCount()))
+              .timeout(timeout);
 
-      final RepairUnit theRepairUnit = repairUnitService.getOrCreateRepairUnit(cluster, builder);
-
+      final RepairUnit theRepairUnit = repairUnitService.getOrCreateRepairUnit(cluster, builder, force);
       if (theRepairUnit.getIncrementalRepair() != incrementalRepair) {
         String msg = String.format(
             "A repair unit %s already exist for the same cluster/keyspace/tables"
@@ -275,7 +279,8 @@ public final class RepairRunResource {
       Optional<String> datacentersStr,
       Optional<String> blacklistedTableNamesParam,
       Optional<Integer> repairThreadCountStr,
-      Optional<String> forceParam) throws ReaperException {
+      Optional<String> forceParam,
+      Optional<Integer> timeoutParam) throws ReaperException {
 
     if (!clusterName.isPresent()) {
       return createMissingArgumentResponse("clusterName");
@@ -358,6 +363,14 @@ public final class RepairRunResource {
 
       return Response.status(Response.Status.BAD_REQUEST)
           .entity("invalid query parameter \"force\", expecting [True,False]")
+          .build();
+    }
+
+    if (timeoutParam.isPresent()
+        && timeoutParam.get() == 0) {
+
+      return Response.status(Response.Status.BAD_REQUEST)
+          .entity("invalid query parameter \"timeout\", should be higher than 0")
           .build();
     }
 

@@ -135,6 +135,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final VersionNumber version;
   private final UUID reaperInstanceId;
+  private final int defaultTimeout;
 
   private final AtomicReference<Collection<Cluster>> clustersCache = new AtomicReference(Collections.EMPTY_SET);
   private final AtomicLong clustersCacheAge = new AtomicLong(0);
@@ -214,6 +215,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       CassandraMode mode) throws ReaperException {
 
     this.reaperInstanceId = reaperInstanceId;
+    this.defaultTimeout = config.getHangingRepairTimeoutMins();
     CassandraFactory cassandraFactory = config.getCassandraFactory();
     overrideQueryOptions(cassandraFactory, mode);
     overrideRetryPolicy(cassandraFactory);
@@ -422,8 +424,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     insertRepairUnitPrepStmt = session
         .prepare(
             "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
-                + "incremental_repair, nodes, \"datacenters\", blacklisted_tables, repair_thread_count) "
-                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                + "incremental_repair, nodes, \"datacenters\", blacklisted_tables, repair_thread_count, timeout) "
+                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     getRepairUnitPrepStmt = session
         .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
@@ -1024,7 +1026,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             repairUnit.getNodes(),
             repairUnit.getDatacenters(),
             repairUnit.getBlacklistedTables(),
-            repairUnit.getRepairThreadCount()));
+            repairUnit.getRepairThreadCount(),
+            repairUnit.getTimeout()));
 
     repairUnits.put(repairUnit.getId(), repairUnit);
     return repairUnit;
@@ -1042,6 +1045,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               .datacenters(repairUnitRow.getSet("datacenters", String.class))
               .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
               .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
+              .timeout(repairUnitRow.isNull("timeout") ? this.defaultTimeout : repairUnitRow.getInt("timeout"))
               .build(id);
     }
     throw new IllegalArgumentException("No repair unit exists for " + id);
@@ -1060,18 +1064,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     stmt.setIdempotent(Boolean.TRUE);
     ResultSet results = session.execute(stmt);
     for (Row repairUnitRow : results) {
-      if (repairUnitRow.getString("cluster_name").equals(params.clusterName)
-          && repairUnitRow.getString("keyspace_name").equals(params.keyspaceName)
-          && repairUnitRow.getSet("column_families", String.class).equals(params.columnFamilies)
-          && repairUnitRow.getBool("incremental_repair") == params.incrementalRepair
-          && repairUnitRow.getSet("nodes", String.class).equals(params.nodes)
-          && repairUnitRow.getSet("datacenters", String.class).equals(params.datacenters)
-          && repairUnitRow
-              .getSet("blacklisted_tables", String.class)
-              .equals(params.blacklistedTables)
-          && repairUnitRow.getInt("repair_thread_count") == params.repairThreadCount) {
-
-        repairUnit = RepairUnit.builder()
+      RepairUnit existingRepairUnit = RepairUnit.builder()
             .clusterName(repairUnitRow.getString("cluster_name"))
             .keyspaceName(repairUnitRow.getString("keyspace_name"))
             .columnFamilies(repairUnitRow.getSet("column_families", String.class))
@@ -1080,7 +1073,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             .datacenters(repairUnitRow.getSet("datacenters", String.class))
             .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
             .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
+            .timeout(repairUnitRow.isNull("timeout") ? this.defaultTimeout : repairUnitRow.getInt("timeout"))
             .build(repairUnitRow.getUUID("id"));
+      if (existingRepairUnit.with().equals(params)) {
+        repairUnit = existingRepairUnit;
+        LOG.info("Found matching repair unit: {}", repairUnitRow.getUUID("id"));
         // exit the loop once we find a match
         break;
       }

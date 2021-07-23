@@ -180,8 +180,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     context.repairManager = RepairManager.create(
         context,
         environment.lifecycle().scheduledExecutorService("RepairRunner").threads(repairThreads).build(),
-        config.getHangingRepairTimeoutMins(),
-        TimeUnit.MINUTES,
         config.getRepairManagerSchedulingIntervalSeconds(),
         TimeUnit.SECONDS,
         maxParallelRepairs);
@@ -476,7 +474,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   }
 
   private void tryInitializeStorage(ReaperApplicationConfiguration config, Environment environment)
-    throws ReaperException, InterruptedException {
+      throws ReaperException, InterruptedException {
     if (context.storage == null) {
       LOG.info("initializing storage of type: {}", config.getStorageType());
       int storageFailures = 0;

@@ -87,8 +87,9 @@ public final class SegmentRunnerTest {
 
   @Test
   public void timeoutTest() throws InterruptedException, ReaperException, ExecutionException,
-    MalformedObjectNameException, ReflectionException, IOException {
+        MalformedObjectNameException, ReflectionException, IOException {
     final AppContext context = new AppContext();
+    final int segmentTimeout = 30;
     context.config = Mockito.mock(ReaperApplicationConfiguration.class);
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
@@ -101,7 +102,8 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(segmentTimeout));
 
     Map<String, String> replicas = Maps.newHashMap();
     replicas.put("127.0.0.1", "dc1");
@@ -211,8 +213,9 @@ public final class SegmentRunnerTest {
 
   @Test
   public void successTest() throws InterruptedException, ReaperException, ExecutionException,
-    MalformedObjectNameException, ReflectionException, IOException {
+        MalformedObjectNameException, ReflectionException, IOException {
     final IStorage storage = new MemoryStorage();
+    final int segmentTimeout = 30;
 
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
@@ -221,7 +224,8 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(segmentTimeout));
 
     Map<String, String> replicas = Maps.newHashMap();
     replicas.put("127.0.0.1", "dc1");
@@ -362,8 +366,9 @@ public final class SegmentRunnerTest {
 
   @Test
   public void failureTest() throws InterruptedException, ReaperException, ExecutionException,
-    MalformedObjectNameException, ReflectionException, IOException {
+        MalformedObjectNameException, ReflectionException, IOException {
     final IStorage storage = new MemoryStorage();
+    final int segmentTimeout = 30;
 
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
@@ -372,7 +377,8 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(segmentTimeout));
 
     Map<String, String> replicas = Maps.newHashMap();
     replicas.put("127.0.0.1", "dc1");
@@ -518,7 +524,8 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(30));
 
     Map<String, String> replicas = Maps.newHashMap();
     replicas.put("127.0.0.1", "dc1");
@@ -660,7 +667,8 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(30));
 
     Map<String, String> replicas = Maps.newHashMap();
     replicas.put("127.0.0.1", "dc1");
@@ -795,6 +803,7 @@ public final class SegmentRunnerTest {
       throws InterruptedException, ReaperException, ExecutionException,
       MalformedObjectNameException, ReflectionException, IOException {
     final IStorage storage = new MemoryStorage();
+    final int segmentTimeout = 30;
 
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
@@ -803,7 +812,8 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(30));
 
     Map<String, String> replicas = Maps.newHashMap();
     replicas.put("127.0.0.1", "dc1");
@@ -939,6 +949,7 @@ public final class SegmentRunnerTest {
       throws InterruptedException, ReaperException, ExecutionException,
       MalformedObjectNameException, ReflectionException, IOException {
     final IStorage storage = new MemoryStorage();
+    final int segmentTimeout = 30;
 
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
@@ -947,7 +958,8 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(30));
 
     Map<String, String> replicas = Maps.newHashMap();
     replicas.put("127.0.0.1", "dc1");

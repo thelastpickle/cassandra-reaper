@@ -228,6 +228,7 @@ public final class RepairRunServiceTest {
     final long TIME_RUN = 41L;
     final double INTENSITY = 0.5f;
     final int REPAIR_THREAD_COUNT = 1;
+    final int segmentTimeout = 30;
     final List<BigInteger> TOKENS = Lists.newArrayList(
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
@@ -245,7 +246,8 @@ public final class RepairRunServiceTest {
             .nodes(NODES)
             .datacenters(DATACENTERS)
             .blacklistedTables(BLACKLISTED_TABLES)
-            .repairThreadCount(REPAIR_THREAD_COUNT));
+            .repairThreadCount(REPAIR_THREAD_COUNT)
+            .timeout(segmentTimeout));
     DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
 
     AppContext context = new AppContext();
@@ -290,6 +292,7 @@ public final class RepairRunServiceTest {
         .blacklistedTables(Sets.newHashSet("table1"))
         .incrementalRepair(false)
         .repairThreadCount(4)
+        .timeout(segmentTimeout)
         .build(UUIDs.timeBased());
     List<Segment> segments = repairRunService.generateSegments(cluster, 10, 10, unit);
     assertEquals(12, segments.size());

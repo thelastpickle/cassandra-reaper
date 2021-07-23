@@ -85,6 +85,7 @@ public final class RepairUnitServiceTest {
         .blacklistedTables(Sets.newHashSet("table1"))
         .incrementalRepair(false)
         .repairThreadCount(4)
+        .timeout(30)
         .build(UUIDs.timeBased());
 
     assertEquals(Sets.newHashSet("table2", "table3"), service.getTablesToRepair(cluster, unit));
@@ -108,6 +109,7 @@ public final class RepairUnitServiceTest {
           .blacklistedTables(Sets.newHashSet("table1"))
           .incrementalRepair(false)
           .repairThreadCount(4)
+          .timeout(30)
           .build(UUIDs.timeBased());
 
     assertEquals(Sets.newHashSet("table2", "table3"), service.getTablesToRepair(cluster, unit));
@@ -130,6 +132,7 @@ public final class RepairUnitServiceTest {
         .keyspaceName("test")
         .incrementalRepair(false)
         .repairThreadCount(4)
+        .timeout(30)
         .build(UUIDs.timeBased());
 
     assertEquals(Sets.newHashSet("table2", "table3"), service.getTablesToRepair(cluster, unit));
@@ -153,6 +156,7 @@ public final class RepairUnitServiceTest {
         .blacklistedTables(Sets.newHashSet("table1", "table3"))
         .incrementalRepair(false)
         .repairThreadCount(4)
+        .timeout(30)
         .build(UUIDs.timeBased());
 
     assertEquals(Sets.newHashSet("table2"), service.getTablesToRepair(cluster, unit));
@@ -176,6 +180,7 @@ public final class RepairUnitServiceTest {
         .blacklistedTables(Sets.newHashSet("table1"))
         .incrementalRepair(false)
         .repairThreadCount(4)
+        .timeout(30)
         .build(UUIDs.timeBased());
 
     assertEquals(Sets.newHashSet("table2"), service.getTablesToRepair(cluster, unit));
@@ -200,6 +205,7 @@ public final class RepairUnitServiceTest {
         .blacklistedTables(Sets.newHashSet("table1"))
         .incrementalRepair(false)
         .repairThreadCount(4)
+        .timeout(30)
         .build(UUIDs.timeBased());
 
     assertEquals(Sets.newHashSet("table2"), service.getTablesToRepair(cluster, unit));
@@ -224,6 +230,7 @@ public final class RepairUnitServiceTest {
         .blacklistedTables(Sets.newHashSet("table1"))
         .incrementalRepair(false)
         .repairThreadCount(4)
+        .timeout(30)
         .build(UUIDs.timeBased());
 
     assertEquals(Sets.newHashSet("table2"), service.getTablesToRepair(cluster, unit));
@@ -247,6 +254,7 @@ public final class RepairUnitServiceTest {
         .blacklistedTables(Sets.newHashSet("table1", "table2", "table3"))
         .incrementalRepair(false)
         .repairThreadCount(4)
+        .timeout(30)
         .build(UUIDs.timeBased());
 
     service.getTablesToRepair(cluster, unit);
@@ -272,6 +280,7 @@ public final class RepairUnitServiceTest {
         .blacklistedTables(Sets.newHashSet("table1", "table2", "table3"))
         .incrementalRepair(false)
         .repairThreadCount(4)
+        .timeout(30)
         .build(UUIDs.timeBased());
 
     service.getTablesToRepair(cluster, unit);

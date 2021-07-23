@@ -103,7 +103,8 @@ public final class RepairScheduleResource {
       @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
       @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam,
       @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam,
-      @QueryParam("force") Optional<String> forceParam) {
+      @QueryParam("force") Optional<String> forceParam,
+      @QueryParam("timeout") Optional<Integer> timeoutParam) {
 
     try {
       Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
@@ -120,7 +121,8 @@ public final class RepairScheduleResource {
           datacentersToRepairParam,
           blacklistedTableNamesParam,
           repairThreadCountParam,
-          forceParam);
+          forceParam,
+          timeoutParam);
 
       if (null != possibleFailResponse) {
         return possibleFailResponse;
@@ -202,6 +204,8 @@ public final class RepairScheduleResource {
       // explicitly force a schedule even if the schedule conflicts
       boolean force = (forceParam.isPresent() ? Boolean.parseBoolean(forceParam.get()) : false);
 
+      int timeout = timeoutParam.orElse(context.config.getHangingRepairTimeoutMins());
+
       RepairUnit.Builder unitBuilder = RepairUnit.builder()
           .clusterName(cluster.getName())
           .keyspaceName(keyspace.get())
@@ -210,7 +214,8 @@ public final class RepairScheduleResource {
           .nodes(nodesToRepair)
           .datacenters(datacentersToRepair)
           .blacklistedTables(blacklistedTableNames)
-          .repairThreadCount(repairThreadCountParam.orElse(context.config.getRepairThreadCount()));
+          .repairThreadCount(repairThreadCountParam.orElse(context.config.getRepairThreadCount()))
+          .timeout(timeout);
 
       return addRepairSchedule(
           cluster,
