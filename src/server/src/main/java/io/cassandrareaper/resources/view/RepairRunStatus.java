@@ -112,6 +112,9 @@ public final class RepairRunStatus {
   @JsonProperty("repair_unit_id")
   private UUID repairUnitId;
 
+  @JsonProperty("segment_timeout")
+  private int segmentTimeout;
+
 
   /**
    * Default public constructor Required for Jackson JSON parsing.
@@ -141,7 +144,8 @@ public final class RepairRunStatus {
       Collection<String> datacenters,
       Collection<String> blacklistedTables,
       int repairThreadCount,
-      UUID repairUnitId) {
+      UUID repairUnitId,
+      int segmentTimeout) {
 
     this.id = runId;
     this.cause = cause;
@@ -166,6 +170,7 @@ public final class RepairRunStatus {
     this.datacenters = datacenters;
     this.blacklistedTables = blacklistedTables;
     this.repairThreadCount = repairThreadCount;
+    this.segmentTimeout = segmentTimeout;
 
     if (startTime == null) {
       duration = null;
@@ -226,7 +231,8 @@ public final class RepairRunStatus {
         repairUnit.getDatacenters(),
         repairUnit.getBlacklistedTables(),
         repairUnit.getRepairThreadCount(),
-        repairRun.getRepairUnitId());
+        repairRun.getRepairUnitId(),
+        repairUnit.getTimeout());
   }
 
   @JsonProperty("creation_time")

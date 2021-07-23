@@ -172,8 +172,6 @@ public final class HeartTest {
     context.repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(1),
-        REPAIR_TIMEOUT_S,
-        TimeUnit.SECONDS,
         RETRY_DELAY_S,
         TimeUnit.SECONDS,
         1);
@@ -203,8 +201,6 @@ public final class HeartTest {
     context.repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(1),
-        REPAIR_TIMEOUT_S,
-        TimeUnit.SECONDS,
         RETRY_DELAY_S,
         TimeUnit.SECONDS,
         1);
@@ -237,8 +233,6 @@ public final class HeartTest {
     context.repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(1),
-        REPAIR_TIMEOUT_S,
-        TimeUnit.SECONDS,
         RETRY_DELAY_S,
         TimeUnit.SECONDS,
         1);
@@ -275,8 +269,6 @@ public final class HeartTest {
     context.repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(1),
-        REPAIR_TIMEOUT_S,
-        TimeUnit.SECONDS,
         RETRY_DELAY_S,
         TimeUnit.SECONDS,
         1);

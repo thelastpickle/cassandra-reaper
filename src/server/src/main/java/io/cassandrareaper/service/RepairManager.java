@@ -63,7 +63,6 @@ public final class RepairManager implements AutoCloseable {
   private final AppContext context;
   private final ClusterFacade clusterFacade;
   private final ListeningScheduledExecutorService executor;
-  private final long repairTimeoutMillis;
   private final long retryDelayMillis;
   private final int maxParallelRepairs;
 
@@ -71,8 +70,6 @@ public final class RepairManager implements AutoCloseable {
       AppContext context,
       ClusterFacade clusterFacade,
       ScheduledExecutorService executor,
-      long repairTimeout,
-      TimeUnit repairTimeoutTimeUnit,
       long retryDelay,
       TimeUnit retryDelayTimeUnit,
       int maxParallelRepairs
@@ -80,7 +77,6 @@ public final class RepairManager implements AutoCloseable {
 
     this.context = context;
     this.clusterFacade = clusterFacade;
-    this.repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
     this.retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
 
     this.executor = MoreExecutors.listeningDecorator(
@@ -93,8 +89,6 @@ public final class RepairManager implements AutoCloseable {
       AppContext context,
       ClusterFacade clusterFacadeSupplier,
       ScheduledExecutorService executor,
-      long repairTimeout,
-      TimeUnit repairTimeoutTimeUnit,
       long retryDelay,
       TimeUnit retryDelayTimeUnit,
       int maxParallelRepairs
@@ -104,8 +98,6 @@ public final class RepairManager implements AutoCloseable {
         context,
         clusterFacadeSupplier,
         executor,
-        repairTimeout,
-        repairTimeoutTimeUnit,
         retryDelay,
         retryDelayTimeUnit,
         maxParallelRepairs);
@@ -114,8 +106,6 @@ public final class RepairManager implements AutoCloseable {
   public static RepairManager create(
       AppContext context,
       ScheduledExecutorService executor,
-      long repairTimeout,
-      TimeUnit repairTimeoutTimeUnit,
       long retryDelay,
       TimeUnit retryDelayTimeUnit,
       int maxParallelRepairs
@@ -125,15 +115,9 @@ public final class RepairManager implements AutoCloseable {
         context,
         ClusterFacade.create(context),
         executor,
-        repairTimeout,
-        repairTimeoutTimeUnit,
         retryDelay,
         retryDelayTimeUnit,
         maxParallelRepairs);
-  }
-
-  long getRepairTimeoutMillis() {
-    return repairTimeoutMillis;
   }
 
   /**

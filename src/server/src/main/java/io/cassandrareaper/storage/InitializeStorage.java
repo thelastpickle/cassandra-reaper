@@ -56,7 +56,7 @@ public final class InitializeStorage {
   }
 
   public IStorage initializeStorageBackend()
-    throws ReaperException {
+      throws ReaperException {
     IStorage storage;
     LOG.info("Initializing the database and performing schema migrations");
 
@@ -82,7 +82,8 @@ public final class InitializeStorage {
       // instantiate store
       storage = new PostgresStorage(
           reaperInstanceId,
-          factory.build(environment, config.getDataSourceFactory(), "postgresql")
+          factory.build(environment, config.getDataSourceFactory(), "postgresql"),
+          config.getHangingRepairTimeoutMins()
       );
       initDatabase(config);
     } else {

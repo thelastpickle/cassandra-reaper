@@ -280,6 +280,10 @@ const TableRowDetails = CreateReactClass({
                     <td>{this.props.row.repair_thread_count}</td>
                 </tr>
                 <tr>
+                    <td>Segment timeout (mins)</td>
+                    <td>{this.props.row.segment_timeout}</td>
+                </tr>
+                <tr>
                     <td>Repair parallelism</td>
                     <td>{this.props.row.repair_parallelism}</td>
                 </tr>

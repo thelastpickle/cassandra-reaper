@@ -89,16 +89,18 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   private final Duration metricsTimeout;
   private final Duration nodeOperationsTimeout;
   private final UUID reaperInstanceId;
+  private final int defaultTimeout;
 
 
-  public PostgresStorage(UUID reaperInstanceId, DBI jdbi) {
+  public PostgresStorage(UUID reaperInstanceId, DBI jdbi, int defaultTimeout) {
     this(
-      reaperInstanceId,
-      jdbi,
-      DEFAULT_LEADER_TIMEOUT_MIN,
-      DEFAULT_REAPER_TIMEOUT_MIN,
-      DEFAULT_METRICS_TIMEOUT_MIN,
-      DEFAULT_NODE_OPERATIONS_TIMEOUT_MIN
+        reaperInstanceId,
+        jdbi,
+        DEFAULT_LEADER_TIMEOUT_MIN,
+        DEFAULT_REAPER_TIMEOUT_MIN,
+        DEFAULT_METRICS_TIMEOUT_MIN,
+        DEFAULT_NODE_OPERATIONS_TIMEOUT_MIN,
+        defaultTimeout
     );
   }
 
@@ -108,13 +110,15 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
                          int leaderTimeoutInMinutes,
                          int reaperTimeoutInMinutes,
                          int metricsTimeoutInMinutes,
-                         int nodeOperationsTimeoutInMinutes) {
+                         int nodeOperationsTimeoutInMinutes,
+                         int defaultTimeoutInMinutes) {
     this.reaperInstanceId = reaperInstanceId;
     this.jdbi = jdbi;
     leaderTimeout = Duration.ofMinutes(leaderTimeoutInMinutes);
     reaperTimeout = Duration.ofMinutes(reaperTimeoutInMinutes);
     metricsTimeout = Duration.ofMinutes(metricsTimeoutInMinutes);
     nodeOperationsTimeout = Duration.ofMinutes(nodeOperationsTimeoutInMinutes);
+    this.defaultTimeout = defaultTimeoutInMinutes;
   }
 
   protected static IStoragePostgreSql getPostgresStorage(Handle handle) {
@@ -394,9 +398,24 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
               params.nodes,
               params.datacenters,
               params.blacklistedTables,
-              params.repairThreadCount);
+              params.repairThreadCount,
+              params.timeout);
     }
-    return Optional.ofNullable(result);
+    return Optional.ofNullable(applyDefaultSegmentTimeout(result));
+  }
+
+  /**
+   * If the timeout is set to 0 (meaning it's not set) we need to set it to the default segment timeout.
+   * This method returns a new unit built on top of the original one passed as argument, using the proper timeout.
+   *
+   * @param repairUnit the repair unit for which we may want to patch the timeout
+   * @return a repair unit built on top of the original one, with a timeout set to the default if it was 0 originally
+   */
+  public RepairUnit applyDefaultSegmentTimeout(RepairUnit repairUnit) {
+    if (null != repairUnit && repairUnit.getTimeout() == 0) {
+      return repairUnit.with().timeout(this.defaultTimeout).build(repairUnit.getId());
+    }
+    return repairUnit;
   }
 
   private void addRepairSegments(Collection<RepairSegment.Builder> newSegments, UUID runId) {

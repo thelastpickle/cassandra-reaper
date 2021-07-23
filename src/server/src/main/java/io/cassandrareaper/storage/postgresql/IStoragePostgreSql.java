@@ -99,13 +99,13 @@ public interface IStoragePostgreSql {
   // RepairUni
   //
   String SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID = "cluster_name, keyspace_name, column_families, "
-          + "incremental_repair, nodes, datacenters, blacklisted_tables, repair_thread_count";
+          + "incremental_repair, nodes, datacenters, blacklisted_tables, repair_thread_count, timeout";
   String SQL_REPAIR_UNIT_ALL_FIELDS = "repair_unit.id, " + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID;
   String SQL_INSERT_REPAIR_UNIT = "INSERT INTO repair_unit ("
           + SQL_REPAIR_UNIT_ALL_FIELDS_NO_ID
           + ") VALUES "
           + "(:clusterName, :keyspaceName, :columnFamilies, "
-          + ":incrementalRepair, :nodes, :datacenters, :blacklistedTables, :repairThreadCount)";
+          + ":incrementalRepair, :nodes, :datacenters, :blacklistedTables, :repairThreadCount, :timeout)";
   String SQL_GET_REPAIR_UNIT = "SELECT " + SQL_REPAIR_UNIT_ALL_FIELDS + " FROM repair_unit WHERE id = :id";
 
   String SQL_GET_REPAIR_UNIT_BY_CLUSTER_AND_TABLES = "SELECT "
@@ -230,7 +230,8 @@ public interface IStoragePostgreSql {
       = "SELECT repair_schedule.id, owner, cluster_name, keyspace_name, column_families, state, "
           + "creation_time, next_activation, pause_time, intensity, segment_count, "
           + "repair_parallelism, days_between, incremental_repair, nodes, "
-          + "datacenters, blacklisted_tables, segment_count_per_node, repair_thread_count, repair_unit_id "
+          + "datacenters, blacklisted_tables, segment_count_per_node, repair_thread_count,"
+          + "repair_unit_id, repair_unit.timeout "
           + "FROM repair_schedule "
           + "JOIN repair_unit ON repair_unit_id = repair_unit.id "
           + "WHERE cluster_name = :clusterName";
@@ -541,7 +542,8 @@ public interface IStoragePostgreSql {
       @Bind("nodes") Collection<String> nodes,
       @Bind("datacenters") Collection<String> datacenters,
       @Bind("blacklisted_tables") Collection<String> blacklistedTables,
-      @Bind("repairThreadCount") int repairThreadCount);
+      @Bind("repairThreadCount") int repairThreadCount,
+      @Bind("timeout") int timeout);
 
   @SqlUpdate(SQL_INSERT_REPAIR_UNIT)
   @GetGeneratedKeys

@@ -62,6 +62,7 @@ const repairForm = CreateReactClass({
       intervalDays: "",
       incrementalRepair: "false",
       repairThreadCount: 1,
+      timeout: null,
       formCollapsed: true,
       advancedFormCollapsed: true,
       clusterStatus: {},
@@ -218,6 +219,9 @@ const repairForm = CreateReactClass({
     }
     else {
       repair.force = "false";
+    }
+    if (this.state.timeout) {
+      repair.timeout = this.state.timeout;
     }
 
     this.props.addRepairSubject.onNext({
@@ -693,6 +697,13 @@ const repairForm = CreateReactClass({
                         <input type="number" className="form-control" value={this.state.repairThreadCount}
                           min="1" max="4"
                           onChange={this._handleChange} id="in_repairThreadCount" placeholder="repair threads"/>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_timeout" className="col-sm-3 control-label">Segment timeout</label>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                      <input type="number" className="form-control" value={this.state.timeout}
+                          onChange={this._handleChange} id="in_timeout" placeholder="Segment timeout in minutes before it gets killed and rescheduled."/>
                       </div>
                     </div>
                   </div>
