@@ -35,6 +35,7 @@ public final class RepairUnit {
   private final Set<String> datacenters;
   private final Set<String> blacklistedTables;
   private final int repairThreadCount;
+  private final int timeout;
 
   private RepairUnit(Builder builder, UUID id) {
     this.id = id;
@@ -46,6 +47,7 @@ public final class RepairUnit {
     this.datacenters = builder.datacenters;
     this.blacklistedTables = builder.blacklistedTables;
     this.repairThreadCount = builder.repairThreadCount;
+    this.timeout = builder.timeout;
   }
 
   public static Builder builder() {
@@ -88,6 +90,10 @@ public final class RepairUnit {
     return repairThreadCount;
   }
 
+  public int getTimeout() {
+    return timeout;
+  }
+
   public Builder with() {
     return new Builder(this);
   }
@@ -102,6 +108,7 @@ public final class RepairUnit {
     public Set<String> datacenters = Collections.emptySet();
     public Set<String> blacklistedTables = Collections.emptySet();
     public Integer repairThreadCount;
+    public Integer timeout;
 
     private Builder() {}
 
@@ -114,6 +121,7 @@ public final class RepairUnit {
       datacenters = original.datacenters;
       blacklistedTables = original.blacklistedTables;
       repairThreadCount = original.repairThreadCount;
+      timeout = original.timeout;
     }
 
     public Builder clusterName(String clusterName) {
@@ -156,11 +164,17 @@ public final class RepairUnit {
       return this;
     }
 
+    public Builder timeout(int timeout) {
+      this.timeout = timeout;
+      return this;
+    }
+
     public RepairUnit build(UUID id) {
       Preconditions.checkState(null != clusterName, "clusterName(..) must be called before build(..)");
       Preconditions.checkState(null != keyspaceName, "keyspaceName(..) must be called before build(..)");
       Preconditions.checkState(null != incrementalRepair, "incrementalRepair(..) must be called before build(..)");
       Preconditions.checkState(null != repairThreadCount, "repairThreadCount(..) must be called before build(..)");
+      Preconditions.checkState(null != timeout, "timeout(..) must be called before build(..)");
       return new RepairUnit(this, id);
     }
 
@@ -181,6 +195,10 @@ public final class RepairUnit {
       hash +=  Objects.hashCode(this.datacenters);
       hash *= 59;
       hash +=  Objects.hashCode(this.blacklistedTables);
+      hash *= 59;
+      hash +=  Objects.hashCode(this.repairThreadCount);
+      hash *= 59;
+      hash +=  Objects.hashCode(this.timeout);
       return hash;
     }
 
@@ -200,7 +218,8 @@ public final class RepairUnit {
           && Objects.equals(this.nodes, ((Builder) obj).nodes)
           && Objects.equals(this.datacenters, ((Builder) obj).datacenters)
           && Objects.equals(this.blacklistedTables, ((Builder) obj).blacklistedTables)
-          && Objects.equals(this.repairThreadCount, ((Builder) obj).repairThreadCount);
+          && Objects.equals(this.repairThreadCount, ((Builder) obj).repairThreadCount)
+          && Objects.equals(this.timeout, ((Builder) obj).timeout);
     }
   }
 }

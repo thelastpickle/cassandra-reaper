@@ -50,6 +50,7 @@ public class PostgresStorageTest {
 
   private static final String DB_URL = "jdbc:h2:mem:test_mem;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;"
       + "DATABASE_TO_UPPER=FALSE;CASE_INSENSITIVE_IDENTIFIERS=TRUE";
+  private static final int SEGMENT_TIMEOUT = 30;
 
   @Before
   public void setUp() throws SQLException, IOException {
@@ -75,7 +76,7 @@ public class PostgresStorageTest {
   public void testTakeLead() {
     DBI dbi = new DBI(DB_URL);
     UUID reaperInstanceId = UUID.randomUUID();
-    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi);
+    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi, SEGMENT_TIMEOUT);
     Assertions.assertThat(storage.isStorageConnected()).isTrue();
 
     Handle handle = dbi.open();
@@ -105,7 +106,7 @@ public class PostgresStorageTest {
   public void testNoLeaders() {
     DBI dbi = new DBI(DB_URL);
     UUID reaperInstanceId = UUID.randomUUID();
-    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi);
+    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi, SEGMENT_TIMEOUT);
     Assertions.assertThat(storage.isStorageConnected()).isTrue();
 
     Handle handle = dbi.open();
@@ -119,7 +120,7 @@ public class PostgresStorageTest {
   public void testRenewLead() throws InterruptedException {
     DBI dbi = new DBI(DB_URL);
     UUID reaperInstanceId = UUID.randomUUID();
-    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi);
+    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi, SEGMENT_TIMEOUT);
     Assertions.assertThat(storage.isStorageConnected()).isTrue();
 
     Handle handle = dbi.open();
@@ -148,7 +149,7 @@ public class PostgresStorageTest {
   public void testReleaseLead() {
     DBI dbi = new DBI(DB_URL);
     UUID reaperInstanceId = UUID.randomUUID();
-    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi);
+    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi, SEGMENT_TIMEOUT);
     Assertions.assertThat(storage.isStorageConnected()).isTrue();
 
     Handle handle = dbi.open();
@@ -182,7 +183,7 @@ public class PostgresStorageTest {
   public void testSaveHeartbeat() {
     DBI dbi = new DBI(DB_URL);
     UUID reaperInstanceId = UUID.randomUUID();
-    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi);
+    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi, SEGMENT_TIMEOUT);
     Assertions.assertThat(storage.isStorageConnected()).isTrue();
 
     Handle handle = dbi.open();
@@ -197,7 +198,7 @@ public class PostgresStorageTest {
   public void testNodeOperations() {
     DBI dbi = new DBI(DB_URL);
     UUID reaperInstanceId = UUID.randomUUID();
-    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi);
+    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi, SEGMENT_TIMEOUT);
     Assertions.assertThat(storage.isStorageConnected()).isTrue();
 
     Handle handle = dbi.open();
@@ -216,7 +217,7 @@ public class PostgresStorageTest {
   public void testGenericMetricsByHostandCluster() {
     DBI dbi = new DBI(DB_URL);
     UUID reaperInstanceId = UUID.randomUUID();
-    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi);
+    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi, SEGMENT_TIMEOUT);
     Assertions.assertThat(storage.isStorageConnected()).isTrue();
 
     Handle handle = dbi.open();
@@ -283,7 +284,7 @@ public class PostgresStorageTest {
   public void testGenericMetricExpiration() {
     DBI dbi = new DBI(DB_URL);
     UUID reaperInstanceId = UUID.randomUUID();
-    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi);
+    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi, SEGMENT_TIMEOUT);
     Assertions.assertThat(storage.isStorageConnected()).isTrue();
 
     Handle handle = dbi.open();
@@ -345,7 +346,7 @@ public class PostgresStorageTest {
     System.out.println("Testing leader timeout (this will take a minute)...");
     DBI dbi = new DBI(DB_URL);
     UUID reaperInstanceId = UUID.randomUUID();
-    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi, 1, 1, 1, 1);
+    PostgresStorage storage = new PostgresStorage(reaperInstanceId, dbi, 1, 1, 1, 1, SEGMENT_TIMEOUT);
     Assertions.assertThat(storage.isStorageConnected()).isTrue();
 
     Handle handle = dbi.open();

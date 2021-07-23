@@ -317,7 +317,8 @@ public final class RepairRunService {
       RepairUnit repairUnit) {
 
     List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
-    tokenSegments.forEach(range -> repairSegmentBuilders.add(RepairSegment.builder(range, repairUnit.getId())));
+    tokenSegments.forEach(
+        range -> repairSegmentBuilders.add(RepairSegment.builder(range, repairUnit.getId())));
     return repairSegmentBuilders;
   }
 

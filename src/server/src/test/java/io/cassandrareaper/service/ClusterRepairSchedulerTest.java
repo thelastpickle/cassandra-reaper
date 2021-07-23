@@ -262,7 +262,8 @@ public final class ClusterRepairSchedulerTest {
         .clusterName(cluster.getName())
         .keyspaceName(keyspace)
         .incrementalRepair(Boolean.FALSE)
-        .repairThreadCount(1);
+        .repairThreadCount(1)
+        .timeout(30);
   }
 
   private ClusterRepairScheduleAssertion assertThatClusterRepairSchedules(Collection<RepairSchedule> repairSchedules) {

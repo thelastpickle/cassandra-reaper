@@ -45,6 +45,10 @@ public final class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
             ? new String[] {}
             : IStoragePostgreSql.parseStringArray(rs.getArray("blacklisted_tables").getArray());
 
+    int segmentTimeout = rs.getInt("timeout") == 0
+            ? 30
+            : rs.getInt("timeout");
+
     RepairUnit.Builder builder = RepairUnit.builder()
             .clusterName(rs.getString("cluster_name"))
             .keyspaceName(rs.getString("keyspace_name"))
@@ -53,7 +57,8 @@ public final class RepairUnitMapper implements ResultSetMapper<RepairUnit> {
             .nodes(Sets.newHashSet(nodes))
             .datacenters(Sets.newHashSet(datacenters))
             .blacklistedTables(Sets.newHashSet(blacklistedTables))
-            .repairThreadCount(rs.getInt("repair_thread_count"));
+            .repairThreadCount(rs.getInt("repair_thread_count"))
+            .timeout(segmentTimeout);
 
     return builder.build(UuidUtil.fromSequenceId(rs.getLong("id")));
   }
