@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:16.04
+FROM ubuntu:xenial-20210114
 
 # use a common app path, copied from python-onbuild:latest
 ENV WORKDIR /usr/src/app
