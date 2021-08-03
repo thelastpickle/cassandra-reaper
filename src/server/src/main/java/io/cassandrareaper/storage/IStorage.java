@@ -89,6 +89,8 @@ public interface IStorage {
 
   Optional<RepairUnit> getRepairUnit(RepairUnit.Builder repairUnit);
 
+  void updateRepairUnit(RepairUnit updatedRepairUnit);
+
   boolean updateRepairSegment(RepairSegment newRepairSegment);
 
   Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId);

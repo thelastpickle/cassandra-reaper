@@ -180,9 +180,6 @@ public class RepairScheduleResourceTest {
     // repairUnitId
     assertThat(patchedRepairSchedule.getRepairUnitId()).isNotNull();
     assertThat(patchedRepairSchedule.getRepairUnitId()).isEqualTo(mockRepairSchedule.getRepairUnitId());
-    // segmentCount
-    assertThat(patchedRepairSchedule.getSegmentCount()).isNotNull();
-    assertThat(patchedRepairSchedule.getSegmentCount()).isEqualTo(mockRepairSchedule.getSegmentCount());
     // creationTime
     assertThat(patchedRepairSchedule.getCreationTime()).isNotNull();
     assertThat(patchedRepairSchedule.getCreationTime()).isEqualTo(mockRepairSchedule.getCreationTime());
@@ -301,7 +298,8 @@ public class RepairScheduleResourceTest {
         .incrementalRepair(false)
         .repairThreadCount(1)
         .clusterName("cluster-test")
-        .keyspaceName("keyspace-test");
+        .keyspaceName("keyspace-test")
+        .timeout(30);
     RepairUnit repairUnit = context.storage.addRepairUnit(mockRepairUnitBuilder);
     mockObjects.setRepairUnit(repairUnit);
 

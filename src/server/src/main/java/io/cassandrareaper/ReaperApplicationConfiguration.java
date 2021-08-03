@@ -561,6 +561,9 @@ public final class ReaperApplicationConfiguration extends Configuration {
     @JsonProperty
     private List<String> excludedClusters = Collections.emptyList();
 
+    @JsonProperty
+    private Boolean adaptive;
+
     public Boolean isEnabled() {
       return enabled;
     }
@@ -621,6 +624,14 @@ public final class ReaperApplicationConfiguration extends Configuration {
       return excludedClusters;
     }
 
+    public Boolean isAdaptive() {
+      return adaptive == null ? false : adaptive;
+    }
+
+    public void setAdaptive(Boolean adaptive) {
+      this.adaptive = adaptive;
+    }
+
     @Override
     public String toString() {
       return "AutoSchedulingConfiguration{"
@@ -634,6 +645,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
           + timeBeforeFirstSchedule
           + ", scheduleSpreadPeriod="
           + scheduleSpreadPeriod
+          + ", adaptive="
+          + adaptive
           + '}';
     }
   }

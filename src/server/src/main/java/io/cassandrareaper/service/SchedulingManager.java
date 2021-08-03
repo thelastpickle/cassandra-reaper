@@ -303,10 +303,10 @@ public final class SchedulingManager extends TimerTask {
         repairUnit,
         Optional.of(getCauseName(schedule)),
         schedule.getOwner(),
-        schedule.getSegmentCount(),
         schedule.getSegmentCountPerNode(),
         schedule.getRepairParallelism(),
-        schedule.getIntensity());
+        schedule.getIntensity(),
+        schedule.getAdaptive());
   }
 
   private static String getCauseName(RepairSchedule schedule) {

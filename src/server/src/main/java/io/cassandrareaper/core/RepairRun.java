@@ -48,6 +48,7 @@ public final class RepairRun implements Comparable<RepairRun> {
   private final int segmentCount;
   private final RepairParallelism repairParallelism;
   private final Set<String> tables;
+  private final boolean adaptiveSchedule;
 
   private RepairRun(Builder builder, UUID id) {
     this.id = id;
@@ -65,6 +66,7 @@ public final class RepairRun implements Comparable<RepairRun> {
     this.segmentCount = builder.segmentCount;
     this.repairParallelism = builder.repairParallelism;
     this.tables = builder.tables;
+    this.adaptiveSchedule = builder.adaptiveSchedule;
   }
 
   public static Builder builder(String clusterName, UUID repairUnitId) {
@@ -129,6 +131,10 @@ public final class RepairRun implements Comparable<RepairRun> {
 
   public Set<String> getTables() {
     return tables;
+  }
+
+  public Boolean getAdaptiveSchedule() {
+    return adaptiveSchedule;
   }
 
   public Builder with() {
@@ -208,6 +214,8 @@ public final class RepairRun implements Comparable<RepairRun> {
     private Integer segmentCount;
     private RepairParallelism repairParallelism;
     private Set<String> tables;
+    private boolean adaptiveSchedule;
+
 
     private Builder(String clusterName, UUID repairUnitId) {
       this.clusterName = clusterName;
@@ -229,6 +237,7 @@ public final class RepairRun implements Comparable<RepairRun> {
       segmentCount = original.segmentCount;
       repairParallelism = original.repairParallelism;
       tables = original.tables;
+      adaptiveSchedule = original.adaptiveSchedule;
     }
 
     public Builder runState(RunState runState) {
@@ -291,6 +300,11 @@ public final class RepairRun implements Comparable<RepairRun> {
 
     public Builder tables(Set<String> tables) {
       this.tables = Collections.unmodifiableSet(tables);
+      return this;
+    }
+
+    public Builder adaptiveSchedule(boolean adaptive) {
+      this.adaptiveSchedule = adaptive;
       return this;
     }
 

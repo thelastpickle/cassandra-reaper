@@ -199,7 +199,6 @@ public final class RepairRunResource {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
-
       int timeout = timeoutParam.orElse(context.config.getHangingRepairTimeoutMins());
       boolean force = (forceParam.isPresent() ? Boolean.parseBoolean(forceParam.get()) : false);
 
@@ -245,10 +244,10 @@ public final class RepairRunResource {
               theRepairUnit,
               cause,
               owner.get(),
-              0,
               segments,
               parallelism,
-              intensity);
+              intensity,
+              false);
 
       return Response.created(buildRepairRunUri(uriInfo, newRepairRun))
           .entity(new RepairRunStatus(newRepairRun, theRepairUnit, 0))

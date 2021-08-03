@@ -294,8 +294,8 @@ public final class RepairRunServiceTest {
         .repairThreadCount(4)
         .timeout(segmentTimeout)
         .build(UUIDs.timeBased());
-    List<Segment> segments = repairRunService.generateSegments(cluster, 10, 10, unit);
-    assertEquals(12, segments.size());
+    List<Segment> segments = repairRunService.generateSegments(cluster, 10, unit);
+    assertEquals(32, segments.size());
     assertEquals(3, segments.get(0).getReplicas().keySet().size());
     assertEquals("dc1", segments.get(0).getReplicas().get("127.0.0.1"));
   }

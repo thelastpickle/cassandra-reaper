@@ -88,6 +88,7 @@ const repairForm = CreateReactClass({
       datacentersSelectDisabled: false,
       showModal: false,
       force: "false",
+      adaptive: false,
     };
   },
 
@@ -206,6 +207,9 @@ const repairForm = CreateReactClass({
     if (this.state.cause) repair.cause = this.state.cause;
     if (this.state.incrementalRepair) {
       repair.incrementalRepair = this.state.incrementalRepair;
+      if (repair.incrementalRepair == "true") {
+        repair.repairParallelism = "PARALLEL";
+      }
     }
     else {
       repair.incrementalRepair = "false";
@@ -222,6 +226,12 @@ const repairForm = CreateReactClass({
     }
     if (this.state.timeout) {
       repair.timeout = this.state.timeout;
+    }
+    if (this.state.adaptive) {
+      repair.adaptive = this.state.adaptive;
+    }
+    else {
+      repair.adaptive = "false";
     }
 
     this.props.addRepairSubject.onNext({
@@ -487,32 +497,44 @@ const repairForm = CreateReactClass({
     else if (this.state.formType === "schedule") {
       customInput = (
         <div>
-        <div className="form-group">
-          <label htmlFor="in_startTime" className="col-sm-3 control-label">Start time*</label>
-          <div className="col-sm-9 col-md-7 col-lg-5">
-            <DatePicker
-              selected={this.state.startTime}
-              onChange={value => this.setState({startTime: value})}
-              showTimeSelect
-              timeFormat="HH:mm"
-              timeIntervals={15}
-              timeCaption="Time"
-              dateFormat="d MMMM yyyy HH:mm"
-            />
+          <div className="form-group">
+            <label htmlFor="in_startTime" className="col-sm-3 control-label">Start time*</label>
+            <div className="col-sm-9 col-md-7 col-lg-5">
+              <DatePicker
+                selected={this.state.startTime}
+                onChange={value => this.setState({startTime: value})}
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={15}
+                timeCaption="Time"
+                dateFormat="d MMMM yyyy HH:mm"
+              />
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="in_intervalDays" className="col-sm-3 control-label">Interval in days*</label>
+            <div className="col-sm-9 col-md-7 col-lg-5">
+              <input type="number" required className="form-control" value={this.state.intervalDays}
+                onChange={this._handleChange} id="in_intervalDays" placeholder="amount of days to wait between scheduling new repairs, (e.g. 7 for weekly)"/>
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="in_adaptive" className="col-sm-3 control-label">Adaptive</label>
+            <div className="col-sm-9 col-md-7 col-lg-5">
+              <Select
+                id="in_adaptive"
+                name="in_adaptive"
+                classNamePrefix="select"
+                options={[{label: "true", value: "true"}, {label: "false", value: "false"}]}
+                placeholder="false"
+                onChange={this._handleSelectOnChange}
+              />
+            </div>
           </div>
         </div>
-        <div className="form-group">
-          <label htmlFor="in_intervalDays" className="col-sm-3 control-label">Interval in days*</label>
-          <div className="col-sm-9 col-md-7 col-lg-5">
-            <input type="number" required className="form-control" value={this.state.intervalDays}
-              onChange={this._handleChange} id="in_intervalDays" placeholder="amount of days to wait between scheduling new repairs, (e.g. 7 for weekly)"/>
-          </div>
-        </div>
-        </div>
+        
       );
     }
-
-    const keyspaceInputStyle = this.state.keyspaceList.length > 0 ? 'form-control-hidden':'form-control';
 
     const advancedSettingsHeader = (
       <div className="panel-title" >
