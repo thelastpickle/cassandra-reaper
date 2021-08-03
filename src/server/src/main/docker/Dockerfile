@@ -103,11 +103,11 @@ RUN touch /etc/cassandra-reaper.yml
 RUN touch /etc/shiro.ini
 
 
-RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
+RUN adduser -S -D -H -u 1001 -s /sbin/nologin -G root -g reaper reaper && \
     mkdir -p /var/lib/cassandra-reaper && \
     mkdir -p /etc/cassandra-reaper/shiro && \
     mkdir -p /var/log/cassandra-reaper && \
-    chown reaper:reaper \
+    chown reaper:root \
         /etc/cassandra-reaper.yml \
         /usr/local/lib/cassandra-reaper.jar \
         /usr/local/bin/entrypoint.sh \
@@ -117,7 +117,7 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/bin/configure-jmx-credentials.sh \
         /usr/local/bin/spreaper \
         /etc/shiro.ini && \
-    chown -R reaper:reaper \
+    chown -R reaper:root \
         /var/lib/cassandra-reaper \
         /etc/cassandra-reaper/shiro \
         /var/log/cassandra-reaper && \
