@@ -37,13 +37,13 @@ public final class RepairSchedule {
   private final int daysBetween;
   private final DateTime nextActivation;
   private final ImmutableList<UUID> runHistory;
-  @Deprecated private final int segmentCount;
   private final RepairParallelism repairParallelism;
   private final double intensity;
   private final DateTime creationTime;
   private final String owner;
   private final DateTime pauseTime;
   private final int segmentCountPerNode;
+  private final boolean adaptive;
 
   private RepairSchedule(Builder builder, UUID id) {
     this.id = id;
@@ -52,13 +52,13 @@ public final class RepairSchedule {
     this.daysBetween = builder.daysBetween;
     this.nextActivation = builder.nextActivation;
     this.runHistory = builder.runHistory;
-    this.segmentCount = builder.segmentCount;
     this.repairParallelism = builder.repairParallelism;
     this.intensity = builder.intensity;
     this.creationTime = builder.creationTime;
     this.owner = builder.owner;
     this.pauseTime = builder.pauseTime;
     this.segmentCountPerNode = builder.segmentCountPerNode;
+    this.adaptive = builder.adaptive;
   }
 
   public static Builder builder(UUID repairUnitId) {
@@ -101,10 +101,6 @@ public final class RepairSchedule {
     return new LongCollectionSqlType(list);
   }
 
-  public int getSegmentCount() {
-    return segmentCount;
-  }
-
   public int getSegmentCountPerNode() {
     return segmentCountPerNode;
   }
@@ -129,6 +125,10 @@ public final class RepairSchedule {
     return pauseTime;
   }
 
+  public boolean getAdaptive() {
+    return adaptive;
+  }
+
   public Builder with() {
     return new Builder(this);
   }
@@ -151,14 +151,13 @@ public final class RepairSchedule {
     private Integer daysBetween;
     private DateTime nextActivation;
     private ImmutableList<UUID> runHistory = ImmutableList.<UUID>of();
-    @Deprecated private int segmentCount = 0;
     private RepairParallelism repairParallelism;
     private Double intensity;
     private DateTime creationTime = DateTime.now();
     private String owner = "";
     private DateTime pauseTime;
     private Integer segmentCountPerNode;
-    private boolean majorCompaction = false;
+    private boolean adaptive = false;
 
     private Builder(UUID repairUnitId) {
       this.repairUnitId = repairUnitId;
@@ -170,7 +169,6 @@ public final class RepairSchedule {
       daysBetween = original.daysBetween;
       nextActivation = original.nextActivation;
       runHistory = original.runHistory;
-      segmentCount = original.segmentCount;
       repairParallelism = original.repairParallelism;
       intensity = original.intensity;
       creationTime = original.creationTime;
@@ -178,6 +176,7 @@ public final class RepairSchedule {
       pauseTime = original.pauseTime;
       intensity = original.intensity;
       segmentCountPerNode = original.segmentCountPerNode;
+      adaptive = original.adaptive;
     }
 
     public Builder state(State state) {
@@ -197,11 +196,6 @@ public final class RepairSchedule {
 
     public Builder runHistory(ImmutableList<UUID> runHistory) {
       this.runHistory = runHistory;
-      return this;
-    }
-
-    public Builder segmentCount(int segmentCount) {
-      this.segmentCount = segmentCount;
       return this;
     }
 
@@ -232,6 +226,11 @@ public final class RepairSchedule {
 
     public Builder segmentCountPerNode(int segmentCountPerNode) {
       this.segmentCountPerNode = segmentCountPerNode;
+      return this;
+    }
+
+    public Builder adaptive(boolean adaptive) {
+      this.adaptive = adaptive;
       return this;
     }
 

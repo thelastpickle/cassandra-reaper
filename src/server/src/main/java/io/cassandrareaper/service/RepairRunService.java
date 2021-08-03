@@ -95,23 +95,23 @@ public final class RepairRunService {
       RepairUnit repairUnit,
       Optional<String> cause,
       String owner,
-      int segments,
       int segmentsPerNode,
       RepairParallelism repairParallelism,
-      Double intensity)
+      Double intensity,
+      boolean adaptiveSchedule)
       throws ReaperException {
 
     // preparing a repair run involves several steps
     // the first step is to generate token segments
     List<Segment> tokenSegments = repairUnit.getIncrementalRepair()
             ? Lists.newArrayList()
-            : generateSegments(cluster, segments, segmentsPerNode, repairUnit);
+            : generateSegments(cluster, segmentsPerNode, repairUnit);
 
     checkNotNull(tokenSegments, "failed generating repair segments");
 
     Map<String, RingRange> nodes = getClusterNodes(cluster, repairUnit);
     // the next step is to prepare a repair run objec
-    segments = repairUnit.getIncrementalRepair() ? nodes.keySet().size() : tokenSegments.size();
+    int segments = repairUnit.getIncrementalRepair() ? nodes.keySet().size() : tokenSegments.size();
 
     RepairRun.Builder runBuilder = RepairRun.builder(cluster.getName(), repairUnit.getId())
         .intensity(intensity)
@@ -119,7 +119,8 @@ public final class RepairRunService {
         .repairParallelism(repairParallelism)
         .cause(cause.orElse("no cause specified"))
         .owner(owner)
-        .tables(repairUnitService.getTablesToRepair(cluster, repairUnit));
+        .tables(repairUnitService.getTablesToRepair(cluster, repairUnit))
+        .adaptiveSchedule(adaptiveSchedule);
 
     // the last preparation step is to generate actual repair segments
     List<RepairSegment.Builder> segmentBuilders = repairUnit.getIncrementalRepair()
@@ -148,7 +149,7 @@ public final class RepairRunService {
    */
   @VisibleForTesting
   List<Segment> generateSegments(
-      Cluster targetCluster, int segmentCount, int segmentCountPerNode, RepairUnit repairUnit)
+      Cluster targetCluster, int segmentCountPerNode, RepairUnit repairUnit)
       throws ReaperException {
 
     List<Segment> segments = Lists.newArrayList();
@@ -172,10 +173,7 @@ public final class RepairRunService {
       Map<List<String>, List<RingRange>> replicasToRange = buildReplicasToRangeMap(rangeToEndpoint);
       String cassandraVersion = clusterFacade.getCassandraVersion(targetCluster);
 
-      int globalSegmentCount = segmentCount;
-      if (globalSegmentCount == 0) {
-        globalSegmentCount = computeGlobalSegmentCount(segmentCountPerNode, endpointToRange);
-      }
+      int globalSegmentCount = computeGlobalSegmentCount(segmentCountPerNode, endpointToRange);
 
       segments = filterSegmentsByNodes(
               sg.generateSegments(

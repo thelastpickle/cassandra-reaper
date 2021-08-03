@@ -79,7 +79,8 @@ public final class RepairRunStatusTest {
             Collections.EMPTY_LIST, // blacklist
             1,
             UUID.randomUUID(),
-            30); // repair thread count
+            30,
+            false); // repair thread count
 
     assertEquals("1 minute 0 seconds", repairStatus.getDuration());
   }
@@ -109,7 +110,8 @@ public final class RepairRunStatusTest {
             Collections.EMPTY_LIST, // blacklist
             1,
             UUID.randomUUID(),
-            30); // repair thread count
+            30,
+            false); // repair thread count
 
     assertEquals("1 minute 30 seconds", repairStatus.getDuration());
   }
@@ -139,7 +141,8 @@ public final class RepairRunStatusTest {
             Collections.EMPTY_LIST, // blacklist
             1,
             UUID.randomUUID(),
-            30); // repair thread count
+            30,
+            false); // repair thread count
 
     assertEquals("1 minute 50 seconds", repairStatus.getDuration());
   }
@@ -169,7 +172,8 @@ public final class RepairRunStatusTest {
             Collections.EMPTY_LIST, // blacklist
             1,
             UUID.randomUUID(),
-            30); // repair thread count
+            30,
+            false); // repair thread count
 
     assertEquals("1 minute 30 seconds", repairStatus.getDuration());
   }

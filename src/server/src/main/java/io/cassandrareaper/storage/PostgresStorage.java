@@ -376,6 +376,13 @@ public class PostgresStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
+  public void updateRepairUnit(RepairUnit updatedRepairUnit) {
+    try (Handle h = jdbi.open()) {
+      getPostgresStorage(h).updateRepairUnit(updatedRepairUnit);
+    }
+  }
+
+  @Override
   public RepairUnit getRepairUnit(UUID id) {
     RepairUnit result;
     try (Handle h = jdbi.open()) {

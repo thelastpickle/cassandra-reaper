@@ -64,9 +64,6 @@ public final class RepairScheduleStatus {
   @JsonProperty("incremental_repair")
   private boolean incrementalRepair;
 
-  @JsonProperty("segment_count")
-  private int segmentCount;
-
   @JsonProperty("repair_parallelism")
   private RepairParallelism repairParallelism;
 
@@ -94,6 +91,9 @@ public final class RepairScheduleStatus {
   @JsonProperty("segment_timeout")
   private int segmentTimeout;
 
+  @JsonProperty("adaptive")
+  private boolean adaptive;
+
   /**
    * Default public constructor Required for Jackson JSON parsing.
    */
@@ -112,7 +112,6 @@ public final class RepairScheduleStatus {
       DateTime pauseTime,
       double intensity,
       boolean incrementalRepair,
-      int segmentCount,
       RepairParallelism repairParallelism,
       int daysBetween,
       Collection<String> nodes,
@@ -121,7 +120,8 @@ public final class RepairScheduleStatus {
       int segmentCountPerNode,
       int repairThreadCount,
       UUID repairUnitId,
-      int segmentTimeout) {
+      int segmentTimeout,
+      boolean adaptive) {
 
     this.id = id;
     this.owner = owner;
@@ -134,7 +134,6 @@ public final class RepairScheduleStatus {
     this.pauseTime = pauseTime;
     this.intensity = RepairRunStatus.roundDoubleNicely(intensity);
     this.incrementalRepair = incrementalRepair;
-    this.segmentCount = segmentCount;
     this.repairParallelism = repairParallelism;
     this.daysBetween = daysBetween;
     this.nodes = nodes;
@@ -144,7 +143,7 @@ public final class RepairScheduleStatus {
     this.repairThreadCount = repairThreadCount;
     this.repairUnitId = repairUnitId;
     this.segmentTimeout = segmentTimeout;
-
+    this.adaptive = adaptive;
   }
 
   public RepairScheduleStatus(RepairSchedule repairSchedule, RepairUnit repairUnit) {
@@ -160,7 +159,6 @@ public final class RepairScheduleStatus {
         repairSchedule.getPauseTime(),
         repairSchedule.getIntensity(),
         repairUnit.getIncrementalRepair(),
-        repairSchedule.getSegmentCount(),
         repairSchedule.getRepairParallelism(),
         repairSchedule.getDaysBetween(),
         repairUnit.getNodes(),
@@ -169,7 +167,8 @@ public final class RepairScheduleStatus {
         repairSchedule.getSegmentCountPerNode(),
         repairUnit.getRepairThreadCount(),
         repairUnit.getId(),
-        repairUnit.getTimeout());
+        repairUnit.getTimeout(),
+        repairSchedule.getAdaptive());
   }
 
   public UUID getId() {
@@ -252,20 +251,12 @@ public final class RepairScheduleStatus {
     this.intensity = intensity;
   }
 
-  public int getSegmentCount() {
-    return segmentCount;
-  }
-
   public boolean getIncrementalRepair() {
     return incrementalRepair;
   }
 
   public void setIncrementalRepair(boolean incrementalRepair) {
     this.incrementalRepair = incrementalRepair;
-  }
-
-  public void setSegmentCount(int segmentCount) {
-    this.segmentCount = segmentCount;
   }
 
   public RepairParallelism getRepairParallelism() {
@@ -374,5 +365,13 @@ public final class RepairScheduleStatus {
 
   public void setRepairUnitId(UUID repairUnitId) {
     this.repairUnitId = repairUnitId;
+  }
+
+  public boolean getAdaptive() {
+    return adaptive;
+  }
+
+  public void setAdaptive(boolean adaptive) {
+    this.adaptive = adaptive;
   }
 }

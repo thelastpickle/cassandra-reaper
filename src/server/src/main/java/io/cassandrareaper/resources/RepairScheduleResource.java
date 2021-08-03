@@ -104,7 +104,8 @@ public final class RepairScheduleResource {
       @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam,
       @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam,
       @QueryParam("force") Optional<String> forceParam,
-      @QueryParam("timeout") Optional<Integer> timeoutParam) {
+      @QueryParam("timeout") Optional<Integer> timeoutParam,
+      @QueryParam("adaptive") Optional<String> adaptiveParam) {
 
     try {
       Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
@@ -205,6 +206,7 @@ public final class RepairScheduleResource {
       boolean force = (forceParam.isPresent() ? Boolean.parseBoolean(forceParam.get()) : false);
 
       int timeout = timeoutParam.orElse(context.config.getHangingRepairTimeoutMins());
+      boolean adaptive = (adaptiveParam.isPresent() ? Boolean.parseBoolean(adaptiveParam.get()) : false);
 
       RepairUnit.Builder unitBuilder = RepairUnit.builder()
           .clusterName(cluster.getName())
@@ -228,7 +230,8 @@ public final class RepairScheduleResource {
           nextActivation,
           getSegmentCount(segmentCountPerNode),
           getIntensity(intensityStr),
-          force);
+          force,
+          adaptive);
 
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -247,7 +250,8 @@ public final class RepairScheduleResource {
       DateTime next,
       int segments,
       Double intensity,
-      boolean force) {
+      boolean force,
+      boolean adaptive) {
 
     Optional<RepairSchedule> conflictingRepairSchedule
         = repairScheduleService.identicalRepairUnit(cluster, unitBuilder);
@@ -289,7 +293,7 @@ public final class RepairScheduleResource {
         .checkState(unit.getIncrementalRepair() == incremental, "%s!=%s", unit.getIncrementalRepair(), incremental);
 
     RepairSchedule newRepairSchedule = repairScheduleService
-        .storeNewRepairSchedule(cluster, unit, days, next, owner, segments, parallel, intensity, force);
+        .storeNewRepairSchedule(cluster, unit, days, next, owner, segments, parallel, intensity, force, adaptive);
 
     return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule)).build();
   }

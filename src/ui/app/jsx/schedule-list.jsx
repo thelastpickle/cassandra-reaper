@@ -78,6 +78,7 @@ const TableRowDetails = CreateReactClass({
     const nextAt = moment(this.props.row.next_activation).format("LLL");
     const rowID = `details_${this.props.row.id}`;
     const incremental = this.props.row.incremental_repair == true ? "true" : "false";
+    const adaptive = this.props.row.adaptive == true ? "true" : "false";
 
     let segmentCount = <tr>
                         <td>Segment count per node</td>
@@ -144,6 +145,10 @@ const TableRowDetails = CreateReactClass({
                 <tr>
                     <td>Creation time</td>
                     <td>{createdAt}</td>
+                </tr>
+                <tr>
+                    <td>Adaptive</td>
+                    <td>{adaptive}</td>
                 </tr>
             </tbody>
           </table>

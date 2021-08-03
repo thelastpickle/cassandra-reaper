@@ -24,6 +24,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
+import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
@@ -37,6 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -51,6 +53,8 @@ import java.util.stream.Collectors;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -68,6 +72,12 @@ final class RepairRunner implements Runnable {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunner.class);
   private static final ExecutorService METRICS_GRABBER_EXECUTOR = Executors.newFixedThreadPool(10);
+  // Threshold over which adaptive schedules will get tuned for more segments.
+  private static final int PERCENT_EXTENDED_THRESHOLD = 20;
+  // Minimun number of segments per nodes for adaptive schedule auto-tune.
+  private static final int MIN_SEGMENTS_PER_NODE_REDUCTION = 16;
+  // Segment duration under which adaptive schedules will get a reduction in segments per node.
+  private static final int SEGMENT_DURATION_FOR_REDUCTION_THRESHOLD = 5;
 
   private final AppContext context;
   private final ClusterFacade clusterFacade;
@@ -272,8 +282,106 @@ final class RepairRunner implements Runnable {
 
         context.metricRegistry.counter(
           MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.DONE.toString())).inc();
+
+        maybeAdaptRepairSchedule();
       }
     }
+  }
+
+  /**
+   * Tune segment timeout and number of segments for adaptive schedules.
+   * Checks that the run was triggered by an adaptive schedule and gathers info on the run to apply tunings.
+   */
+  @VisibleForTesting
+  public void maybeAdaptRepairSchedule() {
+    Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
+    if (repairRun.isPresent() && Boolean.TRUE.equals(repairRun.get().getAdaptiveSchedule())) {
+      Collection<RepairSegment> segments
+          = context.storage.getSegmentsWithState(repairRunId, RepairSegment.State.DONE);
+      int maxSegmentDurationInMins = segments.stream()
+          .mapToInt(repairSegment
+              -> (int) (repairSegment.getEndTime().getMillis() - repairSegment.getStartTime().getMillis()) / 60_000)
+          .max()
+          .orElseThrow(NoSuchElementException::new);
+      int extendedSegments = (int) segments.stream().filter(segment -> segment.getFailCount() > 0).count();
+      double percentExtendedSegments
+          = ((float) extendedSegments / (float) repairRun.get().getSegmentCount()) * 100.0;
+      LOG.info("extendedSegments = {}, total segments = {}, percent extended = {}",
+          extendedSegments,
+          repairRun.get().getSegmentCount(),
+          percentExtendedSegments);
+      tuneAdaptiveRepair(percentExtendedSegments, maxSegmentDurationInMins);
+    }
+  }
+
+  @VisibleForTesting
+  void tuneAdaptiveRepair(double percentExtendedSegments, int maxSegmentDuration) {
+    LOG.info("Percent extended segments: {}", percentExtendedSegments);
+    if (percentExtendedSegments > PERCENT_EXTENDED_THRESHOLD) {
+      // Too many segments were extended, meaning that the number of segments is too low
+      addSegmentsPerNodeToScheduleForUnit();
+    } else if ((int) percentExtendedSegments <= PERCENT_EXTENDED_THRESHOLD && percentExtendedSegments >= 1) {
+      // The number of extended segments is moderate and timeout should be extended
+      raiseTimeoutOfUnit();
+    } else if (percentExtendedSegments == 0 && maxSegmentDuration < SEGMENT_DURATION_FOR_REDUCTION_THRESHOLD) {
+      // Segments are being executed very fast so segment count could be lowered
+      reduceSegmentsPerNodeToScheduleForUnit();
+    }
+  }
+
+  @VisibleForTesting
+  void reduceSegmentsPerNodeToScheduleForUnit() {
+    LOG.debug("Reducing segments per node for adaptive schedule on repair unit {}", repairUnit.getId());
+    RepairSchedule scheduleToTune = getScheduleForRun();
+
+    // Reduce segments by decrements of 10%
+    int newSegmentCountPerNode
+        = (int) Math.max(MIN_SEGMENTS_PER_NODE_REDUCTION, scheduleToTune.getSegmentCountPerNode() / 1.1);
+
+    // update schedule with new segment per node value
+    RepairSchedule newSchedule
+        = scheduleToTune.with().segmentCountPerNode(newSegmentCountPerNode).build(scheduleToTune.getId());
+    context.storage.updateRepairSchedule(newSchedule);
+
+  }
+
+  @VisibleForTesting
+  void raiseTimeoutOfUnit() {
+    // Build updated repair unit
+    RepairUnit updatedUnit = repairUnit.with().timeout(repairUnit.getTimeout() * 2).build(repairUnit.getId());
+
+    // update unit with new timeout
+    context.storage.updateRepairUnit(updatedUnit);
+  }
+
+  @VisibleForTesting
+  void addSegmentsPerNodeToScheduleForUnit() {
+    LOG.debug("Adding segments per node for adaptive schedule on repair unit {}", repairUnit.getId());
+    RepairSchedule scheduleToTune = getScheduleForRun();
+
+    // Reduce segments by increments of 20%
+    int newSegmentCountPerNode
+        = (int) Math.max(MIN_SEGMENTS_PER_NODE_REDUCTION, scheduleToTune.getSegmentCountPerNode() * 1.2);
+
+    // update schedule with new segment per node value
+    RepairSchedule newSchedule
+        = scheduleToTune.with().segmentCountPerNode(newSegmentCountPerNode).build(scheduleToTune.getId());
+    context.storage.updateRepairSchedule(newSchedule);
+  }
+
+  private RepairSchedule getScheduleForRun() {
+    // find schedule
+    Collection<RepairSchedule> schedulesForKeyspace
+        = context.storage.getRepairSchedulesForClusterAndKeyspace(clusterName, repairUnit.getKeyspaceName());
+    List<RepairSchedule> schedulesToTune = schedulesForKeyspace.stream()
+        .filter(schedule -> schedule.getRepairUnitId().equals(repairUnit.getId()))
+        .collect(Collectors.toList());
+
+    // Set precondition that only a single schedule should match
+    Preconditions.checkArgument(schedulesToTune.size() == 1, String.format("Update for repair run %s and unit %s "
+        + "should impact a single schedule. %d were found", repairRunId, repairUnit.getId(), schedulesToTune.size()));
+
+    return schedulesToTune.get(0);
   }
 
   /**

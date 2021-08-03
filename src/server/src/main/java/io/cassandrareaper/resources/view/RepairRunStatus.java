@@ -115,6 +115,9 @@ public final class RepairRunStatus {
   @JsonProperty("segment_timeout")
   private int segmentTimeout;
 
+  @JsonProperty("adaptive_schedule")
+  private boolean adaptiveSchedule;
+
 
   /**
    * Default public constructor Required for Jackson JSON parsing.
@@ -145,7 +148,8 @@ public final class RepairRunStatus {
       Collection<String> blacklistedTables,
       int repairThreadCount,
       UUID repairUnitId,
-      int segmentTimeout) {
+      int segmentTimeout,
+      boolean adaptiveSchedule) {
 
     this.id = runId;
     this.cause = cause;
@@ -171,6 +175,7 @@ public final class RepairRunStatus {
     this.blacklistedTables = blacklistedTables;
     this.repairThreadCount = repairThreadCount;
     this.segmentTimeout = segmentTimeout;
+    this.adaptiveSchedule = adaptiveSchedule;
 
     if (startTime == null) {
       duration = null;
@@ -232,7 +237,8 @@ public final class RepairRunStatus {
         repairUnit.getBlacklistedTables(),
         repairUnit.getRepairThreadCount(),
         repairRun.getRepairUnitId(),
-        repairUnit.getTimeout());
+        repairUnit.getTimeout(),
+        repairRun.getAdaptiveSchedule());
   }
 
   @JsonProperty("creation_time")
@@ -510,4 +516,11 @@ public final class RepairRunStatus {
     this.repairUnitId = repairUnitId;
   }
 
+  public boolean getAdaptiveSchedule() {
+    return adaptiveSchedule;
+  }
+
+  public void setAdaptiveSchedule(boolean adaptiveSchedule) {
+    this.adaptiveSchedule = adaptiveSchedule;
+  }
 }

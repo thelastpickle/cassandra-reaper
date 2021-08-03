@@ -78,6 +78,7 @@ public final class RepairRunStatusMapper implements ResultSetMapper<RepairRunSta
 
     int repairThreadCount = rs.getInt("repair_thread_count");
     int timeout = rs.getInt("timeout");
+    boolean adaptiveSchedule = rs.getBoolean("adaptive_schedule");
 
     return new RepairRunStatus(
         UuidUtil.fromSequenceId(runId),
@@ -102,7 +103,8 @@ public final class RepairRunStatusMapper implements ResultSetMapper<RepairRunSta
         blacklistedTables,
         repairThreadCount,
         UuidUtil.fromSequenceId(unitId),
-        timeout
+        timeout,
+        adaptiveSchedule
         );
   }
 }
