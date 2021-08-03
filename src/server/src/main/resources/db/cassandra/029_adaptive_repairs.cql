@@ -16,3 +16,5 @@
 -- Store the repair segment timeout in the repair unit
 
 ALTER TABLE repair_unit_v1 ADD timeout int;
+ALTER TABLE repair_schedule_v1 ADD adaptive boolean;
+ALTER TABLE repair_run ADD adaptive_schedule boolean static;

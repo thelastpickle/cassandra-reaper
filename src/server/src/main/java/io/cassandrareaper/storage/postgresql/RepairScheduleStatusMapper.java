@@ -47,7 +47,6 @@ public final class RepairScheduleStatusMapper implements ResultSetMapper<RepairS
         RepairRunMapper.getDateTimeOrNull(rs, "pause_time"),
         rs.getDouble("intensity"),
         rs.getBoolean("incremental_repair"),
-        rs.getInt("segment_count"),
         RepairParallelism.fromName(
             rs.getString("repair_parallelism")
                 .toLowerCase()
@@ -68,7 +67,8 @@ public final class RepairScheduleStatusMapper implements ResultSetMapper<RepairS
         rs.getInt("segment_count_per_node"),
         rs.getInt("repair_thread_count"),
         UuidUtil.fromSequenceId(rs.getLong("repair_unit_id")),
-        rs.getInt("timeout"));
+        rs.getInt("timeout"),
+        rs.getBoolean("adaptive"));
   }
 
   private String[] getStringArray(Object array) {

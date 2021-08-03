@@ -417,6 +417,7 @@ public final class BasicSteps {
       params.put("scheduleDaysBetween", "1");
       params.put("repairParallelism", repairType.equals("incremental") ? "parallel" : "sequential");
       params.put("incrementalRepair", repairType.equals("incremental") ? "True" : "False");
+      params.put("adaptive", "False");
       Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
       int responseStatus = response.getStatus();
       String responseEntity = response.readEntity(String.class);

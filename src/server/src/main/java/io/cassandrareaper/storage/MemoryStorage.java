@@ -287,6 +287,12 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
+  public void updateRepairUnit(RepairUnit updatedRepairUnit) {
+    repairUnits.put(updatedRepairUnit.getId(), updatedRepairUnit);
+    repairUnitsByKey.put(updatedRepairUnit.with(), updatedRepairUnit);
+  }
+
+  @Override
   public RepairUnit getRepairUnit(UUID id) {
     RepairUnit unit = repairUnits.get(id);
     Preconditions.checkArgument(null != unit);
@@ -503,7 +509,8 @@ public final class MemoryStorage implements IStorage {
               unit.getBlacklistedTables(),
               unit.getRepairThreadCount(),
               unit.getId(),
-              unit.getTimeout()));
+              unit.getTimeout(),
+              run.getAdaptiveSchedule()));
     }
     return runStatuses;
   }
