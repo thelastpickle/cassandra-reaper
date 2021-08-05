@@ -698,8 +698,7 @@ public final class ClusterFacade {
    */
   public List<Snapshot> listSnapshots(Node host) throws ReaperException {
     try {
-      if (context.config.getDatacenterAvailability().isInCollocatedMode()
-          && context.jmxConnectionFactory.getHostConnectionCounters().getSuccessfulConnections(
+      if (context.jmxConnectionFactory.getHostConnectionCounters().getSuccessfulConnections(
               host.getHostname()) >= 0) {
         return SnapshotProxy.create(connect(host)).listSnapshots();
       }

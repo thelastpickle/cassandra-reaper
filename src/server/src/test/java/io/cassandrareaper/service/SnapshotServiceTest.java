@@ -23,6 +23,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.jmx.ClusterFacade;
+import io.cassandrareaper.jmx.HostConnectionCounters;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
@@ -110,14 +111,16 @@ public final class SnapshotServiceTest {
     AppContext cxt = new AppContext();
     cxt.config = TestRepairConfiguration.defaultConfig();
     cxt.jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    HostConnectionCounters connectionCounters = mock(HostConnectionCounters.class);
     when(cxt.jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
+    when(cxt.jmxConnectionFactory.getHostConnectionCounters()).thenReturn(connectionCounters);
 
     List<Snapshot> result = SnapshotService
         .create(cxt, SNAPSHOT_MANAGER_EXECUTOR)
         .listSnapshots(Node.builder().withHostname("127.0.0.1").build());
 
     Assertions.assertThat(result).isEmpty();
-    verify(storageMBean, times(0)).getSnapshotDetails();
+    verify(storageMBean, times(1)).getSnapshotDetails();
   }
 
   @Test

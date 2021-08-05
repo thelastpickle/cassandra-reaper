@@ -34,6 +34,7 @@ import io.cassandrareaper.resources.DiagEventSubscriptionResource;
 import io.cassandrareaper.resources.NodeStatsResource;
 import io.cassandrareaper.resources.PingResource;
 import io.cassandrareaper.resources.ReaperHealthCheck;
+import io.cassandrareaper.resources.ReaperResource;
 import io.cassandrareaper.resources.RepairRunResource;
 import io.cassandrareaper.resources.RepairScheduleResource;
 import io.cassandrareaper.resources.SnapshotResource;
@@ -214,6 +215,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     environment.jersey().register(addRepairScheduleResource);
     final SnapshotResource snapshotResource = new SnapshotResource(context, environment);
     environment.jersey().register(snapshotResource);
+    final ReaperResource reaperResource = new ReaperResource(context);
+    environment.jersey().register(reaperResource);
 
     final NodeStatsResource nodeStatsResource = new NodeStatsResource(context);
     environment.jersey().register(nodeStatsResource);

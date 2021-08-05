@@ -63,6 +63,23 @@ const SnapshotScreen = CreateReactClass({
         this._listSnapshots(this.state.currentCluster);
     }
     this._notificationSystem = this.refs.notificationSystem;
+    this.setState({'datacenterAvailability': 'ALL'});
+    this.setState({communicating: true});
+    $.ajax({
+      url: getUrlPrefix(window.top.location.pathname) + '/reaper/datacenterAvailability',
+      method: 'GET',
+      component: this,
+      success: function(data) {
+        let reaperConfig = data;
+        this.component.setState({'datacenterAvailability': reaperConfig.datacenterAvailability});
+      },
+      complete: function(data) {
+        this.component.setState({communicating: false});
+      },
+      error: function(data) {
+        toastPermanent(this.component._notificationSystem, "Error : " + data.responseText, "error", currentClusterValue);
+      }
+    });
   },
 
   changeCurrentCluster : function(clusterName){
@@ -192,6 +209,13 @@ const SnapshotScreen = CreateReactClass({
             <div className="row">
                 <div className="col-lg-12">
                     <h1 className="page-header">Snapshots</h1>
+                    {this.state.datacenterAvailability != "ALL" &&
+                       <div className="alert alert-warning" role="alert">
+                           <p>
+                             Reaper is configured with datacenterAvailability={this.state.datacenterAvailability}, only snapshots on reachable nodes are listed
+                           </p>
+                       </div>
+                    }
                 </div>
             </div>
             <div className="col-lg-12">
