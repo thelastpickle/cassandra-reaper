@@ -86,8 +86,8 @@ RUN apk add --update \
   && rm -rf /var/cache/apk/*
 
 
-ADD cassandra-reaper.yml /etc/cassandra-reaper.yml
-ADD shiro.ini /etc/shiro.ini
+ADD cassandra-reaper.yml /etc/reaper/cassandra-reaper.yml
+ADD shiro.ini /etc/reaper/shiro.ini
 ADD entrypoint.sh /usr/local/bin/entrypoint.sh
 ADD configure-persistence.sh /usr/local/bin/configure-persistence.sh
 ADD configure-metrics.sh /usr/local/bin/configure-metrics.sh
@@ -97,18 +97,18 @@ ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
 ADD spreaper /usr/local/bin/spreaper
 
 
-# get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper.yml: Interrupted system call` unknown error
-RUN touch /etc/cassandra-reaper.yml
-# get around `/usr/local/bin/configure-webui-authentication.sh: line 44: can't `create` /etc/shiro.ini: Interrupted system call` unknown error
-RUN touch /etc/shiro.ini
+# get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/reaper/cassandra-reaper.yml: Interrupted system call` unknown error
+RUN touch /etc/reaper/cassandra-reaper.yml
+# get around `/usr/local/bin/configure-webui-authentication.sh: line 44: can't `create` /etc/reaper/shiro.ini: Interrupted system call` unknown error
+RUN touch /etc/reaper/shiro.ini
 
 
 RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
     mkdir -p /var/lib/cassandra-reaper && \
-    mkdir -p /etc/cassandra-reaper/shiro && \
+    mkdir -p /etc/reaper/shiro && \
     mkdir -p /var/log/cassandra-reaper && \
     chown reaper:reaper \
-        /etc/cassandra-reaper.yml \
+        /etc/reaper/cassandra-reaper.yml \
         /usr/local/lib/cassandra-reaper.jar \
         /usr/local/bin/entrypoint.sh \
         /usr/local/bin/configure-persistence.sh \
@@ -116,10 +116,10 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/bin/configure-metrics.sh \
         /usr/local/bin/configure-jmx-credentials.sh \
         /usr/local/bin/spreaper \
-        /etc/shiro.ini && \
+        /etc/reaper/shiro.ini && \
     chown -R reaper:reaper \
         /var/lib/cassandra-reaper \
-        /etc/cassandra-reaper/shiro \
+        /etc/reaper/shiro \
         /var/log/cassandra-reaper && \
     chmod +x \
         /usr/local/bin/entrypoint.sh \
@@ -130,7 +130,7 @@ RUN addgroup -g 1001 -S reaper && adduser -G reaper -S -u 1001 reaper && \
         /usr/local/bin/spreaper
 
 VOLUME /var/lib/cassandra-reaper
-VOLUME /etc/cassandra-reaper/shiro
+VOLUME /etc/reaper/shiro
 
 USER reaper
 
