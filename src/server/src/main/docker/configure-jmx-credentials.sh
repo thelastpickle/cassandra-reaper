@@ -17,7 +17,7 @@
 # we expect the jmx credentials to be a comma-separated list of 'user:passowrd@cluster' entries
 if [ ! -z "${REAPER_JMX_CREDENTIALS}" ]; then
 
-cat <<EOT >> /etc/cassandra-reaper.yml
+cat <<EOT >> /etc/reaper/cassandra-reaper.yml
 jmxCredentials:
 EOT
 
@@ -29,7 +29,7 @@ EOT
     PASSWORD=$(echo "${ENTRY}" | cut -d'@' -f1 | cut -d':' -f2)
 
     # finally, write out the YAML entries
-cat <<EOT >> /etc/cassandra-reaper.yml
+cat <<EOT >> /etc/reaper/cassandra-reaper.yml
   ${CLUSTER}:
     username: ${USERNAME}
     password: ${PASSWORD}
@@ -41,7 +41,7 @@ fi
 
 
 if [ ! -z "${REAPER_JMX_AUTH_USERNAME}" ]; then
-cat <<EOT >> /etc/cassandra-reaper.yml
+cat <<EOT >> /etc/reaper/cassandra-reaper.yml
 jmxAuth:
   username: ${REAPER_JMX_AUTH_USERNAME}
   password: ${REAPER_JMX_AUTH_PASSWORD}
@@ -50,7 +50,7 @@ EOT
 fi
 
 if [ ! -z "${CRYPTO_SYSTEM_PROPERTY_SECRET}" ]; then
-cat <<EOT >> /etc/cassandra-reaper.yml
+cat <<EOT >> /etc/reaper/cassandra-reaper.yml
 cryptograph:
   type: symmetric
   systemPropertySecret: ${CRYPTO_SYSTEM_PROPERTY_SECRET}
