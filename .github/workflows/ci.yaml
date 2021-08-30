@@ -125,11 +125,13 @@ jobs:
     name: H2 and Memory backends
     needs: build
     runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [1.2.19, 2.0.17, 2.1.22, 2.2.19, 3.0.24, 3.11.10, 'github:apache/trunk']
+        cassandra-version: [1.2.19, 2.0.17, 2.1.22, 2.2.19, 3.0.25, 3.11.11, 4.0.0, 'github:apache/trunk']
         storage-type: [local]
         test-type: [ccm]
+        experimental: [false]
         include:
           # don't run against the following C* versions when using cassandra storage type
           - cassandra-version: 1.2.19
@@ -140,10 +142,12 @@ jobs:
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 2.2.19
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-          - cassandra-version: 3.0.24
+          - cassandra-version: 3.0.25
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-          - cassandra-version: 3.11.10
+          - cassandra-version: 3.11.11
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
+          - cassandra-version: 'github:apache/trunk'
+            experimental: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -210,7 +214,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        cassandra-version: [3.11.10]
+        cassandra-version: [3.11.11]
         storage-type: [postgresql]
         test-type: [ccm]
         grim-max: [1, 2, 4]
@@ -303,20 +307,24 @@ jobs:
     needs: build
     name: Cassandra backend
     runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [2.1.22, 2.2.19, 3.0.24, 3.11.10, 'github:apache/trunk']
+        cassandra-version: [2.1.22, 2.2.19, 3.0.25, 3.11.11, 4.0.0, 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [ccm]
+        experimental: [false]
         include:
           - cassandra-version: 2.1.22
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 2.2.19
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-          - cassandra-version: 3.0.24
+          - cassandra-version: 3.0.25
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-          - cassandra-version: 3.11.10
+          - cassandra-version: 3.11.11
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
+          - cassandra-version: 'github:apache/trunk'
+            experimental: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -451,33 +459,40 @@ jobs:
     needs: [docker-tests, its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Sidecar
     runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [2.1.22, 2.2.19, 3.0.24, 3.11.10, 'github:apache/trunk']
+        cassandra-version: [2.1.22, 2.2.19, 3.0.25, 3.11.11, 4.0.0, 'github:apache/trunk']
         storage-type: [cassandra, postgresql]
         test-type: [sidecar]
         grim-max: [1]
         grim-min: [1]
+        experimental: [false]
         # all versions but trunk have the same cucumber options, but we can't declare that more effectively (yet)
         include:
           - cassandra-version: 2.1.22
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 2.2.19
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
-          - cassandra-version: 3.0.24
+          - cassandra-version: 3.0.25
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
-          - cassandra-version: 3.11.10
+          - cassandra-version: 3.11.11
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
+          - cassandra-version: 4.0.0
+            cucumber-options: '--tags @sidecar'
           - cassandra-version: 'github:apache/trunk'
             cucumber-options: '--tags @sidecar'
-        # sidecar test including postgres should only run with C* 3.11.10, so we exclude all other
+            experimental: true
+        # sidecar test including postgres should only run with C* 3.11.11, so we exclude all other
         exclude:
           - storage-type: postgresql
             cassandra-version: 2.1.22
           - storage-type: postgresql
             cassandra-version: 2.2.19
           - storage-type: postgresql
-            cassandra-version: 3.0.24
+            cassandra-version: 3.0.25
+          - storage-type: postgresql
+            cassandra-version: 3.11.11
           - storage-type: postgresql
             cassandra-version: 'github:apache/trunk'
     steps:
@@ -556,20 +571,23 @@ jobs:
           - 5432:5432
         # needed because the postgres container does not provide a healthcheck
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [3.11.10, 'github:apache/trunk']
+        cassandra-version: [4.0.0, 'github:apache/trunk']
         storage-type: [cassandra, postgresql]
         test-type: [each]
         grim-max: [1]
         grim-min: [1]
-        # Reducing the scope to 3.11 and trunk to shorten the integration test times
+        experimental: [false]
+        # Reduced scope to shorten the integration test times
         include:
-          - cassandra-version: 3.11.10
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
+          - cassandra-version: 4.0.0
+            cucumber-options: '--tags @sidecar'
           - cassandra-version: 'github:apache/trunk'
             cucumber-options: '--tags @sidecar'
-        # sidecar test including postgres should only run with C* 3.11.10, so we exclude all other
+            experimental: true
+        # sidecar test including postgres should only run with C* 3.11.11, so we exclude all other
         exclude:
           - storage-type: postgresql
             cassandra-version: 'github:apache/trunk'
@@ -633,23 +651,27 @@ jobs:
     needs: [docker-tests, its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Distributed tests
     runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [2.1.22, 2.2.19, 3.0.24, 3.11.10, 'github:apache/trunk']
+        cassandra-version: [2.1.22, 2.2.19, 3.0.25, 3.11.11, 4.0.0, 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [2]
         grim-min: [2]
+        experimental: [false]
         include:
           # all versions but trunk need to exclude trunk tests
           - cassandra-version: 2.1.22
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 2.2.19
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-          - cassandra-version: 3.0.24
+          - cassandra-version: 3.0.25
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-          - cassandra-version: 3.11.10
+          - cassandra-version: 3.11.11
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
+          - cassandra-version: 'github:apache/trunk'
+            experimental: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -712,23 +734,27 @@ jobs:
     needs: [docker-tests, its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
     name: Flapping reapers
     runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [2.1.22, 2.2.19, 3.0.24, 3.11.10, 'github:apache/trunk']
+        cassandra-version: [2.1.22, 2.2.19, 3.0.25, 3.11.11, 4.0.0, 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [4]
         grim-min: [2]
+        experimental: [false]
         include:
           # all versions but trunk need to exclude trunk tests
           - cassandra-version: 2.1.22
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
           - cassandra-version: 2.2.19
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-          - cassandra-version: 3.0.24
+          - cassandra-version: 3.0.25
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-          - cassandra-version: 3.11.10
+          - cassandra-version: 3.11.11
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
+          - cassandra-version: 'github:apache/trunk'
+            experimental: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
