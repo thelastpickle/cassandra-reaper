@@ -1286,26 +1286,25 @@ public final class BasicSteps {
       String keyspace) throws Throwable {
 
     synchronized (BasicSteps.class) {
-      RUNNERS.parallelStream().forEach(runner -> {
-        Map<String, String> params = Maps.newHashMap();
-        params.put("clusterName", clusterName);
-        params.put("keyspace", keyspace);
-        params.put("owner", TestContext.TEST_USER);
-        params.put("intensity", "0.9");
-        params.put("scheduleDaysBetween", "1");
-        params.put("repairParallelism", repairType.equals("incremental") ? "parallel" : "sequential");
-        params.put("incrementalRepair", repairType.equals("incremental") ? "True" : "False");
-        params.put("force", "true");
-        Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Map<String, String> params = Maps.newHashMap();
+      params.put("clusterName", clusterName);
+      params.put("keyspace", keyspace);
+      params.put("owner", TestContext.TEST_USER);
+      params.put("intensity", "0.9");
+      params.put("scheduleDaysBetween", "1");
+      params.put("repairParallelism", repairType.equals("incremental") ? "parallel" : "sequential");
+      params.put("incrementalRepair", repairType.equals("incremental") ? "True" : "False");
+      params.put("force", "true");
+      Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
 
-        int status = response.getStatus();
-        String responseEntity = response.readEntity(String.class);
+      int status = response.getStatus();
+      String responseEntity = response.readEntity(String.class);
 
-        Assertions.assertThat(
-              ImmutableList.of(Response.Status.NO_CONTENT.getStatusCode(), Response.Status.CREATED.getStatusCode()))
-            .withFailMessage(responseEntity)
-            .contains(status);
-      });
+      Assertions.assertThat(
+            ImmutableList.of(Response.Status.CREATED.getStatusCode()))
+          .withFailMessage(responseEntity)
+          .contains(status);
     }
   }
 

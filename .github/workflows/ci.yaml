@@ -131,21 +131,28 @@ jobs:
         cassandra-version: [1.2.19, 2.0.17, 2.1.22, 2.2.19, 3.0.25, 3.11.11, 4.0.0, 'github:apache/trunk']
         storage-type: [local]
         test-type: [ccm]
-        experimental: [false]
         include:
           # don't run against the following C* versions when using cassandra storage type
           - cassandra-version: 1.2.19
             cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 2.0.17
             cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 2.1.22
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 2.2.19
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 3.0.25
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 3.11.11
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            experimental: false
+          - cassandra-version: 4.0.0
+            experimental: false
           - cassandra-version: 'github:apache/trunk'
             experimental: true
     steps:
@@ -313,16 +320,21 @@ jobs:
         cassandra-version: [2.1.22, 2.2.19, 3.0.25, 3.11.11, 4.0.0, 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [ccm]
-        experimental: [false]
         include:
           - cassandra-version: 2.1.22
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 2.2.19
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 3.0.25
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 3.11.11
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            experimental: false
+          - cassandra-version: 4.0.0
+            experimental: false
           - cassandra-version: 'github:apache/trunk'
             experimental: true
     steps:
@@ -467,19 +479,23 @@ jobs:
         test-type: [sidecar]
         grim-max: [1]
         grim-min: [1]
-        experimental: [false]
         # all versions but trunk have the same cucumber options, but we can't declare that more effectively (yet)
         include:
           - cassandra-version: 2.1.22
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 2.2.19
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 3.0.25
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 3.11.11
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
+            experimental: false
           - cassandra-version: 4.0.0
             cucumber-options: '--tags @sidecar'
+            experimental: false
           - cassandra-version: 'github:apache/trunk'
             cucumber-options: '--tags @sidecar'
             experimental: true
@@ -579,11 +595,11 @@ jobs:
         test-type: [each]
         grim-max: [1]
         grim-min: [1]
-        experimental: [false]
         # Reduced scope to shorten the integration test times
         include:
           - cassandra-version: 4.0.0
             cucumber-options: '--tags @sidecar'
+            experimental: false
           - cassandra-version: 'github:apache/trunk'
             cucumber-options: '--tags @sidecar'
             experimental: true
@@ -659,17 +675,22 @@ jobs:
         test-type: [ccm]
         grim-max: [2]
         grim-min: [2]
-        experimental: [false]
         include:
           # all versions but trunk need to exclude trunk tests
           - cassandra-version: 2.1.22
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 2.2.19
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 3.0.25
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 3.11.11
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            experimental: false
+          - cassandra-version: 4.0.0
+            experimental: false
           - cassandra-version: 'github:apache/trunk'
             experimental: true
     steps:
@@ -742,17 +763,22 @@ jobs:
         test-type: [ccm]
         grim-max: [4]
         grim-min: [2]
-        experimental: [false]
         include:
           # all versions but trunk need to exclude trunk tests
           - cassandra-version: 2.1.22
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 2.2.19
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 3.0.25
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
           - cassandra-version: 3.11.11
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            experimental: false
+          - cassandra-version: 4.0.0
+            experimental: false
           - cassandra-version: 'github:apache/trunk'
             experimental: true
     steps:
