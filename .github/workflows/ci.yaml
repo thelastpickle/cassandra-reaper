@@ -46,7 +46,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -95,7 +95,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -161,7 +161,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -250,7 +250,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -334,7 +334,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -406,7 +406,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -496,7 +496,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -589,7 +589,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -667,7 +667,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -746,7 +746,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -816,7 +816,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
@@ -878,7 +878,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
