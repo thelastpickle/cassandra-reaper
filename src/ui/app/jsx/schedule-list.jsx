@@ -19,13 +19,83 @@ import CreateReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import Select from 'react-select';
 import moment from "moment";
-import {RowDeleteMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender, toast, getUrlPrefix} from "jsx/mixin";
+import Modal from 'react-bootstrap/lib/Modal';
+import Button from 'react-bootstrap/lib/Button';
+import {
+  CFsListRender,
+  DeleteStatusMessageMixin,
+  getUrlPrefix,
+  RowDeleteMixin,
+  StatusUpdateMixin,
+  toast
+} from "jsx/mixin";
+import RepairScheduleForm from './repair-schedule-form'
+
 var NotificationSystem = require('react-notification-system');
+
+const EditRowModal = CreateReactClass({
+  propTypes: {
+    row: PropTypes.object,
+    onCancel: PropTypes.func,
+    onSave: PropTypes.func
+  },
+
+  getInitialState: function() {
+    return {
+      editFormState: {},
+      canSubmit: false
+    }
+  },
+
+  cancel: function() {
+    if (this.props.onCancel) {
+      this.props.onCancel();
+    }
+  },
+
+  save: function() {
+    if (this.props.onSave) {
+      this.props.onSave(this.state.editFormState);
+    }
+  },
+
+  onChangeHandler: function(e) {
+    if (!e || !e.field) {
+      return;
+    }
+    if (e && e.state) {
+      if (e.state.valid) {
+        this.setState({editFormState: e.state});
+      }
+      this.setState({canSubmit: e.state.valid});
+    }
+  },
+
+  render: function () {
+    return (
+      <Modal show={this.props.row ? true : false} onHide={this.cancel}>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Schedule: {this.props.row ? this.props.row.cluster_name : 'Unknown Cluster'}/{this.props.row ? this.props.row.keyspace_name : 'Unknown Keyspace'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div>
+            <RepairScheduleForm repair={this.props.row} formType="schedule" onChange={this.onChangeHandler}/>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={this.save} disabled={!this.state.canSubmit}>Save</Button>
+          <Button onClick={this.cancel}>Cancel</Button>
+        </Modal.Footer>
+      </Modal>
+    )
+  }
+});
 
 const TableRow = CreateReactClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin],
   propTypes: {
-    notificationSystem: PropTypes.object.isRequired
+    notificationSystem: PropTypes.object.isRequired,
+    editScheduleCallback: PropTypes.func.isRequired
   },
 
   _runNow: function() {
@@ -42,6 +112,10 @@ const TableRow = CreateReactClass({
         toast(this.component.props.notificationSystem, "Failed starting repair run for schedule : " + data.responseText , "error", this.component.props.row.id);
       }
     });
+  },
+
+  _editSchedule: function() {
+    this.props.editScheduleCallback(this.props.row);
   },
 
   render: function() {
@@ -64,6 +138,7 @@ const TableRow = CreateReactClass({
           {this.statusUpdateButton()}
           {this.deleteButton()}
           <button type="button" className="btn btn-xs btn-info" onClick={this._runNow}>Run now</button>
+          <button type="button" className="btn btn-xs btn-primary" onClick={this._editSchedule}>Edit</button>
         </td>
     </tr>
     );
@@ -154,6 +229,7 @@ const TableRowDetails = CreateReactClass({
 const scheduleList = CreateReactClass({
   mixins: [DeleteStatusMessageMixin],
   _notificationSystem: null,
+  _editRow: undefined,
 
   propTypes: {
     schedules: PropTypes.object.isRequired,
@@ -197,6 +273,20 @@ const scheduleList = CreateReactClass({
     this._clustersSubscription.dispose();
   },
 
+  _editSchedule: function(row) {
+    this._editRow = row;
+  },
+
+  _saveSchedule: function(e) {
+    console.log("_saveSchedule()");
+    console.log(e);
+    this._hideEditSchedule();
+  },
+
+  _hideEditSchedule: function() {
+    this._editRow = undefined;
+  },
+
   _handleSelectOnChange: function(valueContext, actionContext) {
     const nameRef = actionContext.name.split("_")[1];
     const nameSelectValueRef = `${nameRef}SelectValue`;
@@ -218,7 +308,6 @@ const scheduleList = CreateReactClass({
   },
 
   render: function() {
-
     function compareNextActivationTime(a,b) {
       if (a.next_activation < b.next_activation)
         return -1;
@@ -254,7 +343,8 @@ const scheduleList = CreateReactClass({
         <TableRow row={schedule} key={schedule.id+'-head'}
           deleteSubject={this.props.deleteSubject}
           updateStatusSubject={this.props.updateStatusSubject}
-          notificationSystem={this._notificationSystem} />
+          notificationSystem={this._notificationSystem}
+          editScheduleCallback={this._editSchedule}/>
         <TableRowDetails row={schedule} key={schedule.id+'-details'}/>
       </tbody>
     );
@@ -290,6 +380,7 @@ const scheduleList = CreateReactClass({
 
     return (<div className="panel panel-default">
               <div className="panel-body">
+                <EditRowModal row={this._editRow} onCancel={this._hideEditSchedule} onSave={this._saveSchedule}/>
                 <NotificationSystem ref="notificationSystem" />
                 {this.deleteMessage()}
                 {clusterFilter}
