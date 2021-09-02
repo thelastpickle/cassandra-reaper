@@ -22,6 +22,7 @@ import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.PostgresStorage;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Base64;
 
@@ -55,6 +56,7 @@ public final class ShiroJwtProvider {
   }
 
   private static Key getSigningKey(AppContext cxt) {
+    byte[] key;
     String txt = System.getenv("JWT_SECRET");
     if (null == txt) {
       if (cxt.storage instanceof CassandraStorage) {
@@ -64,8 +66,11 @@ public final class ShiroJwtProvider {
       } else {
         txt = AppContext.REAPER_INSTANCE_ADDRESS;
       }
+      key = txt.getBytes(StandardCharsets.UTF_8);
+    } else {
+      key = Base64.getDecoder().decode(txt);
     }
 
-    return new SecretKeySpec(Base64.getDecoder().decode(txt), SIG_ALG.getJcaName());
+    return new SecretKeySpec(key, SIG_ALG.getJcaName());
   }
 }
