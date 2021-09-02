@@ -17,6 +17,8 @@
 
 package io.cassandrareaper.resources;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
@@ -28,14 +30,11 @@ import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.service.RepairScheduleService;
 import io.cassandrareaper.service.RepairUnitService;
-
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import io.dropwizard.jersey.PATCH;
+import org.apache.cassandra.repair.RepairParallelism;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -49,13 +48,13 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
-import org.apache.cassandra.repair.RepairParallelism;
-import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 
 @Path("/repair_schedule")
@@ -74,6 +73,159 @@ public final class RepairScheduleResource {
     this.repairUnitService = RepairUnitService.create(context);
     this.repairScheduleService = RepairScheduleService.create(context);
     this.repairRunService = RepairRunService.create(context);
+  }
+
+  /**
+   * Validate the set of parameters used to patch a RepairSchedule.
+   *
+   * @return List of invalid parameters, empty if all are valid
+   */
+  protected static List<String> validateRepairPatchParams(
+          String owner,
+          String repairParallelism,
+          Double intensity,
+          Integer scheduleDaysBetween,
+          Integer segmentCountPerNode
+  ) {
+    List<String> invalidParams = Lists.newArrayList();
+
+    boolean ownerValid = owner != null && !owner.isEmpty();
+
+    boolean repairParallelismValid = repairParallelism != null && !repairParallelism.isEmpty();
+    if (repairParallelismValid) {
+      try {
+        repairParallelismValid = RepairParallelism.valueOf(repairParallelism.toUpperCase()) != null ? true : false;
+      } catch (Exception e) {
+        repairParallelismValid = false;
+      }
+    }
+    boolean intensityValid = intensity != null && intensity >= 0.0D && intensity <= 1.0D;
+    boolean scheduleDaysBetweenValid = scheduleDaysBetween != null && scheduleDaysBetween > 0;
+    boolean segmentCountPerNodeValid = segmentCountPerNode != null && segmentCountPerNode > 0;
+
+    if (!ownerValid) {
+      invalidParams.add("owner");
+    }
+    if (!repairParallelismValid) {
+      invalidParams.add("repairParallelism");
+    }
+    if (!intensityValid) {
+      invalidParams.add("intensity");
+    }
+    if (!scheduleDaysBetweenValid) {
+      invalidParams.add("scheduleDaysBetween");
+    }
+    if (!segmentCountPerNodeValid) {
+      invalidParams.add("segmentCountPerNode");
+    }
+
+    return invalidParams;
+  }
+
+  /**
+   * Utility method to apply any valid parameters to an existing RepairSchedule.
+   * This method assumes that any non-null parameter provided is valid and should
+   * be applied.
+   *
+   * @param repairSchedule
+   * @param owner
+   * @param repairParallelism
+   * @param intensity
+   * @param scheduleDaysBetween
+   * @param segmentCountPerNode
+   */
+  protected static RepairSchedule applyRepairPatchParams(
+          RepairSchedule repairSchedule,
+          String owner,
+          String repairParallelism,
+          Double intensity,
+          Integer scheduleDaysBetween,
+          Integer segmentCountPerNode
+  ) {
+    if (repairSchedule == null) {
+      return null;
+    }
+
+    // Apply any valid incoming values to the schedule
+    return repairSchedule.with()
+            .owner(owner != null ? owner.trim() : repairSchedule.getOwner())
+            .repairParallelism(repairParallelism != null ? RepairParallelism.valueOf(repairParallelism.toUpperCase()) : repairSchedule.getRepairParallelism())
+            .intensity(intensity != null ? intensity : repairSchedule.getIntensity())
+            .daysBetween(scheduleDaysBetween != null ? scheduleDaysBetween : repairSchedule.getDaysBetween())
+            .segmentCountPerNode(segmentCountPerNode != null ? segmentCountPerNode : repairSchedule.getSegmentCountPerNode())
+            .build(repairSchedule.getId());
+  }
+
+  @PATCH
+  @Path("/{id}")
+  public Response patchRepairSchedule(
+          @Context UriInfo uriInfo,
+          @PathParam("id") UUID repairScheduleId,
+          @QueryParam("owner") Optional<String> owner,
+          @QueryParam("repairParallelism") Optional<String> repairParallelism,
+          @QueryParam("intensity") Optional<Double> intensity,
+          @QueryParam("scheduleDaysBetween") Optional<Integer> scheduleDaysBetween,
+          @QueryParam("segmentCountPerNode") Optional<Integer> segmentCountPerNode
+
+  ) {
+    if (repairScheduleId == null) {
+      return Response.status(Response.Status.NOT_FOUND).build();
+    }
+
+    // Validate the incoming request
+    String ownerValue = owner != null ? owner.orElse(null) : null;
+    String repairParallelismValue = repairParallelism != null ? repairParallelism.orElse(null) : null;
+    Double intensityValue = intensity != null ? intensity.orElse(null) : null;
+    Integer scheduleDaysBetweenValue = scheduleDaysBetween != null ? scheduleDaysBetween.orElse(null) : null;
+    Integer segmentCountPerNodeValue = segmentCountPerNode != null ? segmentCountPerNode.orElse(null) : null;
+
+    List<String> invalidParams = validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
+    // At least one of the params needs to be valid or the overall request is bad
+    boolean validRequest = invalidParams.size() < 5 ? true : false;
+
+    if (!validRequest) {
+      return Response.status(Response.Status.BAD_REQUEST).build();
+    }
+
+    // Try to find the schedule to be updated
+    Optional<RepairSchedule> repairScheduleWrapper = null;
+    try {
+      repairScheduleWrapper = context.storage.getRepairSchedule(repairScheduleId);
+    } catch (Exception e) {
+      LOG.error("Unable to retrieve repair-schedule '{}', an error occurred", repairScheduleId, e);
+      return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+    }
+
+    // See if we found the schedule
+    RepairSchedule repairSchedule = repairScheduleWrapper.orElse(null);
+    if (repairSchedule == null) {
+      return Response.status(Response.Status.NOT_FOUND).build();
+    }
+
+    // Apply any valid incoming values to the schedule
+    RepairSchedule patchedRepairSchedule = applyRepairPatchParams(
+            repairSchedule,
+            !invalidParams.contains("owner") ? ownerValue : null,
+            !invalidParams.contains("repairParallelism") ? repairParallelismValue : null,
+            !invalidParams.contains("intensity") ? intensityValue : null,
+            !invalidParams.contains("scheduleDaysBetween") ? scheduleDaysBetweenValue : null,
+            !invalidParams.contains("segmentCountPerNode") ? segmentCountPerNodeValue : null
+    );
+
+    // Attempt to update the schedule
+    boolean updated = false;
+    try {
+      updated = context.storage.updateRepairSchedule(patchedRepairSchedule);
+    } catch (Exception e) {
+      LOG.error("Unable to update repair-schedule '{}', an error occurred.", repairScheduleId, e);
+      return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+    }
+
+    if (updated) {
+      return Response.status(Response.Status.OK).entity(getRepairScheduleStatus(patchedRepairSchedule)).build();
+    } else {
+      return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+    }
   }
 
   /**
