@@ -68,6 +68,6 @@ public final class ShiroJwtProvider {
       key = Base64.getDecoder().decode(txt);
     }
 
-    return new SecretKeySpec(Base64.getDecoder().decode(txt), SIG_ALG.getJcaName());
+    return new SecretKeySpec(key, SIG_ALG.getJcaName());
   }
 }
