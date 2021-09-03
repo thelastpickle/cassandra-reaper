@@ -30,6 +30,7 @@ const RepairScheduleForm = CreateReactClass({
 
   getInitialState: function() {
     return {
+      id: this.props.repair ? this.props.repair.id : '',
       cluster: this.props.repair ? this.props.repair.cluster_name : '',
       keyspace: this.props.repair ? this.props.repair.keyspace_name : '',
       owner: this.props.repair ? this.props.repair.owner : '',
@@ -50,19 +51,19 @@ const RepairScheduleForm = CreateReactClass({
     }
   },
 
-  formSelectChangeHandler: function(valueContext, actionContext) {
+  _formSelectChangeHandler: function(valueContext, actionContext) {
     const field = actionContext.name.split("_")[1];
     const value = valueContext.value;
-    this.setStateFormChange(field, value);
+    this._setStateFormChange(field, value);
   },
   
-  formInputChangeHandler: function(e) {
+  _formInputChangeHandler: function(e) {
     const field = e.target.id.split("_")[1];
     const value = e.target.value;
-    this.setStateFormChange(field, value);
+    this._setStateFormChange(field, value);
   },
 
-  setStateFormChange: function(field, value) {
+  _setStateFormChange: function(field, value) {
     if (!field || !field.length) {
       return;
     }
@@ -77,7 +78,7 @@ const RepairScheduleForm = CreateReactClass({
     if (field) {
       state[field] = value;
     }
-    state.valid = this.validate(state);
+    state.valid = this._validate(state);
     this.setState(state);
 
     changeEvent.state = state;
@@ -86,7 +87,7 @@ const RepairScheduleForm = CreateReactClass({
     }
   },
 
-  validate: function(state) {
+  _validate: function(state) {
     if (!state) {
       return false;
     }
@@ -104,12 +105,12 @@ const RepairScheduleForm = CreateReactClass({
     return !invalid;
   },
 
-  toggleAdvancedSettings: function() {
+  _toggleAdvancedSettings: function() {
     this.setState({advancedSettingsOpen: !this.state.advancedSettingsOpen});
   },
 
   render: function() {
-    this.setStateFormChange();
+    this._setStateFormChange();
 
     const ownerPlaceholder = `owner name for the ${this.state.formType} run (any string)`;
 
@@ -128,41 +129,47 @@ const RepairScheduleForm = CreateReactClass({
 
     return (
       <form>
+        {/* Id */}
+        <div className="form-group">
+          <label htmlFor="in_id" className="control-label">ID</label>
+          <input type="text" required className="form-control" defaultValue={this.state.id} id="in_id" readOnly/>
+        </div>
+
         {/* Cluster */}
         <div className="form-group">
           <label htmlFor="in_clusterName" className="control-label">Cluster*</label>
-          <input type="text" required className="form-control" defaultValue={this.state.cluster} id="in_clusterName" disabled/>
+          <input type="text" required className="form-control" defaultValue={this.state.cluster} id="in_clusterName" readOnly/>
         </div>
 
         {/* Keyspace */}
         <div className="form-group">
           <label htmlFor="in_keyspace" className="control-label">Keyspace*</label>
-          <input type="text" required className="form-control" defaultValue={this.state.keyspace} id="in_keyspace" disabled/>
+          <input type="text" required className="form-control" defaultValue={this.state.keyspace} id="in_keyspace" readOnly/>
         </div>
 
         {/* Owner */}
         <div className="form-group">
           <label htmlFor="in_owner" className="control-label">Owner*</label>
-          <input type="text" required className="form-control" defaultValue={this.state.owner} id="in_owner" placeholder={ownerPlaceholder} onChange={this.formInputChangeHandler}/>
+          <input type="text" required className="form-control" defaultValue={this.state.owner} id="in_owner" placeholder={ownerPlaceholder} onChange={this._formInputChangeHandler}/>
         </div>
 
         {/* Start Time */}
         <div className="form-group">
           <label htmlFor="in_startTime" className="control-label">Start time*</label>
-          <input type="text" required className="form-control" defaultValue={this.state.startTime} id="in_startTime" disabled/>
+          <input type="text" required className="form-control" defaultValue={this.state.startTime} id="in_startTime" readOnly/>
         </div>
 
         {/* Interval */}
         <div className="form-group">
           <label htmlFor="in_intervalDays" className="control-label">Interval in days*</label>
-          <input type="number" min={1} required className="form-control" defaultValue={this.state.intervalDays} id="in_intervalDays" placeholder="The number of days to wait between scheduling new repairs, (e.g. 7 for weekly)" onChange={this.formInputChangeHandler}/>
+          <input type="number" min={1} max={3650} required className="form-control" defaultValue={this.state.intervalDays} id="in_intervalDays" placeholder="The number of days to wait between scheduling new repairs, (e.g. 7 for weekly)" onChange={this._formInputChangeHandler}/>
         </div>
 
         <div className="form-group">
           <div className="panel panel-info">
             <div className="panel-heading">
               <div className="panel-title">
-                <a onClick={this.toggleAdvancedSettings}>
+                <a onClick={this._toggleAdvancedSettings}>
                   <span style={{paddingRight: '.5em'}}>Advanced settings</span>
                   <span className="glyphicon glyphicon-menu-down" aria-hidden="true" style={ this.state.advancedSettingsOpen ? { display: 'none'} : {}}></span>
                   <span className="glyphicon glyphicon-menu-up" aria-hidden="true" style={ !this.state.advancedSettingsOpen ? { display: 'none'} : {}}></span>
@@ -176,31 +183,31 @@ const RepairScheduleForm = CreateReactClass({
                   {/* Tables */}
                   <div className="form-group">
                     <label htmlFor="in_tables" className="control-label">Tables</label>
-                    <input type="text" className="form-control" defaultValue={this.state.tables ? this.state.tables.join(', ') : ''} id="in_tables" disabled/>
+                    <input type="text" className="form-control" defaultValue={this.state.tables ? this.state.tables.join(', ') : ''} id="in_tables" readOnly/>
                   </div>
 
                   {/* Blacklist */}
                   <div className="form-group">
                     <label htmlFor="in_blacklistedTables" className="control-label">Blacklist</label>
-                    <input type="text" className="form-control" defaultValue={this.state.blacklistedTables ? this.state.blacklistedTables.join(', ') : ''} id="in_blacklistedTables" disabled/>
+                    <input type="text" className="form-control" defaultValue={this.state.blacklistedTables ? this.state.blacklistedTables.join(', ') : ''} id="in_blacklistedTables" readOnly/>
                   </div>
 
                   {/* Nodes */}
                   <div className="form-group">
                     <label htmlFor="in_nodes" className="control-label">Nodes</label>
-                    <input type="text" className="form-control" defaultValue={this.state.nodes ? this.state.nodes.join(', ') : ''} id="in_nodes" disabled/>
+                    <input type="text" className="form-control" defaultValue={this.state.nodes ? this.state.nodes.join(', ') : ''} id="in_nodes" readOnly/>
                   </div>
 
                   {/* Datacenters */}
                   <div className="form-group">
                     <label htmlFor="in_datacenters" className="control-label">Datacenters</label>
-                    <input type="text" className="form-control" defaultValue={this.state.datacenters ? this.state.datacenters.join(', ') : ''} id="in_datacenters" disabled/>
+                    <input type="text" className="form-control" defaultValue={this.state.datacenters ? this.state.datacenters.join(', ') : ''} id="in_datacenters" readOnly/>
                   </div>
 
                   {/* Segments Per Node */}
                   <div className="form-group">
                     <label htmlFor="in_segments" className="control-label">Segments per node</label>
-                    <input type="number" min="0" className="form-control" defaultValue={this.state.segments} id="in_segments" placeholder="Number of segments per node to create for the repair run" onChange={this.formInputChangeHandler}/>
+                    <input type="number" min="0" className="form-control" defaultValue={this.state.segments} id="in_segments" placeholder="Number of segments per node to create for the repair run" onChange={this._formInputChangeHandler}/>
                   </div>
 
                   {/* Parallelism */}
@@ -212,14 +219,14 @@ const RepairScheduleForm = CreateReactClass({
                       classNamePrefix="select"
                       options={parallelismOptions}
                       value={parallelismValue}
-                      onChange={this.formSelectChangeHandler}
+                      onChange={this._formSelectChangeHandler}
                     />
                   </div>
 
                   {/* Intensity */}
                   <div className="form-group">
                     <label htmlFor="in_intensity" className="control-label">Repair Intensity</label>
-                    <input type="number" min="0" max="1" className="form-control" defaultValue={this.state.intensity} id="in_intensity" onChange={this.formInputChangeHandler}/>
+                    <input type="number" min="0" max="1" className="form-control" defaultValue={this.state.intensity} id="in_intensity" onChange={this._formInputChangeHandler}/>
                   </div>
 
                   {/* Incremental */}
@@ -238,7 +245,7 @@ const RepairScheduleForm = CreateReactClass({
                   {/* Repair Threads */}
                   <div className="form-group">
                     <label htmlFor="in_repairThreadCount" className="control-label">Repair Threads</label>
-                    <input type="number" min="1" className="form-control" defaultValue={this.state.repairThreadCount} id="in_repairThreadCount" disabled/>
+                    <input type="number" min="1" className="form-control" defaultValue={this.state.repairThreadCount} id="in_repairThreadCount" readOnly/>
                   </div>
 
                 </div>

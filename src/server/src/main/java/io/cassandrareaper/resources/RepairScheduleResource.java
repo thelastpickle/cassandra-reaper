@@ -100,6 +100,7 @@ public final class RepairScheduleResource {
       }
     }
     boolean intensityValid = intensity != null && intensity >= 0.0D && intensity <= 1.0D;
+    // TODO What are good valid ranges for these values?
     boolean scheduleDaysBetweenValid = scheduleDaysBetween != null && scheduleDaysBetween > 0;
     boolean segmentCountPerNodeValid = segmentCountPerNode != null && segmentCountPerNode > 0;
 

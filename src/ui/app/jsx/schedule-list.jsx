@@ -36,30 +36,82 @@ var NotificationSystem = require('react-notification-system');
 const EditRowModal = CreateReactClass({
   propTypes: {
     row: PropTypes.object,
-    onCancel: PropTypes.func,
-    onSave: PropTypes.func
+    onCancel: PropTypes.func.isRequired,
+    onSaveComplete: PropTypes.func.isRequired
   },
 
   getInitialState: function() {
     return {
       editFormState: {},
-      canSubmit: false
+      canSave: false,
+      saveInProgress: false,
+      saveError: false
     }
   },
 
-  cancel: function() {
+  _cancel: function() {
     if (this.props.onCancel) {
       this.props.onCancel();
     }
   },
 
-  save: function() {
-    if (this.props.onSave) {
-      this.props.onSave(this.state.editFormState);
+  _buildRepairSchedulePatchQueryString: function(repairSchedule) {
+    if (!repairSchedule) {
+      return;
     }
+
+    let queryString = "?owner=";
+    queryString += repairSchedule.owner ? repairSchedule.owner : "";
+
+    queryString += "&repairParallelism=";
+    queryString += repairSchedule.parallelism ? repairSchedule.parallelism : "";
+
+    queryString += "&intensity=";
+    queryString += repairSchedule.intensity ? repairSchedule.intensity : "";
+
+    queryString += "&scheduleDaysBetween=";
+    queryString += repairSchedule.intervalDays ? repairSchedule.intervalDays : "";
+
+    queryString += "&segmentCountPerNode=";
+    queryString += repairSchedule.segments ? repairSchedule.segments : "";
+
+    return queryString;
   },
 
-  onChangeHandler: function(e) {
+  _save: function() {
+    this.setState({canSave: false, saveInProgress: true, saveError: false});
+
+    const url = getUrlPrefix(window.top.location.pathname) + '/repair_schedule/' + encodeURIComponent(this.state.editFormState.id);
+    const queryString = this._buildRepairSchedulePatchQueryString(this.state.editFormState);
+
+    fetch(
+      url + queryString,
+      {
+        method: "PATCH"
+      }
+    ).then(response => {
+      if (!response.ok) {
+        this.setState({canSave: true, saveInProgress: false, saveError: true});
+        console.error("Error: Unable to save changes, request failed with response [" + response.status + "] " + response.statusText + ".");
+        if (this.props.onSaveComplete) {
+          this.props.onSaveComplete(false);
+        }
+      } else {
+        this.setState({canSave: true, saveInProgress: false, saveError: false});
+        if (this.props.onSaveComplete) {
+          this.props.onSaveComplete(true);
+        }
+      }
+    }).catch(error => {
+      this.setState({canSave: true, saveInProgress: false, saveError: true});
+      console.error("Error: Unable to save changes, request failed with error.", error);
+      if (this.props.onSaveComplete) {
+        this.props.onSaveComplete(false);
+      }
+    });
+  },
+
+  _formChangeHandler: function(e) {
     if (!e || !e.field) {
       return;
     }
@@ -67,24 +119,26 @@ const EditRowModal = CreateReactClass({
       if (e.state.valid) {
         this.setState({editFormState: e.state});
       }
-      this.setState({canSubmit: e.state.valid});
+      this.setState({canSave: e.state.valid});
     }
   },
 
   render: function () {
     return (
-      <Modal show={this.props.row ? true : false} onHide={this.cancel}>
-        <Modal.Header closeButton>
+      <Modal show={this.props.row ? true : false} backdrop={"static"}>
+        <Modal.Header>
           <Modal.Title>Edit Schedule: {this.props.row ? this.props.row.cluster_name : 'Unknown Cluster'}/{this.props.row ? this.props.row.keyspace_name : 'Unknown Keyspace'}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <div>
-            <RepairScheduleForm repair={this.props.row} formType="schedule" onChange={this.onChangeHandler}/>
+            <RepairScheduleForm repair={this.props.row} formType="schedule" onChange={this._formChangeHandler}/>
           </div>
         </Modal.Body>
         <Modal.Footer>
-          <Button onClick={this.save} disabled={!this.state.canSubmit}>Save</Button>
-          <Button onClick={this.cancel}>Cancel</Button>
+          <span className="fa fa-spinner fa-spin text-info edit-repair-schedule-modal-status-icon" title="Saving changes..." style={{display: this.state.saveInProgress ? 'inline-block' : 'none'}}></span>
+          <span className="fa fa-exclamation-triangle text-danger edit-repair-schedule-modal-status-icon" title="Error: Unable to save changes." style={{display: this.state.saveError ? 'inline-block' : 'none'}}></span>
+          <Button onClick={this._save} disabled={!this.state.canSave}>Save</Button>
+          <Button onClick={this._cancel} disabled={this.state.saveInProgress}>Cancel</Button>
         </Modal.Footer>
       </Modal>
     )
@@ -229,7 +283,6 @@ const TableRowDetails = CreateReactClass({
 const scheduleList = CreateReactClass({
   mixins: [DeleteStatusMessageMixin],
   _notificationSystem: null,
-  _editRow: undefined,
 
   propTypes: {
     schedules: PropTypes.object.isRequired,
@@ -246,7 +299,8 @@ const scheduleList = CreateReactClass({
       deleteResultMsg: null,
       clusterNames: [],
       currentClusterSelectValue: {value: 'all', label: 'all'},
-      currentCluster: this.props.currentCluster
+      currentCluster: this.props.currentCluster,
+      editRow: undefined
     };
   },
 
@@ -274,17 +328,17 @@ const scheduleList = CreateReactClass({
   },
 
   _editSchedule: function(row) {
-    this._editRow = row;
+    this.setState({editRow: row});
   },
 
-  _saveSchedule: function(e) {
-    console.log("_saveSchedule()");
-    console.log(e);
-    this._hideEditSchedule();
+  _editScheduleSaveHandler: function(success) {
+    if (success) {
+      this._hideEditSchedule();
+    }
   },
 
   _hideEditSchedule: function() {
-    this._editRow = undefined;
+    this.setState({editRow: undefined});
   },
 
   _handleSelectOnChange: function(valueContext, actionContext) {
@@ -380,7 +434,7 @@ const scheduleList = CreateReactClass({
 
     return (<div className="panel panel-default">
               <div className="panel-body">
-                <EditRowModal row={this._editRow} onCancel={this._hideEditSchedule} onSave={this._saveSchedule}/>
+                <EditRowModal row={this.state.editRow} onCancel={this._hideEditSchedule} onSaveComplete={this._editScheduleSaveHandler}/>
                 <NotificationSystem ref="notificationSystem" />
                 {this.deleteMessage()}
                 {clusterFilter}
