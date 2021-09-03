@@ -88,20 +88,16 @@ const RepairScheduleForm = CreateReactClass({
   },
 
   _validate: function(state) {
+    debugger;
     if (!state) {
       return false;
     }
 
-    const clusterInvalid = !state.cluster || !state.cluster.length;
-    const keyspaceInvalid = !state.keyspace || !state.keyspace.length;
+    const idInvalid = !state.id || !state.id.length;
     const ownerInvalid = !state.owner || !state.owner.length;
     const scheduleTimeInvalid = (state.formType === "schedule" && (!state.startTime || !state.intervalDays)) || (state.formType === "repair" && (state.startTime || state.intervalDays));
-    // TODO What should the rules here be for the the combination of Datacenters and Nodes
-    const datacentersSet = state.datacenters && state.datacenters.length ? true : false;
-    const nodesSet = state.nodes && state.nodes.length ? true : false;
-    const datacentersNodesInvalid = datacentersSet && nodesSet;
 
-    const invalid = clusterInvalid || keyspaceInvalid || ownerInvalid || scheduleTimeInvalid || datacentersNodesInvalid;
+    const invalid = idInvalid || ownerInvalid || scheduleTimeInvalid;
     return !invalid;
   },
 
