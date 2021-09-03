@@ -157,9 +157,10 @@ final class RepairRunner implements Runnable {
   }
 
   private void registerMetric(String metricName, Gauge<?> gauge) {
-    if (!context.metricRegistry.getMetrics().containsKey(metricName)) {
-      context.metricRegistry.register(metricName, gauge);
+    if (context.metricRegistry.getMetrics().containsKey(metricName)) {
+      context.metricRegistry.remove(metricName);
     }
+    context.metricRegistry.register(metricName, gauge);
   }
 
   UUID getRepairRunId() {
