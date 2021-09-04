@@ -28,22 +28,17 @@ import com.google.common.collect.Lists;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 
-public final class RepairSchedule {
+public final class RepairSchedule extends EditableRepairSchedule {
 
   private final UUID id;
 
   private final UUID repairUnitId;
   private final State state;
-  private final int daysBetween;
   private final DateTime nextActivation;
   private final ImmutableList<UUID> runHistory;
   @Deprecated private final int segmentCount;
-  private final RepairParallelism repairParallelism;
-  private final double intensity;
   private final DateTime creationTime;
-  private final String owner;
   private final DateTime pauseTime;
-  private final int segmentCountPerNode;
 
   private RepairSchedule(Builder builder, UUID id) {
     this.id = id;
@@ -77,10 +72,6 @@ public final class RepairSchedule {
     return state;
   }
 
-  public int getDaysBetween() {
-    return daysBetween;
-  }
-
   public DateTime getFollowingActivation() {
     return getNextActivation().plusDays(getDaysBetween());
   }
@@ -103,18 +94,6 @@ public final class RepairSchedule {
 
   public int getSegmentCount() {
     return segmentCount;
-  }
-
-  public int getSegmentCountPerNode() {
-    return segmentCountPerNode;
-  }
-
-  public RepairParallelism getRepairParallelism() {
-    return repairParallelism;
-  }
-
-  public double getIntensity() {
-    return intensity;
   }
 
   public DateTime getCreationTime() {

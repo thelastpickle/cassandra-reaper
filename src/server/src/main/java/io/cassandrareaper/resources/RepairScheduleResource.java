@@ -20,6 +20,7 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.EditableRepairSchedule;
 import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
@@ -36,6 +37,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -76,128 +80,17 @@ public final class RepairScheduleResource {
     this.repairRunService = RepairRunService.create(context);
   }
 
-  /**
-   * Validate the set of parameters used to patch a RepairSchedule.
-   *
-   * @return List of invalid parameters, empty if all are valid
-   */
-  protected static List<String> validateRepairPatchParams(
-      final String owner,
-      final String repairParallelism,
-      final Double intensity,
-      final Integer scheduleDaysBetween,
-      final Integer segmentCountPerNode
-  ) {
-    List<String> invalidParams = Lists.newArrayList();
-
-    final boolean ownerValid = owner != null && !owner.isEmpty();
-
-    boolean repairParallelismValid = repairParallelism != null && !repairParallelism.isEmpty();
-    if (repairParallelismValid) {
-      try {
-        repairParallelismValid = RepairParallelism.valueOf(repairParallelism.toUpperCase()) != null;
-      } catch (IllegalArgumentException e) {
-        repairParallelismValid = false;
-      }
-    }
-    final boolean intensityValid = intensity != null && intensity >= 0.0D && intensity <= 1.0D;
-    final boolean scheduleDaysBetweenValid = scheduleDaysBetween != null
-        && scheduleDaysBetween >= 0
-        && scheduleDaysBetween <= 31;
-    final boolean segmentCountPerNodeValid = segmentCountPerNode != null && segmentCountPerNode > 0;
-
-    if (!ownerValid) {
-      invalidParams.add("owner");
-    }
-    if (!repairParallelismValid) {
-      invalidParams.add("repairParallelism");
-    }
-    if (!intensityValid) {
-      invalidParams.add("intensity");
-    }
-    if (!scheduleDaysBetweenValid) {
-      invalidParams.add("scheduleDaysBetween");
-    }
-    if (!segmentCountPerNodeValid) {
-      invalidParams.add("segmentCountPerNode");
-    }
-
-    return invalidParams;
-  }
-
-  /**
-   * Utility method to apply any valid parameters to an existing RepairSchedule.
-   * This method assumes that any non-null parameter provided is valid and should
-   * be applied.
-   *
-   * @param repairSchedule - The schedule object to be updated
-   * @param owner - The owner value to be used in the update
-   * @param repairParallelism - the parallelism value to be used in the update
-   * @param intensity - The intensity value to be used in the update
-   * @param scheduleDaysBetween - The days between value to be used in the update
-   * @param segmentCountPerNode - The segments per node value to be used in the update
-   */
-  protected static RepairSchedule applyRepairPatchParams(
-      final RepairSchedule repairSchedule,
-      final String owner,
-      final String repairParallelism,
-      final Double intensity,
-      final Integer scheduleDaysBetween,
-      final Integer segmentCountPerNode
-  ) {
-    if (repairSchedule == null) {
-      return null;
-    }
-
-    // Apply any valid incoming values to the schedule
-    return repairSchedule.with()
-        .owner(owner != null ? owner.trim() : repairSchedule.getOwner())
-        .repairParallelism(repairParallelism != null
-            ? RepairParallelism.valueOf(repairParallelism.toUpperCase())
-            : repairSchedule.getRepairParallelism())
-        .intensity(intensity != null ? intensity : repairSchedule.getIntensity())
-        .daysBetween(scheduleDaysBetween != null ? scheduleDaysBetween : repairSchedule.getDaysBetween())
-        .segmentCountPerNode(segmentCountPerNode != null
-            ? segmentCountPerNode
-            : repairSchedule.getSegmentCountPerNode())
-        .build(repairSchedule.getId());
-  }
-
   @PATCH
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
   @Path("/{id}")
   public Response patchRepairSchedule(
       @Context UriInfo uriInfo,
       @PathParam("id") UUID repairScheduleId,
-      @QueryParam("owner") Optional<String> owner,
-      @QueryParam("repairParallelism") Optional<String> repairParallelism,
-      @QueryParam("intensity") Optional<Double> intensity,
-      @QueryParam("scheduleDaysBetween") Optional<Integer> scheduleDaysBetween,
-      @QueryParam("segmentCountPerNode") Optional<Integer> segmentCountPerNode
-
+      @NotNull @Valid EditableRepairSchedule editableRepairSchedule
   ) {
     if (repairScheduleId == null) {
       return Response.status(Response.Status.NOT_FOUND).build();
-    }
-
-    // Validate the incoming request
-    String ownerValue = owner != null ? owner.orElse(null) : null;
-    String repairParallelismValue = repairParallelism != null ? repairParallelism.orElse(null) : null;
-    Double intensityValue = intensity != null ? intensity.orElse(null) : null;
-    Integer scheduleDaysBetweenValue = scheduleDaysBetween != null ? scheduleDaysBetween.orElse(null) : null;
-    Integer segmentCountPerNodeValue = segmentCountPerNode != null ? segmentCountPerNode.orElse(null) : null;
-
-    List<String> invalidParams = validateRepairPatchParams(
-        ownerValue,
-        repairParallelismValue,
-        intensityValue,
-        scheduleDaysBetweenValue,
-        segmentCountPerNodeValue
-    );
-    // At least one of the params needs to be valid or the overall request is bad
-    boolean validRequest = invalidParams.size() < 5;
-
-    if (!validRequest) {
-      return Response.status(Response.Status.BAD_REQUEST).build();
     }
 
     // Try to find the schedule to be updated
@@ -211,11 +104,11 @@ public final class RepairScheduleResource {
     // Apply any valid incoming values to the schedule
     RepairSchedule patchedRepairSchedule = applyRepairPatchParams(
         repairSchedule,
-        !invalidParams.contains("owner") ? ownerValue : null,
-        !invalidParams.contains("repairParallelism") ? repairParallelismValue : null,
-        !invalidParams.contains("intensity") ? intensityValue : null,
-        !invalidParams.contains("scheduleDaysBetween") ? scheduleDaysBetweenValue : null,
-        !invalidParams.contains("segmentCountPerNode") ? segmentCountPerNodeValue : null
+        editableRepairSchedule.getOwner(),
+        editableRepairSchedule.getRepairParallelism(),
+        editableRepairSchedule.getIntensity(),
+        editableRepairSchedule.getDaysBetween(),
+        editableRepairSchedule.getSegmentCountPerNode()
     );
 
     // Attempt to update the schedule
@@ -728,5 +621,41 @@ public final class RepairScheduleResource {
       @PathParam("id") UUID repairScheduleId) throws IllegalArgumentException {
     long since = DateTime.now().minusHours(1).getMillis();
     return context.storage.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
+  }
+
+  /**
+   * Utility method to apply any valid parameters to an existing RepairSchedule.
+   * This method assumes that any non-null parameter provided is valid and should
+   * be applied.
+   *
+   * @param repairSchedule - The schedule object to be updated
+   * @param owner - The owner value to be used in the update
+   * @param repairParallelism - the parallelism value to be used in the update
+   * @param intensity - The intensity value to be used in the update
+   * @param scheduleDaysBetween - The days between value to be used in the update
+   * @param segmentCountPerNode - The segments per node value to be used in the update
+   */
+  protected static RepairSchedule applyRepairPatchParams(
+      final RepairSchedule repairSchedule,
+      final String owner,
+      final RepairParallelism repairParallelism,
+      final Double intensity,
+      final Integer scheduleDaysBetween,
+      final Integer segmentCountPerNode
+  ) {
+    if (repairSchedule == null) {
+      return null;
+    }
+
+    // Apply any valid incoming values to the schedule
+    return repairSchedule.with()
+        .owner(owner != null ? owner.trim() : repairSchedule.getOwner())
+        .repairParallelism(repairParallelism != null ? repairParallelism : repairSchedule.getRepairParallelism())
+        .intensity(intensity != null ? intensity : repairSchedule.getIntensity())
+        .daysBetween(scheduleDaysBetween != null ? scheduleDaysBetween : repairSchedule.getDaysBetween())
+        .segmentCountPerNode(segmentCountPerNode != null
+            ? segmentCountPerNode
+            : repairSchedule.getSegmentCountPerNode())
+        .build(repairSchedule.getId());
   }
 }

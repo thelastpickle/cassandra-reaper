@@ -1,5 +1,5 @@
 /*
- * Copyright 2021- DataStax Inc.
+ * Copyright 2021-2021 DataStax, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,167 +17,63 @@
 package io.cassandrareaper.resources;
 
 import io.cassandrareaper.core.RepairSchedule;
+
+import java.util.UUID;
+
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.junit.Test;
-
-import java.util.List;
-import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class RepairScheduleResourceTest {
-    @Test
-    public void testValidateRepairPatchParamsValidParams() {
-        String ownerValue = "test";
-        String repairParallelismValue = RepairParallelism.PARALLEL.toString();
-        Double intensityValue = 1.0D;
-        Integer scheduleDaysBetweenValue = 2;
-        Integer segmentCountPerNodeValue = 5;
-        List<String> invalidParams = RepairScheduleResource.validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
-        assertTrue(invalidParams.isEmpty());
-    }
+  @Test
+  public void testApplyRepairPatchParamsValidParams() {
+    DateTime nextActivation = DateTime.now();
+    UUID uuid = UUID.randomUUID();
+    RepairSchedule repairSchedule = RepairSchedule.builder(uuid)
+        .nextActivation(nextActivation)
+        .owner("test")
+        .repairParallelism(RepairParallelism.PARALLEL)
+        .intensity(1.0D)
+        .daysBetween(1)
+        .segmentCountPerNode(2)
+        .build(uuid);
 
-    @Test
-    public void testValidateRepairPatchParamsInvalidParams() {
-        String ownerValue = null;
-        String repairParallelismValue = null;
-        Double intensityValue = null;
-        Integer scheduleDaysBetweenValue = null;
-        Integer segmentCountPerNodeValue = null;
-        List<String> invalidParams = RepairScheduleResource.validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
-        assertTrue(invalidParams.size() == 5);
-    }
+    assertTrue(nextActivation.equals(repairSchedule.getNextActivation()));
+    assertTrue(uuid.equals(repairSchedule.getRepairUnitId()));
+    assertTrue(uuid.equals(repairSchedule.getId()));
+    assertEquals("test", repairSchedule.getOwner());
+    assertEquals(RepairParallelism.PARALLEL, repairSchedule.getRepairParallelism());
+    assertTrue(1.0D == repairSchedule.getIntensity());
+    assertEquals(1, repairSchedule.getDaysBetween() != null
+        ? repairSchedule.getDaysBetween().intValue()
+        : -1);
+    assertEquals(2, repairSchedule.getSegmentCountPerNode() != null
+        ? repairSchedule.getSegmentCountPerNode().intValue()
+        : -1);
 
-    @Test
-    public void testValidateRepairPatchParamsInvalidOwnerParam() {
-        String ownerValue = null;
-        String repairParallelismValue = RepairParallelism.PARALLEL.toString();
-        Double intensityValue = 1.0D;
-        Integer scheduleDaysBetweenValue = 2;
-        Integer segmentCountPerNodeValue = 5;
-        List<String> invalidParams = RepairScheduleResource.validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
-        assertTrue(invalidParams.size() == 1);
-        assertTrue(invalidParams.contains("owner"));
+    RepairSchedule patchedRepairSchedule = RepairScheduleResource.applyRepairPatchParams(
+        repairSchedule,
+        "test2",
+        RepairParallelism.SEQUENTIAL,
+        0.0D,
+        2,
+        3
+    );
 
-        ownerValue = "";
-        invalidParams = RepairScheduleResource.validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
-        assertTrue(invalidParams.size() == 1);
-        assertTrue(invalidParams.contains("owner"));
-    }
-
-    @Test
-    public void testValidateRepairPatchParamsInvalidRepairParallelismParam() {
-        String ownerValue = "test";
-        String repairParallelismValue = null;
-        Double intensityValue = 1.0D;
-        Integer scheduleDaysBetweenValue = 2;
-        Integer segmentCountPerNodeValue = 5;
-        List<String> invalidParams = RepairScheduleResource.validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
-        assertTrue(invalidParams.size() == 1);
-        assertTrue(invalidParams.contains("repairParallelism"));
-
-        repairParallelismValue = "";
-        invalidParams = RepairScheduleResource.validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
-        assertTrue(invalidParams.size() == 1);
-        assertTrue(invalidParams.contains("repairParallelism"));
-
-        repairParallelismValue = "INVALID";
-        invalidParams = RepairScheduleResource.validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
-        assertTrue(invalidParams.size() == 1);
-        assertTrue(invalidParams.contains("repairParallelism"));
-    }
-
-    @Test
-    public void testValidateRepairPatchParamsInvalidIntensityParam() {
-        String ownerValue = "test";
-        String repairParallelismValue = RepairParallelism.PARALLEL.toString();
-        Double intensityValue = null;
-        Integer scheduleDaysBetweenValue = 2;
-        Integer segmentCountPerNodeValue = 5;
-        List<String> invalidParams = RepairScheduleResource.validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
-        assertTrue(invalidParams.size() == 1);
-        assertTrue(invalidParams.contains("intensity"));
-
-        intensityValue = 1.1D;
-        invalidParams = RepairScheduleResource.validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
-        assertTrue(invalidParams.size() == 1);
-        assertTrue(invalidParams.contains("intensity"));
-    }
-
-    @Test
-    public void testValidateRepairPatchParamsInvalidScheduleDaysBetweenParam() {
-        String ownerValue = "test";
-        String repairParallelismValue = RepairParallelism.PARALLEL.toString();
-        Double intensityValue = 1.0D;
-        Integer scheduleDaysBetweenValue = null;
-        Integer segmentCountPerNodeValue = 5;
-        List<String> invalidParams = RepairScheduleResource.validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
-        assertTrue(invalidParams.size() == 1);
-        assertTrue(invalidParams.contains("scheduleDaysBetween"));
-
-        scheduleDaysBetweenValue = 0;
-        invalidParams = RepairScheduleResource.validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
-        assertTrue(invalidParams.size() == 1);
-        assertTrue(invalidParams.contains("scheduleDaysBetween"));
-    }
-
-    @Test
-    public void testValidateRepairPatchParamsInvalidSegmentCountPerNodeParam() {
-        String ownerValue = "test";
-        String repairParallelismValue = RepairParallelism.PARALLEL.toString();
-        Double intensityValue = 1.0D;
-        Integer scheduleDaysBetweenValue = 2;
-        Integer segmentCountPerNodeValue = null;
-        List<String> invalidParams = RepairScheduleResource.validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
-        assertTrue(invalidParams.size() == 1);
-        assertTrue(invalidParams.contains("segmentCountPerNode"));
-
-        segmentCountPerNodeValue = 0;
-        invalidParams = RepairScheduleResource.validateRepairPatchParams(ownerValue, repairParallelismValue, intensityValue, scheduleDaysBetweenValue, segmentCountPerNodeValue);
-        assertTrue(invalidParams.size() == 1);
-        assertTrue(invalidParams.contains("segmentCountPerNode"));
-    }
-
-    @Test
-    public void testApplyRepairPatchParamsValidParams() {
-        DateTime nextActivation = DateTime.now();
-        UUID uuid = UUID.randomUUID();
-        RepairSchedule repairSchedule = RepairSchedule.builder(uuid)
-                .nextActivation(nextActivation)
-                .owner("test")
-                .repairParallelism(RepairParallelism.PARALLEL)
-                .intensity(1.0D)
-                .daysBetween(1)
-                .segmentCountPerNode(2)
-                .build(uuid);
-
-        assertTrue(nextActivation.equals(repairSchedule.getNextActivation()));
-        assertTrue(uuid.equals(repairSchedule.getRepairUnitId()));
-        assertTrue(uuid.equals(repairSchedule.getId()));
-        assertEquals("test", repairSchedule.getOwner());
-        assertEquals(RepairParallelism.PARALLEL, repairSchedule.getRepairParallelism());
-        assertTrue(1.0D == repairSchedule.getIntensity());
-        assertEquals(1, repairSchedule.getDaysBetween());
-        assertEquals(2, repairSchedule.getSegmentCountPerNode());
-
-        RepairSchedule patchedRepairSchedule = RepairScheduleResource.applyRepairPatchParams(
-                repairSchedule,
-                "test2",
-                RepairParallelism.SEQUENTIAL.toString(),
-                0.0D,
-                2,
-                3
-        );
-
-        assertTrue(nextActivation.equals(patchedRepairSchedule.getNextActivation()));
-        assertTrue(uuid.equals(patchedRepairSchedule.getRepairUnitId()));
-        assertTrue(uuid.equals(patchedRepairSchedule.getId()));
-        assertEquals("test2", patchedRepairSchedule.getOwner());
-        assertEquals(RepairParallelism.SEQUENTIAL, patchedRepairSchedule.getRepairParallelism());
-        assertTrue(0.0D == patchedRepairSchedule.getIntensity());
-        assertEquals(2, patchedRepairSchedule.getDaysBetween());
-        assertEquals(3, patchedRepairSchedule.getSegmentCountPerNode());
-    }
+    assertTrue(nextActivation.equals(patchedRepairSchedule.getNextActivation()));
+    assertTrue(uuid.equals(patchedRepairSchedule.getRepairUnitId()));
+    assertTrue(uuid.equals(patchedRepairSchedule.getId()));
+    assertEquals("test2", patchedRepairSchedule.getOwner());
+    assertEquals(RepairParallelism.SEQUENTIAL, patchedRepairSchedule.getRepairParallelism());
+    assertTrue(0.0D == patchedRepairSchedule.getIntensity());
+    assertEquals(2, patchedRepairSchedule.getDaysBetween() != null
+        ? patchedRepairSchedule.getDaysBetween().intValue()
+        : -1);
+    assertEquals(3, patchedRepairSchedule.getSegmentCountPerNode() != null
+        ? patchedRepairSchedule.getSegmentCountPerNode().intValue()
+        : -1);
+  }
 }
