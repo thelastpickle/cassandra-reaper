@@ -50,5 +50,6 @@ public class EditableRepairSchedule {
 
   @JsonProperty(value = "segment_count_per_node")
   @Min(value = 1)
+  @Max(value = 1000)
   protected Integer segmentCountPerNode;
 }

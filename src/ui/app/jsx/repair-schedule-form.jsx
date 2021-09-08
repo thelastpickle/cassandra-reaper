@@ -88,16 +88,33 @@ const RepairScheduleForm = CreateReactClass({
   },
 
   _validate: function(state) {
-    debugger;
     if (!state) {
       return false;
     }
 
     const idInvalid = !state.id || !state.id.length;
     const ownerInvalid = !state.owner || !state.owner.length;
-    const scheduleTimeInvalid = (state.formType === "schedule" && (!state.startTime || !state.intervalDays)) || (state.formType === "repair" && (state.startTime || state.intervalDays));
+    const scheduleTimeInvalid = (state.formType === "schedule" &&
+        (!state.startTime ||
+          state.intervalDays == undefined ||
+          state.intervalDays == null ||
+          state.intervalDays < 0 ||
+          state.intervalDays > 31
+        )
+      ) ||
+      (state.formType === "repair" &&
+        (state.startTime ||
+          state.intervalDays
+        )
+      );
+    const segmentsPerNodeInvalid = !state.segments ||
+      state.segments == undefined ||
+      state.segments == null ||
+      state.segments < 1 ||
+      state.segments > 1000;
+    const parallelismInvalid = !state.parallelism || !state.parallelism.length;
 
-    const invalid = idInvalid || ownerInvalid || scheduleTimeInvalid;
+    const invalid = idInvalid || ownerInvalid || scheduleTimeInvalid || segmentsPerNodeInvalid || parallelismInvalid;
     return !invalid;
   },
 
@@ -158,7 +175,7 @@ const RepairScheduleForm = CreateReactClass({
         {/* Interval */}
         <div className="form-group">
           <label htmlFor="in_intervalDays" className="control-label">Interval in days*</label>
-          <input type="number" min={1} max={3650} required className="form-control" defaultValue={this.state.intervalDays} id="in_intervalDays" placeholder="The number of days to wait between scheduling new repairs, (e.g. 7 for weekly)" onChange={this._formInputChangeHandler}/>
+          <input type="number" min={0} max={31} required className="form-control" defaultValue={this.state.intervalDays} id="in_intervalDays" placeholder="The number of days to wait between scheduling new repairs, (e.g. 7 for weekly)" onChange={this._formInputChangeHandler}/>
         </div>
 
         <div className="form-group">
@@ -203,7 +220,7 @@ const RepairScheduleForm = CreateReactClass({
                   {/* Segments Per Node */}
                   <div className="form-group">
                     <label htmlFor="in_segments" className="control-label">Segments per node</label>
-                    <input type="number" min="0" className="form-control" defaultValue={this.state.segments} id="in_segments" placeholder="Number of segments per node to create for the repair run" onChange={this._formInputChangeHandler}/>
+                    <input type="number" min={1} max={1000} className="form-control" defaultValue={this.state.segments} id="in_segments" placeholder="Number of segments per node to create for the repair run" onChange={this._formInputChangeHandler}/>
                   </div>
 
                   {/* Parallelism */}

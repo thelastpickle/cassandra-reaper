@@ -16,20 +16,109 @@
 
 package io.cassandrareaper.resources;
 
+import io.cassandrareaper.AppContext;
+import io.cassandrareaper.ReaperException;
+import io.cassandrareaper.core.EditableRepairSchedule;
 import io.cassandrareaper.core.RepairSchedule;
+import io.cassandrareaper.core.RepairUnit;
+import io.cassandrareaper.resources.view.RepairScheduleStatus;
+import io.cassandrareaper.service.TestRepairConfiguration;
+import io.cassandrareaper.storage.MemoryStorage;
 
+import java.net.URI;
 import java.util.UUID;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.core.UriInfo;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RepairScheduleResourceTest {
+  private static final URI REPAIR_SCHEDULE_URI = URI.create("http://reaper_host/repair_schedule/");
+
   @Test
-  public void testApplyRepairPatchParamsValidParams() {
+  public void testPatchRepairSchedule() throws ReaperException {
+    final MockObjects mocks = initMocks(REPAIR_SCHEDULE_URI);
+    final RepairSchedule mockRepairSchedule = mocks.getRepairSchedule();
+
+    // Create a set of changes to patch
+    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context);
+    EditableRepairSchedule editableRepairSchedule = new EditableRepairSchedule();
+    editableRepairSchedule.setIntensity(1.0D);
+    editableRepairSchedule.setOwner("owner-test-2");
+    editableRepairSchedule.setDaysBetween(10);
+    editableRepairSchedule.setSegmentCountPerNode(20);
+    editableRepairSchedule.setRepairParallelism(RepairParallelism.SEQUENTIAL);
+
+    // Apply the changes
+    Response response = repairScheduleResource.patchRepairSchedule(
+        mocks.uriInfo,
+        mockRepairSchedule.getId(),
+        editableRepairSchedule
+    );
+
+    // Validate that we got back an expected response
+    assertNotNull(response);
+    assertEquals(200, response.getStatus());
+    assertNotNull(response.getEntity());
+
+    RepairScheduleStatus patchedRepairSchedule = (RepairScheduleStatus) response.getEntity();
+
+    // Check that our modified fields were in fact updated
+    // Compare the edited version to the patched version
+
+    // owner
+    assertNotNull(patchedRepairSchedule.getOwner());
+    assertEquals(editableRepairSchedule.getOwner(), patchedRepairSchedule.getOwner());
+    // intensity
+    assertNotNull(patchedRepairSchedule.getIntensity());
+    assertEquals(editableRepairSchedule.getIntensity().doubleValue(), patchedRepairSchedule.getIntensity(), 0D);
+    // segmentCountPerNode
+    assertNotNull(patchedRepairSchedule.getSegmentCountPerNode());
+    assertEquals(
+        editableRepairSchedule.getSegmentCountPerNode().intValue(),
+        patchedRepairSchedule.getSegmentCountPerNode()
+    );
+    // daysBetween
+    assertNotNull(patchedRepairSchedule.getDaysBetween());
+    assertEquals(editableRepairSchedule.getDaysBetween().intValue(), patchedRepairSchedule.getDaysBetween());
+    // repairParallelism
+    assertNotNull(patchedRepairSchedule.getRepairParallelism());
+    assertEquals(editableRepairSchedule.getRepairParallelism(), patchedRepairSchedule.getRepairParallelism());
+
+    // Check that other fields were left untouched
+    // Compare the mocked version to the patched version
+
+    // id
+    assertNotNull(patchedRepairSchedule.getId());
+    assertEquals(mockRepairSchedule.getId(), patchedRepairSchedule.getId());
+    // repairUnitId
+    assertNotNull(patchedRepairSchedule.getRepairUnitId());
+    assertEquals(mockRepairSchedule.getRepairUnitId(), patchedRepairSchedule.getRepairUnitId());
+    // segmentCount
+    assertNotNull(patchedRepairSchedule.getSegmentCount());
+    assertEquals(mockRepairSchedule.getSegmentCount(), patchedRepairSchedule.getSegmentCount());
+    // creationTime
+    assertNotNull(patchedRepairSchedule.getCreationTime());
+    assertEquals(mockRepairSchedule.getCreationTime(), patchedRepairSchedule.getCreationTime());
+    // state
+    assertNotNull(patchedRepairSchedule.getState());
+    assertEquals(mockRepairSchedule.getState(), patchedRepairSchedule.getState());
+  }
+
+  @Test
+  public void testApplyRepairPatch() {
     DateTime nextActivation = DateTime.now();
     UUID uuid = UUID.randomUUID();
     RepairSchedule repairSchedule = RepairSchedule.builder(uuid)
@@ -75,5 +164,55 @@ public class RepairScheduleResourceTest {
     assertEquals(3, patchedRepairSchedule.getSegmentCountPerNode() != null
         ? patchedRepairSchedule.getSegmentCountPerNode().intValue()
         : -1);
+  }
+
+  private static MockObjects initMocks(URI uri) throws ReaperException {
+    MockObjects mockObjects = new MockObjects();
+
+    AppContext context = new AppContext();
+    context.storage = new MemoryStorage();
+    context.config = TestRepairConfiguration.defaultConfig();
+    mockObjects.setContext(context);
+
+    UriInfo uriInfo = mock(UriInfo.class);
+    when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(uri));
+    mockObjects.setUriInfo(uriInfo);
+
+    RepairUnit.Builder mockRepairUnitBuilder = RepairUnit.builder()
+        .incrementalRepair(false)
+        .repairThreadCount(1)
+        .clusterName("cluster-test")
+        .keyspaceName("keyspace-test");
+    RepairUnit repairUnit = context.storage.addRepairUnit(mockRepairUnitBuilder);
+    mockObjects.setRepairUnit(repairUnit);
+
+    RepairSchedule.Builder mockRepairScheduleBuilder = RepairSchedule.builder(repairUnit.getId())
+        .daysBetween(1)
+        .nextActivation(DateTime.now())
+        .segmentCountPerNode(2)
+        .owner("owner-test")
+        .repairParallelism(RepairParallelism.PARALLEL)
+        .creationTime(DateTime.now())
+        .intensity(0.5D)
+        .state(RepairSchedule.State.ACTIVE);
+    RepairSchedule repairSchedule = context.storage.addRepairSchedule(mockRepairScheduleBuilder);
+    mockObjects.setRepairSchedule(repairSchedule);
+
+    return mockObjects;
+  }
+
+  @Data
+  @AllArgsConstructor
+  @NoArgsConstructor
+  private static final class MockObjects {
+    private AppContext context;
+    private UriInfo uriInfo;
+    private RepairSchedule repairSchedule;
+    private RepairUnit repairUnit;
+
+    MockObjects(AppContext context, UriInfo uriInfo) {
+      this.context = context;
+      this.uriInfo = uriInfo;
+    }
   }
 }

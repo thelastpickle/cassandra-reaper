@@ -55,39 +55,60 @@ const EditRowModal = CreateReactClass({
     }
   },
 
-  _buildRepairSchedulePatchQueryString: function(repairSchedule) {
+  _buildRepairSchedulePatchBody: function(repairSchedule) {
     if (!repairSchedule) {
       return;
     }
 
-    let queryString = "?owner=";
-    queryString += repairSchedule.owner ? repairSchedule.owner : "";
+    // Build a body from the provided form state
+    // Validation happens within the form and on submit, so we will not validate here
 
-    queryString += "&repairParallelism=";
-    queryString += repairSchedule.parallelism ? repairSchedule.parallelism : "";
+    const body = {};
 
-    queryString += "&intensity=";
-    queryString += repairSchedule.intensity ? repairSchedule.intensity : "";
+    if (repairSchedule.owner) {
+      body.owner = repairSchedule.owner;
+    }
 
-    queryString += "&scheduleDaysBetween=";
-    queryString += repairSchedule.intervalDays ? repairSchedule.intervalDays : "";
+    if (repairSchedule.parallelism) {
+      body.repair_parallelism = repairSchedule.parallelism;
+    }
 
-    queryString += "&segmentCountPerNode=";
-    queryString += repairSchedule.segments ? repairSchedule.segments : "";
+    // These are numeric types that could allow zeros, so need to explicitly check existence
 
-    return queryString;
+    if (repairSchedule.intensity != undefined && repairSchedule.intensity != null) {
+      body.intensity = repairSchedule.intensity;
+    }
+
+    if (repairSchedule.intervalDays != undefined && repairSchedule.intervalDays != null) {
+      body.scheduled_days_between = repairSchedule.intervalDays;
+    }
+
+    if (repairSchedule.segments != undefined && repairSchedule.segments != null) {
+      body.segment_count_per_node = repairSchedule.segments;
+    }
+
+    return body;
   },
 
   _save: function() {
     this.setState({canSave: false, saveInProgress: true, saveError: false});
 
     const url = getUrlPrefix(window.top.location.pathname) + '/repair_schedule/' + encodeURIComponent(this.state.editFormState.id);
-    const queryString = this._buildRepairSchedulePatchQueryString(this.state.editFormState);
+    const body = this._buildRepairSchedulePatchBody(this.state.editFormState);
+    if (!body) {
+      this.setState({canSave: true, saveInProgress: false, saveError: true});
+      console.error("Error: Unable to save changes, unable to build request body from current form state.", this.state.editFormState);
+      return;
+    }
 
     fetch(
-      url + queryString,
+      url,
       {
-        method: "PATCH"
+        method: "PATCH",
+        body: JSON.stringify(body),
+        headers: {
+          "Content-Type": "application/json"
+        }
       }
     ).then(response => {
       if (!response.ok) {
