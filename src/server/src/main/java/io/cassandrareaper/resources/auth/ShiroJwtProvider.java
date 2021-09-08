@@ -19,7 +19,6 @@ package io.cassandrareaper.resources.auth;
 
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.storage.CassandraStorage;
-import io.cassandrareaper.storage.PostgresStorage;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -61,8 +60,6 @@ public final class ShiroJwtProvider {
     if (null == txt) {
       if (cxt.storage instanceof CassandraStorage) {
         txt = cxt.config.getCassandraFactory().getClusterName();
-      } else if (cxt.storage instanceof PostgresStorage) {
-        txt = cxt.config.getPostgresDataSourceFactory().getUrl();
       } else {
         txt = AppContext.REAPER_INSTANCE_ADDRESS;
       }

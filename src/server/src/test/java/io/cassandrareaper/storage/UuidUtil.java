@@ -1,6 +1,7 @@
 /*
  * Copyright 2017-2017 Spotify AB
  * Copyright 2017-2018 The Last Pickle Ltd
+ * Copyright 2021-2021 DataStax, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,29 +16,21 @@
  * limitations under the License.
  */
 
-package io.cassandrareaper;
+package io.cassandrareaper.storage;
 
-import java.io.File;
-import java.io.IOException;
+import java.util.UUID;
 
-import org.flywaydb.core.Flyway;
-import org.h2.jdbcx.JdbcDataSource;
-import org.junit.Test;
+public final class UuidUtil {
 
-public final class ReaperApplicationTest {
-
-  @Test
-  public void testFlywayOnH2() throws IOException {
-    Flyway flyway = new Flyway();
-    flyway.setLocations("/db/h2");
-    JdbcDataSource ds = new JdbcDataSource();
-    File db = File.createTempFile("cassandra-reaper", "h2");
-    try {
-      ds.setUrl("jdbc:h2:" + db.getAbsolutePath() + ";MODE=PostgreSQL");
-      flyway.setDataSource(ds);
-      flyway.migrate();
-    } finally {
-      db.delete();
-    }
+  private UuidUtil() {
   }
+
+  public static UUID fromSequenceId(long insertedId) {
+    return new UUID(insertedId, 0L);
+  }
+
+  public static long toSequenceId(UUID id) {
+    return id.getMostSignificantBits();
+  }
+
 }

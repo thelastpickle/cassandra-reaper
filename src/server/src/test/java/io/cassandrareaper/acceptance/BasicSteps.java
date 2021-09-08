@@ -30,8 +30,7 @@ import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.storage.CassandraStorage;
-import io.cassandrareaper.storage.PostgresStorage;
-import io.cassandrareaper.storage.postgresql.DiagEventSubscriptionMapper;
+import io.cassandrareaper.storage.DiagEventSubscriptionMapper;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -2061,8 +2060,7 @@ public final class BasicSteps {
 
   private static boolean isInstanceOfDistributedStorage(String storageClassname) {
     String csCls = CassandraStorage.class.getName();
-    String pgCls = PostgresStorage.class.getName();
-    return csCls.equals(storageClassname) || pgCls.equals(storageClassname);
+    return csCls.equals(storageClassname);
   }
 
   @And("^percent repaired metrics get collected for the existing schedule$")

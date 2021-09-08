@@ -25,7 +25,6 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.storage.CassandraStorage;
-import io.cassandrareaper.storage.PostgresStorage;
 
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -152,43 +151,4 @@ public class JmxConnectionsInitializerTest {
 
     assertEquals(0, connectionAttempts.get());
   }
-
-  /*
-   * JMX connections initialization should happen only if storage is using Cassandra as backend and
-   * DatacenterAvailability is set to either LOCAL or EACH.
-   *
-   * @throws ReaperException
-   */
-  @Test
-  public void initializerPostgresTest() throws ReaperException {
-    AppContext context = new AppContext();
-    final Cryptograph cryptographMock = mock(Cryptograph.class);
-    final JmxProxy jmxProxyMock = mock(JmxProxy.class);
-    final AtomicInteger connectionAttempts = new AtomicInteger(0);
-
-    context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
-          @Override
-          protected JmxProxy connectImpl(Node node) throws ReaperException {
-            final JmxProxy jmx = jmxProxyMock;
-            connectionAttempts.incrementAndGet();
-            return jmx;
-          }
-        };
-
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setDatacenterAvailability(DatacenterAvailability.ALL);
-    context.storage = mock(PostgresStorage.class);
-
-    Cluster cluster = Cluster.builder()
-            .withName("test")
-            .withPartitioner("murmur3partitioner")
-            .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2", "127.0.0.3"))
-            .build();
-
-    JmxConnectionsInitializer initializer = JmxConnectionsInitializer.create(context);
-    initializer.on(cluster);
-
-    assertEquals(0, connectionAttempts.get());
-  }
-
 }
