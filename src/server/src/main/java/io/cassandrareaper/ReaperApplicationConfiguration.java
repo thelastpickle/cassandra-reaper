@@ -297,26 +297,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
     return database != null ? database : relationalDb;
   }
 
-  @JsonProperty("h2")
-  public DataSourceFactory getH2DataSourceFactory() {
-    return relationalDb;
-  }
-
-  @JsonProperty("h2")
-  public void setH2DataSourceFactory(DataSourceFactory h2) {
-    this.relationalDb = h2;
-  }
-
-  @JsonProperty("postgres")
-  public DataSourceFactory getPostgresDataSourceFactory() {
-    return relationalDb;
-  }
-
-  @JsonProperty("postgres")
-  public void setPostgresDataSourceFactory(DataSourceFactory postgres) {
-    this.relationalDb = postgres;
-  }
-
   public int getRepairManagerSchedulingIntervalSeconds() {
     return this.repairManagerSchedulingIntervalSeconds == null ? 30 : this.repairManagerSchedulingIntervalSeconds;
   }

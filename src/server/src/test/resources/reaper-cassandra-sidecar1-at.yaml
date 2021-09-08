@@ -58,13 +58,6 @@ jmxCredentials:
   test:
     username: cassandra
     password: cassandrapassword
-
-# database section will be ignored if storageType is set to "cassandra"
-h2:
-  driverClass: org.h2.Driver
-  url: jdbc:h2:mem:reaper-db;MODE=PostgreSQL
-  user:
-  password:
   
 cassandra:
   clusterName: "test"

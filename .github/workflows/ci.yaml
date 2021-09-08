@@ -122,7 +122,7 @@ jobs:
         timeout-minutes: 30
 
   its-ccm-local:
-    name: H2 and Memory backends
+    name: Memory backends
     needs: build
     runs-on: ubuntu-20.04
     continue-on-error: ${{ matrix.experimental }}
@@ -206,101 +206,6 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
-          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
-
-      - uses: codecov/codecov-action@v1
-
-      - name: Setup tmate session
-        if: "failure()"
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 30
-
-  its-pgsql:
-    name: Postgres backend
-    needs: build
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        cassandra-version: [3.11.11]
-        storage-type: [postgresql]
-        test-type: [ccm]
-        grim-max: [1, 2, 4]
-        cucumber-options: ['--tags ~@cassandra_4_0_onwards']
-        # for each grim-max, specify corresponding min
-        include:
-          - grim-max: 1
-            grim-min: 1
-          - grim-max: 2
-            grim-min: 2
-          - grim-max: 4
-            grim-min: 2
-        # in case of sidecar and pgsql, we only want the grim-min/max of 1/1
-        exclude:
-          - test-type: sidecar
-            grim-max: 2
-          - test-type: sidecar
-            grim-max: 4
-          - test-type: each
-            grim-max: 2
-          - test-type: each
-            grim-max: 4
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup Maven Cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven2-
-
-
-      - name: Setup Java
-        uses: actions/setup-java@v2
-        with:
-          distribution: 'adopt' # See 'Supported distributions' for available options
-          java-version: '8.0.192'
-
-      - name: Setup Node
-        uses: actions/setup-node@v1
-        with:
-          node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
-
-      - name: Setup Python
-        uses: actions/setup-python@v1
-        with:
-          python-version: '3.x'
-          architecture: 'x64'
-
-      - name: Setup postgres DB
-        run:
-          docker run --name posttest -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=reaper postgres:alpine -c max_connections=300
-
-      - name: Install CCM
-        run: |
-          pip install pyyaml
-          pip install ccm
-
-      - name: Setup CCM Cluster
-        run: ./.github/scripts/configure-ccm.sh
-        env:
-          TEST_TYPE: ${{ matrix.test-type }}
-          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-          STORAGE_TYPE: ${{ matrix.storage-type }}
-
-      - name: Run Tests
-        run: ./.github/scripts/run-tests.sh
-        env:
-          TEST_TYPE: ${{ matrix.test-type }}
-          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-          STORAGE_TYPE: ${{ matrix.storage-type }}
-          GRIM_MAX: ${{ matrix.grim-max }}
-          GRIM_MIN: ${{ matrix.grim-min }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
 
       - uses: codecov/codecov-action@v1
@@ -468,14 +373,14 @@ jobs:
       - uses: codecov/codecov-action@v1
 
   its-sidecar:
-    needs: [docker-tests, its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
     name: Sidecar
     runs-on: ubuntu-20.04
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
         cassandra-version: [2.1.22, 2.2.19, 3.0.25, 3.11.11, 4.0.0, 'github:apache/trunk']
-        storage-type: [cassandra, postgresql]
+        storage-type: [cassandra]
         test-type: [sidecar]
         grim-max: [1]
         grim-min: [1]
@@ -499,18 +404,6 @@ jobs:
           - cassandra-version: 'github:apache/trunk'
             cucumber-options: '--tags @sidecar'
             experimental: true
-        # sidecar test including postgres should only run with C* 3.11.11, so we exclude all other
-        exclude:
-          - storage-type: postgresql
-            cassandra-version: 2.1.22
-          - storage-type: postgresql
-            cassandra-version: 2.2.19
-          - storage-type: postgresql
-            cassandra-version: 3.0.25
-          - storage-type: postgresql
-            cassandra-version: 3.11.11
-          - storage-type: postgresql
-            cassandra-version: 'github:apache/trunk'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -543,10 +436,6 @@ jobs:
           python-version: '3.x'
           architecture: 'x64'
 
-      - name: Setup postgres DB
-        run:
-          docker run --name posttest -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=reaper postgres:alpine -c max_connections=300
-
       - name: Install CCM
         run: |
           pip install pyyaml
@@ -572,26 +461,14 @@ jobs:
       - uses: codecov/codecov-action@v1
 
   its-each:
-    needs: [docker-tests, its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
     name: Each DC Availability
     runs-on: ubuntu-20.04
-    services:
-      postgres:
-        image: postgres:9.4
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          # this replaces the manual reaper creation
-          POSTGRES_DB: reaper
-        ports:
-          - 5432:5432
-        # needed because the postgres container does not provide a healthcheck
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
         cassandra-version: [4.0.0, 'github:apache/trunk']
-        storage-type: [cassandra, postgresql]
+        storage-type: [cassandra]
         test-type: [each]
         grim-max: [1]
         grim-min: [1]
@@ -603,10 +480,6 @@ jobs:
           - cassandra-version: 'github:apache/trunk'
             cucumber-options: '--tags @sidecar'
             experimental: true
-        # sidecar test including postgres should only run with C* 3.11.11, so we exclude all other
-        exclude:
-          - storage-type: postgresql
-            cassandra-version: 'github:apache/trunk'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -664,7 +537,7 @@ jobs:
       - uses: codecov/codecov-action@v1
 
   its-distributed:
-    needs: [docker-tests, its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
     name: Distributed tests
     runs-on: ubuntu-20.04
     continue-on-error: ${{ matrix.experimental }}
@@ -752,7 +625,7 @@ jobs:
 
 
   its-flapping:
-    needs: [docker-tests, its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
     name: Flapping reapers
     runs-on: ubuntu-20.04
     continue-on-error: ${{ matrix.experimental }}
@@ -840,7 +713,7 @@ jobs:
       - uses: codecov/codecov-action@v1
 
   its-elassandra-distributed:
-    needs: [docker-tests, its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
     name: Distributed tests with Elassandra
     runs-on: ubuntu-20.04
     strategy:
