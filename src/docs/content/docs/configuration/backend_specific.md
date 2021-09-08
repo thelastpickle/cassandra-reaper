@@ -122,6 +122,8 @@ Cassandra native protocol password.
 
 ## H2 or Postgres Database Settings
 
+**Removed in v3.0.0**
+
 The following settings are specific to a Reaper deployment that is backed by either a H2 or Postgres database. An example of the configuration settings for a Postgres database are as follows.
 
 ```yaml

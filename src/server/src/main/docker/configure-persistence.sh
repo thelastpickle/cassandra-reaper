@@ -98,28 +98,5 @@ fi
 # END cassandra persistence options
 
     ;;
-    "postgres")
-
-# BEGIN postgres persistence options
-cat <<EOT >> /etc/cassandra-reaper.yml
-postgres:
-  url: ${REAPER_DB_URL}
-  user: ${REAPER_DB_USERNAME}
-  password: ${REAPER_DB_PASSWORD}
-EOT
-# END postgres persistence options
-
-    ;;
-    "h2")
-
-# BEGIN h2 persistence options
-cat <<EOT >> /etc/cassandra-reaper.yml
-h2:
-  url: ${REAPER_DB_URL}
-  user: ${REAPER_DB_USERNAME}
-  password: ${REAPER_DB_PASSWORD}
-EOT
-# END h2 persistence options
-
 esac
 
