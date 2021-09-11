@@ -209,27 +209,35 @@ public class RepairScheduleResourceTest {
   }
 
   @Test
-  public void testApplyRepairPatch() {
-    DateTime nextActivation = DateTime.now();
-    UUID id = UUID.randomUUID();
-    UUID unitId = UUID.randomUUID();
-    RepairSchedule repairSchedule = RepairSchedule.builder(unitId)
-        .nextActivation(nextActivation)
-        .owner("test")
-        .repairParallelism(RepairParallelism.PARALLEL)
-        .intensity(1.0D)
-        .daysBetween(1)
-        .segmentCountPerNode(2)
-        .build(id);
+  public void testApplyRepairPatchParamsEmpty() {
+    RepairSchedule repairSchedule = buildBasicTestRepairSchedule();
 
-    assertThat(repairSchedule.getNextActivation()).isNotNull().isEqualTo(nextActivation);
-    assertThat(repairSchedule.getRepairUnitId()).isNotNull().isEqualTo(unitId);
-    assertThat(repairSchedule.getId()).isNotNull().isEqualTo(id);
-    assertThat(repairSchedule.getOwner()).isNotNull().isEqualTo("test");
-    assertThat(repairSchedule.getRepairParallelism()).isNotNull().isEqualTo(RepairParallelism.PARALLEL);
-    assertThat(repairSchedule.getIntensity()).isNotNull().isEqualTo(1.0D);
-    assertThat(repairSchedule.getDaysBetween()).isNotNull().isEqualTo(1);
-    assertThat(repairSchedule.getSegmentCountPerNode()).isNotNull().isEqualTo(2);
+    RepairSchedule patchedRepairSchedule = RepairScheduleResource.applyRepairPatchParams(
+        repairSchedule,
+        null,
+        null,
+        null,
+        null,
+        null
+    );
+
+    assertThat(patchedRepairSchedule.getNextActivation()).isNotNull().isEqualTo(repairSchedule.getNextActivation());
+    assertThat(patchedRepairSchedule.getRepairUnitId()).isNotNull().isEqualTo(repairSchedule.getRepairUnitId());
+    assertThat(patchedRepairSchedule.getId()).isNotNull().isEqualTo(repairSchedule.getId());
+    assertThat(patchedRepairSchedule.getOwner()).isNotNull().isEqualTo(repairSchedule.getOwner());
+    assertThat(patchedRepairSchedule.getRepairParallelism())
+        .isNotNull()
+        .isEqualTo(repairSchedule.getRepairParallelism());
+    assertThat(patchedRepairSchedule.getIntensity()).isNotNull().isEqualTo(repairSchedule.getIntensity());
+    assertThat(patchedRepairSchedule.getDaysBetween()).isNotNull().isEqualTo(repairSchedule.getDaysBetween());
+    assertThat(patchedRepairSchedule.getSegmentCountPerNode())
+        .isNotNull()
+        .isEqualTo(repairSchedule.getSegmentCountPerNode());
+  }
+
+  @Test
+  public void testApplyRepairPatchParams() {
+    RepairSchedule repairSchedule = buildBasicTestRepairSchedule();
 
     RepairSchedule patchedRepairSchedule = RepairScheduleResource.applyRepairPatchParams(
         repairSchedule,
@@ -240,9 +248,9 @@ public class RepairScheduleResourceTest {
         3
     );
 
-    assertThat(patchedRepairSchedule.getNextActivation()).isNotNull().isEqualTo(nextActivation);
-    assertThat(patchedRepairSchedule.getRepairUnitId()).isNotNull().isEqualTo(unitId);
-    assertThat(patchedRepairSchedule.getId()).isNotNull().isEqualTo(id);
+    assertThat(patchedRepairSchedule.getNextActivation()).isNotNull().isEqualTo(repairSchedule.getNextActivation());
+    assertThat(patchedRepairSchedule.getRepairUnitId()).isNotNull().isEqualTo(repairSchedule.getRepairUnitId());
+    assertThat(patchedRepairSchedule.getId()).isNotNull().isEqualTo(repairSchedule.getId());
     assertThat(patchedRepairSchedule.getOwner()).isNotNull().isEqualTo("test2");
     assertThat(patchedRepairSchedule.getRepairParallelism()).isNotNull().isEqualTo(RepairParallelism.SEQUENTIAL);
     assertThat(patchedRepairSchedule.getIntensity()).isNotNull().isEqualTo(0.0D);
@@ -313,6 +321,21 @@ public class RepairScheduleResourceTest {
     mockObjects.setRepairSchedule(repairSchedule);
 
     return mockObjects;
+  }
+
+  private static RepairSchedule buildBasicTestRepairSchedule() {
+    DateTime nextActivation = DateTime.now();
+    UUID id = UUID.randomUUID();
+    UUID unitId = UUID.randomUUID();
+    RepairSchedule repairSchedule = RepairSchedule.builder(unitId)
+        .nextActivation(nextActivation)
+        .owner("test")
+        .repairParallelism(RepairParallelism.PARALLEL)
+        .intensity(1.0D)
+        .daysBetween(1)
+        .segmentCountPerNode(2)
+        .build(id);
+    return repairSchedule;
   }
 
   private static EditableRepairSchedule buildBasicTestEditableRepairSchedule() {
