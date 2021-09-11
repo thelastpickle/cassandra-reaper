@@ -17,7 +17,6 @@
 package io.cassandrareaper.resources;
 
 import io.cassandrareaper.AppContext;
-import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.EditableRepairSchedule;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
@@ -50,7 +49,7 @@ public class RepairScheduleResourceTest {
   private static final URI REPAIR_SCHEDULE_URI = URI.create("http://reaper_host/repair_schedule/");
 
   @Test
-  public void testPatchRepairScheduleBadPathParam() throws ReaperException {
+  public void testPatchRepairScheduleBadPathParam() {
     final MockObjects mocks = initInMemoryMocks(REPAIR_SCHEDULE_URI);
 
     RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context);
@@ -71,7 +70,7 @@ public class RepairScheduleResourceTest {
   }
 
   @Test
-  public void testPatchRepairScheduleEmptyBody() throws ReaperException {
+  public void testPatchRepairScheduleEmptyBody() {
     final MockObjects mocks = initInMemoryMocks(REPAIR_SCHEDULE_URI);
 
     RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context);
@@ -92,18 +91,13 @@ public class RepairScheduleResourceTest {
   }
 
   @Test
-  public void testPatchRepairScheduleFailedUpdate() throws ReaperException {
+  public void testPatchRepairScheduleFailedUpdate() {
     final MockObjects mocks = initFailedUpdateStorageMocks(REPAIR_SCHEDULE_URI, UUID.randomUUID());
     final RepairSchedule mockRepairSchedule = mocks.getRepairSchedule();
 
     // Create a set of changes to patch
     RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context);
-    EditableRepairSchedule editableRepairSchedule = new EditableRepairSchedule();
-    editableRepairSchedule.setIntensity(1.0D);
-    editableRepairSchedule.setOwner("owner-test-2");
-    editableRepairSchedule.setDaysBetween(10);
-    editableRepairSchedule.setSegmentCountPerNode(20);
-    editableRepairSchedule.setRepairParallelism(RepairParallelism.SEQUENTIAL);
+    EditableRepairSchedule editableRepairSchedule = buildBasicTestEditableRepairSchedule();
 
     // Apply the changes
     Response response = repairScheduleResource.patchRepairSchedule(
@@ -118,18 +112,33 @@ public class RepairScheduleResourceTest {
   }
 
   @Test
-  public void testPatchRepairSchedule() throws ReaperException {
+  public void testPatchRepairScheduleNotFoundSchedule() {
+    final MockObjects mocks = initFailedUpdateStorageMocks(REPAIR_SCHEDULE_URI, UUID.randomUUID());
+
+    // Create a set of changes to patch
+    RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context);
+    EditableRepairSchedule editableRepairSchedule = buildBasicTestEditableRepairSchedule();
+
+    // Apply the changes - with a random UUID that won't be found
+    Response response = repairScheduleResource.patchRepairSchedule(
+        mocks.uriInfo,
+        UUID.randomUUID(),
+        editableRepairSchedule
+    );
+
+    // Validate that we got back a 500 when the update was valid but fails
+    assertThat(response).isNotNull();
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @Test
+  public void testPatchRepairSchedule() {
     final MockObjects mocks = initInMemoryMocks(REPAIR_SCHEDULE_URI);
     final RepairSchedule mockRepairSchedule = mocks.getRepairSchedule();
 
     // Create a set of changes to patch
     RepairScheduleResource repairScheduleResource = new RepairScheduleResource(mocks.context);
-    EditableRepairSchedule editableRepairSchedule = new EditableRepairSchedule();
-    editableRepairSchedule.setIntensity(1.0D);
-    editableRepairSchedule.setOwner("owner-test-2");
-    editableRepairSchedule.setDaysBetween(10);
-    editableRepairSchedule.setSegmentCountPerNode(20);
-    editableRepairSchedule.setRepairParallelism(RepairParallelism.SEQUENTIAL);
+    EditableRepairSchedule editableRepairSchedule = buildBasicTestEditableRepairSchedule();
 
     // Apply the changes
     Response response = repairScheduleResource.patchRepairSchedule(
@@ -304,6 +313,16 @@ public class RepairScheduleResourceTest {
     mockObjects.setRepairSchedule(repairSchedule);
 
     return mockObjects;
+  }
+
+  private static EditableRepairSchedule buildBasicTestEditableRepairSchedule() {
+    EditableRepairSchedule editableRepairSchedule = new EditableRepairSchedule();
+    editableRepairSchedule.setIntensity(1.0D);
+    editableRepairSchedule.setOwner("owner-test-2");
+    editableRepairSchedule.setDaysBetween(10);
+    editableRepairSchedule.setSegmentCountPerNode(20);
+    editableRepairSchedule.setRepairParallelism(RepairParallelism.SEQUENTIAL);
+    return editableRepairSchedule;
   }
 
   @Data
