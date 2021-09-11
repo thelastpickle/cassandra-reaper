@@ -17,8 +17,6 @@
 
 package io.cassandrareaper.resources;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
@@ -56,6 +54,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.dropwizard.jersey.PATCH;
 import io.dropwizard.jersey.validation.ValidationErrorMessage;
@@ -83,11 +82,6 @@ public final class RepairScheduleResource {
     this.repairRunService = RepairRunService.create(context);
   }
 
-//  private static Map<String, List<String>> buildErrorResponseEntity(final List<String> errorMessages) {
-//    Map<String, String> errorMap = Maps.newHashMap();
-//    errorMap.put("errors")
-//  }
-
   @PATCH
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
@@ -98,14 +92,22 @@ public final class RepairScheduleResource {
       @NotNull @Valid EditableRepairSchedule editableRepairSchedule
   ) {
     if (repairScheduleId == null) {
-      ValidationErrorMessage errorMessage = new ValidationErrorMessage(ImmutableList.copyOf(Lists.newArrayList("id must not be null or empty")));
+      ValidationErrorMessage errorMessage = new ValidationErrorMessage(
+          ImmutableList.copyOf(
+              Lists.newArrayList("id must not be null or empty")
+          )
+      );
       return Response.status(400).entity(errorMessage).build();
     }
 
     // When executed through DropWizard the validation will prevent this from ever being reached
     // but to protect against an NPE if the behavior is ever changed, do a quick check of the param
     if (editableRepairSchedule == null) {
-      ValidationErrorMessage errorMessage = new ValidationErrorMessage(ImmutableList.copyOf(Lists.newArrayList("request body must not be null or empty")));
+      ValidationErrorMessage errorMessage = new ValidationErrorMessage(
+          ImmutableList.copyOf(
+              Lists.newArrayList("request body must not be null or empty")
+          )
+      );
       return Response.status(400).entity(errorMessage).build();
     }
 
