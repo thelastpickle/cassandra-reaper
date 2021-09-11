@@ -64,7 +64,7 @@ public class RepairScheduleResourceTest {
     // Validate that we got back 400 - an invalid schedule-id should return a 400
     assertThat(response).isNotNull();
     assertThat(Response.Status.BAD_REQUEST.getStatusCode()).isEqualTo(response.getStatus());
-    assertThat(response.getEntity());
+    assertThat(response.getEntity()).isNotNull();
 
     ValidationErrorMessage errorMessage = (ValidationErrorMessage) response.getEntity();
     assertThat(errorMessage.getErrors()).isNotNull().isNotEmpty();
@@ -85,7 +85,7 @@ public class RepairScheduleResourceTest {
     // Validate that we got back 400 - an invalid editable-repair-schedule (body) should return a 400
     assertThat(response).isNotNull();
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-    assertThat(response.getEntity());
+    assertThat(response.getEntity()).isNotNull();
 
     ValidationErrorMessage errorMessage = (ValidationErrorMessage) response.getEntity();
     assertThat(errorMessage.getErrors()).isNotNull().isNotEmpty();
