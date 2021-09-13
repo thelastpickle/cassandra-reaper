@@ -43,7 +43,7 @@ public class EditableRepairSchedule {
   protected Integer daysBetween;
 
   @JsonProperty(value = "segment_count_per_node")
-  @Min(value = 1)
+  @Min(value = 0)
   @Max(value = 1000)
   protected Integer segmentCountPerNode;
 

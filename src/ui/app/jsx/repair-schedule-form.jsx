@@ -44,7 +44,7 @@ const RepairScheduleForm = CreateReactClass({
       parallelism: this.props.repair ? this.props.repair.repair_parallelism : 'PARALLEL',
       intensity: this.props.repair ? this.props.repair.intensity : '',
       incrementalRepair: this.props.repair ? this.props.repair.incremental_repair : 'false',
-      repairThreadCount: this.props.repair ? this.props.repair.repair_thread_count : 1,
+      repairThreadCount: this.props.repair ? this.props.repair.repair_thread_count : 0,
       formType: this.props.formType,
       advancedSettingsOpen: false,
       valid: undefined  // Indicates if the current state of the form is valid or not
@@ -110,7 +110,7 @@ const RepairScheduleForm = CreateReactClass({
     const segmentsPerNodeInvalid = !state.segments ||
       state.segments == undefined ||
       state.segments == null ||
-      state.segments < 1 ||
+      state.segments < 0 ||
       state.segments > 1000;
     const parallelismInvalid = !state.parallelism || !state.parallelism.length;
 
@@ -220,7 +220,7 @@ const RepairScheduleForm = CreateReactClass({
                   {/* Segments Per Node */}
                   <div className="form-group">
                     <label htmlFor="in_segments" className="control-label">Segments per node</label>
-                    <input type="number" min={1} max={1000} className="form-control" defaultValue={this.state.segments} id="in_segments" placeholder="Number of segments per node to create for the repair run" onChange={this._formInputChangeHandler}/>
+                    <input type="number" min={0} max={1000} className="form-control" defaultValue={this.state.segments} id="in_segments" placeholder="Number of segments per node to create for the repair run" onChange={this._formInputChangeHandler}/>
                   </div>
 
                   {/* Parallelism */}
