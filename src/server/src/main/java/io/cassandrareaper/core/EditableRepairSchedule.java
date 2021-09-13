@@ -23,12 +23,8 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.apache.cassandra.repair.RepairParallelism;
 
-@Data
-@NoArgsConstructor
 @ValidEditableRepairSchedule
 public class EditableRepairSchedule {
   @NullOrNotBlank
@@ -50,4 +46,52 @@ public class EditableRepairSchedule {
   @Min(value = 1)
   @Max(value = 1000)
   protected Integer segmentCountPerNode;
+
+  public EditableRepairSchedule() {
+    this.owner = null;
+    this.repairParallelism = null;
+    this.intensity = null;
+    this.daysBetween = null;
+    this.segmentCountPerNode = null;
+  }
+
+  public String getOwner() {
+    return owner;
+  }
+
+  public void setOwner(String owner) {
+    this.owner = owner;
+  }
+
+  public RepairParallelism getRepairParallelism() {
+    return repairParallelism;
+  }
+
+  public void setRepairParallelism(RepairParallelism repairParallelism) {
+    this.repairParallelism = repairParallelism;
+  }
+
+  public Double getIntensity() {
+    return intensity;
+  }
+
+  public void setIntensity(Double intensity) {
+    this.intensity = intensity;
+  }
+
+  public Integer getDaysBetween() {
+    return daysBetween;
+  }
+
+  public void setDaysBetween(Integer daysBetween) {
+    this.daysBetween = daysBetween;
+  }
+
+  public Integer getSegmentCountPerNode() {
+    return segmentCountPerNode;
+  }
+
+  public void setSegmentCountPerNode(Integer segmentCountPerNode) {
+    this.segmentCountPerNode = segmentCountPerNode;
+  }
 }

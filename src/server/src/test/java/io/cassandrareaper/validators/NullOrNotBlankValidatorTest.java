@@ -22,8 +22,6 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
@@ -56,10 +54,12 @@ public class NullOrNotBlankValidatorTest {
     assertFalse(violations.isEmpty());
   }
 
-  @Data
-  @AllArgsConstructor
   private static class NullOrNotBlankTest {
     @NullOrNotBlank
     private String test;
+
+    NullOrNotBlankTest(String test) {
+      this.test = test;
+    }
   }
 }

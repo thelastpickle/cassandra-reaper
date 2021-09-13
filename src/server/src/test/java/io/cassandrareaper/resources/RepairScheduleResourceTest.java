@@ -33,9 +33,6 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import io.dropwizard.jersey.validation.ValidationErrorMessage;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -348,18 +345,54 @@ public class RepairScheduleResourceTest {
     return editableRepairSchedule;
   }
 
-  @Data
-  @AllArgsConstructor
-  @NoArgsConstructor
   private static final class MockObjects {
     private AppContext context;
     private UriInfo uriInfo;
     private RepairSchedule repairSchedule;
     private RepairUnit repairUnit;
 
+    MockObjects() {
+      context = null;
+      uriInfo = null;
+      repairSchedule = null;
+      repairUnit = null;
+    }
+
     MockObjects(AppContext context, UriInfo uriInfo) {
       this.context = context;
       this.uriInfo = uriInfo;
+    }
+
+    public AppContext getContext() {
+      return context;
+    }
+
+    public void setContext(AppContext context) {
+      this.context = context;
+    }
+
+    public UriInfo getUriInfo() {
+      return uriInfo;
+    }
+
+    public void setUriInfo(UriInfo uriInfo) {
+      this.uriInfo = uriInfo;
+    }
+
+    public RepairSchedule getRepairSchedule() {
+      return repairSchedule;
+    }
+
+    public void setRepairSchedule(RepairSchedule repairSchedule) {
+      this.repairSchedule = repairSchedule;
+    }
+
+    public RepairUnit getRepairUnit() {
+      return repairUnit;
+    }
+
+    public void setRepairUnit(RepairUnit repairUnit) {
+      this.repairUnit = repairUnit;
     }
   }
 }
