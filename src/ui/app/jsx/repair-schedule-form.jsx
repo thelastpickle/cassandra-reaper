@@ -107,14 +107,17 @@ const RepairScheduleForm = CreateReactClass({
           state.intervalDays
         )
       );
-    const segmentsPerNodeInvalid = !state.segments ||
-      state.segments == undefined ||
+    const segmentsPerNodeInvalid = state.segments == undefined ||
       state.segments == null ||
       state.segments < 0 ||
       state.segments > 1000;
+    const intensityInvalid = state.intensity == undefined ||
+      state.intensity == null ||
+      state.intensity < 0.0 ||
+      state.intensity > 1.0;
     const parallelismInvalid = !state.parallelism || !state.parallelism.length;
 
-    const invalid = idInvalid || ownerInvalid || scheduleTimeInvalid || segmentsPerNodeInvalid || parallelismInvalid;
+    const invalid = idInvalid || ownerInvalid || scheduleTimeInvalid || segmentsPerNodeInvalid || intensityInvalid || parallelismInvalid;
     return !invalid;
   },
 
