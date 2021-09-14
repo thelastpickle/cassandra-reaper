@@ -20,6 +20,7 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.EditableRepairSchedule;
 import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
@@ -36,7 +37,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -51,7 +54,10 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import io.dropwizard.jersey.PATCH;
+import io.dropwizard.jersey.validation.ValidationErrorMessage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -74,6 +80,62 @@ public final class RepairScheduleResource {
     this.repairUnitService = RepairUnitService.create(context);
     this.repairScheduleService = RepairScheduleService.create(context);
     this.repairRunService = RepairRunService.create(context);
+  }
+
+  @PATCH
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Path("/{id}")
+  public Response patchRepairSchedule(
+      @Context UriInfo uriInfo,
+      @PathParam("id") UUID repairScheduleId,
+      @NotNull @Valid EditableRepairSchedule editableRepairSchedule
+  ) {
+    if (repairScheduleId == null) {
+      ValidationErrorMessage errorMessage = new ValidationErrorMessage(
+          ImmutableList.copyOf(
+              Lists.newArrayList("id must not be null or empty")
+          )
+      );
+      return Response.status(400).entity(errorMessage).build();
+    }
+
+    // When executed through DropWizard the validation will prevent this from ever being reached
+    // but to protect against an NPE if the behavior is ever changed, do a quick check of the param
+    if (editableRepairSchedule == null) {
+      ValidationErrorMessage errorMessage = new ValidationErrorMessage(
+          ImmutableList.copyOf(
+              Lists.newArrayList("request body must not be null or empty")
+          )
+      );
+      return Response.status(400).entity(errorMessage).build();
+    }
+
+    // Try to find the schedule to be updated
+    Optional<RepairSchedule> repairScheduleWrapper = context.storage.getRepairSchedule(repairScheduleId);
+    // See if we found the schedule
+    RepairSchedule repairSchedule = repairScheduleWrapper.orElse(null);
+    if (repairSchedule == null) {
+      return Response.status(Response.Status.NOT_FOUND).build();
+    }
+
+    // Apply any valid incoming values to the schedule
+    RepairSchedule patchedRepairSchedule = applyRepairPatchParams(
+        repairSchedule,
+        editableRepairSchedule.getOwner(),
+        editableRepairSchedule.getRepairParallelism(),
+        editableRepairSchedule.getIntensity(),
+        editableRepairSchedule.getDaysBetween(),
+        editableRepairSchedule.getSegmentCountPerNode()
+    );
+
+    // Attempt to update the schedule
+    boolean updated = context.storage.updateRepairSchedule(patchedRepairSchedule);
+    if (updated) {
+      return Response.status(Response.Status.OK).entity(getRepairScheduleStatus(patchedRepairSchedule)).build();
+    } else {
+      return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+    }
   }
 
   /**
@@ -577,5 +639,41 @@ public final class RepairScheduleResource {
       @PathParam("id") UUID repairScheduleId) throws IllegalArgumentException {
     long since = DateTime.now().minusHours(1).getMillis();
     return context.storage.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
+  }
+
+  /**
+   * Utility method to apply any valid parameters to an existing RepairSchedule.
+   * This method assumes that any non-null parameter provided is valid and should
+   * be applied.
+   *
+   * @param repairSchedule - The schedule object to be updated
+   * @param owner - The owner value to be used in the update
+   * @param repairParallelism - the parallelism value to be used in the update
+   * @param intensity - The intensity value to be used in the update
+   * @param scheduleDaysBetween - The days between value to be used in the update
+   * @param segmentCountPerNode - The segments per node value to be used in the update
+   */
+  protected static RepairSchedule applyRepairPatchParams(
+      final RepairSchedule repairSchedule,
+      final String owner,
+      final RepairParallelism repairParallelism,
+      final Double intensity,
+      final Integer scheduleDaysBetween,
+      final Integer segmentCountPerNode
+  ) {
+    if (repairSchedule == null) {
+      return null;
+    }
+
+    // Apply any valid incoming values to the schedule
+    return repairSchedule.with()
+        .owner(owner != null ? owner.trim() : repairSchedule.getOwner())
+        .repairParallelism(repairParallelism != null ? repairParallelism : repairSchedule.getRepairParallelism())
+        .intensity(intensity != null ? intensity : repairSchedule.getIntensity())
+        .daysBetween(scheduleDaysBetween != null ? scheduleDaysBetween : repairSchedule.getDaysBetween())
+        .segmentCountPerNode(segmentCountPerNode != null
+            ? segmentCountPerNode
+            : repairSchedule.getSegmentCountPerNode())
+        .build(repairSchedule.getId());
   }
 }

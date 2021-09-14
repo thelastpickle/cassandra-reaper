@@ -191,7 +191,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       FilterRegistration.Dynamic co = environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);
       co.setInitParameter("allowedOrigins", "*");
       co.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin");
-      co.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD");
+      co.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD,PATCH");
       co.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
     }
 
