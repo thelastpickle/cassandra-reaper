@@ -87,6 +87,14 @@ const EditRowModal = CreateReactClass({
       body.segment_count_per_node = repairSchedule.segments;
     }
 
+    if (repairSchedule.percentUnrepairedThreshold != undefined && repairSchedule.percentUnrepairedThreshold != null) {
+      body.percent_unrepaired_threshold = repairSchedule.percentUnrepairedThreshold;
+    }
+
+    if (repairSchedule.adaptive != undefined && repairSchedule.adaptive != null) {
+      body.adaptive = repairSchedule.adaptive;
+    }
+
     return body;
   },
 
@@ -197,7 +205,8 @@ const TableRow = CreateReactClass({
 
     const next = moment(this.props.row.next_activation).fromNow();
     const rowID = `#details_${this.props.row.id}`;
-    const incremental = this.props.row.incremental_repair == true ? "true" : "false";
+    const incremental = this.props.row.incremental_repair === true ? "true" : "false";
+    const percentThreshold = this.props.row.percent_unrepaired_threshold > 0 ? ` or ${this.props.row.percent_unrepaired_threshold}% unrepaired` : "";
 
     return (
     <tr>
@@ -208,7 +217,7 @@ const TableRow = CreateReactClass({
         <td data-toggle="collapse" data-target={rowID}><CFsListRender list={this.props.row.blacklisted_tables} /></td>
         <td data-toggle="collapse" data-target={rowID}>{incremental}</td>
         <td data-toggle="collapse" data-target={rowID}>{next}</td>
-        <td data-toggle="collapse" data-target={rowID}>{this.props.row.scheduled_days_between} days</td>
+        <td data-toggle="collapse" data-target={rowID}>{this.props.row.scheduled_days_between} days{percentThreshold}</td>
         <td>
           {this.statusUpdateButton()}
           {this.deleteButton()}

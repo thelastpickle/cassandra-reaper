@@ -47,12 +47,23 @@ public class EditableRepairSchedule {
   @Max(value = 1000)
   protected Integer segmentCountPerNode;
 
+  @JsonProperty(value = "percent_unrepaired_threshold")
+  @Min(value = -1)
+  @Max(value = 99)
+  protected Integer percentUnrepairedThreshold;
+
+  protected Boolean adaptive;
+
+
   public EditableRepairSchedule() {
     this.owner = null;
     this.repairParallelism = null;
     this.intensity = null;
     this.daysBetween = null;
     this.segmentCountPerNode = null;
+    this.percentUnrepairedThreshold = null;
+    this.adaptive = null;
+
   }
 
   public String getOwner() {
@@ -94,4 +105,21 @@ public class EditableRepairSchedule {
   public void setSegmentCountPerNode(Integer segmentCountPerNode) {
     this.segmentCountPerNode = segmentCountPerNode;
   }
+
+  public Integer getPercentUnrepairedThreshold() {
+    return percentUnrepairedThreshold == null ? -1 : percentUnrepairedThreshold;
+  }
+
+  public void setPercentUnrepairedThreshold(Integer percentUnrepairedThreshold) {
+    this.percentUnrepairedThreshold = percentUnrepairedThreshold;
+  }
+
+  public Boolean getAdaptive() {
+    return adaptive;
+  }
+
+  public void setAdaptive(boolean adaptive) {
+    this.adaptive = adaptive;
+  }
+
 }

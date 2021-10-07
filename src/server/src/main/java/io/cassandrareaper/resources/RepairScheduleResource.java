@@ -126,7 +126,9 @@ public final class RepairScheduleResource {
         editableRepairSchedule.getRepairParallelism(),
         editableRepairSchedule.getIntensity(),
         editableRepairSchedule.getDaysBetween(),
-        editableRepairSchedule.getSegmentCountPerNode()
+        editableRepairSchedule.getSegmentCountPerNode(),
+        editableRepairSchedule.getAdaptive(),
+        editableRepairSchedule.getPercentUnrepairedThreshold()
     );
 
     // Attempt to update the schedule
@@ -167,7 +169,8 @@ public final class RepairScheduleResource {
       @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam,
       @QueryParam("force") Optional<String> forceParam,
       @QueryParam("timeout") Optional<Integer> timeoutParam,
-      @QueryParam("adaptive") Optional<String> adaptiveParam) {
+      @QueryParam("adaptive") Optional<String> adaptiveParam,
+      @QueryParam("percentUnrepairedThreshold") Optional<Integer> percentUnrepairedParam) {
 
     try {
       Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
@@ -264,6 +267,12 @@ public final class RepairScheduleResource {
             .build();
       }
 
+      if (percentUnrepairedParam.orElse(-1) > 0 && !incremental) {
+        return Response.status(Response.Status.BAD_REQUEST)
+            .entity("Triggering schedules on % unrepaired threshold is only allowed for incremental repairs.")
+            .build();
+      }
+
       // explicitly force a schedule even if the schedule conflicts
       boolean force = (forceParam.isPresent() ? Boolean.parseBoolean(forceParam.get()) : false);
 
@@ -293,7 +302,8 @@ public final class RepairScheduleResource {
           getSegmentCount(segmentCountPerNode),
           getIntensity(intensityStr),
           force,
-          adaptive);
+          adaptive,
+          percentUnrepairedParam.orElse(-1));
 
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -313,7 +323,8 @@ public final class RepairScheduleResource {
       int segments,
       Double intensity,
       boolean force,
-      boolean adaptive) {
+      boolean adaptive,
+      int percentUnrepairedThreshold) {
 
     Optional<RepairSchedule> conflictingRepairSchedule
         = repairScheduleService.identicalRepairUnit(cluster, unitBuilder);
@@ -353,9 +364,13 @@ public final class RepairScheduleResource {
 
     Preconditions
         .checkState(unit.getIncrementalRepair() == incremental, "%s!=%s", unit.getIncrementalRepair(), incremental);
+    Preconditions
+        .checkState((percentUnrepairedThreshold > 0 && incremental) || percentUnrepairedThreshold <= 0,
+          "Setting a % repaired threshold can only be done on incremental schedules");
 
     RepairSchedule newRepairSchedule = repairScheduleService
-        .storeNewRepairSchedule(cluster, unit, days, next, owner, segments, parallel, intensity, force, adaptive);
+        .storeNewRepairSchedule(
+          cluster, unit, days, next, owner, segments, parallel, intensity, force, adaptive, percentUnrepairedThreshold);
 
     return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule)).build();
   }
@@ -661,6 +676,8 @@ public final class RepairScheduleResource {
    * @param intensity - The intensity value to be used in the update
    * @param scheduleDaysBetween - The days between value to be used in the update
    * @param segmentCountPerNode - The segments per node value to be used in the update
+   * @param adaptive - Whether or not the schedule is adaptive
+   * @param percentUnrepairedThreshold - Threshold of unrepaired percentage that triggers a repair
    */
   protected static RepairSchedule applyRepairPatchParams(
       final RepairSchedule repairSchedule,
@@ -668,7 +685,9 @@ public final class RepairScheduleResource {
       final RepairParallelism repairParallelism,
       final Double intensity,
       final Integer scheduleDaysBetween,
-      final Integer segmentCountPerNode
+      final Integer segmentCountPerNode,
+      final Boolean adaptive,
+      final Integer percentUnrepairedThreshold
   ) {
     if (repairSchedule == null) {
       return null;
@@ -683,6 +702,8 @@ public final class RepairScheduleResource {
         .segmentCountPerNode(segmentCountPerNode != null
             ? segmentCountPerNode
             : repairSchedule.getSegmentCountPerNode())
+        .percentUnrepairedThreshold(percentUnrepairedThreshold)
+        .adaptive(adaptive != null ? adaptive : false)
         .build(repairSchedule.getId());
   }
 }

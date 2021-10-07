@@ -51,6 +51,7 @@ import com.google.common.collect.Sets;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.joda.time.DateTimeUtils;
+import org.junit.After;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -60,6 +61,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public final class RepairRunServiceTest {
+
+  @After
+  public void tearDown() {
+    DateTimeUtils.setCurrentMillisSystem();
+  }
 
   @Test
   public void buildEndpointToRangeMapTest() {

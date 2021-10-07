@@ -196,7 +196,9 @@ public class RepairScheduleResourceTest {
         RepairParallelism.SEQUENTIAL,
         0.0D,
         2,
-        3
+        3,
+        false,
+        null
     );
 
     assertThat(patchedRepairSchedule).isNull();
@@ -208,6 +210,8 @@ public class RepairScheduleResourceTest {
 
     RepairSchedule patchedRepairSchedule = RepairScheduleResource.applyRepairPatchParams(
         repairSchedule,
+        null,
+        null,
         null,
         null,
         null,
@@ -239,7 +243,9 @@ public class RepairScheduleResourceTest {
         RepairParallelism.SEQUENTIAL,
         0.0D,
         2,
-        3
+        3,
+        false,
+        null
     );
 
     assertThat(patchedRepairSchedule.getNextActivation()).isNotNull().isEqualTo(repairSchedule.getNextActivation());

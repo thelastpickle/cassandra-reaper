@@ -155,7 +155,7 @@ public final class MetricsService {
   }
 
   void grabAndStoreCompactionStats(Optional<Node> maybeNode)
-    throws JsonProcessingException, JMException, ReaperException {
+      throws JsonProcessingException, JMException, ReaperException {
     Preconditions.checkState(
         context.config.getDatacenterAvailability().isInCollocatedMode(),
         "grabAndStoreCompactionStats() can only be called in sidecar");
@@ -206,7 +206,7 @@ public final class MetricsService {
   }
 
   public void grabAndStorePercentRepairedMetrics(Optional<Node> maybeNode, RepairSchedule sched)
-    throws ReaperException {
+      throws ReaperException {
     Node node = getNode(maybeNode);
     RepairUnit repairUnit = context.storage.getRepairUnit(sched.getRepairUnitId());
     Set<String> tables = this.repairUnitService.getTablesToRepair(node.getCluster().get(), repairUnit);

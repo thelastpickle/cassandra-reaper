@@ -102,8 +102,6 @@ public final class HeartTest {
     }
 
     Mockito.verify(context.storage, Mockito.times(1)).getClusters();
-    // Percent repaired metrics will first check that incremental repair schedules exist
-    Mockito.verify(context.storage, Mockito.times(1)).getRepairSchedulesForCluster(any(), anyBoolean());
   }
 
   @Test
@@ -139,8 +137,6 @@ public final class HeartTest {
     }
     Mockito.verify((CassandraStorage)context.storage, Mockito.times(1)).saveHeartbeat();
     Mockito.verify(context.storage, Mockito.times(1)).getClusters();
-    // Percent repaired metrics will first check that incremental repair schedules exist
-    Mockito.verify(context.storage, Mockito.times(1)).getRepairSchedulesForCluster(any(), anyBoolean());
   }
 
   @Test

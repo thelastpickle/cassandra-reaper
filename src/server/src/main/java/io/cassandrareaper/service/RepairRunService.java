@@ -95,10 +95,10 @@ public final class RepairRunService {
       RepairUnit repairUnit,
       Optional<String> cause,
       String owner,
-      int segmentsPerNode,
+      Integer segmentsPerNode,
       RepairParallelism repairParallelism,
       Double intensity,
-      boolean adaptiveSchedule)
+      Boolean adaptiveSchedule)
       throws ReaperException {
 
     // preparing a repair run involves several steps

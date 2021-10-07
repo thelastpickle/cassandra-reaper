@@ -582,7 +582,7 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
-  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, long since) {
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
     return percentRepairedMetrics.entrySet().stream()
       .filter(entry -> entry.getKey().equals(clusterName + "-" + repairScheduleId))
       .map(entry -> entry.getValue().entrySet())
