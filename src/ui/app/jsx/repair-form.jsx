@@ -89,6 +89,7 @@ const repairForm = CreateReactClass({
       showModal: false,
       force: "false",
       adaptive: false,
+      percentUnrepairedThreshold: ""
     };
   },
 
@@ -234,6 +235,13 @@ const repairForm = CreateReactClass({
       repair.adaptive = "false";
     }
 
+    if (this.state.percentUnrepairedThreshold) {
+      repair.percentUnrepairedThreshold = this.state.percentUnrepairedThreshold;
+    }
+    else {
+      repair.percentUnrepairedThreshold = "-1";
+    }
+
     this.props.addRepairSubject.onNext({
       type: this.state.formType,
       params: repair,
@@ -257,15 +265,12 @@ const repairForm = CreateReactClass({
     const valid = this.state.keyspaceList.length
       && this.state.clusterName
       && this.state.owner
-      && (
-        (this.state.formType === "schedule" && this.state.startTime && this.state.intervalDays)
-        || (this.state.formType === "repair" && !this.state.startTime && !this.state.intervalDays)
-      )
-      && (
-        (this.state.datacentersList.length && !this.state.nodesList.length)
+      && ((this.state.formType === "schedule" && this.state.startTime && this.state.intervalDays) || this.state.formType != "schedule")
+      && ((this.state.datacentersList.length && !this.state.nodesList.length)
           || (!this.state.datacentersList.length && this.state.nodesList.length)
-          || (!this.state.datacentersList.length && !this.state.nodesList.length)
-      );
+          || (!this.state.datacentersList.length && !this.state.nodesList.length))
+      ;
+    
     this.setState({submitEnabled: valid});
   },
 
@@ -309,6 +314,8 @@ const repairForm = CreateReactClass({
       "blacklistedTables": "tables",
       "nodes": "datacenters",
       "datacenters": "nodes",
+      "intervalDays": "percentUnrepairedThreshold",
+      "percentUnrepairedThreshold": "intervalDays"
     };
     return selectNameMap[selectName];
   },
@@ -516,6 +523,13 @@ const repairForm = CreateReactClass({
             <div className="col-sm-9 col-md-7 col-lg-5">
               <input type="number" required className="form-control" value={this.state.intervalDays}
                 onChange={this._handleChange} id="in_intervalDays" placeholder="amount of days to wait between scheduling new repairs, (e.g. 7 for weekly)"/>
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="in_percentUnrepairedThreshold" className="col-sm-3 control-label">Percent unrepaired threshold</label>
+            <div className="col-sm-9 col-md-7 col-lg-5">
+              <input type="number" required className="form-control" value={this.state.percentUnrepairedThreshold}
+                onChange={this._handleChange} id="in_percentUnrepairedThreshold" placeholder="% of unrepaired data over which repair should be started (optional)"/>
             </div>
           </div>
           <div className="form-group">

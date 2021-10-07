@@ -94,6 +94,9 @@ public final class RepairScheduleStatus {
   @JsonProperty("adaptive")
   private boolean adaptive;
 
+  @JsonProperty("percent_unrepaired_threshold")
+  private int percentUnrepairedThreshold;
+
   /**
    * Default public constructor Required for Jackson JSON parsing.
    */
@@ -121,7 +124,8 @@ public final class RepairScheduleStatus {
       int repairThreadCount,
       UUID repairUnitId,
       int segmentTimeout,
-      boolean adaptive) {
+      boolean adaptive,
+      int percentUnrepairedThreshold) {
 
     this.id = id;
     this.owner = owner;
@@ -144,6 +148,7 @@ public final class RepairScheduleStatus {
     this.repairUnitId = repairUnitId;
     this.segmentTimeout = segmentTimeout;
     this.adaptive = adaptive;
+    this.percentUnrepairedThreshold = percentUnrepairedThreshold;
   }
 
   public RepairScheduleStatus(RepairSchedule repairSchedule, RepairUnit repairUnit) {
@@ -168,7 +173,8 @@ public final class RepairScheduleStatus {
         repairUnit.getRepairThreadCount(),
         repairUnit.getId(),
         repairUnit.getTimeout(),
-        repairSchedule.getAdaptive());
+        repairSchedule.getAdaptive(),
+        repairSchedule.getPercentUnrepairedThreshold() == null ? -1 : repairSchedule.getPercentUnrepairedThreshold());
   }
 
   public UUID getId() {
@@ -373,5 +379,13 @@ public final class RepairScheduleStatus {
 
   public void setAdaptive(boolean adaptive) {
     this.adaptive = adaptive;
+  }
+
+  public int getPercentUnrepairedThreshold() {
+    return percentUnrepairedThreshold;
+  }
+
+  public void setPercentUnrepairedThreshold(int percentUnrepairedThreshold) {
+    this.percentUnrepairedThreshold = percentUnrepairedThreshold;
   }
 }

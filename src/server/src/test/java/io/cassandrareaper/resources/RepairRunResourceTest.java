@@ -61,6 +61,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.util.Maps;
 import org.joda.time.DateTimeUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -196,6 +197,11 @@ public final class RepairRunResourceTest {
     context.storage.addRepairUnit(repairUnitBuilder);
   }
 
+  @After
+  public void tearDown() {
+    DateTimeUtils.setCurrentMillisSystem();
+  }
+
   private Response addDefaultRepairRun(RepairRunResource resource) {
     return addRepairRun(resource,
         uriInfo,
@@ -244,7 +250,6 @@ public final class RepairRunResourceTest {
 
   @Test
   public void testAddRepairRun() throws Exception {
-
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);

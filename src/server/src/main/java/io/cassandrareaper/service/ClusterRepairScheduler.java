@@ -117,7 +117,7 @@ public final class ClusterRepairScheduler {
   }
 
   private void createRepairSchedule(Cluster cluster, String keyspace, DateTime nextActivationTime) {
-    boolean incrementalRepair = context.config.getIncrementalRepair();
+    boolean incrementalRepair = context.config.getAutoScheduling().incremental();
 
     RepairUnit.Builder builder = RepairUnit.builder()
         .clusterName(cluster.getName())
@@ -136,7 +136,8 @@ public final class ClusterRepairScheduler {
             context.config.getRepairParallelism(),
             context.config.getRepairIntensity(),
             false,
-            context.config.getAutoScheduling().isAdaptive());
+            context.config.getAutoScheduling().isAdaptive(),
+            context.config.getAutoScheduling().getPercentUnrepairedThreshold());
 
     LOG.info("Scheduled repair created: {}", repairSchedule);
   }

@@ -36,12 +36,9 @@ public final class RepairSchedule extends EditableRepairSchedule {
   private final State state;
   private final DateTime nextActivation;
   private final ImmutableList<UUID> runHistory;
-  private final RepairParallelism repairParallelism;
-  private final double intensity;
   private final DateTime creationTime;
   private final DateTime pauseTime;
-  private final int segmentCountPerNode;
-  private final boolean adaptive;
+  private final UUID lastRun;
 
   private RepairSchedule(Builder builder, UUID id) {
     this.id = id;
@@ -57,6 +54,8 @@ public final class RepairSchedule extends EditableRepairSchedule {
     this.pauseTime = builder.pauseTime;
     this.segmentCountPerNode = builder.segmentCountPerNode;
     this.adaptive = builder.adaptive;
+    this.percentUnrepairedThreshold = builder.percentUnrepairedThreshold;
+    this.lastRun = builder.lastRun;
   }
 
   public static Builder builder(UUID repairUnitId) {
@@ -87,6 +86,10 @@ public final class RepairSchedule extends EditableRepairSchedule {
     return runHistory;
   }
 
+  public UUID getLastRun() {
+    return lastRun;
+  }
+
   /**
    * Required for JDBI mapping into database. Generic collection type would be hard to map into Postgres array types.
    */
@@ -95,32 +98,12 @@ public final class RepairSchedule extends EditableRepairSchedule {
     return new LongCollectionSqlType(list);
   }
 
-  public Integer getSegmentCountPerNode() {
-    return segmentCountPerNode;
-  }
-
-  public RepairParallelism getRepairParallelism() {
-    return repairParallelism;
-  }
-
-  public Double getIntensity() {
-    return intensity;
-  }
-
   public DateTime getCreationTime() {
     return creationTime;
   }
 
-  public String getOwner() {
-    return owner;
-  }
-
   public DateTime getPauseTime() {
     return pauseTime;
-  }
-
-  public boolean getAdaptive() {
-    return adaptive;
   }
 
   public Builder with() {
@@ -152,6 +135,8 @@ public final class RepairSchedule extends EditableRepairSchedule {
     private DateTime pauseTime;
     private Integer segmentCountPerNode;
     private boolean adaptive = false;
+    private Integer percentUnrepairedThreshold;
+    private UUID lastRun;
 
     private Builder(UUID repairUnitId) {
       this.repairUnitId = repairUnitId;
@@ -168,9 +153,10 @@ public final class RepairSchedule extends EditableRepairSchedule {
       creationTime = original.creationTime;
       owner = original.owner;
       pauseTime = original.pauseTime;
-      intensity = original.intensity;
       segmentCountPerNode = original.segmentCountPerNode;
       adaptive = original.adaptive;
+      percentUnrepairedThreshold = original.percentUnrepairedThreshold;
+      lastRun = original.lastRun;
     }
 
     public Builder state(State state) {
@@ -225,6 +211,16 @@ public final class RepairSchedule extends EditableRepairSchedule {
 
     public Builder adaptive(boolean adaptive) {
       this.adaptive = adaptive;
+      return this;
+    }
+
+    public Builder percentUnrepairedThreshold(Integer percentUnrepairedThreshold) {
+      this.percentUnrepairedThreshold = percentUnrepairedThreshold;
+      return this;
+    }
+
+    public Builder lastRun(UUID lastRun) {
+      this.lastRun = lastRun;
       return this;
     }
 

@@ -75,6 +75,7 @@ import org.awaitility.Duration;
 import org.awaitility.core.ConditionTimeoutException;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -115,6 +116,11 @@ public final class RepairRunnerTest {
   @Before
   public void setUp() throws Exception {
     SegmentRunner.SEGMENT_RUNNERS.clear();
+  }
+
+  @After
+  public void tearDown() {
+    DateTimeUtils.setCurrentMillisSystem();
   }
 
   @Test

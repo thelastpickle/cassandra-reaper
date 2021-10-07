@@ -63,6 +63,8 @@ public interface IDistributedStorage {
 
   int countRunningReapers();
 
+  List<UUID> getRunningReapers();
+
   void saveHeartbeat();
 
   /**

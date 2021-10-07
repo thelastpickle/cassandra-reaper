@@ -45,6 +45,8 @@ const RepairScheduleForm = CreateReactClass({
       intensity: this.props.repair ? this.props.repair.intensity : '',
       incrementalRepair: this.props.repair ? this.props.repair.incremental_repair : 'false',
       repairThreadCount: this.props.repair ? this.props.repair.repair_thread_count : 0,
+      adaptive: this.props.repair.adaptive ? this.props.repair.adaptive : 'false',
+      percentUnrepairedThreshold: this.props.repair.percent_unrepaired_threshold ? this.props.repair.percent_unrepaired_threshold : "",
       formType: this.props.formType,
       advancedSettingsOpen: false,
       valid: undefined  // Indicates if the current state of the form is valid or not
@@ -179,6 +181,26 @@ const RepairScheduleForm = CreateReactClass({
         <div className="form-group">
           <label htmlFor="in_intervalDays" className="control-label">Interval in days*</label>
           <input type="number" min={0} max={31} required className="form-control" defaultValue={this.state.intervalDays} id="in_intervalDays" placeholder="The number of days to wait between scheduling new repairs, (e.g. 7 for weekly)" onChange={this._formInputChangeHandler}/>
+        </div>
+
+        {/* Percent unrepaired threshold */}
+        <div className="form-group">
+          <label htmlFor="in_percentUnrepairedThreshold" className="control-label">Percent unrepaired threshold</label>
+          <input type="number" min={0} max={99} required className="form-control" defaultValue={this.state.percentUnrepairedThreshold >= 0 ? this.state.percentUnrepairedThreshold : ""} id="in_percentUnrepairedThreshold" placeholder="% of unrepaired data over which repair should be started (optional)" onChange={this._formInputChangeHandler}/>
+        </div>
+
+        <div className="form-group">
+            <label htmlFor="in_adaptive" className="control-label">Adaptive</label>
+            {/* <div className="col-sm-9 col-md-7 col-lg-5"> */}
+              <Select
+                id="in_adaptive"
+                name="in_adaptive"
+                classNamePrefix="select"
+                options={[{label: "true", value: "true"}, {label: "false", value: "false"}]}
+                placeholder="false"
+                onChange={this._formSelectChangeHandler}
+              /> 
+            {/* </div> */}
         </div>
 
         <div className="form-group">

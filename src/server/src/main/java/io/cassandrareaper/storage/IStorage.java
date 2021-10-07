@@ -163,7 +163,7 @@ public interface IStorage {
   List<PercentRepairedMetric> getPercentRepairedMetrics(
       String clusterName,
       UUID repairScheduleId,
-      long since);
+      Long since);
 
   void storePercentRepairedMetric(PercentRepairedMetric metric);
 }

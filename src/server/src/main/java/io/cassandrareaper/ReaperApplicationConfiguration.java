@@ -442,7 +442,7 @@ public final class ReaperApplicationConfiguration extends Configuration {
   }
 
   @JsonProperty("percentRepairedCheckIntervalMinutes")
-  public void setpercentRepairedCheckIntervalMinutes(Integer percentRepairedCheckIntervalMinutes) {
+  public void setPercentRepairedCheckIntervalMinutes(Integer percentRepairedCheckIntervalMinutes) {
     this.percentRepairedCheckIntervalMinutes = percentRepairedCheckIntervalMinutes;
   }
 
@@ -544,6 +544,13 @@ public final class ReaperApplicationConfiguration extends Configuration {
     @JsonProperty
     private Boolean adaptive;
 
+    @JsonProperty
+    private Boolean incremental;
+
+    @JsonProperty
+    private Integer percentUnrepairedThreshold;
+
+
     public Boolean isEnabled() {
       return enabled;
     }
@@ -610,6 +617,22 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
     public void setAdaptive(Boolean adaptive) {
       this.adaptive = adaptive;
+    }
+
+    public Boolean incremental() {
+      return incremental == null ? false : incremental;
+    }
+
+    public void setIncremental(Boolean incremental) {
+      this.incremental = incremental;
+    }
+
+    public Integer getPercentUnrepairedThreshold() {
+      return percentUnrepairedThreshold == null ? -1 : percentUnrepairedThreshold;
+    }
+
+    public void setPercentUnrepairedThreshold(Integer percentUnrepairedThreshold) {
+      this.percentUnrepairedThreshold = percentUnrepairedThreshold;
     }
 
     @Override
