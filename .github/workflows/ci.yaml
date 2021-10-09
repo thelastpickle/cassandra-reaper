@@ -631,25 +631,13 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [2.1.22, 2.2.19, 3.0.25, 3.11.11, 4.0.0, 'github:apache/trunk']
+        cassandra-version: [4.0.0, 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [4]
         grim-min: [2]
         include:
           # all versions but trunk need to exclude trunk tests
-          - cassandra-version: 2.1.22
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-          - cassandra-version: 2.2.19
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-          - cassandra-version: 3.0.25
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
-            experimental: false
-          - cassandra-version: 3.11.11
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
-            experimental: false
           - cassandra-version: 4.0.0
             experimental: false
           - cassandra-version: 'github:apache/trunk'
