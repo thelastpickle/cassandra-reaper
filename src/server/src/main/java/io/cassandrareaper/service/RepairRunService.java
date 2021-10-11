@@ -204,7 +204,8 @@ public final class RepairRunService {
           Segment.builder()
                  .withBaseRange(segment.getBaseRange())
                  .withTokenRanges(segment.getTokenRanges())
-                 .withReplicas(getDCsByNodeForRepairSegment(targetCluster, segment, repairUnit.getKeyspaceName()))
+                 .withReplicas(getDCsByNodeForRepairSegment(
+                    targetCluster, segment, repairUnit.getKeyspaceName(), repairUnit))
                  .build());
     }
 
@@ -214,7 +215,8 @@ public final class RepairRunService {
   private Map<String, String> getDCsByNodeForRepairSegment(
       Cluster cluster,
       Segment segment,
-      String keyspace) throws ReaperException {
+      String keyspace,
+      RepairUnit repairUnit) throws ReaperException {
 
     final int maxAttempts = 2;
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
@@ -224,7 +226,13 @@ public final class RepairRunService {
         Collection<String> nodes = clusterFacade.tokenRangeToEndpoint(cluster, keyspace, segment);
         Map<String, String> dcByNode = Maps.newHashMap();
         nodes.forEach(node -> dcByNode.put(node, EndpointSnitchInfoProxy.create(jmxConnection).getDataCenter(node)));
-        return dcByNode;
+        if (repairUnit.getDatacenters().isEmpty()) {
+          return dcByNode;
+        } else {
+          return dcByNode.entrySet().stream()
+            .filter(entry -> repairUnit.getDatacenters().contains(entry.getValue()))
+            .collect(Collectors.toMap(entry -> entry.getKey(), entry -> entry.getValue()));
+        }
       } catch (RuntimeException e) {
         if (attempt < maxAttempts - 1) {
           LOG.warn("Failed getting replicas for token range {}. Attempt {} of {}",
