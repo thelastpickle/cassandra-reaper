@@ -50,7 +50,7 @@ public final class NodesStatus {
           = Pattern.compile("^([0-9:a-fA-F\\]\\[]{3,41})", Pattern.MULTILINE | Pattern.DOTALL);
   private static final Pattern ENDPOINT_STATUS_22_PATTERN = Pattern.compile("(STATUS):([0-9]*):(\\w+)");
   private static final Pattern ENDPOINT_STATUS_40_PATTERN = Pattern.compile("(STATUS_WITH_PORT):([0-9]*):(\\w+)");
-  private static final Pattern ENDPOINT_DC_22_PATTERN = Pattern.compile("(DC):([0-9]*):([0-9a-zA-Z-\\.]+)");
+  private static final Pattern ENDPOINT_DC_22_PATTERN = Pattern.compile("(DC):([0-9]*):([0-9a-zA-Z-_\\.]+)");
   private static final Pattern ENDPOINT_RACK_22_PATTERN = Pattern.compile("(RACK):([0-9]*):([0-9a-zA-Z-\\.]+)");
   private static final Pattern ENDPOINT_LOAD_22_PATTERN = Pattern.compile("(LOAD):([0-9]*):([0-9eE.]+)");
   private static final Pattern ENDPOINT_RELEASE_22_PATTERN = Pattern.compile("(RELEASE_VERSION):([0-9]*):([0-9.]+)");
@@ -58,7 +58,7 @@ public final class NodesStatus {
   private static final Pattern ENDPOINT_HOSTID_22_PATTERN = Pattern.compile("(HOST_ID):([0-9]*):([0-9a-z-]+)");
   private static final Pattern ENDPOINT_TOKENS_22_PATTERN = Pattern.compile("(TOKENS):([0-9]*)");
   private static final Pattern ENDPOINT_STATUS_21_PATTERN = Pattern.compile("(STATUS)(:)(\\w+)");
-  private static final Pattern ENDPOINT_DC_21_PATTERN = Pattern.compile("(DC)(:)([0-9a-zA-Z-\\.]+)");
+  private static final Pattern ENDPOINT_DC_21_PATTERN = Pattern.compile("(DC)(:)([0-9a-zA-Z-_\\.]+)");
   private static final Pattern ENDPOINT_RACK_21_PATTERN = Pattern.compile("(RACK)(:)([0-9a-zA-Z-\\.]+)");
   private static final Pattern ENDPOINT_LOAD_21_PATTERN = Pattern.compile("(LOAD)(:)([0-9eE.]+)");
   private static final Pattern ENDPOINT_RELEASE_21_PATTERN = Pattern.compile("(RELEASE_VERSION)(:)([0-9.]+)");
