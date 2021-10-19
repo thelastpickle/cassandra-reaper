@@ -429,8 +429,8 @@ const repairForm = CreateReactClass({
                   </Modal.Header>
                   <Modal.Body>
                     <p>{this.state.addRepairResultMsg}</p>
-                    <p>It is not reccommended to create overlapping repair schedules.</p>
-                    <p>For Cassandra 4.0 and later, you can force creating this schedule by clicking the "Force" button below.</p>
+                    <p>It is not reccommended to create overlapping repair schedules/runs.</p>
+                    <p>For Cassandra 4.0 and later, you can force creating this schedule/run by clicking the "Force" button below.</p>
                   </Modal.Body>
                   <Modal.Footer>
                     <Button variant="secondary" onClick={this._onClose}>Cancel</Button>

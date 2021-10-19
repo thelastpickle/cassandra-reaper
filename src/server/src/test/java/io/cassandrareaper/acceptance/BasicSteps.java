@@ -1030,6 +1030,24 @@ public final class BasicSteps {
     }
   }
 
+  @When("^a new repair is added for the last added cluster and keyspace \"([^\"]*)\" with force option$")
+  public void a_new_repair_is_added_for_the_last_added_cluster_and_keyspace_force(String keyspace) throws Throwable {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Map<String, String> params = Maps.newHashMap();
+      params.put("clusterName", TestContext.TEST_CLUSTER);
+      params.put("keyspace", keyspace);
+      params.put("owner", TestContext.TEST_USER);
+      params.put("force", "true");
+      Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
+      assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
+      String responseData = response.readEntity(String.class);
+      Assertions.assertThat(responseData).isNotBlank();
+      RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
+      testContext.addCurrentRepairId(run.getId());
+    }
+  }
+
   @And("^the last added repair has table \"([^\"]*)\" in the blacklist$")
   public void the_last_added_repair_has_table_in_the_blacklist(String blacklistedTable) throws Throwable {
     synchronized (BasicSteps.class) {
