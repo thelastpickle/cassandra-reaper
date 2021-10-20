@@ -27,7 +27,6 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
-import io.cassandrareaper.service.RepairParameters;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -352,20 +351,6 @@ public final class MemoryStorage implements IStorage {
       }
     }
     return segments;
-  }
-
-  @Override
-  public Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName) {
-    List<RepairParameters> ongoingRepairs = Lists.newArrayList();
-    for (RepairRun run : getRepairRunsWithState(RepairRun.RunState.RUNNING)) {
-      for (RepairSegment segment : getSegmentsWithState(run.getId(), RepairSegment.State.RUNNING)) {
-        RepairUnit unit = getRepairUnit(segment.getRepairUnitId());
-        ongoingRepairs.add(
-            new RepairParameters(
-                segment.getTokenRange(), unit.getKeyspaceName(), unit.getColumnFamilies(), run.getRepairParallelism()));
-      }
-    }
-    return ongoingRepairs;
   }
 
   @Override

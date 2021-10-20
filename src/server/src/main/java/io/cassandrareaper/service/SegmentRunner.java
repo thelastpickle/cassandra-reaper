@@ -47,12 +47,10 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.sun.management.UnixOperatingSystemMXBean;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.progress.ProgressEventType;
-import org.apache.commons.lang3.concurrent.LazyInitializer;
 import org.joda.time.DateTime;
 import org.joda.time.Seconds;
 import org.slf4j.Logger;
@@ -920,27 +918,4 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private int countRunningReapers() {
     return context.isDistributed.get() ? ((IDistributedStorage) context.storage).countRunningReapers() : 1;
   }
-
-  private class BusyHostsInitializer extends LazyInitializer<Set<String>> {
-
-    private final Cluster cluster;
-
-    BusyHostsInitializer(Cluster cluster) {
-      this.cluster = cluster;
-    }
-
-    @Override
-    protected Set<String> initialize() {
-      Collection<RepairParameters> ongoingRepairs = context.storage.getOngoingRepairsInCluster(clusterName);
-      Set<String> busyHosts = Sets.newHashSet();
-      ongoingRepairs.forEach(
-          (ongoingRepair) -> {
-            busyHosts.addAll(
-                clusterFacade.tokenRangeToEndpoint(
-                    cluster, ongoingRepair.keyspaceName, ongoingRepair.tokenRange));
-          });
-      return busyHosts;
-    }
-  }
-
 }

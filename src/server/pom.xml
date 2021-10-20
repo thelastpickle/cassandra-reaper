@@ -48,6 +48,7 @@
     |           |
         </cucumber.no-versions-to-test>
         <cucumber.upgrade-versions>${cucumber.no-versions-to-test}</cucumber.upgrade-versions>
+        <cxf-version>3.4.5</cxf-version>
     </properties>
 
     <dependencies>
@@ -294,9 +295,22 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-rs-client</artifactId>
+            <version>${cxf-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-rs-sse</artifactId>
+            <version>${cxf-version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>com.ibatis</groupId>
             <artifactId>ibatis2-common</artifactId>
             <version>2.1.7.597</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

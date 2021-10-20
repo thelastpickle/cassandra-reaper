@@ -159,11 +159,6 @@ public final class RepairRunService {
         "no partitioner for cluster: " + targetCluster.getName());
 
     SegmentGenerator sg = new SegmentGenerator(targetCluster.getPartitioner().get());
-    if (targetCluster.getSeedHosts().isEmpty()) {
-      String errMsg = String.format("didn't get any seed hosts for cluster \"%s\"", targetCluster.getName());
-      LOG.error(errMsg);
-      throw new ReaperException(errMsg);
-    }
 
     try {
       List<BigInteger> tokens = clusterFacade.getTokens(targetCluster);
@@ -210,7 +205,8 @@ public final class RepairRunService {
     return segmentsWithReplicas;
   }
 
-  private Map<String, String> getDCsByNodeForRepairSegment(
+  @VisibleForTesting
+  Map<String, String> getDCsByNodeForRepairSegment(
       Cluster cluster,
       Segment segment,
       String keyspace,
@@ -332,7 +328,8 @@ public final class RepairRunService {
    * Creates the repair runs linked to given RepairRun and stores them directly in the storage backend in case of
    * incrementalRepair
    */
-  private static List<RepairSegment.Builder> createRepairSegmentsForIncrementalRepair(
+  @VisibleForTesting
+  static List<RepairSegment.Builder> createRepairSegmentsForIncrementalRepair(
       Map<String, RingRange> nodes,
       RepairUnit repairUnit) {
 
@@ -354,15 +351,9 @@ public final class RepairRunService {
     return repairSegmentBuilders;
   }
 
-  private Map<String,RingRange> getClusterNodes(Cluster targetCluster, RepairUnit repairUnit) throws ReaperException {
-
+  @VisibleForTesting
+  Map<String,RingRange> getClusterNodes(Cluster targetCluster, RepairUnit repairUnit) throws ReaperException {
     ConcurrentHashMap<String, RingRange> nodesWithRanges = new ConcurrentHashMap<>();
-    if (targetCluster.getSeedHosts().isEmpty()) {
-      String errMsg = String.format("didn't get any seed hosts for cluster \"%s\"", targetCluster.getName());
-      LOG.error(errMsg);
-      throw new ReaperException(errMsg);
-    }
-
     Map<List<String>, List<String>> rangeToEndpoint = Maps.newHashMap();
 
     try {
@@ -438,7 +429,7 @@ public final class RepairRunService {
     return nodesToRepair;
   }
 
-  public static Set<String> getDatacentersToRepairBasedOnParam(Cluster cluster, Optional<String> datacenters) {
+  public static Set<String> getDatacentersToRepairBasedOnParam(Optional<String> datacenters) {
     Set<String> datacentersToRepair = Collections.emptySet();
     if (datacenters.isPresent() && !datacenters.get().isEmpty()) {
       datacentersToRepair = Sets.newHashSet(COMMA_SEPARATED_LIST_SPLITTER.split(datacenters.get()));

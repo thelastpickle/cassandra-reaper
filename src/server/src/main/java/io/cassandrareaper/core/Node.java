@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.core;
 
-
 import java.util.Objects;
 import java.util.Optional;
 

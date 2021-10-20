@@ -23,6 +23,7 @@ import io.cassandrareaper.service.DiagEventSubscriptionService;
 
 import java.net.URI;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -42,6 +43,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
@@ -95,7 +97,15 @@ public final class DiagEventSubscriptionResource {
         .orElseGet(() -> {
           created.set(true);
           return diagEventService.addEventSubscription(
-            new DiagEventSubscription(Optional.empty(), cluster, desc, nodes, events, sse, logger, endpoint));
+            new DiagEventSubscription(
+              Optional.empty(),
+              cluster,
+              desc,
+              nodes,
+              events,
+              sse,
+              logger.isEmpty() ? null : logger,
+              endpoint.isEmpty() ? null : endpoint));
         });
 
     LOG.debug((created.get() ? "created" : "found") + " subscription {}", subscription);
@@ -117,6 +127,37 @@ public final class DiagEventSubscriptionResource {
       return Response.ok().entity(diagEventService.getEventSubscription(id)).build();
     } catch (IllegalArgumentException ignore) {
       return Response.status(Response.Status.NOT_FOUND).build();
+    }
+  }
+
+  @VisibleForTesting
+  @GET
+  @Path("/adhoc")
+  public Response getActiveAdhocSubscriptions() {
+    try {
+      Collection<DiagEventSubscription> allSubs = context.storage.getEventSubscriptions();
+      Set<DiagEventSubscription> activeSubscriptions
+          = DiagEventSubscriptionService.getAdhocActiveSubs(allSubs, Collections.emptySet());
+      if (activeSubscriptions.isEmpty()) {
+        return Response.status(Response.Status.NOT_FOUND).build();
+      }
+      return Response.ok().entity(activeSubscriptions).build();
+    } catch (RuntimeException e) {
+      return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e).build();
+    }
+  }
+
+  @VisibleForTesting
+  @GET
+  @Path("/pollers")
+  public Response getActivePollers() {
+    try {
+      if (DiagEventSubscriptionService.POLLERS_BY_NODE.isEmpty()) {
+        return Response.status(Response.Status.NOT_FOUND).build();
+      }
+      return Response.ok().entity(DiagEventSubscriptionService.POLLERS_BY_NODE.size()).build();
+    } catch (RuntimeException e) {
+      return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e).build();
     }
   }
 
