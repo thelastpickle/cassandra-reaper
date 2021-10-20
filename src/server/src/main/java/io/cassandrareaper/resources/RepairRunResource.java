@@ -193,7 +193,7 @@ public final class RepairRunResource {
       final Set<String> datacentersToRepair;
       try {
         datacentersToRepair = RepairRunService
-            .getDatacentersToRepairBasedOnParam(cluster, datacentersToRepairParam);
+            .getDatacentersToRepairBasedOnParam(datacentersToRepairParam);
 
       } catch (IllegalArgumentException ex) {
         LOG.error(ex.getMessage(), ex);
@@ -468,40 +468,6 @@ public final class RepairRunResource {
       return updateRunIntensity(uriInfo, repairRun.get(), intensity);
     } catch (ValidationException ex) {
       return Response.status(Response.Status.BAD_REQUEST).entity(ex.getMessage()).build();
-    }
-  }
-
-  /**
-   * MOVED_PERMANENTLY to PUT repair_run/{id}/state/{state}
-   */
-  @PUT
-  @Path("/{id}")
-  @Deprecated
-  public Response oldModifyRunState(
-      @Context UriInfo uriInfo,
-      @PathParam("id") UUID repairRunId,
-      @QueryParam("state") Optional<String> stateStr) {
-
-    try {
-      if (!stateStr.isPresent()) {
-        return createMissingArgumentResponse("state");
-      }
-      RepairRun.RunState state = parseRunState(stateStr.get());
-
-      Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
-      if (!repairRun.isPresent()) {
-        return Response.status(Status.NOT_FOUND).entity("repair run " + repairRunId + " doesn't exist").build();
-      }
-
-      URI redirectUri = uriInfo
-          .getRequestUriBuilder()
-          .replacePath(String.format("repair_run/%s/state/%s", repairRun.get().getId().toString(), state))
-          .replaceQuery("")
-          .build();
-
-      return Response.seeOther(redirectUri).build();
-    } catch (ValidationException ex) {
-      return Response.status(Status.BAD_REQUEST).entity(ex.getMessage()).build();
     }
   }
 

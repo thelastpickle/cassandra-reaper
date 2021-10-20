@@ -38,6 +38,8 @@ import com.google.common.collect.Lists;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -48,6 +50,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public final class SchedulingManagerTest {
+
+  @Before
+  public void setUp() {
+    // Some other test classes change this to use fake predictable times.
+    // We need to reset this to using the current time for scheduling tests.
+    DateTimeUtils.setCurrentMillisSystem();
+  }
 
   @Test
   public void testCurrentReaperIsSchedulingLeader() {

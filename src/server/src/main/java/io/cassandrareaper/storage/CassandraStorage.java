@@ -37,7 +37,6 @@ import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
-import io.cassandrareaper.service.RepairParameters;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.cassandra.DateTimeCodec;
 import io.cassandrareaper.storage.cassandra.Migration016;
@@ -1024,18 +1023,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
     RepairUnit repairUnit = newRepairUnit.build(UUIDs.timeBased());
-    session.execute(
-        insertRepairUnitPrepStmt.bind(
-            repairUnit.getId(),
-            repairUnit.getClusterName(),
-            repairUnit.getKeyspaceName(),
-            repairUnit.getColumnFamilies(),
-            repairUnit.getIncrementalRepair(),
-            repairUnit.getNodes(),
-            repairUnit.getDatacenters(),
-            repairUnit.getBlacklistedTables(),
-            repairUnit.getRepairThreadCount(),
-            repairUnit.getTimeout()));
+    updateRepairUnit(repairUnit);
 
     repairUnits.put(repairUnit.getId(), repairUnit);
     return repairUnit;
@@ -1291,29 +1279,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       }
     }
     return segments;
-  }
-
-  @Override
-  public Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName) {
-    Collection<RepairParameters> repairs = Lists.<RepairParameters>newArrayList();
-    Collection<RepairRun> repairRuns = getRepairRunsForCluster(clusterName, Optional.empty());
-
-    for (RepairRun repairRun : repairRuns) {
-      Collection<RepairSegment> runningSegments = getSegmentsWithState(repairRun.getId(), State.RUNNING);
-      for (RepairSegment segment : runningSegments) {
-        RepairUnit repairUnit = getRepairUnit(repairRun.getRepairUnitId());
-        repairs.add(
-            new RepairParameters(
-                Segment.builder().withTokenRanges(segment.getTokenRange().getTokenRanges()).build(),
-                repairUnit.getKeyspaceName(),
-                repairUnit.getColumnFamilies(),
-                repairRun.getRepairParallelism()));
-      }
-    }
-
-    LOG.trace("found ongoing repairs {} {}", repairs.size(), repairs);
-
-    return repairs;
   }
 
   @Override

@@ -154,6 +154,7 @@ Feature: Using Reaper
     Then reaper has the last added cluster in storage
     And reaper has 0 scheduled repairs for cluster called "test"
     When a new daily "incremental" repair schedule is added for "test" and keyspace "test_keyspace3"
+    And a new daily "full" repair schedule fails to be added that already exists for "test" and keyspace "test_keyspace3"
     And a new daily "full" repair schedule is added that already exists for "test" and keyspace "test_keyspace3" with force option
     Then reaper has 2 scheduled repairs for cluster called "test"
     When reaper is upgraded to latest
@@ -289,6 +290,9 @@ Feature: Using Reaper
     When reaper is upgraded to latest
     Then reaper has 2 started or done repairs for the last added cluster
     And we wait for at least 1 segments to be repaired
+    And modifying the run state of the last added repair to "PAUSED" succeeds
+    And modifying the run state of the last added repair to "RUNNING" succeeds
+    And I can purge repair runs
     When all added repair runs are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
@@ -328,5 +332,87 @@ Feature: Using Reaper
     When a request is made to clear the seed host existing snapshots
     Then there is 0 snapshot returned when listing snapshots
     When the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
+  ${cucumber.upgrade-versions}
+
+  @all_nodes_reachable
+  @cassandra_2_1_onwards
+  Scenario Outline: Test resources failure paths
+    Given that reaper <version> is running
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    And reaper has 0 scheduled repairs for cluster called "test"
+    And a new repair fails to be added for keyspace "test_keyspace" and "tables" "nonexistent_table"
+    And a new repair fails to be added for keyspace "test_keyspace" and "blacklistedTables" "nonexistent_table"
+    And a new repair fails to be added for keyspace "test_keyspace" and "nodes" "nonexistent_node"
+    And a new repair fails to be added for keyspace "test_keyspace" and "segmentCountPerNode" "2000"
+    And a new repair fails to be added for keyspace "test_keyspace" and "repairParallelism" "whatever"
+    And a new repair fails to be added for keyspace "test_keyspace" including both node and datacenter lists
+    And a new repair fails to be added for keyspace "test_keyspace" including both tables and blacklisted tables lists
+    And a new repair fails to be added for keyspace "test_keyspace" without the "clusterName" param
+    And a new repair fails to be added for keyspace "test_keyspace" without the "owner" param
+    And a new repair fails to be added for keyspace "test_keyspace" without the "keyspace" param
+    And a new daily repair schedule fails being added with "2000-01-01T00:00:00" activation time
+    And a new daily repair schedule fails being added with "200-1-01T00-0-000" activation time
+    And a new daily repair schedule fails being added without "clusterName"
+    And a new daily repair schedule fails being added without "keyspace"
+    And a new daily repair schedule fails being added without "owner"
+    And a new daily repair schedule fails being added without "scheduleDaysBetween"
+    And a new daily repair schedule fails being added with "clusterName" "nonexistent_cluster"
+    And a new daily repair schedule fails being added with "tables" "nonexistent_table"
+    And a new daily repair schedule fails being added with "blacklistedTables" "nonexistent_table"
+    And a new daily repair schedule fails being added with "nodes" "nonexistent_node"
+    And a new daily repair schedule fails being added with "segmentCountPerNode" "2000"
+    And a new daily repair schedule fails being added with "repairParallelism" "whatever"
+    And a new daily repair schedule fails being added with "incrementalRepair" "True"
+    And a new daily repair schedule fails being added with "percentUnrepairedThreshold" "10"
+    And getting repair run "whatever" fails
+    And aborting a segment from a non existent repair fails
+    When a new incremental repair is added for the last added cluster and keyspace "booya"
+    Then aborting a segment on the last added repair fails
+    And the last added repair fails to be deleted
+    When the last added repair is activated
+    And the last added repair fails to be deleted
+    And modifying the run state of the last added repair to "WHATEVER" fails
+    And we wait for at least 1 segments to be repaired
+    And the last added repair is stopped
+    And the last added repair fails to be deleted with owner ""
+    And the last added repair fails to be deleted with owner "whatever"
+    And all added repair runs are deleted for the last added cluster
+    And the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
+  ${cucumber.upgrade-versions}
+
+  @sidecar
+  @all_nodes_reachable
+  @cassandra_2_1_onwards
+  @schedule
+  Scenario Outline: Exhaustive testing on schedules
+    Given that reaper <version> is running
+    And cluster seed host "127.0.0.2" points to cluster with name "test"
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    And the seed node has vnodes
+    And reaper has 0 scheduled repairs for the last added cluster
+    When a new daily "full" repair schedule is added for the last added cluster and keyspace "booya"
+    Then reaper has 1 scheduled repairs for cluster "test" and keyspace "booya"
+    Then reaper has 1 scheduled repairs for cluster "" and keyspace "booya"
+    Then reaper has 1 scheduled repairs for cluster "test" and keyspace ""
+    Then reaper has 1 scheduled repairs for cluster "" and keyspace ""
+    And I can set the last added schedule state to "ACTIVE"
+    And the last added schedule fails being deleted for the last added cluster
+    And I can set the last added schedule state to "PAUSED"
+    And I can set the last added schedule state to "ACTIVE"
+    And I cannot set the last added schedule state to "UNKNOWN"
+    And I cannot set the last added schedule state to "DELETED"
+    And I cannot set an unknown schedule state to "ACTIVE"
+    And deleting cluster called "test" fails
+    And the last added schedule fails being deleted for the last added cluster with owner ""
+    And the last added schedule fails being deleted for the last added cluster with owner "fake"
+    And I can start the last added schedule
+    And I cannot start an unknown schedule
+    When the last added cluster is force deleted
     Then reaper has no longer the last added cluster in storage
   ${cucumber.upgrade-versions}

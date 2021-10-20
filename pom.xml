@@ -194,6 +194,7 @@
                 <exclude>**/*.password</exclude>
                 <exclude>**/*.txt</exclude>
                 <exclude>src/packaging/**</exclude>
+                <exclude>codecov.yml</exclude>
               </excludes>
             </configuration>
             <executions>

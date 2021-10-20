@@ -27,7 +27,6 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
-import io.cassandrareaper.service.RepairParameters;
 
 import java.util.Collection;
 import java.util.List;
@@ -106,8 +105,6 @@ public interface IStorage {
   List<RepairSegment> getNextFreeSegments(UUID runId);
 
   Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState);
-
-  Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName);
 
   SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit);
 

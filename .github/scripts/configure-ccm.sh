@@ -33,10 +33,11 @@ configure_ccm () {
   sed -i 's/internode_compression: dc/internode_compression: none/' ~/.ccm/test/node$1/conf/cassandra.yaml
   sed -i 's/# file_cache_size_in_mb: 512/file_cache_size_in_mb: 1/' ~/.ccm/test/node$1/conf/cassandra.yaml
   echo 'phi_convict_threshold: 16' >> ~/.ccm/test/node$1/conf/cassandra.yaml
-  if  echo "$CASSANDRA_VERSION" | grep -q "trunk"  ; then
+  if [[ "$CASSANDRA_VERSION" == *"trunk"* ]] || [[ "$CASSANDRA_VERSION" == *"4."* ]]; then
     sed -i 's/start_rpc: true//' ~/.ccm/test/node$1/conf/cassandra.yaml
     echo '-Dcassandra.max_local_pause_in_ms=15000' >> ~/.ccm/test/node$1/conf/jvm-server.options
     sed -i 's/#-Dcassandra.available_processors=number_of_processors/-Dcassandra.available_processors=2/' ~/.ccm/test/node$1/conf/jvm-server.options
+    sed -i 's/diagnostic_events_enabled: false/diagnostic_events_enabled: true/' ~/.ccm/test/node$1/conf/cassandra.yaml
   else
     sed -i 's/start_rpc: true/start_rpc: false/' ~/.ccm/test/node$1/conf/cassandra.yaml
   fi

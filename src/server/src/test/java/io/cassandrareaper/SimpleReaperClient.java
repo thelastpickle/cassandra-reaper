@@ -46,6 +46,8 @@ import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Maps;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +86,7 @@ public final class SimpleReaperClient {
     }
 
     Client client = ClientBuilder.newClient();
+    client.property("http.autoredirect", true);
     WebTarget webTarget = client.target(uri);
 
     LOG.info("calling (" + httpMethod + ") Reaper in resource: " + webTarget.getUri());
@@ -172,6 +175,20 @@ public final class SimpleReaperClient {
   public List<RepairScheduleStatus> getRepairSchedulesForCluster(String clusterName) {
     Response response = doHttpCall("GET", reaperHost, reaperPort,
         "/repair_schedule/cluster/" + clusterName, EMPTY_PARAMS);
+    assertEquals(200, response.getStatus());
+    String responseData = response.readEntity(String.class);
+    return parseRepairScheduleStatusListJSON(responseData);
+  }
+
+  public List<RepairScheduleStatus> getRepairSchedulesForClusterAndKs(String clusterName, String keyspaceName) {
+    Map<String, String> params = Maps.newHashMap();
+    if (!clusterName.isEmpty()) {
+      params.put("clusterName", clusterName);
+    }
+    if (!keyspaceName.isEmpty()) {
+      params.put("keyspace", keyspaceName);
+    }
+    Response response = doHttpCall("GET", reaperHost, reaperPort, "/repair_schedule", Optional.of(params));
     assertEquals(200, response.getStatus());
     String responseData = response.readEntity(String.class);
     return parseRepairScheduleStatusListJSON(responseData);

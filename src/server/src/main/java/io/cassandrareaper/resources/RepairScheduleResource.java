@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
@@ -214,12 +215,8 @@ public final class RepairScheduleResource {
             .build();
       }
 
-      Cluster cluster ;
-      try {
-        cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
-      } catch (IllegalArgumentException ex) {
-        return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
-      }
+      Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
+
       Set<String> tableNames;
       try {
         tableNames = repairRunService.getTableNamesBasedOnParam(cluster, keyspace.get(), tableNamesParam);
@@ -245,14 +242,8 @@ public final class RepairScheduleResource {
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
 
-      final Set<String> datacentersToRepair;
-      try {
-        datacentersToRepair = RepairRunService
-            .getDatacentersToRepairBasedOnParam(cluster, datacentersToRepairParam);
-      } catch (final IllegalArgumentException ex) {
-        LOG.error(ex.getMessage(), ex);
-        return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
-      }
+      final Set<String> datacentersToRepair = RepairRunService
+            .getDatacentersToRepairBasedOnParam(datacentersToRepairParam);
 
       boolean incremental = isIncrementalRepair(incrementalRepairStr);
       RepairParallelism parallelism = context.config.getRepairParallelism();

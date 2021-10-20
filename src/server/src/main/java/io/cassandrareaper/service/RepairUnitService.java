@@ -34,7 +34,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.VersionNumber;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -50,13 +52,20 @@ public final class RepairUnitService {
       = ImmutableSet.of("TimeWindowCompactionStrategy", "DateTieredCompactionStrategy");
 
   private final AppContext context;
+  private final ClusterFacade clusterFacade;
 
-  private RepairUnitService(AppContext context) {
+  private RepairUnitService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier) {
     this.context = context;
+    this.clusterFacade = clusterFacadeSupplier.get();
+  }
+
+  @VisibleForTesting
+  static RepairUnitService create(AppContext context, Supplier<ClusterFacade> supplier) throws ReaperException {
+    return new RepairUnitService(context, supplier);
   }
 
   public static RepairUnitService create(AppContext context) {
-    return new RepairUnitService(context);
+    return new RepairUnitService(context, () -> ClusterFacade.create(context));
   }
 
   public RepairUnit getOrCreateRepairUnit(Cluster cluster, RepairUnit.Builder params) {
@@ -66,7 +75,7 @@ public final class RepairUnitService {
   public RepairUnit getOrCreateRepairUnit(Cluster cluster, RepairUnit.Builder params, boolean force) {
     if (params.incrementalRepair) {
       try {
-        String version = ClusterFacade.create(context).getCassandraVersion(cluster);
+        String version = clusterFacade.getCassandraVersion(cluster);
         if (null != version && version.startsWith("2.0")) {
           throw new IllegalArgumentException("Incremental repair does not work with Cassandra versions before 2.1");
         }
@@ -90,7 +99,7 @@ public final class RepairUnitService {
     Set<String> result;
 
     if (repairUnit.getColumnFamilies().isEmpty()) {
-      Set<Table> tables = ClusterFacade.create(context).getTablesForKeyspace(cluster, keyspace);
+      Set<Table> tables = clusterFacade.getTablesForKeyspace(cluster, keyspace);
       Set<String> twcsBlacklisted = findBlacklistedCompactionStrategyTables(cluster, tables);
 
       result = tables.stream()
@@ -114,7 +123,7 @@ public final class RepairUnitService {
 
   public Set<String> findBlacklistedCompactionStrategyTables(Cluster clstr, Set<Table> tables) throws ReaperException {
     if (context.config.getBlacklistTwcsTables()
-        && versionCompare(ClusterFacade.create(context).getCassandraVersion(clstr), "2.1") >= 0) {
+        && versionCompare(clusterFacade.getCassandraVersion(clstr), "2.1") >= 0) {
 
       return tables
           .stream()
@@ -144,7 +153,8 @@ public final class RepairUnitService {
     return context.storage.addRepairUnit(builder);
   }
 
-  private boolean unitConflicts(Cluster cluster, RepairUnit.Builder builder) {
+  @VisibleForTesting
+  boolean unitConflicts(Cluster cluster, RepairUnit.Builder builder) {
 
     Collection<RepairSchedule> repairSchedules = context.storage
         .getRepairSchedulesForClusterAndKeyspace(builder.clusterName, builder.keyspaceName);
@@ -223,8 +233,7 @@ public final class RepairUnitService {
 
   public Set<String> getTableNamesForKeyspace(Cluster cluster, String keyspace) {
     try {
-      return ClusterFacade
-          .create(context)
+      return clusterFacade
           .getTablesForKeyspace(cluster, keyspace)
           .stream()
           .map(Table::getName)
@@ -240,8 +249,7 @@ public final class RepairUnitService {
       return builder.nodes;
     }
     try {
-      return ClusterFacade
-          .create(context)
+      return clusterFacade
           .getLiveNodes(cluster)
           .stream()
           .collect(Collectors.toSet());
@@ -257,9 +265,8 @@ public final class RepairUnitService {
     }
     Set<String> datacenters = Sets.newHashSet();
     try {
-      ClusterFacade facade = ClusterFacade.create(context);
       for (String node : nodes) {
-        datacenters.add(facade.getDatacenter(Node.builder().withHostname(node).build()));
+        datacenters.add(clusterFacade.getDatacenter(Node.builder().withHostname(node).build()));
       }
     } catch (ReaperException | InterruptedException e) {
       LOG.warn("Unable to get the list of datacenters for cluster {}", cluster.getName(), e);

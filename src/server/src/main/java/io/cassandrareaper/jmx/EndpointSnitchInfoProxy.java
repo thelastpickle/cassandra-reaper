@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.jmx;
 
-
 import java.util.concurrent.ExecutionException;
 
 import com.google.common.base.Preconditions;
