@@ -33,7 +33,7 @@ Schema initialization and migration will be done automatically upon startup.
 ## SSL settings
 
 Astra enables client to node encryption by default, which requires some additional setup in Reaper.
-After installing Reaper and configuring the yaml file, copy the `cassandra-reaper-ssl.properties` file to the `/etc/cassandra-reaper` directory (the temmplate can be found under `/etc/cassandra-reaper/configs/`) and configure it as follows:
+After installing Reaper and configuring the yaml file, copy the `cassandra-reaper-ssl.properties` file to the `/etc/reaper` directory (the template can be found under `/etc/reaper/configs/`) and configure it as follows:
 
 ```
 -Djavax.net.ssl.keyStore=/path/to/identity.jks

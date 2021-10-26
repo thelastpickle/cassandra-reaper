@@ -114,8 +114,8 @@ In case of problem, check the alternate procedure on [cloudsmith.io](https://clo
 
 ## Service Configuration
 
-The yaml file used by the service is located at `/etc/cassandra-reaper/cassandra-reaper.yaml` and alternate config templates can be found under `/etc/cassandra-reaper/configs`.
-It is recommended to create a new file with your specific configuration and symlink it as `/etc/cassandra-reaper/cassandra-reaper.yaml` to avoid your configuration from being overwritten during upgrades.  
+The yaml file used by the service is located at `/etc/reaper/cassandra-reaper.yaml` and alternate config templates can be found under `/etc/reaper/configs`.
+It is recommended to create a new file with your specific configuration and symlink it as `/etc/reaper/cassandra-reaper.yaml` to avoid your configuration from being overwritten during upgrades.  
 Adapt the config file to suit your setup and then run `sudo service cassandra-reaper start`.  
   
 Log files can be found at `/var/log/cassandra-reaper.log` and `/var/log/cassandra-reaper.err`.  

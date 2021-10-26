@@ -45,15 +45,15 @@ if [ -z "$CLASS_PATH" ]; then
 fi
 
 if [ $# -eq 0 ]; then
-    CONFIG_PATH="/usr/local/etc/cassandra-reaper/cassandra-reaper.yaml"
+    CONFIG_PATH="/usr/local/etc/reaper/cassandra-reaper.yaml"
     if [ ! -e "$CONFIG_PATH" ]; then
-        CONFIG_PATH="/etc/cassandra-reaper/cassandra-reaper.yaml"
+        CONFIG_PATH="/etc/reaper/cassandra-reaper.yaml"
     fi
 else
     CONFIG_PATH="$@"
 fi
 
-SSL_CONFIG_PATH="/etc/cassandra-reaper/cassandra-reaper-ssl.properties"
+SSL_CONFIG_PATH="/etc/reaper/cassandra-reaper-ssl.properties"
 if [ -r "$SSL_CONFIG_PATH" ]; then
     echo "Loading SSL configuration from $SSL_CONFIG_PATH"
     # The `sed` expression below removes empty lines and comments

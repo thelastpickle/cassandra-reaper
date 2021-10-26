@@ -23,13 +23,13 @@ prepare:
 	mkdir -p build/usr/share/cassandra-reaper
 	mkdir -p build/usr/local/bin
 	mkdir -p build/etc/init.d
-	mkdir -p build/etc/cassandra-reaper
-	mkdir -p build/etc/cassandra-reaper/configs
+	mkdir -p build/etc/reaper
+	mkdir -p build/etc/reaper/configs
 	mkdir -p build/etc/bash_completion.d
 	mkdir -p build/lib/systemd/system/
-	cp resource/cassandra-reaper.yaml build/etc/cassandra-reaper/
-	cp resource/cassandra-reaper*.yaml build/etc/cassandra-reaper/configs
-	cp resource/cassandra-reaper-ssl.properties build/etc/cassandra-reaper/configs
+	cp resource/cassandra-reaper.yaml build/etc/reaper/
+	cp resource/cassandra-reaper*.yaml build/etc/reaper/configs
+	cp resource/cassandra-reaper-ssl.properties build/etc/reaper/configs
 	cp ../server/target/cassandra-reaper-$(VERSION).jar build/usr/share/cassandra-reaper/
 	cp bin/* build/usr/local/bin/
 	cp etc/bash_completion.d/spreaper build/etc/bash_completion.d/
@@ -41,7 +41,7 @@ deb: prepare
 	fpm -s dir -t deb -n reaper -v $(VERSION) --pre-install debian/preinstall.sh --post-install debian/postinstall.sh -C build .
 
 rpm: prepare
-	fpm -s dir -t rpm -n reaper -v $(VERSION) --pre-install redhat/preinstall.sh --post-install redhat/postinstall.sh --config-files /etc/cassandra-reaper/cassandra-reaper.yaml -C build .
+	fpm -s dir -t rpm -n reaper -v $(VERSION) --pre-install redhat/preinstall.sh --post-install redhat/postinstall.sh --config-files /etc/reaper/cassandra-reaper.yaml -C build .
 
 all: package deb rpm
 

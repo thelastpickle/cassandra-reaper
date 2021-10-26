@@ -248,8 +248,8 @@ make package
 <p>Install the RPM (Fedora based distros like RHEL or Centos) using : <code>sudo rpm -ivh reaper-*.*.*.x86_64.rpm</code><br />
 Install the DEB (Debian based distros like Ubuntu) using : <code>sudo dpkg -i reaper_*.*.*_amd64.deb</code></p>
 
-<p>The yaml file used by the service is located at <code>/etc/cassandra-reaper/cassandra-reaper.yaml</code> and alternate config templates can be found under <code>/etc/cassandra-reaper/configs</code>.
-It is recommended to create a new file with your specific configuration and symlink it as <code>/etc/cassandra-reaper/cassandra-reaper.yaml</code> to avoid your configuration from being overwritten during upgrades.<br />
+<p>The yaml file used by the service is located at <code>/etc/reaper/cassandra-reaper.yaml</code> and alternate config templates can be found under <code>/etc/reaper/configs</code>.
+It is recommended to create a new file with your specific configuration and symlink it as <code>/etc/reaper/cassandra-reaper.yaml</code> to avoid your configuration from being overwritten during upgrades.<br />
 Adapt the config file to suit your setup and then run <code>sudo service cassandra-reaper start</code>.</p>
 
 <p>Log files can be found at <code>/var/log/cassandra-reaper.log</code> and <code>/var/log/cassandra-reaper.err</code>.</p>

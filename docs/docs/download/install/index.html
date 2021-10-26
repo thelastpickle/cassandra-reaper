@@ -372,8 +372,8 @@ sudo apt-get install reaper
 sudo apt-get install reaper
 </code></pre><p>In case of problem, check the alternate procedure on <a href="https://cloudsmith.io/~thelastpickle/repos/reaper-beta/setup/#formats-deb">cloudsmith.io</a>.</p>
 <h2 id="service-configuration">Service Configuration</h2>
-<p>The yaml file used by the service is located at <code>/etc/cassandra-reaper/cassandra-reaper.yaml</code> and alternate config templates can be found under <code>/etc/cassandra-reaper/configs</code>.
-It is recommended to create a new file with your specific configuration and symlink it as <code>/etc/cassandra-reaper/cassandra-reaper.yaml</code> to avoid your configuration from being overwritten during upgrades.<br>
+<p>The yaml file used by the service is located at <code>/etc/reaper/cassandra-reaper.yaml</code> and alternate config templates can be found under <code>/etc/reaper/configs</code>.
+It is recommended to create a new file with your specific configuration and symlink it as <code>/etc/reaper/cassandra-reaper.yaml</code> to avoid your configuration from being overwritten during upgrades.<br>
 Adapt the config file to suit your setup and then run <code>sudo service cassandra-reaper start</code>.</p>
 <p>Log files can be found at <code>/var/log/cassandra-reaper.log</code> and <code>/var/log/cassandra-reaper.err</code>.</p>
 <p>Stop the service by running : <code>sudo service cassandra-reaper stop</code></p>
