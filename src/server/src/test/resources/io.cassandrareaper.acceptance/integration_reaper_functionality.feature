@@ -23,6 +23,51 @@ Feature: Using Reaper
     And cluster "test" has keyspace "test_keyspace2" with tables "test_table1, test_table2"
     And cluster "test" has keyspace "test_keyspace3" with tables "test_table1, test_table2"
 
+@all_nodes_reachable
+  @cassandra_3_11_onwards
+  @snapshots
+  Scenario Outline: Create a cluster, create a cluster wide snapshot and delete it
+    Given that reaper <version> is running
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    When a request is made to clear the existing snapshot cluster wide
+    And a cluster wide snapshot request is made to Reaper
+    Then there is 1 snapshot returned when listing snapshots
+    When reaper is upgraded to latest
+    And a cluster wide snapshot request is made to Reaper for keyspace "booya"
+    And a cluster wide snapshot request fails for keyspace "nonexistent"
+    Then there is 2 snapshot returned when listing snapshots cluster wide
+    And I fail listing cluster wide snapshots for cluster "fake"
+    When a request is made to clear the existing snapshot cluster wide
+    Then there is 0 snapshot returned when listing snapshots
+    When the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
+  ${cucumber.upgrade-versions}
+
+  @all_nodes_reachable
+  @cassandra_3_11_onwards
+  @snapshots
+  Scenario Outline: Create a cluster, create a snapshot on a single host and delete it
+    Given that reaper <version> is running
+    And reaper has no cluster in storage
+    When an add-cluster request is made to reaper
+    Then reaper has the last added cluster in storage
+    When a request is made to clear the seed host existing snapshots
+    And a snapshot request for the seed host is made to Reaper
+    Then there is 1 snapshot returned when listing snapshots
+    When reaper is upgraded to latest
+    And a snapshot request for the seed host and keyspace "booya" is made to Reaper
+    And a snapshot request for the seed host and keyspace "fake" fails
+    Then there is 2 snapshot returned when listing snapshots
+    And I fail listing snapshots for cluster "fake" and host "127.0.0.1"
+    And I fail listing snapshots for cluster "test" and host "fakenode"
+    When a request is made to clear the seed host existing snapshots
+    Then there is 0 snapshot returned when listing snapshots
+    When the last added cluster is deleted
+    Then reaper has no longer the last added cluster in storage
+  ${cucumber.upgrade-versions}
+
   @sidecar
   Scenario Outline: Registering a cluster with JMX auth
     Given that reaper <version> is running
@@ -300,43 +345,6 @@ Feature: Using Reaper
 
   @all_nodes_reachable
   @cassandra_2_1_onwards
-  Scenario Outline: Create a cluster, create a cluster wide snapshot and delete it
-    Given that reaper <version> is running
-    And reaper has no cluster in storage
-    When an add-cluster request is made to reaper
-    Then reaper has the last added cluster in storage
-    When a request is made to clear the existing snapshot cluster wide
-    And a cluster wide snapshot request is made to Reaper
-    Then there is 1 snapshot returned when listing snapshots
-    When reaper is upgraded to latest
-    Then there is 1 snapshot returned when listing snapshots
-    When a request is made to clear the existing snapshot cluster wide
-    Then there is 0 snapshot returned when listing snapshots
-    When the last added cluster is deleted
-    Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
-
-
-  @all_nodes_reachable
-  @cassandra_2_1_onwards
-  Scenario Outline: Create a cluster, create a snapshot on a single host and delete it
-    Given that reaper <version> is running
-    And reaper has no cluster in storage
-    When an add-cluster request is made to reaper
-    Then reaper has the last added cluster in storage
-    When a request is made to clear the seed host existing snapshots
-    And a snapshot request for the seed host is made to Reaper
-    Then there is 1 snapshot returned when listing snapshots
-    When reaper is upgraded to latest
-    Then there is 1 snapshot returned when listing snapshots
-    When a request is made to clear the seed host existing snapshots
-    Then there is 0 snapshot returned when listing snapshots
-    When the last added cluster is deleted
-    Then reaper has no longer the last added cluster in storage
-  ${cucumber.upgrade-versions}
-
-  @all_nodes_reachable
-  @cassandra_2_1_onwards
   Scenario Outline: Test resources failure paths
     Given that reaper <version> is running
     And reaper has no cluster in storage
@@ -387,7 +395,6 @@ Feature: Using Reaper
   @sidecar
   @all_nodes_reachable
   @cassandra_2_1_onwards
-  @schedule
   Scenario Outline: Exhaustive testing on schedules
     Given that reaper <version> is running
     And cluster seed host "127.0.0.2" points to cluster with name "test"
