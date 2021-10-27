@@ -142,8 +142,24 @@ public final class BasicSteps {
       Optional<Map<String, String>> params,
       Optional<String> expectedDataInResponseData,
       Response.Status... expectedStatuses) {
+    callAndExpect(
+        RUNNERS,
+        httpMethod,
+        callPath,
+        params,
+        expectedDataInResponseData,
+        expectedStatuses);
+  }
 
-    RUNNERS.parallelStream().forEach(runner -> {
+  private static void callAndExpect(
+      List<ReaperTestJettyRunner> runners,
+      String httpMethod,
+      String callPath,
+      Optional<Map<String, String>> params,
+      Optional<String> expectedDataInResponseData,
+      Response.Status... expectedStatuses) {
+
+    runners.parallelStream().forEach(runner -> {
       Response response = runner.callReaper(httpMethod, callPath, params);
       String responseEntity = "";
       try {
@@ -1649,8 +1665,37 @@ public final class BasicSteps {
   public void a_cluster_wide_snapshot_request_is_made_to_reaper() throws Throwable {
     synchronized (BasicSteps.class) {
       ReaperTestJettyRunner runner = RUNNERS.get(0);
-      Response response = runner.callReaper("POST", "/snapshot/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
+      Map<String, String> params = Maps.newHashMap();
+      params.put("snapshot_name", UUIDs.timeBased().toString());
+      Response response
+          = runner.callReaper("POST", "/snapshot/cluster/" + TestContext.TEST_CLUSTER, Optional.of(params));
       assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @When("^a cluster wide snapshot request is made to Reaper for keyspace \"([^\"]*)\"$")
+  public void a_cluster_wide_snapshot_request_is_made_to_reaper(String keyspace) throws Throwable {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(0);
+      Map<String, String> params = Maps.newHashMap();
+      params.put("keyspace", keyspace);
+      params.put("snapshot_name", UUIDs.timeBased().toString());
+      Response response
+          = runner.callReaper("POST", "/snapshot/cluster/" + TestContext.TEST_CLUSTER, Optional.of(params));
+      assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @When("^a cluster wide snapshot request fails for keyspace \"([^\"]*)\"$")
+  public void a_cluster_wide_snapshot_request_fails(String keyspace) throws Throwable {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(0);
+      Map<String, String> params = Maps.newHashMap();
+      params.put("keyspace", keyspace);
+      params.put("snapshot_name", UUIDs.timeBased().toString());
+      Response response
+          = runner.callReaper("POST", "/snapshot/cluster/" + TestContext.TEST_CLUSTER, Optional.of(params));
+      assertEquals(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), response.getStatus());
     }
   }
 
@@ -1661,7 +1706,7 @@ public final class BasicSteps {
 
       Response response = runner.callReaper(
               "GET",
-              "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+              "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
               EMPTY_PARAMS);
 
       assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -1672,6 +1717,48 @@ public final class BasicSteps {
     }
   }
 
+  @Then("^there is (\\d+) snapshot returned when listing snapshots cluster wide$")
+  public void there_is_1_snapshot_returned_when_listing_snapshots_cluster(int nbSnapshots) throws Throwable {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(0);
+
+      Response response = runner.callReaper(
+              "GET",
+              "/snapshot/cluster/" + TestContext.TEST_CLUSTER,
+              EMPTY_PARAMS);
+
+      assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+      String responseData = response.readEntity(String.class);
+      Assertions.assertThat(responseData).isNotBlank();
+      Map<String, Map<String, List<Snapshot>>> snapshots = SimpleReaperClient.parseClusterSnapshotMapJSON(responseData);
+      assertEquals(nbSnapshots, snapshots.keySet().size());
+    }
+  }
+
+  @Then("^I fail listing snapshots for cluster \"([^\"]*)\" and host \"([^\"]*)\"$")
+  public void iFailListingSnapshotsForClusterAndHost(String clusterName, String hostname) throws Throwable {
+    synchronized (BasicSteps.class) {
+      callAndExpect("GET",
+          "/snapshot/cluster/" + clusterName + "/" + hostname,
+          Optional.empty(),
+          Optional.empty(),
+          Response.Status.NOT_FOUND,
+          Response.Status.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Then("^I fail listing cluster wide snapshots for cluster \"([^\"]*)\"$")
+  public void iFailListingClusterSnapshotsForClusterAndHost(String clusterName) throws Throwable {
+    synchronized (BasicSteps.class) {
+      callAndExpect("GET",
+          "/snapshot/cluster/" + clusterName,
+          Optional.empty(),
+          Optional.empty(),
+          Response.Status.NOT_IMPLEMENTED,
+          Response.Status.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   @When("^a request is made to clear the existing snapshot cluster wide$")
   public void a_request_is_made_to_clear_the_existing_snapshots_cluster_wide() throws Throwable {
     synchronized (BasicSteps.class) {
@@ -1679,7 +1766,7 @@ public final class BasicSteps {
 
       Response response = runner.callReaper(
               "GET",
-              "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+              "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
               EMPTY_PARAMS);
 
       assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -1703,13 +1790,46 @@ public final class BasicSteps {
   public void a_host_snapshot_request_is_made_to_reaper() throws Throwable {
     synchronized (BasicSteps.class) {
       ReaperTestJettyRunner runner = RUNNERS.get(0);
-
+      Map<String, String> params = Maps.newHashMap();
+      params.put("snapshot_name", UUIDs.timeBased().toString());
       Response response = runner.callReaper(
               "POST",
-              "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
-              EMPTY_PARAMS);
+              "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+              Optional.of(params));
 
       assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @When("^a snapshot request for the seed host and keyspace \"([^\"]*)\" is made to Reaper$")
+  public void a_host_snapshot_request_is_made_to_reaper_keyspace(String keyspace) throws Throwable {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(0);
+      Map<String, String> params = Maps.newHashMap();
+      params.put("keyspace", keyspace);
+      params.put("snapshot_name", UUIDs.timeBased().toString());
+      Response response = runner.callReaper(
+              "POST",
+              "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+              Optional.of(params));
+
+      assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @When("^a snapshot request for the seed host and keyspace \"([^\"]*)\" fails$")
+  public void a_host_snapshot_request_fails_keyspace(String keyspace) throws Throwable {
+    synchronized (BasicSteps.class) {
+      Map<String, String> params = Maps.newHashMap();
+      params.put("keyspace", keyspace);
+      params.put("snapshot_name", UUIDs.timeBased().toString());
+      callAndExpect(
+          "POST",
+          "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+          Optional.of(params),
+          Optional.empty(),
+          Response.Status.NOT_FOUND,
+          Response.Status.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -1720,7 +1840,7 @@ public final class BasicSteps {
 
       Response response = runner.callReaper(
               "GET",
-              "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+              "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
               EMPTY_PARAMS);
 
       assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -1731,7 +1851,7 @@ public final class BasicSteps {
       snapshots.keySet().stream().forEach(snapshot -> {
         callAndExpect(
             "DELETE",
-            "/snapshot/" + TestContext.TEST_CLUSTER
+            "/snapshot/cluster/" + TestContext.TEST_CLUSTER
                 + "/" + TestContext.SEED_HOST.split("@")[0] + "/" + snapshot,
             Optional.empty(),
             Optional.empty(),

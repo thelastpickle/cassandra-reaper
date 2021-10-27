@@ -108,7 +108,7 @@ const NodeStatus = CreateReactClass({
   
     _listSnapshots: function() {
       $.ajax({
-            url: getUrlPrefix(window.top.location.pathname) + '/snapshot/' +  encodeURIComponent(this.props.clusterName) + '/' + encodeURIComponent(this.props.endpointStatus.endpoint),
+            url: getUrlPrefix(window.top.location.pathname) + '/snapshot/cluster/' +  encodeURIComponent(this.props.clusterName) + '/' + encodeURIComponent(this.props.endpointStatus.endpoint),
             method: 'GET',
             component: this,
             complete: function(data) {
@@ -134,7 +134,7 @@ const NodeStatus = CreateReactClass({
       this.setState({communicating: true}); 
       toast(this.props.notificationSystem, "Taking a new snapshot...", "warning", this.props.endpointStatus.endpoint);   
       $.ajax({
-            url: getUrlPrefix(window.top.location.pathname) + '/snapshot/' +  encodeURIComponent(this.props.clusterName) + '/' + encodeURIComponent(this.props.endpointStatus.endpoint),
+            url: getUrlPrefix(window.top.location.pathname) + '/snapshot/cluster/' +  encodeURIComponent(this.props.clusterName) + '/' + encodeURIComponent(this.props.endpointStatus.endpoint),
             dataType: 'text',
             method: 'POST',
             component: this,

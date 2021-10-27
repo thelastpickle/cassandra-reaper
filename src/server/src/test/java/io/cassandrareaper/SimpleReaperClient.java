@@ -198,6 +198,10 @@ public final class SimpleReaperClient {
     return parseJSON(json, new TypeReference<Map<String, List<Snapshot>>>() {});
   }
 
+  public static Map<String, Map<String, List<Snapshot>>> parseClusterSnapshotMapJSON(String json) {
+    return parseJSON(json, new TypeReference<Map<String, Map<String, List<Snapshot>>>>() {});
+  }
+
   public static List<ThreadPoolStat> parseTpStatJSON(String json) {
     return parseJSON(json, new TypeReference<List<ThreadPoolStat>>() {});
   }
