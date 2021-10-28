@@ -440,16 +440,10 @@ Note that Cassandra backend configuration relies on the <a href="https://github.
 <span style="color:#66d9ef">metricsEnabled</span>:
 <span style="color:#66d9ef">jmxEnabled</span>:
 <span style="color:#66d9ef">shutdownGracePeriod</span>:
-
-
-<span style="color:#75715e">## H2 or Postgres Database Settings</span>
-
-<span style="color:#75715e">**Removed</span> in v3<span style="color:#ae81ff">.0.0</span><span style="color:#75715e">**</span>
-
-The following settings are specific to a Reaper deployment that is backed by either a H2 or Postgres database. An example of the configuration settings for a Postgres database are as follows.
-
-```yaml
-<span style="color:#66d9ef">postgres</span>:
+</code></pre></div><h2 id="h2-or-postgres-database-settings">H2 or Postgres Database Settings</h2>
+<p><strong>Removed in v3.0.0</strong></p>
+<p>The following settings are specific to a Reaper deployment that is backed by either a H2 or Postgres database. An example of the configuration settings for a Postgres database are as follows.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">postgres</span>:
   <span style="color:#66d9ef">url</span>: jdbc:postgresql://<span style="color:#ae81ff">127.0.0.1</span>/reaper
   <span style="color:#66d9ef">user</span>: postgres
   <span style="color:#66d9ef">password</span>:

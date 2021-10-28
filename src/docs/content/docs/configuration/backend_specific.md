@@ -175,7 +175,7 @@ poolingOptions:
 metricsEnabled:
 jmxEnabled:
 shutdownGracePeriod:
-
+```
 
 ## H2 or Postgres Database Settings
 
