@@ -120,6 +120,63 @@ Type: *String*
 
 Cassandra native protocol password.
 
+#### Full Configuration Reference
+
+```yaml
+clusterName:
+keyspace:
+validationQuery:
+healthCheckTimeout:
+contactPoints:
+port:
+protocolVersion:
+compression:
+maxSchemaAgreementWait:
+ssl:
+  type:
+addressTranslator:
+  type:
+reconnectionPolicy:
+  type:
+authProvider:
+  type:
+retryPolicy:
+  type:
+loadBalancingPolicy:
+  type:
+speculativeExecutionPolicy:
+  type:
+queryOptions:
+  consistencyLevel:
+  serialConsistencyLevel:
+  fetchSize:
+socketOptions:
+  connectTimeoutMillis:
+  readTimeoutMillis:
+  keepAlive:
+  reuseAddress:
+  soLinger:
+  tcpNoDelay:
+  receiveBufferSize:
+  sendBufferSize:
+poolingOptions:
+  heartbeatInterval:
+  poolTimeout:
+  local:
+    maxRequestsPerConnection:
+    newConnectionThreshold:
+    coreConnections:
+    maxConnections:
+  remote:
+    maxRequestsPerConnection:
+    newConnectionThreshold:
+    coreConnections:
+    maxConnections:
+metricsEnabled:
+jmxEnabled:
+shutdownGracePeriod:
+
+
 ## H2 or Postgres Database Settings
 
 **Removed in v3.0.0**
