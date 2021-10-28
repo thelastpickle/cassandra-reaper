@@ -403,6 +403,7 @@ To activate graphite metrics reporting, run the container with the following sam
 <p>Default: <em>false</em></p>
 <p>Allows Reaper to establish an encrypted connection when establishing a connection with Cassandra via the native protocol.</p>
 <h2 id="direct-mapping-to-h2-or-postgres-backend-configuration-settings">Direct Mapping to H2 or Postgres Backend Configuration Settings</h2>
+<p><strong>Removed in v3.0.0</strong></p>
 <p>The Docker environment variables listed in this section map directly to H2/Postgres backend specific settings in the <em>cassandra-reaper.yaml</em> configuration file. The following table below lists the Docker environment variables, their associated H2/Postgres backend specific setting in the <em>cassandra-reaper.yaml</em> configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.</p>
 <p>In order to use the following settings, <code>REAPER_STORAGE_TYPE</code> must be set to <code>h2</code> or <code>postgres</code>.</p>
 <!-- raw HTML omitted -->

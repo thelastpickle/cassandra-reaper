@@ -46,7 +46,8 @@ storageType: cassandra cassandra: clusterName: &amp;#34;test&amp;#34; contactPoi
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/backends/h2/</guid>
-      <description>H2 Backend To use H2 as the persistent storage for Reaper, the storageType setting must be set to h2 in the Reaper configuration YAML file. When using H2 storage, the database will be automatically created under the path configured in the configuration YAML file. An example of how to configure H2 as persistent storage for Reaper can be found in the cassandra-reaper-h2.yaml.
+      <description>H2 Backend Removed in v3.0.0
+To use H2 as the persistent storage for Reaper, the storageType setting must be set to h2 in the Reaper configuration YAML file. When using H2 storage, the database will be automatically created under the path configured in the configuration YAML file. An example of how to configure H2 as persistent storage for Reaper can be found in the cassandra-reaper-h2.yaml.
 storageType: h2 h2: # H2 JDBC settings url: jdbc:h2:~/reaper-db/db;MODE=PostgreSQL user: password: </description>
     </item>
     
@@ -66,7 +67,8 @@ storageType: memory In-memory storage is volatile and as such all registered clu
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/backends/postgres/</guid>
-      <description>Postgres Backend To use PostgreSQL as the persistent storage for Reaper, the storageType setting must be set to postgres in the Reaper configuration YAML file. The schema will be initialized/upgraded automatically upon startup in the configured database. Ensure that the correct JDBC credentials are specified in the cassandra-reaper.yaml to allow object creation. An example of how to configure Postgres as persistent storage for Reaper can be found in the cassandra-reaper-postgres.yaml.</description>
+      <description>Postgres Backend Removed in v3.0.0
+To use PostgreSQL as the persistent storage for Reaper, the storageType setting must be set to postgres in the Reaper configuration YAML file. The schema will be initialized/upgraded automatically upon startup in the configured database. Ensure that the correct JDBC credentials are specified in the cassandra-reaper.yaml to allow object creation. An example of how to configure Postgres as persistent storage for Reaper can be found in the cassandra-reaper-postgres.</description>
     </item>
     
     <item>
@@ -301,7 +303,7 @@ Start a New Repair Click the repair menu item on the left side to navigate to th
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/faq/</guid>
-      <description>Frequently Asked Questions Why use Reaper instead of noddetool + cron? While it&amp;rsquo;s possible to set up crontab to call nodetool, it requires staggering the crons to ensure overlap is kept to a minimum. Reaper is able to intelligently schedule repairs to avoid putting too much load on the cluster, avoiding impacting performance. Reaper also offers a simple UI to schedule repairs as granularly as needed.
+      <description>Frequently Asked Questions Why use Reaper instead of nodetool + cron? While it&amp;rsquo;s possible to set up crontab to call nodetool, it requires staggering the crons to ensure overlap is kept to a minimum. Reaper is able to intelligently schedule repairs to avoid putting too much load on the cluster, avoiding impacting performance. Reaper also offers a simple UI to schedule repairs as granularly as needed.
 Do I need to do repairs if I&amp;rsquo;m not deleting data?</description>
     </item>
     

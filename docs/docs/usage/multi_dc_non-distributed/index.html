@@ -329,7 +329,7 @@
 <h2 id="single-reaper-instance-with-jmx-accessible-for-all-dcs">Single Reaper instance with JMX accessible for all DCs</h2>
 <p>In the case where the JMX port is accessible (with or without authentication) from the running Reaper instance for all nodes in all DCs, it is possible to have a single instance of Reaper handle one or multiple clusters by using the following setting in the configuration yaml file :</p>
 <pre><code>datacenterAvailability: ALL
-</code></pre><p>This setup works with all backends : Apache Cassandra, Memory, H2 and Postgres.</p>
+</code></pre><p>This setup works with all backends : Apache Cassandra, Astra and Memory.</p>
 <div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/singlereaper-multidc-all.png">
@@ -358,7 +358,7 @@
 <pre><code>datacenterAvailability: LOCAL
 </code></pre><p>Be aware that this setup will not allow to handle backpressure for those remote DCs as JMX metrics (pending compactions, running repairs) from those remote nodes are not made available to Reaper.</p>
 <p>If multiple clusters are registered in Reaper it is required that Reaper can access all nodes in at least one data center in each of the registered clusters.</p>
-<p>This setup works with all backends : Apache Cassandra, Memory, H2 and Postgres.</p>
+<p>This setup works with all backends : Apache Cassandra, Astra and Memory.</p>
 <div class = "row">
     <div class = "col-md-6">
         <a data-fancybox="gallery" href="/img/singlereaper-multidc-local.png">
