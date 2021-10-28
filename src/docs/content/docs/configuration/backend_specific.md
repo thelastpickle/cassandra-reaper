@@ -122,7 +122,7 @@ Cassandra native protocol password.
 
 #### Full Configuration Reference
 
-```
+```yaml
 clusterName:
 keyspace:
 validationQuery:
