@@ -13,6 +13,7 @@
 # limitations under the License.
 
 @cassandra_4_0_onwards
+@diag_event_subscriptions
 Feature: Manage diagnostic event subscriptions
   Background:
     Given cluster seed host "127.0.0.1" points to cluster with name "test"
