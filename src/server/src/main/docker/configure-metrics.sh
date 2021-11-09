@@ -15,7 +15,7 @@
 # limitations under the License.
 
 if [ "true" = "${REAPER_METRICS_ENABLED}" ]; then
-cat <<EOT >> /etc/reaper/cassandra-reaper.yml
+cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
 metrics:
   frequency: ${REAPER_METRICS_FREQUENCY}
   reporters: ${REAPER_METRICS_REPORTERS}

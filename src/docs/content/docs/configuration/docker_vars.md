@@ -72,7 +72,7 @@ Example :
 REAPER_CASS_ADDRESS_TRANSLATOR_TYPE=multiIpPerNode
 REAPER_CASS_ADDRESS_TRANSLATOR_MAPPING=host1:ip1,host2:ip2
 ```
-config bloc at the container startup file '/etc/reaper/cassandra-reaper.yml' :
+config bloc at the container startup file '/etc/cassandra-reaper/cassandra-reaper.yml' :
 ```
  addressTranslator:
     type: multiIpPerNode
