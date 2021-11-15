@@ -62,8 +62,8 @@ if [ "true" = "${REAPER_CASS_AUTH_ENABLED}" ]; then
 cat <<EOT >> /etc/reaper/cassandra-reaper.yml
   authProvider:
     type: plainText
-    username: ${REAPER_CASS_AUTH_USERNAME}
-    password: ${REAPER_CASS_AUTH_PASSWORD}
+    username: "$(echo "${REAPER_CASS_AUTH_USERNAME}" | sed 's/"/\\"/g')"
+    password: "$(echo "${REAPER_CASS_AUTH_PASSWORD}" | sed 's/"/\\"/g')"
 EOT
 fi
 
@@ -99,4 +99,3 @@ fi
 
     ;;
 esac
-
