@@ -45,7 +45,7 @@ const RepairScheduleForm = CreateReactClass({
       intensity: this.props.repair ? this.props.repair.intensity : '',
       incrementalRepair: this.props.repair ? this.props.repair.incremental_repair : 'false',
       repairThreadCount: this.props.repair ? this.props.repair.repair_thread_count : 0,
-      adaptive: this.props.repair.adaptive ? this.props.repair.adaptive : 'false',
+      adaptive: this.props.repair ? this.props.repair.adaptive : 'false',
       percentUnrepairedThreshold: this.props.repair.percent_unrepaired_threshold ? this.props.repair.percent_unrepaired_threshold : "",
       formType: this.props.formType,
       advancedSettingsOpen: false,
@@ -145,6 +145,8 @@ const RepairScheduleForm = CreateReactClass({
     ];
     const parallelismValue = parallelismOptions.filter(value => value.value === this.state.parallelism)[0];
 
+    const adaptiveValue = trueFalseOptions.filter(value => value.value === this.state.adaptive.toString())[0];
+
     return (
       <form>
         {/* Id */}
@@ -196,7 +198,8 @@ const RepairScheduleForm = CreateReactClass({
                 id="in_adaptive"
                 name="in_adaptive"
                 classNamePrefix="select"
-                options={[{label: "true", value: "true"}, {label: "false", value: "false"}]}
+                options={[{label: "True", value: "true"}, {label: "False", value: "false"}]}
+                value={adaptiveValue}
                 placeholder="false"
                 onChange={this._formSelectChangeHandler}
               /> 
