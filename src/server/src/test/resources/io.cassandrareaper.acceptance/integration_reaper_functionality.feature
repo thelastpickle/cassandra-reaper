@@ -312,6 +312,11 @@ Feature: Using Reaper
     When reaper is upgraded to latest
     Then reaper has 1 started or done repairs for the last added cluster
     When the last added repair is stopped
+    When a new repair is added for the last added cluster and keyspace "booya" with force option
+    And the last added repair is activated
+    And we wait for at least 1 segments to be repaired
+    Then reaper has 2 repairs for cluster called "test"
+    When the last added repair is stopped
     And all added repair runs are deleted for the last added cluster
     And the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage

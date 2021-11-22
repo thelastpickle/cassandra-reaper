@@ -351,19 +351,28 @@ public final class RepairScheduleResource {
       }
     }
 
-    RepairUnit unit = repairUnitService.getOrCreateRepairUnit(cluster, unitBuilder, force);
+    Optional<RepairUnit> maybeUnit = repairUnitService.getOrCreateRepairUnit(cluster, unitBuilder, force);
 
-    Preconditions
-        .checkState(unit.getIncrementalRepair() == incremental, "%s!=%s", unit.getIncrementalRepair(), incremental);
-    Preconditions
-        .checkState((percentUnrepairedThreshold > 0 && incremental) || percentUnrepairedThreshold <= 0,
-          "Setting a % repaired threshold can only be done on incremental schedules");
+    if (maybeUnit.isPresent()) {
+      RepairUnit unit = maybeUnit.get();
+      Preconditions
+          .checkState(unit.getIncrementalRepair() == incremental, "%s!=%s", unit.getIncrementalRepair(), incremental);
+      Preconditions
+          .checkState((percentUnrepairedThreshold > 0 && incremental) || percentUnrepairedThreshold <= 0,
+            "Setting a % repaired threshold can only be done on incremental schedules");
 
-    RepairSchedule newRepairSchedule = repairScheduleService
-        .storeNewRepairSchedule(
-          cluster, unit, days, next, owner, segments, parallel, intensity, force, adaptive, percentUnrepairedThreshold);
+      RepairSchedule newRepairSchedule = repairScheduleService
+          .storeNewRepairSchedule(
+            cluster, unit, days, next, owner, segments,
+            parallel, intensity, force, adaptive, percentUnrepairedThreshold);
 
-    return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule)).build();
+      return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule)).build();
+    }
+
+    return Response
+            .status(Response.Status.NO_CONTENT)
+            .entity("Repair schedule couldn't be created as an existing repair unit seems to conflict with it.")
+            .build();
   }
 
   private int getDaysBetween(Optional<Integer> scheduleDaysBetween) {

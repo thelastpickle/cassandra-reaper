@@ -68,11 +68,11 @@ public final class RepairUnitService {
     return new RepairUnitService(context, () -> ClusterFacade.create(context));
   }
 
-  public RepairUnit getOrCreateRepairUnit(Cluster cluster, RepairUnit.Builder params) {
+  public Optional<RepairUnit> getOrCreateRepairUnit(Cluster cluster, RepairUnit.Builder params) {
     return getOrCreateRepairUnit(cluster, params, false);
   }
 
-  public RepairUnit getOrCreateRepairUnit(Cluster cluster, RepairUnit.Builder params, boolean force) {
+  public Optional<RepairUnit> getOrCreateRepairUnit(Cluster cluster, RepairUnit.Builder params, boolean force) {
     if (params.incrementalRepair) {
       try {
         String version = clusterFacade.getCassandraVersion(cluster);
@@ -84,7 +84,17 @@ public final class RepairUnitService {
       }
     }
     Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(params);
-    return repairUnit.isPresent() ? repairUnit.get() : createRepairUnit(cluster, params, force);
+    if (repairUnit.isPresent()) {
+      return repairUnit;
+    }
+
+    try {
+      return Optional.of(createRepairUnit(cluster, params, force));
+    } catch (IllegalArgumentException e) {
+      return Optional.empty();
+    }
+
+
   }
 
   /**
