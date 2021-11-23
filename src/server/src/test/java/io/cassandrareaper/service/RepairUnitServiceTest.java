@@ -78,6 +78,7 @@ public final class RepairUnitServiceTest {
     context.config.setBlacklistTwcsTables(true);
     IStorage storage = mock(IStorage.class);
     when(storage.getRepairUnit(any(RepairUnit.Builder.class))).thenReturn(Optional.empty());
+    when(storage.addRepairUnit(any(RepairUnit.Builder.class))).thenReturn(mock(RepairUnit.class));
     context.storage = storage;
     context.jmxConnectionFactory = mock(JmxConnectionFactory.class);
     service = RepairUnitService.create(context);
