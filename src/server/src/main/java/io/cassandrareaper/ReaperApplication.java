@@ -71,7 +71,6 @@ import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
-import io.dropwizard.jetty.BiDiGzipHandler;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
@@ -79,6 +78,7 @@ import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.MetricsServlet;
 import org.apache.http.client.HttpClient;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.joda.time.DateTimeZone;
@@ -367,8 +367,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   private static void setupSse(Environment environment) {
     // Enabling gzip buffering will prevent flushing of server-side-events, so we disable compression for SSE
     environment.lifecycle().addServerLifecycleListener(server -> {
-      for (Handler handler : server.getChildHandlersByClass(BiDiGzipHandler.class)) {
-        ((BiDiGzipHandler) handler).addExcludedMimeTypes("text/event-stream");
+      for (Handler handler : server.getChildHandlersByClass(GzipHandler.class)) {
+        ((GzipHandler) handler).addExcludedMimeTypes("text/event-stream");
       }
     });
   }

@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import org.fest.assertions.api.Assertions;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

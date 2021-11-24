@@ -356,6 +356,7 @@ public final class RepairManager implements AutoCloseable {
     return updatedRun;
   }
 
+  @SuppressWarnings("CheckReturnValue")
   private void startRunner(RepairRun run) {
     try {
       repairRunnersLock.lock();
@@ -430,6 +431,7 @@ public final class RepairManager implements AutoCloseable {
     return updatedRun;
   }
 
+  @SuppressWarnings("CheckReturnValue")
   void scheduleRetry(RepairRunner runner) {
     executor.schedule(runner, retryDelayMillis, TimeUnit.MILLISECONDS);
   }

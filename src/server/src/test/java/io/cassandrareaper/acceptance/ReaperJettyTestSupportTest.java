@@ -17,12 +17,11 @@
 
 package io.cassandrareaper.acceptance;
 
-
 import io.cassandrareaper.acceptance.ReaperTestJettyRunner.ReaperJettyTestSupport;
 
 import java.util.Optional;
 
-import org.fest.assertions.api.Assertions;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 public final class ReaperJettyTestSupportTest {
