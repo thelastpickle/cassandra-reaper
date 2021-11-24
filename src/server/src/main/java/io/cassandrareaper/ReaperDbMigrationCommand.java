@@ -42,10 +42,11 @@ final class ReaperDbMigrationCommand extends ConfiguredCommand<ReaperApplication
   ) throws Exception {
     final Environment environment = new Environment(bootstrap.getApplication().getName(),
                                                         bootstrap.getObjectMapper(),
-                                                        Validation.buildDefaultValidatorFactory()
-                                                                  .getValidator(),
+                                                        Validation.buildDefaultValidatorFactory(),
                                                         bootstrap.getMetricRegistry(),
-                                                        bootstrap.getClassLoader());
+                                                        bootstrap.getClassLoader(),
+                                                        bootstrap.getHealthCheckRegistry(),
+                                                        configuration);
     InitializeStorage.initializeStorage(configuration, environment).initializeStorageBackend();
     System.exit(0);
   }

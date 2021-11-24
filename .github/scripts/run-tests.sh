@@ -15,7 +15,7 @@
 
 echo "Starting Script step..."
 JACOCO_VERSION="0.8.6"
-
+REAPER_ENCRYPTION_KEY="SECRET_KEY"
 
 set -xe
 

@@ -187,6 +187,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement releaseLeadPrepStmt;
   private PreparedStatement getRunningReapersCountPrepStmt;
   private PreparedStatement saveHeartbeatPrepStmt;
+  private PreparedStatement deleteHeartbeatPrepStmt;
   private PreparedStatement storeNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsByNodePrepStmt;
@@ -472,6 +473,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             "INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat)"
                 + " VALUES(?,?," + timeUdf + "(now()))")
         .setIdempotent(false);
+    deleteHeartbeatPrepStmt = session
+        .prepare(
+            "DELETE FROM running_reapers WHERE reaper_instance_id = ?")
+        .setIdempotent(true);
 
     getSnapshotPrepStmt = session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
     deleteSnapshotPrepStmt = session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
@@ -2201,5 +2206,17 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         metric.getPercentRepaired(),
         DateTime.now().toDate())
     );
+  }
+
+  @Override
+  public void start() {
+    // no-op
+  }
+
+  @Override
+  public void stop() {
+    // Statements executed when the server shuts down.
+    LOG.info("Reaper is stopping, removing this instance from running reapers...");
+    session.execute(deleteHeartbeatPrepStmt.bind(reaperInstanceId));
   }
 }

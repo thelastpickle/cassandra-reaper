@@ -30,6 +30,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       JACOCO_VERSION: 0.8.6
+      REAPER_ENCRYPTION_KEY: SECRET_KEY
     steps:
       - name: Checkout
         uses: actions/checkout@v2

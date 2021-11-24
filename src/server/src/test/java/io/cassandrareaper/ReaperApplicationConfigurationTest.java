@@ -26,7 +26,7 @@ import org.junit.Before;
 import org.junit.Test;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public final class ReaperApplicationConfigurationTest {
 

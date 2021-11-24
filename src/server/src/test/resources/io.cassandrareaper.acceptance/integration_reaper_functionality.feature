@@ -34,7 +34,6 @@ Feature: Using Reaper
     When a request is made to clear the existing snapshot cluster wide
     And a cluster wide snapshot request is made to Reaper
     Then there is 1 snapshot returned when listing snapshots
-    When reaper is upgraded to latest
     And a cluster wide snapshot request is made to Reaper for keyspace "booya"
     And a cluster wide snapshot request fails for keyspace "nonexistent"
     Then there is 2 snapshot returned when listing snapshots cluster wide
@@ -56,7 +55,6 @@ Feature: Using Reaper
     When a request is made to clear the seed host existing snapshots
     And a snapshot request for the seed host is made to Reaper
     Then there is 1 snapshot returned when listing snapshots
-    When reaper is upgraded to latest
     And a snapshot request for the seed host and keyspace "booya" is made to Reaper
     And a snapshot request for the seed host and keyspace "fake" fails
     Then there is 2 snapshot returned when listing snapshots
@@ -74,7 +72,6 @@ Feature: Using Reaper
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper with authentication
     Then reaper has the last added cluster in storage
-    When reaper is upgraded to latest
     Then reaper has the last added cluster in storage
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
@@ -94,7 +91,6 @@ Feature: Using Reaper
     And reaper has no cluster in storage
     When an add-cluster request is made to reaper
     Then reaper has the last added cluster in storage
-    When reaper is upgraded to latest
     Then reaper has the last added cluster in storage
     When the last added cluster is deleted
     Then reaper has no longer the last added cluster in storage
@@ -110,7 +106,6 @@ Feature: Using Reaper
     When a new daily "full" repair schedule is added for "test" and keyspace "test_keyspace"
     Then reaper has a cluster called "test" in storage
     And reaper has 1 scheduled repairs for cluster called "test"
-    When reaper is upgraded to latest
     Then reaper has a cluster called "test" in storage
     And reaper has 1 scheduled repairs for cluster called "test"
     When deleting cluster called "test" fails
@@ -135,7 +130,6 @@ Feature: Using Reaper
     And we can collect the client request metrics from a seed node
     When a new daily "full" repair schedule is added for the last added cluster and keyspace "booya"
     Then reaper has 1 scheduled repairs for the last added cluster
-    When reaper is upgraded to latest
     Then reaper has 1 scheduled repairs for the last added cluster
     And deleting cluster called "test" fails
     When the last added schedule is deleted for the last added cluster
@@ -157,7 +151,6 @@ Feature: Using Reaper
     And a second daily repair schedule is added for "test" and keyspace "test_keyspace3"
     Then reaper has a cluster called "test" in storage
     And reaper has 3 scheduled repairs for cluster called "test"
-    When reaper is upgraded to latest
     And reaper has 3 scheduled repairs for cluster called "test"
     When the last added schedule is deleted for cluster called "test"
     Then reaper has 2 scheduled repairs for cluster called "test"
@@ -181,7 +174,6 @@ Feature: Using Reaper
     When a new daily "incremental" repair schedule is added for "test" and keyspace "test_keyspace3"
     And a new daily "full" repair schedule is added that already exists for "test" and keyspace "test_keyspace3"
     Then reaper has 1 scheduled repairs for cluster called "test"
-    When reaper is upgraded to latest
     Then reaper has 1 scheduled repairs for cluster called "test"
     And deleting cluster called "test" fails
     When all added schedules are deleted for the last added cluster
@@ -202,7 +194,6 @@ Feature: Using Reaper
     And a new daily "full" repair schedule fails to be added that already exists for "test" and keyspace "test_keyspace3"
     And a new daily "full" repair schedule is added that already exists for "test" and keyspace "test_keyspace3" with force option
     Then reaper has 2 scheduled repairs for cluster called "test"
-    When reaper is upgraded to latest
     Then reaper has 2 scheduled repairs for cluster called "test"
     And deleting cluster called "test" fails
     When all added schedules are deleted for the last added cluster
@@ -221,7 +212,6 @@ Feature: Using Reaper
     And reaper has 0 scheduled repairs for cluster called "test"
     When a new daily "incremental" repair schedule is added for "test" and keyspace "test_keyspace3"
     Then reaper has 1 scheduled repairs for cluster called "test"
-    When reaper is upgraded to latest
     Then reaper has 1 scheduled repairs for cluster called "test"
     And percent repaired metrics get collected for the existing schedule
     And deleting cluster called "test" fails
@@ -262,7 +252,6 @@ Feature: Using Reaper
     When a new repair is added for the last added cluster and keyspace "booya" with the table "booya2" blacklisted
     And the last added repair has table "booya2" in the blacklist
     And the last added repair has twcs table "booya_twcs" in the blacklist
-    When reaper is upgraded to latest
     And the last added repair has table "booya2" in the blacklist
     And deleting cluster called "test" fails
     And the last added repair is activated
@@ -283,7 +272,6 @@ Feature: Using Reaper
     And reaper has 0 repairs for the last added cluster
     When a new repair is added for the last added cluster and keyspace "booya"
     And the last added repair has twcs table "booya_twcs" in the blacklist
-    When reaper is upgraded to latest
     And the last added repair has twcs table "booya_twcs" in the blacklist
     And deleting cluster called "test" fails
     And the last added repair is activated
@@ -309,7 +297,6 @@ Feature: Using Reaper
     And the last added repair is activated
     And we wait for at least 1 segments to be repaired
     Then reaper has 1 started or done repairs for the last added cluster
-    When reaper is upgraded to latest
     Then reaper has 1 started or done repairs for the last added cluster
     When the last added repair is stopped
     When a new repair is added for the last added cluster and keyspace "booya" with force option
@@ -337,7 +324,6 @@ Feature: Using Reaper
     And the last added repair is activated
     Then reaper has 2 repairs for cluster called "test"
     Then reaper has 2 started or done repairs for the last added cluster
-    When reaper is upgraded to latest
     Then reaper has 2 started or done repairs for the last added cluster
     And we wait for at least 1 segments to be repaired
     And modifying the run state of the last added repair to "PAUSED" succeeds

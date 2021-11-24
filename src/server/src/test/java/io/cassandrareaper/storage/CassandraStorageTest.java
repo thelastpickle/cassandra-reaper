@@ -17,8 +17,8 @@
 
 package io.cassandrareaper.storage;
 
+import org.assertj.core.api.Assertions;
 import org.cognitor.cassandra.migration.MigrationRepository;
-import org.fest.assertions.api.Assertions;
 import org.junit.Test;
 
 
