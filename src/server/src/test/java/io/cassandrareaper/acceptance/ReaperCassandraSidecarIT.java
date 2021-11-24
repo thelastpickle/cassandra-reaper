@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.acceptance;
 
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -83,11 +82,17 @@ public class ReaperCassandraSidecarIT implements Upgradable {
     }
   }
 
+  @SuppressWarnings("IllegalCatchCheck")
   private static void createReaperTestJettyRunner(Optional<String> version) throws InterruptedException {
-    ReaperTestJettyRunner runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE[RUNNER_INSTANCES.size()], version);
-    RUNNER_INSTANCES.add(runner);
-    Thread.sleep(100);
-    BasicSteps.addReaperRunner(runner);
+    ReaperTestJettyRunner runner;
+    try {
+      runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE[RUNNER_INSTANCES.size()], version);
+      RUNNER_INSTANCES.add(runner);
+      Thread.sleep(100);
+      BasicSteps.addReaperRunner(runner);
+    } catch (RuntimeException e) {
+      e.printStackTrace();
+    }
   }
 
   private static void removeReaperTestJettyRunner(ReaperTestJettyRunner runner) throws InterruptedException {

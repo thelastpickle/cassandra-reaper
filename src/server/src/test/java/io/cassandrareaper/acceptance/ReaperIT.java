@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.acceptance;
 
-
 import java.util.Optional;
 
 import cucumber.api.CucumberOptions;

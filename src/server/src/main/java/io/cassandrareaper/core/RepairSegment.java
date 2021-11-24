@@ -20,7 +20,6 @@ package io.cassandrareaper.core;
 import java.math.BigInteger;
 import java.util.Map;
 import java.util.UUID;
-
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;

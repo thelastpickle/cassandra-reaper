@@ -204,13 +204,13 @@
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
             <!-- can't go up to 2.26 until dropwizard-shiro-0.3.0 is released -->
-            <version>2.25.1</version>
+            <version>2.32</version>
         </dependency>
         <dependency>
             <!-- required to solve dropwizard 1.1.7 & jersery-client 2.25.1 dependency issues -->
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-server</artifactId>
-            <version>2.25.1</version>
+            <version>2.32</version>
             <exclusions>
 	            <exclusion>
 	            		<groupId>javax.validation</groupId>
@@ -646,7 +646,7 @@
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
-              <version>2.14.1</version>
+              <version>2.18.1</version>
               <inherited>true</inherited>
               <configuration>
                   <systemPropertyVariables>
@@ -656,7 +656,7 @@
                     <io.cassandrareaper.service.SegmentRunner.sleep_time_after_postpone_in_ms>500</io.cassandrareaper.service.SegmentRunner.sleep_time_after_postpone_in_ms>
                   </systemPropertyVariables>
                   <!-- noverify is needed for ReaperTestJettyRunner.ParentLastURLClassLoader.ChildURLClassLoader.findClass(..) -->
-                  <argLine>${argLine} -noverify</argLine>
+                  <!-- <argLine>${argLine} -noverify</argLine> -->
               </configuration>
             </plugin>
             <plugin>

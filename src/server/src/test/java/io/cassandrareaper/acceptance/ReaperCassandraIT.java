@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.acceptance;
 
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -106,10 +105,16 @@ public class ReaperCassandraIT implements Upgradable {
   }
 
   private static void createReaperTestJettyRunner(Optional<String> version) throws InterruptedException {
-    ReaperTestJettyRunner runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE, version);
-    RUNNER_INSTANCES.add(runner);
-    Thread.sleep(100);
-    BasicSteps.addReaperRunner(runner);
+    ReaperTestJettyRunner runner;
+    try {
+      runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE, version);
+      RUNNER_INSTANCES.add(runner);
+      Thread.sleep(100);
+      BasicSteps.addReaperRunner(runner);
+    } catch (RuntimeException e) {
+      LOG.error("Failed creating Test Jetty Runner", e);
+      e.printStackTrace();
+    }
   }
 
   private static void removeReaperTestJettyRunner(ReaperTestJettyRunner runner) throws InterruptedException {

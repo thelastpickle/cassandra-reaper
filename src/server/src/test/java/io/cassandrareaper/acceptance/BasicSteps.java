@@ -115,11 +115,11 @@ public final class BasicSteps {
 
   public static synchronized void addReaperRunner(ReaperTestJettyRunner runner) {
     if (!CLIENTS.isEmpty()) {
-      Preconditions.checkState(isInstanceOfDistributedStorage(runner.runnerInstance.getContextStorageClassname()));
+      Preconditions.checkState(isInstanceOfDistributedStorage(runner.getContextStorageClassname()));
       RUNNERS.stream()
           .forEach(r ->
               Preconditions.checkState(
-                  isInstanceOfDistributedStorage(runner.runnerInstance.getContextStorageClassname())
+                  isInstanceOfDistributedStorage(runner.getContextStorageClassname())
               ));
     }
     RUNNERS.add(runner);
@@ -271,7 +271,7 @@ public final class BasicSteps {
           String responseData = response.readEntity(String.class);
           Assertions.assertThat(responseData).isNotBlank();
           List<String> clusterNames = SimpleReaperClient.parseClusterNameListJSON(responseData);
-          if (!((AppContext) runner.runnerInstance.getContext()).config.isInSidecarMode()) {
+          if (!((AppContext) runner.getContext()).config.isInSidecarMode()) {
             // Sidecar self registers clusters
             if (clusterNames.size() == 0) {
               return true;
@@ -317,7 +317,7 @@ public final class BasicSteps {
         Map<String, Object> cluster = SimpleReaperClient.parseClusterStatusJSON(responseData);
 
         if (Response.Status.CREATED.getStatusCode() == responseStatus
-            || ((AppContext) runner.runnerInstance.getContext()).config.isInSidecarMode()) {
+            || ((AppContext) runner.getContext()).config.isInSidecarMode()) {
           TestContext.TEST_CLUSTER = (String) cluster.get("name");
         }
       });
@@ -364,7 +364,7 @@ public final class BasicSteps {
         Map<String, Object> cluster = SimpleReaperClient.parseClusterStatusJSON(responseData);
 
         if (Response.Status.CREATED.getStatusCode() == responseStatus
-            || ((AppContext) runner.runnerInstance.getContext()).config.isInSidecarMode()) {
+            || ((AppContext) runner.getContext()).config.isInSidecarMode()) {
           TestContext.TEST_CLUSTER = (String) cluster.get("name");
         }
       });

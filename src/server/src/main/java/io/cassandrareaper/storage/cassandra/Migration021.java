@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.storage.cassandra;
 
-
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.VersionNumber;
 import org.slf4j.Logger;
