@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.jmx;
 
-
 import io.cassandrareaper.core.DroppedMessages;
 import io.cassandrareaper.core.GenericMetric;
 import io.cassandrareaper.core.JmxStat;

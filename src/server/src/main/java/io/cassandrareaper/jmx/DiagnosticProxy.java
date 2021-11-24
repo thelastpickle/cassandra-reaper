@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.jmx;
 
-
 import io.cassandrareaper.service.DiagEventSubscriptionService;
 
 import java.io.IOException;

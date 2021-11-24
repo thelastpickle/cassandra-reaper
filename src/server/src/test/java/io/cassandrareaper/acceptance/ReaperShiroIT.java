@@ -17,8 +17,6 @@
 
 package io.cassandrareaper.acceptance;
 
-import java.util.Optional;
-
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.AfterClass;
@@ -46,7 +44,7 @@ public final class ReaperShiroIT {
         "setting up testing Reaper runner with {} seed hosts defined and memory storage",
         TestContext.TEST_CLUSTER_SEED_HOSTS.size());
 
-    runner = new ReaperTestJettyRunner(MEMORY_CONFIG_FILE, Optional.empty());
+    runner = new ReaperTestJettyRunner(MEMORY_CONFIG_FILE);
     BasicSteps.addReaperRunner(runner);
   }
 

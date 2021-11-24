@@ -43,6 +43,7 @@ public final class LoginResourceLdapTest {
     try (InputStream is = ResourceUtils.getInputStreamForPath("classpath:test-shiro-ldap.ini")) {
       Ini ini = new Ini();
       ini.load(is);
+      ini.get("main").remove("filterChainResolver.globalFilters");
       int port = embeddedLdapRule.embeddedServerPort();
       ini.setSectionProperty("main", "ldapRealm.contextFactory.url", "ldap://localhost:" + port);
       new WebIniSecurityManagerFactory(ini).getInstance().authenticate(new UsernamePasswordToken("sclaus", "abcdefg"));

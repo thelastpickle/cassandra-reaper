@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.storage.cassandra;
 
-
 import io.cassandrareaper.core.RepairRun;
 
 import java.util.Date;

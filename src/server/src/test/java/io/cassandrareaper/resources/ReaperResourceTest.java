@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2018-2018 The Last Pickle Ltd
  *
  *

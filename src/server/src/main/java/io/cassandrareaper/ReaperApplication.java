@@ -71,7 +71,6 @@ import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
-import io.dropwizard.jetty.BiDiGzipHandler;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
@@ -79,6 +78,7 @@ import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.MetricsServlet;
 import org.apache.http.client.HttpClient;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.joda.time.DateTimeZone;
@@ -99,13 +99,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     this.context = new AppContext();
   }
 
-  @VisibleForTesting
-  public ReaperApplication(AppContext context) {
-    super();
-    LOG.info("ReaperApplication constructor called with custom AppContext");
-    this.context = context;
-  }
-
   public static void main(String[] args) throws Exception {
     new ReaperApplication().run(args);
   }
@@ -113,6 +106,11 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   @Override
   public String getName() {
     return "cassandra-reaper";
+  }
+
+  @VisibleForTesting
+  public AppContext getContext() {
+    return context;
   }
 
   /**
@@ -367,8 +365,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   private static void setupSse(Environment environment) {
     // Enabling gzip buffering will prevent flushing of server-side-events, so we disable compression for SSE
     environment.lifecycle().addServerLifecycleListener(server -> {
-      for (Handler handler : server.getChildHandlersByClass(BiDiGzipHandler.class)) {
-        ((BiDiGzipHandler) handler).addExcludedMimeTypes("text/event-stream");
+      for (Handler handler : server.getChildHandlersByClass(GzipHandler.class)) {
+        ((GzipHandler) handler).addExcludedMimeTypes("text/event-stream");
       }
     });
   }
@@ -485,6 +483,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         try {
           context.storage = InitializeStorage.initializeStorage(
             config, environment, context.reaperInstanceId).initializeStorageBackend();
+
+          // Allows to execute cleanup queries as shutdown hooks
+          environment.lifecycle().manage(context.storage);
           break;
         } catch (RuntimeException e) {
           LOG.error("Storage is not ready yet, trying again to connect shortly...", e);

@@ -19,7 +19,7 @@ package io.cassandrareaper;
 
 import java.nio.file.Paths;
 
-import org.fest.assertions.api.Assertions;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 public final class AssertionTest {

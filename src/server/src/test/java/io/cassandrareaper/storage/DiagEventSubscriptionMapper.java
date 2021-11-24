@@ -20,8 +20,6 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.DiagEventSubscription;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -30,34 +28,10 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.google.common.collect.ImmutableSet;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 
-public final class DiagEventSubscriptionMapper implements ResultSetMapper<DiagEventSubscription> {
+public final class DiagEventSubscriptionMapper {
 
-  @Override
-  public DiagEventSubscription map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
-
-    UUID id = UuidUtil.fromSequenceId(rs.getLong("id"));
-    String cluster = rs.getString("cluster");
-    String description = rs.getString("description");
-    Set<String> includeNodes = parseStringArray(rs.getArray("include_nodes").getArray());
-    Set<String> events = parseStringArray(rs.getArray("events").getArray());
-    Boolean exportWebUi = rs.getBoolean("export_sse");
-    String exportFileLogger = rs.getString("export_file_logger");
-    String exportHttpEndpoint = rs.getString("export_http_endpoint");
-
-    return new DiagEventSubscription(
-        Optional.of(id),
-        cluster,
-        Optional.ofNullable(description),
-        includeNodes,
-        events,
-        exportWebUi,
-        exportFileLogger,
-        exportHttpEndpoint);
-  }
 
   private Set<String> parseStringArray(Object obj) {
     Set<String> values = Collections.emptySet();

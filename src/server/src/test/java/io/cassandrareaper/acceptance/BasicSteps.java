@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.acceptance;
 
-import io.cassandrareaper.AppContext;
 import io.cassandrareaper.SimpleReaperClient;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.DroppedMessages;
@@ -48,8 +47,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.sse.SseEventSource;
 
@@ -74,6 +71,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Duration;
 import org.awaitility.core.ConditionTimeoutException;
+import org.glassfish.jersey.client.JerseyClientBuilder;
+import org.glassfish.jersey.client.JerseyWebTarget;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +96,6 @@ public final class BasicSteps {
   private static final List<ReaperTestJettyRunner> RUNNERS = new CopyOnWriteArrayList<>();
   private static final List<SimpleReaperClient> CLIENTS = new CopyOnWriteArrayList<>();
   private static final Random RAND = new Random(System.nanoTime());
-  private static final AtomicReference<Upgradable> TEST_INSTANCE = new AtomicReference<>();
 
   private static final Map<String,String> EVENT_TYPES = ImmutableMap.<String,String>builder()
       .put("AuditEvent", "org.apache.cassandra.audit.AuditEvent")
@@ -115,11 +113,11 @@ public final class BasicSteps {
 
   public static synchronized void addReaperRunner(ReaperTestJettyRunner runner) {
     if (!CLIENTS.isEmpty()) {
-      Preconditions.checkState(isInstanceOfDistributedStorage(runner.runnerInstance.getContextStorageClassname()));
+      Preconditions.checkState(isInstanceOfDistributedStorage(runner.getContextStorageClassname()));
       RUNNERS.stream()
           .forEach(r ->
               Preconditions.checkState(
-                  isInstanceOfDistributedStorage(runner.runnerInstance.getContextStorageClassname())
+                  isInstanceOfDistributedStorage(runner.getContextStorageClassname())
               ));
     }
     RUNNERS.add(runner);
@@ -129,11 +127,6 @@ public final class BasicSteps {
   public static synchronized void removeReaperRunner(ReaperTestJettyRunner runner) {
     CLIENTS.remove(runner.getClient());
     RUNNERS.remove(runner);
-  }
-
-  static void setup(Upgradable testInstance) {
-    Preconditions.checkState(null == TEST_INSTANCE.get());
-    TEST_INSTANCE.set(testInstance);
   }
 
   private static void callAndExpect(
@@ -230,25 +223,6 @@ public final class BasicSteps {
   public void start_reaper(String version) throws Throwable {
     synchronized (BasicSteps.class) {
       testContext = new TestContext();
-      Optional<String> newVersion = version.trim().isEmpty() ? Optional.empty() : Optional.of(version);
-      if (RUNNERS.isEmpty() || !newVersion.equals(reaperVersion)) {
-        if (null == TEST_INSTANCE.get()) {
-          throw new AssertionError(
-              "Running upgrade tests is not supported with this IT. The test must subclass and implement Upgradable");
-        }
-        reaperVersion = newVersion;
-        TEST_INSTANCE.get().upgradeReaperRunner(reaperVersion);
-      }
-    }
-  }
-
-  @When("^reaper is upgraded to latest$")
-  public void upgrade_reaper() throws Throwable {
-    synchronized (BasicSteps.class) {
-      if (reaperVersion.isPresent()) {
-        reaperVersion = Optional.empty();
-        TEST_INSTANCE.get().upgradeReaperRunner(Optional.empty());
-      }
     }
   }
 
@@ -271,7 +245,7 @@ public final class BasicSteps {
           String responseData = response.readEntity(String.class);
           Assertions.assertThat(responseData).isNotBlank();
           List<String> clusterNames = SimpleReaperClient.parseClusterNameListJSON(responseData);
-          if (!((AppContext) runner.runnerInstance.getContext()).config.isInSidecarMode()) {
+          if (!runner.getContext().config.isInSidecarMode()) {
             // Sidecar self registers clusters
             if (clusterNames.size() == 0) {
               return true;
@@ -317,7 +291,7 @@ public final class BasicSteps {
         Map<String, Object> cluster = SimpleReaperClient.parseClusterStatusJSON(responseData);
 
         if (Response.Status.CREATED.getStatusCode() == responseStatus
-            || ((AppContext) runner.runnerInstance.getContext()).config.isInSidecarMode()) {
+            || runner.getContext().config.isInSidecarMode()) {
           TestContext.TEST_CLUSTER = (String) cluster.get("name");
         }
       });
@@ -364,7 +338,7 @@ public final class BasicSteps {
         Map<String, Object> cluster = SimpleReaperClient.parseClusterStatusJSON(responseData);
 
         if (Response.Status.CREATED.getStatusCode() == responseStatus
-            || ((AppContext) runner.runnerInstance.getContext()).config.isInSidecarMode()) {
+            || runner.getContext().config.isInSidecarMode()) {
           TestContext.TEST_CLUSTER = (String) cluster.get("name");
         }
       });
@@ -2343,8 +2317,8 @@ public final class BasicSteps {
     synchronized (BasicSteps.class) {
       DiagEventSubscription last = testContext.getCurrentEventSubscription();
 
-      Client client = ClientBuilder.newClient();
-      WebTarget target = client.target("http://localhost:"
+      Client client = JerseyClientBuilder.createClient();
+      JerseyWebTarget target = (JerseyWebTarget) client.target("http://localhost:"
           + RUNNERS.get(0).runnerInstance.getLocalPort()
           + "/diag_event/sse_listen/"
           + last.getId().get());

@@ -36,7 +36,6 @@ import javax.ws.rs.DefaultValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
 import io.dropwizard.client.HttpClientConfiguration;
-import io.dropwizard.db.DataSourceFactory;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.secnod.dropwizard.shiro.ShiroConfiguration;
@@ -154,12 +153,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
   private Integer numberOfRunsToKeepPerUnit;
 
   private CassandraFactory cassandra = new CassandraFactory();
-
-  @Deprecated
-  @JsonProperty
-  private DataSourceFactory database;
-
-  private DataSourceFactory relationalDb = new DataSourceFactory();
 
   @JsonProperty
   private Optional<String> enforcedLocalNode = Optional.empty();
@@ -291,10 +284,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setStorageType(String storageType) {
     this.storageType = storageType;
-  }
-
-  public DataSourceFactory getDataSourceFactory() {
-    return database != null ? database : relationalDb;
   }
 
   public int getRepairManagerSchedulingIntervalSeconds() {

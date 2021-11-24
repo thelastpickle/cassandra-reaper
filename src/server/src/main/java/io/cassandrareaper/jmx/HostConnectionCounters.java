@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.jmx;
 
-
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
