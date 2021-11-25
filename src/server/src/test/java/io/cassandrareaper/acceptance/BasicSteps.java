@@ -48,8 +48,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.sse.SseEventSource;
 
@@ -74,6 +72,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Duration;
 import org.awaitility.core.ConditionTimeoutException;
+import org.glassfish.jersey.client.JerseyClientBuilder;
+import org.glassfish.jersey.client.JerseyWebTarget;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -2343,8 +2343,8 @@ public final class BasicSteps {
     synchronized (BasicSteps.class) {
       DiagEventSubscription last = testContext.getCurrentEventSubscription();
 
-      Client client = ClientBuilder.newClient();
-      WebTarget target = client.target("http://localhost:"
+      Client client = JerseyClientBuilder.createClient();
+      JerseyWebTarget target = (JerseyWebTarget) client.target("http://localhost:"
           + RUNNERS.get(0).runnerInstance.getLocalPort()
           + "/diag_event/sse_listen/"
           + last.getId().get());

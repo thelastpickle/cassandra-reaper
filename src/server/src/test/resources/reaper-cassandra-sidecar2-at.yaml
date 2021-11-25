@@ -41,11 +41,11 @@ server:
   type: default
   applicationConnectors:
     - type: http
-      port: 8085
+      port: 8092
       bindHost: 127.0.0.1
   adminConnectors:
     - type: http
-      port: 8086
+      port: 8093
       bindHost: 127.0.0.1
 
 jmxPorts:
