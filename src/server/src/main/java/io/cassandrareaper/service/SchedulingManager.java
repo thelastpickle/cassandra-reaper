@@ -34,6 +34,7 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+import com.datastax.driver.core.exceptions.DriverInternalError;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 
@@ -116,6 +117,8 @@ public final class SchedulingManager extends TimerTask {
               nextActivatedSchedule.getNextActivation(),
               nextActivatedSchedule.getId());
         }
+      } catch (DriverInternalError expected) {
+        LOG.warn("Driver connection closed, Reaper is shutting down.");
       } catch (Throwable ex) {
         LOG.error("failed managing schedule for run with id: {}", lastId);
         LOG.error("catch exception", ex);
