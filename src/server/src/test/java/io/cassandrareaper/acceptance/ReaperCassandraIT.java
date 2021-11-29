@@ -27,6 +27,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
 import com.google.common.base.Preconditions;
+
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.AfterClass;
@@ -107,9 +108,10 @@ public class ReaperCassandraIT implements Upgradable {
   private static void createReaperTestJettyRunner(Optional<String> version) throws InterruptedException {
     ReaperTestJettyRunner runner;
     try {
-      runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE, version);
+
+      runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE);
       RUNNER_INSTANCES.add(runner);
-      Thread.sleep(30000);
+      Thread.sleep(100);
       BasicSteps.addReaperRunner(runner);
     } catch (RuntimeException e) {
       LOG.error("Failed creating Test Jetty Runner", e);
@@ -119,7 +121,7 @@ public class ReaperCassandraIT implements Upgradable {
 
   private static void removeReaperTestJettyRunner(ReaperTestJettyRunner runner) throws InterruptedException {
     BasicSteps.removeReaperRunner(runner);
-    Thread.sleep(10000);
+    Thread.sleep(200);
     runner.runnerInstance.after();
     RUNNER_INSTANCES.remove(runner);
   }

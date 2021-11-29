@@ -21,13 +21,19 @@ import io.cassandrareaper.ReaperApplication;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.SimpleReaperClient;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.ServerSocket;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.ws.rs.core.Response;
 
+import com.google.common.collect.Sets;
+
 import io.dropwizard.Application;
+import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;
 
@@ -41,14 +47,17 @@ import io.dropwizard.testing.ResourceHelpers;
  */
 public final class ReaperTestJettyRunner {
 
+  static final Set<Integer> USED_PORTS = Sets.newConcurrentHashSet();
   static final String REAPER_APPLICATION_FQN = "io.cassandrareaper.ReaperApplication";
 
   final DropwizardTestSupport<ReaperApplicationConfiguration> runnerInstance;
   private SimpleReaperClient reaperClientInstance;
 
-  public ReaperTestJettyRunner(String yamlConfigFile, Optional<String> version) {
+  public ReaperTestJettyRunner(String yamlConfigFile) {
     runnerInstance = new DropwizardTestSupport<ReaperApplicationConfiguration>(
-      ReaperApplication.class, ResourceHelpers.resourceFilePath(yamlConfigFile));
+      ReaperApplication.class, ResourceHelpers.resourceFilePath(yamlConfigFile),
+      ConfigOverride.config("server.applicationConnectors[0].port", String.valueOf(getAnyAvailablePort())),
+      ConfigOverride.config("server.adminConnectors[0].port", String.valueOf(getAnyAvailablePort())));
     try {
       runnerInstance.before();
     } catch (Exception e) { // CHECKSTYLE IGNORE THIS LINE
@@ -95,6 +104,14 @@ public final class ReaperTestJettyRunner {
       return context.getClass().getField("storage").get(context).getClass().getName();
     } catch (ReflectiveOperationException ex) {
       throw new AssertionError(ex);
+    }
+  }
+
+  private static int getAnyAvailablePort() {
+    try (ServerSocket s = new ServerSocket(0)) {
+      return USED_PORTS.add(s.getLocalPort()) ? s.getLocalPort() : getAnyAvailablePort();
+    } catch (IOException ex) {
+      throw new IllegalStateException("no available ports", ex);
     }
   }
 }

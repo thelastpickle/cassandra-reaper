@@ -86,7 +86,7 @@ public class ReaperCassandraSidecarIT implements Upgradable {
   private static void createReaperTestJettyRunner(Optional<String> version) throws InterruptedException {
     ReaperTestJettyRunner runner;
     try {
-      runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE[RUNNER_INSTANCES.size()], version);
+      runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE[RUNNER_INSTANCES.size()]);
       RUNNER_INSTANCES.add(runner);
       Thread.sleep(100);
       BasicSteps.addReaperRunner(runner);

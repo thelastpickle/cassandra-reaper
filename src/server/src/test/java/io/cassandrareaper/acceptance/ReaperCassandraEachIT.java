@@ -78,7 +78,7 @@ public class ReaperCassandraEachIT implements Upgradable {
 
   private static void createReaperTestJettyRunner(Optional<String> version) throws InterruptedException {
     ReaperTestJettyRunner runner
-        = new ReaperTestJettyRunner(CASS_CONFIG_FILE[RUNNER_INSTANCES.size()], Optional.empty());
+        = new ReaperTestJettyRunner(CASS_CONFIG_FILE[RUNNER_INSTANCES.size()]);
     RUNNER_INSTANCES.add(runner);
     Thread.sleep(100);
     if (RUNNER_INSTANCES.size() == 1) {
