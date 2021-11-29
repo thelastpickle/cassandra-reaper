@@ -635,7 +635,7 @@ jobs:
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [4]
-        grim-min: [2]
+        grim-min: [3]
         cucumber-options: ['--tags ~@diag_event_subscriptions']
         include:
           # all versions but trunk need to exclude trunk tests
@@ -710,7 +710,7 @@ jobs:
         test-type: [elassandra]
         storage-type: [elassandra]
         elassandra-version: ['6.2.3.26']
-        grim-min: [2]
+        grim-min: [3]
         grim-max: [4]
         cucumber-options: ['--tags ~@cassandra_4_0_onwards --tags ~@diag_event_subscriptions']
     steps:

@@ -109,7 +109,7 @@ public class ReaperCassandraIT implements Upgradable {
     try {
       runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE, version);
       RUNNER_INSTANCES.add(runner);
-      Thread.sleep(100);
+      Thread.sleep(30000);
       BasicSteps.addReaperRunner(runner);
     } catch (RuntimeException e) {
       LOG.error("Failed creating Test Jetty Runner", e);
@@ -119,7 +119,7 @@ public class ReaperCassandraIT implements Upgradable {
 
   private static void removeReaperTestJettyRunner(ReaperTestJettyRunner runner) throws InterruptedException {
     BasicSteps.removeReaperRunner(runner);
-    Thread.sleep(200);
+    Thread.sleep(10000);
     runner.runnerInstance.after();
     RUNNER_INSTANCES.remove(runner);
   }
