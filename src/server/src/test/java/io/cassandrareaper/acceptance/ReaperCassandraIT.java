@@ -84,6 +84,7 @@ public class ReaperCassandraIT implements Upgradable {
             int remove = minReaperInstances + RAND.nextInt(maxReaperInstances - minReaperInstances);
             removeReaperTestJettyRunner(RUNNER_INSTANCES.get(remove));
           }
+          Thread.sleep(30000);
         } catch (RuntimeException | InterruptedException ex) {
           LOG.error("failed adding/removing reaper instance", ex);
         }
@@ -122,8 +123,8 @@ public class ReaperCassandraIT implements Upgradable {
   private static void removeReaperTestJettyRunner(ReaperTestJettyRunner runner) throws InterruptedException {
     BasicSteps.removeReaperRunner(runner);
     Thread.sleep(200);
-    runner.runnerInstance.after();
     RUNNER_INSTANCES.remove(runner);
+    runner.runnerInstance.after();
   }
 
   public static void initSchema() throws IOException {
