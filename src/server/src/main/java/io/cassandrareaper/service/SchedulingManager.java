@@ -101,24 +101,26 @@ public final class SchedulingManager extends TimerTask {
    */
   @Override
   public void run() {
-    if (context.isRunning.get() && currentReaperIsSchedulingLeader()) {
+    if (context.isRunning.get()) {
       LOG.debug("Checking for repair schedules...");
       UUID lastId = null;
       try {
-        Collection<RepairSchedule> schedules = context.storage.getAllRepairSchedules();
-        boolean anyRunStarted = false;
-        for (RepairSchedule schedule : schedules) {
-          lastId = schedule.getId();
-          anyRunStarted = manageSchedule(schedule) || anyRunStarted;
-        }
-        if (!anyRunStarted && nextActivatedSchedule != null) {
-          LOG.debug(
-              "not scheduling new repairs yet, next activation is '{}' for schedule id '{}'",
-              nextActivatedSchedule.getNextActivation(),
-              nextActivatedSchedule.getId());
+        if (currentReaperIsSchedulingLeader()) {
+          Collection<RepairSchedule> schedules = context.storage.getAllRepairSchedules();
+          boolean anyRunStarted = false;
+          for (RepairSchedule schedule : schedules) {
+            lastId = schedule.getId();
+            anyRunStarted = manageSchedule(schedule) || anyRunStarted;
+          }
+          if (!anyRunStarted && nextActivatedSchedule != null) {
+            LOG.debug(
+                "not scheduling new repairs yet, next activation is '{}' for schedule id '{}'",
+                nextActivatedSchedule.getNextActivation(),
+                nextActivatedSchedule.getId());
+          }
         }
       } catch (DriverInternalError expected) {
-        LOG.warn("Driver connection closed, Reaper is shutting down.");
+        LOG.debug("Driver connection closed, Reaper is shutting down.");
       } catch (Throwable ex) {
         LOG.error("failed managing schedule for run with id: {}", lastId);
         LOG.error("catch exception", ex);
