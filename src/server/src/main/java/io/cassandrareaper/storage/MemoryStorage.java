@@ -588,4 +588,14 @@ public final class MemoryStorage implements IStorage {
       percentRepairedMetrics.put(metricKey, newValue);
     }
   }
+
+  @Override
+  public void start() {
+    // no-op
+  }
+
+  @Override
+  public void stop() {
+    // no-op
+  }
 }

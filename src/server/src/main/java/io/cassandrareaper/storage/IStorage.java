@@ -34,11 +34,12 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.UUID;
 
+import io.dropwizard.lifecycle.Managed;
 
 /**
  * API definition for cassandra-reaper.
  */
-public interface IStorage {
+public interface IStorage extends Managed {
 
   boolean isStorageConnected();
 

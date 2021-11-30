@@ -485,6 +485,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         try {
           context.storage = InitializeStorage.initializeStorage(
             config, environment, context.reaperInstanceId).initializeStorageBackend();
+
+          // Allows to execute cleanup queries as shutdown hooks
+          environment.lifecycle().manage(context.storage);
           break;
         } catch (RuntimeException e) {
           LOG.error("Storage is not ready yet, trying again to connect shortly...", e);
