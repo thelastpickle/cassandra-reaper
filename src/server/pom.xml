@@ -50,6 +50,7 @@
         </cucumber.no-versions-to-test>
         <cucumber.upgrade-versions>${cucumber.no-versions-to-test}</cucumber.upgrade-versions>
         <cxf-version>3.4.5</cxf-version>
+        <shiro-version>1.8.0</shiro-version>
     </properties>
 
     <dependencies>
@@ -158,14 +159,23 @@
             <version>1.26</version>
         </dependency>
         <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-handler</artifactId>
+            <version>4.1.70.Final</version>
+        </dependency>
+        <dependency>
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
-            <version>3.10.1</version>
+            <version>3.11.0</version>
             <exclusions>
 	            <exclusion>
 		            <groupId>com.fasterxml.jackson.core</groupId>
 	                <artifactId>jackson-databind</artifactId>
 	            </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-handler</artifactId>
+                </exclusion>
 	        </exclusions>
         </dependency>
         <dependency>
@@ -192,6 +202,35 @@
             <groupId>io.cassandrareaper.dropwizard</groupId>
             <artifactId>dropwizard-shiro</artifactId>
             <version>0.3.0-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.shiro</groupId>
+                    <artifactId>shiro-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.shiro</groupId>
+                    <artifactId>shiro-web</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.shiro</groupId>
+                    <artifactId>shiro-jaxrs</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.shiro</groupId>
+            <artifactId>shiro-core</artifactId>
+            <version>${shiro-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.shiro</groupId>
+            <artifactId>shiro-web</artifactId>
+            <version>${shiro-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.shiro</groupId>
+            <artifactId>shiro-jaxrs</artifactId>
+            <version>${shiro-version}</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

@@ -1874,6 +1874,7 @@ public final class BasicSteps {
   @Then("^the response was redirected to the login page$")
   public void theResponseWasRedirectedToTheLoginPage() throws Throwable {
     assertTrue(lastResponse.hasEntity());
+    LOG.error("HTTP response entity : {}", lastResponse.readEntity(String.class));
     assertTrue(lastResponse.readEntity(String.class).contains("<title>Not a real login page</title>"));
   }
 
