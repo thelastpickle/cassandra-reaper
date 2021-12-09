@@ -19,14 +19,11 @@ package io.cassandrareaper.acceptance;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
-import com.google.common.base.Preconditions;
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.AfterClass;
@@ -44,7 +41,7 @@ import static org.awaitility.Awaitility.await;
     features = "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature",
     plugin = {"pretty"}
     )
-public class ReaperCassandraSidecarIT implements Upgradable {
+public class ReaperCassandraSidecarIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperCassandraSidecarIT.class);
   private static final List<ReaperTestJettyRunner> RUNNER_INSTANCES = new CopyOnWriteArrayList<>();
@@ -55,8 +52,6 @@ public class ReaperCassandraSidecarIT implements Upgradable {
       "reaper-cassandra-sidecar3-at.yaml",
       "reaper-cassandra-sidecar4-at.yaml",
     };
-  private static final Random RAND = new Random(System.nanoTime());
-  private static Thread GRIM_REAPER;
 
   protected ReaperCassandraSidecarIT() {}
 
@@ -66,40 +61,19 @@ public class ReaperCassandraSidecarIT implements Upgradable {
         "setting up testing Reaper runner with {} seed hosts defined and cassandra storage",
         TestContext.TEST_CLUSTER_SEED_HOSTS.size());
 
-    BasicSteps.setup(new ReaperCassandraSidecarIT());
     int reaperInstances = Integer.getInteger("grim.reaper.min", 2);
 
     initSchema();
     for (int i = 0;i < reaperInstances;i++) {
-      createReaperTestJettyRunner(Optional.empty());
+      createReaperTestJettyRunner();
     }
   }
 
-  @Override
-  public void upgradeReaperRunner(Optional<String> version) throws InterruptedException {
-    synchronized (ReaperCassandraSidecarIT.class) {
-      Preconditions.checkState(1 >= RUNNER_INSTANCES.size(), "Upgrading with multiple Reaper instances not supported");
-    }
-  }
-
-  @SuppressWarnings("IllegalCatchCheck")
-  private static void createReaperTestJettyRunner(Optional<String> version) throws InterruptedException {
-    ReaperTestJettyRunner runner;
-    try {
-      runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE[RUNNER_INSTANCES.size()]);
-      RUNNER_INSTANCES.add(runner);
-      Thread.sleep(100);
-      BasicSteps.addReaperRunner(runner);
-    } catch (RuntimeException e) {
-      e.printStackTrace();
-    }
-  }
-
-  private static void removeReaperTestJettyRunner(ReaperTestJettyRunner runner) throws InterruptedException {
-    BasicSteps.removeReaperRunner(runner);
-    Thread.sleep(200);
-    runner.runnerInstance.after();
-    RUNNER_INSTANCES.remove(runner);
+  private static void createReaperTestJettyRunner() throws InterruptedException {
+    ReaperTestJettyRunner runner = new ReaperTestJettyRunner(CASS_CONFIG_FILE[RUNNER_INSTANCES.size()]);
+    RUNNER_INSTANCES.add(runner);
+    Thread.sleep(100);
+    BasicSteps.addReaperRunner(runner);
   }
 
   public static void initSchema() throws IOException {

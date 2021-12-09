@@ -18,13 +18,11 @@ package io.cassandrareaper.acceptance;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
-import com.google.common.base.Preconditions;
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.AfterClass;
@@ -42,7 +40,7 @@ import static org.awaitility.Awaitility.await;
     features = "classpath:io.cassandrareaper.acceptance/integration_reaper_functionality.feature",
     plugin = {"pretty"}
     )
-public class ReaperCassandraEachIT implements Upgradable {
+public class ReaperCassandraEachIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReaperCassandraSidecarIT.class);
   private static final List<ReaperTestJettyRunner> RUNNER_INSTANCES = new CopyOnWriteArrayList<>();
@@ -60,23 +58,15 @@ public class ReaperCassandraEachIT implements Upgradable {
         "setting up testing Reaper runner with {} seed hosts defined and cassandra storage",
         TestContext.TEST_CLUSTER_SEED_HOSTS.size());
 
-    BasicSteps.setup(new ReaperCassandraSidecarIT());
     int reaperInstances = Integer.getInteger("grim.reaper.min", 2);
 
     initSchema();
     for (int i = 0;i < reaperInstances;i++) {
-      createReaperTestJettyRunner(Optional.empty());
+      createReaperTestJettyRunner();
     }
   }
 
-  @Override
-  public void upgradeReaperRunner(Optional<String> version) throws InterruptedException {
-    synchronized (ReaperCassandraSidecarIT.class) {
-      Preconditions.checkState(1 >= RUNNER_INSTANCES.size(), "Upgrading with multiple Reaper instances not supported");
-    }
-  }
-
-  private static void createReaperTestJettyRunner(Optional<String> version) throws InterruptedException {
+  private static void createReaperTestJettyRunner() throws InterruptedException {
     ReaperTestJettyRunner runner
         = new ReaperTestJettyRunner(CASS_CONFIG_FILE[RUNNER_INSTANCES.size()]);
     RUNNER_INSTANCES.add(runner);

@@ -17,12 +17,12 @@
 
 package io.cassandrareaper.acceptance;
 
+import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperApplication;
 import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.SimpleReaperClient;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.ServerSocket;
 import java.util.Map;
 import java.util.Optional;
@@ -32,7 +32,6 @@ import javax.ws.rs.core.Response;
 
 import com.google.common.collect.Sets;
 
-import io.dropwizard.Application;
 import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;
@@ -48,7 +47,6 @@ import io.dropwizard.testing.ResourceHelpers;
 public final class ReaperTestJettyRunner {
 
   static final Set<Integer> USED_PORTS = Sets.newConcurrentHashSet();
-  static final String REAPER_APPLICATION_FQN = "io.cassandrareaper.ReaperApplication";
 
   final DropwizardTestSupport<ReaperApplicationConfiguration> runnerInstance;
   private SimpleReaperClient reaperClientInstance;
@@ -64,18 +62,10 @@ public final class ReaperTestJettyRunner {
       throw new RuntimeException(e);
     }
 
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-      @Override
-      public void run() {
-        if (runnerInstance != null) {
-          runnerInstance.after();
-        }
-      }
-    });
+    Runtime.getRuntime().addShutdownHook(new Thread(runnerInstance::after));
   }
 
   public Response callReaper(String httpMethod, String urlPath, Optional<Map<String, String>> params) {
-    assert runnerInstance != null : "service not initialized, call setup() first";
     return SimpleReaperClient.doHttpCall(httpMethod, "localhost", runnerInstance.getLocalPort(), urlPath, params);
   }
 
@@ -86,26 +76,16 @@ public final class ReaperTestJettyRunner {
     return reaperClientInstance;
   }
 
-  public Object getContext() {
-    Application<ReaperApplicationConfiguration> application = runnerInstance.getApplication();
-    try {
-      Field field = application.getClass().getDeclaredField("context");
-      field.setAccessible(true);
-      return field.get(application);
-    } catch (ReflectiveOperationException ex) {
-      throw new AssertionError("Failed creating the proxy to DropwizardTestSupport", ex);
-    }
+  public AppContext getContext() {
+    ReaperApplication application = runnerInstance.getApplication();
+    return application.getContext();
   }
 
   String getContextStorageClassname() {
-    try {
-      // reflection for `context.storage.getClass().getName()`
-      Object context = getContext();
-      return context.getClass().getField("storage").get(context).getClass().getName();
-    } catch (ReflectiveOperationException ex) {
-      throw new AssertionError(ex);
-    }
+    AppContext context = getContext();
+    return context.storage.getClass().getName();
   }
+
 
   private static int getAnyAvailablePort() {
     try (ServerSocket s = new ServerSocket(0)) {

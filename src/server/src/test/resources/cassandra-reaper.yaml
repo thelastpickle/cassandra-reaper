@@ -79,11 +79,11 @@ server:
   type: default
   applicationConnectors:
     - type: http
-      port: 8090
+      port: 8083
       bindHost: 127.0.0.1
   adminConnectors:
     - type: http
-      port: 8091
+      port: 8084
       bindHost: 127.0.0.1
 
 # Config used to automatically add/remove sheduled repair for each keyspace

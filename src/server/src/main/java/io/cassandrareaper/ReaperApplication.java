@@ -99,13 +99,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     this.context = new AppContext();
   }
 
-  @VisibleForTesting
-  public ReaperApplication(AppContext context) {
-    super();
-    LOG.info("ReaperApplication constructor called with custom AppContext");
-    this.context = context;
-  }
-
   public static void main(String[] args) throws Exception {
     new ReaperApplication().run(args);
   }
@@ -113,6 +106,11 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   @Override
   public String getName() {
     return "cassandra-reaper";
+  }
+
+  @VisibleForTesting
+  public AppContext getContext() {
+    return context;
   }
 
   /**

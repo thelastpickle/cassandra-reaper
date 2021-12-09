@@ -97,7 +97,6 @@ public final class BasicSteps {
   private static final List<ReaperTestJettyRunner> RUNNERS = new CopyOnWriteArrayList<>();
   private static final List<SimpleReaperClient> CLIENTS = new CopyOnWriteArrayList<>();
   private static final Random RAND = new Random(System.nanoTime());
-  private static final AtomicReference<Upgradable> TEST_INSTANCE = new AtomicReference<>();
 
   private static final Map<String,String> EVENT_TYPES = ImmutableMap.<String,String>builder()
       .put("AuditEvent", "org.apache.cassandra.audit.AuditEvent")
@@ -129,11 +128,6 @@ public final class BasicSteps {
   public static synchronized void removeReaperRunner(ReaperTestJettyRunner runner) {
     CLIENTS.remove(runner.getClient());
     RUNNERS.remove(runner);
-  }
-
-  static void setup(Upgradable testInstance) {
-    Preconditions.checkState(null == TEST_INSTANCE.get());
-    TEST_INSTANCE.set(testInstance);
   }
 
   private static void callAndExpect(
@@ -230,25 +224,6 @@ public final class BasicSteps {
   public void start_reaper(String version) throws Throwable {
     synchronized (BasicSteps.class) {
       testContext = new TestContext();
-      Optional<String> newVersion = version.trim().isEmpty() ? Optional.empty() : Optional.of(version);
-      if (RUNNERS.isEmpty() || !newVersion.equals(reaperVersion)) {
-        if (null == TEST_INSTANCE.get()) {
-          throw new AssertionError(
-              "Running upgrade tests is not supported with this IT. The test must subclass and implement Upgradable");
-        }
-        reaperVersion = newVersion;
-        TEST_INSTANCE.get().upgradeReaperRunner(reaperVersion);
-      }
-    }
-  }
-
-  @When("^reaper is upgraded to latest$")
-  public void upgrade_reaper() throws Throwable {
-    synchronized (BasicSteps.class) {
-      if (reaperVersion.isPresent()) {
-        reaperVersion = Optional.empty();
-        TEST_INSTANCE.get().upgradeReaperRunner(Optional.empty());
-      }
     }
   }
 
@@ -1874,7 +1849,6 @@ public final class BasicSteps {
   @Then("^the response was redirected to the login page$")
   public void theResponseWasRedirectedToTheLoginPage() throws Throwable {
     assertTrue(lastResponse.hasEntity());
-    LOG.error("HTTP response entity : {}", lastResponse.readEntity(String.class));
     assertTrue(lastResponse.readEntity(String.class).contains("<title>Not a real login page</title>"));
   }
 
