@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.acceptance;
 
-import io.cassandrareaper.AppContext;
 import io.cassandrareaper.SimpleReaperClient;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.DroppedMessages;
@@ -246,7 +245,7 @@ public final class BasicSteps {
           String responseData = response.readEntity(String.class);
           Assertions.assertThat(responseData).isNotBlank();
           List<String> clusterNames = SimpleReaperClient.parseClusterNameListJSON(responseData);
-          if (!((AppContext) runner.getContext()).config.isInSidecarMode()) {
+          if (!runner.getContext().config.isInSidecarMode()) {
             // Sidecar self registers clusters
             if (clusterNames.size() == 0) {
               return true;
@@ -292,7 +291,7 @@ public final class BasicSteps {
         Map<String, Object> cluster = SimpleReaperClient.parseClusterStatusJSON(responseData);
 
         if (Response.Status.CREATED.getStatusCode() == responseStatus
-            || ((AppContext) runner.getContext()).config.isInSidecarMode()) {
+            || runner.getContext().config.isInSidecarMode()) {
           TestContext.TEST_CLUSTER = (String) cluster.get("name");
         }
       });
@@ -339,7 +338,7 @@ public final class BasicSteps {
         Map<String, Object> cluster = SimpleReaperClient.parseClusterStatusJSON(responseData);
 
         if (Response.Status.CREATED.getStatusCode() == responseStatus
-            || ((AppContext) runner.getContext()).config.isInSidecarMode()) {
+            || runner.getContext().config.isInSidecarMode()) {
           TestContext.TEST_CLUSTER = (String) cluster.get("name");
         }
       });
