@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# we expect the jmx credentials to be a comma-separated list of 'user:passowrd@cluster' entries
+# we expect the jmx credentials to be a comma-separated list of 'user:password@cluster' entries
 if [ ! -z "${REAPER_JMX_CREDENTIALS}" ]; then
 
 cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
@@ -25,14 +25,14 @@ EOT
   for ENTRY in $(echo "${REAPER_JMX_CREDENTIALS}" | sed "s/,/ /g"); do
     # and then just cut out the fields we need
     CLUSTER=$(echo "${ENTRY}" | cut -d'@' -f2)
-    USERNAME=$(echo "${ENTRY}" | cut -d'@' -f1 | cut -d':' -f1)
-    PASSWORD=$(echo "${ENTRY}" | cut -d'@' -f1 | cut -d':' -f2)
+    USERNAME=$(echo "${ENTRY}" | cut -d'@' -f1 | cut -d':' -f1 | sed 's/"/\\"/g')
+    PASSWORD=$(echo "${ENTRY}" | cut -d'@' -f1 | cut -d':' -f2 | sed 's/"/\\"/g')
 
     # finally, write out the YAML entries
 cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
   ${CLUSTER}:
-    username: ${USERNAME}
-    password: ${PASSWORD}
+    username: "${USERNAME}"
+    password: "${PASSWORD}"
 EOT
 
   done
@@ -43,8 +43,8 @@ fi
 if [ ! -z "${REAPER_JMX_AUTH_USERNAME}" ]; then
 cat <<EOT >> /etc/cassandra-reaper/cassandra-reaper.yml
 jmxAuth:
-  username: ${REAPER_JMX_AUTH_USERNAME}
-  password: ${REAPER_JMX_AUTH_PASSWORD}
+  username: "$(echo "${REAPER_JMX_AUTH_USERNAME}" | sed 's/"/\\"/g')"
+  password: "$(echo "${REAPER_JMX_AUTH_PASSWORD}" | sed 's/"/\\"/g')"
 EOT
 
 fi
