@@ -43,7 +43,7 @@ http://dropwizard.io/
 Dependencies
 ------------
 
-For information on the packaged dependencies of Reaper for Apache Cassandra&reg; and their licenses, check out our [open source report](https://app.fossa.com/reports/5c4e445c-c3d5-4aa3-b34e-bc25e5ed21a2).
+For information on the packaged dependencies of Reaper for Apache Cassandra&reg; and their licenses, check out our [open source report](https://app.fossa.com/reports/9754f92d-782f-4660-a410-d0337e8ff514).
 
 
 *Note: This repo is a fork from the original Reaper project, created by the awesome folks at Spotify.*
