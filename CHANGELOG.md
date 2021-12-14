@@ -1,5 +1,16 @@
 ## Change Log
 
+### 3.1.0 (2021/12/14 10:15 +00:00)
+- [#1152](https://github.com/thelastpickle/cassandra-reaper/pull/1152) Update to the newer version of Fossa's CLI (#1152) (@jdonenine)
+- [a6d1724](https://github.com/thelastpickle/cassandra-reaper/commit/a6d17245182b53b5abcab64ef32150c261122df4) Upgrade to Dropwizard 2.0 (@adejanovski)
+- [e9cfc20](https://github.com/thelastpickle/cassandra-reaper/commit/e9cfc202ddcca549165ebbf6aa5841241ade5d0b) JDK11 support (@burmanm)
+- [bd1211b](https://github.com/thelastpickle/cassandra-reaper/commit/bd1211bc4b3d945388da7fecfc485e4e9a625634) Fix the Base64-decoder failing if JWT_SECRET is not provided (@burmanm)
+- [1a4fb1d](https://github.com/thelastpickle/cassandra-reaper/commit/1a4fb1db7b48c23c20c5e9a330d9bd36d1130ff1) Quote username and passwords in generated cassandra-reaper.yml (@adutra)
+- [#1131](https://github.com/thelastpickle/cassandra-reaper/pull/1131) Allow to force create repair runs with conflicting units (#1131) (@adejanovski)
+- [#1146](https://github.com/thelastpickle/cassandra-reaper/pull/1146) Add missing auto-scheduling environment variables (#1146) (@adutra)
+- [9b97ef8](https://github.com/thelastpickle/cassandra-reaper/commit/9b97ef8e72ae37221b5f31b31ae79147ff81e9db) Fix adaptive value when editing schedules (@adejanovski)
+- [5c91ad9](https://github.com/thelastpickle/cassandra-reaper/commit/5c91ad95468e0225863f9312f8d06f177dfca728) Revert to /etc/cassandra-reaper (@jeffbanks)
+
 ### 3.0.0 (2021/10/29 09:48 +00:00)
 - [8f79e2d](https://github.com/thelastpickle/cassandra-reaper/commit/8f79e2da9dd363ef4c132376dede3bd7e0062436) Fix snapshot conflicting REST endpoints (@adejanovski)
 - [93c0410](https://github.com/thelastpickle/cassandra-reaper/commit/93c041080a429129dcae98d41a8625ac066373c5) Apply DC filters when building the list of segments (@adejanovski)
