@@ -96,7 +96,7 @@ ADD configure-persistence.sh /usr/local/bin/configure-persistence.sh
 ADD configure-metrics.sh /usr/local/bin/configure-metrics.sh
 ADD configure-webui-authentication.sh /usr/local/bin/configure-webui-authentication.sh
 ADD configure-jmx-credentials.sh /usr/local/bin/configure-jmx-credentials.sh
-ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
+ADD cassandra-reaper-3.1.0.jar /usr/local/lib/cassandra-reaper.jar
 ADD spreaper /usr/local/bin/spreaper
 
 
@@ -106,11 +106,12 @@ RUN touch /etc/cassandra-reaper/cassandra-reaper.yml
 RUN touch /etc/cassandra-reaper/shiro.ini
 
 
-RUN adduser -S -D -H -u 1001 -s /sbin/nologin -G root -g reaper reaper && \
+RUN addgroup -g 1001 -S reaper && \
+    adduser -S -D -H -u 1001 -s /sbin/nologin -G reaper -g reaper reaper && \
     mkdir -p /var/lib/cassandra-reaper && \
     mkdir -p /etc/cassandra-reaper/shiro && \
     mkdir -p /var/log/cassandra-reaper && \
-    chown reaper:reaper \
+    chown 1001:0 \
         /etc/cassandra-reaper/cassandra-reaper.yml \
         /usr/local/lib/cassandra-reaper.jar \
         /usr/local/bin/entrypoint.sh \
@@ -120,7 +121,7 @@ RUN adduser -S -D -H -u 1001 -s /sbin/nologin -G root -g reaper reaper && \
         /usr/local/bin/configure-jmx-credentials.sh \
         /usr/local/bin/spreaper \
         /etc/cassandra-reaper/shiro.ini && \
-    chown -R reaper:reaper \
+    chown -R 1001:0 \
         /var/lib/cassandra-reaper \
         /etc/cassandra-reaper/shiro \
         /var/log/cassandra-reaper && \
