@@ -20,6 +20,7 @@ package io.cassandrareaper.resources;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.EditableRepairSchedule;
 import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
@@ -37,6 +38,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -51,7 +55,10 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import io.dropwizard.jersey.PATCH;
+import io.dropwizard.jersey.validation.ValidationErrorMessage;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -74,6 +81,64 @@ public final class RepairScheduleResource {
     this.repairUnitService = RepairUnitService.create(context);
     this.repairScheduleService = RepairScheduleService.create(context);
     this.repairRunService = RepairRunService.create(context);
+  }
+
+  @PATCH
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Path("/{id}")
+  public Response patchRepairSchedule(
+      @Context UriInfo uriInfo,
+      @PathParam("id") UUID repairScheduleId,
+      @NotNull @Valid EditableRepairSchedule editableRepairSchedule
+  ) {
+    if (repairScheduleId == null) {
+      ValidationErrorMessage errorMessage = new ValidationErrorMessage(
+          ImmutableList.copyOf(
+              Lists.newArrayList("id must not be null or empty")
+          )
+      );
+      return Response.status(400).entity(errorMessage).build();
+    }
+
+    // When executed through DropWizard the validation will prevent this from ever being reached
+    // but to protect against an NPE if the behavior is ever changed, do a quick check of the param
+    if (editableRepairSchedule == null) {
+      ValidationErrorMessage errorMessage = new ValidationErrorMessage(
+          ImmutableList.copyOf(
+              Lists.newArrayList("request body must not be null or empty")
+          )
+      );
+      return Response.status(400).entity(errorMessage).build();
+    }
+
+    // Try to find the schedule to be updated
+    Optional<RepairSchedule> repairScheduleWrapper = context.storage.getRepairSchedule(repairScheduleId);
+    // See if we found the schedule
+    RepairSchedule repairSchedule = repairScheduleWrapper.orElse(null);
+    if (repairSchedule == null) {
+      return Response.status(Response.Status.NOT_FOUND).build();
+    }
+
+    // Apply any valid incoming values to the schedule
+    RepairSchedule patchedRepairSchedule = applyRepairPatchParams(
+        repairSchedule,
+        editableRepairSchedule.getOwner(),
+        editableRepairSchedule.getRepairParallelism(),
+        editableRepairSchedule.getIntensity(),
+        editableRepairSchedule.getDaysBetween(),
+        editableRepairSchedule.getSegmentCountPerNode(),
+        editableRepairSchedule.getAdaptive(),
+        editableRepairSchedule.getPercentUnrepairedThreshold()
+    );
+
+    // Attempt to update the schedule
+    boolean updated = context.storage.updateRepairSchedule(patchedRepairSchedule);
+    if (updated) {
+      return Response.status(Response.Status.OK).entity(getRepairScheduleStatus(patchedRepairSchedule)).build();
+    } else {
+      return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+    }
   }
 
   /**
@@ -103,7 +168,10 @@ public final class RepairScheduleResource {
       @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
       @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam,
       @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam,
-      @QueryParam("force") Optional<String> forceParam) {
+      @QueryParam("force") Optional<String> forceParam,
+      @QueryParam("timeout") Optional<Integer> timeoutParam,
+      @QueryParam("adaptive") Optional<String> adaptiveParam,
+      @QueryParam("percentUnrepairedThreshold") Optional<Integer> percentUnrepairedParam) {
 
     try {
       Response possibleFailResponse = RepairRunResource.checkRequestForAddRepair(
@@ -120,7 +188,8 @@ public final class RepairScheduleResource {
           datacentersToRepairParam,
           blacklistedTableNamesParam,
           repairThreadCountParam,
-          forceParam);
+          forceParam,
+          timeoutParam);
 
       if (null != possibleFailResponse) {
         return possibleFailResponse;
@@ -146,12 +215,8 @@ public final class RepairScheduleResource {
             .build();
       }
 
-      Cluster cluster ;
-      try {
-        cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
-      } catch (IllegalArgumentException ex) {
-        return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
-      }
+      Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
+
       Set<String> tableNames;
       try {
         tableNames = repairRunService.getTableNamesBasedOnParam(cluster, keyspace.get(), tableNamesParam);
@@ -177,14 +242,8 @@ public final class RepairScheduleResource {
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
 
-      final Set<String> datacentersToRepair;
-      try {
-        datacentersToRepair = RepairRunService
-            .getDatacentersToRepairBasedOnParam(cluster, datacentersToRepairParam);
-      } catch (final IllegalArgumentException ex) {
-        LOG.error(ex.getMessage(), ex);
-        return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
-      }
+      final Set<String> datacentersToRepair = RepairRunService
+            .getDatacentersToRepairBasedOnParam(datacentersToRepairParam);
 
       boolean incremental = isIncrementalRepair(incrementalRepairStr);
       RepairParallelism parallelism = context.config.getRepairParallelism();
@@ -199,8 +258,17 @@ public final class RepairScheduleResource {
             .build();
       }
 
+      if (percentUnrepairedParam.orElse(-1) > 0 && !incremental) {
+        return Response.status(Response.Status.BAD_REQUEST)
+            .entity("Triggering schedules on % unrepaired threshold is only allowed for incremental repairs.")
+            .build();
+      }
+
       // explicitly force a schedule even if the schedule conflicts
       boolean force = (forceParam.isPresent() ? Boolean.parseBoolean(forceParam.get()) : false);
+
+      int timeout = timeoutParam.orElse(context.config.getHangingRepairTimeoutMins());
+      boolean adaptive = (adaptiveParam.isPresent() ? Boolean.parseBoolean(adaptiveParam.get()) : false);
 
       RepairUnit.Builder unitBuilder = RepairUnit.builder()
           .clusterName(cluster.getName())
@@ -210,7 +278,8 @@ public final class RepairScheduleResource {
           .nodes(nodesToRepair)
           .datacenters(datacentersToRepair)
           .blacklistedTables(blacklistedTableNames)
-          .repairThreadCount(repairThreadCountParam.orElse(context.config.getRepairThreadCount()));
+          .repairThreadCount(repairThreadCountParam.orElse(context.config.getRepairThreadCount()))
+          .timeout(timeout);
 
       return addRepairSchedule(
           cluster,
@@ -223,7 +292,9 @@ public final class RepairScheduleResource {
           nextActivation,
           getSegmentCount(segmentCountPerNode),
           getIntensity(intensityStr),
-          force);
+          force,
+          adaptive,
+          percentUnrepairedParam.orElse(-1));
 
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -242,7 +313,9 @@ public final class RepairScheduleResource {
       DateTime next,
       int segments,
       Double intensity,
-      boolean force) {
+      boolean force,
+      boolean adaptive,
+      int percentUnrepairedThreshold) {
 
     Optional<RepairSchedule> conflictingRepairSchedule
         = repairScheduleService.identicalRepairUnit(cluster, unitBuilder);
@@ -278,15 +351,28 @@ public final class RepairScheduleResource {
       }
     }
 
-    RepairUnit unit = repairUnitService.getOrCreateRepairUnit(cluster, unitBuilder, force);
+    Optional<RepairUnit> maybeUnit = repairUnitService.getOrCreateRepairUnit(cluster, unitBuilder, force);
 
-    Preconditions
-        .checkState(unit.getIncrementalRepair() == incremental, "%s!=%s", unit.getIncrementalRepair(), incremental);
+    if (maybeUnit.isPresent()) {
+      RepairUnit unit = maybeUnit.get();
+      Preconditions
+          .checkState(unit.getIncrementalRepair() == incremental, "%s!=%s", unit.getIncrementalRepair(), incremental);
+      Preconditions
+          .checkState((percentUnrepairedThreshold > 0 && incremental) || percentUnrepairedThreshold <= 0,
+            "Setting a % repaired threshold can only be done on incremental schedules");
 
-    RepairSchedule newRepairSchedule = repairScheduleService
-        .storeNewRepairSchedule(cluster, unit, days, next, owner, segments, parallel, intensity, force);
+      RepairSchedule newRepairSchedule = repairScheduleService
+          .storeNewRepairSchedule(
+            cluster, unit, days, next, owner, segments,
+            parallel, intensity, force, adaptive, percentUnrepairedThreshold);
 
-    return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule)).build();
+      return Response.created(buildRepairScheduleUri(uriInfo, newRepairSchedule)).build();
+    }
+
+    return Response
+            .status(Response.Status.NO_CONTENT)
+            .entity("Repair schedule couldn't be created as an existing repair unit seems to conflict with it.")
+            .build();
   }
 
   private int getDaysBetween(Optional<Integer> scheduleDaysBetween) {
@@ -577,5 +663,47 @@ public final class RepairScheduleResource {
       @PathParam("id") UUID repairScheduleId) throws IllegalArgumentException {
     long since = DateTime.now().minusHours(1).getMillis();
     return context.storage.getPercentRepairedMetrics(clusterName, repairScheduleId, since);
+  }
+
+  /**
+   * Utility method to apply any valid parameters to an existing RepairSchedule.
+   * This method assumes that any non-null parameter provided is valid and should
+   * be applied.
+   *
+   * @param repairSchedule - The schedule object to be updated
+   * @param owner - The owner value to be used in the update
+   * @param repairParallelism - the parallelism value to be used in the update
+   * @param intensity - The intensity value to be used in the update
+   * @param scheduleDaysBetween - The days between value to be used in the update
+   * @param segmentCountPerNode - The segments per node value to be used in the update
+   * @param adaptive - Whether or not the schedule is adaptive
+   * @param percentUnrepairedThreshold - Threshold of unrepaired percentage that triggers a repair
+   */
+  protected static RepairSchedule applyRepairPatchParams(
+      final RepairSchedule repairSchedule,
+      final String owner,
+      final RepairParallelism repairParallelism,
+      final Double intensity,
+      final Integer scheduleDaysBetween,
+      final Integer segmentCountPerNode,
+      final Boolean adaptive,
+      final Integer percentUnrepairedThreshold
+  ) {
+    if (repairSchedule == null) {
+      return null;
+    }
+
+    // Apply any valid incoming values to the schedule
+    return repairSchedule.with()
+        .owner(owner != null ? owner.trim() : repairSchedule.getOwner())
+        .repairParallelism(repairParallelism != null ? repairParallelism : repairSchedule.getRepairParallelism())
+        .intensity(intensity != null ? intensity : repairSchedule.getIntensity())
+        .daysBetween(scheduleDaysBetween != null ? scheduleDaysBetween : repairSchedule.getDaysBetween())
+        .segmentCountPerNode(segmentCountPerNode != null
+            ? segmentCountPerNode
+            : repairSchedule.getSegmentCountPerNode())
+        .percentUnrepairedThreshold(percentUnrepairedThreshold)
+        .adaptive(adaptive != null ? adaptive : false)
+        .build(repairSchedule.getId());
   }
 }

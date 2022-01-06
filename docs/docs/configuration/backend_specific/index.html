@@ -387,7 +387,61 @@ Note that Cassandra backend configuration relies on the <a href="https://github.
 <h4 id="password"><code>password</code></h4>
 <p>Type: <em>String</em></p>
 <p>Cassandra native protocol password.</p>
-<h2 id="h2-or-postgres-database-settings">H2 or Postgres Database Settings</h2>
+<h4 id="full-configuration-reference">Full Configuration Reference</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">clusterName</span>:
+<span style="color:#66d9ef">keyspace</span>:
+<span style="color:#66d9ef">validationQuery</span>:
+<span style="color:#66d9ef">healthCheckTimeout</span>:
+<span style="color:#66d9ef">contactPoints</span>:
+<span style="color:#66d9ef">port</span>:
+<span style="color:#66d9ef">protocolVersion</span>:
+<span style="color:#66d9ef">compression</span>:
+<span style="color:#66d9ef">maxSchemaAgreementWait</span>:
+<span style="color:#66d9ef">ssl</span>:
+  <span style="color:#66d9ef">type</span>:
+<span style="color:#66d9ef">addressTranslator</span>:
+  <span style="color:#66d9ef">type</span>:
+<span style="color:#66d9ef">reconnectionPolicy</span>:
+  <span style="color:#66d9ef">type</span>:
+<span style="color:#66d9ef">authProvider</span>:
+  <span style="color:#66d9ef">type</span>:
+<span style="color:#66d9ef">retryPolicy</span>:
+  <span style="color:#66d9ef">type</span>:
+<span style="color:#66d9ef">loadBalancingPolicy</span>:
+  <span style="color:#66d9ef">type</span>:
+<span style="color:#66d9ef">speculativeExecutionPolicy</span>:
+  <span style="color:#66d9ef">type</span>:
+<span style="color:#66d9ef">queryOptions</span>:
+  <span style="color:#66d9ef">consistencyLevel</span>:
+  <span style="color:#66d9ef">serialConsistencyLevel</span>:
+  <span style="color:#66d9ef">fetchSize</span>:
+<span style="color:#66d9ef">socketOptions</span>:
+  <span style="color:#66d9ef">connectTimeoutMillis</span>:
+  <span style="color:#66d9ef">readTimeoutMillis</span>:
+  <span style="color:#66d9ef">keepAlive</span>:
+  <span style="color:#66d9ef">reuseAddress</span>:
+  <span style="color:#66d9ef">soLinger</span>:
+  <span style="color:#66d9ef">tcpNoDelay</span>:
+  <span style="color:#66d9ef">receiveBufferSize</span>:
+  <span style="color:#66d9ef">sendBufferSize</span>:
+<span style="color:#66d9ef">poolingOptions</span>:
+  <span style="color:#66d9ef">heartbeatInterval</span>:
+  <span style="color:#66d9ef">poolTimeout</span>:
+  <span style="color:#66d9ef">local</span>:
+    <span style="color:#66d9ef">maxRequestsPerConnection</span>:
+    <span style="color:#66d9ef">newConnectionThreshold</span>:
+    <span style="color:#66d9ef">coreConnections</span>:
+    <span style="color:#66d9ef">maxConnections</span>:
+  <span style="color:#66d9ef">remote</span>:
+    <span style="color:#66d9ef">maxRequestsPerConnection</span>:
+    <span style="color:#66d9ef">newConnectionThreshold</span>:
+    <span style="color:#66d9ef">coreConnections</span>:
+    <span style="color:#66d9ef">maxConnections</span>:
+<span style="color:#66d9ef">metricsEnabled</span>:
+<span style="color:#66d9ef">jmxEnabled</span>:
+<span style="color:#66d9ef">shutdownGracePeriod</span>:
+</code></pre></div><h2 id="h2-or-postgres-database-settings">H2 or Postgres Database Settings</h2>
+<p><strong>Removed in v3.0.0</strong></p>
 <p>The following settings are specific to a Reaper deployment that is backed by either a H2 or Postgres database. An example of the configuration settings for a Postgres database are as follows.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">postgres</span>:
   <span style="color:#66d9ef">url</span>: jdbc:postgresql://<span style="color:#ae81ff">127.0.0.1</span>/reaper

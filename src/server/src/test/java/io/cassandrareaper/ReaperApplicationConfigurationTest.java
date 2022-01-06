@@ -20,14 +20,13 @@ package io.cassandrareaper;
 import javax.validation.Validation;
 import javax.validation.Validator;
 
-import io.dropwizard.db.DataSourceFactory;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.HibernateValidator;
 import org.junit.Before;
 import org.junit.Test;
 import systems.composable.dropwizard.cassandra.CassandraFactory;
 
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public final class ReaperApplicationConfigurationTest {
 
@@ -42,14 +41,9 @@ public final class ReaperApplicationConfigurationTest {
   @Before
   public void setUp() {
     //create a valid config
-    DataSourceFactory dataSourceFactory = new DataSourceFactory();
-    dataSourceFactory.setDriverClass("org.postgresql.Driver");
-    dataSourceFactory.setUrl("jdbc:postgresql://db.example.com/db-prod");
-    dataSourceFactory.setUser("user");
     CassandraFactory cassandraFactory = new CassandraFactory();
     cassandraFactory.setContactPoints(new String[]{"127.0.0.1"});
     config.setCassandraFactory(cassandraFactory);
-    config.setPostgresDataSourceFactory(dataSourceFactory);
     config.setHangingRepairTimeoutMins(1);
     config.setRepairParallelism(RepairParallelism.DATACENTER_AWARE);
     config.setRepairRunThreadCount(1);

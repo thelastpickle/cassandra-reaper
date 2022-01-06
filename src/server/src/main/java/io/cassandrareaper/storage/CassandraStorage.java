@@ -37,7 +37,6 @@ import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
-import io.cassandrareaper.service.RepairParameters;
 import io.cassandrareaper.service.RingRange;
 import io.cassandrareaper.storage.cassandra.DateTimeCodec;
 import io.cassandrareaper.storage.cassandra.Migration016;
@@ -135,6 +134,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final VersionNumber version;
   private final UUID reaperInstanceId;
+  private final int defaultTimeout;
 
   private final AtomicReference<Collection<Cluster>> clustersCache = new AtomicReference(Collections.EMPTY_SET);
   private final AtomicLong clustersCacheAge = new AtomicLong(0);
@@ -187,6 +187,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement releaseLeadPrepStmt;
   private PreparedStatement getRunningReapersCountPrepStmt;
   private PreparedStatement saveHeartbeatPrepStmt;
+  private PreparedStatement deleteHeartbeatPrepStmt;
   private PreparedStatement storeNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsPrepStmt;
   private PreparedStatement getNodeMetricsByNodePrepStmt;
@@ -214,6 +215,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       CassandraMode mode) throws ReaperException {
 
     this.reaperInstanceId = reaperInstanceId;
+    this.defaultTimeout = config.getHangingRepairTimeoutMins();
     CassandraFactory cassandraFactory = config.getCassandraFactory();
     overrideQueryOptions(cassandraFactory, mode);
     overrideRetryPolicy(cassandraFactory);
@@ -390,14 +392,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     insertRepairRunPrepStmt = session
         .prepare(
             "INSERT INTO repair_run(id, cluster_name, repair_unit_id, cause, owner, state, creation_time, "
-                + "start_time, end_time, pause_time, intensity, last_event, segment_count, repair_parallelism,tables) "
-                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                + "start_time, end_time, pause_time, intensity, last_event, segment_count, repair_parallelism, "
+                + "tables, adaptive_schedule) "
+                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     insertRepairRunNoStatePrepStmt = session
         .prepare(
             "INSERT INTO repair_run(id, cluster_name, repair_unit_id, cause, owner, creation_time, "
-                + "intensity, last_event, segment_count, repair_parallelism,tables) "
-                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                + "intensity, last_event, segment_count, repair_parallelism, tables, adaptive_schedule) "
+                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     insertRepairRunClusterIndexPrepStmt
         = session.prepare("INSERT INTO repair_run_by_cluster_v2(cluster_name, id, repair_run_state) values(?, ?, ?)");
@@ -406,7 +409,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     getRepairRunPrepStmt = session
         .prepare(
             "SELECT id,cluster_name,repair_unit_id,cause,owner,state,creation_time,start_time,end_time,"
-                + "pause_time,intensity,last_event,segment_count,repair_parallelism,tables "
+                + "pause_time,intensity,last_event,segment_count,repair_parallelism,tables,adaptive_schedule "
                 + "FROM repair_run WHERE id = ? LIMIT 1")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     getRepairRunForClusterPrepStmt = session.prepare(
@@ -422,8 +425,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     insertRepairUnitPrepStmt = session
         .prepare(
             "INSERT INTO repair_unit_v1(id, cluster_name, keyspace_name, column_families, "
-                + "incremental_repair, nodes, \"datacenters\", blacklisted_tables, repair_thread_count) "
-                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                + "incremental_repair, nodes, \"datacenters\", blacklisted_tables, repair_thread_count, timeout) "
+                + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     getRepairUnitPrepStmt = session
         .prepare("SELECT * FROM repair_unit_v1 WHERE id = ?")
@@ -462,29 +465,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
             + "segment_end_time,fail_count, token_ranges, replicas FROM repair_run WHERE id = ?");
     getRepairSegmentCountByRunIdPrepStmt = session.prepare("SELECT count(*) FROM repair_run WHERE id = ?");
-    insertRepairSchedulePrepStmt
-        = session
-            .prepare(
-                "INSERT INTO repair_schedule_v1(id, repair_unit_id, state,"
-                    + "days_between, next_activation, run_history, "
-                    + "segment_count, repair_parallelism, intensity, "
-                    + "creation_time, owner, pause_time, segment_count_per_node) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-            .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    getRepairSchedulePrepStmt
-        = session
-            .prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?")
-            .setConsistencyLevel(ConsistencyLevel.QUORUM);
-    insertRepairScheduleByClusterAndKsPrepStmt = session.prepare(
-        "INSERT INTO repair_schedule_by_cluster_and_keyspace(cluster_name, keyspace_name, repair_schedule_id)"
-            + " VALUES(?, ?, ?)");
-    getRepairScheduleByClusterAndKsPrepStmt = session.prepare(
-        "SELECT repair_schedule_id FROM repair_schedule_by_cluster_and_keyspace "
-            + "WHERE cluster_name = ? and keyspace_name = ?");
-    deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule_v1 WHERE id = ?");
-    deleteRepairScheduleByClusterAndKsByIdPrepStmt = session.prepare(
-        "DELETE FROM repair_schedule_by_cluster_and_keyspace "
-            + "WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
+    prepareScheduleStatements();
     prepareLeaderElectionStatements(timeUdf);
     getRunningReapersCountPrepStmt = session.prepare(SELECT_RUNNING_REAPERS);
     saveHeartbeatPrepStmt = session
@@ -492,6 +473,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             "INSERT INTO running_reapers(reaper_instance_id, reaper_instance_host, last_heartbeat)"
                 + " VALUES(?,?," + timeUdf + "(now()))")
         .setIdempotent(false);
+    deleteHeartbeatPrepStmt = session
+        .prepare(
+            "DELETE FROM running_reapers WHERE reaper_instance_id = ?")
+        .setIdempotent(true);
 
     getSnapshotPrepStmt = session.prepare("SELECT * FROM snapshot WHERE cluster = ? and snapshot_name = ?");
     deleteSnapshotPrepStmt = session.prepare("DELETE FROM snapshot WHERE cluster = ? and snapshot_name = ?");
@@ -523,6 +508,33 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     }
     prepareMetricStatements();
     prepareOperationsStatements();
+  }
+
+  private void prepareScheduleStatements() {
+    insertRepairSchedulePrepStmt
+        = session
+            .prepare(
+                "INSERT INTO repair_schedule_v1(id, repair_unit_id, state,"
+                    + "days_between, next_activation, "
+                    + "repair_parallelism, intensity, "
+                    + "creation_time, owner, pause_time, segment_count_per_node, "
+                    + "adaptive, percent_unrepaired_threshold, last_run) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    getRepairSchedulePrepStmt
+        = session
+            .prepare("SELECT * FROM repair_schedule_v1 WHERE id = ?")
+            .setConsistencyLevel(ConsistencyLevel.QUORUM);
+    insertRepairScheduleByClusterAndKsPrepStmt = session.prepare(
+        "INSERT INTO repair_schedule_by_cluster_and_keyspace(cluster_name, keyspace_name, repair_schedule_id)"
+            + " VALUES(?, ?, ?)");
+    getRepairScheduleByClusterAndKsPrepStmt = session.prepare(
+        "SELECT repair_schedule_id FROM repair_schedule_by_cluster_and_keyspace "
+            + "WHERE cluster_name = ? and keyspace_name = ?");
+    deleteRepairSchedulePrepStmt = session.prepare("DELETE FROM repair_schedule_v1 WHERE id = ?");
+    deleteRepairScheduleByClusterAndKsByIdPrepStmt = session.prepare(
+        "DELETE FROM repair_schedule_by_cluster_and_keyspace "
+            + "WHERE cluster_name = ? and keyspace_name = ? and repair_schedule_id = ?");
   }
 
   private void prepareLeaderElectionStatements(final String timeUdf) {
@@ -772,7 +784,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             newRepairRun.getLastEvent(),
             newRepairRun.getSegmentCount(),
             newRepairRun.getRepairParallelism().toString(),
-            newRepairRun.getTables()));
+            newRepairRun.getTables(),
+            newRepairRun.getAdaptiveSchedule()));
 
     int nbRanges = 0;
     for (RepairSegment.Builder builder : newSegments) {
@@ -876,7 +889,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               repairRun.getLastEvent(),
               repairRun.getSegmentCount(),
               repairRun.getRepairParallelism().toString(),
-              repairRun.getTables()));
+              repairRun.getTables(),
+              repairRun.getAdaptiveSchedule()));
       session.execute(updateRepairRunBatch);
     } else {
       session.execute(
@@ -891,9 +905,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               repairRun.getLastEvent(),
               repairRun.getSegmentCount(),
               repairRun.getRepairParallelism().toString(),
-              repairRun.getTables()));
+              repairRun.getTables(),
+              repairRun.getAdaptiveSchedule()));
     }
-
 
     return true;
   }
@@ -1014,20 +1028,26 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public RepairUnit addRepairUnit(RepairUnit.Builder newRepairUnit) {
     RepairUnit repairUnit = newRepairUnit.build(UUIDs.timeBased());
-    session.execute(
-        insertRepairUnitPrepStmt.bind(
-            repairUnit.getId(),
-            repairUnit.getClusterName(),
-            repairUnit.getKeyspaceName(),
-            repairUnit.getColumnFamilies(),
-            repairUnit.getIncrementalRepair(),
-            repairUnit.getNodes(),
-            repairUnit.getDatacenters(),
-            repairUnit.getBlacklistedTables(),
-            repairUnit.getRepairThreadCount()));
+    updateRepairUnit(repairUnit);
 
     repairUnits.put(repairUnit.getId(), repairUnit);
     return repairUnit;
+  }
+
+  @Override
+  public void updateRepairUnit(RepairUnit updatedRepairUnit) {
+    session.execute(
+        insertRepairUnitPrepStmt.bind(
+            updatedRepairUnit.getId(),
+            updatedRepairUnit.getClusterName(),
+            updatedRepairUnit.getKeyspaceName(),
+            updatedRepairUnit.getColumnFamilies(),
+            updatedRepairUnit.getIncrementalRepair(),
+            updatedRepairUnit.getNodes(),
+            updatedRepairUnit.getDatacenters(),
+            updatedRepairUnit.getBlacklistedTables(),
+            updatedRepairUnit.getRepairThreadCount(),
+            updatedRepairUnit.getTimeout()));
   }
 
   private RepairUnit getRepairUnitImpl(UUID id) {
@@ -1042,6 +1062,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               .datacenters(repairUnitRow.getSet("datacenters", String.class))
               .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
               .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
+              .timeout(repairUnitRow.isNull("timeout") ? this.defaultTimeout : repairUnitRow.getInt("timeout"))
               .build(id);
     }
     throw new IllegalArgumentException("No repair unit exists for " + id);
@@ -1060,18 +1081,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     stmt.setIdempotent(Boolean.TRUE);
     ResultSet results = session.execute(stmt);
     for (Row repairUnitRow : results) {
-      if (repairUnitRow.getString("cluster_name").equals(params.clusterName)
-          && repairUnitRow.getString("keyspace_name").equals(params.keyspaceName)
-          && repairUnitRow.getSet("column_families", String.class).equals(params.columnFamilies)
-          && repairUnitRow.getBool("incremental_repair") == params.incrementalRepair
-          && repairUnitRow.getSet("nodes", String.class).equals(params.nodes)
-          && repairUnitRow.getSet("datacenters", String.class).equals(params.datacenters)
-          && repairUnitRow
-              .getSet("blacklisted_tables", String.class)
-              .equals(params.blacklistedTables)
-          && repairUnitRow.getInt("repair_thread_count") == params.repairThreadCount) {
-
-        repairUnit = RepairUnit.builder()
+      RepairUnit existingRepairUnit = RepairUnit.builder()
             .clusterName(repairUnitRow.getString("cluster_name"))
             .keyspaceName(repairUnitRow.getString("keyspace_name"))
             .columnFamilies(repairUnitRow.getSet("column_families", String.class))
@@ -1080,7 +1090,11 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             .datacenters(repairUnitRow.getSet("datacenters", String.class))
             .blacklistedTables(repairUnitRow.getSet("blacklisted_tables", String.class))
             .repairThreadCount(repairUnitRow.getInt("repair_thread_count"))
+            .timeout(repairUnitRow.isNull("timeout") ? this.defaultTimeout : repairUnitRow.getInt("timeout"))
             .build(repairUnitRow.getUUID("id"));
+      if (existingRepairUnit.with().equals(params)) {
+        repairUnit = existingRepairUnit;
+        LOG.info("Found matching repair unit: {}", repairUnitRow.getUUID("id"));
         // exit the loop once we find a match
         break;
       }
@@ -1273,29 +1287,6 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName) {
-    Collection<RepairParameters> repairs = Lists.<RepairParameters>newArrayList();
-    Collection<RepairRun> repairRuns = getRepairRunsForCluster(clusterName, Optional.empty());
-
-    for (RepairRun repairRun : repairRuns) {
-      Collection<RepairSegment> runningSegments = getSegmentsWithState(repairRun.getId(), State.RUNNING);
-      for (RepairSegment segment : runningSegments) {
-        RepairUnit repairUnit = getRepairUnit(repairRun.getRepairUnitId());
-        repairs.add(
-            new RepairParameters(
-                Segment.builder().withTokenRanges(segment.getTokenRange().getTokenRanges()).build(),
-                repairUnit.getKeyspaceName(),
-                repairUnit.getColumnFamilies(),
-                repairRun.getRepairParallelism()));
-      }
-    }
-
-    LOG.trace("found ongoing repairs {} {}", repairs.size(), repairs);
-
-    return repairs;
-  }
-
-  @Override
   public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
     SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int)(u0.timestamp() - u1.timestamp()));
     ResultSet results = session.execute(getRepairRunForClusterPrepStmt.bind(clusterName, limit.orElse(
@@ -1364,13 +1355,17 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .daysBetween(repairScheduleRow.getInt("days_between"))
         .nextActivation(new DateTime(repairScheduleRow.getTimestamp("next_activation")))
         .runHistory(ImmutableList.copyOf(repairScheduleRow.getSet("run_history", UUID.class)))
-        .segmentCount(repairScheduleRow.getInt("segment_count"))
         .repairParallelism(RepairParallelism.fromName(repairScheduleRow.getString("repair_parallelism")))
         .intensity(repairScheduleRow.getDouble("intensity"))
         .creationTime(new DateTime(repairScheduleRow.getTimestamp("creation_time")))
         .segmentCountPerNode(repairScheduleRow.getInt("segment_count_per_node"))
         .owner(repairScheduleRow.getString("owner"))
         .pauseTime(new DateTime(repairScheduleRow.getTimestamp("pause_time")))
+        .adaptive(repairScheduleRow.isNull("adaptive") ? false : repairScheduleRow.getBool("adaptive"))
+        .percentUnrepairedThreshold(repairScheduleRow.isNull("percent_unrepaired_threshold")
+          ? -1
+          : repairScheduleRow.getInt("percent_unrepaired_threshold"))
+        .lastRun(repairScheduleRow.getUUID("last_run"))
         .build(repairScheduleRow.getUUID("id"));
   }
 
@@ -1451,14 +1446,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                 newRepairSchedule.getState().toString(),
                 newRepairSchedule.getDaysBetween(),
                 newRepairSchedule.getNextActivation(),
-                repairHistory,
-                newRepairSchedule.getSegmentCount(),
                 newRepairSchedule.getRepairParallelism().toString(),
                 newRepairSchedule.getIntensity(),
                 newRepairSchedule.getCreationTime(),
                 newRepairSchedule.getOwner(),
                 newRepairSchedule.getPauseTime(),
-                newRepairSchedule.getSegmentCountPerNode())));
+                newRepairSchedule.getSegmentCountPerNode(),
+                newRepairSchedule.getAdaptive(),
+                newRepairSchedule.getPercentUnrepairedThreshold(),
+                newRepairSchedule.getLastRun())));
 
     futures.add(
         session.executeAsync(
@@ -1557,6 +1553,9 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .lastEvent(repairRunResult.getString("last_event"))
         .runState(RunState.valueOf(repairRunResult.getString("state")))
         .tables(repairRunResult.getSet("tables", String.class))
+        .adaptiveSchedule(repairRunResult.isNull("adaptive_schedule")
+            ? false
+            : repairRunResult.getBool("adaptive_schedule"))
         .build(id);
   }
 
@@ -1645,10 +1644,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
 
   @Override
   public int countRunningReapers() {
-    ResultSet result = session.execute(getRunningReapersCountPrepStmt.bind());
-    int runningReapers = result.all().size();
+    int runningReapers = getRunningReapers().size();
     LOG.debug("Running reapers = {}", runningReapers);
     return runningReapers > 0 ? runningReapers : 1;
+  }
+
+  @Override
+  public List<UUID> getRunningReapers() {
+    ResultSet result = session.execute(getRunningReapersCountPrepStmt.bind());
+    return result.all().stream().map(row -> row.getUUID("reaper_instance_id")).collect(Collectors.toList());
   }
 
   @Override
@@ -2142,7 +2146,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   }
 
   @Override
-  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, long since) {
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
     List<PercentRepairedMetric> metrics = Lists.newArrayList();
     List<ResultSetFuture> futures = Lists.newArrayList();
     List<String> timeBuckets = Lists.newArrayList();
@@ -2165,17 +2169,22 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               timeBucket)));
     }
 
+    long maxTimeBucket = 0;
     for (ResultSetFuture future : futures) {
       for (Row row : future.getUninterruptibly()) {
-        metrics.add(
-            PercentRepairedMetric.builder()
-                .withCluster(clusterName)
-                .withRepairScheduleId(row.getUUID("repair_schedule_id"))
-                .withKeyspaceName(row.getString("keyspace_name"))
-                .withTableName(row.getString("table_name"))
-                .withNode(row.getString("node"))
-                .withPercentRepaired(row.getInt("percent_repaired"))
-                .build());
+        if (Long.parseLong(row.getString("time_bucket")) >= maxTimeBucket) {
+          // we only want metrics from the latest bucket
+          metrics.add(
+              PercentRepairedMetric.builder()
+                  .withCluster(clusterName)
+                  .withRepairScheduleId(row.getUUID("repair_schedule_id"))
+                  .withKeyspaceName(row.getString("keyspace_name"))
+                  .withTableName(row.getString("table_name"))
+                  .withNode(row.getString("node"))
+                  .withPercentRepaired(row.getInt("percent_repaired"))
+                  .build());
+          maxTimeBucket = Math.max(maxTimeBucket, Long.parseLong(row.getString("time_bucket")));
+        }
       }
       if (!metrics.isEmpty()) {
         break;
@@ -2197,5 +2206,17 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         metric.getPercentRepaired(),
         DateTime.now().toDate())
     );
+  }
+
+  @Override
+  public void start() {
+    // no-op
+  }
+
+  @Override
+  public void stop() {
+    // Statements executed when the server shuts down.
+    LOG.info("Reaper is stopping, removing this instance from running reapers...");
+    session.execute(deleteHeartbeatPrepStmt.bind(reaperInstanceId));
   }
 }

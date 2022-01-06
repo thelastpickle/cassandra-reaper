@@ -27,7 +27,6 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
-import io.cassandrareaper.service.RepairParameters;
 
 import java.util.Collection;
 import java.util.List;
@@ -35,11 +34,12 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.UUID;
 
+import io.dropwizard.lifecycle.Managed;
 
 /**
  * API definition for cassandra-reaper.
  */
-public interface IStorage {
+public interface IStorage extends Managed {
 
   boolean isStorageConnected();
 
@@ -89,6 +89,8 @@ public interface IStorage {
 
   Optional<RepairUnit> getRepairUnit(RepairUnit.Builder repairUnit);
 
+  void updateRepairUnit(RepairUnit updatedRepairUnit);
+
   boolean updateRepairSegment(RepairSegment newRepairSegment);
 
   Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId);
@@ -104,8 +106,6 @@ public interface IStorage {
   List<RepairSegment> getNextFreeSegments(UUID runId);
 
   Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState);
-
-  Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName);
 
   SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit);
 
@@ -161,7 +161,7 @@ public interface IStorage {
   List<PercentRepairedMetric> getPercentRepairedMetrics(
       String clusterName,
       UUID repairScheduleId,
-      long since);
+      Long since);
 
   void storePercentRepairedMetric(PercentRepairedMetric metric);
 }

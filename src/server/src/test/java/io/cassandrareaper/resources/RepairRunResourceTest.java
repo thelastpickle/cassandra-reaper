@@ -61,6 +61,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.util.Maps;
 import org.joda.time.DateTimeUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -98,6 +99,7 @@ public final class RepairRunResourceTest {
   private static final double REPAIR_INTENSITY = 0.5f;
   private static final RepairParallelism REPAIR_PARALLELISM = RepairParallelism.SEQUENTIAL;
   private static final String STCS = "SizeTieredCompactionStrategy";
+  private static final int SEGMENT_TIMEOUT = 30;
 
   private static final List<BigInteger> TOKENS = Lists.newArrayList(
       BigInteger.valueOf(0L),
@@ -118,8 +120,6 @@ public final class RepairRunResourceTest {
     context.repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(THREAD_CNT),
-        REPAIR_TIMEOUT_S,
-        TimeUnit.SECONDS,
         RETRY_DELAY_S,
         TimeUnit.SECONDS,
         1);
@@ -138,6 +138,7 @@ public final class RepairRunResourceTest {
     context.config = new ReaperApplicationConfiguration();
     context.config.setSegmentCount(SEGMENT_CNT);
     context.config.setRepairIntensity(REPAIR_INTENSITY);
+    context.config.setHangingRepairTimeoutMins(SEGMENT_TIMEOUT);
 
     uriInfo = mock(UriInfo.class);
     when(uriInfo.getBaseUriBuilder()).thenReturn(UriBuilder.fromUri(SAMPLE_URI));
@@ -190,9 +191,15 @@ public final class RepairRunResourceTest {
             .nodes(NODES)
             .datacenters(DATACENTERS)
             .blacklistedTables(BLACKLISTED_TABLES)
-            .repairThreadCount(REPAIR_THREAD_COUNT);
+            .repairThreadCount(REPAIR_THREAD_COUNT)
+            .timeout(SEGMENT_TIMEOUT);
 
     context.storage.addRepairUnit(repairUnitBuilder);
+  }
+
+  @After
+  public void tearDown() {
+    DateTimeUtils.setCurrentMillisSystem();
   }
 
   private Response addDefaultRepairRun(RepairRunResource resource) {
@@ -237,12 +244,12 @@ public final class RepairRunResourceTest {
         Optional.<String>empty(),
         blacklistedTables.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(blacklistedTables, ',')),
         Optional.of(repairThreadCount),
-        Optional.<String>empty());
+        Optional.<String>empty(),
+        Optional.of(30));
   }
 
   @Test
   public void testAddRepairRun() throws Exception {
-
     DateTimeUtils.setCurrentMillisFixed(TIME_CREATE);
     RepairRunResource resource = new RepairRunResource(context);
     Response response = addDefaultRepairRun(resource);
@@ -293,6 +300,7 @@ public final class RepairRunResourceTest {
   @Test
   public void doesNotDisplayBlacklistedCompactionStrategies() throws Exception {
     context.config.setBlacklistTwcsTables(true);
+    context.config.setHangingRepairTimeoutMins(30);
     when(proxy.getKeyspaces()).thenReturn(Lists.newArrayList(keyspace));
 
     when(proxy.getTablesForKeyspace(keyspace)).thenReturn(
@@ -539,7 +547,8 @@ public final class RepairRunResourceTest {
       Set<String> nodes,
       Set<String> blacklistedTables,
       Integer repairThreadCount,
-      String force) {
+      String force,
+      Integer segmentTimeout) {
 
     return resource.addRepairRun(
         uriInfo,
@@ -556,7 +565,8 @@ public final class RepairRunResourceTest {
         Optional.<String>empty(),
         blacklistedTables.isEmpty() ? Optional.empty() : Optional.of(StringUtils.join(blacklistedTables, ',')),
         Optional.of(repairThreadCount),
-        Optional.of(force));
+        Optional.of(force),
+        Optional.of(segmentTimeout));
   }
 
   @Test
@@ -575,7 +585,8 @@ public final class RepairRunResourceTest {
             NODES,
             BLACKLISTED_TABLES,
             REPAIR_THREAD_COUNT,
-            "foo");
+            "foo",
+            30);
 
     assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
     assertTrue(response.getEntity() instanceof String);

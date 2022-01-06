@@ -19,13 +19,166 @@ import CreateReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import Select from 'react-select';
 import moment from "moment";
-import {RowDeleteMixin, StatusUpdateMixin, DeleteStatusMessageMixin, CFsListRender, toast, getUrlPrefix} from "jsx/mixin";
+import Modal from 'react-bootstrap/lib/Modal';
+import Button from 'react-bootstrap/lib/Button';
+import {
+  CFsListRender,
+  DeleteStatusMessageMixin,
+  getUrlPrefix,
+  RowDeleteMixin,
+  StatusUpdateMixin,
+  toast
+} from "jsx/mixin";
+import RepairScheduleForm from './repair-schedule-form'
+
 var NotificationSystem = require('react-notification-system');
+
+const EditRowModal = CreateReactClass({
+  propTypes: {
+    row: PropTypes.object,
+    onCancel: PropTypes.func.isRequired,
+    onSaveComplete: PropTypes.func.isRequired
+  },
+
+  getInitialState: function() {
+    return {
+      editFormState: {},
+      canSave: false,
+      saveInProgress: false,
+      saveError: false
+    }
+  },
+
+  _cancel: function() {
+    if (this.props.onCancel) {
+      this.props.onCancel();
+    }
+  },
+
+  _buildRepairSchedulePatchBody: function(repairSchedule) {
+    if (!repairSchedule) {
+      return;
+    }
+
+    // Build a body from the provided form state
+    // Validation happens within the form and on submit, so we will not validate here
+
+    const body = {};
+
+    if (repairSchedule.owner) {
+      body.owner = repairSchedule.owner;
+    }
+
+    if (repairSchedule.parallelism) {
+      body.repair_parallelism = repairSchedule.parallelism;
+    }
+
+    // These are numeric types that could allow zeros, so need to explicitly check existence
+
+    if (repairSchedule.intensity != undefined && repairSchedule.intensity != null) {
+      body.intensity = repairSchedule.intensity;
+    }
+
+    if (repairSchedule.intervalDays != undefined && repairSchedule.intervalDays != null) {
+      body.scheduled_days_between = repairSchedule.intervalDays;
+    }
+
+    if (repairSchedule.segments != undefined && repairSchedule.segments != null) {
+      body.segment_count_per_node = repairSchedule.segments;
+    }
+
+    if (repairSchedule.percentUnrepairedThreshold != undefined && repairSchedule.percentUnrepairedThreshold != null) {
+      body.percent_unrepaired_threshold = repairSchedule.percentUnrepairedThreshold;
+    }
+
+    if (repairSchedule.adaptive != undefined && repairSchedule.adaptive != null) {
+      body.adaptive = repairSchedule.adaptive;
+    }
+
+    return body;
+  },
+
+  _save: function() {
+    this.setState({canSave: false, saveInProgress: true, saveError: false});
+
+    const url = getUrlPrefix(window.top.location.pathname) + '/repair_schedule/' + encodeURIComponent(this.state.editFormState.id);
+    const body = this._buildRepairSchedulePatchBody(this.state.editFormState);
+    if (!body) {
+      this.setState({canSave: true, saveInProgress: false, saveError: true});
+      console.error("Error: Unable to save changes, unable to build request body from current form state.", this.state.editFormState);
+      return;
+    }
+
+    fetch(
+      url,
+      {
+        method: "PATCH",
+        body: JSON.stringify(body),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    ).then(response => {
+      if (!response.ok) {
+        this.setState({canSave: true, saveInProgress: false, saveError: true});
+        console.error("Error: Unable to save changes, request failed with response [" + response.status + "] " + response.statusText + ".");
+        if (this.props.onSaveComplete) {
+          this.props.onSaveComplete(false);
+        }
+      } else {
+        this.setState({canSave: true, saveInProgress: false, saveError: false});
+        if (this.props.onSaveComplete) {
+          this.props.onSaveComplete(true);
+        }
+      }
+    }).catch(error => {
+      this.setState({canSave: true, saveInProgress: false, saveError: true});
+      console.error("Error: Unable to save changes, request failed with error.", error);
+      if (this.props.onSaveComplete) {
+        this.props.onSaveComplete(false);
+      }
+    });
+  },
+
+  _formChangeHandler: function(e) {
+    if (!e || !e.field) {
+      return;
+    }
+    if (e && e.state) {
+      if (e.state.valid) {
+        this.setState({editFormState: e.state});
+      }
+      this.setState({canSave: e.state.valid});
+    }
+  },
+
+  render: function () {
+    return (
+      <Modal show={this.props.row ? true : false} backdrop={"static"}>
+        <Modal.Header>
+          <Modal.Title>Edit Schedule: {this.props.row ? this.props.row.cluster_name : 'Unknown Cluster'}/{this.props.row ? this.props.row.keyspace_name : 'Unknown Keyspace'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div>
+            <RepairScheduleForm repair={this.props.row} formType="schedule" onChange={this._formChangeHandler}/>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <span className="fa fa-spinner fa-spin text-info edit-repair-schedule-modal-status-icon" title="Saving changes..." style={{display: this.state.saveInProgress ? 'inline-block' : 'none'}}></span>
+          <span className="fa fa-exclamation-triangle text-danger edit-repair-schedule-modal-status-icon" title="Error: Unable to save changes." style={{display: this.state.saveError ? 'inline-block' : 'none'}}></span>
+          <Button onClick={this._save} disabled={!this.state.canSave}>Save</Button>
+          <Button onClick={this._cancel} disabled={this.state.saveInProgress}>Cancel</Button>
+        </Modal.Footer>
+      </Modal>
+    )
+  }
+});
 
 const TableRow = CreateReactClass({
   mixins: [RowDeleteMixin, StatusUpdateMixin],
   propTypes: {
-    notificationSystem: PropTypes.object.isRequired
+    notificationSystem: PropTypes.object.isRequired,
+    editScheduleCallback: PropTypes.func.isRequired
   },
 
   _runNow: function() {
@@ -44,11 +197,16 @@ const TableRow = CreateReactClass({
     });
   },
 
+  _editSchedule: function() {
+    this.props.editScheduleCallback(this.props.row);
+  },
+
   render: function() {
 
     const next = moment(this.props.row.next_activation).fromNow();
     const rowID = `#details_${this.props.row.id}`;
-    const incremental = this.props.row.incremental_repair == true ? "true" : "false";
+    const incremental = this.props.row.incremental_repair === true ? "true" : "false";
+    const percentThreshold = this.props.row.percent_unrepaired_threshold > 0 ? ` or ${this.props.row.percent_unrepaired_threshold}% unrepaired` : "";
 
     return (
     <tr>
@@ -59,11 +217,12 @@ const TableRow = CreateReactClass({
         <td data-toggle="collapse" data-target={rowID}><CFsListRender list={this.props.row.blacklisted_tables} /></td>
         <td data-toggle="collapse" data-target={rowID}>{incremental}</td>
         <td data-toggle="collapse" data-target={rowID}>{next}</td>
-        <td data-toggle="collapse" data-target={rowID}>{this.props.row.scheduled_days_between} days</td>
+        <td data-toggle="collapse" data-target={rowID}>{this.props.row.scheduled_days_between} days{percentThreshold}</td>
         <td>
           {this.statusUpdateButton()}
           {this.deleteButton()}
           <button type="button" className="btn btn-xs btn-info" onClick={this._runNow}>Run now</button>
+          <button type="button" className="btn btn-xs btn-primary" onClick={this._editSchedule}>Edit</button>
         </td>
     </tr>
     );
@@ -78,6 +237,7 @@ const TableRowDetails = CreateReactClass({
     const nextAt = moment(this.props.row.next_activation).format("LLL");
     const rowID = `details_${this.props.row.id}`;
     const incremental = this.props.row.incremental_repair == true ? "true" : "false";
+    const adaptive = this.props.row.adaptive == true ? "true" : "false";
 
     let segmentCount = <tr>
                         <td>Segment count per node</td>
@@ -130,6 +290,10 @@ const TableRowDetails = CreateReactClass({
                     <td>{this.props.row.repair_thread_count}</td>
                 </tr>
                 <tr>
+                    <td>Segment timeout (mins)</td>
+                    <td>{this.props.row.segment_timeout}</td>
+                </tr>
+                <tr>
                     <td>Repair parallelism</td>
                     <td>{this.props.row.repair_parallelism}</td>
                 </tr>
@@ -140,6 +304,10 @@ const TableRowDetails = CreateReactClass({
                 <tr>
                     <td>Creation time</td>
                     <td>{createdAt}</td>
+                </tr>
+                <tr>
+                    <td>Adaptive</td>
+                    <td>{adaptive}</td>
                 </tr>
             </tbody>
           </table>
@@ -170,7 +338,8 @@ const scheduleList = CreateReactClass({
       deleteResultMsg: null,
       clusterNames: [],
       currentClusterSelectValue: {value: 'all', label: 'all'},
-      currentCluster: this.props.currentCluster
+      currentCluster: this.props.currentCluster,
+      editRow: undefined
     };
   },
 
@@ -197,6 +366,20 @@ const scheduleList = CreateReactClass({
     this._clustersSubscription.dispose();
   },
 
+  _editSchedule: function(row) {
+    this.setState({editRow: row});
+  },
+
+  _editScheduleSaveHandler: function(success) {
+    if (success) {
+      this._hideEditSchedule();
+    }
+  },
+
+  _hideEditSchedule: function() {
+    this.setState({editRow: undefined});
+  },
+
   _handleSelectOnChange: function(valueContext, actionContext) {
     const nameRef = actionContext.name.split("_")[1];
     const nameSelectValueRef = `${nameRef}SelectValue`;
@@ -218,7 +401,6 @@ const scheduleList = CreateReactClass({
   },
 
   render: function() {
-
     function compareNextActivationTime(a,b) {
       if (a.next_activation < b.next_activation)
         return -1;
@@ -254,7 +436,8 @@ const scheduleList = CreateReactClass({
         <TableRow row={schedule} key={schedule.id+'-head'}
           deleteSubject={this.props.deleteSubject}
           updateStatusSubject={this.props.updateStatusSubject}
-          notificationSystem={this._notificationSystem} />
+          notificationSystem={this._notificationSystem}
+          editScheduleCallback={this._editSchedule}/>
         <TableRowDetails row={schedule} key={schedule.id+'-details'}/>
       </tbody>
     );
@@ -290,6 +473,7 @@ const scheduleList = CreateReactClass({
 
     return (<div className="panel panel-default">
               <div className="panel-body">
+                <EditRowModal row={this.state.editRow} onCancel={this._hideEditSchedule} onSaveComplete={this._editScheduleSaveHandler}/>
                 <NotificationSystem ref="notificationSystem" />
                 {this.deleteMessage()}
                 {clusterFilter}

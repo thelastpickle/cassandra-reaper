@@ -20,7 +20,7 @@
 
     <groupId>io.cassandrareaper</groupId>
     <artifactId>cassandra-reaper-pom</artifactId>
-    <version>2.4.0-SNAPSHOT</version>
+    <version>3.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Reaper for Apache Cassandra project</name>
@@ -194,6 +194,7 @@
                 <exclude>**/*.password</exclude>
                 <exclude>**/*.txt</exclude>
                 <exclude>src/packaging/**</exclude>
+                <exclude>codecov.yml</exclude>
               </excludes>
             </configuration>
             <executions>
@@ -291,7 +292,14 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.1.2</version>
+                <dependencies>
+                  <dependency>
+                    <groupId>com.puppycrawl.tools</groupId>
+                    <artifactId>checkstyle</artifactId>
+                    <version>8.19</version>
+                  </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -324,11 +332,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <version.jdk>1.8</version.jdk>
-        <!-- travis of July 2018 was still using _151 -->
-        <build.jdk.minimum>1.8.0-151</build.jdk.minimum>
+        <release.jdk>8</release.jdk>
+        <build.jdk.minimum>1.8</build.jdk.minimum>
         <!-- travis of July 2018 was still using maven-3.5.2 but our Docker image for building packages ships with 3.3.8 -->
-        <maven.version.minimum>3.3.8</maven.version.minimum>
+        <maven.version.minimum>3.6.3</maven.version.minimum>
         <surefireArgLine></surefireArgLine>
 
         <!--

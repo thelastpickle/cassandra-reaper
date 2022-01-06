@@ -1,5 +1,35 @@
 ## Change Log
 
+### 3.1.0 (2021/12/14 10:15 +00:00)
+- [#1152](https://github.com/thelastpickle/cassandra-reaper/pull/1152) Update to the newer version of Fossa's CLI (#1152) (@jdonenine)
+- [a6d1724](https://github.com/thelastpickle/cassandra-reaper/commit/a6d17245182b53b5abcab64ef32150c261122df4) Upgrade to Dropwizard 2.0 (@adejanovski)
+- [e9cfc20](https://github.com/thelastpickle/cassandra-reaper/commit/e9cfc202ddcca549165ebbf6aa5841241ade5d0b) JDK11 support (@burmanm)
+- [bd1211b](https://github.com/thelastpickle/cassandra-reaper/commit/bd1211bc4b3d945388da7fecfc485e4e9a625634) Fix the Base64-decoder failing if JWT_SECRET is not provided (@burmanm)
+- [1a4fb1d](https://github.com/thelastpickle/cassandra-reaper/commit/1a4fb1db7b48c23c20c5e9a330d9bd36d1130ff1) Quote username and passwords in generated cassandra-reaper.yml (@adutra)
+- [#1131](https://github.com/thelastpickle/cassandra-reaper/pull/1131) Allow to force create repair runs with conflicting units (#1131) (@adejanovski)
+- [#1146](https://github.com/thelastpickle/cassandra-reaper/pull/1146) Add missing auto-scheduling environment variables (#1146) (@adutra)
+- [9b97ef8](https://github.com/thelastpickle/cassandra-reaper/commit/9b97ef8e72ae37221b5f31b31ae79147ff81e9db) Fix adaptive value when editing schedules (@adejanovski)
+- [5c91ad9](https://github.com/thelastpickle/cassandra-reaper/commit/5c91ad95468e0225863f9312f8d06f177dfca728) Revert to /etc/cassandra-reaper (@jeffbanks)
+
+### 3.0.0 (2021/10/29 09:48 +00:00)
+- [8f79e2d](https://github.com/thelastpickle/cassandra-reaper/commit/8f79e2da9dd363ef4c132376dede3bd7e0062436) Fix snapshot conflicting REST endpoints (@adejanovski)
+- [93c0410](https://github.com/thelastpickle/cassandra-reaper/commit/93c041080a429129dcae98d41a8625ac066373c5) Apply DC filters when building the list of segments (@adejanovski)
+- [bee5dad](https://github.com/thelastpickle/cassandra-reaper/commit/bee5dadc6d288dcbe3f8be950a920ec2dae51df8) Remove DC collocation check on listSnapshots method
+- [b8a89e6](https://github.com/thelastpickle/cassandra-reaper/commit/b8a89e6f5011c6db093fdfb5bcaecb5a4bf09bfe) Add schedule triggers for incremental repairs based on % unrepaired metrics (@adejanovski)
+- [#1129](https://github.com/thelastpickle/cassandra-reaper/pull/1129) Added UI support for datacenter and rack names containing underscores (#1129) (@weisdd)
+- [b9c7129](https://github.com/thelastpickle/cassandra-reaper/commit/b9c7129361db47da70b56ca589db36929939e891) Mount path change for config (@jeffbanks)
+- [d252b07](https://github.com/thelastpickle/cassandra-reaper/commit/d252b07a360f98e55df36cf159d4b4950b56753e) Remove H2 and Postgres storage backends (@adejanovski)
+- [14e70de](https://github.com/thelastpickle/cassandra-reaper/commit/14e70dec69883680a14d8f0a7c961a3761bc94a0) Add adaptive segment timeouts (@adejanovski)
+- [699b855](https://github.com/thelastpickle/cassandra-reaper/commit/699b855015e52522a24f75037bdd861f01ad8dce) Allow repair schedules to be adaptive (@adejanovski)
+- [#1119](https://github.com/thelastpickle/cassandra-reaper/pull/1119) Allow editing of existing repair schedules (#1119) (@jdonenine)
+- [91b51a8](https://github.com/thelastpickle/cassandra-reaper/commit/91b51a8a87849c4329843963908f6524b38272a3) repairProgress metrics are updated on subsequent runs. (@Skunnyk)
+- [#1118](https://github.com/thelastpickle/cassandra-reaper/pull/1118) Fix the Base64-decoder failing if JWT_SECRET is not provided (#1118) (@burmanm)
+- [#1099](https://github.com/thelastpickle/cassandra-reaper/pull/1099) Add force option and warning for overlapping repair schedules (#1099) (@emerkle826)
+
+### 2.3.1 (2021/07/10 05:10 +00:00)
+- [0f3d451](https://github.com/thelastpickle/cassandra-reaper/commit/0f3d4516eb271ba4f8d3c3095e813450fc14c859) Allow schema upgrades with other Reaper instances possibly running (@adejanovski)
+- [d31f538](https://github.com/thelastpickle/cassandra-reaper/commit/d31f5384a2c8bf786f72ac069d87c2eff9e5d983) Fix endpoint state not returning in EACH mode due to seeds being shuffled (@adejanovski)
+
 ### 2.3.0 (2021/07/08 14:52 +00:00)
 - [eafe0dd](https://github.com/thelastpickle/cassandra-reaper/commit/eafe0ddad4d30173d541a02b4fcdbf6c5acd19f5) Add support for scylla 4.4 repair
 - [e82d464](https://github.com/thelastpickle/cassandra-reaper/commit/e82d464b15299445791bf71a4e43b0d84a131d9e) Add schema migration startup mode (@adejanovski)

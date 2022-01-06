@@ -33,8 +33,8 @@ function wait_for {
 
 if [ "$1" = 'cassandra-reaper' ]; then
 
-    # get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper.yml: Interrupted system call` unknown error
-    touch /etc/cassandra-reaper.yml
+    # get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper/cassandra-reaper.yml: Interrupted system call` unknown error
+    touch /etc/cassandra-reaper/cassandra-reaper.yml
 
     /usr/local/bin/configure-persistence.sh
     /usr/local/bin/configure-webui-authentication.sh
@@ -43,13 +43,13 @@ if [ "$1" = 'cassandra-reaper' ]; then
     exec java \
             ${JAVA_OPTS} \
             -cp "/usr/local/lib/*" io.cassandrareaper.ReaperApplication server \
-            /etc/cassandra-reaper.yml
+            /etc/cassandra-reaper/cassandra-reaper.yml
 fi
 
 if [ "$1" = 'schema-migration' ]; then
 
-    # get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper.yml: Interrupted system call` unknown error
-    touch /etc/cassandra-reaper.yml
+    # get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper/cassandra-reaper.yml: Interrupted system call` unknown error
+    touch /etc/cassandra-reaper/cassandra-reaper.yml
 
     /usr/local/bin/configure-persistence.sh
     /usr/local/bin/configure-webui-authentication.sh
@@ -58,7 +58,7 @@ if [ "$1" = 'schema-migration' ]; then
     exec java \
             ${JAVA_OPTS} \
             -cp "/usr/local/lib/*" io.cassandrareaper.ReaperApplication schema-migration \
-            /etc/cassandra-reaper.yml
+            /etc/cassandra-reaper/cassandra-reaper.yml
 fi
 
 if [ "$1" = 'register-clusters' ]; then

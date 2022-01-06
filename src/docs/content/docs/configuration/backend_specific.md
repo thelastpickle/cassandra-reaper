@@ -120,7 +120,66 @@ Type: *String*
 
 Cassandra native protocol password.
 
+#### Full Configuration Reference
+
+```yaml
+clusterName:
+keyspace:
+validationQuery:
+healthCheckTimeout:
+contactPoints:
+port:
+protocolVersion:
+compression:
+maxSchemaAgreementWait:
+ssl:
+  type:
+addressTranslator:
+  type:
+reconnectionPolicy:
+  type:
+authProvider:
+  type:
+retryPolicy:
+  type:
+loadBalancingPolicy:
+  type:
+speculativeExecutionPolicy:
+  type:
+queryOptions:
+  consistencyLevel:
+  serialConsistencyLevel:
+  fetchSize:
+socketOptions:
+  connectTimeoutMillis:
+  readTimeoutMillis:
+  keepAlive:
+  reuseAddress:
+  soLinger:
+  tcpNoDelay:
+  receiveBufferSize:
+  sendBufferSize:
+poolingOptions:
+  heartbeatInterval:
+  poolTimeout:
+  local:
+    maxRequestsPerConnection:
+    newConnectionThreshold:
+    coreConnections:
+    maxConnections:
+  remote:
+    maxRequestsPerConnection:
+    newConnectionThreshold:
+    coreConnections:
+    maxConnections:
+metricsEnabled:
+jmxEnabled:
+shutdownGracePeriod:
+```
+
 ## H2 or Postgres Database Settings
+
+**Removed in v3.0.0**
 
 The following settings are specific to a Reaper deployment that is backed by either a H2 or Postgres database. An example of the configuration settings for a Postgres database are as follows.
 

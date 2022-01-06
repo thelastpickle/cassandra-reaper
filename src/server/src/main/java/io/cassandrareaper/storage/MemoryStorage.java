@@ -27,7 +27,6 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
-import io.cassandrareaper.service.RepairParameters;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -287,6 +286,12 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
+  public void updateRepairUnit(RepairUnit updatedRepairUnit) {
+    repairUnits.put(updatedRepairUnit.getId(), updatedRepairUnit);
+    repairUnitsByKey.put(updatedRepairUnit.with(), updatedRepairUnit);
+  }
+
+  @Override
   public RepairUnit getRepairUnit(UUID id) {
     RepairUnit unit = repairUnits.get(id);
     Preconditions.checkArgument(null != unit);
@@ -346,20 +351,6 @@ public final class MemoryStorage implements IStorage {
       }
     }
     return segments;
-  }
-
-  @Override
-  public Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName) {
-    List<RepairParameters> ongoingRepairs = Lists.newArrayList();
-    for (RepairRun run : getRepairRunsWithState(RepairRun.RunState.RUNNING)) {
-      for (RepairSegment segment : getSegmentsWithState(run.getId(), RepairSegment.State.RUNNING)) {
-        RepairUnit unit = getRepairUnit(segment.getRepairUnitId());
-        ongoingRepairs.add(
-            new RepairParameters(
-                segment.getTokenRange(), unit.getKeyspaceName(), unit.getColumnFamilies(), run.getRepairParallelism()));
-      }
-    }
-    return ongoingRepairs;
   }
 
   @Override
@@ -502,7 +493,9 @@ public final class MemoryStorage implements IStorage {
               unit.getDatacenters(),
               unit.getBlacklistedTables(),
               unit.getRepairThreadCount(),
-              unit.getId()));
+              unit.getId(),
+              unit.getTimeout(),
+              run.getAdaptiveSchedule()));
     }
     return runStatuses;
   }
@@ -574,7 +567,7 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
-  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, long since) {
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
     return percentRepairedMetrics.entrySet().stream()
       .filter(entry -> entry.getKey().equals(clusterName + "-" + repairScheduleId))
       .map(entry -> entry.getValue().entrySet())
@@ -594,5 +587,15 @@ public final class MemoryStorage implements IStorage {
       newValue.put(metric.getNode(), metric);
       percentRepairedMetrics.put(metricKey, newValue);
     }
+  }
+
+  @Override
+  public void start() {
+    // no-op
+  }
+
+  @Override
+  public void stop() {
+    // no-op
   }
 }

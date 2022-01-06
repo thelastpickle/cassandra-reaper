@@ -50,7 +50,7 @@ public interface StorageServiceMBean20 extends NotificationEmitter, StorageServi
       String keyspace,
       boolean isSequential,
       Collection<String> dataCenters,
-      final Collection<String> hosts,
+      final Collection<String> hosts, // CHECKSTYLE IGNORE THIS LINE
       boolean primaryRange,
       String... columnFamilies);
 
@@ -66,7 +66,7 @@ public interface StorageServiceMBean20 extends NotificationEmitter, StorageServi
       String keyspace,
       int parallelismDegree,
       Collection<String> dataCenters,
-      final Collection<String> hosts,
+      final Collection<String> hosts, // CHECKSTYLE IGNORE THIS LINE
       boolean primaryRange,
       String... columnFamilies);
 
@@ -89,11 +89,11 @@ public interface StorageServiceMBean20 extends NotificationEmitter, StorageServi
   int forceRepairRangeAsync(
       String beginToken,
       String endToken,
-      final String keyspaceName,
+      final String keyspaceName, // CHECKSTYLE IGNORE THIS LINE
       boolean isSequential,
       Collection<String> dataCenters,
-      final Collection<String> hosts,
-      final String... columnFamilies);
+      final Collection<String> hosts, // CHECKSTYLE IGNORE THIS LINE
+      final String... columnFamilies); // CHECKSTYLE IGNORE THIS LINE
 
   /**
    * Same as forceRepairAsync, but handles a specified range
@@ -103,20 +103,20 @@ public interface StorageServiceMBean20 extends NotificationEmitter, StorageServi
   int forceRepairRangeAsync(
       String beginToken,
       String endToken,
-      final String keyspaceName,
+      final String keyspaceName, // CHECKSTYLE IGNORE THIS LINE
       int parallelismDegree,
       Collection<String> dataCenters,
-      final Collection<String> hosts,
-      final String... columnFamilies);
+      final Collection<String> hosts, // CHECKSTYLE IGNORE THIS LINE
+      final String... columnFamilies); // CHECKSTYLE IGNORE THIS LINE
 
   /** Same as forceRepairAsync, but handles a specified range */
   int forceRepairRangeAsync(
       String beginToken,
       String endToken,
-      final String keyspaceName,
+      final String keyspaceName, // CHECKSTYLE IGNORE THIS LINE
       boolean isSequential,
       boolean isLocal,
-      final String... columnFamilies);
+      final String... columnFamilies); // CHECKSTYLE IGNORE THIS LINE
 
   /**
    * Triggers proactive repair for given column families, or all columnfamilies for the given

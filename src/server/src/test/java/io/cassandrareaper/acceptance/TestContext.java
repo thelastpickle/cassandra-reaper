@@ -17,9 +17,9 @@
 
 package io.cassandrareaper.acceptance;
 
-
 import io.cassandrareaper.core.DiagEventSubscription;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import javax.ws.rs.sse.InboundSseEvent;
+import javax.ws.rs.sse.SseEventSource;
 
 import com.google.common.collect.Lists;
 
@@ -46,6 +49,10 @@ public final class TestContext {
 
   /* Testing cluster name mapped to keyspace name mapped to tables list. */
   public static Map<String, Map<String, Set<String>>> TEST_CLUSTER_INFO = new HashMap<>();
+
+  /* Diagnostic events storage */
+  public static SseEventSource sseEventSource;
+  public static List<InboundSseEvent> diagnosticEvents = new ArrayList<>();
 
   /* Used for targeting an object accessed in last test step. */
   private final List<UUID> currentSchedules = Lists.newCopyOnWriteArrayList();

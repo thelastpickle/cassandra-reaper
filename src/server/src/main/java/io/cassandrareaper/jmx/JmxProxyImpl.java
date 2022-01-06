@@ -32,7 +32,6 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMISocketFactory;
-import java.security.Security;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -227,7 +226,6 @@ final class JmxProxyImpl implements JmxProxy {
         String[] creds = { jmxCredentials.get().getUsername(), jmxCredentials.get().getPassword() };
         env.put(JMXConnector.CREDENTIALS, creds);
         LOG.debug("Use SSL with profile 'TLS SASL/PLAIN' with JMXMP");
-        Security.addProvider(new com.sun.security.sasl.Provider());
         env.put("jmx.remote.profiles", "TLS SASL/PLAIN");
         env.put("jmx.remote.sasl.callback.handler",
             new UserPasswordCallbackHandler(jmxCredentials.get().getUsername(), jmxCredentials.get().getPassword()));

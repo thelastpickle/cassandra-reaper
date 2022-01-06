@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.codahale.metrics.MetricRegistry;
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +40,7 @@ public final class AppContext {
 
   public static final String REAPER_INSTANCE_ADDRESS = Private.initialiseInstanceAddress();
 
-  public final UUID reaperInstanceId = UUID.randomUUID();
+  public final UUID reaperInstanceId = UUIDs.timeBased();
   public final AtomicBoolean isRunning = new AtomicBoolean(true);
   public final AtomicBoolean isDistributed = new AtomicBoolean(false);
   public IStorage storage;
