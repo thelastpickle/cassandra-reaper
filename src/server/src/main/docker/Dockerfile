@@ -96,7 +96,7 @@ ADD configure-persistence.sh /usr/local/bin/configure-persistence.sh
 ADD configure-metrics.sh /usr/local/bin/configure-metrics.sh
 ADD configure-webui-authentication.sh /usr/local/bin/configure-webui-authentication.sh
 ADD configure-jmx-credentials.sh /usr/local/bin/configure-jmx-credentials.sh
-ADD cassandra-reaper-3.1.0.jar /usr/local/lib/cassandra-reaper.jar
+ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
 ADD spreaper /usr/local/bin/spreaper
 
 
