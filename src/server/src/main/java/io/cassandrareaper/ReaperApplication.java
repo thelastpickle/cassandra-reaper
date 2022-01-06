@@ -34,6 +34,7 @@ import io.cassandrareaper.resources.DiagEventSubscriptionResource;
 import io.cassandrareaper.resources.NodeStatsResource;
 import io.cassandrareaper.resources.PingResource;
 import io.cassandrareaper.resources.ReaperHealthCheck;
+import io.cassandrareaper.resources.ReaperResource;
 import io.cassandrareaper.resources.RepairRunResource;
 import io.cassandrareaper.resources.RepairScheduleResource;
 import io.cassandrareaper.resources.SnapshotResource;
@@ -70,7 +71,6 @@ import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
-import io.dropwizard.jetty.BiDiGzipHandler;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
@@ -78,6 +78,7 @@ import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.MetricsServlet;
 import org.apache.http.client.HttpClient;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.joda.time.DateTimeZone;
@@ -85,7 +86,6 @@ import org.secnod.dropwizard.shiro.ShiroBundle;
 import org.secnod.dropwizard.shiro.ShiroConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.Signal;
 
 public final class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
@@ -98,13 +98,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     this.context = new AppContext();
   }
 
-  @VisibleForTesting
-  public ReaperApplication(AppContext context) {
-    super();
-    LOG.info("ReaperApplication constructor called with custom AppContext");
-    this.context = context;
-  }
-
   public static void main(String[] args) throws Exception {
     new ReaperApplication().run(args);
   }
@@ -112,6 +105,11 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   @Override
   public String getName() {
     return "cassandra-reaper";
+  }
+
+  @VisibleForTesting
+  public AppContext getContext() {
+    return context;
   }
 
   /**
@@ -156,7 +154,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     DateTimeZone.setDefault(DateTimeZone.UTC);
     checkConfiguration(config);
     context.config = config;
-    addSignalHandlers(); // SIGHUP, etc.
     context.metricRegistry = environment.metrics();
     CollectorRegistry.defaultRegistry.register(new DropwizardExports(environment.metrics()));
 
@@ -180,8 +177,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     context.repairManager = RepairManager.create(
         context,
         environment.lifecycle().scheduledExecutorService("RepairRunner").threads(repairThreads).build(),
-        config.getHangingRepairTimeoutMins(),
-        TimeUnit.MINUTES,
         config.getRepairManagerSchedulingIntervalSeconds(),
         TimeUnit.SECONDS,
         maxParallelRepairs);
@@ -191,7 +186,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
       FilterRegistration.Dynamic co = environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);
       co.setInitParameter("allowedOrigins", "*");
       co.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin");
-      co.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD");
+      co.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD,PATCH");
       co.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
     }
 
@@ -214,6 +209,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     environment.jersey().register(addRepairScheduleResource);
     final SnapshotResource snapshotResource = new SnapshotResource(context, environment);
     environment.jersey().register(snapshotResource);
+    final ReaperResource reaperResource = new ReaperResource(context);
+    environment.jersey().register(reaperResource);
 
     final NodeStatsResource nodeStatsResource = new NodeStatsResource(context);
     environment.jersey().register(nodeStatsResource);
@@ -366,8 +363,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   private static void setupSse(Environment environment) {
     // Enabling gzip buffering will prevent flushing of server-side-events, so we disable compression for SSE
     environment.lifecycle().addServerLifecycleListener(server -> {
-      for (Handler handler : server.getChildHandlersByClass(BiDiGzipHandler.class)) {
-        ((BiDiGzipHandler) handler).addExcludedMimeTypes("text/event-stream");
+      for (Handler handler : server.getChildHandlersByClass(GzipHandler.class)) {
+        ((GzipHandler) handler).addExcludedMimeTypes("text/event-stream");
       }
     });
   }
@@ -441,21 +438,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.debug("jmxPorts: {}", config.getJmxPorts());
   }
 
-  void reloadConfiguration() {
-    // TODO: reload configuration, but how?
-    LOG.warn("SIGHUP signal dropped, missing implementation for configuration reload");
-  }
-
-  private void addSignalHandlers() {
-    if (!System.getProperty("os.name").toLowerCase().contains("win")) {
-      LOG.debug("adding signal handler for SIGHUP");
-      Signal.handle(new Signal("HUP"), signal -> {
-        LOG.info("received SIGHUP signal: {}", signal);
-        reloadConfiguration();
-      });
-    }
-  }
-
   private void initializeJmxSeedsForAllClusters() {
     LOG.info("Initializing JMX seed list for all clusters...");
     try (JmxConnectionsInitializer jmxConnectionsIntializer = JmxConnectionsInitializer.create(context);
@@ -476,7 +458,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   }
 
   private void tryInitializeStorage(ReaperApplicationConfiguration config, Environment environment)
-    throws ReaperException, InterruptedException {
+      throws ReaperException, InterruptedException {
     if (context.storage == null) {
       LOG.info("initializing storage of type: {}", config.getStorageType());
       int storageFailures = 0;
@@ -484,6 +466,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         try {
           context.storage = InitializeStorage.initializeStorage(
             config, environment, context.reaperInstanceId).initializeStorageBackend();
+
+          // Allows to execute cleanup queries as shutdown hooks
+          environment.lifecycle().manage(context.storage);
           break;
         } catch (RuntimeException e) {
           LOG.error("Storage is not ready yet, trying again to connect shortly...", e);

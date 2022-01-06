@@ -19,7 +19,7 @@ In the case where the JMX port is accessible (with or without authentication) fr
 datacenterAvailability: ALL
 ```
 
-This setup works with all backends : Apache Cassandra, Memory, H2 and Postgres.
+This setup works with all backends : Apache Cassandra, Astra and Memory.
 
 
 {{< screenshot src="/img/singlereaper-multidc-all.png">}}
@@ -44,7 +44,7 @@ Be aware that this setup will not allow to handle backpressure for those remote 
 
 If multiple clusters are registered in Reaper it is required that Reaper can access all nodes in at least one data center in each of the registered clusters.
 
-This setup works with all backends : Apache Cassandra, Memory, H2 and Postgres.
+This setup works with all backends : Apache Cassandra, Astra and Memory.
 
 
 {{< screenshot src="/img/singlereaper-multidc-local.png">}}

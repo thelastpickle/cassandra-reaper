@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.acceptance;
 
-import io.cassandrareaper.AppContext;
 import io.cassandrareaper.SimpleReaperClient;
 import io.cassandrareaper.core.DiagEventSubscription;
 import io.cassandrareaper.core.DroppedMessages;
@@ -30,8 +29,7 @@ import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
 import io.cassandrareaper.service.RepairRunService;
 import io.cassandrareaper.storage.CassandraStorage;
-import io.cassandrareaper.storage.PostgresStorage;
-import io.cassandrareaper.storage.postgresql.DiagEventSubscriptionMapper;
+import io.cassandrareaper.storage.DiagEventSubscriptionMapper;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,7 +46,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.sse.SseEventSource;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Host;
@@ -56,9 +56,11 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
 import com.datastax.driver.core.VersionNumber;
 import com.datastax.driver.core.exceptions.AlreadyExistsException;
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import cucumber.api.java.en.And;
@@ -69,6 +71,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Duration;
 import org.awaitility.core.ConditionTimeoutException;
+import org.glassfish.jersey.client.JerseyClientBuilder;
+import org.glassfish.jersey.client.JerseyWebTarget;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +96,6 @@ public final class BasicSteps {
   private static final List<ReaperTestJettyRunner> RUNNERS = new CopyOnWriteArrayList<>();
   private static final List<SimpleReaperClient> CLIENTS = new CopyOnWriteArrayList<>();
   private static final Random RAND = new Random(System.nanoTime());
-  private static final AtomicReference<Upgradable> TEST_INSTANCE = new AtomicReference<>();
 
   private static final Map<String,String> EVENT_TYPES = ImmutableMap.<String,String>builder()
       .put("AuditEvent", "org.apache.cassandra.audit.AuditEvent")
@@ -110,11 +113,11 @@ public final class BasicSteps {
 
   public static synchronized void addReaperRunner(ReaperTestJettyRunner runner) {
     if (!CLIENTS.isEmpty()) {
-      Preconditions.checkState(isInstanceOfDistributedStorage(runner.runnerInstance.getContextStorageClassname()));
+      Preconditions.checkState(isInstanceOfDistributedStorage(runner.getContextStorageClassname()));
       RUNNERS.stream()
           .forEach(r ->
               Preconditions.checkState(
-                  isInstanceOfDistributedStorage(runner.runnerInstance.getContextStorageClassname())
+                  isInstanceOfDistributedStorage(runner.getContextStorageClassname())
               ));
     }
     RUNNERS.add(runner);
@@ -126,21 +129,37 @@ public final class BasicSteps {
     RUNNERS.remove(runner);
   }
 
-  static void setup(Upgradable testInstance) {
-    Preconditions.checkState(null == TEST_INSTANCE.get());
-    TEST_INSTANCE.set(testInstance);
-  }
-
   private static void callAndExpect(
       String httpMethod,
       String callPath,
       Optional<Map<String, String>> params,
       Optional<String> expectedDataInResponseData,
       Response.Status... expectedStatuses) {
+    callAndExpect(
+        RUNNERS,
+        httpMethod,
+        callPath,
+        params,
+        expectedDataInResponseData,
+        expectedStatuses);
+  }
 
-    RUNNERS.parallelStream().forEach(runner -> {
+  private static void callAndExpect(
+      List<ReaperTestJettyRunner> runners,
+      String httpMethod,
+      String callPath,
+      Optional<Map<String, String>> params,
+      Optional<String> expectedDataInResponseData,
+      Response.Status... expectedStatuses) {
+
+    runners.parallelStream().forEach(runner -> {
       Response response = runner.callReaper(httpMethod, callPath, params);
-      String responseEntity = response.readEntity(String.class);
+      String responseEntity = "";
+      try {
+        responseEntity = response.readEntity(String.class);
+      } catch (RuntimeException e) {
+        LOG.debug("Failed deserializing response entity as a string. Continuing...", e);
+      }
 
       Assertions
           .assertThat(Arrays.asList(expectedStatuses).stream().map(Response.Status::getStatusCode))
@@ -204,25 +223,6 @@ public final class BasicSteps {
   public void start_reaper(String version) throws Throwable {
     synchronized (BasicSteps.class) {
       testContext = new TestContext();
-      Optional<String> newVersion = version.trim().isEmpty() ? Optional.empty() : Optional.of(version);
-      if (RUNNERS.isEmpty() || !newVersion.equals(reaperVersion)) {
-        if (null == TEST_INSTANCE.get()) {
-          throw new AssertionError(
-              "Running upgrade tests is not supported with this IT. The test must subclass and implement Upgradable");
-        }
-        reaperVersion = newVersion;
-        TEST_INSTANCE.get().upgradeReaperRunner(reaperVersion);
-      }
-    }
-  }
-
-  @When("^reaper is upgraded to latest$")
-  public void upgrade_reaper() throws Throwable {
-    synchronized (BasicSteps.class) {
-      if (reaperVersion.isPresent()) {
-        reaperVersion = Optional.empty();
-        TEST_INSTANCE.get().upgradeReaperRunner(Optional.empty());
-      }
     }
   }
 
@@ -239,15 +239,22 @@ public final class BasicSteps {
   public void reaper_has_no_cluster_in_storage() throws Throwable {
     synchronized (BasicSteps.class) {
       RUNNERS.parallelStream().forEach(runner -> {
-        Response response = runner.callReaper("GET", "/cluster/", Optional.<Map<String, String>>empty());
-        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-        String responseData = response.readEntity(String.class);
-        Assertions.assertThat(responseData).isNotBlank();
-        List<String> clusterNames = SimpleReaperClient.parseClusterNameListJSON(responseData);
-        if (!((AppContext) runner.runnerInstance.getContext()).config.isInSidecarMode()) {
-          // Sidecar self registers clusters
-          assertEquals(0, clusterNames.size());
-        }
+        await().with().pollInterval(POLL_INTERVAL).atMost(12, SECONDS).until(() -> {
+          Response response = runner.callReaper("GET", "/cluster/", Optional.<Map<String, String>>empty());
+          assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+          String responseData = response.readEntity(String.class);
+          Assertions.assertThat(responseData).isNotBlank();
+          List<String> clusterNames = SimpleReaperClient.parseClusterNameListJSON(responseData);
+          if (!runner.getContext().config.isInSidecarMode()) {
+            // Sidecar self registers clusters
+            if (clusterNames.size() == 0) {
+              return true;
+            }
+            LOG.error("There are still clusters registered in Reaper");
+            return false;
+          }
+          return true;
+        });
       });
     }
   }
@@ -275,14 +282,16 @@ public final class BasicSteps {
         Assertions.assertThat(responseEntity).isEmpty();
 
         // follow to new location (to GET resource)
+        LOG.error("location: {}", response.getLocation().toString());
         response = runner.callReaper("GET", response.getLocation().toString(), Optional.empty());
 
         String responseData = response.readEntity(String.class);
         Assertions.assertThat(responseData).isNotBlank();
+        LOG.error(responseData);
         Map<String, Object> cluster = SimpleReaperClient.parseClusterStatusJSON(responseData);
 
         if (Response.Status.CREATED.getStatusCode() == responseStatus
-            || ((AppContext) runner.runnerInstance.getContext()).config.isInSidecarMode()) {
+            || runner.getContext().config.isInSidecarMode()) {
           TestContext.TEST_CLUSTER = (String) cluster.get("name");
         }
       });
@@ -329,7 +338,7 @@ public final class BasicSteps {
         Map<String, Object> cluster = SimpleReaperClient.parseClusterStatusJSON(responseData);
 
         if (Response.Status.CREATED.getStatusCode() == responseStatus
-            || ((AppContext) runner.runnerInstance.getContext()).config.isInSidecarMode()) {
+            || runner.getContext().config.isInSidecarMode()) {
           TestContext.TEST_CLUSTER = (String) cluster.get("name");
         }
       });
@@ -417,6 +426,8 @@ public final class BasicSteps {
       params.put("scheduleDaysBetween", "1");
       params.put("repairParallelism", repairType.equals("incremental") ? "parallel" : "sequential");
       params.put("incrementalRepair", repairType.equals("incremental") ? "True" : "False");
+      params.put("adaptive", "False");
+      params.put("segmentCountPerNode", "10");
       Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
       int responseStatus = response.getStatus();
       String responseEntity = response.readEntity(String.class);
@@ -723,6 +734,35 @@ public final class BasicSteps {
     }
   }
 
+  @And("^reaper has (\\d+) scheduled repairs for cluster \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
+  public void reaper_has_scheduled_repairs_for_the_last_added_cluster(
+      int expectedSchedules,
+      String clusterName,
+      String keyspace)
+      throws Throwable {
+    synchronized (BasicSteps.class) {
+      CLIENTS.parallelStream().forEach(client -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
+          try {
+            List<RepairScheduleStatus> schedules
+                = client.getRepairSchedulesForClusterAndKs(clusterName, keyspace);
+
+            Assertions.assertThat(schedules)
+                .withFailMessage(StringUtils.join(schedules, " , "))
+                .hasSize(expectedSchedules);
+          } catch (AssertionError ex) {
+            LOG.warn(ex.getMessage());
+            logResponse(
+                RUNNERS.get(0),
+                "/repair_schedule?clusterName=" + clusterName + "&keyspace=" + keyspace);
+            return false;
+          }
+          return true;
+        });
+      });
+    }
+  }
+
   @When("^the last added schedule is deleted for cluster called \"([^\"]*)\"$")
   public void the_last_added_schedule_is_deleted_for_cluster_called(String clusterName) throws Throwable {
     synchronized (BasicSteps.class) {
@@ -807,6 +847,54 @@ public final class BasicSteps {
         }
         return true;
       });
+    }
+  }
+
+  @When("^the last added schedule fails being deleted for the last added cluster with owner \"([^\"]*)\"$")
+  public void the_last_added_schedule_fails_deletion_for_the_last_added_cluster_owner(String owner) throws Throwable {
+    synchronized (BasicSteps.class) {
+      LOG.info("pause last added repair schedule with id: {}", testContext.getCurrentScheduleId());
+      Map<String, String> params = Maps.newHashMap();
+      params.put("state", "paused");
+
+      callAndExpect(
+          "PUT",
+          "/repair_schedule/" + testContext.getCurrentScheduleId(),
+          Optional.of(params),
+          Optional.of("\"" + TestContext.TEST_CLUSTER + "\""),
+          Response.Status.OK,
+          Response.Status.NO_CONTENT);
+
+      LOG.info("delete last added repair schedule with id: {}", testContext.getCurrentScheduleId());
+      params.clear();
+      if (!owner.isEmpty()) {
+        params.put("owner", owner);
+      }
+
+      callAndExpect(
+          "DELETE",
+          "/repair_schedule/" + testContext.getCurrentScheduleId(),
+          Optional.of(params),
+          Optional.empty(),
+          Response.Status.BAD_REQUEST,
+          Response.Status.CONFLICT);
+    }
+  }
+
+  @When("^the last added schedule fails being deleted for the last added cluster$")
+  public void the_last_added_schedule_fails_deletion_for_the_last_added_cluster() throws Throwable {
+
+    synchronized (BasicSteps.class) {
+      LOG.info("delete last added repair schedule with id: {}", testContext.getCurrentScheduleId());
+      Map<String, String> params = Maps.newHashMap();
+      params.put("owner", TestContext.TEST_USER);
+
+      callAndExpect(
+          "DELETE",
+          "/repair_schedule/" + testContext.getCurrentScheduleId(),
+          Optional.of(params),
+          Optional.empty(),
+          Response.Status.CONFLICT);
     }
   }
 
@@ -1030,6 +1118,24 @@ public final class BasicSteps {
     }
   }
 
+  @When("^a new repair is added for the last added cluster and keyspace \"([^\"]*)\" with force option$")
+  public void a_new_repair_is_added_for_the_last_added_cluster_and_keyspace_force(String keyspace) throws Throwable {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Map<String, String> params = Maps.newHashMap();
+      params.put("clusterName", TestContext.TEST_CLUSTER);
+      params.put("keyspace", keyspace);
+      params.put("owner", TestContext.TEST_USER);
+      params.put("force", "true");
+      Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
+      assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
+      String responseData = response.readEntity(String.class);
+      Assertions.assertThat(responseData).isNotBlank();
+      RepairRunStatus run = SimpleReaperClient.parseRepairRunStatusJSON(responseData);
+      testContext.addCurrentRepairId(run.getId());
+    }
+  }
+
   @And("^the last added repair has table \"([^\"]*)\" in the blacklist$")
   public void the_last_added_repair_has_table_in_the_blacklist(String blacklistedTable) throws Throwable {
     synchronized (BasicSteps.class) {
@@ -1137,13 +1243,16 @@ public final class BasicSteps {
 
     synchronized (BasicSteps.class) {
       RUNNERS.parallelStream().forEach(runner -> {
-        Response response = runner.callReaper("GET", "/repair_run/cluster/" + clusterName, EMPTY_PARAMS);
-        String responseData = response.readEntity(String.class);
-        assertEquals(responseData, Response.Status.OK.getStatusCode(), response.getStatus());
-        Assertions.assertThat(responseData).isNotBlank();
-        List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
+        List<RepairRunStatus> runs = Lists.newArrayList();
+        startedStates.stream().forEach(state -> {
+          Response response
+              = runner.callReaper("GET", "/repair_run?cluster_name=" + clusterName + "&state=" + state, EMPTY_PARAMS);
+          String responseData = response.readEntity(String.class);
+          assertEquals(responseData, Response.Status.OK.getStatusCode(), response.getStatus());
+          Assertions.assertThat(responseData).isNotBlank();
+          runs.addAll(SimpleReaperClient.parseRepairRunStatusListJSON(responseData));
+        });
         long found = runs.stream().filter(rrs -> startedStates.contains(rrs.getState())).count();
-
         // a repair can be started multiple times by different reaper processes (duplicates are dealt with in time)
         assertTrue(
             String.format("Expected at least %s running or done repair runs. Found %s", expected, found),
@@ -1172,25 +1281,7 @@ public final class BasicSteps {
 
   @Then("^reaper has (\\d+) started or done repairs for the last added cluster$")
   public void reaper_has_started_repairs_for_the_last_added_cluster(int expected) throws Throwable {
-
-    Set<RepairRun.RunState> startedStates = EnumSet.copyOf(
-        Sets.newHashSet(RepairRun.RunState.RUNNING, RepairRun.RunState.DONE));
-
-    synchronized (BasicSteps.class) {
-      RUNNERS.parallelStream().forEach(runner -> {
-        Response response = runner.callReaper("GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
-        String responseData = response.readEntity(String.class);
-        assertEquals(responseData, Response.Status.OK.getStatusCode(), response.getStatus());
-        Assertions.assertThat(responseData).isNotBlank();
-        List<RepairRunStatus> runs = SimpleReaperClient.parseRepairRunStatusListJSON(responseData);
-        long found = runs.stream().filter(rrs -> startedStates.contains(rrs.getState())).count();
-
-        // a repair can be started multiple times by different reaper processes (duplicates are dealt with in time)
-        assertTrue(
-            String.format("Expected at least %s running or done repair runs. Found %s", expected, found),
-            expected <= found);
-      });
-    }
+    reaper_has_running_repairs_for_cluster_called(expected, TestContext.TEST_CLUSTER);
   }
 
   @When("^all added repair runs are deleted for the last added cluster$")
@@ -1286,26 +1377,54 @@ public final class BasicSteps {
       String keyspace) throws Throwable {
 
     synchronized (BasicSteps.class) {
-      RUNNERS.parallelStream().forEach(runner -> {
-        Map<String, String> params = Maps.newHashMap();
-        params.put("clusterName", clusterName);
-        params.put("keyspace", keyspace);
-        params.put("owner", TestContext.TEST_USER);
-        params.put("intensity", "0.9");
-        params.put("scheduleDaysBetween", "1");
-        params.put("repairParallelism", repairType.equals("incremental") ? "parallel" : "sequential");
-        params.put("incrementalRepair", repairType.equals("incremental") ? "True" : "False");
-        params.put("force", "true");
-        Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Map<String, String> params = Maps.newHashMap();
+      params.put("clusterName", clusterName);
+      params.put("keyspace", keyspace);
+      params.put("owner", TestContext.TEST_USER);
+      params.put("intensity", "0.9");
+      params.put("scheduleDaysBetween", "1");
+      params.put("repairParallelism", repairType.equals("incremental") ? "parallel" : "sequential");
+      params.put("incrementalRepair", repairType.equals("incremental") ? "True" : "False");
+      params.put("force", "true");
+      Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
 
-        int status = response.getStatus();
-        String responseEntity = response.readEntity(String.class);
+      int status = response.getStatus();
+      String responseEntity = response.readEntity(String.class);
 
-        Assertions.assertThat(
-              ImmutableList.of(Response.Status.NO_CONTENT.getStatusCode(), Response.Status.CREATED.getStatusCode()))
-            .withFailMessage(responseEntity)
-            .contains(status);
-      });
+      Assertions.assertThat(
+            ImmutableList.of(Response.Status.CREATED.getStatusCode()))
+          .withFailMessage(responseEntity)
+          .contains(status);
+    }
+  }
+
+  @When("^a new daily \"([^\"]*)\" repair schedule fails to be added "
+      + "that already exists for \"([^\"]*)\" and keyspace \"([^\"]*)\"$")
+  public void a_new_daily_repair_schedule_fails_added_that_already_exists_for(
+      String repairType,
+      String clusterName,
+      String keyspace) throws Throwable {
+
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Map<String, String> params = Maps.newHashMap();
+      params.put("clusterName", clusterName);
+      params.put("keyspace", keyspace);
+      params.put("owner", TestContext.TEST_USER);
+      params.put("intensity", "0.9");
+      params.put("scheduleDaysBetween", "1");
+      params.put("repairParallelism", repairType.equals("incremental") ? "parallel" : "sequential");
+      params.put("incrementalRepair", repairType.equals("incremental") ? "True" : "False");
+      Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
+
+      int status = response.getStatus();
+      String responseEntity = response.readEntity(String.class);
+
+      Assertions.assertThat(
+            ImmutableList.of(Response.Status.CONFLICT.getStatusCode()))
+          .withFailMessage(responseEntity)
+          .contains(status);
     }
   }
 
@@ -1520,8 +1639,37 @@ public final class BasicSteps {
   public void a_cluster_wide_snapshot_request_is_made_to_reaper() throws Throwable {
     synchronized (BasicSteps.class) {
       ReaperTestJettyRunner runner = RUNNERS.get(0);
-      Response response = runner.callReaper("POST", "/snapshot/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
+      Map<String, String> params = Maps.newHashMap();
+      params.put("snapshot_name", UUIDs.timeBased().toString());
+      Response response
+          = runner.callReaper("POST", "/snapshot/cluster/" + TestContext.TEST_CLUSTER, Optional.of(params));
       assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @When("^a cluster wide snapshot request is made to Reaper for keyspace \"([^\"]*)\"$")
+  public void a_cluster_wide_snapshot_request_is_made_to_reaper(String keyspace) throws Throwable {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(0);
+      Map<String, String> params = Maps.newHashMap();
+      params.put("keyspace", keyspace);
+      params.put("snapshot_name", UUIDs.timeBased().toString());
+      Response response
+          = runner.callReaper("POST", "/snapshot/cluster/" + TestContext.TEST_CLUSTER, Optional.of(params));
+      assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @When("^a cluster wide snapshot request fails for keyspace \"([^\"]*)\"$")
+  public void a_cluster_wide_snapshot_request_fails(String keyspace) throws Throwable {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(0);
+      Map<String, String> params = Maps.newHashMap();
+      params.put("keyspace", keyspace);
+      params.put("snapshot_name", UUIDs.timeBased().toString());
+      Response response
+          = runner.callReaper("POST", "/snapshot/cluster/" + TestContext.TEST_CLUSTER, Optional.of(params));
+      assertEquals(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), response.getStatus());
     }
   }
 
@@ -1532,7 +1680,7 @@ public final class BasicSteps {
 
       Response response = runner.callReaper(
               "GET",
-              "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+              "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
               EMPTY_PARAMS);
 
       assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -1543,6 +1691,48 @@ public final class BasicSteps {
     }
   }
 
+  @Then("^there is (\\d+) snapshot returned when listing snapshots cluster wide$")
+  public void there_is_1_snapshot_returned_when_listing_snapshots_cluster(int nbSnapshots) throws Throwable {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(0);
+
+      Response response = runner.callReaper(
+              "GET",
+              "/snapshot/cluster/" + TestContext.TEST_CLUSTER,
+              EMPTY_PARAMS);
+
+      assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+      String responseData = response.readEntity(String.class);
+      Assertions.assertThat(responseData).isNotBlank();
+      Map<String, Map<String, List<Snapshot>>> snapshots = SimpleReaperClient.parseClusterSnapshotMapJSON(responseData);
+      assertEquals(nbSnapshots, snapshots.keySet().size());
+    }
+  }
+
+  @Then("^I fail listing snapshots for cluster \"([^\"]*)\" and host \"([^\"]*)\"$")
+  public void iFailListingSnapshotsForClusterAndHost(String clusterName, String hostname) throws Throwable {
+    synchronized (BasicSteps.class) {
+      callAndExpect("GET",
+          "/snapshot/cluster/" + clusterName + "/" + hostname,
+          Optional.empty(),
+          Optional.empty(),
+          Response.Status.NOT_FOUND,
+          Response.Status.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Then("^I fail listing cluster wide snapshots for cluster \"([^\"]*)\"$")
+  public void iFailListingClusterSnapshotsForClusterAndHost(String clusterName) throws Throwable {
+    synchronized (BasicSteps.class) {
+      callAndExpect("GET",
+          "/snapshot/cluster/" + clusterName,
+          Optional.empty(),
+          Optional.empty(),
+          Response.Status.NOT_IMPLEMENTED,
+          Response.Status.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   @When("^a request is made to clear the existing snapshot cluster wide$")
   public void a_request_is_made_to_clear_the_existing_snapshots_cluster_wide() throws Throwable {
     synchronized (BasicSteps.class) {
@@ -1550,7 +1740,7 @@ public final class BasicSteps {
 
       Response response = runner.callReaper(
               "GET",
-              "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+              "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
               EMPTY_PARAMS);
 
       assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -1574,13 +1764,46 @@ public final class BasicSteps {
   public void a_host_snapshot_request_is_made_to_reaper() throws Throwable {
     synchronized (BasicSteps.class) {
       ReaperTestJettyRunner runner = RUNNERS.get(0);
-
+      Map<String, String> params = Maps.newHashMap();
+      params.put("snapshot_name", UUIDs.timeBased().toString());
       Response response = runner.callReaper(
               "POST",
-              "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
-              EMPTY_PARAMS);
+              "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+              Optional.of(params));
 
       assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @When("^a snapshot request for the seed host and keyspace \"([^\"]*)\" is made to Reaper$")
+  public void a_host_snapshot_request_is_made_to_reaper_keyspace(String keyspace) throws Throwable {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(0);
+      Map<String, String> params = Maps.newHashMap();
+      params.put("keyspace", keyspace);
+      params.put("snapshot_name", UUIDs.timeBased().toString());
+      Response response = runner.callReaper(
+              "POST",
+              "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+              Optional.of(params));
+
+      assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @When("^a snapshot request for the seed host and keyspace \"([^\"]*)\" fails$")
+  public void a_host_snapshot_request_fails_keyspace(String keyspace) throws Throwable {
+    synchronized (BasicSteps.class) {
+      Map<String, String> params = Maps.newHashMap();
+      params.put("keyspace", keyspace);
+      params.put("snapshot_name", UUIDs.timeBased().toString());
+      callAndExpect(
+          "POST",
+          "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+          Optional.of(params),
+          Optional.empty(),
+          Response.Status.NOT_FOUND,
+          Response.Status.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -1591,7 +1814,7 @@ public final class BasicSteps {
 
       Response response = runner.callReaper(
               "GET",
-              "/snapshot/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
+              "/snapshot/cluster/" + TestContext.TEST_CLUSTER + "/" + TestContext.SEED_HOST.split("@")[0],
               EMPTY_PARAMS);
 
       assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -1602,7 +1825,7 @@ public final class BasicSteps {
       snapshots.keySet().stream().forEach(snapshot -> {
         callAndExpect(
             "DELETE",
-            "/snapshot/" + TestContext.TEST_CLUSTER
+            "/snapshot/cluster/" + TestContext.TEST_CLUSTER
                 + "/" + TestContext.SEED_HOST.split("@")[0] + "/" + snapshot,
             Optional.empty(),
             Optional.empty(),
@@ -2061,8 +2284,7 @@ public final class BasicSteps {
 
   private static boolean isInstanceOfDistributedStorage(String storageClassname) {
     String csCls = CassandraStorage.class.getName();
-    String pgCls = PostgresStorage.class.getName();
-    return csCls.equals(storageClassname) || pgCls.equals(storageClassname);
+    return csCls.equals(storageClassname);
   }
 
   @And("^percent repaired metrics get collected for the existing schedule$")
@@ -2088,5 +2310,433 @@ public final class BasicSteps {
         });
       });
     }
+  }
+
+  @When("^we listen for diagnostic events on the last created subscription$")
+  public void weListenForDiagnosticEvents() throws Throwable {
+    synchronized (BasicSteps.class) {
+      DiagEventSubscription last = testContext.getCurrentEventSubscription();
+
+      Client client = JerseyClientBuilder.createClient();
+      JerseyWebTarget target = (JerseyWebTarget) client.target("http://localhost:"
+          + RUNNERS.get(0).runnerInstance.getLocalPort()
+          + "/diag_event/sse_listen/"
+          + last.getId().get());
+      try (SseEventSource source = SseEventSource.target(target).build()) {
+        source.register((inboundSseEvent) -> TestContext.diagnosticEvents.add(inboundSseEvent));
+        source.open();
+        await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
+          try {
+            assertTrue("No diagnostic events were received", TestContext.diagnosticEvents.size() > 0);
+          } catch (AssertionError ex) {
+            LOG.warn("Failed getting diagnostic events through subscription " + last.getId().get());
+            return false;
+          }
+          source.close();
+          return true;
+        });
+      }
+    }
+  }
+
+  @And("^all adhoc subscriptions move to inactive state$")
+  public void allAdhocSubscriptionsAreInactive() {
+    await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
+      try {
+        callAndExpect(
+            "GET",
+            "/diag_event/subscription/adhoc",
+            Optional.empty(),
+            Optional.empty(),
+            Response.Status.NOT_FOUND);
+        callAndExpect(
+            "GET",
+            "/diag_event/subscription/pollers",
+            Optional.empty(),
+            Optional.empty(),
+            Response.Status.NOT_FOUND);
+      } catch (AssertionError ex) {
+        LOG.warn("There are still active adhoc subscriptions");
+        return false;
+      }
+      return true;
+    });
+  }
+
+  @And("^a new repair fails to be added for keyspace \"([^\"]*)\" and \"([^\"]*)\" \"([^\"]*)\"$")
+  public void addRepairFailsForNonExistingParamValue(String keyspace, String paramKind, String paramValue) {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Map<String, String> params = Maps.newHashMap();
+      params.put("clusterName", TestContext.TEST_CLUSTER);
+      params.put("keyspace", keyspace);
+      params.put("owner", TestContext.TEST_USER);
+      params.put("intensity", "0.9");
+      params.put(paramKind, paramValue);
+      Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
+      String responseData = response.readEntity(String.class);
+      List<Integer> expectedStatusCodes
+          = Arrays.asList(Response.Status.NOT_FOUND.getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
+      assertTrue(responseData, expectedStatusCodes.contains(response.getStatus()));
+    }
+  }
+
+  @And("^a new repair fails to be added for keyspace \"([^\"]*)\" including both node and datacenter lists$")
+  public void addRepairFailsWithNodesAndDcLists(String keyspace) {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Map<String, String> params = Maps.newHashMap();
+      params.put("clusterName", TestContext.TEST_CLUSTER);
+      params.put("keyspace", keyspace);
+      params.put("owner", TestContext.TEST_USER);
+      params.put("intensity", "0.9");
+      params.put("nodes", "127.0.0.1");
+      params.put("datacenters", "dc1");
+      Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
+      String responseData = response.readEntity(String.class);
+      assertEquals(responseData, Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @And("^a new repair fails to be added for keyspace \"([^\"]*)\" including both tables and blacklisted tables lists$")
+  public void addRepairFailsForBothTablesAndBlacklistedTables(String keyspace) {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Map<String, String> params = Maps.newHashMap();
+      params.put("clusterName", TestContext.TEST_CLUSTER);
+      params.put("keyspace", keyspace);
+      params.put("owner", TestContext.TEST_USER);
+      params.put("intensity", "0.9");
+      params.put("tables", "table1");
+      params.put("blacklistedTables", "table2");
+      Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
+      String responseData = response.readEntity(String.class);
+      assertEquals(responseData, Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @And("^a new repair fails to be added for keyspace \"([^\"]*)\" without the \"([^\"]*)\" param$")
+  public void addRepairFailsIfMandatoryParamsAreMissing(String keyspace, String paramName) {
+    synchronized (BasicSteps.class) {
+      Map<String, String> params = Maps.newHashMap();
+      if (!paramName.equals("clusterName")) {
+        params.put("clusterName", TestContext.TEST_CLUSTER);
+      }
+      if (!paramName.equals("keyspace")) {
+        params.put("keyspace", keyspace);
+      }
+      if (!paramName.equals("owner")) {
+        params.put("owner", TestContext.TEST_USER);
+      }
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Response response = runner.callReaper("POST", "/repair_run", Optional.of(params));
+      String responseData = response.readEntity(String.class);
+      assertEquals(responseData, Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @And("^getting repair run \"([^\"]*)\" fails$")
+  public void getRepairRunFails(String repairRunId) {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Response response = runner.callReaper("GET", "/repair_run/" + repairRunId, Optional.empty());
+      String responseData = response.readEntity(String.class);
+      assertEquals(responseData, Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @And("^aborting a segment from a non existent repair fails$")
+  public void abortingSegmentFailsOnNonExistentRepair() {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Response response = runner.callReaper("POST", "/repair_run/whatever/segments/abort/whatever", Optional.empty());
+      String responseData = response.readEntity(String.class);
+      assertEquals(responseData, Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @And("^aborting a segment on the last added repair fails$")
+  public void abortingSegmentFailsOnNotStartedRepair() {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Response response = runner.callReaper(
+          "POST", "/repair_run/" + testContext.getCurrentRepairId() + "/segments/abort/whatever",
+          Optional.empty());
+      String responseData = response.readEntity(String.class);
+      assertEquals(responseData, Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
+    }
+  }
+
+  @When("^a new daily repair schedule fails being added with \"([^\"]*)\" activation time$")
+  public void aNewRepairScheduleFailsToBeAddedDueToPastActivationTime(String activationTime) {
+    synchronized (BasicSteps.class) {
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Map<String, String> params = Maps.newHashMap();
+      params.put("clusterName", TestContext.TEST_CLUSTER);
+      params.put("keyspace", "test");
+      params.put("owner", TestContext.TEST_USER);
+      params.put("intensity", "0.9");
+      params.put("scheduleDaysBetween", "1");
+      params.put("repairParallelism", "sequential");
+      params.put("incrementalRepair", "False");
+      params.put("adaptive", "False");
+      params.put("scheduleTriggerTime", activationTime);
+
+      Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
+      int responseStatus = response.getStatus();
+      String responseEntity = response.readEntity(String.class);
+
+      Assertions.assertThat(
+          ImmutableList.of(
+            Response.Status.BAD_REQUEST.getStatusCode()))
+          .withFailMessage(responseEntity)
+          .contains(responseStatus);
+    }
+  }
+
+  @When("^a new daily repair schedule fails being added without \"([^\"]*)\"$")
+  public void aNewRepairScheduleFailsToBeAddedMissingParam(String missingParam) {
+    synchronized (BasicSteps.class) {
+      Map<String, String> params = Maps.newHashMap();
+      if (!missingParam.equals("clusterName")) {
+        params.put("clusterName", TestContext.TEST_CLUSTER);
+      }
+      if (!missingParam.equals("keyspace")) {
+        params.put("keyspace", "test");
+      }
+      if (!missingParam.equals("owner")) {
+        params.put("owner", TestContext.TEST_USER);
+      }
+      params.put("intensity", "0.9");
+      if (!missingParam.equals("scheduleDaysBetween")) {
+        params.put("scheduleDaysBetween", "1");
+      }
+      params.put("repairParallelism", "sequential");
+      params.put("incrementalRepair", "False");
+
+      params.put("adaptive", "False");
+      params.put("scheduleTriggerTime", DateTime.now().plusMinutes(1).toString());
+
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
+      int responseStatus = response.getStatus();
+      String responseEntity = response.readEntity(String.class);
+
+      Assertions.assertThat(
+          ImmutableList.of(
+            Response.Status.BAD_REQUEST.getStatusCode(), Response.Status.NOT_FOUND.getStatusCode()))
+          .withFailMessage(responseEntity)
+          .contains(responseStatus);
+    }
+  }
+
+  @When("^a new daily repair schedule fails being added with \"([^\"]*)\" \"([^\"]*)\"$")
+  public void aNewRepairScheduleFailsToBeAddedMissingParam(String paramName, String paramValue) {
+    synchronized (BasicSteps.class) {
+      Map<String, String> params = Maps.newHashMap();
+      params.put("clusterName", TestContext.TEST_CLUSTER);
+      params.put("keyspace", "test_keyspace");
+      params.put("owner", TestContext.TEST_USER);
+      params.put("intensity", "0.9");
+      params.put("scheduleDaysBetween", "1");
+      params.put("repairParallelism", "sequential");
+      params.put("incrementalRepair", "False");
+      params.put("adaptive", "False");
+      params.put("segmentCountPerNode", "10");
+      params.put("scheduleTriggerTime", DateTime.now().plusMinutes(1).toString());
+      params.put(paramName, paramValue);
+      ReaperTestJettyRunner runner = RUNNERS.get(RAND.nextInt(RUNNERS.size()));
+      Response response = runner.callReaper("POST", "/repair_schedule", Optional.of(params));
+      int responseStatus = response.getStatus();
+      String responseEntity = response.readEntity(String.class);
+
+      Assertions.assertThat(
+          ImmutableList.of(
+            Response.Status.BAD_REQUEST.getStatusCode(), Response.Status.NOT_FOUND.getStatusCode()))
+          .withFailMessage(responseEntity)
+          .contains(responseStatus);
+    }
+  }
+
+  @When("^the last added repair fails to be deleted with owner \"([^\"]*)\"$")
+  public void lastRepairFailsToBeDeletedWithOwner(String owner) throws Throwable {
+    synchronized (BasicSteps.class) {
+      final Set<RepairRunStatus> runs = Sets.newConcurrentHashSet();
+
+      RUNNERS.parallelStream().forEach(runner -> {
+        Response response
+            = runner.callReaper("GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
+
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        String responseData = response.readEntity(String.class);
+        Assertions.assertThat(responseData).isNotBlank();
+        runs.addAll(SimpleReaperClient.parseRepairRunStatusListJSON(responseData));
+      });
+
+      runs.stream().forEach((run) -> {
+        UUID id = run.getId();
+        LOG.info("stopping repair run with id: {}", id);
+        stopRepairRun(id);
+      });
+
+      HashMap<String, String> params = Maps.newHashMap();
+      if (!owner.isEmpty()) {
+        params.put("owner", owner);
+      }
+
+      runs.stream().forEach((run) -> {
+        UUID id = run.getId();
+        LOG.info("deleting repair run with id: {}", id);
+
+        await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
+          try {
+            callAndExpect(
+                "DELETE",
+                "/repair_run/" + id,
+                Optional.of(params),
+                Optional.empty(),
+                Response.Status.BAD_REQUEST,
+                Response.Status.CONFLICT);
+          } catch (AssertionError ex) {
+            LOG.warn("DELETE /repair_run/" + testContext.getCurrentRepairId() + " didn't fail: " + ex.getMessage());
+            return false;
+          }
+          return true;
+        });
+      });
+    }
+  }
+
+  @When("^the last added repair fails to be deleted$")
+  public void lastRepairFailsToBeDeleted() throws Throwable {
+    synchronized (BasicSteps.class) {
+      final Set<RepairRunStatus> runs = Sets.newConcurrentHashSet();
+
+      RUNNERS.parallelStream().forEach(runner -> {
+        Response response
+            = runner.callReaper("GET", "/repair_run/cluster/" + TestContext.TEST_CLUSTER, EMPTY_PARAMS);
+
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        String responseData = response.readEntity(String.class);
+        Assertions.assertThat(responseData).isNotBlank();
+        runs.addAll(SimpleReaperClient.parseRepairRunStatusListJSON(responseData));
+      });
+
+      runs.stream().forEach((run) -> {
+        UUID id = run.getId();
+        LOG.info("deleting repair run with id: {}", id);
+
+        await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
+          try {
+            callAndExpect(
+                "DELETE",
+                "/repair_run/" + id,
+                Optional.empty(),
+                Optional.empty(),
+                Response.Status.BAD_REQUEST);
+          } catch (AssertionError ex) {
+            LOG.warn("DELETE /repair_run/" + testContext.getCurrentRepairId() + " didn't fail: " + ex.getMessage());
+            return false;
+          }
+          return true;
+        });
+      });
+    }
+  }
+
+  @And("^I can purge repair runs$")
+  public void iCanPurgeRepairRuns() {
+    RUNNERS.parallelStream().forEach(runner -> {
+      Response response
+          = runner.callReaper("POST", "/repair_run/purge", EMPTY_PARAMS);
+
+      assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    });
+  }
+
+  @And("^modifying the run state of the last added repair to \"([^\"]*)\" fails$")
+  public void invalidRunStateChangeFails(String runState) {
+    RUNNERS.parallelStream().forEach(runner -> {
+      callAndExpect(
+              "PUT",
+              "/repair_run/" + testContext.getCurrentRepairId() + "/state/" + runState,
+              Optional.empty(),
+              Optional.empty(),
+              Response.Status.BAD_REQUEST);
+    });
+  }
+
+  @And("^modifying the run state of the last added repair to \"([^\"]*)\" succeeds$")
+  public void runStateChangeSucceeds(String runState) {
+    RUNNERS.parallelStream().forEach(runner -> {
+      callAndExpect(
+              "PUT",
+              "/repair_run/" + testContext.getCurrentRepairId() + "/state/" + runState,
+              Optional.empty(),
+              Optional.empty(),
+              Response.Status.OK,
+              Response.Status.NO_CONTENT);
+    });
+  }
+
+  @And("^I can set the last added schedule state to \"([^\"]*)\"$")
+  public void changeScheduleState(String scheduleState) {
+    RUNNERS.parallelStream().forEach(runner -> {
+      callAndExpect(
+              "PUT",
+              "/repair_schedule/" + testContext.getCurrentScheduleId() + "?state=" + scheduleState,
+              Optional.empty(),
+              Optional.empty(),
+              Response.Status.OK,
+              Response.Status.NO_CONTENT);
+    });
+  }
+
+  @And("^I cannot set the last added schedule state to \"([^\"]*)\"$")
+  public void changeScheduleStateFail(String scheduleState) {
+    RUNNERS.parallelStream().forEach(runner -> {
+      callAndExpect(
+              "PUT",
+              "/repair_schedule/" + testContext.getCurrentScheduleId() + "?state=" + scheduleState,
+              Optional.empty(),
+              Optional.empty(),
+              Response.Status.BAD_REQUEST);
+    });
+  }
+
+  @And("^I cannot set an unknown schedule state to \"([^\"]*)\"$")
+  public void changeUnknownScheduleStateFail(String scheduleState) {
+    RUNNERS.parallelStream().forEach(runner -> {
+      callAndExpect(
+              "PUT",
+              "/repair_schedule/" + UUIDs.timeBased() + "?state=" + scheduleState,
+              Optional.empty(),
+              Optional.empty(),
+              Response.Status.NOT_FOUND);
+    });
+  }
+
+  @And("^I can start the last added schedule$")
+  public void startRepairSchedule() {
+    RUNNERS.parallelStream().forEach(runner -> {
+      callAndExpect(
+          "POST",
+          "/repair_schedule/start/" + testContext.getCurrentScheduleId(),
+          Optional.empty(),
+          Optional.empty(),
+          Response.Status.OK);
+    });
+  }
+
+  @And("^I cannot start an unknown schedule$")
+  public void startFakeRepairSchedule() {
+    RUNNERS.parallelStream().forEach(runner -> {
+      callAndExpect(
+          "POST",
+          "/repair_schedule/start/" + UUIDs.timeBased(),
+          Optional.empty(),
+          Optional.empty(),
+          Response.Status.NOT_FOUND);
+    });
   }
 }

@@ -47,12 +47,10 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.sun.management.UnixOperatingSystemMXBean;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.progress.ProgressEventType;
-import org.apache.commons.lang3.concurrent.LazyInitializer;
 import org.joda.time.DateTime;
 import org.joda.time.Seconds;
 import org.slf4j.Logger;
@@ -310,8 +308,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
                     repairUnit.getRepairThreadCount());
 
             if (0 != repairNo) {
-              //releaseSegmentRunners();
-              //segmentsLocked = false;
               processTriggeredSegment(segment, coordinator, repairNo);
             } else {
               LOG.info("Nothing to repair for segment {} in keyspace {}", segmentId, keyspace);
@@ -352,15 +348,17 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
     repairRunner.updateLastEvent(
         String.format("Triggered repair of segment %s via host %s", segment.getId(), coordinator.getHost()));
 
-    {
-      long timeout = repairUnit.getIncrementalRepair() ? timeoutMillis * MAX_TIMEOUT_EXTENSIONS : timeoutMillis;
-      LOG.info("Repair for segment {} started, status wait will timeout in {} millis", segmentId, timeout);
-    }
+    // Timeout is extended for each attempt to prevent repairs from blocking if settings aren't accurate
+    int attempt = segment.getFailCount() + 1;
+    long segmentTimeout = repairUnit.getIncrementalRepair()
+        ? timeoutMillis * MAX_TIMEOUT_EXTENSIONS * attempt
+        : timeoutMillis * attempt;
+    LOG.info("Repair for segment {} started, status wait will timeout in {} millis", segmentId, segmentTimeout);
 
     try {
       final long startTime = System.currentTimeMillis();
-      final long maxTime = startTime + timeoutMillis;
-      final long waitTime = Math.min(timeoutMillis, 60000);
+      final long maxTime = startTime + segmentTimeout;
+      final long waitTime = Math.min(segmentTimeout, 60000);
 
       while (System.currentTimeMillis() < maxTime) {
         boolean isDoneOrFailed = condition.await(waitTime, TimeUnit.MILLISECONDS);
@@ -564,7 +562,6 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
         break;
 
       case SUCCESS:
-
         Preconditions.checkState(
             !successOrFailedNotified.get(),
             "illegal multiple 'SUCCESS' and 'FAILURE', %s:%s", repairRunner.getRepairRunId(), segmentId);
@@ -921,27 +918,4 @@ final class SegmentRunner implements RepairStatusHandler, Runnable {
   private int countRunningReapers() {
     return context.isDistributed.get() ? ((IDistributedStorage) context.storage).countRunningReapers() : 1;
   }
-
-  private class BusyHostsInitializer extends LazyInitializer<Set<String>> {
-
-    private final Cluster cluster;
-
-    BusyHostsInitializer(Cluster cluster) {
-      this.cluster = cluster;
-    }
-
-    @Override
-    protected Set<String> initialize() {
-      Collection<RepairParameters> ongoingRepairs = context.storage.getOngoingRepairsInCluster(clusterName);
-      Set<String> busyHosts = Sets.newHashSet();
-      ongoingRepairs.forEach(
-          (ongoingRepair) -> {
-            busyHosts.addAll(
-                clusterFacade.tokenRangeToEndpoint(
-                    cluster, ongoingRepair.keyspaceName, ongoingRepair.tokenRange));
-          });
-      return busyHosts;
-    }
-  }
-
 }

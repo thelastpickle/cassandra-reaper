@@ -62,6 +62,7 @@ const repairForm = CreateReactClass({
       intervalDays: "",
       incrementalRepair: "false",
       repairThreadCount: 1,
+      timeout: null,
       formCollapsed: true,
       advancedFormCollapsed: true,
       clusterStatus: {},
@@ -87,6 +88,8 @@ const repairForm = CreateReactClass({
       datacentersSelectDisabled: false,
       showModal: false,
       force: "false",
+      adaptive: false,
+      percentUnrepairedThreshold: ""
     };
   },
 
@@ -205,6 +208,9 @@ const repairForm = CreateReactClass({
     if (this.state.cause) repair.cause = this.state.cause;
     if (this.state.incrementalRepair) {
       repair.incrementalRepair = this.state.incrementalRepair;
+      if (repair.incrementalRepair == "true") {
+        repair.repairParallelism = "PARALLEL";
+      }
     }
     else {
       repair.incrementalRepair = "false";
@@ -218,6 +224,22 @@ const repairForm = CreateReactClass({
     }
     else {
       repair.force = "false";
+    }
+    if (this.state.timeout) {
+      repair.timeout = this.state.timeout;
+    }
+    if (this.state.adaptive) {
+      repair.adaptive = this.state.adaptive;
+    }
+    else {
+      repair.adaptive = "false";
+    }
+
+    if (this.state.percentUnrepairedThreshold) {
+      repair.percentUnrepairedThreshold = this.state.percentUnrepairedThreshold;
+    }
+    else {
+      repair.percentUnrepairedThreshold = "-1";
     }
 
     this.props.addRepairSubject.onNext({
@@ -243,15 +265,12 @@ const repairForm = CreateReactClass({
     const valid = this.state.keyspaceList.length
       && this.state.clusterName
       && this.state.owner
-      && (
-        (this.state.formType === "schedule" && this.state.startTime && this.state.intervalDays)
-        || (this.state.formType === "repair" && !this.state.startTime && !this.state.intervalDays)
-      )
-      && (
-        (this.state.datacentersList.length && !this.state.nodesList.length)
+      && ((this.state.formType === "schedule" && this.state.startTime && this.state.intervalDays) || this.state.formType != "schedule")
+      && ((this.state.datacentersList.length && !this.state.nodesList.length)
           || (!this.state.datacentersList.length && this.state.nodesList.length)
-          || (!this.state.datacentersList.length && !this.state.nodesList.length)
-      );
+          || (!this.state.datacentersList.length && !this.state.nodesList.length))
+      ;
+    
     this.setState({submitEnabled: valid});
   },
 
@@ -295,6 +314,8 @@ const repairForm = CreateReactClass({
       "blacklistedTables": "tables",
       "nodes": "datacenters",
       "datacenters": "nodes",
+      "intervalDays": "percentUnrepairedThreshold",
+      "percentUnrepairedThreshold": "intervalDays"
     };
     return selectNameMap[selectName];
   },
@@ -408,8 +429,8 @@ const repairForm = CreateReactClass({
                   </Modal.Header>
                   <Modal.Body>
                     <p>{this.state.addRepairResultMsg}</p>
-                    <p>It is not reccommended to create overlapping repair schedules.</p>
-                    <p>For Cassandra 4.0 and later, you can force creating this schedule by clicking the "Force" button below.</p>
+                    <p>It is not reccommended to create overlapping repair schedules/runs.</p>
+                    <p>For Cassandra 4.0 and later, you can force creating this schedule/run by clicking the "Force" button below.</p>
                   </Modal.Body>
                   <Modal.Footer>
                     <Button variant="secondary" onClick={this._onClose}>Cancel</Button>
@@ -483,32 +504,51 @@ const repairForm = CreateReactClass({
     else if (this.state.formType === "schedule") {
       customInput = (
         <div>
-        <div className="form-group">
-          <label htmlFor="in_startTime" className="col-sm-3 control-label">Start time*</label>
-          <div className="col-sm-9 col-md-7 col-lg-5">
-            <DatePicker
-              selected={this.state.startTime}
-              onChange={value => this.setState({startTime: value})}
-              showTimeSelect
-              timeFormat="HH:mm"
-              timeIntervals={15}
-              timeCaption="Time"
-              dateFormat="d MMMM yyyy HH:mm"
-            />
+          <div className="form-group">
+            <label htmlFor="in_startTime" className="col-sm-3 control-label">Start time*</label>
+            <div className="col-sm-9 col-md-7 col-lg-5">
+              <DatePicker
+                selected={this.state.startTime}
+                onChange={value => this.setState({startTime: value})}
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={15}
+                timeCaption="Time"
+                dateFormat="d MMMM yyyy HH:mm"
+              />
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="in_intervalDays" className="col-sm-3 control-label">Interval in days*</label>
+            <div className="col-sm-9 col-md-7 col-lg-5">
+              <input type="number" required className="form-control" value={this.state.intervalDays}
+                onChange={this._handleChange} id="in_intervalDays" placeholder="amount of days to wait between scheduling new repairs, (e.g. 7 for weekly)"/>
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="in_percentUnrepairedThreshold" className="col-sm-3 control-label">Percent unrepaired threshold</label>
+            <div className="col-sm-9 col-md-7 col-lg-5">
+              <input type="number" required className="form-control" value={this.state.percentUnrepairedThreshold}
+                onChange={this._handleChange} id="in_percentUnrepairedThreshold" placeholder="% of unrepaired data over which repair should be started (optional)"/>
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="in_adaptive" className="col-sm-3 control-label">Adaptive</label>
+            <div className="col-sm-9 col-md-7 col-lg-5">
+              <Select
+                id="in_adaptive"
+                name="in_adaptive"
+                classNamePrefix="select"
+                options={[{label: "true", value: "true"}, {label: "false", value: "false"}]}
+                placeholder="false"
+                onChange={this._handleSelectOnChange}
+              />
+            </div>
           </div>
         </div>
-        <div className="form-group">
-          <label htmlFor="in_intervalDays" className="col-sm-3 control-label">Interval in days*</label>
-          <div className="col-sm-9 col-md-7 col-lg-5">
-            <input type="number" required className="form-control" value={this.state.intervalDays}
-              onChange={this._handleChange} id="in_intervalDays" placeholder="amount of days to wait between scheduling new repairs, (e.g. 7 for weekly)"/>
-          </div>
-        </div>
-        </div>
+        
       );
     }
-
-    const keyspaceInputStyle = this.state.keyspaceList.length > 0 ? 'form-control-hidden':'form-control';
 
     const advancedSettingsHeader = (
       <div className="panel-title" >
@@ -693,6 +733,13 @@ const repairForm = CreateReactClass({
                         <input type="number" className="form-control" value={this.state.repairThreadCount}
                           min="1" max="4"
                           onChange={this._handleChange} id="in_repairThreadCount" placeholder="repair threads"/>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_timeout" className="col-sm-3 control-label">Segment timeout</label>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                      <input type="number" className="form-control" value={this.state.timeout}
+                          onChange={this._handleChange} id="in_timeout" placeholder="Segment timeout in minutes before it gets killed and rescheduled."/>
                       </div>
                     </div>
                   </div>

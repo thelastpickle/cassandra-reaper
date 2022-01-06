@@ -96,7 +96,9 @@ public final class RepairScheduleService {
       int segmentCountPerNode,
       RepairParallelism repairParallelism,
       Double intensity,
-      boolean force) {
+      boolean force,
+      boolean adaptive,
+      int percentUnrepairedThreshold) {
 
     Preconditions.checkArgument(
         force || !conflictingRepairSchedule(cluster, repairUnit.with()).isPresent(),
@@ -111,7 +113,9 @@ public final class RepairScheduleService {
         .repairParallelism(repairParallelism)
         .intensity(intensity)
         .segmentCountPerNode(segmentCountPerNode)
-        .owner(owner);
+        .owner(owner)
+        .adaptive(adaptive)
+        .percentUnrepairedThreshold(percentUnrepairedThreshold);
 
     return context.storage.addRepairSchedule(scheduleBuilder);
   }

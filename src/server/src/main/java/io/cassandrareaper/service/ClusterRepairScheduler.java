@@ -22,7 +22,6 @@ import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
-import io.cassandrareaper.core.Table;
 import io.cassandrareaper.jmx.ClusterFacade;
 
 import java.util.Collection;
@@ -31,7 +30,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
@@ -119,41 +117,29 @@ public final class ClusterRepairScheduler {
   }
 
   private void createRepairSchedule(Cluster cluster, String keyspace, DateTime nextActivationTime) {
-    boolean incrementalRepair = context.config.getIncrementalRepair();
+    boolean incrementalRepair = context.config.getAutoScheduling().incremental();
 
     RepairUnit.Builder builder = RepairUnit.builder()
         .clusterName(cluster.getName())
         .keyspaceName(keyspace)
         .incrementalRepair(incrementalRepair)
-        .repairThreadCount(context.config.getRepairThreadCount());
+        .repairThreadCount(context.config.getRepairThreadCount())
+        .timeout(context.config.getHangingRepairTimeoutMins());
 
     RepairSchedule repairSchedule = repairScheduleService.storeNewRepairSchedule(
             cluster,
-            repairUnitService.getOrCreateRepairUnit(cluster, builder),
+            repairUnitService.getOrCreateRepairUnit(cluster, builder).get(),
             context.config.getScheduleDaysBetween(),
             nextActivationTime,
             REPAIR_OWNER,
             context.config.getSegmentCountPerNode(),
             context.config.getRepairParallelism(),
             context.config.getRepairIntensity(),
-            false);
+            false,
+            context.config.getAutoScheduling().isAdaptive(),
+            context.config.getAutoScheduling().getPercentUnrepairedThreshold());
 
     LOG.info("Scheduled repair created: {}", repairSchedule);
-  }
-
-  private boolean keyspaceHasNoTable(AppContext context, Cluster cluster, String keyspace) {
-    try {
-      Set<String> tables
-          = ClusterFacade
-              .create(context)
-              .getTablesForKeyspace(cluster, keyspace)
-              .stream()
-              .map(Table::getName)
-              .collect(Collectors.toSet());
-      return tables.isEmpty();
-    } catch (ReaperException e) {
-      throw Throwables.propagate(e);
-    }
   }
 
   private static class ScheduledRepairDiffView {

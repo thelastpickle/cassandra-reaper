@@ -161,9 +161,6 @@ public final class Heart implements AutoCloseable {
             }).get();
           } else {
             // In SIDECAR mode we grab metrics for the local node only
-            Collection<RepairSchedule> incrementalRepairSchedules
-                = context.storage.getRepairSchedulesForCluster(
-                  context.storage.getClusters().stream().findFirst().get().getName(), true);
             if (canPerformBeat(lastMetricBeat, maxBeatFrequencyMillis)) {
               metricsService.grabAndStoreGenericMetrics(Optional.empty());
               lastMetricBeat.set(System.currentTimeMillis());
@@ -172,7 +169,7 @@ public final class Heart implements AutoCloseable {
                   lastMetricBeat.get(),
                   System.currentTimeMillis());
             }
-            updatePercentRepairedForNode(Optional.empty(), incrementalRepairSchedules);
+            updatePercentRepairedForNode(Optional.empty(), context.storage.getClusters().stream().findFirst().get());
             metricsService.grabAndStoreCompactionStats(Optional.empty());
             metricsService.grabAndStoreActiveStreams(Optional.empty());
           }
@@ -203,8 +200,6 @@ public final class Heart implements AutoCloseable {
         .filter(cluster -> cluster.getState() == Cluster.State.ACTIVE)
         .forEach(cluster -> {
           try {
-            Collection<RepairSchedule> incrementalRepairSchedules
-                = context.storage.getRepairSchedulesForCluster(cluster.getName(), true);
             clusterFacade.getLiveNodes(cluster)
                 .parallelStream()
                 .filter(hostname -> {
@@ -222,10 +217,7 @@ public final class Heart implements AutoCloseable {
                       // All metrics but percent repaired should be extracted only in distributed/collocated modes
                       updateMetricsForNode(node);
                     }
-                    if (!incrementalRepairSchedules.isEmpty()) {
-                      // Percent repaired metrics are only collected when incr repair schedules exist
-                      updatePercentRepairedForNode(Optional.of(node), incrementalRepairSchedules);
-                    }
+                    updatePercentRepairedForNode(Optional.of(node), cluster);
                   } catch (JMException | ReaperException | RuntimeException | IOException e) {
                     LOG.error("Couldn't extract metrics for node {} in cluster {}",
                         node.getHostname(), cluster.getName(), e);
@@ -250,20 +242,24 @@ public final class Heart implements AutoCloseable {
    */
   private void updatePercentRepairedForNode(
       Optional<Node> node,
-      Collection<RepairSchedule> incrementalRepairSchedules
+      Cluster cluster
   ) {
     if (canPerformBeat(
         lastPercentRepairedBeat,
         TimeUnit.MINUTES.toMillis(context.config.getPercentRepairedCheckIntervalMinutes()))) {
+
+      Collection<RepairSchedule> incrementalRepairSchedules
+          = context.storage.getRepairSchedulesForCluster(cluster.getName(), true);
+
       incrementalRepairSchedules.stream().forEach(sched -> {
         try {
           metricsService.grabAndStorePercentRepairedMetrics(node, sched);
         } catch (ReaperException e) {
           if (node.isPresent()) {
-            LOG.error("Couldn't extract metrics for node {} in cluster {}", node.get().getHostname(),
+            LOG.error("Couldn't extract % repaired metrics for node {} in cluster {}", node.get().getHostname(),
                 node.get().getCluster().get().getName(), e);
           } else {
-            LOG.error("Couldn't extract metrics for local node", e);
+            LOG.error("Couldn't extract % repaired metrics for local node", e);
           }
         }
       });

@@ -50,6 +50,8 @@ authc = org.apache.shiro.web.filter.authc.PassThruAuthenticationFilter
 authc.loginUrl = /webui/login.html
 sha256Matcher = org.apache.shiro.authc.credential.Sha256CredentialsMatcher
 iniRealm.credentialsMatcher = $sha256Matcher
+filterChainResolver.globalFilters = null
+
 
 [users]
 john = 807A09440428C0A8AEF58BD3ECE32938B0D76E638119E47619756F5C2C20FF3A

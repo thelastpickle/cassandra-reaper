@@ -35,6 +35,7 @@ import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+
 public final class JmxProxyTest {
 
   public static JmxProxy mockJmxProxyImpl() throws UnknownHostException {

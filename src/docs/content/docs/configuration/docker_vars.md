@@ -72,7 +72,7 @@ Example :
 REAPER_CASS_ADDRESS_TRANSLATOR_TYPE=multiIpPerNode
 REAPER_CASS_ADDRESS_TRANSLATOR_MAPPING=host1:ip1,host2:ip2
 ```
-config bloc at the container startup file '/etc/cassandra-reaper.yml' :
+config bloc at the container startup file '/etc/cassandra-reaper/cassandra-reaper.yml' :
 ```
  addressTranslator:
     type: multiIpPerNode
@@ -220,6 +220,8 @@ Default: *false*
 Allows Reaper to establish an encrypted connection when establishing a connection with Cassandra via the native protocol.
 
 ## Direct Mapping to H2 or Postgres Backend Configuration Settings
+
+**Removed in v3.0.0**
 
 The Docker environment variables listed in this section map directly to H2/Postgres backend specific settings in the *cassandra-reaper.yaml* configuration file. The following table below lists the Docker environment variables, their associated H2/Postgres backend specific setting in the *cassandra-reaper.yaml* configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.
 

@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.resources.view;
 
-
 import io.cassandrareaper.core.RepairRun;
 
 import java.util.Collections;
@@ -49,7 +48,7 @@ public final class RepairRunStatusTest {
   }
 
   @Test
-  public void testDateTimeToISO8601() {
+  public void testDateTimeToIso8601() {
     DateTime dateTime = new DateTime(2015, 2, 20, 15, 24, 45, DateTimeZone.UTC);
     assertEquals("2015-02-20T15:24:45Z", RepairRunStatus.dateTimeToIso8601(dateTime));
   }
@@ -79,7 +78,9 @@ public final class RepairRunStatusTest {
             Collections.EMPTY_LIST, // datacenters
             Collections.EMPTY_LIST, // blacklist
             1,
-            UUID.randomUUID()); // repair thread count
+            UUID.randomUUID(),
+            30,
+            false); // repair thread count
 
     assertEquals("1 minute 0 seconds", repairStatus.getDuration());
   }
@@ -108,7 +109,9 @@ public final class RepairRunStatusTest {
             Collections.EMPTY_LIST, // datacenters
             Collections.EMPTY_LIST, // blacklist
             1,
-            UUID.randomUUID()); // repair thread count
+            UUID.randomUUID(),
+            30,
+            false); // repair thread count
 
     assertEquals("1 minute 30 seconds", repairStatus.getDuration());
   }
@@ -137,7 +140,9 @@ public final class RepairRunStatusTest {
             Collections.EMPTY_LIST, // datacenters
             Collections.EMPTY_LIST, // blacklist
             1,
-            UUID.randomUUID()); // repair thread count
+            UUID.randomUUID(),
+            30,
+            false); // repair thread count
 
     assertEquals("1 minute 50 seconds", repairStatus.getDuration());
   }
@@ -166,7 +171,9 @@ public final class RepairRunStatusTest {
             Collections.EMPTY_LIST, // datacenters
             Collections.EMPTY_LIST, // blacklist
             1,
-            UUID.randomUUID()); // repair thread count
+            UUID.randomUUID(),
+            30,
+            false); // repair thread count
 
     assertEquals("1 minute 30 seconds", repairStatus.getDuration());
   }

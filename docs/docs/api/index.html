@@ -654,7 +654,7 @@ Delete all the related repair runs before calling this endpoint.</li>
 <h2 id="snapshot-resource">Snapshot Resource</h2>
 <ul>
 <li>
-<p><strong>GET /snapshot/{clusterName}/{host}</strong></p>
+<p><strong>GET /snapshot/cluster/{clusterName}/{host}</strong></p>
 <ul>
 <li>Expected query parameters: <em>None</em></li>
 <li>Lists snapshots for the given host in the given cluster.</li>
@@ -668,21 +668,21 @@ Delete all the related repair runs before calling this endpoint.</li>
 </ul>
 </li>
 <li>
-<p><strong>DELETE /snapshot/{clusterName}/{host}/{snapshotName}</strong></p>
+<p><strong>DELETE /snapshot/cluster/{clusterName}/{host}/{snapshotName}</strong></p>
 <ul>
 <li>Expected query parameters: <em>None</em></li>
 <li>Deletes a specific snapshot on a given node.</li>
 </ul>
 </li>
 <li>
-<p><strong>DELETE /snapshot/{clusterName}/{snapshotName}</strong></p>
+<p><strong>DELETE /snapshot/cluster/{clusterName}/{snapshotName}</strong></p>
 <ul>
 <li>Expected query parameters: <em>None</em></li>
 <li>Deletes a specific snapshot on all nodes in a given cluster.</li>
 </ul>
 </li>
 <li>
-<p><strong>POST /snapshot/{clusterName}</strong></p>
+<p><strong>POST /snapshot/cluster/{clusterName}</strong></p>
 <ul>
 <li>Expected query parameters:
 * <em>keyspace</em>: Name of the Cassandra cluster.
@@ -698,7 +698,7 @@ If no tables given, then the whole keyspace is targeted. (Optional)
 </ul>
 </li>
 <li>
-<p><strong>POST /snapshot/{clusterName}/{host}</strong></p>
+<p><strong>POST /snapshot/cluster/{clusterName}/{host}</strong></p>
 <ul>
 <li>Expected query parameters:
 * <em>keyspace</em>: Name of the Cassandra cluster.

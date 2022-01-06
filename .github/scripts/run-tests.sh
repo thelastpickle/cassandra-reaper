@@ -15,9 +15,18 @@
 
 echo "Starting Script step..."
 JACOCO_VERSION="0.8.6"
-
+REAPER_ENCRYPTION_KEY="SECRET_KEY"
 
 set -xe
+
+function set_java_home() {
+    major_version=$1
+    for jdk in /opt/hostedtoolcache/Java_Adopt_jdk/${major_version}*/; 
+    do 
+        export JAVA_HOME="${jdk/}"x64/
+        echo "JAVA_HOME is set to $JAVA_HOME"
+    done
+}
 
 case "${TEST_TYPE}" in
     "")
@@ -40,24 +49,23 @@ case "${TEST_TYPE}" in
     "ccm"|"elassandra")
         mvn --version -B
         ps uax | grep cass
+        # dependending on the version of cassandra, we may need to use a different jdk
+        set_java_home ${JDK_VERSION}
         ccm start -v --no-wait --skip-wait-other-notice || true
         echo "${TEST_TYPE}" | grep -q ccm && sleep 30 || sleep 120
         ccm status
         ccm node1 nodetool -- -u cassandra -pw cassandrapassword status
+        # Reaper requires JDK11 for compilation
+        set_java_home 11
         case "${STORAGE_TYPE}" in
             "")
                 echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
                 exit 1
                 ;;
             "local")
-                mvn -B package
+                mvn -B package -DskipTests
                 mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperShiroIT -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
                 mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperIT -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
-                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx256m"  -Dtest=ReaperH2IT -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
-                ;;
-            "postgresql")
-                mvn -B package -DskipTests
-                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx384m" -Dtest=ReaperPostgresIT -Dgrim.reaper.min=${GRIM_MIN} -Dgrim.reaper.max=${GRIM_MAX} -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
                 ;;
             "cassandra"|"elassandra")
                 ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
@@ -73,17 +81,16 @@ case "${TEST_TYPE}" in
     "sidecar")
         mvn --version -B
         mvn -B package -DskipTests
+        # dependending on the version of cassandra, we may need to use a different jdk
+        set_java_home ${JDK_VERSION}
         ccm start -v --no-wait --skip-wait-other-notice || true
         sleep 30
         ccm status
-
+        set_java_home 11
         case "${STORAGE_TYPE}" in
             "")
                 echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
                 exit 1
-                ;;
-            "postgresql")
-                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperPostgresSidecarIT -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
                 ;;
             "cassandra")
                 ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
@@ -98,17 +105,16 @@ case "${TEST_TYPE}" in
     "each")
         mvn --version -B
         mvn -B package -DskipTests
+        # dependending on the version of cassandra, we may need to use a different jdk
+        set_java_home ${JDK_VERSION}
         ccm start -v --no-wait --skip-wait-other-notice || true
         sleep 30
         ccm status
-
+        set_java_home 11
         case "${STORAGE_TYPE}" in
             "")
                 echo "ERROR: Environment variable STORAGE_TYPE is unspecified."
                 exit 1
-                ;;
-            "postgresql")
-                mvn -B org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:prepare-agent surefire:test -DsurefireArgLine="-Xmx512m" -Dtest=ReaperPostgresEachIT -Dcucumber.options="$CUCUMBER_OPTIONS" org.jacoco:jacoco-maven-plugin:${JACOCO_VERSION}:report
                 ;;
             "cassandra")
                 ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
@@ -122,11 +128,13 @@ case "${TEST_TYPE}" in
         ;;
     "upgrade")
         mvn --version -B
+        # dependending on the version of cassandra, we may need to use a different jdk
+        set_java_home ${JDK_VERSION}
         ccm start -v --no-wait --skip-wait-other-notice || true
         sleep 30
         ccm status
-
         ccm node1 cqlsh -e "DROP KEYSPACE reaper_db" || true
+        set_java_home 11
         mvn package -B -DskipTests -Pintegration-upgrade-tests
         MAVEN_OPTS="-Xmx384m" mvn -B surefire:test -Dtest=ReaperCassandraIT
         ;;

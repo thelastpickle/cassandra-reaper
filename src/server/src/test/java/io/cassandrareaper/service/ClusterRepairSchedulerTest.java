@@ -43,7 +43,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import static java.lang.String.format;
-import static org.fest.assertions.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -117,8 +117,8 @@ public final class ClusterRepairSchedulerTest {
   @Test
   public void removeSchedulesForKeyspaceThatNoLongerExists() throws Exception {
     context.storage.addCluster(cluster);
-    context.storage.addRepairSchedule(aRepairSchedule(cluster, "keyspace1", TWO_HOURS_AGO));
-    context.storage.addRepairSchedule(aRepairSchedule(cluster, "keyspace2", TWO_HOURS_AGO));
+    context.storage.addRepairSchedule(oneRepairSchedule(cluster, "keyspace1", TWO_HOURS_AGO));
+    context.storage.addRepairSchedule(oneRepairSchedule(cluster, "keyspace2", TWO_HOURS_AGO));
     when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1"));
     clusterRepairAuto.scheduleRepairs(cluster);
     assertThat(context.storage.getAllRepairSchedules()).hasSize(1);
@@ -131,7 +131,7 @@ public final class ClusterRepairSchedulerTest {
   @Test
   public void addSchedulesForNewKeyspace() throws Exception {
     context.storage.addCluster(cluster);
-    context.storage.addRepairSchedule(aRepairSchedule(cluster, "keyspace1", TWO_HOURS_AGO));
+    context.storage.addRepairSchedule(oneRepairSchedule(cluster, "keyspace1", TWO_HOURS_AGO));
 
     when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1", "keyspace2"));
 
@@ -228,7 +228,7 @@ public final class ClusterRepairSchedulerTest {
         Arrays.asList(cluster.getName() + "-1", cluster.getName() + "-2")
     );
     context.storage.addCluster(cluster);
-    context.storage.addRepairSchedule(aRepairSchedule(cluster, "keyspace1", TWO_HOURS_AGO));
+    context.storage.addRepairSchedule(oneRepairSchedule(cluster, "keyspace1", TWO_HOURS_AGO));
     when(jmxProxy.getKeyspaces()).thenReturn(Lists.newArrayList("keyspace1"));
 
     clusterRepairAuto.scheduleRepairs(cluster);
@@ -243,8 +243,8 @@ public final class ClusterRepairSchedulerTest {
     return DateTime.now().plus(DELAY_BEFORE_SCHEDULE.toMillis());
   }
 
-  private RepairSchedule.Builder aRepairSchedule(Cluster cluster, String keyspace, DateTime creationTime) {
-    RepairUnit repairUnit = context.storage.addRepairUnit(aRepair(cluster, keyspace));
+  private RepairSchedule.Builder oneRepairSchedule(Cluster cluster, String keyspace, DateTime creationTime) {
+    RepairUnit repairUnit = context.storage.addRepairUnit(oneRepair(cluster, keyspace));
 
     return RepairSchedule.builder(repairUnit.getId())
         .creationTime(creationTime)
@@ -252,17 +252,17 @@ public final class ClusterRepairSchedulerTest {
         .nextActivation(DateTime.now())
         .repairParallelism(RepairParallelism.DATACENTER_AWARE)
         .intensity(0.9)
-        .segmentCount(10)
-        .segmentCountPerNode(0);
+        .segmentCountPerNode(3);
 
   }
 
-  private RepairUnit.Builder aRepair(Cluster cluster, String keyspace) {
+  private RepairUnit.Builder oneRepair(Cluster cluster, String keyspace) {
     return RepairUnit.builder()
         .clusterName(cluster.getName())
         .keyspaceName(keyspace)
         .incrementalRepair(Boolean.FALSE)
-        .repairThreadCount(1);
+        .repairThreadCount(1)
+        .timeout(30);
   }
 
   private ClusterRepairScheduleAssertion assertThatClusterRepairSchedules(Collection<RepairSchedule> repairSchedules) {
@@ -303,7 +303,6 @@ public final class ClusterRepairSchedulerTest {
 
         assertThat(repairSchedule.getDaysBetween()).isEqualTo(config.getScheduleDaysBetween());
         assertThat(repairSchedule.getIntensity()).isEqualTo(config.getRepairIntensity());
-        assertThat(repairSchedule.getSegmentCount()).isEqualTo(0);
         assertThat(repairSchedule.getSegmentCountPerNode())
             .isEqualTo(config.getSegmentCountPerNode());
         assertThat(repairSchedule.getRepairParallelism()).isEqualTo(config.getRepairParallelism());

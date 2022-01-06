@@ -47,7 +47,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.cassandra.repair.RepairParallelism;
-import org.fest.assertions.api.Assertions;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
@@ -82,6 +82,7 @@ public final class RepairManagerTest {
     final Set<String> datacenters = Collections.emptySet();
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
 
     // use CassandraStorage so we get both IStorage and IDistributedStorage
     final IStorage storage = mock(CassandraStorage.class);
@@ -95,8 +96,6 @@ public final class RepairManagerTest {
     RepairManager repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(1),
-        500,
-        TimeUnit.MILLISECONDS,
         1,
         TimeUnit.MILLISECONDS,
         1);
@@ -112,6 +111,7 @@ public final class RepairManagerTest {
         .nodes(nodes)
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
+        .timeout(segmentTimeout)
         .build(UUIDs.timeBased());
 
     final RepairRun run = RepairRun.builder(clusterName, cf.getId())
@@ -159,6 +159,7 @@ public final class RepairManagerTest {
     final Set<String> datacenters = Collections.emptySet();
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
 
     // use CassandraStorage so we get both IStorage and IDistributedStorage
     final IStorage storage = mock(CassandraStorage.class);
@@ -172,8 +173,6 @@ public final class RepairManagerTest {
     RepairManager repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(1),
-        500,
-        TimeUnit.MILLISECONDS,
         1,
         TimeUnit.MILLISECONDS,
         1);
@@ -189,6 +188,7 @@ public final class RepairManagerTest {
         .nodes(nodes)
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
+        .timeout(segmentTimeout)
         .build(UUIDs.timeBased());
 
     final RepairRun run = RepairRun.builder(clusterName, cf.getId())
@@ -240,6 +240,7 @@ public final class RepairManagerTest {
     final Set<String> datacenters = Collections.emptySet();
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
 
     final IStorage storage = mock(IStorage.class);
 
@@ -252,8 +253,6 @@ public final class RepairManagerTest {
     RepairManager repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(1),
-        500,
-        TimeUnit.MILLISECONDS,
         1,
         TimeUnit.MILLISECONDS,
         1);
@@ -269,6 +268,7 @@ public final class RepairManagerTest {
         .nodes(nodes)
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
+        .timeout(segmentTimeout)
         .build(UUIDs.timeBased());
 
     final RepairRun run = RepairRun.builder(clusterName, cf.getId())
@@ -317,6 +317,7 @@ public final class RepairManagerTest {
     final Set<String> datacenters = Collections.emptySet();
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
 
     final IStorage storage = mock(IStorage.class);
 
@@ -329,8 +330,6 @@ public final class RepairManagerTest {
     RepairManager repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(1),
-        500,
-        TimeUnit.MILLISECONDS,
         1,
         TimeUnit.MILLISECONDS,
         1);
@@ -346,6 +345,7 @@ public final class RepairManagerTest {
         .nodes(nodes)
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
+        .timeout(segmentTimeout)
         .build(UUIDs.timeBased());
 
     final RepairRun run = RepairRun.builder(clusterName, cf.getId())
@@ -388,8 +388,6 @@ public final class RepairManagerTest {
     context.repairManager = RepairManager.create(
         context,
         Executors.newScheduledThreadPool(1),
-        500,
-        TimeUnit.MILLISECONDS,
         1,
         TimeUnit.MILLISECONDS,
         1);
@@ -400,6 +398,7 @@ public final class RepairManagerTest {
     final Set<String> nodes = Sets.newHashSet("127.0.0.1");
     final Set<String> datacenters = Collections.emptySet();
     final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
 
     final RepairUnit cf = RepairUnit.builder()
         .clusterName(clusterName)
@@ -409,6 +408,7 @@ public final class RepairManagerTest {
         .nodes(nodes)
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
+        .timeout(segmentTimeout)
         .build(UUIDs.timeBased());
 
     double intensity = 0.5f;
@@ -436,14 +436,6 @@ public final class RepairManagerTest {
     context.config = new ReaperApplicationConfiguration();
     context.storage = mock(CassandraStorage.class);
     doReturn(true).when(context.storage).updateRepairRun(any());
-    RepairManager repairManager = RepairManager.create(
-        context,
-        Executors.newScheduledThreadPool(1),
-        500,
-        TimeUnit.MILLISECONDS,
-        1,
-        TimeUnit.MILLISECONDS,
-        100);
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     String cluster1 = "cluster1";
     String cluster2 = "cluster2";
@@ -489,7 +481,12 @@ public final class RepairManagerTest {
             return Optional.of(repairRuns.get(invocation.getArgument(0)));
           }
         });
-
+    RepairManager repairManager = RepairManager.create(
+        context,
+        Executors.newScheduledThreadPool(1),
+        1,
+        TimeUnit.MILLISECONDS,
+        100);
     repairRuns.entrySet().stream().forEach(run -> {
       try {
         repairManager.startRepairRun(run.getValue());
@@ -509,14 +506,6 @@ public final class RepairManagerTest {
     context.config = new ReaperApplicationConfiguration();
     context.storage = mock(CassandraStorage.class);
     doReturn(true).when(context.storage).updateRepairRun(any());
-    RepairManager repairManager = RepairManager.create(
-        context,
-        Executors.newScheduledThreadPool(1),
-        500,
-        TimeUnit.MILLISECONDS,
-        1,
-        TimeUnit.MILLISECONDS,
-        2);
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     String cluster1 = "cluster1";
     String cluster2 = "cluster2";
@@ -562,7 +551,12 @@ public final class RepairManagerTest {
             return Optional.of(repairRuns.get(invocation.getArgument(0)));
           }
         });
-
+    RepairManager repairManager = RepairManager.create(
+        context,
+        Executors.newScheduledThreadPool(1),
+        1,
+        TimeUnit.MILLISECONDS,
+        2);
     repairRuns.entrySet().stream().forEach(run -> {
       try {
         repairManager.startRepairRun(run.getValue());
@@ -583,6 +577,7 @@ public final class RepairManagerTest {
     final Set<String> nodes = Sets.newHashSet("127.0.0.1");
     final Set<String> datacenters = Collections.emptySet();
     final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
 
     final RepairUnit repairUnit = RepairUnit.builder()
         .clusterName(clusterName)
@@ -592,6 +587,7 @@ public final class RepairManagerTest {
         .nodes(nodes)
         .datacenters(datacenters)
         .repairThreadCount(repairThreadCount)
+        .timeout(segmentTimeout)
         .build(UUIDs.timeBased());
 
     return repairUnit;

@@ -25,6 +25,7 @@ import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairRun;
+import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Segment;
@@ -74,6 +75,7 @@ import org.awaitility.Duration;
 import org.awaitility.core.ConditionTimeoutException;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -88,6 +90,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -115,33 +118,40 @@ public final class RepairRunnerTest {
     SegmentRunner.SEGMENT_RUNNERS.clear();
   }
 
+  @After
+  public void tearDown() {
+    DateTimeUtils.setCurrentMillisSystem();
+  }
+
   @Test
   public void testHangingRepair() throws InterruptedException, ReaperException, JMException, IOException {
-    final String KS_NAME = "reaper";
-    final Set<String> CF_NAMES = Sets.newHashSet("reaper");
-    final boolean INCREMENTAL_REPAIR = false;
-    final Set<String> NODES = Sets.newHashSet("127.0.0.1");
-    final Set<String> DATACENTERS = Collections.emptySet();
-    final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
-    final long TIME_RUN = 41L;
-    final double INTENSITY = 0.5f;
-    final int REPAIR_THREAD_COUNT = 1;
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodeSet = Sets.newHashSet("127.0.0.1");
+    final Set<String> datacenters = Collections.emptySet();
+    final Set<String> blacklistedTables = Collections.emptySet();
+    final long timeRun = 41L;
+    final double intensity = 0.5f;
+    final int repairThreadCount = 1;
+    final int segmentTimeout = 1;
     final IStorage storage = new MemoryStorage();
     storage.addCluster(cluster);
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
             .clusterName(cluster.getName())
-            .keyspaceName(KS_NAME)
-            .columnFamilies(CF_NAMES)
-            .incrementalRepair(INCREMENTAL_REPAIR)
-            .nodes(NODES)
-            .datacenters(DATACENTERS)
-            .blacklistedTables(BLACKLISTED_TABLES)
-            .repairThreadCount(REPAIR_THREAD_COUNT));
-    DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
+            .keyspaceName(ksName)
+            .columnFamilies(cfNames)
+            .incrementalRepair(incrementalRepair)
+            .nodes(nodeSet)
+            .datacenters(datacenters)
+            .blacklistedTables(blacklistedTables)
+            .repairThreadCount(repairThreadCount)
+            .timeout(segmentTimeout));
+    DateTimeUtils.setCurrentMillisFixed(timeRun);
     RepairRun run = storage.addRepairRun(
             RepairRun.builder(cluster.getName(), cf.getId())
-                .intensity(INTENSITY)
+                .intensity(intensity)
                 .segmentCount(1)
                 .repairParallelism(RepairParallelism.PARALLEL)
                 .tables(TABLES),
@@ -152,9 +162,9 @@ public final class RepairRunnerTest {
                            .withReplicas(replicas)
                            .build(),
                     cf.getId())));
-    final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegments(run.getId()).get(0).getId();
-    assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
+    final UUID runId = run.getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -172,11 +182,10 @@ public final class RepairRunnerTest {
     }
     JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
     final AtomicInteger repairAttempts = new AtomicInteger(1);
-
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
-              assertEquals(RepairSegment.State.STARTED, storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+              assertEquals(RepairSegment.State.STARTED, storage.getRepairSegment(runId, segmentId).get().getState());
               final int repairNumber = repairAttempts.getAndIncrement();
               switch (repairNumber) {
                 case 1:
@@ -189,7 +198,7 @@ public final class RepairRunnerTest {
                               Optional.empty(), null, jmx);
                       assertEquals(
                           RepairSegment.State.RUNNING,
-                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                          storage.getRepairSegment(runId, segmentId).get().getState());
                     }
                   }.start();
                   break;
@@ -204,7 +213,7 @@ public final class RepairRunnerTest {
                               Optional.empty(), null, jmx);
                       assertEquals(
                           RepairSegment.State.RUNNING,
-                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                          storage.getRepairSegment(runId, segmentId).get().getState());
                       ((RepairStatusHandler)invocation.getArgument(7))
                           .handle(
                               repairNumber,
@@ -212,7 +221,7 @@ public final class RepairRunnerTest {
                               Optional.empty(), null, jmx);
                       assertEquals(
                           RepairSegment.State.DONE,
-                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                          storage.getRepairSegment(runId, segmentId).get().getState());
                       ((RepairStatusHandler)invocation.getArgument(7))
                           .handle(repairNumber,
                               Optional.of(ActiveRepairService.Status.FINISHED),
@@ -232,18 +241,15 @@ public final class RepairRunnerTest {
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
-    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(NODES));
+    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(nodeSet));
     when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
         Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
-        .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
-
+        .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(nodeSet)));
     context.repairManager = RepairManager.create(
             context,
             clusterFacade,
             Executors.newScheduledThreadPool(1),
-            500,
-            TimeUnit.MILLISECONDS,
             1,
             TimeUnit.MILLISECONDS,
             1);
@@ -254,7 +260,7 @@ public final class RepairRunnerTest {
           }
         };
     context.repairManager.startRepairRun(run);
-    await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
+    await().with().atMost(2, TimeUnit.MINUTES).until(() -> {
       try {
         mutex.acquire();
         LOG.info("MUTEX ACQUIRED");
@@ -264,37 +270,39 @@ public final class RepairRunnerTest {
         throw new IllegalStateException(ex);
       }
     });
-    assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
+    assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(runId).get().getRunState());
   }
 
   @Test
-  public void testHangingRepairNewAPI() throws InterruptedException, ReaperException, MalformedObjectNameException,
+  public void testHangingRepairNewApi() throws InterruptedException, ReaperException, MalformedObjectNameException,
       ReflectionException, IOException {
-    final String KS_NAME = "reaper";
-    final Set<String> CF_NAMES = Sets.newHashSet("reaper");
-    final boolean INCREMENTAL_REPAIR = false;
-    final Set<String> NODES = Sets.newHashSet("127.0.0.1");
-    final Set<String> DATACENTERS = Collections.emptySet();
-    final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
-    final long TIME_RUN = 41L;
-    final double INTENSITY = 0.5f;
-    final int REPAIR_THREAD_COUNT = 1;
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodeSet = Sets.newHashSet("127.0.0.1");
+    final Set<String> datacenters = Collections.emptySet();
+    final Set<String> blacklistedTables = Collections.emptySet();
+    final long timeRun = 41L;
+    final double intensity = 0.5f;
+    final int repairThreadCount = 1;
+    final int segmentTimeout = 1;
     final IStorage storage = new MemoryStorage();
     storage.addCluster(cluster);
-    DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
+    DateTimeUtils.setCurrentMillisFixed(timeRun);
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
             .clusterName(cluster.getName())
-            .keyspaceName(KS_NAME)
-            .columnFamilies(CF_NAMES)
-            .incrementalRepair(INCREMENTAL_REPAIR)
-            .nodes(NODES)
-            .datacenters(DATACENTERS)
-            .blacklistedTables(BLACKLISTED_TABLES)
-            .repairThreadCount(REPAIR_THREAD_COUNT));
+            .keyspaceName(ksName)
+            .columnFamilies(cfNames)
+            .incrementalRepair(incrementalRepair)
+            .nodes(nodeSet)
+            .datacenters(datacenters)
+            .blacklistedTables(blacklistedTables)
+            .repairThreadCount(repairThreadCount)
+            .timeout(segmentTimeout));
     RepairRun run = storage.addRepairRun(
             RepairRun.builder(cluster.getName(), cf.getId())
-                .intensity(INTENSITY).segmentCount(1)
+                .intensity(intensity).segmentCount(1)
                 .repairParallelism(RepairParallelism.PARALLEL)
                 .tables(TABLES),
             Collections.singleton(
@@ -304,9 +312,9 @@ public final class RepairRunnerTest {
                            .withReplicas(replicas)
                            .build(),
                     cf.getId())));
-    final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegments(run.getId()).get(0).getId();
-    assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
+    final UUID runId = run.getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = new ReaperApplicationConfiguration();
@@ -329,7 +337,7 @@ public final class RepairRunnerTest {
             (invocation) -> {
               assertEquals(
                   RepairSegment.State.STARTED,
-                  storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                  storage.getRepairSegment(runId, segmentId).get().getState());
               final int repairNumber = repairAttempts.getAndIncrement();
               switch (repairNumber) {
                 case 1:
@@ -342,7 +350,7 @@ public final class RepairRunnerTest {
                               Optional.of(ProgressEventType.START), null, jmx);
                       assertEquals(
                           RepairSegment.State.RUNNING,
-                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                          storage.getRepairSegment(runId, segmentId).get().getState());
                     }
                   }.start();
                   break;
@@ -356,14 +364,14 @@ public final class RepairRunnerTest {
                               Optional.of(ProgressEventType.START), null, jmx);
                       assertEquals(
                           RepairSegment.State.RUNNING,
-                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                          storage.getRepairSegment(runId, segmentId).get().getState());
                       ((RepairStatusHandler)invocation.getArgument(7))
                           .handle(
                               repairNumber, Optional.empty(),
                               Optional.of(ProgressEventType.SUCCESS), null, jmx);
                       assertEquals(
                           RepairSegment.State.DONE,
-                          storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState());
+                          storage.getRepairSegment(runId, segmentId).get().getState());
                       ((RepairStatusHandler)invocation.getArgument(7))
                           .handle(
                               repairNumber, Optional.empty(),
@@ -382,9 +390,9 @@ public final class RepairRunnerTest {
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
-        .thenReturn(Lists.newArrayList(NODES));
+        .thenReturn(Lists.newArrayList(nodeSet));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
-        .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
+        .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(nodeSet)));
     when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
         Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
     context.repairManager
@@ -392,8 +400,6 @@ public final class RepairRunnerTest {
             context,
             clusterFacade,
             Executors.newScheduledThreadPool(1),
-            500,
-            TimeUnit.MILLISECONDS,
             1,
             TimeUnit.MILLISECONDS,
             1);
@@ -404,7 +410,7 @@ public final class RepairRunnerTest {
           }
         };
     context.repairManager.startRepairRun(run);
-    await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
+    await().with().atMost(2, TimeUnit.MINUTES).until(() -> {
       try {
         mutex.acquire();
         LOG.info("MUTEX ACQUIRED");
@@ -415,25 +421,26 @@ public final class RepairRunnerTest {
         throw new IllegalStateException(ex);
       }
     });
-    assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
+    assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(runId).get().getRunState());
   }
 
   @Test
   public void testResumeRepair() throws InterruptedException, ReaperException, MalformedObjectNameException,
       ReflectionException, IOException {
-    final String KS_NAME = "reaper";
-    final Set<String> CF_NAMES = Sets.newHashSet("reaper");
-    final boolean INCREMENTAL_REPAIR = false;
-    final Set<String> NODES = Sets.newHashSet("127.0.0.1");
-    final Map<String, String> NODES_MAP = ImmutableMap.of(
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodeSet = Sets.newHashSet("127.0.0.1");
+    final Map<String, String> nodeMap = ImmutableMap.of(
         "127.0.0.1", "dc1"
         );
-    final Set<String> DATACENTERS = Collections.emptySet();
-    final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
-    final long TIME_RUN = 41L;
-    final double INTENSITY = 0.5f;
-    final int REPAIR_THREAD_COUNT = 1;
-    final List<BigInteger> TOKENS = Lists.newArrayList(
+    final Set<String> datacenters = Collections.emptySet();
+    final Set<String> blacklistedTables = Collections.emptySet();
+    final long timeRun = 41L;
+    final double intensity = 0.5f;
+    final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
+    final List<BigInteger> tokens = Lists.newArrayList(
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
         BigInteger.valueOf(200L));
@@ -445,25 +452,26 @@ public final class RepairRunnerTest {
     UUID cf = storage.addRepairUnit(
         RepairUnit.builder()
             .clusterName(cluster.getName())
-            .keyspaceName(KS_NAME)
-            .columnFamilies(CF_NAMES)
-            .incrementalRepair(INCREMENTAL_REPAIR)
-            .nodes(NODES)
-            .datacenters(DATACENTERS)
-            .blacklistedTables(BLACKLISTED_TABLES)
-            .repairThreadCount(REPAIR_THREAD_COUNT))
+            .keyspaceName(ksName)
+            .columnFamilies(cfNames)
+            .incrementalRepair(incrementalRepair)
+            .nodes(nodeSet)
+            .datacenters(datacenters)
+            .blacklistedTables(blacklistedTables)
+            .repairThreadCount(repairThreadCount)
+            .timeout(segmentTimeout))
         .getId();
-    DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
-    RepairRun run = generateRepairRunForPendingCompactions(INTENSITY, storage, cf);
-    final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegments(run.getId()).get(0).getId();
-    assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
+    DateTimeUtils.setCurrentMillisFixed(timeRun);
+    RepairRun run = generateRepairRunForPendingCompactions(intensity, storage, cf);
+    final UUID runId = run.getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
     final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
-    when(jmx.getEndpointToHostId()).thenReturn(NODES_MAP);
-    when(jmx.getTokens()).thenReturn(TOKENS);
+    when(jmx.getEndpointToHostId()).thenReturn(nodeMap);
+    when(jmx.getTokens()).thenReturn(tokens);
     EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
     when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
     try {
@@ -476,11 +484,11 @@ public final class RepairRunnerTest {
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
-        .thenReturn(Lists.newArrayList(NODES));
+        .thenReturn(Lists.newArrayList(nodeSet));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map)ImmutableMap.of(
-            Lists.newArrayList("0", "100"), Lists.newArrayList(NODES),
-            Lists.newArrayList("100", "200"), Lists.newArrayList(NODES)));
+            Lists.newArrayList("0", "100"), Lists.newArrayList(nodeSet),
+            Lists.newArrayList("100", "200"), Lists.newArrayList(nodeSet)));
     when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
         Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
 
@@ -488,8 +496,6 @@ public final class RepairRunnerTest {
         context,
         clusterFacade,
         Executors.newScheduledThreadPool(1),
-        500,
-        TimeUnit.MILLISECONDS,
         1,
         TimeUnit.MILLISECONDS,
         1);
@@ -538,33 +544,34 @@ public final class RepairRunnerTest {
     ClusterFacade clusterProxySpy = Mockito.spy(clusterProxy);
     Mockito.doReturn(Collections.singletonList("")).when(clusterProxySpy).tokenRangeToEndpoint(any(), any(), any());
 
-    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
+    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(runId).get().getRunState());
     context.repairManager.resumeRunningRepairRuns();
-    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
+    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(runId).get().getRunState());
 
     storage.updateRepairRun(
-        run.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(RUN_ID));
+        run.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(runId));
 
     context.repairManager.resumeRunningRepairRuns();
     Thread.sleep(1000);
-    assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(RUN_ID).get().getRunState());
+    assertEquals(RepairRun.RunState.DONE, storage.getRepairRun(runId).get().getRunState());
   }
 
   @Test(expected = ConditionTimeoutException.class)
   public void testTooManyPendingCompactions()
-    throws InterruptedException, ReaperException, MalformedObjectNameException,
+      throws InterruptedException, ReaperException, MalformedObjectNameException,
       ReflectionException, IOException {
-    final String KS_NAME = "reaper";
-    final Set<String> CF_NAMES = Sets.newHashSet("reaper");
-    final boolean INCREMENTAL_REPAIR = false;
-    final Set<String> NODES = Sets.newHashSet("127.0.0.1");
-    final Map<String, String> NODES_MAP = ImmutableMap.of("127.0.0.1", "dc1");
-    final Set<String> DATACENTERS = Collections.emptySet();
-    final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
-    final long TIME_RUN = 41L;
-    final double INTENSITY = 0.5f;
-    final int REPAIR_THREAD_COUNT = 1;
-    final List<BigInteger> TOKENS = Lists.newArrayList(
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodeSet = Sets.newHashSet("127.0.0.1");
+    final Map<String, String> nodeMap = ImmutableMap.of("127.0.0.1", "dc1");
+    final Set<String> datacenters = Collections.emptySet();
+    final Set<String> blacklistedTables = Collections.emptySet();
+    final long timeRun = 41L;
+    final double intensity = 0.5f;
+    final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
+    final List<BigInteger> tokens = Lists.newArrayList(
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
         BigInteger.valueOf(200L));
@@ -576,25 +583,26 @@ public final class RepairRunnerTest {
     UUID cf = storage.addRepairUnit(
         RepairUnit.builder()
             .clusterName(cluster.getName())
-            .keyspaceName(KS_NAME)
-            .columnFamilies(CF_NAMES)
-            .incrementalRepair(INCREMENTAL_REPAIR)
-            .nodes(NODES)
-            .datacenters(DATACENTERS)
-            .blacklistedTables(BLACKLISTED_TABLES)
-            .repairThreadCount(REPAIR_THREAD_COUNT))
+            .keyspaceName(ksName)
+            .columnFamilies(cfNames)
+            .incrementalRepair(incrementalRepair)
+            .nodes(nodeSet)
+            .datacenters(datacenters)
+            .blacklistedTables(blacklistedTables)
+            .repairThreadCount(repairThreadCount)
+            .timeout(segmentTimeout))
         .getId();
-    DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
-    RepairRun run = generateRepairRunForPendingCompactions(INTENSITY, storage, cf);
-    final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegments(run.getId()).get(0).getId();
-    assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
+    DateTimeUtils.setCurrentMillisFixed(timeRun);
+    RepairRun run = generateRepairRunForPendingCompactions(intensity, storage, cf);
+    final UUID runId = run.getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
     final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
-    when(jmx.getEndpointToHostId()).thenReturn(NODES_MAP);
-    when(jmx.getTokens()).thenReturn(TOKENS);
+    when(jmx.getEndpointToHostId()).thenReturn(nodeMap);
+    when(jmx.getTokens()).thenReturn(tokens);
     EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
     when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
     try {
@@ -607,11 +615,11 @@ public final class RepairRunnerTest {
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
-        .thenReturn(Lists.newArrayList(NODES));
+        .thenReturn(Lists.newArrayList(nodeSet));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map)ImmutableMap.of(
-            Lists.newArrayList("0", "100"), Lists.newArrayList(NODES),
-            Lists.newArrayList("100", "200"), Lists.newArrayList(NODES)));
+            Lists.newArrayList("0", "100"), Lists.newArrayList(nodeSet),
+            Lists.newArrayList("100", "200"), Lists.newArrayList(nodeSet)));
     when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
         Collections.emptyList()).withPendingCompactions(Optional.of(100)).build());
 
@@ -619,8 +627,6 @@ public final class RepairRunnerTest {
         context,
         clusterFacade,
         Executors.newScheduledThreadPool(1),
-        500,
-        TimeUnit.MILLISECONDS,
         1,
         TimeUnit.MILLISECONDS,
         1);
@@ -668,24 +674,24 @@ public final class RepairRunnerTest {
     ClusterFacade clusterProxySpy = Mockito.spy(clusterProxy);
     Mockito.doReturn(Collections.singletonList("")).when(clusterProxySpy).tokenRangeToEndpoint(any(), any(), any());
 
-    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
+    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(runId).get().getRunState());
     context.repairManager.resumeRunningRepairRuns();
-    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
+    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(runId).get().getRunState());
 
     storage.updateRepairRun(
-        run.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(RUN_ID));
+        run.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(runId));
 
     context.repairManager.resumeRunningRepairRuns();
     // Make sure it's still in RUNNING state as segments can't be processed due to pending compactions
     await().with().pollInterval(POLL_INTERVAL).atMost(30, SECONDS).until(() -> {
-      if (RepairRun.RunState.RUNNING != storage.getRepairRun(RUN_ID).get().getRunState()) {
+      if (RepairRun.RunState.RUNNING != storage.getRepairRun(runId).get().getRunState()) {
         return true;
       }
       return false;
     });
     // If we get here then there's a problem...
     // An exception should be thrown by Awaitility as we should not reach a status different than RUNNING
-    assertEquals(RepairRun.RunState.RUNNING, storage.getRepairRun(RUN_ID).get().getRunState());
+    assertEquals(RepairRun.RunState.RUNNING, storage.getRepairRun(runId).get().getRunState());
   }
 
   private RepairRun generateRepairRunForPendingCompactions(final double intensity, final IStorage storage, UUID cf) {
@@ -814,20 +820,19 @@ public final class RepairRunnerTest {
   @Test
   public void testFailRepairAfterTopologyChange() throws InterruptedException, ReaperException,
       MalformedObjectNameException, ReflectionException, IOException {
-    final String KS_NAME = "reaper";
-    final Set<String> CF_NAMES = Sets.newHashSet("reaper");
-    final boolean INCREMENTAL_REPAIR = false;
-    final Set<String> NODES = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
-    final List<String> NODES_AFTER_TOPOLOGY_CHANGE = Lists.newArrayList("127.0.0.1", "127.0.0.2", "127.0.0.4");
-    final Map<String, String> NODES_MAP = ImmutableMap.of(
-        "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
-        );
-    final Set<String> DATACENTERS = Collections.emptySet();
-    final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
-    final long TIME_RUN = 41L;
-    final double INTENSITY = 0.5f;
-    final int REPAIR_THREAD_COUNT = 1;
-    final List<BigInteger> TOKENS = Lists.newArrayList(
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
+    final List<String> nodeSetAfterTopologyChange = Lists.newArrayList("127.0.0.1", "127.0.0.2", "127.0.0.4");
+    final Map<String, String> nodeMap = ImmutableMap.of(
+        "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1");
+    final Set<String> datacenters = Collections.emptySet();
+    final Set<String> blacklistedTables = Collections.emptySet();
+    final double intensity = 0.5f;
+    final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
+    final List<BigInteger> tokens = Lists.newArrayList(
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
         BigInteger.valueOf(200L));
@@ -839,17 +844,18 @@ public final class RepairRunnerTest {
     UUID cf = storage.addRepairUnit(
         RepairUnit.builder()
             .clusterName(cluster.getName())
-            .keyspaceName(KS_NAME)
-            .columnFamilies(CF_NAMES)
-            .incrementalRepair(INCREMENTAL_REPAIR)
-            .nodes(NODES)
-            .datacenters(DATACENTERS)
-            .blacklistedTables(BLACKLISTED_TABLES)
-            .repairThreadCount(REPAIR_THREAD_COUNT))
+            .keyspaceName(ksName)
+            .columnFamilies(cfNames)
+            .incrementalRepair(incrementalRepair)
+            .nodes(nodeSet)
+            .datacenters(datacenters)
+            .blacklistedTables(blacklistedTables)
+            .repairThreadCount(repairThreadCount)
+            .timeout(segmentTimeout))
         .getId();
     RepairRun run = storage.addRepairRun(
             RepairRun.builder(cluster.getName(), cf)
-                .intensity(INTENSITY)
+                .intensity(intensity)
                 .segmentCount(1)
                 .repairParallelism(RepairParallelism.PARALLEL)
                 .tables(TABLES),
@@ -857,7 +863,7 @@ public final class RepairRunnerTest {
                 RepairSegment.builder(
                         Segment.builder()
                             .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100")))
-                            .withReplicas(NODES_MAP)
+                            .withReplicas(nodeMap)
                             .build(), cf)
                     .withState(RepairSegment.State.RUNNING)
                     .withStartTime(DateTime.now())
@@ -865,17 +871,17 @@ public final class RepairRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(new BigInteger("100"), new BigInteger("200")))
-                        .withReplicas(NODES_MAP)
+                        .withReplicas(nodeMap)
                         .build(), cf)));
-    final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegments(run.getId()).get(0).getId();
-    assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
+    final UUID runId = run.getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
     final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
-    when(jmx.getEndpointToHostId()).thenReturn(NODES_MAP);
-    when(jmx.getTokens()).thenReturn(TOKENS);
+    when(jmx.getEndpointToHostId()).thenReturn(nodeMap);
+    when(jmx.getTokens()).thenReturn(tokens);
     EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
     when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
     try {
@@ -888,12 +894,12 @@ public final class RepairRunnerTest {
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
-        .thenReturn(Lists.newArrayList(NODES));
+        .thenReturn(Lists.newArrayList(nodeSet));
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
         .thenReturn((Map)ImmutableMap.of(
-            Lists.newArrayList("0", "100"), Lists.newArrayList(NODES),
-            Lists.newArrayList("100", "200"), Lists.newArrayList(NODES)));
-    when(clusterFacade.getEndpointToHostId(any())).thenReturn(NODES_MAP);
+            Lists.newArrayList("0", "100"), Lists.newArrayList(nodeSet),
+            Lists.newArrayList("100", "200"), Lists.newArrayList(nodeSet)));
+    when(clusterFacade.getEndpointToHostId(any())).thenReturn(nodeMap);
     when(clusterFacade.listActiveCompactions(any())).thenReturn(
         CompactionStats.builder()
           .withActiveCompactions(Collections.emptyList())
@@ -903,8 +909,6 @@ public final class RepairRunnerTest {
         context,
         clusterFacade,
         Executors.newScheduledThreadPool(10),
-        500,
-        TimeUnit.MILLISECONDS,
         1,
         TimeUnit.MILLISECONDS,
         1);
@@ -949,19 +953,19 @@ public final class RepairRunnerTest {
         };
     ClusterFacade clusterProxy = ClusterFacade.create(context);
     ClusterFacade clusterProxySpy = Mockito.spy(clusterProxy);
-    Mockito.doReturn(NODES_AFTER_TOPOLOGY_CHANGE).when(clusterProxySpy).tokenRangeToEndpoint(any(), any(), any());
-    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(RUN_ID).get().getRunState());
+    Mockito.doReturn(nodeSetAfterTopologyChange).when(clusterProxySpy).tokenRangeToEndpoint(any(), any(), any());
+    assertEquals(RepairRun.RunState.NOT_STARTED, storage.getRepairRun(runId).get().getRunState());
     storage.updateRepairRun(
-        run.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(RUN_ID));
+        run.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(runId));
     // We'll now change the list of replicas for any segment, making the stored ones obsolete
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
-      .thenReturn(Lists.newArrayList(NODES_AFTER_TOPOLOGY_CHANGE));
+      .thenReturn(Lists.newArrayList(nodeSetAfterTopologyChange));
     context.repairManager.resumeRunningRepairRuns();
     // The repair should now fail as the list of replicas for the segments are different from storage
     await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
-      return RepairRun.RunState.ERROR == storage.getRepairRun(RUN_ID).get().getRunState();
+      return RepairRun.RunState.ERROR == storage.getRepairRun(runId).get().getRunState();
     });
-    assertEquals(RepairRun.RunState.ERROR, storage.getRepairRun(RUN_ID).get().getRunState());
+    assertEquals(RepairRun.RunState.ERROR, storage.getRepairRun(runId).get().getRunState());
   }
 
   @Test
@@ -980,21 +984,21 @@ public final class RepairRunnerTest {
   }
 
   @Test
-  public void getNodeMetricsInLocalDCAvailabilityForRemoteDCNodeTest() throws Exception {
-    final String KS_NAME = "reaper";
-    final Set<String> CF_NAMES = Sets.newHashSet("reaper");
-    final boolean INCREMENTAL_REPAIR = false;
-    final Set<String> NODES = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
-    final List<String> NODES_AFTER_TOPOLOGY_CHANGE = Lists.newArrayList("127.0.0.1", "127.0.0.2", "127.0.0.4");
-    final Map<String, String> NODES_MAP = ImmutableMap.of(
+  public void getNodeMetricsInLocalDcAvailabilityForRemoteDcNodeTest() throws Exception {
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
+    final List<String> nodeSetAfterTopologyChange = Lists.newArrayList("127.0.0.1", "127.0.0.2", "127.0.0.4");
+    final Map<String, String> nodeMap = ImmutableMap.of(
         "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
         );
-    final Set<String> DATACENTERS = Collections.emptySet();
-    final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
-    final long TIME_RUN = 41L;
-    final double INTENSITY = 0.5f;
-    final int REPAIR_THREAD_COUNT = 1;
-    final List<BigInteger> TOKENS = Lists.newArrayList(
+    final Set<String> datacenters = Collections.emptySet();
+    final Set<String> blacklistedTables = Collections.emptySet();
+    final double intensity = 0.5f;
+    final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
+    final List<BigInteger> tokens = Lists.newArrayList(
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
         BigInteger.valueOf(200L));
@@ -1002,16 +1006,18 @@ public final class RepairRunnerTest {
     context.storage = Mockito.mock(CassandraStorage.class);
     RepairUnit repairUnit = RepairUnit.builder()
           .clusterName(cluster.getName())
-          .keyspaceName(KS_NAME)
-          .columnFamilies(CF_NAMES)
-          .incrementalRepair(INCREMENTAL_REPAIR)
-          .nodes(NODES)
-          .datacenters(DATACENTERS)
-          .blacklistedTables(BLACKLISTED_TABLES)
-          .repairThreadCount(REPAIR_THREAD_COUNT).build(UUID.randomUUID());
+          .keyspaceName(ksName)
+          .columnFamilies(cfNames)
+          .incrementalRepair(incrementalRepair)
+          .nodes(nodeSet)
+          .datacenters(datacenters)
+          .blacklistedTables(blacklistedTables)
+          .repairThreadCount(repairThreadCount)
+          .timeout(segmentTimeout)
+          .build(UUID.randomUUID());
 
     RepairRun run = RepairRun.builder(cluster.getName(), repairUnit.getId())
-          .intensity(INTENSITY)
+          .intensity(intensity)
           .segmentCount(1)
           .repairParallelism(RepairParallelism.PARALLEL)
           .tables(TABLES).build(UUID.randomUUID());
@@ -1027,8 +1033,8 @@ public final class RepairRunnerTest {
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
-    when(jmx.getEndpointToHostId()).thenReturn(NODES_MAP);
-    when(jmx.getTokens()).thenReturn(TOKENS);
+    when(jmx.getEndpointToHostId()).thenReturn(nodeMap);
+    when(jmx.getTokens()).thenReturn(tokens);
     when(jmx.isRepairRunning()).thenReturn(true);
     when(jmx.getPendingCompactions()).thenReturn(3);
     context.jmxConnectionFactory = jmxConnectionFactory;
@@ -1039,7 +1045,7 @@ public final class RepairRunnerTest {
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.listActiveCompactions(any())).thenReturn(null);
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
-      .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
+      .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(nodeSet)));
 
     RepairRunner repairRunner = RepairRunner.create(
         context,
@@ -1052,21 +1058,21 @@ public final class RepairRunnerTest {
   }
 
   @Test
-  public void getNodeMetricsInLocalDCAvailabilityForLocalDCNodeTest() throws Exception {
-    final String KS_NAME = "reaper";
-    final Set<String> CF_NAMES = Sets.newHashSet("reaper");
-    final boolean INCREMENTAL_REPAIR = false;
-    final Set<String> NODES = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
-    final List<String> NODES_AFTER_TOPOLOGY_CHANGE = Lists.newArrayList("127.0.0.1", "127.0.0.2", "127.0.0.4");
-    final Map<String, String> NODES_MAP = ImmutableMap.of(
+  public void getNodeMetricsInLocalDcAvailabilityForLocalDcNodeTest() throws Exception {
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
+    final Map<String, String> nodeMap = ImmutableMap.of(
         "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
         );
-    final Set<String> DATACENTERS = Collections.emptySet();
-    final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
-    final long TIME_RUN = 41L;
-    final double INTENSITY = 0.5f;
-    final int REPAIR_THREAD_COUNT = 1;
-    final List<BigInteger> TOKENS = Lists.newArrayList(
+    final Set<String> datacenters = Collections.emptySet();
+    final Set<String> blacklistedTables = Collections.emptySet();
+    final long timeRun = 41L;
+    final double intensity = 0.5f;
+    final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
+    final List<BigInteger> tokens = Lists.newArrayList(
         BigInteger.valueOf(0L),
         BigInteger.valueOf(100L),
         BigInteger.valueOf(200L));
@@ -1078,18 +1084,19 @@ public final class RepairRunnerTest {
     UUID cf = storage.addRepairUnit(
         RepairUnit.builder()
             .clusterName(cluster.getName())
-            .keyspaceName(KS_NAME)
-            .columnFamilies(CF_NAMES)
-            .incrementalRepair(INCREMENTAL_REPAIR)
-            .nodes(NODES)
-            .datacenters(DATACENTERS)
-            .blacklistedTables(BLACKLISTED_TABLES)
-            .repairThreadCount(REPAIR_THREAD_COUNT))
+            .keyspaceName(ksName)
+            .columnFamilies(cfNames)
+            .incrementalRepair(incrementalRepair)
+            .nodes(nodeSet)
+            .datacenters(datacenters)
+            .blacklistedTables(blacklistedTables)
+            .repairThreadCount(repairThreadCount)
+            .timeout(segmentTimeout))
         .getId();
-    DateTimeUtils.setCurrentMillisFixed(TIME_RUN);
+    DateTimeUtils.setCurrentMillisFixed(timeRun);
     RepairRun run = storage.addRepairRun(
             RepairRun.builder(cluster.getName(), cf)
-                .intensity(INTENSITY)
+                .intensity(intensity)
                 .segmentCount(1)
                 .repairParallelism(RepairParallelism.PARALLEL)
                 .tables(TABLES),
@@ -1097,7 +1104,7 @@ public final class RepairRunnerTest {
                 RepairSegment.builder(
                         Segment.builder()
                             .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100")))
-                            .withReplicas(NODES_MAP)
+                            .withReplicas(nodeMap)
                             .build(),
                         cf)
                     .withState(RepairSegment.State.RUNNING)
@@ -1106,18 +1113,18 @@ public final class RepairRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(new BigInteger("100"), new BigInteger("200")))
-                        .withReplicas(NODES_MAP)
+                        .withReplicas(nodeMap)
                         .build(),
                     cf)));
-    final UUID RUN_ID = run.getId();
-    final UUID SEGMENT_ID = storage.getNextFreeSegments(run.getId()).get(0).getId();
-    assertEquals(storage.getRepairSegment(RUN_ID, SEGMENT_ID).get().getState(), RepairSegment.State.NOT_STARTED);
+    final UUID runId = run.getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
     final JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
     when(proxy.getClusterName()).thenReturn(cluster.getName());
     when(proxy.isConnectionAlive()).thenReturn(true);
     when(proxy.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
-    when(proxy.getEndpointToHostId()).thenReturn(NODES_MAP);
-    when(proxy.getTokens()).thenReturn(TOKENS);
+    when(proxy.getEndpointToHostId()).thenReturn(nodeMap);
+    when(proxy.getTokens()).thenReturn(tokens);
     when(proxy.isRepairRunning()).thenReturn(true);
     when(proxy.getPendingCompactions()).thenReturn(3);
 
@@ -1138,11 +1145,11 @@ public final class RepairRunnerTest {
     when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
         Collections.emptyList()).withPendingCompactions(Optional.of(3)).build());
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
-      .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
+      .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(nodeSet)));
 
     RepairRunner repairRunner = RepairRunner.create(
         context,
-        RUN_ID,
+        runId,
         clusterFacade);
 
     Pair<String, Callable<Optional<CompactionStats>>> result = repairRunner.getNodeMetrics("node-some", "dc1", "dc1");
@@ -1150,5 +1157,366 @@ public final class RepairRunnerTest {
     assertTrue(optional.isPresent());
     CompactionStats metrics = optional.get();
     assertEquals(3, metrics.getPendingCompactions().get().intValue());
+  }
+
+  @Test
+  public void adaptiveRepairReduceSegmentsTest() throws Exception {
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
+    final Map<String, String> nodeMap = ImmutableMap.of(
+        "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
+        );
+    final Set<String> datacenters = Collections.emptySet();
+    final Set<String> blacklistedTables = Collections.emptySet();
+    final double intensity = 0.5f;
+    final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
+    final List<BigInteger> tokens = Lists.newArrayList(
+        BigInteger.valueOf(0L),
+        BigInteger.valueOf(100L),
+        BigInteger.valueOf(200L));
+    final AppContext context = new AppContext();
+    context.storage = Mockito.mock(CassandraStorage.class);
+    RepairUnit repairUnit = RepairUnit.builder()
+          .clusterName(cluster.getName())
+          .keyspaceName(ksName)
+          .columnFamilies(cfNames)
+          .incrementalRepair(incrementalRepair)
+          .nodes(nodeSet)
+          .datacenters(datacenters)
+          .blacklistedTables(blacklistedTables)
+          .repairThreadCount(repairThreadCount)
+          .timeout(segmentTimeout)
+          .build(UUID.randomUUID());
+
+    RepairRun run = RepairRun.builder(cluster.getName(), repairUnit.getId())
+          .intensity(intensity)
+          .segmentCount(64)
+          .repairParallelism(RepairParallelism.PARALLEL)
+          .adaptiveSchedule(true)
+          .tables(TABLES).build(UUID.randomUUID());
+
+    RepairSchedule repairSchedule = RepairSchedule.builder(repairUnit.getId())
+        .adaptive(true)
+        .daysBetween(1)
+        .intensity(1)
+        .owner("reaper")
+        .segmentCountPerNode(64)
+        .state(RepairSchedule.State.ACTIVE)
+        .nextActivation(DateTime.now())
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .build(UUID.randomUUID());
+    Collection<RepairSchedule> schedules = Lists.newArrayList(repairSchedule);
+
+    List<RepairSegment> segments = generateRepairSegments(10, 0, 1, repairUnit.getId());
+    Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
+    Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
+    Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    Mockito.when(((CassandraStorage) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when((((CassandraStorage) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
+        .thenReturn(schedules);
+
+    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
+    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    JmxProxy jmx = mock(JmxProxy.class);
+    when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
+    when(jmx.getClusterName()).thenReturn(cluster.getName());
+    when(jmx.isConnectionAlive()).thenReturn(true);
+    when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
+    when(jmx.getEndpointToHostId()).thenReturn(nodeMap);
+    when(jmx.getTokens()).thenReturn(tokens);
+    when(jmx.isRepairRunning()).thenReturn(true);
+    when(jmx.getPendingCompactions()).thenReturn(3);
+    context.jmxConnectionFactory = jmxConnectionFactory;
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
+
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+
+    RepairRunner repairRunner = RepairRunner.create(
+        context,
+        UUID.randomUUID(),
+        clusterFacade);
+
+    RepairRunner repairRunnerSpy = Mockito.spy(repairRunner);
+
+    repairRunnerSpy.maybeAdaptRepairSchedule();
+    verify(repairRunnerSpy, times(1)).tuneAdaptiveRepair(anyDouble(), anyInt());
+    verify(repairRunnerSpy, times(1)).reduceSegmentsPerNodeToScheduleForUnit();
+  }
+
+  @Test
+  public void adaptiveRepairAddSegmentsTest() throws Exception {
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
+    final Map<String, String> nodeMap = ImmutableMap.of(
+        "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
+        );
+    final Set<String> datacenters = Collections.emptySet();
+    final Set<String> blacklistedTables = Collections.emptySet();
+    final double intensity = 0.5f;
+    final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
+    final List<BigInteger> tokens = Lists.newArrayList(
+        BigInteger.valueOf(0L),
+        BigInteger.valueOf(100L),
+        BigInteger.valueOf(200L));
+    final AppContext context = new AppContext();
+    context.storage = Mockito.mock(CassandraStorage.class);
+    RepairUnit repairUnit = RepairUnit.builder()
+          .clusterName(cluster.getName())
+          .keyspaceName(ksName)
+          .columnFamilies(cfNames)
+          .incrementalRepair(incrementalRepair)
+          .nodes(nodeSet)
+          .datacenters(datacenters)
+          .blacklistedTables(blacklistedTables)
+          .repairThreadCount(repairThreadCount)
+          .timeout(segmentTimeout)
+          .build(UUID.randomUUID());
+
+    RepairRun run = RepairRun.builder(cluster.getName(), repairUnit.getId())
+          .intensity(intensity)
+          .segmentCount(100)
+          .repairParallelism(RepairParallelism.PARALLEL)
+          .adaptiveSchedule(true)
+          .tables(TABLES).build(UUID.randomUUID());
+
+    RepairSchedule repairSchedule = RepairSchedule.builder(repairUnit.getId())
+        .adaptive(true)
+        .daysBetween(1)
+        .intensity(1)
+        .owner("reaper")
+        .segmentCountPerNode(64)
+        .state(RepairSchedule.State.ACTIVE)
+        .nextActivation(DateTime.now())
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .build(UUID.randomUUID());
+    Collection<RepairSchedule> schedules = Lists.newArrayList(repairSchedule);
+
+    List<RepairSegment> segments = generateRepairSegments(100, 35, 10, repairUnit.getId());
+    Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
+    Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
+    Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    Mockito.when(((CassandraStorage) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when((((CassandraStorage) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
+        .thenReturn(schedules);
+
+    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
+    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    JmxProxy jmx = mock(JmxProxy.class);
+    when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
+    when(jmx.getClusterName()).thenReturn(cluster.getName());
+    when(jmx.isConnectionAlive()).thenReturn(true);
+    when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
+    when(jmx.getEndpointToHostId()).thenReturn(nodeMap);
+    when(jmx.getTokens()).thenReturn(tokens);
+    when(jmx.isRepairRunning()).thenReturn(true);
+    when(jmx.getPendingCompactions()).thenReturn(3);
+    context.jmxConnectionFactory = jmxConnectionFactory;
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
+
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+
+    RepairRunner repairRunner = RepairRunner.create(
+        context,
+        UUID.randomUUID(),
+        clusterFacade);
+
+    RepairRunner repairRunnerSpy = Mockito.spy(repairRunner);
+
+    repairRunnerSpy.maybeAdaptRepairSchedule();
+    verify(repairRunnerSpy, times(1)).tuneAdaptiveRepair(anyDouble(), anyInt());
+    verify(repairRunnerSpy, times(1)).addSegmentsPerNodeToScheduleForUnit();
+  }
+
+  @Test
+  public void adaptiveRepairRaiseTimeoutTest() throws Exception {
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
+    final Map<String, String> nodeMap = ImmutableMap.of(
+        "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
+        );
+    final Set<String> datacenters = Collections.emptySet();
+    final Set<String> blacklistedTables = Collections.emptySet();
+    final double intensity = 0.5f;
+    final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
+    final int maxDuration = 10;
+    final List<BigInteger> tokens = Lists.newArrayList(
+        BigInteger.valueOf(0L),
+        BigInteger.valueOf(100L),
+        BigInteger.valueOf(200L));
+    final AppContext context = new AppContext();
+    context.storage = Mockito.mock(CassandraStorage.class);
+    RepairUnit repairUnit = RepairUnit.builder()
+          .clusterName(cluster.getName())
+          .keyspaceName(ksName)
+          .columnFamilies(cfNames)
+          .incrementalRepair(incrementalRepair)
+          .nodes(nodeSet)
+          .datacenters(datacenters)
+          .blacklistedTables(blacklistedTables)
+          .repairThreadCount(repairThreadCount)
+          .timeout(segmentTimeout)
+          .build(UUID.randomUUID());
+
+    RepairRun run = RepairRun.builder(cluster.getName(), repairUnit.getId())
+          .intensity(intensity)
+          .segmentCount(100)
+          .repairParallelism(RepairParallelism.PARALLEL)
+          .adaptiveSchedule(true)
+          .tables(TABLES).build(UUID.randomUUID());
+
+    RepairSchedule repairSchedule = RepairSchedule.builder(repairUnit.getId())
+        .adaptive(true)
+        .daysBetween(1)
+        .intensity(1)
+        .owner("reaper")
+        .segmentCountPerNode(64)
+        .state(RepairSchedule.State.ACTIVE)
+        .nextActivation(DateTime.now())
+        .repairParallelism(RepairParallelism.DATACENTER_AWARE)
+        .build(UUID.randomUUID());
+    Collection<RepairSchedule> schedules = Lists.newArrayList(repairSchedule);
+
+    List<RepairSegment> segments = generateRepairSegments(100, 10, maxDuration, repairUnit.getId());
+    Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
+    Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
+    Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    Mockito.when(((CassandraStorage) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
+    Mockito.when((((CassandraStorage) context.storage).getRepairSchedulesForClusterAndKeyspace(any(), any())))
+        .thenReturn(schedules);
+
+    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
+    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    JmxProxy jmx = mock(JmxProxy.class);
+    when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
+    when(jmx.getClusterName()).thenReturn(cluster.getName());
+    when(jmx.isConnectionAlive()).thenReturn(true);
+    when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
+    when(jmx.getEndpointToHostId()).thenReturn(nodeMap);
+    when(jmx.getTokens()).thenReturn(tokens);
+    when(jmx.isRepairRunning()).thenReturn(true);
+    when(jmx.getPendingCompactions()).thenReturn(3);
+    context.jmxConnectionFactory = jmxConnectionFactory;
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
+
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+
+    RepairRunner repairRunner = RepairRunner.create(
+        context,
+        UUID.randomUUID(),
+        clusterFacade);
+
+    RepairRunner repairRunnerSpy = Mockito.spy(repairRunner);
+
+    repairRunnerSpy.maybeAdaptRepairSchedule();
+    verify(repairRunnerSpy, times(1)).tuneAdaptiveRepair(anyDouble(), anyInt());
+    verify(repairRunnerSpy, times(1)).raiseTimeoutOfUnit();
+  }
+
+  @Test
+  public void notAdaptiveScheduleTest() throws Exception {
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
+    final Map<String, String> nodeMap = ImmutableMap.of(
+        "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
+        );
+    final Set<String> datacenters = Collections.emptySet();
+    final Set<String> blacklistedTables = Collections.emptySet();
+    final double intensity = 0.5f;
+    final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
+    final int maxDuration = 10;
+    final List<BigInteger> tokens = Lists.newArrayList(
+        BigInteger.valueOf(0L),
+        BigInteger.valueOf(100L),
+        BigInteger.valueOf(200L));
+    final AppContext context = new AppContext();
+    context.storage = Mockito.mock(CassandraStorage.class);
+    RepairUnit repairUnit = RepairUnit.builder()
+          .clusterName(cluster.getName())
+          .keyspaceName(ksName)
+          .columnFamilies(cfNames)
+          .incrementalRepair(incrementalRepair)
+          .nodes(nodeSet)
+          .datacenters(datacenters)
+          .blacklistedTables(blacklistedTables)
+          .repairThreadCount(repairThreadCount)
+          .timeout(segmentTimeout)
+          .build(UUID.randomUUID());
+
+    RepairRun run = RepairRun.builder(cluster.getName(), repairUnit.getId())
+          .intensity(intensity)
+          .segmentCount(100)
+          .repairParallelism(RepairParallelism.PARALLEL)
+          .adaptiveSchedule(false)
+          .tables(TABLES).build(UUID.randomUUID());
+
+    List<RepairSegment> segments = generateRepairSegments(100, 30, maxDuration, repairUnit.getId());
+    Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
+    Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
+    Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    Mockito.when(((CassandraStorage) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
+
+    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
+    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
+    JmxProxy jmx = mock(JmxProxy.class);
+    when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
+    when(jmx.getClusterName()).thenReturn(cluster.getName());
+    when(jmx.isConnectionAlive()).thenReturn(true);
+    when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.threeNodeClusterWithIps());
+    when(jmx.getEndpointToHostId()).thenReturn(nodeMap);
+    when(jmx.getTokens()).thenReturn(tokens);
+    when(jmx.isRepairRunning()).thenReturn(true);
+    when(jmx.getPendingCompactions()).thenReturn(3);
+    context.jmxConnectionFactory = jmxConnectionFactory;
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
+
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+
+    RepairRunner repairRunner = RepairRunner.create(
+        context,
+        UUID.randomUUID(),
+        clusterFacade);
+
+    RepairRunner repairRunnerSpy = Mockito.spy(repairRunner);
+
+    repairRunnerSpy.maybeAdaptRepairSchedule();
+    verify(repairRunnerSpy, Mockito.never()).tuneAdaptiveRepair(anyDouble(), anyInt());
+  }
+
+  private List<RepairSegment> generateRepairSegments(
+      int nbSegments,
+      int extendedSegments,
+      int segmentDuration,
+      UUID repairUnitId) {
+    List<RepairSegment> segments = Lists.newArrayList();
+    for (int i = 0; i < nbSegments; i++) {
+      int failCount = extendedSegments > i ? 1 : 0;
+      DateTime startTime = DateTime.now();
+      RepairSegment segment = RepairSegment.builder(mock(Segment.class), repairUnitId)
+          .withStartTime(startTime)
+          .withEndTime(startTime.plusMinutes(segmentDuration))
+          .withFailCount(failCount)
+          .withId(UUID.randomUUID())
+          .withRunId(repairUnitId)
+          .withState(RepairSegment.State.DONE)
+          .build();
+      segments.add(segment);
+    }
+    return segments;
   }
 }

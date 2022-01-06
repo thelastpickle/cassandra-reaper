@@ -167,12 +167,14 @@ const TableRowDetails = CreateReactClass({
 
     var metrics = ["io.cassandrareaper.service.RepairRunner.repairProgress", "io.cassandrareaper.service.RepairRunner.segmentsDone",
                    "io.cassandrareaper.service.RepairRunner.segmentsTotal", "io.cassandrareaper.service.RepairRunner.millisSinceLastRepair"];
-  let cleanupRegex = /[^A-Za-z0-9]/mg
-  let availableMetrics = metrics.map(metric => <div key={metric + this.props.row.repair_unit_id}>
-      {metric + "." 
-        + this.props.row.cluster_name.replace(cleanupRegex, "") + "." 
-        + this.props.row.keyspace_name.replace(cleanupRegex, "") + "." 
-        + this.props.row.repair_unit_id.replace(cleanupRegex, "")}</div>)
+    let cleanupRegex = /[^A-Za-z0-9]/mg
+    let availableMetrics = metrics.map(metric => <div key={metric + this.props.row.repair_unit_id}>
+        {metric + "." 
+          + this.props.row.cluster_name.replace(cleanupRegex, "") + "." 
+          + this.props.row.keyspace_name.replace(cleanupRegex, "") + "." 
+          + this.props.row.repair_unit_id.replace(cleanupRegex, "")}</div>);
+
+    const adaptiveSchedule = this.props.row.adaptive_schedule == true ? "true" : "false";
     return (
       <tr id={rowID} className="collapse out">
         <td colSpan="7">
@@ -235,6 +237,10 @@ const TableRowDetails = CreateReactClass({
                     <td>{this.props.row.repair_thread_count}</td>
                 </tr>
                 <tr>
+                    <td>Segment timeout (mins)</td>
+                    <td>{this.props.row.segment_timeout}</td>
+                </tr>
+                <tr>
                     <td>Nodes</td>
                     <td><CFsListRender list={this.props.row.nodes} /></td>
                 </tr>
@@ -253,6 +259,10 @@ const TableRowDetails = CreateReactClass({
                 <tr>
                     <td>Available metrics<br/><i>(can require a full run before appearing)</i></td>
                     <td>{availableMetrics}</td>
+                </tr>
+                <tr>
+                    <td>Adaptive Schedule</td>
+                    <td>{adaptiveSchedule}</td>
                 </tr>
             </tbody>
           </table>

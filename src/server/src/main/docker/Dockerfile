@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM adoptopenjdk/openjdk8:alpine
+FROM adoptopenjdk/openjdk11:alpine
 
 ARG SHADED_JAR
 
@@ -38,6 +38,9 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
     REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS=PT10M \
     REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE=PT5M \
     REAPER_AUTO_SCHEDULING_SCHEDULE_SPREAD_PERIOD=PT6H \
+    REAPER_AUTO_SCHEDULING_ADAPTIVE=true \
+    REAPER_AUTO_SCHEDULING_INCREMENTAL=false \
+    REAPER_AUTO_SCHEDULING_PERCENT_UNREPAIRED_THRESHOLD=10 \
     REAPER_AUTO_SCHEDULING_EXCLUDED_CLUSTERS="[]" \
     REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES="[]" \
     REAPER_JMX_PORTS="{}" \
@@ -62,7 +65,7 @@ ENV REAPER_SEGMENT_COUNT_PER_NODE=64 \
     REAPER_CASS_AUTH_USERNAME="cassandra" \
     REAPER_CASS_AUTH_PASSWORD="cassandra" \
     REAPER_CASS_NATIVE_PROTOCOL_SSL_ENCRYPTION_ENABLED="false" \
-    REAPER_DB_URL="jdbc:h2:/var/lib/cassandra-reaper/db;MODE=PostgreSQL" \
+    REAPER_DB_URL="" \
     REAPER_DB_USERNAME="" \
     REAPER_DB_PASSWORD="" \
     REAPER_METRICS_ENABLED=false \
@@ -86,8 +89,8 @@ RUN apk add --update \
   && rm -rf /var/cache/apk/*
 
 
-ADD cassandra-reaper.yml /etc/cassandra-reaper.yml
-ADD shiro.ini /etc/shiro.ini
+ADD cassandra-reaper.yml /etc/cassandra-reaper/cassandra-reaper.yml
+ADD shiro.ini /etc/cassandra-reaper/shiro.ini
 ADD entrypoint.sh /usr/local/bin/entrypoint.sh
 ADD configure-persistence.sh /usr/local/bin/configure-persistence.sh
 ADD configure-metrics.sh /usr/local/bin/configure-metrics.sh
@@ -97,18 +100,18 @@ ADD ${SHADED_JAR} /usr/local/lib/cassandra-reaper.jar
 ADD spreaper /usr/local/bin/spreaper
 
 
-# get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper.yml: Interrupted system call` unknown error
-RUN touch /etc/cassandra-reaper.yml
-# get around `/usr/local/bin/configure-webui-authentication.sh: line 44: can't `create` /etc/shiro.ini: Interrupted system call` unknown error
-RUN touch /etc/shiro.ini
+# get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper/cassandra-reaper.yml: Interrupted system call` unknown error
+RUN touch /etc/cassandra-reaper/cassandra-reaper.yml
+# get around `/usr/local/bin/configure-webui-authentication.sh: line 44: can't `create` /etc/cassandra-reaper/shiro.ini: Interrupted system call` unknown error
+RUN touch /etc/cassandra-reaper/shiro.ini
 
 
 RUN adduser -S -D -H -u 1001 -s /sbin/nologin -G root -g reaper reaper && \
     mkdir -p /var/lib/cassandra-reaper && \
     mkdir -p /etc/cassandra-reaper/shiro && \
     mkdir -p /var/log/cassandra-reaper && \
-    chown reaper:root \
-        /etc/cassandra-reaper.yml \
+    chown reaper:reaper \
+        /etc/cassandra-reaper/cassandra-reaper.yml \
         /usr/local/lib/cassandra-reaper.jar \
         /usr/local/bin/entrypoint.sh \
         /usr/local/bin/configure-persistence.sh \
@@ -116,8 +119,8 @@ RUN adduser -S -D -H -u 1001 -s /sbin/nologin -G root -g reaper reaper && \
         /usr/local/bin/configure-metrics.sh \
         /usr/local/bin/configure-jmx-credentials.sh \
         /usr/local/bin/spreaper \
-        /etc/shiro.ini && \
-    chown -R reaper:root \
+        /etc/cassandra-reaper/shiro.ini && \
+    chown -R reaper:reaper \
         /var/lib/cassandra-reaper \
         /etc/cassandra-reaper/shiro \
         /var/log/cassandra-reaper && \

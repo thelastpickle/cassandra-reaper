@@ -23,11 +23,7 @@ import java.util.UUID;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import io.dropwizard.db.DataSourceFactory;
-import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.setup.Environment;
-import org.apache.commons.lang3.StringUtils;
-import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +52,7 @@ public final class InitializeStorage {
   }
 
   public IStorage initializeStorageBackend()
-    throws ReaperException {
+      throws ReaperException {
     IStorage storage;
     LOG.info("Initializing the database and performing schema migrations");
 
@@ -67,53 +63,11 @@ public final class InitializeStorage {
           ? CassandraStorage.CassandraMode.CASSANDRA
           : CassandraStorage.CassandraMode.ASTRA;
       storage = new CassandraStorage(reaperInstanceId, config, environment, mode);
-    } else if ("postgres".equalsIgnoreCase(config.getStorageType())
-        || "h2".equalsIgnoreCase(config.getStorageType())
-        || "database".equalsIgnoreCase(config.getStorageType())) {
-      // create DBI instance
-      final DBIFactory factory = new DBIFactory();
-      if (StringUtils.isEmpty(config.getDataSourceFactory().getDriverClass())
-          && "postgres".equalsIgnoreCase(config.getStorageType())) {
-        config.getDataSourceFactory().setDriverClass("org.postgresql.Driver");
-      } else if (StringUtils.isEmpty(config.getDataSourceFactory().getDriverClass())
-          && "h2".equalsIgnoreCase(config.getStorageType())) {
-        config.getDataSourceFactory().setDriverClass("org.h2.Driver");
-      }
-      // instantiate store
-      storage = new PostgresStorage(
-          reaperInstanceId,
-          factory.build(environment, config.getDataSourceFactory(), "postgresql")
-      );
-      initDatabase(config);
     } else {
       LOG.error("invalid storageType: {}", config.getStorageType());
       throw new ReaperException("invalid storage type: " + config.getStorageType());
     }
     Preconditions.checkState(storage.isStorageConnected(), "Failed to connect storage");
     return storage;
-  }
-
-  private void initDatabase(ReaperApplicationConfiguration config) throws ReaperException {
-    Flyway flyway = new Flyway();
-    DataSourceFactory dsfactory = config.getDataSourceFactory();
-    flyway.setDataSource(
-        dsfactory.getUrl(),
-        dsfactory.getUser(),
-        dsfactory.getPassword());
-
-    if ("database".equals(config.getStorageType())) {
-      LOG.warn("!!!!!!!!!!    USAGE 'database' AS STORAGE TYPE IS NOW DEPRECATED   !!!!!!!!!!!!!!");
-      LOG.warn("!!!!!!!!!!    PLEASE USE EITHER 'postgres' OR 'h2' FROM NOW ON     !!!!!!!!!!!!!!");
-      if (config.getDataSourceFactory().getUrl().contains("h2")) {
-        flyway.setLocations("/db/h2");
-      } else {
-        flyway.setLocations("/db/postgres");
-      }
-    } else {
-      flyway.setLocations("/db/".concat(config.getStorageType().toLowerCase()));
-    }
-    flyway.setBaselineOnMigrate(true);
-    flyway.repair();
-    flyway.migrate();
   }
 }

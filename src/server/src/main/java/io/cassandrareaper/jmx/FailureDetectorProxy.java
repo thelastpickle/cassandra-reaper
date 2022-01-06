@@ -17,8 +17,6 @@
 
 package io.cassandrareaper.jmx;
 
-
-
 import java.util.Map;
 
 import com.google.common.base.Preconditions;

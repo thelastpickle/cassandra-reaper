@@ -16,11 +16,8 @@
 import React from "react";
 import CreateReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
-import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
-import Modal from 'react-bootstrap/lib/Modal';
-import Tooltip from 'react-bootstrap/lib/Tooltip';
+import {humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
 import OverlayTrigger from 'react-bootstrap/lib/OverlayTrigger';
-import ProgressBar from 'react-bootstrap/lib/ProgressBar';
 import Popover from 'react-bootstrap/lib/Popover';
 import $ from "jquery";
 var NotificationSystem = require('react-notification-system');
@@ -45,7 +42,7 @@ const Snapshot = CreateReactClass({
       this.setState({communicating: true});
       toast(this.props.notificationSystem, "Clearing snapshot " + this.props.snapshotName + " on node " + this.props.endpoint, "warning", this.props.snapshotName);
       $.ajax({
-        url: getUrlPrefix(window.top.location.pathname) + '/snapshot/' +  encodeURIComponent(this.props.clusterName) + '/' + encodeURIComponent(this.props.endpoint) + "/" + this.props.snapshotName,
+        url: getUrlPrefix(window.top.location.pathname) + '/snapshot/cluster/' +  encodeURIComponent(this.props.clusterName) + '/' + encodeURIComponent(this.props.endpoint) + "/" + this.props.snapshotName,
         method: 'DELETE',
         component: this,
         dataType: 'text',
