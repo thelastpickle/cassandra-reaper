@@ -50,15 +50,7 @@ final class ReaperDbMigrationCommand extends ConfiguredCommand<ReaperApplication
                                                         bootstrap.getClassLoader(),
                                                         bootstrap.getHealthCheckRegistry(),
                                                         configuration);
-    boolean skipMigration = System.getenv().containsKey("REAPER_SKIP_SCHEMA_MIGRATION")
-        ? Boolean.parseBoolean(System.getenv("REAPER_SKIP_SCHEMA_MIGRATION"))
-        : Boolean.FALSE;
-
-    if (skipMigration) {
-      LOG.info("Skipping schema migration as requested.");
-    } else {
-      InitializeStorage.initializeStorage(configuration, environment).initializeStorageBackend();
-    }
+    InitializeStorage.initializeStorage(configuration, environment).initializeStorageBackend();
     System.exit(0);
   }
 }
