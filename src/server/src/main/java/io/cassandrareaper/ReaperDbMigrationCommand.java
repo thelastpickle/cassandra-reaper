@@ -24,8 +24,11 @@ import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class ReaperDbMigrationCommand extends ConfiguredCommand<ReaperApplicationConfiguration> {
+  private static final Logger LOG = LoggerFactory.getLogger(ReaperDbMigrationCommand.class);
 
   protected ReaperDbMigrationCommand(
       String name,
@@ -47,7 +50,15 @@ final class ReaperDbMigrationCommand extends ConfiguredCommand<ReaperApplication
                                                         bootstrap.getClassLoader(),
                                                         bootstrap.getHealthCheckRegistry(),
                                                         configuration);
-    InitializeStorage.initializeStorage(configuration, environment).initializeStorageBackend();
+    boolean skipMigration = System.getenv().containsKey("REAPER_SKIP_SCHEMA_MIGRATION")
+        ? Boolean.parseBoolean(System.getenv("REAPER_SKIP_SCHEMA_MIGRATION"))
+        : Boolean.FALSE;
+
+    if (skipMigration) {
+      LOG.info("Skipping schema migration as requested.");
+    } else {
+      InitializeStorage.initializeStorage(configuration, environment).initializeStorageBackend();
+    }
     System.exit(0);
   }
 }
