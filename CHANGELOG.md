@@ -1,5 +1,8 @@
 ## Change Log
 
+### 3.1.1 (2022/02/10 13:32 +00:00)
+- [5b1cde6](https://github.com/thelastpickle/cassandra-reaper/commit/5b1cde6100b0ae54582be9f55e1534071cdb0ec7) Add a way to skip schema migrations (@adejanovski)
+
 ### 3.1.0 (2021/12/14 10:15 +00:00)
 - [#1152](https://github.com/thelastpickle/cassandra-reaper/pull/1152) Update to the newer version of Fossa's CLI (#1152) (@jdonenine)
 - [a6d1724](https://github.com/thelastpickle/cassandra-reaper/commit/a6d17245182b53b5abcab64ef32150c261122df4) Upgrade to Dropwizard 2.0 (@adejanovski)
