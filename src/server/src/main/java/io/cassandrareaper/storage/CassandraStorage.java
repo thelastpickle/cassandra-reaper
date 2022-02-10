@@ -242,7 +242,15 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .min(VersionNumber::compareTo)
         .get();
 
-    initializeAndUpgradeSchema(cassandra, session, config, version, mode);
+    boolean skipMigration = System.getenv().containsKey("REAPER_SKIP_SCHEMA_MIGRATION")
+        ? Boolean.parseBoolean(System.getenv("REAPER_SKIP_SCHEMA_MIGRATION"))
+        : Boolean.FALSE;
+
+    if (skipMigration) {
+      LOG.info("Skipping schema migration as requested.");
+    } else {
+      initializeAndUpgradeSchema(cassandra, session, config, version, mode);
+    }
     prepareStatements();
   }
 
