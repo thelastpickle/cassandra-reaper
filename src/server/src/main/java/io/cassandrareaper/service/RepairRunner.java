@@ -36,6 +36,7 @@ import io.cassandrareaper.storage.IDistributedStorage;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -81,6 +82,7 @@ final class RepairRunner implements Runnable {
 
   private final AppContext context;
   private final ClusterFacade clusterFacade;
+  private final RepairRunService repairRunService;
   private final UUID repairRunId;
   private final String clusterName;
   private final String metricNameForMillisSinceLastRepairPerKeyspace;
@@ -100,6 +102,7 @@ final class RepairRunner implements Runnable {
     LOG.debug("Creating RepairRunner for run with ID {}", repairRunId);
     this.context = context;
     this.clusterFacade = clusterFacade;
+    this.repairRunService = RepairRunService.create(context);
     this.repairRunId = repairRunId;
     Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
@@ -407,12 +410,15 @@ final class RepairRunner implements Runnable {
                 repairRunId);
 
     Optional<RepairSegment> nextRepairSegment = Optional.empty();
+    Collection<String> potentialReplicas = new HashSet<>();
     for (RepairSegment segment : nextRepairSegments) {
-      Collection<String> potentialReplicas = repairUnit.getIncrementalRepair()
+      Map<String, String> potentialReplicaMap = this.repairRunService.getDCsByNodeForRepairSegment(
+          cluster, segment.getTokenRange(), repairUnit.getKeyspaceName(), repairUnit);
+      potentialReplicas = repairUnit.getIncrementalRepair()
           ? Collections.singletonList(segment.getCoordinatorHost())
-          : segment.getReplicas().keySet();
+          : potentialReplicaMap.keySet();
       JmxProxy coordinator = clusterFacade.connect(cluster, potentialReplicas);
-      if (nodesReadyForNewRepair(coordinator, segment, segment.getReplicas(), repairRunId)) {
+      if (nodesReadyForNewRepair(coordinator, segment, potentialReplicaMap, repairRunId)) {
         nextRepairSegment = Optional.of(segment);
         break;
       }
@@ -425,7 +431,8 @@ final class RepairRunner implements Runnable {
       LOG.info("Next segment to run : {}", nextRepairSegment.get().getId());
       scheduleRetry = repairSegment(
               nextRepairSegment.get().getId(),
-              nextRepairSegment.get().getTokenRange());
+              nextRepairSegment.get().getTokenRange(),
+              potentialReplicas);
       if (scheduleRetry) {
         segmentsTotal = context.storage.getSegmentAmountForRepairRun(repairRunId);
         repairStarted = true;
@@ -554,7 +561,7 @@ final class RepairRunner implements Runnable {
    * @return Boolean indicating whether rescheduling next run is needed.
    * @throws ReaperException any runtime exception we caught in the execution
    */
-  private boolean repairSegment(final UUID segmentId, Segment segment)
+  private boolean repairSegment(final UUID segmentId, Segment segment, Collection<String> segmentReplicas)
       throws InterruptedException, ReaperException {
 
     RepairRun repairRun;
@@ -578,7 +585,6 @@ final class RepairRunner implements Runnable {
 
     List<String> potentialCoordinators;
     if (!repairUnit.getIncrementalRepair()) {
-      Set<String> segmentReplicas = segment.getReplicas().keySet();
       // full repair
       try {
         potentialCoordinators = filterPotentialCoordinatorsByDatacenters(
@@ -586,7 +592,7 @@ final class RepairRunner implements Runnable {
                 clusterFacade.tokenRangeToEndpoint(cluster, keyspace, segment));
 
       } catch (RuntimeException e) {
-        LOG.warn("Couldn't get token ranges from coordinator: #{}", e);
+        LOG.warn("Couldn't get token ranges from coordinator", e);
         return true;
       }
       if (potentialCoordinators.isEmpty()) {
@@ -601,33 +607,6 @@ final class RepairRunner implements Runnable {
                   .with()
                   .runState(RepairRun.RunState.ERROR)
                   .lastEvent(String.format("No coordinators for range %s", segment))
-                  .endTime(DateTime.now())
-                  .build(repairRunId));
-
-          context.metricRegistry.counter(
-            MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.ERROR.toString())).inc();
-
-          killAndCleanupRunner();
-        }
-
-        return false;
-      } else if (
-          !Sets.difference(
-            segmentReplicas,
-            potentialCoordinators.stream().collect(Collectors.toSet())).isEmpty()) {
-        LOG.warn(
-            "Segment #{} is faulty, replica set changed since repair was started: {}",
-            segmentId,
-            segment.toString());
-        // This segment has a faulty token range. Abort the entire repair run.
-        synchronized (this) {
-          context.storage.updateRepairRun(
-              context.storage.getRepairRun(repairRunId).get()
-                  .with()
-                  .runState(RepairRun.RunState.ERROR)
-                  .lastEvent(String.format("Replica set changed for segment %s on range %s",
-                      segmentId,
-                      segment))
                   .endTime(DateTime.now())
                   .build(repairRunId));
 

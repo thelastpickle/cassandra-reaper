@@ -205,7 +205,6 @@ public final class RepairRunService {
     return segmentsWithReplicas;
   }
 
-  @VisibleForTesting
   Map<String, String> getDCsByNodeForRepairSegment(
       Cluster cluster,
       Segment segment,
