@@ -82,13 +82,17 @@ if [ -z $JAVA ] ; then
     exit 1;
 fi
 
+if [ -z "$REAPER_HEAP_SIZE" ]; then
+    REAPER_HEAP_SIZE="2G"
+fi
+
 
 JVM_OPTS=(
     # it is safe and performant to disable assertions in production
     # environments (ie replace `-ea` with `-da`)
     -ea
-    -Xms2G
-    -Xmx2G
+    -Xms${REAPER_HEAP_SIZE}
+    -Xmx${REAPER_HEAP_SIZE}
     ${JVM_OPTS[@]}
     # Prefer binding to IPv4 network intefaces (when net.ipv6.bindv6only=1). See
     # http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6342561 (short version:
