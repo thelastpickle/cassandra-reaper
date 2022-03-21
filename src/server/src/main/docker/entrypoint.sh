@@ -33,6 +33,9 @@ function wait_for {
 
 if [ "$1" = 'cassandra-reaper' ]; then
 
+    if [ -z "$REAPER_HEAP_SIZE" ]; then
+        REAPER_HEAP_SIZE="1G"
+    fi
     # get around `/usr/local/bin/configure-persistence.sh: line 65: can't create /etc/cassandra-reaper/cassandra-reaper.yml: Interrupted system call` unknown error
     touch /etc/cassandra-reaper/cassandra-reaper.yml
 
@@ -42,6 +45,8 @@ if [ "$1" = 'cassandra-reaper' ]; then
     /usr/local/bin/configure-jmx-credentials.sh
     exec java \
             ${JAVA_OPTS} \
+            -Xms${REAPER_HEAP_SIZE} \
+            -Xmx${REAPER_HEAP_SIZE} \
             -cp "/usr/local/lib/*" io.cassandrareaper.ReaperApplication server \
             /etc/cassandra-reaper/cassandra-reaper.yml
 fi
