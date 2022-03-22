@@ -30,11 +30,11 @@ RUN apt-get update \
         build-essential \
         git \
         openjdk-8-jdk \
+        openjdk-11-jdk \
         maven \
         nodejs \
         rpm \
         ruby-dev \
-    && apt-get remove --purge -y openjdk-11-jre-headless \
     && mvn --version \
     && gem install fpm \
     && npm install -g bower
@@ -44,3 +44,4 @@ WORKDIR ${WORKDIR}
 # Add entrypoint script
 COPY src/packaging/docker-build/docker-entrypoint.sh ${WORKDIR}
 ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]
+CMD [""]
