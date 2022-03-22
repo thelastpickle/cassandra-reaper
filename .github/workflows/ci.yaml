@@ -54,9 +54,6 @@ jobs:
         with:
           node-version: '10.x'
 
-      - name: Setup bower
-        run: npm install -g bower
-
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
@@ -102,9 +99,6 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Setup Python
         uses: actions/setup-python@v1
@@ -187,9 +181,6 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Setup Python
         uses: actions/setup-python@v1
@@ -283,9 +274,6 @@ jobs:
         with:
           node-version: '10.x'
 
-      - name: Setup bower
-        run: npm install -g bower
-
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
@@ -356,9 +344,6 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Install ECM
         run: |
@@ -454,9 +439,6 @@ jobs:
         with:
           node-version: '10.x'
 
-      - name: Setup bower
-        run: npm install -g bower
-
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
@@ -531,9 +513,6 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Setup Python
         uses: actions/setup-python@v1
@@ -627,9 +606,6 @@ jobs:
         with:
           node-version: '10.x'
 
-      - name: Setup bower
-        run: npm install -g bower
-
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
@@ -708,9 +684,6 @@ jobs:
         with:
           node-version: '10.x'
 
-      - name: Setup bower
-        run: npm install -g bower
-
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
@@ -780,9 +753,6 @@ jobs:
         with:
           node-version: '10.x'
 
-      - name: Setup bower
-        run: npm install -g bower
-
       - name: Install ECM
         run: |
           wget -O ecm-ccm-elassandra.zip https://github.com/strapdata/ecm/archive/ccm-elassandra.zip
@@ -843,9 +813,6 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Setup Python
         uses: actions/setup-python@v1
