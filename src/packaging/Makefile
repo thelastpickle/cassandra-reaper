@@ -13,10 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package:
+REAPER_JAR=../server/target/cassandra-reaper-$(VERSION).jar
+
+$(REAPER_JAR) package:
 	mvn -B clean package  -f ../../pom.xml -DskipTests
 
-prepare:
+prepare: $(REAPER_JAR)
 	echo "$(VERSION)..."
 	rm -Rf packages/*
 	rm -Rf build/*
@@ -43,7 +45,7 @@ deb: prepare
 rpm: prepare
 	fpm -s dir -t rpm -n reaper -v $(VERSION) --pre-install redhat/preinstall.sh --post-install redhat/postinstall.sh --config-files /etc/cassandra-reaper/cassandra-reaper.yaml -C build .
 
-all: package deb rpm
+all: $(REAPER_JAR) deb rpm
 
 build-packages: deb rpm
 
