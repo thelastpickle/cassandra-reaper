@@ -172,7 +172,7 @@ In order for the Cassandra backend to be used, `REAPER_STORAGE_TYPE` must be set
 <code class="codeLarge">REAPER_CASS_CLUSTER_NAME</code> | [clusterName]({{< relref "backend_specific.md#clustername" >}}) | clustername
 <code class="codeLarge">REAPER_CASS_CONTACT_POINTS</code> | [contactPoints]({{< relref "backend_specific.md#contactpoints" >}}) | []
 <code class="codeLarge">REAPER_CASS_PORT</code> | [port]({{< relref "backend_specific.md#port" >}}) | []
-<code class="codeLarge">REAPER_CASS_KEYSPACE</code> | [keyspace]({{< relref "backend_specific.md#keyspace" >}}) | cassandra-reaper
+<code class="codeLarge">REAPER_CASS_KEYSPACE</code> | [keyspace]({{< relref "backend_specific.md#keyspace" >}}) | reaper_db
 <code class="codeLarge">REAPER_CASS_LOCAL_DC</code> | [localDC]({{< relref "backend_specific.md#localdc" >}}) |
 <code class="codeLarge">REAPER_CASS_AUTH_USERNAME</code> | [username]({{< relref "backend_specific.md#username" >}}) | cassandra
 <code class="codeLarge">REAPER_CASS_AUTH_PASSWORD</code> | [password]({{< relref "backend_specific.md#password" >}}) | cassandra
