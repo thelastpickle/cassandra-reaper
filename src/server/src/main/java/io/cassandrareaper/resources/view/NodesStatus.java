@@ -43,6 +43,7 @@ public final class NodesStatus {
   private static final List<Pattern> ENDPOINT_SEVERITY_PATTERNS = Lists.newArrayList();
   private static final List<Pattern> ENDPOINT_HOSTID_PATTERNS = Lists.newArrayList();
   private static final List<Pattern> ENDPOINT_TOKENS_PATTERNS = Lists.newArrayList();
+  private static final List<Pattern> ENDPOINT_TYPE_PATTERNS = Lists.newArrayList();
 
   private static final Pattern ENDPOINT_NAME_PATTERN_IP4
       = Pattern.compile("^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3})", Pattern.MULTILINE | Pattern.DOTALL);
@@ -65,6 +66,7 @@ public final class NodesStatus {
   private static final Pattern ENDPOINT_SEVERITY_21_PATTERN = Pattern.compile("(SEVERITY)(:)([0-9.]+)");
   private static final Pattern ENDPOINT_HOSTID_21_PATTERN = Pattern.compile("(HOST_ID)(:)([0-9a-z-]+)");
   private static final Pattern ENDPOINT_LOAD_SCYLLA_44_PATTERN = Pattern.compile("(LOAD)(:)([0-9eE.\\+]+)");
+  private static final Pattern ENDPOINT_TYPE_STARGATE_PATTERN = Pattern.compile("(X10):([0-9]*):(stargate)");
 
   private static final String NOT_AVAILABLE = "Not available";
 
@@ -146,6 +148,7 @@ public final class NodesStatus {
       Optional<String> tokens = parseEndpointState(ENDPOINT_TOKENS_PATTERNS, endpointString, 2, String.class);
       Optional<Double> load = parseEndpointState(ENDPOINT_LOAD_PATTERNS, endpointString, 3, Double.class);
       totalLoad += load.orElse(0.0);
+      Optional<String> stargate = parseEndpointState(ENDPOINT_TYPE_PATTERNS, endpointString, 3, String.class);
 
       EndpointState endpointState = new EndpointState(
           endpoint.orElse(NOT_AVAILABLE),
@@ -156,7 +159,8 @@ public final class NodesStatus {
           severity.orElse(0.0),
           releaseVersion.orElse(NOT_AVAILABLE),
           tokens.orElse(NOT_AVAILABLE),
-          load.orElse(0.0));
+          load.orElse(0.0),
+          stargate.isPresent());
 
       if (!status.orElse(NOT_AVAILABLE).toLowerCase().contains("left")
           && !status.orElse(NOT_AVAILABLE).toLowerCase().contains("removed")) {
@@ -207,6 +211,7 @@ public final class NodesStatus {
     ENDPOINT_SEVERITY_PATTERNS.addAll(Arrays.asList(ENDPOINT_SEVERITY_22_PATTERN, ENDPOINT_SEVERITY_21_PATTERN));
     ENDPOINT_HOSTID_PATTERNS.addAll(Arrays.asList(ENDPOINT_HOSTID_22_PATTERN, ENDPOINT_HOSTID_21_PATTERN));
     ENDPOINT_TOKENS_PATTERNS.add(ENDPOINT_TOKENS_22_PATTERN);
+    ENDPOINT_TYPE_PATTERNS.add(ENDPOINT_TYPE_STARGATE_PATTERN);
   }
 
   public static final class GossipInfo {
@@ -265,6 +270,9 @@ public final class NodesStatus {
     @JsonProperty
     public final Double load;
 
+    @JsonProperty
+    public final Boolean stargate;
+
     public EndpointState(
         String endpoint,
         String hostId,
@@ -274,7 +282,8 @@ public final class NodesStatus {
         Double severity,
         String releaseVersion,
         String tokens,
-        Double load) {
+        Double load,
+        Boolean stargate) {
 
       this.endpoint = endpoint;
       this.hostId = hostId;
@@ -285,6 +294,7 @@ public final class NodesStatus {
       this.releaseVersion = releaseVersion;
       this.tokens = tokens;
       this.load = load;
+      this.stargate = stargate;
     }
 
     public String getDc() {
@@ -322,7 +332,10 @@ public final class NodesStatus {
           + hostId
           + " / "
           + "Tokens : "
-          + tokens;
+          + tokens
+          + " / "
+          + "Stargate : "
+          + stargate;
     }
   }
 }
