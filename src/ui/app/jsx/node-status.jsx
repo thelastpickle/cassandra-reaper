@@ -213,8 +213,14 @@ const NodeStatus = CreateReactClass({
   
       let buttonStyle = "btn btn-xs btn-success";
       let largeButtonStyle = "btn btn-lg btn-static btn-success";
-  
-      if(!this.props.endpointStatus.status.endsWith('UP')){
+
+      // If the node is a Stargate node we won't have real status for it
+      // so we'll display it slightly differently
+      if (this.props.endpointStatus.stargate) {
+          buttonStyle = "btn btn-xs btn-info";
+          largeButtonStyle = "btn btn-lg btn-static btn-info";
+      // If it's not a stargate node, then we can appropriately use its status
+      } else if(!this.props.endpointStatus.status.endsWith('UP')){
         buttonStyle = "btn btn-xs btn-danger";
         largeButtonStyle = "btn btn-lg btn-static btn-danger";
       }
@@ -236,7 +242,13 @@ const NodeStatus = CreateReactClass({
       }
   
       const tooltip = (
-        <Tooltip id="tooltip"><strong>{this.props.endpointStatus.endpoint}</strong> ({humanFileSize(this.props.endpointStatus.load, 1024)})</Tooltip>
+        <Tooltip id="tooltip">
+          <strong>{this.props.endpointStatus.endpoint}</strong>
+          {this.props.endpointStatus.stargate &&
+            <span>&nbsp;(Stargate)</span>
+          }
+          &nbsp;({humanFileSize(this.props.endpointStatus.load, 1024)})
+        </Tooltip>
       );
 
       const tokenList = this.state.tokens.map(token => <div key={token}>{token}</div>);
