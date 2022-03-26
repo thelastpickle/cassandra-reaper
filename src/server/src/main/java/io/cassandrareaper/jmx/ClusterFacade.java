@@ -62,11 +62,13 @@ import javax.management.ReflectionException;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -74,6 +76,12 @@ import org.slf4j.LoggerFactory;
 
 
 public final class ClusterFacade {
+
+  /**
+   * Depth of metrics_node_v3 partitions in minutes
+   */
+  private static final int METRICS_PARTITIONING_TIME_MINS = 10;
+
   private static final Logger LOG = LoggerFactory.getLogger(ClusterFacade.class);
 
   private static final long CLUSTER_VERSIONS_TTL_SECONDS
@@ -197,8 +205,8 @@ public final class ClusterFacade {
    * @return a NodeStatus object with all nodes state
    * @throws ReaperException any runtime exception we catch
    */
-  public NodesStatus getNodesStatus(Cluster cluster, Collection<String> endpoints) throws ReaperException {
-    JmxProxy jmxProxy = connect(cluster, endpoints);
+  public NodesStatus getNodesStatus(Cluster cluster) throws ReaperException {
+    JmxProxy jmxProxy = connect(cluster);
     FailureDetectorProxy proxy = FailureDetectorProxy.create(jmxProxy);
     return new NodesStatus(jmxProxy.getHost(), proxy.getAllEndpointsState(), proxy.getSimpleStates());
   }
@@ -450,13 +458,15 @@ public final class ClusterFacade {
   public CompactionStats listActiveCompactions(Node node)
       throws MalformedObjectNameException, ReflectionException, ReaperException, InterruptedException, IOException {
 
-    String nodeDc = getDatacenter(node);
+    LOG.debug("Listing active compactions for node {}", node);
+    String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
     if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
+      LOG.debug("Yay!! Node {} in DC {} is accessible through JMX", node.getHostname(), nodeDc);
       // We have direct JMX access to the node
       return listCompactionStatsDirect(node);
     } else {
       // We don't have access to the node through JMX, so we'll get data from the database
-      LOG.info("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
+      LOG.debug("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
 
       String compactionsJson = ((IDistributedStorage)context.storage)
           .listOperations(node.getClusterName(), OpType.OP_COMPACTION, node.getHostname());
@@ -480,7 +490,7 @@ public final class ClusterFacade {
 
     CompactionProxy compactionProxy = CompactionProxy.create(connect(node), context.metricRegistry);
     return CompactionStats.builder()
-        .withPendingCompactions(compactionProxy.getPendingCompactions())
+        .withPendingCompactions(Optional.of(compactionProxy.getPendingCompactions()))
         .withActiveCompactions(compactionProxy.listActiveCompactions())
         .build();
   }
@@ -529,21 +539,22 @@ public final class ClusterFacade {
    */
   public List<MetricsHistogram> getClientRequestLatencies(Node node) throws ReaperException {
     try {
-      String nodeDc = getDatacenter(node);
+      String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
         MetricsProxy metricsProxy = MetricsProxy.create(connect(node));
         return convertToMetricsHistogram(
             MetricsProxy.convertToGenericMetrics(metricsProxy.collectLatencyMetrics(), node));
       } else {
+        // We look for metrics in the last two time based partitions to make sure we get a result
         return convertToMetricsHistogram(((IDistributedStorage)context.storage)
             .getMetrics(
                 node.getClusterName(),
                 Optional.of(node.getHostname()),
                 "org.apache.cassandra.metrics",
                 "ClientRequest",
-                DateTime.now().minusMinutes(1).getMillis()));
+                DateTime.now().minusMinutes(METRICS_PARTITIONING_TIME_MINS + 1).getMillis()));
       }
-    } catch (JMException | InterruptedException | IOException e) {
+    } catch (JMException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", node, e);
       throw new ReaperException(e);
     }
@@ -558,7 +569,7 @@ public final class ClusterFacade {
    */
   public List<DroppedMessages> getDroppedMessages(Node node) throws ReaperException {
     try {
-      String nodeDc = getDatacenter(node);
+      String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
         MetricsProxy proxy = MetricsProxy.create(connect(node));
         return convertToDroppedMessages(MetricsProxy.convertToGenericMetrics(proxy.collectDroppedMessages(), node));
@@ -571,7 +582,7 @@ public final class ClusterFacade {
                 "DroppedMessage",
                 DateTime.now().minusMinutes(1).getMillis()));
       }
-    } catch (JMException | InterruptedException | IOException e) {
+    } catch (JMException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", node, e);
       throw new ReaperException(e);
     }
@@ -601,7 +612,7 @@ public final class ClusterFacade {
    */
   public List<ThreadPoolStat> getTpStats(Node node) throws ReaperException {
     try {
-      String nodeDc = getDatacenter(node);
+      String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
       if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
         MetricsProxy proxy = MetricsProxy.create(connect(node));
         return convertToThreadPoolStats(MetricsProxy.convertToGenericMetrics(proxy.collectTpStats(), node));
@@ -614,7 +625,7 @@ public final class ClusterFacade {
                 "ThreadPools",
                 DateTime.now().minusMinutes(1).getMillis()));
       }
-    } catch (JMException | InterruptedException | IOException e) {
+    } catch (JMException | IOException e) {
       LOG.error("Failed collecting tpstats for host {}", node, e);
       throw new ReaperException(e);
     }
@@ -674,7 +685,7 @@ public final class ClusterFacade {
    */
   public Pair<Node, String> takeSnapshot(String snapshotName, Node host, String... keyspaces) throws ReaperException {
     Preconditions.checkArgument(!context.config.isInSidecarMode(), "Snapshots aren't yet supported in sidecar mode");
-    LOG.info("Taking snapshot for node {} and keyspace {}", host, keyspaces);
+    LOG.debug("Taking snapshot for node {} and keyspace {}", host, keyspaces);
     return Pair.of(host, SnapshotProxy.create(connect(host)).takeSnapshot(snapshotName, keyspaces));
   }
 
@@ -687,11 +698,15 @@ public final class ClusterFacade {
    */
   public List<Snapshot> listSnapshots(Node host) throws ReaperException {
     try {
-      return SnapshotProxy.create(connect(host)).listSnapshots();
+      if (context.jmxConnectionFactory.getHostConnectionCounters().getSuccessfulConnections(
+              host.getHostname()) >= 0) {
+        return SnapshotProxy.create(connect(host)).listSnapshots();
+      }
     } catch (UnsupportedOperationException unsupported) {
       LOG.debug("Listing snapshot is unsupported with Cassandra 2.0 and prior");
       throw unsupported;
     }
+    return Collections.emptyList();
   }
 
   /**
@@ -721,18 +736,21 @@ public final class ClusterFacade {
    */
   public List<StreamSession> listActiveStreams(Node node)
       throws ReaperException, InterruptedException, IOException {
-    String nodeDc = getDatacenter(node);
+    String nodeDc = getDatacenter(node.getCluster().get(), node.getHostname());
     if (nodeIsAccessibleThroughJmx(nodeDc, node.getHostname())) {
       // We have direct JMX access to the node
       return listStreamsDirect(node);
     } else {
       // We don't have access to the node through JMX, so we'll get data from the database
-      LOG.info("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
+      LOG.debug("Node {} in DC {} is not accessible through JMX", node.getHostname(), nodeDc);
 
       String streamsJson = ((IDistributedStorage) context.storage)
           .listOperations(node.getClusterName(), OpType.OP_STREAMING, node.getHostname());
+      if (streamsJson.length() > 0) {
+        return parseStreamSessionJson(streamsJson);
+      }
 
-      return parseStreamSessionJson(streamsJson);
+      return Collections.emptyList();
     }
   }
 
@@ -754,8 +772,41 @@ public final class ClusterFacade {
   private Map<List<String>, List<String>> getRangeToEndpointMapImpl(
       Cluster cluster,
       String keyspace) throws ReaperException {
+    JmxProxy jmxConnection = connect(cluster);
+    Map<List<String>, List<String>> endpointMap = jmxConnection.getRangeToEndpointMap(keyspace);
+    return maybeCleanupEndpointFromScylla(endpointMap);
+  }
 
-    return connect(cluster).getRangeToEndpointMap(keyspace);
+  /**
+   * The method makes the Scylla endpoint map compatible with the Cassandra ones
+   *
+   * @param endpointMap map of endpoint returned by jmx client
+   * @return a map of endpoints compatible with cassandra format
+   */
+  protected static Map<List<String>, List<String>>
+      maybeCleanupEndpointFromScylla(Map<List<String>, List<String>> endpointMap) {
+    Map<List<String>, List<String>> resultEndpointMap = Maps.newHashMap();
+
+    String firstToken = "";
+    String lastToken = "";
+    List<String> lastNode = Lists.newArrayList();
+    for (Entry<List<String>, List<String>> entry : endpointMap.entrySet()) {
+      String nodeStartToken = entry.getKey().get(0);
+      String nodeEndToken = entry.getKey().get(1);
+
+      if ("".equals(nodeStartToken)) {
+        lastToken = nodeEndToken;
+        lastNode = entry.getValue();
+      } else if ("".equals(nodeEndToken)) {
+        firstToken = nodeStartToken;
+      } else {
+        resultEndpointMap.put(entry.getKey(), entry.getValue());
+      }
+    }
+    if (!"".equals(firstToken) && !"".equals(lastToken)) {
+      resultEndpointMap.put(Lists.newArrayList(firstToken, lastToken), lastNode);
+    }
+    return resultEndpointMap;
   }
 
   public static List<StreamSession> parseStreamSessionJson(String json) throws IOException {
@@ -772,13 +823,19 @@ public final class ClusterFacade {
    * @throws IOException if parsing the JSON breaks
    */
   public static CompactionStats parseCompactionStats(String json) throws IOException {
+    if (json.isEmpty()) {
+      return CompactionStats.builder()
+          .withPendingCompactions(Optional.empty())
+          .withActiveCompactions(Collections.emptyList())
+          .build();
+    }
     try {
       return parseJson(json, new TypeReference<CompactionStats>(){});
     } catch (IOException e) {
       // it can be that the storage had old format of compaction info, so we try to parse that
       List<Compaction> compactions = parseJson(json, new TypeReference<List<Compaction>>() {});
       return CompactionStats.builder()
-          .withPendingCompactions(-1)
+          .withPendingCompactions(Optional.empty())
           .withActiveCompactions(compactions)
           .build();
     }
@@ -786,7 +843,9 @@ public final class ClusterFacade {
 
   private static <T> T parseJson(String json, TypeReference<T> ref) throws IOException {
     try {
-      return new ObjectMapper().readValue(json, ref);
+      ObjectMapper mapper = new ObjectMapper();
+      mapper.registerModule(new Jdk8Module());
+      return mapper.readValue(json, ref);
     } catch (IOException e) {
       LOG.error("Error parsing json", e);
       throw e;

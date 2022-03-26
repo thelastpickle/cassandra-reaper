@@ -55,6 +55,7 @@ import com.codahale.metrics.InstrumentedScheduledExecutorService;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
@@ -73,10 +74,12 @@ import org.slf4j.LoggerFactory;
 
 public final class DiagEventSubscriptionService {
 
+  @VisibleForTesting
+  public static final Map<Node, DiagEventPoller> POLLERS_BY_NODE = new HashMap<>();
+
   private static final Logger LOG = LoggerFactory.getLogger(DiagEventSubscriptionService.class);
 
   private static final Map<DiagEventSubscription, Broadcaster> BROADCASTERS = new HashMap<>();
-  private static final Map<Node, DiagEventPoller> POLLERS_BY_NODE = new HashMap<>();
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper(new JsonFactory());
   private static final AtomicLong ID_COUNTER = new AtomicLong(0);
 
@@ -135,14 +138,12 @@ public final class DiagEventSubscriptionService {
   }
 
   private synchronized void updateEnabledEvents() {
-    if (context.isDistributed.get()) {
-      if (!BROADCASTERS.isEmpty() || null == subsAlwaysActive || !subsAlwaysActive.isEmpty()
-          // when there are no broadcasters and no known subscriptions, only check for updated events once per minute
-          || (System.currentTimeMillis() - lastUpdateCheck.get()) > TimeUnit.MINUTES.toMillis(1)) {
+    if (!BROADCASTERS.isEmpty() || null == subsAlwaysActive || !subsAlwaysActive.isEmpty()
+        // when there are no broadcasters and no known subscriptions, only check for updated events once per minute
+        || (System.currentTimeMillis() - lastUpdateCheck.get()) > TimeUnit.MINUTES.toMillis(1)) {
 
-        lastUpdateCheck.set(System.currentTimeMillis());
-        updateEnabledEvents(Collections.emptySet());
-      }
+      lastUpdateCheck.set(System.currentTimeMillis());
+      updateEnabledEvents(Collections.emptySet());
     }
   }
 
@@ -158,10 +159,8 @@ public final class DiagEventSubscriptionService {
             .collect(Collectors.toSet());
 
     // determine which of the ad-hoc subscriptions have currently active SSE clients listening
-    Set<DiagEventSubscription> subsAdHocActive = allSubs.stream()
-        .filter((sub) -> !subsAlwaysActive.contains(sub))
-        .filter((sub) -> BROADCASTERS.containsKey(sub) && BROADCASTERS.get(sub).isActive())
-        .collect(Collectors.toSet());
+    Set<DiagEventSubscription> subsAdHocActive
+        = DiagEventSubscriptionService.getAdhocActiveSubs(allSubs, this.subsAlwaysActive);
 
     // create mapping for all subscriptions by node
     SetMultimap<Node, DiagEventSubscription> subscriptionsByNodeMulti
@@ -220,13 +219,11 @@ public final class DiagEventSubscriptionService {
 
             // if there are no active events for this node, disable them and stop polling
             if (activeEvents.isEmpty()) {
-              LOG.debug("No active events subscriptions");
               Set<String> possiblyEnabledEvents = new HashSet<>();
               possiblyEnabledEvents.addAll(inactiveEvents);
               // kill poller
               DiagEventPoller poller = POLLERS_BY_NODE.remove(node);
               if (poller != null) {
-                LOG.debug("Stopping existing event poller");
                 possiblyEnabledEvents.addAll(poller.getEnabledEvents());
                 poller.stop();
               }
@@ -275,6 +272,16 @@ public final class DiagEventSubscriptionService {
             nodesLatch.getCount(), subscriptionsByNode.size());
       }
     } catch (InterruptedException ignore) { }
+  }
+
+  @VisibleForTesting
+  public static synchronized Set<DiagEventSubscription> getAdhocActiveSubs(
+      Collection<DiagEventSubscription> allSubs,
+      Set<DiagEventSubscription> alwaysActiveSubs) {
+    return allSubs.stream()
+      .filter((sub) -> !alwaysActiveSubs.contains(sub))
+      .filter((sub) -> BROADCASTERS.containsKey(sub) && BROADCASTERS.get(sub).isActive())
+      .collect(Collectors.toSet());
   }
 
   private void enableEvents(Node node, Set<String> events, boolean enabled, JmxProxy jmxProxy) {

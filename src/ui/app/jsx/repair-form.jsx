@@ -23,6 +23,8 @@ import $ from "jquery";
 import DatePicker from "react-datepicker";
 import Moment from 'moment';
 import moment from "moment";
+import Modal from 'react-bootstrap/lib/Modal';
+import Button from 'react-bootstrap/lib/Button';
 
 Moment.locale(navigator.language);
 
@@ -42,6 +44,7 @@ const repairForm = CreateReactClass({
     return {
       formType: this.props.formType,
       addRepairResultMsg: null,
+      addRepairResultStatus: null,
       clusterNames: [],
       submitEnabled: false,
       clusterName: this.props.currentCluster === "all" ? this.props.clusterNames[0] : this.props.currentCluster,
@@ -59,6 +62,7 @@ const repairForm = CreateReactClass({
       intervalDays: "",
       incrementalRepair: "false",
       repairThreadCount: 1,
+      timeout: null,
       formCollapsed: true,
       advancedFormCollapsed: true,
       clusterStatus: {},
@@ -82,14 +86,27 @@ const repairForm = CreateReactClass({
       datacentersList: [],
       datacentersSelectValues: [],
       datacentersSelectDisabled: false,
+      showModal: false,
+      force: "false",
+      adaptive: false,
+      percentUnrepairedThreshold: ""
     };
   },
 
   UNSAFE_componentWillMount: function() {
     this._repairResultSubscription = this.props.addRepairResult.subscribeOnNext(obs =>
       obs.subscribe(
-        r => this.setState({addRepairResultMsg: null}),
-        r => this.setState({addRepairResultMsg: r.responseText})
+        r => this.setState({
+          addRepairResultMsg: null,
+          addRepairResultStatus: null,
+          showModal: false,
+          force: "false",
+        }),
+        r => this.setState({
+          addRepairResultMsg: r.responseText,
+          addRepairResultStatus: r.status,
+          showModal: true,
+        })
       )
     );
 
@@ -97,7 +114,8 @@ const repairForm = CreateReactClass({
       obs.subscribeOnNext(names => {
         let previousNames = this.state.clusterNames;
         this.setState({clusterNames: names});
-        if (names.length) {
+        if (names.length && !this.state.clusterName) {
+          // Set the cluster name in state if it's not set yet
           this.setState({clusterName: names[0]});
         }
         if (!previousNames.length) {
@@ -184,12 +202,15 @@ const repairForm = CreateReactClass({
     }
 
     if (this.state.tables) repair.tables = this.state.tables;
-    if (this.state.segments) repair.segmentCount = this.state.segments;
+    if (this.state.segments) repair.segmentCountPerNode = this.state.segments;
     if (this.state.parallelism) repair.repairParallelism = this.state.parallelism;
     if (this.state.intensity) repair.intensity = this.state.intensity;
     if (this.state.cause) repair.cause = this.state.cause;
     if (this.state.incrementalRepair) {
       repair.incrementalRepair = this.state.incrementalRepair;
+      if (repair.incrementalRepair == "true") {
+        repair.repairParallelism = "PARALLEL";
+      }
     }
     else {
       repair.incrementalRepair = "false";
@@ -198,6 +219,28 @@ const repairForm = CreateReactClass({
     if (this.state.datacenters) repair.datacenters = this.state.datacenters;
     if (this.state.blacklistedTables) repair.blacklistedTables = this.state.blacklistedTables;
     if (this.state.repairThreadCount && this.state.repairThreadCount > 0) repair.repairThreadCount = this.state.repairThreadCount;
+    if (this.state.force) {
+      repair.force = this.state.force;
+    }
+    else {
+      repair.force = "false";
+    }
+    if (this.state.timeout) {
+      repair.timeout = this.state.timeout;
+    }
+    if (this.state.adaptive) {
+      repair.adaptive = this.state.adaptive;
+    }
+    else {
+      repair.adaptive = "false";
+    }
+
+    if (this.state.percentUnrepairedThreshold) {
+      repair.percentUnrepairedThreshold = this.state.percentUnrepairedThreshold;
+    }
+    else {
+      repair.percentUnrepairedThreshold = "-1";
+    }
 
     this.props.addRepairSubject.onNext({
       type: this.state.formType,
@@ -222,15 +265,12 @@ const repairForm = CreateReactClass({
     const valid = this.state.keyspaceList.length
       && this.state.clusterName
       && this.state.owner
-      && (
-        (this.state.formType === "schedule" && this.state.startTime && this.state.intervalDays)
-        || (this.state.formType === "repair" && !this.state.startTime && !this.state.intervalDays)
-      )
-      && (
-        (this.state.datacentersList.length && !this.state.nodesList.length)
+      && ((this.state.formType === "schedule" && this.state.startTime && this.state.intervalDays) || this.state.formType != "schedule")
+      && ((this.state.datacentersList.length && !this.state.nodesList.length)
           || (!this.state.datacentersList.length && this.state.nodesList.length)
-          || (!this.state.datacentersList.length && !this.state.nodesList.length)
-      );
+          || (!this.state.datacentersList.length && !this.state.nodesList.length))
+      ;
+    
     this.setState({submitEnabled: valid});
   },
 
@@ -257,8 +297,10 @@ const repairForm = CreateReactClass({
     let stateValue = {};
 
     stateValue[stateName] = valueContext.value;
-    this.setState(stateValue);
+    this.setState(stateValue, ()=>this._handleSelectOnChangeCallback(stateName));
+  },
 
+  _handleSelectOnChangeCallback: function(stateName) {
     if (stateName === "clusterName") {
       this._getClusterStatus();
     }
@@ -272,6 +314,8 @@ const repairForm = CreateReactClass({
       "blacklistedTables": "tables",
       "nodes": "datacenters",
       "datacenters": "nodes",
+      "intervalDays": "percentUnrepairedThreshold",
+      "percentUnrepairedThreshold": "intervalDays"
     };
     return selectNameMap[selectName];
   },
@@ -357,11 +401,48 @@ const repairForm = CreateReactClass({
     return uuid;
   },
 
+  _onForce(e){
+    this.setState({
+      force: "true",
+      addRepairResultMsg: null,
+      showModal: false }, () => this._onAdd(e));
+  },
+
+  _onClose(e){
+    this.setState({
+      force: "false",
+      addRepairResultMsg: null,
+      showModal: false
+    });
+  },
+
   render: function() {
 
     let addMsg = null;
     if(this.state.addRepairResultMsg) {
-      addMsg = <div className="alert alert-danger" role="alert">{this.state.addRepairResultMsg}</div>
+      if(this.state.addRepairResultStatus && this.state.addRepairResultStatus === 409) {
+        addMsg = (
+                <span>
+                <Modal show={this.state.showModal} onHide={this._onClose}>
+                  <Modal.Header closeButton>
+                    <Modal.Title>Scheduling conflict detected</Modal.Title>
+                  </Modal.Header>
+                  <Modal.Body>
+                    <p>{this.state.addRepairResultMsg}</p>
+                    <p>It is not reccommended to create overlapping repair schedules/runs.</p>
+                    <p>For Cassandra 4.0 and later, you can force creating this schedule/run by clicking the "Force" button below.</p>
+                  </Modal.Body>
+                  <Modal.Footer>
+                    <Button variant="secondary" onClick={this._onClose}>Cancel</Button>
+                    <Button variant="primary" onClick={this._onForce}>Force</Button>
+                  </Modal.Footer>
+                </Modal>
+              </span>
+        );
+      }
+      else {
+        addMsg = <div className="alert alert-danger" role="alert">{this.state.addRepairResultMsg}</div>
+      }
     }
 
     const clusterNameOptions = this.state.clusterNames.sort().map(name => {
@@ -423,32 +504,51 @@ const repairForm = CreateReactClass({
     else if (this.state.formType === "schedule") {
       customInput = (
         <div>
-        <div className="form-group">
-          <label htmlFor="in_startTime" className="col-sm-3 control-label">Start time*</label>
-          <div className="col-sm-9 col-md-7 col-lg-5">
-            <DatePicker
-              selected={this.state.startTime}
-              onChange={value => this.setState({startTime: value})}
-              showTimeSelect
-              timeFormat="HH:mm"
-              timeIntervals={15}
-              timeCaption="Time"
-              dateFormat="d MMMM yyyy HH:mm"
-            />
+          <div className="form-group">
+            <label htmlFor="in_startTime" className="col-sm-3 control-label">Start time*</label>
+            <div className="col-sm-9 col-md-7 col-lg-5">
+              <DatePicker
+                selected={this.state.startTime}
+                onChange={value => this.setState({startTime: value})}
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={15}
+                timeCaption="Time"
+                dateFormat="d MMMM yyyy HH:mm"
+              />
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="in_intervalDays" className="col-sm-3 control-label">Interval in days*</label>
+            <div className="col-sm-9 col-md-7 col-lg-5">
+              <input type="number" required className="form-control" value={this.state.intervalDays}
+                onChange={this._handleChange} id="in_intervalDays" placeholder="amount of days to wait between scheduling new repairs, (e.g. 7 for weekly)"/>
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="in_percentUnrepairedThreshold" className="col-sm-3 control-label">Percent unrepaired threshold</label>
+            <div className="col-sm-9 col-md-7 col-lg-5">
+              <input type="number" required className="form-control" value={this.state.percentUnrepairedThreshold}
+                onChange={this._handleChange} id="in_percentUnrepairedThreshold" placeholder="% of unrepaired data over which repair should be started (optional)"/>
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="in_adaptive" className="col-sm-3 control-label">Adaptive</label>
+            <div className="col-sm-9 col-md-7 col-lg-5">
+              <Select
+                id="in_adaptive"
+                name="in_adaptive"
+                classNamePrefix="select"
+                options={[{label: "true", value: "true"}, {label: "false", value: "false"}]}
+                placeholder="false"
+                onChange={this._handleSelectOnChange}
+              />
+            </div>
           </div>
         </div>
-        <div className="form-group">
-          <label htmlFor="in_intervalDays" className="col-sm-3 control-label">Interval in days*</label>
-          <div className="col-sm-9 col-md-7 col-lg-5">
-            <input type="number" required className="form-control" value={this.state.intervalDays}
-              onChange={this._handleChange} id="in_intervalDays" placeholder="amount of days to wait between scheduling new repairs, (e.g. 7 for weekly)"/>
-          </div>
-        </div>
-        </div>
+        
       );
     }
-
-    const keyspaceInputStyle = this.state.keyspaceList.length > 0 ? 'form-control-hidden':'form-control';
 
     const advancedSettingsHeader = (
       <div className="panel-title" >
@@ -633,6 +733,13 @@ const repairForm = CreateReactClass({
                         <input type="number" className="form-control" value={this.state.repairThreadCount}
                           min="1" max="4"
                           onChange={this._handleChange} id="in_repairThreadCount" placeholder="repair threads"/>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="in_timeout" className="col-sm-3 control-label">Segment timeout</label>
+                      <div className="col-sm-14 col-md-12 col-lg-9">
+                      <input type="number" className="form-control" value={this.state.timeout}
+                          onChange={this._handleChange} id="in_timeout" placeholder="Segment timeout in minutes before it gets killed and rescheduled."/>
                       </div>
                     </div>
                   </div>

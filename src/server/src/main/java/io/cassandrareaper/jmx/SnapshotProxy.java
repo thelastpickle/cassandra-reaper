@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.jmx;
 
-
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Snapshot;
 

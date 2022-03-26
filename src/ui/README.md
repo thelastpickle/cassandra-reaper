@@ -1,4 +1,4 @@
-### Cassandra Reaper UI
+### Reaper for Apache Cassandra UI
 
 #### Thanks to
 
@@ -7,7 +7,7 @@ This subdirectory is a fork of the original [cassandra-reaper-ui project](https:
 
 #### About
 
-Complimentary web UI for [Cassandra Reaper](https://github.com/thelastpickle/cassandra-reaper).
+Complimentary web UI for [Reaper for Apache Cassandra](https://github.com/thelastpickle/cassandra-reaper).
 
 #### Installation
 
@@ -17,8 +17,7 @@ Instruction to rebuild and embed the UI in Reaper can be found in the root [READ
 
 Getting started to work with the source code is easy. You will need to install
 
-* [node](https://nodejs.org/) (v7.7.0+ recommended)
-* [bower](http://bower.io/) (1.8.0+ recommended)
+* [node](https://nodejs.org/) (v7.7.0-v14-lts recommended)
 
 Then run:
 
@@ -26,7 +25,6 @@ Then run:
 # Assume we are in the reaper project parent directory
 $ cd src/ui/
 $ npm install
-$ bower install
 ```
 
 The dev-server can be started as follows:

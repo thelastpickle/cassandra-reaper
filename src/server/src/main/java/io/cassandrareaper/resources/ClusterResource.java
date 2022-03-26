@@ -24,25 +24,18 @@ import io.cassandrareaper.core.JmxCredentials;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.resources.view.ClusterStatus;
-import io.cassandrareaper.resources.view.NodesStatus;
 import io.cassandrareaper.service.ClusterRepairScheduler;
 
 import java.net.URI;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.DELETE;
@@ -59,12 +52,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import com.codahale.metrics.InstrumentedExecutorService;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,17 +68,24 @@ public final class ClusterResource {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterResource.class);
 
   private final AppContext context;
-  private final ExecutorService executor;
   private final ClusterRepairScheduler clusterRepairScheduler;
   private final ClusterFacade clusterFacade;
   private final Cryptograph cryptograph;
 
-  public ClusterResource(AppContext context, Cryptograph cryptograph, ExecutorService executor) {
+  private ClusterResource(AppContext context, Cryptograph cryptograph, Supplier<ClusterFacade> clusterFacadeSupplier) {
     this.context = context;
-    this.executor = new InstrumentedExecutorService(executor, context.metricRegistry);
     this.clusterRepairScheduler = new ClusterRepairScheduler(context);
-    this.clusterFacade = ClusterFacade.create(context);
+    this.clusterFacade = clusterFacadeSupplier.get();
     this.cryptograph = cryptograph;
+  }
+
+  @VisibleForTesting
+  static ClusterResource create(AppContext context, Cryptograph cryptograph, Supplier<ClusterFacade> supplier) {
+    return new ClusterResource(context, cryptograph, supplier);
+  }
+
+  public static ClusterResource create(AppContext context, Cryptograph cryptograph) {
+    return new ClusterResource(context, cryptograph, () -> ClusterFacade.create(context));
   }
 
   @GET
@@ -129,10 +128,15 @@ public final class ClusterResource {
             jmxPasswordIsSet,
             context.storage.getClusterRunStatuses(cluster.getName(), limit.orElse(Integer.MAX_VALUE)),
             context.storage.getClusterScheduleStatuses(cluster.getName()),
-            getNodesStatus(cluster));
+            clusterFacade.getNodesStatus(cluster));
 
       return Response.ok().entity(clusterStatus).build();
-    } catch (IllegalArgumentException ignore) { }
+    } catch (IllegalArgumentException ignore) {
+      // Ignoring this exception
+    } catch (ReaperException e) {
+      LOG.error("Failed getting cluster {} info", clusterName, e);
+      return Response.status(500).entity(e).build();
+    }
     return Response.status(404).entity("cluster with name \"" + clusterName + "\" not found").build();
   }
 
@@ -260,14 +264,17 @@ public final class ClusterResource {
       LOG.debug("Attempting updating nodelist for cluster {}", existingCluster.get().getName());
       try {
         // the cluster is already managed by reaper. if nothing is changed return 204. then if updated return 200.
-        Cluster updatedCluster = updateClusterSeeds(existingCluster.get(), seedHost.get());
-        if (updatedCluster.getSeedHosts().equals(existingCluster.get().getSeedHosts())) {
-          LOG.debug("Nodelist of cluster {} is already up to date.", existingCluster.get().getName());
-          return Response.noContent().location(location).build();
-        } else {
-          LOG.info("Nodelist of cluster {} updated", existingCluster.get().getName());
-          return Response.ok().location(location).build();
+        if (context.config.getEnableDynamicSeedList()) {
+          Cluster updatedCluster = updateClusterSeeds(existingCluster.get(), seedHost.get());
+          if (updatedCluster.getSeedHosts().equals(existingCluster.get().getSeedHosts())) {
+            LOG.debug("Nodelist of cluster {} is already up to date.", existingCluster.get().getName());
+            return Response.noContent().location(location).build();
+          } else {
+            LOG.info("Nodelist of cluster {} updated", existingCluster.get().getName());
+            return Response.ok().location(location).build();
+          }
         }
+        return Response.noContent().location(location).build();
       } catch (ReaperException ex) {
         LOG.error("fail:", ex);
         return Response.serverError().entity(ex.getMessage()).build();
@@ -410,59 +417,6 @@ public final class ClusterResource {
           .entity("cluster \"" + clusterName + "\" not found")
           .build();
     }
-  }
-
-  /**
-   * Callable to get and parse endpoint states through JMX
-   *
-   * @param cluster the cluster object contains additional connection info like jmx port and jmx credentials
-   * @param seeds The host address to connect to via JMX
-   * @return An optional NodesStatus object with the status of each node in the cluster as seen from
-   *     the seedHost node
-   */
-  private Callable<NodesStatus> getEndpointState(Cluster cluster, Set<String> seeds) {
-    return () -> {
-      try {
-        return clusterFacade.getNodesStatus(cluster, seeds);
-      } catch (RuntimeException e) {
-        LOG.debug("failed to get endpoints for cluster {} with seeds {}", cluster.getName(), seeds, e);
-        Thread.sleep((int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds() * 1000);
-        return new NodesStatus(Collections.EMPTY_LIST);
-      }
-    };
-  }
-
-  /**
-   * Get all nodes state by querying the AllEndpointsState attribute through JMX.
-   *
-   * <p>
-   * To speed up execution, the method calls JMX on 3 nodes asynchronously and processes the first response
-   *
-   * @return An optional NodesStatus object with all nodes statuses
-   */
-  private NodesStatus getNodesStatus(Cluster cluster) {
-    List<Callable<NodesStatus>> endpointStateTasks = Lists.newArrayList();
-    List<String> seedHosts = new ArrayList<>(cluster.getSeedHosts());
-    Collections.shuffle(seedHosts);
-    int index = 0;
-    for (String host : seedHosts) {
-      if (index >= 3) {
-        break;
-      }
-      endpointStateTasks.add(getEndpointState(cluster, Collections.singleton(host)));
-      index++;
-    }
-
-    try {
-      return executor.invokeAny(
-          endpointStateTasks,
-          (int) JmxProxy.DEFAULT_JMX_CONNECTION_TIMEOUT.getSeconds(),
-          TimeUnit.SECONDS);
-
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      LOG.debug("failed grabbing nodes status", e);
-    }
-    return new NodesStatus(Collections.EMPTY_LIST);
   }
 
   /*

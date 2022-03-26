@@ -17,7 +17,6 @@
 
 package io.cassandrareaper.storage.cassandra;
 
-
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.VersionNumber;
 import org.slf4j.Logger;
@@ -27,7 +26,6 @@ public final class Migration021 {
 
   private static final Logger LOG = LoggerFactory.getLogger(Migration021.class);
   private static final String METRICS_V1_TABLE = "node_metrics_v1";
-  private static final String METRICS_V2_TABLE = "node_metrics_v2";
   private static final String OPERATIONS_TABLE = "node_operations";
 
   private Migration021() {
@@ -56,21 +54,12 @@ public final class Migration021 {
                       + "'compaction_window_size': '2', "
                       + "'compaction_window_unit': 'MINUTES'}");
 
-          LOG.info("Altering {} to use TWCS...", METRICS_V2_TABLE);
-          session.execute(
-                  "ALTER TABLE " + METRICS_V2_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
-                      + "'unchecked_tombstone_compaction': 'true', "
-                      + "'compaction_window_size': '1', "
-                      + "'compaction_window_unit': 'HOURS'}");
-
-          LOG.info("{} was successfully altered to use TWCS.", METRICS_V2_TABLE);
-
           LOG.info("Altering {} to use TWCS...", OPERATIONS_TABLE);
           session.execute(
                   "ALTER TABLE " + OPERATIONS_TABLE + " WITH compaction = {'class': 'TimeWindowCompactionStrategy', "
                       + "'unchecked_tombstone_compaction': 'true', "
-                      + "'compaction_window_size': '1', "
-                      + "'compaction_window_unit': 'HOURS'}");
+                      + "'compaction_window_size': '30', "
+                      + "'compaction_window_unit': 'MINUTES'}");
 
           LOG.info("{} was successfully altered to use TWCS.", OPERATIONS_TABLE);
         }

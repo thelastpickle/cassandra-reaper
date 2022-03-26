@@ -35,7 +35,10 @@ const loginForm = CreateReactClass({
       obs.subscribe(
         response => {
           this.setState({loginResultMsg: null});
-          window.location.href = "/webui/index.html"
+          var pathName = document.location.pathname;
+          var baseUrl = "<%= htmlWebpackPlugin.options.baseUrl %>".endsWith('/') ? "<%= htmlWebpackPlugin.options.baseUrl %>".substring(0,"<%= htmlWebpackPlugin.options.baseUrl %>".lastIndexOf('/')):"<%= htmlWebpackPlugin.options.baseUrl %>";
+          var contextPath = pathName.substring(0, pathName.indexOf(baseUrl));
+          window.location.href = contextPath + "/webui/index.html"
         },
         response => {
             this.setState({loginResultMsg: response.responseText});
@@ -66,7 +69,7 @@ const loginForm = CreateReactClass({
     const form = <div className="row">
       <div className="col-lg-12">
         <div className="col-lg-4">&nbsp;</div>
-        <div className="col-lg-4"><h2>Cassandra Reaper</h2></div>
+        <div className="col-lg-4"><h2>Reaper for Apache Cassandra</h2></div>
         <div className="col-lg-4">&nbsp;</div>
       </div>
       <div className="col-lg-12">

@@ -22,7 +22,7 @@ import Streams from "jsx/streams";
 import DroppedMessages from "jsx/dropped-messages";
 import ClientRequestLatency from "jsx/client-request-latency";
 import ActiveCompactions from "jsx/active-compactions";
-import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast} from "jsx/mixin";
+import {DeleteStatusMessageMixin, humanFileSize, getUrlPrefix, toast, toastPermanent} from "jsx/mixin";
 import Modal from 'react-bootstrap/lib/Modal';
 import Button from 'react-bootstrap/lib/Button';
 import Tooltip from 'react-bootstrap/lib/Tooltip';
@@ -57,7 +57,27 @@ const NodeStatus = CreateReactClass({
     UNSAFE_componentWillMount: function() {
       this._getNodeTokens();
     },
-  
+
+    componentDidMount: function() {
+      this.setState({'datacenterAvailability': 'ALL'});
+      this.setState({communicating: true});
+      $.ajax({
+        url: getUrlPrefix(window.top.location.pathname) + '/reaper/datacenterAvailability',
+        method: 'GET',
+        component: this,
+        success: function(data) {
+          let reaperConfig = data;
+          this.component.setState({'datacenterAvailability': reaperConfig.datacenterAvailability});
+        },
+        complete: function(data) {
+          this.component.setState({communicating: false});
+        },
+        error: function(data) {
+          toastPermanent(this.component._notificationSystem, "Error : " + data.responseText, "error", currentClusterValue);
+        }
+      });
+    },
+
     _getNodeTokens: function() {
       $.ajax({
             url: this.state.urlPrefix + '/node/tokens/' + encodeURIComponent(this.props.clusterName) + '/' + encodeURIComponent(this.props.endpointStatus.endpoint),
@@ -88,7 +108,7 @@ const NodeStatus = CreateReactClass({
   
     _listSnapshots: function() {
       $.ajax({
-            url: getUrlPrefix(window.top.location.pathname) + '/snapshot/' +  encodeURIComponent(this.props.clusterName) + '/' + encodeURIComponent(this.props.endpointStatus.endpoint),
+            url: getUrlPrefix(window.top.location.pathname) + '/snapshot/cluster/' +  encodeURIComponent(this.props.clusterName) + '/' + encodeURIComponent(this.props.endpointStatus.endpoint),
             method: 'GET',
             component: this,
             complete: function(data) {
@@ -114,7 +134,7 @@ const NodeStatus = CreateReactClass({
       this.setState({communicating: true}); 
       toast(this.props.notificationSystem, "Taking a new snapshot...", "warning", this.props.endpointStatus.endpoint);   
       $.ajax({
-            url: getUrlPrefix(window.top.location.pathname) + '/snapshot/' +  encodeURIComponent(this.props.clusterName) + '/' + encodeURIComponent(this.props.endpointStatus.endpoint),
+            url: getUrlPrefix(window.top.location.pathname) + '/snapshot/cluster/' +  encodeURIComponent(this.props.clusterName) + '/' + encodeURIComponent(this.props.endpointStatus.endpoint),
             dataType: 'text',
             method: 'POST',
             component: this,
@@ -315,6 +335,13 @@ const NodeStatus = CreateReactClass({
                         <div className="panel-body" id="snapshots">
                         <div className="row">
                           <div className="col-lg-12">
+                            {this.state.datacenterAvailability != "ALL" &&
+                              <div className="alert alert-warning" role="alert">
+                                <p>
+                                  Reaper is configured with datacenterAvailability={this.state.datacenterAvailability}, only snapshots on reachable nodes are listed
+                                </p>
+                              </div>
+                            }
                             <OverlayTrigger trigger="focus" placement="bottom" overlay={takeSnapshotClick}><button type="button" className="btn btn-md btn-success" style={takeSnapshotStyle}>Take a snapshot</button></OverlayTrigger>                  
                             <button type="button" className="btn btn-md btn-success" style={progressStyle} disabled>Taking a snapshot...</button>
                           </div>

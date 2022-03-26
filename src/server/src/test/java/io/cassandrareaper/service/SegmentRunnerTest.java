@@ -22,8 +22,8 @@ import io.cassandrareaper.ReaperApplicationConfiguration;
 import io.cassandrareaper.ReaperApplicationConfiguration.DatacenterAvailability;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.CompactionStats;
 import io.cassandrareaper.core.Node;
-import io.cassandrareaper.core.NodeMetrics;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
@@ -34,48 +34,49 @@ import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.jmx.JmxProxyTest;
 import io.cassandrareaper.jmx.RepairStatusHandler;
-import io.cassandrareaper.storage.CassandraStorage;
-import io.cassandrareaper.storage.IDistributedStorage;
 import io.cassandrareaper.storage.IStorage;
 import io.cassandrareaper.storage.MemoryStorage;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import javax.management.MalformedObjectNameException;
+import javax.management.ReflectionException;
+
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import jersey.repackaged.com.google.common.collect.Maps;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
+import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.service.ActiveRepairService;
+import org.apache.cassandra.service.StorageServiceMBean;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.commons.lang3.tuple.Pair;
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import static org.apache.cassandra.repair.RepairParallelism.DATACENTER_AWARE;
 import static org.apache.cassandra.repair.RepairParallelism.PARALLEL;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public final class SegmentRunnerTest {
@@ -90,8 +91,10 @@ public final class SegmentRunnerTest {
   }
 
   @Test
-  public void timeoutTest() throws InterruptedException, ReaperException, ExecutionException {
+  public void timeoutTest() throws InterruptedException, ReaperException, ExecutionException,
+        MalformedObjectNameException, ReflectionException, IOException {
     final AppContext context = new AppContext();
+    final int segmentTimeout = 30;
     context.config = Mockito.mock(ReaperApplicationConfiguration.class);
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
@@ -104,8 +107,11 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(segmentTimeout));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = context.storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -116,20 +122,21 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
 
     context.storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = context.storage.getNextFreeSegmentInRange(run.getId(),
-        Optional.empty()).get().getId();
+    final UUID segmentId = context.storage.getNextFreeSegments(
+        run.getId()).get(0).getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -194,6 +201,8 @@ public final class SegmentRunnerTest {
         .thenReturn(Lists.newArrayList(cf.getNodes()));
 
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+    when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
+        Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
 
     SegmentRunner sr = SegmentRunner
         .create(context, clusterFacade, segmentId, COORDS, 100, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
@@ -208,8 +217,10 @@ public final class SegmentRunnerTest {
   }
 
   @Test
-  public void successTest() throws InterruptedException, ReaperException, ExecutionException {
+  public void successTest() throws InterruptedException, ReaperException, ExecutionException,
+        MalformedObjectNameException, ReflectionException, IOException {
     final IStorage storage = new MemoryStorage();
+    final int segmentTimeout = 30;
 
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
@@ -218,8 +229,11 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(segmentTimeout));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -230,28 +244,26 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
-
     storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
-
     AppContext context = new AppContext();
     context.storage = storage;
     context.config = Mockito.mock(ReaperApplicationConfiguration.class);
     when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
     when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
-
     final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
     when(jmx.getClusterName()).thenReturn("reaper");
     when(jmx.isConnectionAlive()).thenReturn(true);
@@ -263,7 +275,6 @@ public final class SegmentRunnerTest {
       throw new AssertionError(ex);
     }
     JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
-
     when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
         .then(
             (invocation) -> {
@@ -343,6 +354,8 @@ public final class SegmentRunnerTest {
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(cf.getNodes()));
+    when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
+        Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
 
     SegmentRunner sr = SegmentRunner
         .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
@@ -357,8 +370,10 @@ public final class SegmentRunnerTest {
   }
 
   @Test
-  public void failureTest() throws InterruptedException, ReaperException, ExecutionException {
+  public void failureTest() throws InterruptedException, ReaperException, ExecutionException,
+        MalformedObjectNameException, ReflectionException, IOException {
     final IStorage storage = new MemoryStorage();
+    final int segmentTimeout = 30;
 
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
@@ -367,8 +382,11 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(segmentTimeout));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -379,19 +397,20 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
 
     storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -482,6 +501,8 @@ public final class SegmentRunnerTest {
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(cf.getNodes()));
+    when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
+        Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
 
     SegmentRunner sr = SegmentRunner
         .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
@@ -497,7 +518,8 @@ public final class SegmentRunnerTest {
 
   @Test
   public void outOfOrderSuccessCass21Test()
-      throws InterruptedException, ReaperException, ExecutionException {
+      throws InterruptedException, ReaperException, ExecutionException,
+      MalformedObjectNameException, ReflectionException, IOException {
     final IStorage storage = new MemoryStorage();
 
     RepairUnit cf = storage.addRepairUnit(
@@ -507,8 +529,11 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(30));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -519,19 +544,20 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
 
     storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -617,6 +643,8 @@ public final class SegmentRunnerTest {
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(cf.getNodes()));
+    when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
+        Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
 
     SegmentRunner sr = SegmentRunner
         .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
@@ -633,7 +661,8 @@ public final class SegmentRunnerTest {
 
   @Test
   public void outOfOrderSuccessCass22Test()
-      throws InterruptedException, ReaperException, ExecutionException {
+      throws InterruptedException, ReaperException, ExecutionException,
+      MalformedObjectNameException, ReflectionException, IOException {
     final IStorage storage = new MemoryStorage();
 
     RepairUnit cf = storage.addRepairUnit(
@@ -643,8 +672,11 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(30));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -655,19 +687,20 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
 
     storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -753,6 +786,8 @@ public final class SegmentRunnerTest {
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(cf.getNodes()));
+    when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
+        Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
 
     SegmentRunner sr = SegmentRunner
         .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
@@ -770,8 +805,10 @@ public final class SegmentRunnerTest {
 
   @Test
   public void outOfOrderFailureCass21Test()
-      throws InterruptedException, ReaperException, ExecutionException {
+      throws InterruptedException, ReaperException, ExecutionException,
+      MalformedObjectNameException, ReflectionException, IOException {
     final IStorage storage = new MemoryStorage();
+    final int segmentTimeout = 30;
 
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
@@ -780,8 +817,11 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(30));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -792,19 +832,20 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
 
     storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -890,6 +931,8 @@ public final class SegmentRunnerTest {
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(cf.getNodes()));
+    when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
+        Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
 
     SegmentRunner sr = SegmentRunner
         .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
@@ -908,8 +951,10 @@ public final class SegmentRunnerTest {
 
   @Test
   public void outOfOrderFailureTestCass22()
-      throws InterruptedException, ReaperException, ExecutionException {
+      throws InterruptedException, ReaperException, ExecutionException,
+      MalformedObjectNameException, ReflectionException, IOException {
     final IStorage storage = new MemoryStorage();
+    final int segmentTimeout = 30;
 
     RepairUnit cf = storage.addRepairUnit(
             RepairUnit.builder()
@@ -918,8 +963,11 @@ public final class SegmentRunnerTest {
                 .columnFamilies(Sets.newHashSet("reaper"))
                 .incrementalRepair(false)
                 .nodes(Sets.newHashSet("127.0.0.1"))
-                .repairThreadCount(1));
+                .repairThreadCount(1)
+                .timeout(30));
 
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
     RepairRun run = storage.addRepairRun(
             RepairRun.builder("reaper", cf.getId())
                 .intensity(0.5)
@@ -930,19 +978,20 @@ public final class SegmentRunnerTest {
                 RepairSegment.builder(
                     Segment.builder()
                         .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
                         .build(),
                     cf.getId())));
 
     storage.addCluster(Cluster.builder()
         .withName(cf.getClusterName())
-        .withPartitioner("murmur3")
+        .withPartitioner("Murmur3Partitioner")
         .withSeedHosts(cf.getNodes())
         .withJmxPort(7199)
         .withState(Cluster.State.ACTIVE)
         .build());
 
     final UUID runId = run.getId();
-    final UUID segmentId = storage.getNextFreeSegmentInRange(run.getId(), Optional.empty()).get().getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
 
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     final MutableObject<Future<?>> future = new MutableObject<>();
@@ -1028,6 +1077,8 @@ public final class SegmentRunnerTest {
 
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(cf.getNodes()));
+    when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
+        Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
 
     SegmentRunner sr = SegmentRunner
         .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
@@ -1058,111 +1109,379 @@ public final class SegmentRunnerTest {
     assertEquals("883fd090-baad-11e5-94c5-03d4762e50b7", SegmentRunner.parseRepairId(msg));
   }
 
-  @Test
-  public void isItOkToRepairTest() {
-    assertFalse(SegmentRunner.okToRepairSegment(false, true, DatacenterAvailability.ALL));
-    assertFalse(SegmentRunner.okToRepairSegment(false, false, DatacenterAvailability.ALL));
-    assertTrue(SegmentRunner.okToRepairSegment(true, true, DatacenterAvailability.ALL));
-
-    assertTrue(SegmentRunner.okToRepairSegment(false, true, DatacenterAvailability.LOCAL));
-    assertFalse(SegmentRunner.okToRepairSegment(false, false, DatacenterAvailability.LOCAL));
-    assertTrue(SegmentRunner.okToRepairSegment(true, true, DatacenterAvailability.LOCAL));
-
-    assertFalse(SegmentRunner.okToRepairSegment(false, true, DatacenterAvailability.EACH));
-    assertFalse(SegmentRunner.okToRepairSegment(false, false, DatacenterAvailability.EACH));
-    assertTrue(SegmentRunner.okToRepairSegment(true, true, DatacenterAvailability.EACH));
+  @Test(expected = ReaperException.class)
+  public void alreadyRunningSegmentRunnerCreationFailure() throws ReaperException {
+    UUID segmentId = UUIDs.timeBased();
+    SegmentRunner.SEGMENT_RUNNERS.put(segmentId, mock(SegmentRunner.class));
+    SegmentRunner.create(
+        mock(AppContext.class),
+        mock(ClusterFacade.class),
+        segmentId,
+        Collections.emptyList(),
+        1,
+        1,
+        RepairParallelism.DATACENTER_AWARE,
+        "clusterName",
+        mock(RepairUnit.class),
+        Collections.emptySet(),
+        mock(RepairRunner.class));
   }
 
   @Test
-  public void getNodeMetricsInLocalDCAvailabilityForRemoteDCNodeTest() throws Exception {
-    final AppContext context = new AppContext();
-    context.storage = Mockito.mock(CassandraStorage.class);
-    when(((IDistributedStorage) context.storage).getNodeMetrics(any(), any()))
-        .thenReturn(Optional.empty());
-    Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
-    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    JmxProxy jmx = mock(JmxProxy.class);
-    when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(jmx);
-    context.jmxConnectionFactory = jmxConnectionFactory;
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
+  public void triggerFailureTest() throws InterruptedException, ReaperException, ExecutionException,
+        MalformedObjectNameException, ReflectionException, IOException {
+    final IStorage storage = new MemoryStorage();
+    final int segmentTimeout = 30;
+
+    RepairUnit cf = storage.addRepairUnit(
+            RepairUnit.builder()
+                .clusterName("reaper")
+                .keyspaceName("reaper")
+                .columnFamilies(Sets.newHashSet("reaper"))
+                .incrementalRepair(false)
+                .nodes(Sets.newHashSet("127.0.0.1"))
+                .repairThreadCount(1)
+                .timeout(segmentTimeout));
+
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
+    RepairRun run = storage.addRepairRun(
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(PARALLEL)
+                .tables(TABLES),
+            Collections.singleton(
+                RepairSegment.builder(
+                    Segment.builder()
+                        .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
+                        .build(),
+                    cf.getId())));
+
+    storage.addCluster(Cluster.builder()
+        .withName(cf.getClusterName())
+        .withPartitioner("Murmur3Partitioner")
+        .withSeedHosts(cf.getNodes())
+        .withJmxPort(7199)
+        .withState(Cluster.State.ACTIVE)
+        .build());
+
+    final UUID runId = run.getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+
+    AppContext context = new AppContext();
+    context.storage = storage;
+    context.config = Mockito.mock(ReaperApplicationConfiguration.class);
+    when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
+    when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
+
+    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    when(jmx.getClusterName()).thenReturn("reaper");
+    when(jmx.isConnectionAlive()).thenReturn(true);
+
+    EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+    when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+    try {
+      when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+    } catch (UnknownHostException ex) {
+      throw new AssertionError(ex);
+    }
+    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+        .thenThrow(new ReaperException("failure"));
+
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
+          @Override
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
+            return jmx;
+          }
+        };
+
+    RepairRunner rr = mock(RepairRunner.class);
+    RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
+    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
-    SegmentRunner segmentRunner = SegmentRunner.create(
-            context,
-            clusterFacade,
-            UUID.randomUUID(),
-            Collections.emptyList(),
-            1000,
-            1.1,
-            DATACENTER_AWARE,
-            "test",
-            mock(RepairUnit.class),
-            TABLES,
-            mock(RepairRunner.class));
+    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
+        .thenReturn(Lists.newArrayList(cf.getNodes()));
+    when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
+        Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
 
-    Pair<String, Callable<Optional<NodeMetrics>>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc2");
-    assertFalse(result.getRight().call().isPresent());
-    verify(jmxConnectionFactory, times(0)).connectAny(any(Collection.class));
-    // Verify that we didn't call any method that is used in getRemoteNodeMetrics()
-    verify((CassandraStorage)context.storage, times(0)).storeNodeMetrics(any(), any());
-    verify((CassandraStorage)context.storage, times(0)).getNodeMetrics(any(), any());
+    SegmentRunner sr = SegmentRunner
+        .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
+
+    sr.run();
+
+    assertEquals(RepairSegment.State.NOT_STARTED, storage.getRepairSegment(runId, segmentId).get().getState());
+    assertEquals(1, storage.getRepairSegment(runId, segmentId).get().getFailCount());
   }
 
   @Test
-  public void getNodeMetricsInLocalDCAvailabilityForLocalDCNodeTest() throws Exception {
-    final AppContext context = new AppContext();
-    context.storage = Mockito.mock(CassandraStorage.class);
+  public void nothingToRepairTest() throws InterruptedException, ReaperException, ExecutionException,
+        MalformedObjectNameException, ReflectionException, IOException {
+    final IStorage storage = new MemoryStorage();
+    final int segmentTimeout = 30;
 
-    Mockito.when(((CassandraStorage) context.storage).getCluster(any()))
-        .thenReturn(Cluster.builder()
-          .withName("test")
-          .withPartitioner("murmur3")
-          .withSeedHosts(ImmutableSet.of("test"))
-          .withJmxPort(7199)
-          .build());
+    RepairUnit cf = storage.addRepairUnit(
+            RepairUnit.builder()
+                .clusterName("reaper")
+                .keyspaceName("reaper")
+                .columnFamilies(Sets.newHashSet("reaper"))
+                .incrementalRepair(false)
+                .nodes(Sets.newHashSet("127.0.0.1"))
+                .repairThreadCount(1)
+                .timeout(segmentTimeout));
 
-    JmxProxy proxy = JmxProxyTest.mockJmxProxyImpl();
-    when(proxy.getClusterName()).thenReturn("test");
-    when(proxy.getPendingCompactions()).thenReturn(3);
-    when(proxy.isRepairRunning()).thenReturn(true);
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
+    RepairRun run = storage.addRepairRun(
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(PARALLEL)
+                .tables(TABLES),
+            Collections.singleton(
+                RepairSegment.builder(
+                    Segment.builder()
+                        .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
+                        .build(),
+                    cf.getId())));
 
-    EndpointSnitchInfoMBean endpointSnitchInfoMBeanMock = mock(EndpointSnitchInfoMBean.class);
-    when(endpointSnitchInfoMBeanMock.getDatacenter(any())).thenReturn("dc1");
-    JmxProxyTest.mockGetEndpointSnitchInfoMBean(proxy, endpointSnitchInfoMBeanMock);
+    storage.addCluster(Cluster.builder()
+        .withName(cf.getClusterName())
+        .withPartitioner("Murmur3Partitioner")
+        .withSeedHosts(cf.getNodes())
+        .withJmxPort(7199)
+        .withState(Cluster.State.ACTIVE)
+        .build());
 
-    JmxConnectionFactory jmxConnectionFactory = mock(JmxConnectionFactory.class);
-    when(jmxConnectionFactory.connectAny(any(Collection.class))).thenReturn(proxy);
-    when(jmxConnectionFactory.getAccessibleDatacenters()).thenReturn(Sets.newHashSet("dc1"));
-    context.jmxConnectionFactory = jmxConnectionFactory;
-    context.config = new ReaperApplicationConfiguration();
-    context.config.setDatacenterAvailability(DatacenterAvailability.LOCAL);
+    final UUID runId = run.getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+
+    AppContext context = new AppContext();
+    context.storage = storage;
+    context.config = Mockito.mock(ReaperApplicationConfiguration.class);
+    when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
+    when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
+
+    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    when(jmx.getClusterName()).thenReturn("reaper");
+    when(jmx.isConnectionAlive()).thenReturn(true);
+
+    EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+    when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+    try {
+      when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+    } catch (UnknownHostException ex) {
+      throw new AssertionError(ex);
+    }
+    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
+    when(jmx.triggerRepair(any(), any(), any(), any(), any(), anyBoolean(), any(), any(), any(), anyInt()))
+        .thenReturn(0);
+
+    context.jmxConnectionFactory = new JmxConnectionFactory(context, new NoopCrypotograph()) {
+          @Override
+          protected JmxProxy connectImpl(Node host) throws ReaperException {
+            return jmx;
+          }
+        };
+
+    RepairRunner rr = mock(RepairRunner.class);
+    RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
 
     ClusterFacade clusterFacade = mock(ClusterFacade.class);
-    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(proxy);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
 
-    SegmentRunner segmentRunner = SegmentRunner.create(
-            context,
-            clusterFacade,
-            UUID.randomUUID(),
-            Collections.emptyList(),
-            1000,
-            1.1,
-            DATACENTER_AWARE,
-            "test",
-            mock(RepairUnit.class),
-            TABLES,
-            mock(RepairRunner.class));
+    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
+        .thenReturn(Lists.newArrayList(cf.getNodes()));
+    when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
+        Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
 
-    Pair<String, Callable<Optional<NodeMetrics>>> result = segmentRunner.getNodeMetrics("node-some", "dc1", "dc1");
-    Optional<NodeMetrics> optional = result.getRight().call();
-    assertTrue(optional.isPresent());
-    NodeMetrics metrics = optional.get();
-    assertEquals("test", metrics.getCluster());
-    assertEquals(3, metrics.getPendingCompactions());
-    assertTrue(metrics.hasRepairRunning());
+    SegmentRunner sr = SegmentRunner
+        .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
+
+    sr.run();
+
+    assertEquals(RepairSegment.State.DONE, storage.getRepairSegment(runId, segmentId).get().getState());
+    assertEquals(0, storage.getRepairSegment(runId, segmentId).get().getFailCount());
+  }
+
+  @Test
+  public void failComputingIntensityDelayTest() throws InterruptedException, ReaperException, ExecutionException,
+        MalformedObjectNameException, ReflectionException, IOException {
+    final IStorage storage = mock(IStorage.class);
+    AppContext context = new AppContext();
+    context.storage = storage;
+
+    RepairRunner rr = mock(RepairRunner.class);
+    when(rr.getRepairRunId()).thenReturn(UUIDs.timeBased());
+    RepairUnit ru = mock(RepairUnit.class);
+    RepairSegment segment = mock(RepairSegment.class);
+    when(segment.getStartTime()).thenReturn(DateTime.now());
+    when(segment.getEndTime()).thenReturn(null);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
+    when(storage.getRepairSegment(any(), any())).thenReturn(Optional.of(segment));
+
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+
+    SegmentRunner sr = SegmentRunner
+        .create(context, clusterFacade, UUIDs.timeBased(), COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
+
+    assertEquals("Intensity could apply fine although it shouldn't", 0, sr.intensityBasedDelayMillis(new Double(1)));
+  }
+
+  @Test
+  public void clearSnapshotTest() throws InterruptedException, ReaperException, ExecutionException,
+        MalformedObjectNameException, ReflectionException, IOException {
+    final IStorage storage = new MemoryStorage();
+    final int segmentTimeout = 30;
+
+    RepairUnit cf = storage.addRepairUnit(
+            RepairUnit.builder()
+                .clusterName("reaper")
+                .keyspaceName("reaper")
+                .columnFamilies(Sets.newHashSet("reaper"))
+                .incrementalRepair(false)
+                .nodes(Sets.newHashSet("127.0.0.1"))
+                .repairThreadCount(1)
+                .timeout(segmentTimeout));
+
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
+    RepairRun run = storage.addRepairRun(
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(PARALLEL)
+                .tables(TABLES),
+            Collections.singleton(
+                RepairSegment.builder(
+                    Segment.builder()
+                        .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
+                        .build(),
+                    cf.getId())));
+    storage.addCluster(Cluster.builder()
+        .withName(cf.getClusterName())
+        .withPartitioner("Murmur3Partitioner")
+        .withSeedHosts(cf.getNodes())
+        .withJmxPort(7199)
+        .withState(Cluster.State.ACTIVE)
+        .build());
+
+    final UUID runId = run.getId();
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    AppContext context = new AppContext();
+    context.storage = storage;
+    context.config = Mockito.mock(ReaperApplicationConfiguration.class);
+    when(context.config.getJmxConnectionTimeoutInSeconds()).thenReturn(30);
+    when(context.config.getDatacenterAvailability()).thenReturn(DatacenterAvailability.ALL);
+    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    when(jmx.getClusterName()).thenReturn("reaper");
+    when(jmx.isConnectionAlive()).thenReturn(true);
+    EndpointSnitchInfoMBean endpointSnitchInfoMBean = mock(EndpointSnitchInfoMBean.class);
+    when(endpointSnitchInfoMBean.getDatacenter()).thenReturn("dc1");
+    try {
+      when(endpointSnitchInfoMBean.getDatacenter(anyString())).thenReturn("dc1");
+    } catch (UnknownHostException ex) {
+      throw new AssertionError(ex);
+    }
+    JmxProxyTest.mockGetEndpointSnitchInfoMBean(jmx, endpointSnitchInfoMBean);
+
+    StorageServiceMBean storageServiceMbeanMock = mock(StorageServiceMBean.class);
+    JmxProxyTest.mockGetStorageServiceMBean(jmx, storageServiceMbeanMock);
+    doThrow(new IOException("failure"))
+        .when(storageServiceMbeanMock).clearSnapshot(any(), any());
+
+    RepairRunner rr = mock(RepairRunner.class);
+    RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
+
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
+    when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
+
+    when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
+        .thenReturn(Lists.newArrayList(cf.getNodes()));
+    when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
+        Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
+
+    SegmentRunner sr = SegmentRunner
+        .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
+
+    sr.tryClearSnapshots(UUIDs.timeBased().toString());
+    Mockito.verify(storageServiceMbeanMock, Mockito.times(1)).clearSnapshot(any(), any());
+  }
+
+  @Test
+  public void clearSnapshotFailTest() throws InterruptedException, ReaperException, ExecutionException,
+        MalformedObjectNameException, ReflectionException, IOException {
+    final IStorage storage = new MemoryStorage();
+    final int segmentTimeout = 30;
+
+    RepairUnit cf = storage.addRepairUnit(
+            RepairUnit.builder()
+                .clusterName("reaper")
+                .keyspaceName("reaper")
+                .columnFamilies(Sets.newHashSet("reaper"))
+                .incrementalRepair(false)
+                .nodes(Sets.newHashSet("127.0.0.1"))
+                .repairThreadCount(1)
+                .timeout(segmentTimeout));
+
+    Map<String, String> replicas = Maps.newHashMap();
+    replicas.put("127.0.0.1", "dc1");
+    RepairRun run = storage.addRepairRun(
+            RepairRun.builder("reaper", cf.getId())
+                .intensity(0.5)
+                .segmentCount(1)
+                .repairParallelism(PARALLEL)
+                .tables(TABLES),
+            Collections.singleton(
+                RepairSegment.builder(
+                    Segment.builder()
+                        .withTokenRange(new RingRange(BigInteger.ONE, BigInteger.ZERO))
+                        .withReplicas(replicas)
+                        .build(),
+                    cf.getId())));
+    storage.addCluster(Cluster.builder()
+        .withName(cf.getClusterName())
+        .withPartitioner("Murmur3Partitioner")
+        .withSeedHosts(cf.getNodes())
+        .withJmxPort(7199)
+        .withState(Cluster.State.ACTIVE)
+        .build());
+
+    final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
+    AppContext context = new AppContext();
+    context.storage = storage;
+    context.config = Mockito.mock(ReaperApplicationConfiguration.class);
+
+    RepairUnit ru = mock(RepairUnit.class);
+    when(ru.getKeyspaceName()).thenReturn("reaper");
+
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    when(clusterFacade.connect(any(Cluster.class), any())).thenThrow(new ReaperException("failure"));
+    StorageServiceMBean storageServiceMbeanMock = mock(StorageServiceMBean.class);
+    final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    JmxProxyTest.mockGetStorageServiceMBean(jmx, storageServiceMbeanMock);
+    doThrow(new IOException("failure"))
+        .when(storageServiceMbeanMock).clearSnapshot(any(), any());
+
+    RepairRunner rr = mock(RepairRunner.class);
+    SegmentRunner sr = SegmentRunner
+        .create(context, clusterFacade, segmentId, COORDS, 5000, 0.5, PARALLEL, "reaper", ru, TABLES, rr);
+
+    sr.tryClearSnapshots(UUIDs.timeBased().toString());
+    Mockito.verify(storageServiceMbeanMock, Mockito.times(0)).clearSnapshot(any(), any());
   }
 }

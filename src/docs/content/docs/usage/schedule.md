@@ -20,7 +20,7 @@ Click the *schedule* menu item on the left side to navigate to the Schedules pag
 
 ## Fill in the Details
 
-Enter values for the keyspace, tables, owner and other fields and click *Add Schedule* button. The details for adding a schedule are similar to the details for [Repair](../single) form except the "Clause" field is replaced with two fields; "Start time" and "Interval in days". See the table below for further information the two fields.
+Enter values for the keyspace, tables, owner and other fields and click *Add Schedule* button. The details for adding a schedule are similar to the details for [Repair](../single) form except the "Cause" field is replaced with three fields; "Start time", "Interval in days" and "Percent unrepaired threshold". See the table below for further information the two fields.
 
 {{< screenshot src="/img/add_schedule.png" />}}
 
@@ -30,6 +30,7 @@ Enter values for the keyspace, tables, owner and other fields and click *Add Sch
 ---|---
 **Start time** | The time to trigger repairs, based in GMT.
 **Interval in days** | The frequency for the schedule to be run.
+**Percent unrepaired threshold** | *For incremental repair only!* Sets the percentage of unrepaired data over which a repair run will be started for this schedule. As soon as one table in the set of tables managed by this schedule gets over the threshold, the run will be triggered.
 
 <br/>
 
@@ -39,4 +40,4 @@ Note that when choosing to add a new repair schedule, it is recommended to restr
 
 For example, if there are certain tables that contain valuable data or a business requirement for high consistency and high availability, they could be schedule to be repaired during low traffic periods.
 
-Note that scheduled repairs can be paused and deleted by users with access to the Reaper web interface. To add authentication security the web UI see the [authentication](../authentication) section for further information.
+Note that scheduled repairs can be paused and deleted by users with access to the Reaper web interface. To add authentication security the web UI see the [authentication](/docs/configuration/authentication) section for further information.

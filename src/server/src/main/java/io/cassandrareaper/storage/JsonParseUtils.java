@@ -20,7 +20,9 @@ package io.cassandrareaper.storage;
 import io.cassandrareaper.service.RingRange;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,7 +38,10 @@ public final class JsonParseUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(JsonParseUtils.class);
 
-  private static final ObjectReader READER = new ObjectMapper().readerFor(new TypeReference<List<RingRange>>() {});
+  private static final ObjectReader LIST_READER
+      = new ObjectMapper().readerFor(new TypeReference<List<RingRange>>() {});
+  private static final ObjectReader MAP_READER
+      = new ObjectMapper().readerFor(new TypeReference<Map<String, String>>() {});
   private static final ObjectWriter WRITER = new ObjectMapper().writer();
 
   private JsonParseUtils() {
@@ -45,7 +50,7 @@ public final class JsonParseUtils {
 
   public static List<RingRange> parseRingRangeList(Optional<String> json) {
     try {
-      return json.isPresent() ? READER.readValue(json.get()) : Lists.newArrayList();
+      return json.isPresent() ? LIST_READER.readValue(json.get()) : Lists.newArrayList();
     } catch (IOException e) {
       LOG.error("error parsing json", e);
       throw new IllegalArgumentException(e);
@@ -55,6 +60,23 @@ public final class JsonParseUtils {
   public static String writeTokenRangesTxt(List<RingRange> tokenRanges) {
     try {
       return WRITER.writeValueAsString(tokenRanges);
+    } catch (JsonProcessingException e) {
+      throw new IllegalArgumentException(e);
+    }
+  }
+
+  public static Map<String, String> parseReplicas(Optional<String> json) {
+    try {
+      return json.isPresent() ? MAP_READER.readValue(json.get()) : Collections.emptyMap();
+    } catch (IOException e) {
+      LOG.error("error parsing json", e);
+      throw new IllegalArgumentException(e);
+    }
+  }
+
+  public static String writeReplicas(Map<String, String> replicas) {
+    try {
+      return WRITER.writeValueAsString(replicas);
     } catch (JsonProcessingException e) {
       throw new IllegalArgumentException(e);
     }

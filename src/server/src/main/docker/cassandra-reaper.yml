@@ -13,9 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-segmentCount: ${REAPER_SEGMENT_COUNT}
+segmentCountPerNode: ${REAPER_SEGMENT_COUNT_PER_NODE}
 repairParallelism: ${REAPER_REPAIR_PARALELLISM}
 repairIntensity: ${REAPER_REPAIR_INTENSITY}
+maxPendingCompactions: ${REAPER_MAX_PENDING_COMPACTIONS}
 scheduleDaysBetween: ${REAPER_SCHEDULE_DAYS_BETWEEN}
 repairRunThreadCount: ${REAPER_REPAIR_RUN_THREADS}
 hangingRepairTimeoutMins: ${REAPER_HANGING_REPAIR_TIMEOUT_MINS}
@@ -27,6 +28,7 @@ enableDynamicSeedList: ${REAPER_ENABLE_DYNAMIC_SEED_LIST}
 repairManagerSchedulingIntervalSeconds: ${REAPER_REPAIR_MANAGER_SCHEDULING_INTERVAL_SECONDS}
 jmxConnectionTimeoutInSeconds: ${REAPER_JMX_CONNECTION_TIMEOUT_IN_SECONDS}
 useAddressTranslator: ${REAPER_USE_ADDRESS_TRANSLATOR}
+maxParallelRepairs: ${REAPER_MAX_PARALLEL_REPAIRS}
 
 # datacenterAvailability has three possible values: ALL | LOCAL | EACH
 # the correct value to use depends on whether jmx ports to C* nodes in remote datacenters are accessible
@@ -45,14 +47,13 @@ autoScheduling:
   periodBetweenPolls: ${REAPER_AUTO_SCHEDULING_PERIOD_BETWEEN_POLLS}
   timeBeforeFirstSchedule: ${REAPER_AUTO_SCHEDULING_TIME_BEFORE_FIRST_SCHEDULE}
   scheduleSpreadPeriod: ${REAPER_AUTO_SCHEDULING_SCHEDULE_SPREAD_PERIOD}
+  adaptive: ${REAPER_AUTO_SCHEDULING_ADAPTIVE}
+  incremental: ${REAPER_AUTO_SCHEDULING_INCREMENTAL}
+  percentUnrepairedThreshold: ${REAPER_AUTO_SCHEDULING_PERCENT_UNREPAIRED_THRESHOLD}
   excludedKeyspaces: ${REAPER_AUTO_SCHEDULING_EXCLUDED_KEYSPACES}
   excludedClusters: ${REAPER_AUTO_SCHEDULING_EXCLUDED_CLUSTERS}
 
 jmxPorts: ${REAPER_JMX_PORTS}
-
-jmxAuth:
-  username: ${REAPER_JMX_AUTH_USERNAME}
-  password: ${REAPER_JMX_AUTH_PASSWORD}
 
 jmxmp:
   enabled: ${REAPER_JMXMP_ENABLED}
@@ -78,4 +79,3 @@ server:
       bindHost: ${REAPER_SERVER_ADMIN_BIND_HOST}
   requestLog:
     appenders: []
-

@@ -20,6 +20,7 @@ package io.cassandrareaper.service;
 import io.cassandrareaper.AppContext;
 import io.cassandrareaper.ReaperException;
 import io.cassandrareaper.core.Cluster;
+import io.cassandrareaper.core.Node;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Table;
@@ -27,12 +28,15 @@ import io.cassandrareaper.jmx.ClusterFacade;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.VersionNumber;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -48,19 +52,30 @@ public final class RepairUnitService {
       = ImmutableSet.of("TimeWindowCompactionStrategy", "DateTieredCompactionStrategy");
 
   private final AppContext context;
+  private final ClusterFacade clusterFacade;
 
-  private RepairUnitService(AppContext context) {
+  private RepairUnitService(AppContext context, Supplier<ClusterFacade> clusterFacadeSupplier) {
     this.context = context;
+    this.clusterFacade = clusterFacadeSupplier.get();
+  }
+
+  @VisibleForTesting
+  static RepairUnitService create(AppContext context, Supplier<ClusterFacade> supplier) throws ReaperException {
+    return new RepairUnitService(context, supplier);
   }
 
   public static RepairUnitService create(AppContext context) {
-    return new RepairUnitService(context);
+    return new RepairUnitService(context, () -> ClusterFacade.create(context));
   }
 
-  public RepairUnit getOrCreateRepairUnit(Cluster cluster, RepairUnit.Builder params) {
+  public Optional<RepairUnit> getOrCreateRepairUnit(Cluster cluster, RepairUnit.Builder params) {
+    return getOrCreateRepairUnit(cluster, params, false);
+  }
+
+  public Optional<RepairUnit> getOrCreateRepairUnit(Cluster cluster, RepairUnit.Builder params, boolean force) {
     if (params.incrementalRepair) {
       try {
-        String version = ClusterFacade.create(context).getCassandraVersion(cluster);
+        String version = clusterFacade.getCassandraVersion(cluster);
         if (null != version && version.startsWith("2.0")) {
           throw new IllegalArgumentException("Incremental repair does not work with Cassandra versions before 2.1");
         }
@@ -69,7 +84,17 @@ public final class RepairUnitService {
       }
     }
     Optional<RepairUnit> repairUnit = context.storage.getRepairUnit(params);
-    return repairUnit.isPresent() ? repairUnit.get() : createRepairUnit(cluster, params);
+    if (repairUnit.isPresent()) {
+      return repairUnit;
+    }
+
+    try {
+      return Optional.of(createRepairUnit(cluster, params, force));
+    } catch (IllegalArgumentException e) {
+      return Optional.empty();
+    }
+
+
   }
 
   /**
@@ -84,7 +109,7 @@ public final class RepairUnitService {
     Set<String> result;
 
     if (repairUnit.getColumnFamilies().isEmpty()) {
-      Set<Table> tables = ClusterFacade.create(context).getTablesForKeyspace(cluster, keyspace);
+      Set<Table> tables = clusterFacade.getTablesForKeyspace(cluster, keyspace);
       Set<String> twcsBlacklisted = findBlacklistedCompactionStrategyTables(cluster, tables);
 
       result = tables.stream()
@@ -108,7 +133,7 @@ public final class RepairUnitService {
 
   public Set<String> findBlacklistedCompactionStrategyTables(Cluster clstr, Set<Table> tables) throws ReaperException {
     if (context.config.getBlacklistTwcsTables()
-        && versionCompare(ClusterFacade.create(context).getCassandraVersion(clstr), "2.1") >= 0) {
+        && versionCompare(clusterFacade.getCassandraVersion(clstr), "2.1") >= 0) {
 
       return tables
           .stream()
@@ -130,15 +155,16 @@ public final class RepairUnitService {
         .anyMatch(s -> table.getCompactionStrategy().toLowerCase().contains(s.toLowerCase()));
   }
 
-  private RepairUnit createRepairUnit(Cluster cluster, RepairUnit.Builder builder) {
+  private RepairUnit createRepairUnit(Cluster cluster, RepairUnit.Builder builder, boolean force) {
     Preconditions.checkArgument(
-        !unitConflicts(cluster, builder),
+        force || !unitConflicts(cluster, builder),
         "unit conflicts with existing in " + builder.clusterName + ":" + builder.keyspaceName);
 
     return context.storage.addRepairUnit(builder);
   }
 
-  private boolean unitConflicts(Cluster cluster, RepairUnit.Builder builder) {
+  @VisibleForTesting
+  boolean unitConflicts(Cluster cluster, RepairUnit.Builder builder) {
 
     Collection<RepairSchedule> repairSchedules = context.storage
         .getRepairSchedulesForClusterAndKeyspace(builder.clusterName, builder.keyspaceName);
@@ -170,10 +196,54 @@ public final class RepairUnitService {
     return !Sets.intersection(listRepairTables(unit.with(), tables), listRepairTables(builder, tables)).isEmpty();
   }
 
+  boolean identicalUnits(Cluster cluster, RepairUnit unit, RepairUnit.Builder builder) {
+    // if the Builders are equal, everything is the same
+    if (unit.with().equals(builder)) {
+      return true;
+    }
+
+    // if incremental repair is not the same, the units are not identical
+    if (unit.getIncrementalRepair() != builder.incrementalRepair.booleanValue()) {
+      // incremental reapir is not the same
+      return false;
+    }
+
+    // check the set of tables to be repaired
+    Preconditions.checkState(unit.getKeyspaceName().equals(builder.keyspaceName));
+
+    Set<String> tables = unit.getColumnFamilies().isEmpty() || builder.columnFamilies.isEmpty()
+        ? getTableNamesForKeyspace(cluster, unit.getKeyspaceName())
+        : Collections.emptySet();
+
+    // if the set of tables to repair is not the same, the units are not identical
+    if (!Objects.equals(listRepairTables(unit.with(), tables), listRepairTables(builder, tables))) {
+      // repair tables not the same
+      return false;
+    }
+
+    // if the set of nodes isn't the same, the units are not identical
+    Set<String> unitNodes = getRepairUnitNodes(cluster, unit.with());
+    Set<String> builderNodes = getRepairUnitNodes(cluster, builder);
+    if (!Objects.equals(unitNodes, builderNodes)) {
+      // repair unit nodes not the same
+      return false;
+    }
+
+    // if the set of datacenetrrs isn't the same, the units are not identical
+    Set<String> unitDatacenters = getRepairUnitDatacenters(cluster, unit.with(), unitNodes);
+    Set<String> builderDatacenters = getRepairUnitDatacenters(cluster, builder, builderNodes);
+    if (!Objects.equals(unitDatacenters, builderDatacenters)) {
+      // repair datacenters not the same
+      return false;
+    }
+
+    // units are effectively identical
+    return true;
+  }
+
   public Set<String> getTableNamesForKeyspace(Cluster cluster, String keyspace) {
     try {
-      return ClusterFacade
-          .create(context)
+      return clusterFacade
           .getTablesForKeyspace(cluster, keyspace)
           .stream()
           .map(Table::getName)
@@ -182,6 +252,36 @@ public final class RepairUnitService {
       LOG.warn("unknown table list to cluster {} keyspace", cluster.getName(), keyspace, e);
       return Collections.emptySet();
     }
+  }
+
+  private Set<String> getRepairUnitNodes(Cluster cluster, RepairUnit.Builder builder) {
+    if (!builder.nodes.isEmpty()) {
+      return builder.nodes;
+    }
+    try {
+      return clusterFacade
+          .getLiveNodes(cluster)
+          .stream()
+          .collect(Collectors.toSet());
+    } catch (ReaperException e) {
+      LOG.warn("Unable to get list of live nodes for cluster {}", cluster.getName());
+      return Collections.emptySet();
+    }
+  }
+
+  private Set<String> getRepairUnitDatacenters(Cluster cluster, RepairUnit.Builder builder, Set<String> nodes) {
+    if (!builder.datacenters.isEmpty()) {
+      return builder.datacenters;
+    }
+    Set<String> datacenters = Sets.newHashSet();
+    try {
+      for (String node : nodes) {
+        datacenters.add(clusterFacade.getDatacenter(Node.builder().withHostname(node).build()));
+      }
+    } catch (ReaperException | InterruptedException e) {
+      LOG.warn("Unable to get the list of datacenters for cluster {}", cluster.getName(), e);
+    }
+    return datacenters;
   }
 
   private static Set<String> listRepairTables(RepairUnit.Builder builder, Set<String> allTables) {

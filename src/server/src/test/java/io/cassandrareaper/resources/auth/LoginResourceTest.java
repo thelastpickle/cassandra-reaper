@@ -34,6 +34,7 @@ public final class LoginResourceTest {
     try (InputStream is = ResourceUtils.getInputStreamForPath("classpath:shiro.ini")) {
       Ini ini = new Ini();
       ini.load(is);
+      ini.get("main").remove("filterChainResolver.globalFilters");
       new WebIniSecurityManagerFactory(ini).getInstance();
     }
   }
@@ -43,6 +44,7 @@ public final class LoginResourceTest {
     try (InputStream is = ResourceUtils.getInputStreamForPath("classpath:shiro.ini")) {
       Ini ini = new Ini();
       ini.load(is);
+      ini.get("main").remove("filterChainResolver.globalFilters");
       new WebIniSecurityManagerFactory(ini).getInstance().authenticate(new UsernamePasswordToken("admin", "admin"));
     }
   }

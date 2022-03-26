@@ -214,6 +214,8 @@
         
         <li><a href="/docs/backends/cassandra/"> Cassandra </a> </li>
         
+        <li><a href="/docs/backends/astra/"> Astra </a> </li>
+        
     </ul>
     
     </li>
@@ -328,7 +330,32 @@
 <p>The Docker environment variables listed in this section map directly to Reaper specific settings in the <em>cassandra-reaper.yaml</em> configuration file. The following table below lists the Docker environment variables, their associated Reaper specific setting in the <em>cassandra-reaper.yaml</em> configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.</p>
 <!-- raw HTML omitted -->
 <!-- raw HTML omitted -->
-<p><strong>Note:</strong></p>
+<h2 id="using-address-translator-mapping">Using Address translator mapping</h2>
+<p>The Docker environment variables listed in this section are those related to the feature address translator mapping.</p>
+<!-- raw HTML omitted -->
+<p>Example :</p>
+<pre><code>REAPER_CASS_ADDRESS_TRANSLATOR_TYPE=multiIpPerNode
+REAPER_CASS_ADDRESS_TRANSLATOR_MAPPING=host1:ip1,host2:ip2
+</code></pre><p>config bloc at the container startup file &lsquo;/etc/cassandra-reaper/cassandra-reaper.yml&rsquo; :</p>
+<pre><code> addressTranslator:
+    type: multiIpPerNode
+    ipTranslations:
+    - from: &quot;host1&quot;
+      to: &quot;ip1&quot;
+    - from: &quot;host2&quot;
+      to: &quot;ip2&quot;
+</code></pre><p>and the same thing for the jmx mapping</p>
+<pre><code>JMX_ADDRESS_TRANSLATOR_TYPE=multiIpPerNode
+JMX_ADDRESS_TRANSLATOR_MAPPING=host1:ip1,host2:ip2
+</code></pre><p>result</p>
+<pre><code>jmxAddressTranslator:
+  type: multiIpPerNode
+  ipTranslations:
+    - from: &quot;host1&quot;
+      to: &quot;ip1&quot;
+    - from: &quot;host2&quot;
+      to: &quot;ip2&quot;
+</code></pre><!-- raw HTML omitted -->
 <p>Some variable names have changed between the release of Docker-support and Reaper for Apache Cassandra 1.0. The following Reaper specific variable name changes have occurred in an effort to match closely with the YAML parameter names:</p>
 <!-- raw HTML omitted -->
 <h2 id="associated-reaper-specific-configuration-settings">Associated Reaper Specific Configuration Settings</h2>
@@ -376,6 +403,7 @@ To activate graphite metrics reporting, run the container with the following sam
 <p>Default: <em>false</em></p>
 <p>Allows Reaper to establish an encrypted connection when establishing a connection with Cassandra via the native protocol.</p>
 <h2 id="direct-mapping-to-h2-or-postgres-backend-configuration-settings">Direct Mapping to H2 or Postgres Backend Configuration Settings</h2>
+<p><strong>Removed in v3.0.0</strong></p>
 <p>The Docker environment variables listed in this section map directly to H2/Postgres backend specific settings in the <em>cassandra-reaper.yaml</em> configuration file. The following table below lists the Docker environment variables, their associated H2/Postgres backend specific setting in the <em>cassandra-reaper.yaml</em> configuration file, and the default value assigned by the Docker container (if any). Definitions for each Docker environment variable can be found via the link to the associated setting.</p>
 <p>In order to use the following settings, <code>REAPER_STORAGE_TYPE</code> must be set to <code>h2</code> or <code>postgres</code>.</p>
 <!-- raw HTML omitted -->

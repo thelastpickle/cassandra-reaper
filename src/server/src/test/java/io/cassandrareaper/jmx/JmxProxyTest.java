@@ -19,12 +19,14 @@ package io.cassandrareaper.jmx;
 
 import io.cassandrareaper.ReaperException;
 
+import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.Random;
 
 import javax.management.MBeanServerConnection;
 
 import com.google.common.base.Preconditions;
+import org.apache.cassandra.db.compaction.CompactionManagerMBean;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.service.StorageServiceMBean;
 import org.apache.cassandra.streaming.StreamManagerMBean;
@@ -32,12 +34,16 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 
 public final class JmxProxyTest {
 
-  public static JmxProxy mockJmxProxyImpl() {
+  public static JmxProxy mockJmxProxyImpl() throws UnknownHostException {
     JmxProxyImpl impl = Mockito.mock(JmxProxyImpl.class);
     Mockito.when(impl.getUntranslatedHost()).thenReturn("test-host-" + new Random().nextInt());
+    EndpointSnitchInfoMBean endpointSnitchInfoMBean = Mockito.mock(EndpointSnitchInfoMBean.class);
+    Mockito.when(endpointSnitchInfoMBean.getDatacenter(any())).thenReturn("dc1");
+    Mockito.when(impl.getEndpointSnitchInfoMBean()).thenReturn(endpointSnitchInfoMBean);
     return impl;
   }
 
@@ -59,6 +65,11 @@ public final class JmxProxyTest {
   public static void mockGetEndpointSnitchInfoMBean(JmxProxy proxy, EndpointSnitchInfoMBean endpointSnitchInfoMBean) {
     Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
     Mockito.when(((JmxProxyImpl)proxy).getEndpointSnitchInfoMBean()).thenReturn(endpointSnitchInfoMBean);
+  }
+
+  public static void mockGetCompactionManagerMBean(JmxProxy proxy, CompactionManagerMBean compactionManagerMBean) {
+    Preconditions.checkArgument(proxy instanceof JmxProxyImpl, "only JmxProxyImpl is supported");
+    Mockito.when(((JmxProxyImpl)proxy).getCompactionManagerMBean()).thenReturn(compactionManagerMBean);
   }
 
   @Test

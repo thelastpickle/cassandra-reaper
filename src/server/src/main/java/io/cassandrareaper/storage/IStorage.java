@@ -19,6 +19,7 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
+import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -26,19 +27,19 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
-import io.cassandrareaper.service.RepairParameters;
-import io.cassandrareaper.service.RingRange;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.UUID;
 
+import io.dropwizard.lifecycle.Managed;
 
 /**
  * API definition for cassandra-reaper.
  */
-public interface IStorage {
+public interface IStorage extends Managed {
 
   boolean isStorageConnected();
 
@@ -60,6 +61,8 @@ public interface IStorage {
   Cluster deleteCluster(String clusterName);
 
   RepairRun addRepairRun(RepairRun.Builder repairRun, Collection<RepairSegment.Builder> newSegments);
+
+  boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState);
 
   boolean updateRepairRun(RepairRun repairRun);
 
@@ -86,6 +89,8 @@ public interface IStorage {
 
   Optional<RepairUnit> getRepairUnit(RepairUnit.Builder repairUnit);
 
+  void updateRepairUnit(RepairUnit updatedRepairUnit);
+
   boolean updateRepairSegment(RepairSegment newRepairSegment);
 
   Optional<RepairSegment> getRepairSegment(UUID runId, UUID segmentId);
@@ -98,13 +103,11 @@ public interface IStorage {
    *      handled. When start = end, consider that as a range that covers the whole ring.
    * @return a segment enclosed by the range with state NOT_STARTED, or nothing.
    */
-  Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range);
+  List<RepairSegment> getNextFreeSegments(UUID runId);
 
   Collection<RepairSegment> getSegmentsWithState(UUID runId, RepairSegment.State segmentState);
 
-  Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName);
-
-  SortedSet<UUID> getRepairRunIdsForCluster(String clusterName);
+  SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit);
 
   int getSegmentAmountForRepairRun(UUID runId);
 
@@ -115,6 +118,8 @@ public interface IStorage {
   Optional<RepairSchedule> getRepairSchedule(UUID repairScheduleId);
 
   Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName);
+
+  Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental);
 
   Collection<RepairSchedule> getRepairSchedulesForKeyspace(String keyspaceName);
 
@@ -152,4 +157,11 @@ public interface IStorage {
   DiagEventSubscription addEventSubscription(DiagEventSubscription subscription);
 
   boolean deleteEventSubscription(UUID id);
+
+  List<PercentRepairedMetric> getPercentRepairedMetrics(
+      String clusterName,
+      UUID repairScheduleId,
+      Long since);
+
+  void storePercentRepairedMetric(PercentRepairedMetric metric);
 }

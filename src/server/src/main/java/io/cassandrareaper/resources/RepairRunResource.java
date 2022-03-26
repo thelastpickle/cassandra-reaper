@@ -100,14 +100,16 @@ public final class RepairRunResource {
       @QueryParam("tables") Optional<String> tableNamesParam,
       @QueryParam("owner") Optional<String> owner,
       @QueryParam("cause") Optional<String> cause,
-      @QueryParam("segmentCount") Optional<Integer> segmentCountPerNode,
+      @QueryParam("segmentCountPerNode") Optional<Integer> segmentCountPerNode,
       @QueryParam("repairParallelism") Optional<String> repairParallelism,
       @QueryParam("intensity") Optional<String> intensityStr,
       @QueryParam("incrementalRepair") Optional<String> incrementalRepairStr,
       @QueryParam("nodes") Optional<String> nodesToRepairParam,
       @QueryParam("datacenters") Optional<String> datacentersToRepairParam,
       @QueryParam("blacklistedTables") Optional<String> blacklistedTableNamesParam,
-      @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam) {
+      @QueryParam("repairThreadCount") Optional<Integer> repairThreadCountParam,
+      @QueryParam("force") Optional<String> forceParam,
+      @QueryParam("timeout") Optional<Integer> timeoutParam) {
 
     try {
       final Response possibleFailedResponse
@@ -124,12 +126,13 @@ public final class RepairRunResource {
           nodesToRepairParam,
           datacentersToRepairParam,
           blacklistedTableNamesParam,
-          repairThreadCountParam);
+          repairThreadCountParam,
+          forceParam,
+          timeoutParam);
 
       if (null != possibleFailedResponse) {
         return possibleFailedResponse;
       }
-
       Double intensity;
       if (intensityStr.isPresent()) {
         intensity = Double.parseDouble(intensityStr.get());
@@ -137,7 +140,6 @@ public final class RepairRunResource {
         intensity = context.config.getRepairIntensity();
         LOG.debug("no intensity given, so using default value: {}", intensity);
       }
-
       boolean incrementalRepair;
       if (incrementalRepairStr.isPresent()) {
         incrementalRepair = Boolean.parseBoolean(incrementalRepairStr.get());
@@ -145,7 +147,6 @@ public final class RepairRunResource {
         incrementalRepair = context.config.getIncrementalRepair();
         LOG.debug("no incremental repair given, so using default value: {}", incrementalRepair);
       }
-
       int segments = context.config.getSegmentCountPerNode();
       if (!incrementalRepair) {
         if (segmentCountPerNode.isPresent()) {
@@ -159,7 +160,6 @@ public final class RepairRunResource {
         // hijack the segment count in case of incremental repair
         segments = -1;
       }
-
       final Cluster cluster = context.storage.getCluster(Cluster.toSymbolicName(clusterName.get()));
       Set<String> tableNames;
       try {
@@ -168,7 +168,6 @@ public final class RepairRunResource {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
-
       Set<String> blacklistedTableNames;
       try {
         blacklistedTableNames
@@ -177,7 +176,6 @@ public final class RepairRunResource {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
-
       final Set<String> nodesToRepair;
       try {
         nodesToRepair = repairRunService.getNodesToRepairBasedOnParam(cluster, nodesToRepairParam);
@@ -185,17 +183,17 @@ public final class RepairRunResource {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
-
       final Set<String> datacentersToRepair;
       try {
         datacentersToRepair = RepairRunService
-            .getDatacentersToRepairBasedOnParam(cluster, datacentersToRepairParam);
+            .getDatacentersToRepairBasedOnParam(datacentersToRepairParam);
 
       } catch (IllegalArgumentException ex) {
         LOG.error(ex.getMessage(), ex);
         return Response.status(Response.Status.NOT_FOUND).entity(ex.getMessage()).build();
       }
-
+      int timeout = timeoutParam.orElse(context.config.getHangingRepairTimeoutMins());
+      boolean force = (forceParam.isPresent() ? Boolean.parseBoolean(forceParam.get()) : false);
 
       RepairUnit.Builder builder = RepairUnit.builder()
               .clusterName(cluster.getName())
@@ -205,48 +203,55 @@ public final class RepairRunResource {
               .nodes(nodesToRepair)
               .datacenters(datacentersToRepair)
               .blacklistedTables(blacklistedTableNames)
-              .repairThreadCount(repairThreadCountParam.orElse(context.config.getRepairThreadCount()));
+              .repairThreadCount(repairThreadCountParam.orElse(context.config.getRepairThreadCount()))
+              .timeout(timeout);
 
-      final RepairUnit theRepairUnit = repairUnitService.getOrCreateRepairUnit(cluster, builder);
+      final Optional<RepairUnit> maybeTheRepairUnit = repairUnitService.getOrCreateRepairUnit(cluster, builder, force);
+      if (maybeTheRepairUnit.isPresent()) {
+        RepairUnit theRepairUnit = maybeTheRepairUnit.get();
+        if (theRepairUnit.getIncrementalRepair() != incrementalRepair) {
+          String msg = String.format(
+              "A repair unit %s already exist for the same cluster/keyspace/tables"
+                  + " but with a different incremental repair value. Requested value %s | Existing value: %s",
+              theRepairUnit.getId(),
+              incrementalRepair,
+              theRepairUnit.getIncrementalRepair());
 
-      if (theRepairUnit.getIncrementalRepair() != incrementalRepair) {
-        String msg = String.format(
-            "A repair unit %s already exist for the same cluster/keyspace/tables"
-                + " but with a different incremental repair value. Requested value %s | Existing value: %s",
-            theRepairUnit.getId(),
-            incrementalRepair,
-            theRepairUnit.getIncrementalRepair());
+          return Response.status(Response.Status.CONFLICT).entity(msg).build();
+        }
 
-        return Response.status(Response.Status.BAD_REQUEST).entity(msg).build();
-      }
+        RepairParallelism parallelism = context.config.getRepairParallelism();
+        if (repairParallelism.isPresent()) {
+          LOG.debug(
+              "using given repair parallelism {} instead of configured value {}",
+              repairParallelism.get(),
+              context.config.getRepairParallelism());
 
-      RepairParallelism parallelism = context.config.getRepairParallelism();
-      if (repairParallelism.isPresent()) {
-        LOG.debug(
-            "using given repair parallelism {} instead of configured value {}",
-            repairParallelism.get(),
-            context.config.getRepairParallelism());
+          parallelism = RepairParallelism.valueOf(repairParallelism.get().toUpperCase());
+        }
 
-        parallelism = RepairParallelism.valueOf(repairParallelism.get().toUpperCase());
-      }
+        if (incrementalRepair) {
+          parallelism = RepairParallelism.PARALLEL;
+        }
 
-      if (incrementalRepair) {
-        parallelism = RepairParallelism.PARALLEL;
-      }
+        final RepairRun newRepairRun = repairRunService.registerRepairRun(
+                cluster,
+                theRepairUnit,
+                cause,
+                owner.get(),
+                segments,
+                parallelism,
+                intensity,
+                false);
 
-      final RepairRun newRepairRun = repairRunService.registerRepairRun(
-              cluster,
-              theRepairUnit,
-              cause,
-              owner.get(),
-              0,
-              segments,
-              parallelism,
-              intensity);
-
-      return Response.created(buildRepairRunUri(uriInfo, newRepairRun))
-          .entity(new RepairRunStatus(newRepairRun, theRepairUnit, 0))
+        return Response.created(buildRepairRunUri(uriInfo, newRepairRun))
+            .entity(new RepairRunStatus(newRepairRun, theRepairUnit, 0))
+            .build();
+      } else {
+        return Response.status(Response.Status.CONFLICT)
+          .entity("An existing repair unit conflicts with your repair run.")
           .build();
+      }
 
     } catch (ReaperException e) {
       LOG.error(e.getMessage(), e);
@@ -272,7 +277,9 @@ public final class RepairRunResource {
       Optional<String> nodesStr,
       Optional<String> datacentersStr,
       Optional<String> blacklistedTableNamesParam,
-      Optional<Integer> repairThreadCountStr) throws ReaperException {
+      Optional<Integer> repairThreadCountStr,
+      Optional<String> forceParam,
+      Optional<Integer> timeoutParam) throws ReaperException {
 
     if (!clusterName.isPresent()) {
       return createMissingArgumentResponse("clusterName");
@@ -346,6 +353,23 @@ public final class RepairRunResource {
     if (tableNamesParam.isPresent() && blacklistedTableNamesParam.isPresent()) {
       return Response.status(Response.Status.BAD_REQUEST)
           .entity("invalid to specify a table list and a blacklist")
+          .build();
+    }
+
+    if (forceParam.isPresent()
+        && (!forceParam.get().toUpperCase().contentEquals("TRUE")
+        && !forceParam.get().toUpperCase().contentEquals("FALSE"))) {
+
+      return Response.status(Response.Status.BAD_REQUEST)
+          .entity("invalid query parameter \"force\", expecting [True,False]")
+          .build();
+    }
+
+    if (timeoutParam.isPresent()
+        && timeoutParam.get() == 0) {
+
+      return Response.status(Response.Status.BAD_REQUEST)
+          .entity("invalid query parameter \"timeout\", should be higher than 0")
           .build();
     }
 
@@ -444,40 +468,6 @@ public final class RepairRunResource {
       return updateRunIntensity(uriInfo, repairRun.get(), intensity);
     } catch (ValidationException ex) {
       return Response.status(Response.Status.BAD_REQUEST).entity(ex.getMessage()).build();
-    }
-  }
-
-  /**
-   * MOVED_PERMANENTLY to PUT repair_run/{id}/state/{state}
-   */
-  @PUT
-  @Path("/{id}")
-  @Deprecated
-  public Response oldModifyRunState(
-      @Context UriInfo uriInfo,
-      @PathParam("id") UUID repairRunId,
-      @QueryParam("state") Optional<String> stateStr) {
-
-    try {
-      if (!stateStr.isPresent()) {
-        return createMissingArgumentResponse("state");
-      }
-      RepairRun.RunState state = parseRunState(stateStr.get());
-
-      Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
-      if (!repairRun.isPresent()) {
-        return Response.status(Status.NOT_FOUND).entity("repair run " + repairRunId + " doesn't exist").build();
-      }
-
-      URI redirectUri = uriInfo
-          .getRequestUriBuilder()
-          .replacePath(String.format("repair_run/%s/state/%s", repairRun.get().getId().toString(), state))
-          .replaceQuery("")
-          .build();
-
-      return Response.seeOther(redirectUri).build();
-    } catch (ValidationException ex) {
-      return Response.status(Status.BAD_REQUEST).entity(ex.getMessage()).build();
     }
   }
 
@@ -614,10 +604,11 @@ public final class RepairRunResource {
   @GET
   @Path("/cluster/{cluster_name}")
   public Response getRepairRunsForCluster(
-      @PathParam("cluster_name") String clusterName) {
+      @PathParam("cluster_name") String clusterName,
+      @QueryParam("limit") Optional<Integer> limit) {
 
     LOG.debug("get repair run for cluster called with: cluster_name = {}", clusterName);
-    final Collection<RepairRun> repairRuns = context.storage.getRepairRunsForCluster(clusterName, Optional.empty());
+    final Collection<RepairRun> repairRuns = context.storage.getRepairRunsForCluster(clusterName, limit);
     final Collection<RepairRunStatus> repairRunViews = new ArrayList<>();
     for (final RepairRun repairRun : repairRuns) {
       repairRunViews.add(getRepairRunStatus(repairRun));
@@ -656,7 +647,8 @@ public final class RepairRunResource {
   public Response listRepairRuns(
       @QueryParam("state") Optional<String> state,
       @QueryParam("cluster_name") Optional<String> cluster,
-      @QueryParam("keyspace_name") Optional<String> keyspace) {
+      @QueryParam("keyspace_name") Optional<String> keyspace,
+      @QueryParam("limit") Optional<Integer> limit) {
 
     try {
       final Set desiredStates = splitStateParam(state);
@@ -670,7 +662,7 @@ public final class RepairRunResource {
 
       List<RepairRunStatus> runStatuses = Lists.newArrayList();
       for (final Cluster clstr : clusters) {
-        Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(clstr.getName(), Optional.empty());
+        Collection<RepairRun> runs = context.storage.getRepairRunsForCluster(clstr.getName(), limit);
 
         runStatuses.addAll(
             (List<RepairRunStatus>) getRunStatuses(runs, desiredStates)

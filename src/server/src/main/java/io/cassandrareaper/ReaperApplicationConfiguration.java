@@ -36,7 +36,6 @@ import javax.ws.rs.DefaultValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
 import io.dropwizard.client.HttpClientConfiguration;
-import io.dropwizard.db.DataSourceFactory;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.secnod.dropwizard.shiro.ShiroConfiguration;
@@ -45,7 +44,7 @@ import systems.composable.dropwizard.cassandra.network.AddressTranslatorFactory;
 
 public final class ReaperApplicationConfiguration extends Configuration {
 
-  private static final int DEFAULT_SEGMENT_COUNT_PER_NODE = 16;
+  private static final int DEFAULT_SEGMENT_COUNT_PER_NODE = 64;
   private static final Integer DEFAULT_MAX_PENDING_COMPACTIONS = 20;
 
   @JsonProperty
@@ -88,6 +87,10 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   @NotNull
   private Integer repairRunThreadCount;
+
+  @JsonProperty
+  @Nullable
+  private Integer maxParallelRepairs;
 
   @JsonProperty
   @NotNull
@@ -151,12 +154,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   private CassandraFactory cassandra = new CassandraFactory();
 
-  @Deprecated
-  @JsonProperty
-  private DataSourceFactory database;
-
-  private DataSourceFactory relationalDb = new DataSourceFactory();
-
   @JsonProperty
   private Optional<String> enforcedLocalNode = Optional.empty();
 
@@ -169,6 +166,9 @@ public final class ReaperApplicationConfiguration extends Configuration {
   @JsonProperty
   @DefaultValue("true")
   private Boolean enableConcurrentMigrations;
+
+  @JsonProperty
+  private Integer percentRepairedCheckIntervalMinutes;
 
   private HttpClientConfiguration httpClient = new HttpClientConfiguration();
 
@@ -256,6 +256,16 @@ public final class ReaperApplicationConfiguration extends Configuration {
     this.repairRunThreadCount = repairRunThreadCount;
   }
 
+  public int getMaxParallelRepairs() {
+    return maxParallelRepairs == null
+        ? 2
+        : maxParallelRepairs;
+  }
+
+  public void setMaxParallelRepairs(int maxParallelRepairs) {
+    this.maxParallelRepairs = maxParallelRepairs;
+  }
+
   public String getStorageType() {
     return storageType;
   }
@@ -274,30 +284,6 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setStorageType(String storageType) {
     this.storageType = storageType;
-  }
-
-  public DataSourceFactory getDataSourceFactory() {
-    return database != null ? database : relationalDb;
-  }
-
-  @JsonProperty("h2")
-  public DataSourceFactory getH2DataSourceFactory() {
-    return relationalDb;
-  }
-
-  @JsonProperty("h2")
-  public void setH2DataSourceFactory(DataSourceFactory h2) {
-    this.relationalDb = h2;
-  }
-
-  @JsonProperty("postgres")
-  public DataSourceFactory getPostgresDataSourceFactory() {
-    return relationalDb;
-  }
-
-  @JsonProperty("postgres")
-  public void setPostgresDataSourceFactory(DataSourceFactory postgres) {
-    this.relationalDb = postgres;
   }
 
   public int getRepairManagerSchedulingIntervalSeconds() {
@@ -440,13 +426,13 @@ public final class ReaperApplicationConfiguration extends Configuration {
     this.purgeRecordsAfterInDays = purgeRecordsAfterInDays;
   }
 
-  public Integer getNumberOfRunsToKeepPerUnit() {
-    return numberOfRunsToKeepPerUnit == null ? 50 : numberOfRunsToKeepPerUnit;
+  public Integer getPercentRepairedCheckIntervalMinutes() {
+    return percentRepairedCheckIntervalMinutes == null ? 30 : percentRepairedCheckIntervalMinutes;
   }
 
-  @JsonProperty("numberOfRunsToKeepPerUnit")
-  public void setNumberOfRunsToKeepPerUnit(Integer numberOfRunsToKeepPerUnit) {
-    this.numberOfRunsToKeepPerUnit = numberOfRunsToKeepPerUnit;
+  @JsonProperty("percentRepairedCheckIntervalMinutes")
+  public void setPercentRepairedCheckIntervalMinutes(Integer percentRepairedCheckIntervalMinutes) {
+    this.percentRepairedCheckIntervalMinutes = percentRepairedCheckIntervalMinutes;
   }
 
   public Boolean isInSidecarMode() {
@@ -483,6 +469,15 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
   public void setEnableConcurrentMigrations(boolean enableConcurrentMigrations) {
     this.enableConcurrentMigrations = enableConcurrentMigrations;
+  }
+
+  public Integer getNumberOfRunsToKeepPerUnit() {
+    return numberOfRunsToKeepPerUnit == null ? 50 : numberOfRunsToKeepPerUnit;
+  }
+
+  @JsonProperty("numberOfRunsToKeepPerUnit")
+  public void setNumberOfRunsToKeepPerUnit(Integer numberOfRunsToKeepPerUnit) {
+    this.numberOfRunsToKeepPerUnit = numberOfRunsToKeepPerUnit;
   }
 
   public HttpClientConfiguration getHttpClientConfiguration() {
@@ -534,6 +529,16 @@ public final class ReaperApplicationConfiguration extends Configuration {
 
     @JsonProperty
     private List<String> excludedClusters = Collections.emptyList();
+
+    @JsonProperty
+    private Boolean adaptive;
+
+    @JsonProperty
+    private Boolean incremental;
+
+    @JsonProperty
+    private Integer percentUnrepairedThreshold;
+
 
     public Boolean isEnabled() {
       return enabled;
@@ -595,6 +600,30 @@ public final class ReaperApplicationConfiguration extends Configuration {
       return excludedClusters;
     }
 
+    public Boolean isAdaptive() {
+      return adaptive == null ? false : adaptive;
+    }
+
+    public void setAdaptive(Boolean adaptive) {
+      this.adaptive = adaptive;
+    }
+
+    public Boolean incremental() {
+      return incremental == null ? false : incremental;
+    }
+
+    public void setIncremental(Boolean incremental) {
+      this.incremental = incremental;
+    }
+
+    public Integer getPercentUnrepairedThreshold() {
+      return percentUnrepairedThreshold == null ? -1 : percentUnrepairedThreshold;
+    }
+
+    public void setPercentUnrepairedThreshold(Integer percentUnrepairedThreshold) {
+      this.percentUnrepairedThreshold = percentUnrepairedThreshold;
+    }
+
     @Override
     public String toString() {
       return "AutoSchedulingConfiguration{"
@@ -608,6 +637,8 @@ public final class ReaperApplicationConfiguration extends Configuration {
           + timeBeforeFirstSchedule
           + ", scheduleSpreadPeriod="
           + scheduleSpreadPeriod
+          + ", adaptive="
+          + adaptive
           + '}';
     }
   }

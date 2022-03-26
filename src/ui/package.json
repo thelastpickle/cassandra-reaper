@@ -1,7 +1,7 @@
 {
   "name": "cassandra-reaper-ui",
   "version": "0.2.0",
-  "description": "Interactive web UI for Cassandra Reaper",
+  "description": "Interactive web UI for Reaper for Apache Cassandra",
   "main": "index.js",
   "keywords": [
     "cassandra"
@@ -19,6 +19,7 @@
     "babel-preset-react": "^6.0.0",
     "babel-runtime": "^6.26.0",
     "bootstrap": "^3.3.7",
+    "bower": "^1.8.14",
     "css-loader": "^3.5.0",
     "dom-helpers": "^3.4.0",
     "html-webpack-plugin": "^3.0.0",
@@ -46,7 +47,9 @@
     "minimize": "webpack -p --progress --colors --devtool none",
     "zip": "zip -jr release.zip build",
     "start": "node server.js --env.project=$REAPER_HOST",
-    "navbar": "./build-navbar.sh"
+    "navbar": "./build-navbar.sh",
+    "bower": "bower install",
+    "postinstall": "npm run bower"
   },
   "dependencies": {
     "core-js": "^2.6.11",

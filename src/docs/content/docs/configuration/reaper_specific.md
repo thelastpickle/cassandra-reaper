@@ -96,17 +96,17 @@ For security reasons, it is possible that Reaper will have access limited to nod
 
 **ALL** - requires Reaper to have access via JMX to all nodes across all datacenters. In this mode Reaper can be backed by all available storage types.
 
-**LOCAL** - requires Reaper to have access via JMX to all nodes only in the same datacenter local to Reaper. A single Reaper instance can operate in this mode and trigger repairs from within its local data center. In this case, can be backed by all available storage types and repairs to any remote datacenters are be handled internally by Cassandra. A Reaper instance can be deployed to each datacenter and be configured to operate in this mode. In this case, Reaper can use either of Apache Cassandra or Postgres as its storage.
+**LOCAL** - requires Reaper to have access via JMX to all nodes only in the same datacenter local to Reaper. A single Reaper instance can operate in this mode and trigger repairs from within its local data center. In this case, can be backed by all available storage types and repairs to any remote datacenters are be handled internally by Cassandra. A Reaper instance can be deployed to each datacenter and be configured to operate in this mode. In this case, Reaper can use Apache Cassandra or Astra as its storage.
 
 Further information can be found in the [Operating with a Multi DC Cluster](../../usage/multi_dc) section.
 
-**EACH** - requires a minimum of one Reaper instance operating in each datacenter. Each Reaper instance is required to have access via JMX to all nodes only in its local datacenter. When operating in this mode, Reaper can use either of Apache Cassandra or Postgres as its storage. In addition, metrics from nodes in remote datacenters must be collected through the storage backend. If any metric is unavailable, the segment will be postponed for later processing.
+**EACH** - requires a minimum of one Reaper instance operating in each datacenter. Each Reaper instance is required to have access via JMX to all nodes only in its local datacenter. When operating in this mode, Reaper can use either of Apache Cassandra or Astra as its storage. In addition, metrics from nodes in remote datacenters must be collected through the storage backend. If any metric is unavailable, the segment will be postponed for later processing.
 
 Further information can be found in the [Operating with a Multi DC Cluster](../../usage/multi_dc) section.
 
 **SIDECAR** - requires one reaper instance for each node in the cluster.
 Each Reaper instance is required to have access via JMX to its local node.
-When operating in this mode, Reaper can use either of Apache Cassandra or Postgres as its storage.
+When operating in this mode, Reaper can use either of Apache Cassandra or Astra as its storage.
 
 Further information can be found in the [Sidecar Mode](../../usage/sidecar_mode) section.
 
@@ -291,7 +291,7 @@ The number of archive log files stored in the log rotation sliding window. That 
 
 Type: *Object*
 
-Configuration parameters for sending metrics to a reporting system via the [Dropwizard interface](http://www.dropwizard.io/1.1.4/docs/manual/configuration.html#metrics). Cassandra Reaper ships the Graphite and DataDog reporters by default.
+Configuration parameters for sending metrics to a reporting system via the [Dropwizard interface](http://www.dropwizard.io/1.1.4/docs/manual/configuration.html#metrics). Reaper for Apache Cassandra ships the Graphite and DataDog reporters by default.
 
 Further information on metrics configuration can be found in the [Metrics](../../metrics) section.
 
@@ -397,7 +397,7 @@ Note that to bind the service to all interfaces use value **0.0.0.0** or leave t
 
 Type: *String*
 
-The storage type to use in which Reaper will store its control data. The value must be either **cassandra**, **h2**, **memory**, or **postgres**. If the recommended (persistent) storage type **cassandra**, **h2**, or **postgres** is being used, the database client parameters must be specified in the respective `cassandra`, `h2`, or `postgres` section in the configuration file. See the example settings in provided the *[src/packaging/resources](https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource)* directory of the repository.
+The storage type to use in which Reaper will store its control data. The value must be either **cassandra**, **astra** or **memory**. If the recommended (persistent) storage type **cassandra**, or **astra** is being used, the database client parameters must be specified in the `cassandra` section in the configuration file. See the example settings in provided the *[src/packaging/resources](https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource)* directory of the repository.
 
 <br/>
 
@@ -458,6 +458,17 @@ Type: *Integer*
 Default: *20*
 
 Reaper will prevent repair from overwhelming the cluster when lots of SSTables are streamed, by pausing segment processing if there are more than a specific number of pending compactions. Adjust this setting if you have a lot of tables in the cluster and the total number of pending compactions is usually high.
+
+### `maxParallelRepairs`
+
+_**Since 2.2.0**_
+
+Type: *Integer*
+
+Default: *2*
+
+Reaper allows concurrent segments from distinct repair runs running on the same nodes at the same time. In order to limit the repair load, it will only allow a limited number of repair runs to run concurrently (by default, two). Repair runs over the threshold will still start and be in `RUNNING` state, but their segments will be postposned as long as there are too many repairs being processed.  
+Setting this value too high could put a lot of pressure on clusters and negatively impact their performance. 
 
 <br/>
 
@@ -527,4 +538,3 @@ Type: *String*
 
 The key of a system property that holds the shared secret for the symmetric encryption.  If encrypted text is required, then this key and its value need to be defined in the environment before reaper can be started.  
 ```export SOME_SYSTEM_PROPERTY_KEY=mysharedsecret```
-

@@ -15,6 +15,10 @@
   </url>
   
   <url>
+    <loc>http://cassandra-reaper.io/docs/backends/astra/</loc>
+  </url>
+  
+  <url>
     <loc>http://cassandra-reaper.io/docs/backends/cassandra/</loc>
   </url>
   

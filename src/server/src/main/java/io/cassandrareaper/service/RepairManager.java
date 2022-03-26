@@ -23,7 +23,6 @@ import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSegment;
 import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.jmx.ClusterFacade;
-import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.Arrays;
@@ -31,6 +30,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -62,25 +63,25 @@ public final class RepairManager implements AutoCloseable {
   private final AppContext context;
   private final ClusterFacade clusterFacade;
   private final ListeningScheduledExecutorService executor;
-  private final long repairTimeoutMillis;
   private final long retryDelayMillis;
+  private final int maxParallelRepairs;
 
   private RepairManager(
       AppContext context,
       ClusterFacade clusterFacade,
       ScheduledExecutorService executor,
-      long repairTimeout,
-      TimeUnit repairTimeoutTimeUnit,
       long retryDelay,
-      TimeUnit retryDelayTimeUnit) throws ReaperException {
+      TimeUnit retryDelayTimeUnit,
+      int maxParallelRepairs
+  ) throws ReaperException {
 
     this.context = context;
     this.clusterFacade = clusterFacade;
-    this.repairTimeoutMillis = repairTimeoutTimeUnit.toMillis(repairTimeout);
     this.retryDelayMillis = retryDelayTimeUnit.toMillis(retryDelay);
 
     this.executor = MoreExecutors.listeningDecorator(
         new InstrumentedScheduledExecutorService(executor, context.metricRegistry));
+    this.maxParallelRepairs = maxParallelRepairs;
   }
 
   @VisibleForTesting
@@ -88,41 +89,35 @@ public final class RepairManager implements AutoCloseable {
       AppContext context,
       ClusterFacade clusterFacadeSupplier,
       ScheduledExecutorService executor,
-      long repairTimeout,
-      TimeUnit repairTimeoutTimeUnit,
       long retryDelay,
-      TimeUnit retryDelayTimeUnit) throws ReaperException {
+      TimeUnit retryDelayTimeUnit,
+      int maxParallelRepairs
+  ) throws ReaperException {
 
     return new RepairManager(
         context,
         clusterFacadeSupplier,
         executor,
-        repairTimeout,
-        repairTimeoutTimeUnit,
         retryDelay,
-        retryDelayTimeUnit);
+        retryDelayTimeUnit,
+        maxParallelRepairs);
   }
 
   public static RepairManager create(
       AppContext context,
       ScheduledExecutorService executor,
-      long repairTimeout,
-      TimeUnit repairTimeoutTimeUnit,
       long retryDelay,
-      TimeUnit retryDelayTimeUnit) throws ReaperException {
+      TimeUnit retryDelayTimeUnit,
+      int maxParallelRepairs
+  ) throws ReaperException {
 
     return create(
         context,
         ClusterFacade.create(context),
         executor,
-        repairTimeout,
-        repairTimeoutTimeUnit,
         retryDelay,
-        retryDelayTimeUnit);
-  }
-
-  long getRepairTimeoutMillis() {
-    return repairTimeoutMillis;
+        retryDelayTimeUnit,
+        maxParallelRepairs);
   }
 
   /**
@@ -144,10 +139,10 @@ public final class RepairManager implements AutoCloseable {
   private void abortAllRunningSegmentsWithNoLeader(Collection<RepairRun> runningRepairRuns) {
     runningRepairRuns
         .forEach((repairRun) -> {
-          Collection<RepairSegment> runningSegments
-              = context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.RUNNING);
-          Collection<RepairSegment> startedSegments
-              = context.storage.getSegmentsWithState(repairRun.getId(), RepairSegment.State.STARTED);
+          Collection<RepairSegment> runningSegments = context.storage.getSegmentsWithState(repairRun.getId(),
+              RepairSegment.State.RUNNING);
+          Collection<RepairSegment> startedSegments = context.storage.getSegmentsWithState(repairRun.getId(),
+              RepairSegment.State.STARTED);
 
           abortSegmentsWithNoLeader(repairRun, runningSegments);
           abortSegmentsWithNoLeader(repairRun, startedSegments);
@@ -161,8 +156,8 @@ public final class RepairManager implements AutoCloseable {
         if (!repairRunners.containsKey(repairRun.getId())) {
           LOG.info("Restarting run id {} that has no runner", repairRun.getId());
           // it may be that this repair is already "running" actively on other reaper instances
-          //  nonetheless we need to make it actively running on this reaper instance as well
-          //   so to help in running the queued segments
+          // nonetheless we need to make it actively running on this reaper instance as well
+          // so to help in running the queued segments
           startRepairRun(repairRun);
         }
       }
@@ -180,10 +175,10 @@ public final class RepairManager implements AutoCloseable {
           .filter((pausedRepairRun) -> repairRunners.containsKey(pausedRepairRun.getId()))
           .forEach((pausedRepairRun) -> {
             // Abort all running and started segments for paused repair runs
-            Collection<RepairSegment> runningSegments
-                = context.storage.getSegmentsWithState(pausedRepairRun.getId(), RepairSegment.State.RUNNING);
-            Collection<RepairSegment> startedSegments
-                = context.storage.getSegmentsWithState(pausedRepairRun.getId(), RepairSegment.State.STARTED);
+            Collection<RepairSegment> runningSegments = context.storage.getSegmentsWithState(pausedRepairRun.getId(),
+                RepairSegment.State.RUNNING);
+            Collection<RepairSegment> startedSegments = context.storage.getSegmentsWithState(pausedRepairRun.getId(),
+                RepairSegment.State.STARTED);
 
             abortSegments(runningSegments, pausedRepairRun);
             abortSegments(startedSegments, pausedRepairRun);
@@ -201,13 +196,22 @@ public final class RepairManager implements AutoCloseable {
           .stream()
           .filter((pausedRepairRun) -> (!repairRunners.containsKey(pausedRepairRun.getId())))
           // add "paused" repair run to this reaper instance, so it can be visualised in UI
-          .forEachOrdered((pausedRepairRun) -> startRunner(pausedRepairRun.getId()));
+          .forEachOrdered((pausedRepairRun) -> startRunner(pausedRepairRun));
     } finally {
       repairRunnersLock.unlock();
     }
   }
 
   private void abortSegmentsWithNoLeader(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
+    RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
+    if (repairUnit.getIncrementalRepair()) {
+      abortSegmentsWithNoLeaderIncremental(repairRun, runningSegments);
+    } else {
+      abortSegmentsWithNoLeaderNonIncremental(repairRun, runningSegments);
+    }
+  }
+
+  private void abortSegmentsWithNoLeaderIncremental(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
 
     if (LOG.isDebugEnabled()) {
       LOG.debug(
@@ -220,12 +224,41 @@ public final class RepairManager implements AutoCloseable {
         // When multiple Reapers are in use, we can get stuck segments when one instance is rebooted
         // Any segment in RUNNING or STARTED state but with no leader should be killed
         List<UUID> leaders = context.storage instanceof IDistributedStorage
-                ? ((IDistributedStorage) context.storage).getLeaders()
-                : Collections.emptyList();
+            ? ((IDistributedStorage) context.storage).getLeaders()
+            : Collections.emptyList();
 
         Collection<RepairSegment> orphanedSegments = runningSegments
             .stream()
             .filter(segment -> !leaders.contains(segment.getId()) && !leaders.contains(segment.getRunId()))
+            .collect(Collectors.toSet());
+
+        LOG.debug("No leader on the following segments : {}", orphanedSegments);
+        abortSegments(orphanedSegments, repairRun);
+      }
+    } finally {
+      repairRunnersLock.unlock();
+    }
+  }
+
+  private void abortSegmentsWithNoLeaderNonIncremental(RepairRun repairRun, Collection<RepairSegment> runningSegments) {
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(
+          "Checking leadership on the following segments : {}",
+          runningSegments.stream().map(seg -> seg.getId()).collect(Collectors.toList()));
+    }
+    try {
+      repairRunnersLock.lock();
+      if (context.storage instanceof IDistributedStorage || !repairRunners.containsKey(repairRun.getId())) {
+        // When multiple Reapers are in use, we can get stuck segments when one instance is rebooted
+        // Any segment in RUNNING or STARTED state but with no leader should be killed
+        Set<UUID> leaders = context.storage instanceof IDistributedStorage
+            ? ((IDistributedStorage) context.storage).getLockedSegmentsForRun(repairRun.getId())
+            : Collections.emptySet();
+
+        Collection<RepairSegment> orphanedSegments = runningSegments
+            .stream()
+            .filter(segment -> !leaders.contains(segment.getId()))
             .collect(Collectors.toSet());
 
         LOG.debug("No leader on the following segments : {}", orphanedSegments);
@@ -265,32 +298,7 @@ public final class RepairManager implements AutoCloseable {
     RepairUnit repairUnit = context.storage.getRepairUnit(repairRun.getRepairUnitId());
     for (RepairSegment segment : runningSegments) {
       LOG.debug("Trying to abort stuck segment {} in repair run {}", segment.getId(), repairRun.getId());
-      UUID leaderElectionId = repairUnit.getIncrementalRepair() ? repairRun.getId() : segment.getId();
-      boolean tookLead;
-      if (tookLead = takeLead(context, leaderElectionId) || renewLead(context, leaderElectionId)) {
-        try {
-          // refresh segment once we're inside leader-election
-          segment = context.storage.getRepairSegment(repairRun.getId(), segment.getId()).get();
-          if (RepairSegment.State.RUNNING == segment.getState()
-              || RepairSegment.State.STARTED == segment.getState()) {
-            JmxProxy jmxProxy = ClusterFacade.create(context).connect(
-                      context.storage.getCluster(repairRun.getClusterName()),
-                      Arrays.asList(segment.getCoordinatorHost()));
-
-            SegmentRunner.abort(context, segment, jmxProxy);
-          }
-        } catch (ReaperException | NumberFormatException e) {
-          String msg = "Tried to abort repair on segment {} marked as RUNNING, but the "
-              + "host was down (so abortion won't be needed). Postponing the segment.";
-
-          LOG.debug(msg, segment.getId(), e);
-          SegmentRunner.postponeSegment(context, segment);
-        } finally {
-          if (tookLead) {
-            releaseLead(context, leaderElectionId);
-          }
-        }
-      }
+      SegmentRunner.postponeSegment(context, segment);
     }
   }
 
@@ -308,7 +316,7 @@ public final class RepairManager implements AutoCloseable {
         if (!context.storage.updateRepairRun(updatedRun)) {
           throw new ReaperException("failed updating repair run " + updatedRun.getId());
         }
-        startRunner(runId);
+        startRunner(updatedRun);
         return updatedRun;
       }
       case PAUSED: {
@@ -324,15 +332,15 @@ public final class RepairManager implements AutoCloseable {
       }
       case RUNNING:
         LOG.info("re-trigger a running run after restart, with id {}", runId);
-        startRunner(runId);
+        startRunner(runToBeStarted);
         return runToBeStarted;
       case ERROR: {
-        RepairRun updatedRun
-            = runToBeStarted.with().runState(RepairRun.RunState.RUNNING).endTime(null).build(runToBeStarted.getId());
+        RepairRun updatedRun = runToBeStarted.with().runState(RepairRun.RunState.RUNNING).endTime(null).build(
+            runToBeStarted.getId());
         if (!context.storage.updateRepairRun(updatedRun)) {
           throw new ReaperException("failed updating repair run " + updatedRun.getId());
         }
-        startRunner(runId);
+        startRunner(updatedRun);
         return updatedRun;
       }
       default:
@@ -342,31 +350,56 @@ public final class RepairManager implements AutoCloseable {
 
   public RepairRun updateRepairRunIntensity(RepairRun repairRun, Double intensity) throws ReaperException {
     RepairRun updatedRun = repairRun.with().intensity(intensity).build(repairRun.getId());
-    if (!context.storage.updateRepairRun(updatedRun)) {
+    if (!context.storage.updateRepairRun(updatedRun, Optional.of(false))) {
       throw new ReaperException("failed updating repair run " + updatedRun.getId());
     }
     return updatedRun;
   }
 
-  private void startRunner(UUID runId) {
+  @SuppressWarnings("CheckReturnValue")
+  private void startRunner(RepairRun run) {
     try {
       repairRunnersLock.lock();
 
       Preconditions.checkState(
-          !repairRunners.containsKey(runId),
-          "there is already a repair runner for run with id " + runId + ". This should not happen.");
+          !repairRunners.containsKey(run.getId()),
+          "there is already a repair runner for run with id " + run.getId() + ". This should not happen.");
 
-      LOG.info("scheduling repair for repair run #{}", runId);
-      try {
-        RepairRunner newRunner = RepairRunner.create(context, runId, clusterFacade);
-        repairRunners.put(runId, newRunner);
-        executor.submit(newRunner);
-      } catch (ReaperException e) {
-        LOG.warn("Failed to schedule repair for repair run #" + runId, e);
+      LOG.debug("scheduling repair for repair run #{}", run.getId());
+
+      if (countRepairRunnersForCluster(run.getClusterName()) >= maxParallelRepairs) {
+        LOG.debug("Maximum parallel repairs reached ({}). Postponing repair run with id {}",
+            maxParallelRepairs, run.getId());
+        // Update the last event on the repair run
+        RepairRun postponedRun = run.with().lastEvent("Maximum parallel repairs reached, postponing repair run.").build(
+            run.getId());
+        if (!context.storage.updateRepairRun(postponedRun, Optional.of(false))) {
+          LOG.warn("Failed to updating repair run #" + run.getId());
+        }
+
+      } else {
+        try {
+          RepairRunner newRunner = RepairRunner.create(context, run.getId(), clusterFacade);
+          repairRunners.put(run.getId(), newRunner);
+          executor.submit(newRunner);
+        } catch (ReaperException e) {
+          LOG.warn("Failed to schedule repair for repair run #" + run.getId(), e);
+        }
       }
     } finally {
       repairRunnersLock.unlock();
     }
+  }
+
+  @VisibleForTesting
+  public int countRepairRunnersForCluster(String clusterName) {
+    Long repairRunnersForCluster
+        = repairRunners.entrySet()
+          .stream()
+          .map(entry -> entry.getValue())
+          .filter(runner -> runner.getCluster().getName().equals(clusterName))
+          .count();
+    return repairRunnersForCluster.intValue();
   }
 
   public RepairRun pauseRepairRun(RepairRun runToBePaused) throws ReaperException {
@@ -391,9 +424,14 @@ public final class RepairManager implements AutoCloseable {
     if (!context.storage.updateRepairRun(updatedRun)) {
       throw new ReaperException("failed updating repair run " + updatedRun.getId());
     }
+
+    context.metricRegistry.counter(
+      MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.ABORTED.toString())).inc();
+
     return updatedRun;
   }
 
+  @SuppressWarnings("CheckReturnValue")
   void scheduleRetry(RepairRunner runner) {
     executor.schedule(runner, retryDelayMillis, TimeUnit.MILLISECONDS);
   }

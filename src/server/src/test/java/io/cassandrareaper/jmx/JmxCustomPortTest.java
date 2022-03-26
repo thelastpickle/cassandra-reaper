@@ -25,6 +25,7 @@ import io.cassandrareaper.core.Node;
 import io.cassandrareaper.crypto.Cryptograph;
 import io.cassandrareaper.storage.CassandraStorage;
 
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -32,7 +33,9 @@ import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public final class JmxCustomPortTest {
 
@@ -42,11 +45,14 @@ public final class JmxCustomPortTest {
    * @throws ReaperException
    */
   @Test
-  public void customJmxPortTest() throws ReaperException, InterruptedException {
+  public void customJmxPortTest() throws ReaperException, InterruptedException, UnknownHostException {
     AppContext context = new AppContext();
     final Cryptograph cryptographMock = mock(Cryptograph.class);
-    final JmxProxy jmxProxyMock = mock(JmxProxy.class);
+    final JmxProxy jmxProxyMock = JmxProxyTest.mockJmxProxyImpl();
     final AtomicInteger port = new AtomicInteger(0);
+    HostConnectionCounters hostConnectionCounters = mock(HostConnectionCounters.class);
+    when(hostConnectionCounters.getSuccessfulConnections(any())).thenReturn(1);
+
 
     context.jmxConnectionFactory = new JmxConnectionFactory(context, cryptographMock) {
           @Override
@@ -54,6 +60,11 @@ public final class JmxCustomPortTest {
             final JmxProxy jmx = jmxProxyMock;
             port.set(node.getJmxPort());
             return jmx;
+          }
+
+          @Override
+          public HostConnectionCounters getHostConnectionCounters() {
+            return hostConnectionCounters;
           }
         };
 

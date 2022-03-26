@@ -83,16 +83,24 @@ public class JmxConnectionFactory {
     }
   }
 
-  protected JmxProxy connectImpl(Node node) throws ReaperException, InterruptedException {
-    // use configured jmx port for host if provided
+  protected String determineHost(Node node) {
     String host = node.getHostname();
     if (jmxPorts != null && jmxPorts.containsKey(host) && !host.contains(":")) {
       host = host + ":" + jmxPorts.get(host);
       LOG.debug("Connecting to {} with specific port", host);
+    } else if (JmxAddresses.isNumericIPv6Address(host)) {
+      host = "[" + host + "]:" + node.getJmxPort();
+      LOG.debug("Connecting to ipv6 {} with custom port", host);
     } else {
       host = host + ":" + node.getJmxPort();
       LOG.debug("Connecting to {} with custom port", host);
     }
+    return host;
+  }
+
+  protected JmxProxy connectImpl(Node node) throws ReaperException, InterruptedException {
+    // use configured jmx port for host if provided
+    String host = determineHost(node);
 
     Optional<JmxCredentials> jmxCredentials = getJmxCredentialsForCluster(node.getCluster());
 
@@ -133,12 +141,19 @@ public class JmxConnectionFactory {
     for (int i = 0; i < 2; i++) {
       for (Node node : nodeList) {
         // First loop, we try the most accessible nodes, then second loop we try all nodes
-        if (hostConnectionCounters.getSuccessfulConnections(node.getHostname()) >= 0 || 1 == i) {
+        if (getHostConnectionCounters().getSuccessfulConnections(node.getHostname()) >= 0 || 1 == i) {
           try {
-            return connectImpl(node);
+            LOG.debug("Trying to connect to node {} with {} successful connections with i = {}",
+                node.getHostname(), getHostConnectionCounters().getSuccessfulConnections(node.getHostname()), i);
+            JmxProxy jmxProxy = connectImpl(node);
+            getHostConnectionCounters().incrementSuccessfulConnections(node.getHostname());
+            if (getHostConnectionCounters().getSuccessfulConnections(node.getHostname()) > 0) {
+              accessibleDatacenters.add(EndpointSnitchInfoProxy.create(jmxProxy).getDataCenter());
+            }
+            return jmxProxy;
           } catch (ReaperException | RuntimeException e) {
-            LOG.info("Unreachable host: {}: {}", e.getMessage(), e.getCause().getMessage());
-            LOG.debug("Unreachable host: ", e);
+            getHostConnectionCounters().decrementSuccessfulConnections(node.getHostname());
+            LOG.info("Unreachable host: ", e);
           } catch (InterruptedException expected) {
             LOG.trace("Expected exception", expected);
           }
@@ -172,7 +187,7 @@ public class JmxConnectionFactory {
     this.jmxmp = jmxmp;
   }
 
-  public final HostConnectionCounters getHostConnectionCounters() {
+  public HostConnectionCounters getHostConnectionCounters() {
     return hostConnectionCounters;
   }
 
@@ -230,13 +245,8 @@ public class JmxConnectionFactory {
       try {
         JmxProxy proxy = JmxProxyImpl.connect(
                 host, jmxCredentials, addressTranslator, connectionTimeout, metricRegistry, cryptograph, jmxmp);
-        if (hostConnectionCounters.getSuccessfulConnections(host) <= 0) {
-          accessibleDatacenters.add(EndpointSnitchInfoProxy.create(proxy).getDataCenter());
-        }
-        hostConnectionCounters.incrementSuccessfulConnections(host);
         return proxy;
       } catch (ReaperException | InterruptedException ex) {
-        hostConnectionCounters.decrementSuccessfulConnections(host);
         throw new RuntimeException(ex);
       }
     }

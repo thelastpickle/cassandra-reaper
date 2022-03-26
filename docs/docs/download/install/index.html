@@ -214,6 +214,8 @@
         
         <li><a href="/docs/backends/cassandra/"> Cassandra </a> </li>
         
+        <li><a href="/docs/backends/astra/"> Astra </a> </li>
+        
     </ul>
     
     </li>
@@ -328,64 +330,48 @@
 </code></pre></div><p>Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/</p>
 <p>Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool <code>bin/spreaper</code></p>
 <h2 id="installing-and-running-as-a-service">Installing and Running as a Service</h2>
-<p>We provide prebuilt packages for reaper on the <a href="https://bintray.com/thelastpickle">Bintray</a>.</p>
+<p>We provide prebuilt packages for reaper on <a href="https://cloudsmith.io/~thelastpickle/repos/">Cloudsmith</a>.</p>
 <h3 id="rpm-install-centos-fedora-rhek">RPM Install (CentOS, Fedora, RHEK)</h3>
 <p>Grab the RPM from GitHub and install using the <code>rpm</code> command:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo rpm -ivh reaper-*.*.*.x86_64.rpm
 </code></pre></div><h4 id="using-yum-stable-releases">Using yum (stable releases)</h4>
-<p>1/ Run the following to get a generated .repo file:</p>
-<pre><code>wget https://bintray.com/thelastpickle/reaper-rpm/rpm -O bintray-thelastpickle-reaper-rpm.repo
-</code></pre><p>or - Copy this text into a &lsquo;bintray-thelastpickle-reaper-rpm.repo&rsquo; file on your Linux machine:</p>
-<pre><code>#bintraybintray-thelastpickle-reaper-rpm - packages by thelastpickle from Bintray
-[bintraybintray-thelastpickle-reaper-rpm]
-name=bintray-thelastpickle-reaper-rpm
-baseurl=https://dl.bintray.com/thelastpickle/reaper-rpm
-gpgcheck=0
-repo_gpgcheck=0
-enabled=1
-</code></pre><p>2/ Run the following command :</p>
-<pre><code>sudo mv bintray-thelastpickle-reaper-rpm.repo /etc/yum.repos.d/
-</code></pre><p>3/ Install reaper :</p>
+<p>1/ Run the following to install the repo:</p>
+<pre><code>curl -1sLf \
+  'https://dl.cloudsmith.io/public/thelastpickle/reaper/setup.rpm.sh' \
+  | sudo -E bash
+</code></pre><p>2/ Install reaper :</p>
 <pre><code>sudo yum install reaper
-</code></pre><h4 id="using-yum-development-builds">Using yum (development builds)</h4>
-<p>1/ Run the following to get a generated .repo file:</p>
-<pre><code>wget https://bintray.com/thelastpickle/reaper-rpm-beta/rpm -O bintray-thelastpickle-reaper-rpm-beta.repo
-</code></pre><p>or - Copy this text into a &lsquo;bintray-thelastpickle-reaper-rpm-beta.repo&rsquo; file on your Linux machine:</p>
-<pre><code>#bintraybintray-thelastpickle-reaper-rpm-beta - packages by thelastpickle from Bintray
-[bintraybintray-thelastpickle-reaper-rpm-beta]
-name=bintray-thelastpickle-reaper-rpm-beta
-baseurl=https://dl.bintray.com/thelastpickle/reaper-rpm-beta
-gpgcheck=0
-repo_gpgcheck=0
-enabled=1
-</code></pre><p>2/ Run the following command :</p>
-<pre><code>sudo mv bintray-thelastpickle-reaper-rpm-beta.repo /etc/yum.repos.d/
-</code></pre><p>3/ Install reaper :</p>
+</code></pre><p>In case of problem, check the alternate procedure on <a href="https://cloudsmith.io/~thelastpickle/repos/reaper/setup/#formats-rpm">cloudsmith.io</a>.</p>
+<h4 id="using-yum-development-builds">Using yum (development builds)</h4>
+<p>1/ Run the following to install the repo:</p>
+<pre><code>curl -1sLf \
+  'https://dl.cloudsmith.io/public/thelastpickle/reaper-beta/setup.rpm.sh' \
+  | sudo -E bash
+</code></pre><p>2/ Install reaper :</p>
 <pre><code>sudo yum install reaper
-</code></pre><h3 id="deb-debian-based-distros-like-ubuntu">DEB (Debian based distros like Ubuntu)</h3>
+</code></pre><p>In case of problem, check the alternate procedure on <a href="https://cloudsmith.io/~thelastpickle/repos/reaper-beta/setup/#formats-rpm">cloudsmith.io</a>.</p>
+<h3 id="deb-debian-based-distros-like-ubuntu">DEB (Debian based distros like Ubuntu)</h3>
 <p>After downloading the DEB package, install using the <code>dpkg</code> command:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">sudo dpkg -i reaper_*.*.*_amd64.deb
 </code></pre></div><h4 id="using-apt-get-stable-releases">Using apt-get (stable releases)</h4>
-<p>1/ Using the command line, add the following to your /etc/apt/sources.list system config file:</p>
-<pre><code>echo &quot;deb https://dl.bintray.com/thelastpickle/reaper-deb wheezy main&quot; | sudo tee -a /etc/apt/sources.list
-</code></pre><p>Or, add the repository URLs using the &ldquo;Software Sources&rdquo; admin UI:</p>
-<pre><code>deb https://dl.bintray.com/thelastpickle/reaper-deb wheezy main
-</code></pre><p>2/ Install the public key:</p>
-<pre><code>sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 2895100917357435
-</code></pre><p>3/ Install reaper :</p>
+<p>1/ Using the command line, run the following:</p>
+<pre><code>curl -1sLf \
+  'https://dl.cloudsmith.io/public/thelastpickle/reaper/setup.deb.sh' \
+  | sudo -E bash
+</code></pre><p>2/ Install reaper :</p>
 <pre><code>sudo apt-get update
 sudo apt-get install reaper
-</code></pre><h4 id="using-apt-get-development-builds">Using apt-get (development builds)</h4>
-<p>1/ Using the command line, add the following to your /etc/apt/sources.list system config file:</p>
-<pre><code>echo &quot;deb https://dl.bintray.com/thelastpickle/reaper-deb-beta wheezy main&quot; | sudo tee -a /etc/apt/sources.list
-</code></pre><p>Or, add the repository URLs using the &ldquo;Software Sources&rdquo; admin UI:</p>
-<pre><code>deb https://dl.bintray.com/thelastpickle/reaper-deb-beta wheezy main
-</code></pre><p>2/ Install the public key:</p>
-<pre><code>sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 2895100917357435
-</code></pre><p>3/ Install reaper :</p>
+</code></pre><p>In case of problem, check the alternate procedure on <a href="https://cloudsmith.io/~thelastpickle/repos/reaper/setup/#formats-deb">cloudsmith.io</a>.</p>
+<h4 id="using-apt-get-development-builds">Using apt-get (development builds)</h4>
+<p>1/ Using the command line, run the following command:</p>
+<pre><code>curl -1sLf \
+  'https://dl.cloudsmith.io/public/thelastpickle/reaper-beta/setup.deb.sh' \
+  | sudo -E bash
+</code></pre><p>2/ Install reaper :</p>
 <pre><code>sudo apt-get update
 sudo apt-get install reaper
-</code></pre><h2 id="service-configuration">Service Configuration</h2>
+</code></pre><p>In case of problem, check the alternate procedure on <a href="https://cloudsmith.io/~thelastpickle/repos/reaper-beta/setup/#formats-deb">cloudsmith.io</a>.</p>
+<h2 id="service-configuration">Service Configuration</h2>
 <p>The yaml file used by the service is located at <code>/etc/cassandra-reaper/cassandra-reaper.yaml</code> and alternate config templates can be found under <code>/etc/cassandra-reaper/configs</code>.
 It is recommended to create a new file with your specific configuration and symlink it as <code>/etc/cassandra-reaper/cassandra-reaper.yaml</code> to avoid your configuration from being overwritten during upgrades.<br>
 Adapt the config file to suit your setup and then run <code>sudo service cassandra-reaper start</code>.</p>

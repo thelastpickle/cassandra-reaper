@@ -20,13 +20,42 @@ set -ex
 # build web UI
 # build Debian and RPM packages
 # copy built packages into a mounted volume
-cd ${WORKDIR}/cassandra-reaper
-export VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-cd ${WORKDIR}/cassandra-reaper/src/packaging \
-    && make build-packages \
+pushd ${WORKDIR}/cassandra-reaper > /dev/null
+export VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate 2>/dev/null | grep '^VER' | cut -f2)
+echo "Building package for version ${VERSION}"
+# From version 3.1 onwards JDK11 is needed to build Reaper (e9cfc20)
+java_home=""
+java_path=""
+javac_path=""
+javadoc_path=""
+if [ "$(cut -d'.' -f1 <<<${VERSION})" -ge 3 ] && [ "$(cut -d'.' -f2 <<<${VERSION})" -ge 1 ]
+then
+  java_home="/usr/lib/jvm/java-11-openjdk-amd64"
+  java_path="bin/java"
+  javac_path="bin/javac"
+  javadoc_path="bin/javadoc"
+else
+  java_home="/usr/lib/jvm/java-8-openjdk-amd64"
+  java_path="jre/bin/java"
+  javac_path="bin/javac"
+  javadoc_path="bin/javadoc"
+fi
+export JAVA_HOME=${java_home}
+update-alternatives --set java "${JAVA_HOME}/${java_path}"
+update-alternatives --set javac "${JAVA_HOME}/${javac_path}"
+update-alternatives --set javadoc "${JAVA_HOME}/${javadoc_path}"
+
+make_tasks=()
+# Check if the caller has asked us to build the JAR regardless of whether it exists already.
+if [ "$1" = "forcebuild" ]
+then
+  make_tasks+=("package")
+  shift
+fi
+make_tasks+=("build-packages")
+
+pushd ${WORKDIR}/cassandra-reaper/src/packaging > /dev/null \
+    && make ${make_tasks[*]} \
     && mv *.deb *.rpm ${WORKDIR}/packages \
     && cp ../server/target/cassandra-*.jar ${WORKDIR}/packages \
-    && rm ${WORKDIR}/packages/cassandra*-sources.jar
-
-# execute any provided command
-$@
+    && rm -f ${WORKDIR}/packages/cassandra*-sources.jar

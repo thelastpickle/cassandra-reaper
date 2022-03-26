@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Cassandra Reaper Configuration Example.
+# Reaper for Apache Cassandra Configuration Example.
 # This configuration is used mainly for testing.
 # See the README.md file for explanations of configuration keys.
 #
@@ -79,12 +79,11 @@ server:
   type: default
   applicationConnectors:
     - type: http
-      port: 8080
-      # Use "0.0.0.0" for binding to all interfaces, not "*"
+      port: 8083
       bindHost: 127.0.0.1
   adminConnectors:
     - type: http
-      port: 8081
+      port: 8084
       bindHost: 127.0.0.1
 
 # Config used to automatically add/remove sheduled repair for each keyspace

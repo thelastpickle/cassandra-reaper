@@ -214,6 +214,8 @@
         
         <li><a href="/docs/backends/cassandra/"> Cassandra </a> </li>
         
+        <li><a href="/docs/backends/astra/"> Astra </a> </li>
+        
     </ul>
     
     </li>
@@ -372,13 +374,13 @@
 <p>By default, Apache Cassandra restricts JMX communications to localhost only. In this setup, only the <strong>SIDECAR</strong> value is suitable.</p>
 <p>For security reasons, it is possible that Reaper will have access limited to nodes in a single datacenter via JMX (multi region clusters for example). In this case, it is possible to deploy an operate an instance of Reaper in each datacenter where each instance only has access via JMX (with or without authentication) to the nodes in its local datacenter. In addition, Reaper will check the number of pending compactions and actively running repairs on all replicas prior to processing a segment.</p>
 <p><strong>ALL</strong> - requires Reaper to have access via JMX to all nodes across all datacenters. In this mode Reaper can be backed by all available storage types.</p>
-<p><strong>LOCAL</strong> - requires Reaper to have access via JMX to all nodes only in the same datacenter local to Reaper. A single Reaper instance can operate in this mode and trigger repairs from within its local data center. In this case, can be backed by all available storage types and repairs to any remote datacenters are be handled internally by Cassandra. A Reaper instance can be deployed to each datacenter and be configured to operate in this mode. In this case, Reaper can use either of Apache Cassandra or Postgres as its storage.</p>
+<p><strong>LOCAL</strong> - requires Reaper to have access via JMX to all nodes only in the same datacenter local to Reaper. A single Reaper instance can operate in this mode and trigger repairs from within its local data center. In this case, can be backed by all available storage types and repairs to any remote datacenters are be handled internally by Cassandra. A Reaper instance can be deployed to each datacenter and be configured to operate in this mode. In this case, Reaper can use Apache Cassandra or Astra as its storage.</p>
 <p>Further information can be found in the <a href="../../usage/multi_dc">Operating with a Multi DC Cluster</a> section.</p>
-<p><strong>EACH</strong> - requires a minimum of one Reaper instance operating in each datacenter. Each Reaper instance is required to have access via JMX to all nodes only in its local datacenter. When operating in this mode, Reaper can use either of Apache Cassandra or Postgres as its storage. In addition, metrics from nodes in remote datacenters must be collected through the storage backend. If any metric is unavailable, the segment will be postponed for later processing.</p>
+<p><strong>EACH</strong> - requires a minimum of one Reaper instance operating in each datacenter. Each Reaper instance is required to have access via JMX to all nodes only in its local datacenter. When operating in this mode, Reaper can use either of Apache Cassandra or Astra as its storage. In addition, metrics from nodes in remote datacenters must be collected through the storage backend. If any metric is unavailable, the segment will be postponed for later processing.</p>
 <p>Further information can be found in the <a href="../../usage/multi_dc">Operating with a Multi DC Cluster</a> section.</p>
 <p><strong>SIDECAR</strong> - requires one reaper instance for each node in the cluster.
 Each Reaper instance is required to have access via JMX to its local node.
-When operating in this mode, Reaper can use either of Apache Cassandra or Postgres as its storage.</p>
+When operating in this mode, Reaper can use either of Apache Cassandra or Astra as its storage.</p>
 <p>Further information can be found in the <a href="../../usage/sidecar_mode">Sidecar Mode</a> section.</p>
 <!-- raw HTML omitted -->
 <h3 id="enablecrossorigin"><code>enableCrossOrigin</code></h3>
@@ -490,7 +492,7 @@ To match the example above, it could be something like : <code>10.0.10.5@cluster
 <!-- raw HTML omitted -->
 <h3 id="metrics"><code>metrics</code></h3>
 <p>Type: <em>Object</em></p>
-<p>Configuration parameters for sending metrics to a reporting system via the <a href="http://www.dropwizard.io/1.1.4/docs/manual/configuration.html#metrics">Dropwizard interface</a>. Cassandra Reaper ships the Graphite and DataDog reporters by default.</p>
+<p>Configuration parameters for sending metrics to a reporting system via the <a href="http://www.dropwizard.io/1.1.4/docs/manual/configuration.html#metrics">Dropwizard interface</a>. Reaper for Apache Cassandra ships the Graphite and DataDog reporters by default.</p>
 <p>Further information on metrics configuration can be found in the <a href="../../metrics">Metrics</a> section.</p>
 <!-- raw HTML omitted -->
 <h3 id="repairintensity"><code>repairIntensity</code></h3>
@@ -550,7 +552,7 @@ blocking in cause some thread is waiting for I/O, like calling a Cassandra clust
 <!-- raw HTML omitted -->
 <h3 id="storagetype"><code>storageType</code></h3>
 <p>Type: <em>String</em></p>
-<p>The storage type to use in which Reaper will store its control data. The value must be either <strong>cassandra</strong>, <strong>h2</strong>, <strong>memory</strong>, or <strong>postgres</strong>. If the recommended (persistent) storage type <strong>cassandra</strong>, <strong>h2</strong>, or <strong>postgres</strong> is being used, the database client parameters must be specified in the respective <code>cassandra</code>, <code>h2</code>, or <code>postgres</code> section in the configuration file. See the example settings in provided the <em><a href="https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource">src/packaging/resources</a></em> directory of the repository.</p>
+<p>The storage type to use in which Reaper will store its control data. The value must be either <strong>cassandra</strong>, <strong>astra</strong> or <strong>memory</strong>. If the recommended (persistent) storage type <strong>cassandra</strong>, or <strong>astra</strong> is being used, the database client parameters must be specified in the <code>cassandra</code> section in the configuration file. See the example settings in provided the <em><a href="https://github.com/thelastpickle/cassandra-reaper/tree/master/src/packaging/resource">src/packaging/resources</a></em> directory of the repository.</p>
 <!-- raw HTML omitted -->
 <h3 id="useaddresstranslator"><code>useAddressTranslator</code></h3>
 <p>Type: <em>Boolean</em></p>
@@ -585,6 +587,12 @@ No more than four threads are allowed by Cassandra.</p>
 <p>Type: <em>Integer</em></p>
 <p>Default: <em>20</em></p>
 <p>Reaper will prevent repair from overwhelming the cluster when lots of SSTables are streamed, by pausing segment processing if there are more than a specific number of pending compactions. Adjust this setting if you have a lot of tables in the cluster and the total number of pending compactions is usually high.</p>
+<h3 id="maxparallelrepairs"><code>maxParallelRepairs</code></h3>
+<p><em><strong>Since 2.2.0</strong></em></p>
+<p>Type: <em>Integer</em></p>
+<p>Default: <em>2</em></p>
+<p>Reaper allows concurrent segments from distinct repair runs running on the same nodes at the same time. In order to limit the repair load, it will only allow a limited number of repair runs to run concurrently (by default, two). Repair runs over the threshold will still start and be in <code>RUNNING</code> state, but their segments will be postposned as long as there are too many repairs being processed.<br>
+Setting this value too high could put a lot of pressure on clusters and negatively impact their performance.</p>
 <!-- raw HTML omitted -->
 <h3 id="cryptograph"><code>cryptograph</code></h3>
 <p>Optional settings to configure how confidential text (ie: passwords) are encyrpted/decrypted.</p>

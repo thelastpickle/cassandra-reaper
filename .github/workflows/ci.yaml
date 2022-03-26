@@ -27,41 +27,32 @@ on:
 jobs:
   build:
     name: Build Reaper
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    env:
+      JACOCO_VERSION: 0.8.6
+      REAPER_ENCRYPTION_KEY: SECRET_KEY
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
-
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
+            ${{ runner.os }}-maven2-
 
       - name: Setup Java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
-          java-version: '8.0.192'
-          java-package: jdk
-          architecture: x64
+          distribution: 'adopt' # See 'Supported distributions' for available options
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Setup Python
         uses: actions/setup-python@v1
@@ -71,65 +62,125 @@ jobs:
 
       - name: Build Reaper
         run: |
-          MAVEN_OPTS="-Xmx384m" mvn -B install
-          mvn -B surefire:test -Dtest=ReaperShiroIT
-  its-ccm-local:
-    name: H2 and Memory backends
+          MAVEN_OPTS="-Xmx384m" mvn -B org.jacoco:jacoco-maven-plugin:${{ env.JACOCO_VERSION }}:prepare-agent install org.jacoco:jacoco-maven-plugin:${{ env.JACOCO_VERSION }}:report
+          mv src/server/target/site/jacoco src/server/target/site/jacoco_ut    
+          mvn -B org.jacoco:jacoco-maven-plugin:${{ env.JACOCO_VERSION }}:prepare-agent surefire:test org.jacoco:jacoco-maven-plugin:${{ env.JACOCO_VERSION }}:report -Dtest=ReaperShiroIT
+      
+      - uses: codecov/codecov-action@v1
+
+  docker-tests:
+    name: Docker Image Tests
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        cassandra-version: [1.2.19, 2.0.17, 2.1.20, 2.2.13, 3.0.17, 3.11.4, 'github:apache/trunk']
+        storage-type: [cassandra]
+        test-type: [docker]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Maven Cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven2-
+
+
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt' # See 'Supported distributions' for available options
+          java-version: '11'
+
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.x'
+          architecture: 'x64'
+
+      - name: Run Tests
+        run: ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          
+      - name: Setup tmate session
+        if: "failure()"
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+
+  its-ccm-local:
+    name: Memory backends
+    needs: build
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        cassandra-version: ["binary:1.2.19", "binary:2.0.17", 'binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
         storage-type: [local]
         test-type: [ccm]
         include:
           # don't run against the following C* versions when using cassandra storage type
-          - cassandra-version: 1.2.19
-            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards'
-          - cassandra-version: 2.0.17
-            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards'
-          - cassandra-version: 2.1.20
+          - cassandra-version: "binary:1.2.19"
+            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: "binary:2.0.17"
+            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:2.1.22'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:2.2.19'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.0.25'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.11.11'
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
-          - cassandra-version: 2.2.13
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
-          - cassandra-version: 3.0.17
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
-          - cassandra-version: 3.11.4
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.1'
+            experimental: false
+            jdk-version: '11'
+          - cassandra-version: 'github:apache/trunk'
+            experimental: true
+            jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
+            ${{ runner.os }}-maven2-
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
-          java-version: '8.0.192'
-          java-package: jdk
-          architecture: x64
+          distribution: 'adopt' # See 'Supported distributions' for available options
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Setup Python
         uses: actions/setup-python@v1
@@ -138,7 +189,9 @@ jobs:
           architecture: 'x64'
 
       - name: Install CCM
-        run: pip install pyyaml ccm
+        run: |
+          pip install pyyaml
+          pip install ccm
 
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
@@ -146,6 +199,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh
@@ -154,147 +208,71 @@ jobs:
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
-  its-pgsql:
-    name: Postgres backend
-    needs: build
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:9.4
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          # this replaces the manual reaper creation
-          POSTGRES_DB: reaper
-        ports:
-          - 5432:5432
-        # needed because the postgres container does not provide a healthcheck
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-    strategy:
-      matrix:
-        cassandra-version: [3.11.3]
-        storage-type: [postgresql]
-        test-type: [ccm]
-        grim-max: [1, 2, 4]
-        cucumber-options: ['--tags ~@cassandra_4_0_onwards']
-        # for each grim-max, specify corresponding min
-        include:
-          - grim-max: 1
-            grim-min: 1
-          - grim-max: 2
-            grim-min: 2
-          - grim-max: 4
-            grim-min: 2
-        # in case of sidecar and pgsql, we only want the grim-min/max of 1/1
-        exclude:
-          - test-type: sidecar
-            grim-max: 2
-          - test-type: sidecar
-            grim-max: 4
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
-      - name: Setup Maven Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+      - uses: codecov/codecov-action@v1
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
+      - name: Setup tmate session
+        if: "failure()"
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
 
-      - name: Setup Java
-        uses: actions/setup-java@v1
-        with:
-          java-version: '8.0.192'
-          java-package: jdk
-          architecture: x64
-
-      - name: Setup Node
-        uses: actions/setup-node@v1
-        with:
-          node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
-
-      - name: Setup Python
-        uses: actions/setup-python@v1
-        with:
-          python-version: '3.x'
-          architecture: 'x64'
-
-      - name: Install CCM
-        run: pip install pyyaml ccm
-
-      - name: Setup CCM Cluster
-        run: ./.github/scripts/configure-ccm.sh
-        env:
-          TEST_TYPE: ${{ matrix.test-type }}
-          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-          STORAGE_TYPE: ${{ matrix.storage-type }}
-
-      - name: Run Tests
-        run: ./.github/scripts/run-tests.sh
-        env:
-          TEST_TYPE: ${{ matrix.test-type }}
-          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
-          STORAGE_TYPE: ${{ matrix.storage-type }}
-          GRIM_MAX: ${{ matrix.grim-max }}
-          GRIM_MIN: ${{ matrix.grim-min }}
-          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
   its-ccm-cass:
     needs: build
     name: Cassandra backend
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [2.1.20, 2.2.13, 3.0.17, 3.11.4, 'github:apache/trunk']
+        cassandra-version: ['binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [ccm]
-        cucumber-options: ['--tags ~@cassandra_4_0_onwards']
+        include:
+          - cassandra-version: 'binary:2.1.22'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:2.2.19'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.0.25'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.11.11'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.1'
+            experimental: false
+            jdk-version: '11'
+          - cassandra-version: 'github:apache/trunk'
+            experimental: true
+            jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
+            ${{ runner.os }}-maven2-
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
-          java-version: '8.0.192'
-          java-package: jdk
-          architecture: x64
+          distribution: 'adopt' # See 'Supported distributions' for available options
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Setup Python
         uses: actions/setup-python@v1
@@ -303,7 +281,9 @@ jobs:
           architecture: 'x64'
 
       - name: Install CCM
-        run: pip install pyyaml ccm
+        run: |
+          pip install pyyaml
+          pip install ccm
 
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
@@ -311,6 +291,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh
@@ -319,10 +300,19 @@ jobs:
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+      
+      - uses: codecov/codecov-action@v1
+
+      - name: Setup tmate session
+        if: "failure()"
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+
   its-elassandra:
     needs: build
     name: Elassandra Backend
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         test-type: [elassandra]
@@ -336,35 +326,24 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
+            ${{ runner.os }}-maven2-
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
-          java-version: '8.0.192'
-          java-package: jdk
-          architecture: x64
+          distribution: 'adopt' # See 'Supported distributions' for available options
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Install ECM
         run: |
@@ -383,6 +362,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           ELASSANDRA_VERSION: ${{ matrix.elassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: |
@@ -394,86 +374,70 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - uses: codecov/codecov-action@v1
 
   its-sidecar:
-    needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
     name: Sidecar
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:9.4
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          # this replaces the manual reaper creation
-          POSTGRES_DB: reaper
-        ports:
-          - 5432:5432
-        # needed because the postgres container does not provide a healthcheck
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [2.1.20, 2.2.13, 3.0.17, 3.11.3, 'github:apache/trunk']
-        storage-type: [cassandra, postgresql]
+        cassandra-version: ['binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
+        storage-type: [cassandra]
         test-type: [sidecar]
         grim-max: [1]
         grim-min: [1]
         # all versions but trunk have the same cucumber options, but we can't declare that more effectively (yet)
         include:
-          - cassandra-version: 2.1.20
+          - cassandra-version: 'binary:2.1.22'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:2.2.19'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.0.25'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.11.11'
             cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
-          - cassandra-version: 2.2.13
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
-          - cassandra-version: 3.0.17
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
-          - cassandra-version: 3.11.3
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags @sidecar'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.1'
+            cucumber-options: '--tags @sidecar'
+            experimental: false
+            jdk-version: '11'
           - cassandra-version: 'github:apache/trunk'
             cucumber-options: '--tags @sidecar'
-        # sidecar test including postgres should only run with C* 3.11.3, so we exclude all other
-        exclude:
-          - storage-type: postgresql
-            cassandra-version: 2.1.20
-          - storage-type: postgresql
-            cassandra-version: 2.2.13
-          - storage-type: postgresql
-            cassandra-version: 3.0.17
-          - storage-type: postgresql
-            cassandra-version: 'github:apache/trunk'
+            experimental: true
+            jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
-
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
+            ${{ runner.os }}-maven2-
 
       - name: Setup Java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
-          java-version: '8.0.192'
-          java-package: jdk
-          architecture: x64
+          distribution: 'adopt' # See 'Supported distributions' for available options
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Setup Python
         uses: actions/setup-python@v1
@@ -482,7 +446,9 @@ jobs:
           architecture: 'x64'
 
       - name: Install CCM
-        run: pip install pyyaml ccm
+        run: |
+          pip install pyyaml
+          pip install ccm
 
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
@@ -490,6 +456,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
@@ -500,61 +467,144 @@ jobs:
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
-  its-distributed:
-    needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
-    name: Distributed tests
-    runs-on: ubuntu-latest
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - uses: codecov/codecov-action@v1
+
+  its-each:
+    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
+    name: Each DC Availability
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [2.1.20, 2.2.13, 3.0.17, 3.11.4, 'github:apache/trunk']
+        cassandra-version: ['binary:4.0.1', 'github:apache/trunk']
+        storage-type: [cassandra]
+        test-type: [each]
+        grim-max: [1]
+        grim-min: [1]
+        # Reduced scope to shorten the integration test times
+        include:
+          - cassandra-version: 'binary:4.0.1'
+            cucumber-options: '--tags @sidecar'
+            experimental: false
+          - cassandra-version: 'github:apache/trunk'
+            cucumber-options: '--tags @sidecar'
+            experimental: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Maven Cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven2-
+
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt' # See 'Supported distributions' for available options
+          java-version: '11'
+
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.x'
+          architecture: 'x64'
+
+      - name: Install CCM
+        run: |
+          pip install pyyaml
+          pip install ccm
+
+      - name: Setup CCM Cluster
+        run: ./.github/scripts/configure-ccm.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - name: Run Tests
+        run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
+        env:
+          TEST_TYPE: ${{ matrix.test-type }}
+          CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
+          STORAGE_TYPE: ${{ matrix.storage-type }}
+          GRIM_MAX: ${{ matrix.grim-max }}
+          GRIM_MIN: ${{ matrix.grim-min }}
+          CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - uses: codecov/codecov-action@v1
+
+  its-distributed:
+    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
+    name: Distributed tests
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        cassandra-version: ['binary:2.1.22', 'binary:2.2.19', 'binary:3.0.25', 'binary:3.11.11', 'binary:4.0.1', 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [2]
         grim-min: [2]
         include:
           # all versions but trunk need to exclude trunk tests
-          - cassandra-version: 2.1.20
+          - cassandra-version: 'binary:2.1.22'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:2.2.19'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.0.25'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:3.11.11'
             cucumber-options: '--tags ~@cassandra_4_0_onwards'
-          - cassandra-version: 2.2.13
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
-          - cassandra-version: 3.0.17
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
-          - cassandra-version: 3.11.4
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+            experimental: false
+            jdk-version: '8'
+          - cassandra-version: 'binary:4.0.1'
+            experimental: false
+            jdk-version: '11'
+          - cassandra-version: 'github:apache/trunk'
+            experimental: true
+            jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
+            ${{ runner.os }}-maven2-
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
-          java-version: '8.0.192'
-          java-package: jdk
-          architecture: x64
+          distribution: 'adopt' # See 'Supported distributions' for available options
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Setup Python
         uses: actions/setup-python@v1
@@ -563,7 +613,9 @@ jobs:
           architecture: 'x64'
 
       - name: Install CCM
-        run: pip install pyyaml ccm
+        run: |
+          pip install pyyaml
+          pip install ccm
 
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
@@ -571,6 +623,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: ./.github/scripts/run-tests.sh || ./.github/scripts/run-tests.sh
@@ -581,61 +634,55 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - uses: codecov/codecov-action@v1
+
+
   its-flapping:
-    needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
     name: Flapping reapers
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        cassandra-version: [2.1.20, 2.2.13, 3.0.17, 3.11.4, 'github:apache/trunk']
+        cassandra-version: ['binary:4.0.1', 'github:apache/trunk']
         storage-type: [cassandra]
         test-type: [ccm]
         grim-max: [4]
         grim-min: [2]
+        cucumber-options: ['--tags ~@diag_event_subscriptions']
         include:
           # all versions but trunk need to exclude trunk tests
-          - cassandra-version: 2.1.20
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
-          - cassandra-version: 2.2.13
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
-          - cassandra-version: 3.0.17
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
-          - cassandra-version: 3.11.4
-            cucumber-options: '--tags ~@cassandra_4_0_onwards'
+          - cassandra-version: 'binary:4.0.1'
+            experimental: true
+            jdk-version: '11'
+          - cassandra-version: 'github:apache/trunk'
+            experimental: true
+            jdk-version: '11'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
+            ${{ runner.os }}-maven2-
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
-          java-version: '8.0.192'
-          java-package: jdk
-          architecture: x64
+          distribution: 'adopt' # See 'Supported distributions' for available options
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Setup Python
         uses: actions/setup-python@v1
@@ -644,7 +691,9 @@ jobs:
           architecture: 'x64'
 
       - name: Install CCM
-        run: pip install pyyaml ccm
+        run: |
+          pip install pyyaml
+          pip install ccm
 
       - name: Setup CCM Cluster
         run: ./.github/scripts/configure-ccm.sh
@@ -652,6 +701,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           CASSANDRA_VERSION: ${{ matrix.cassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: |
@@ -663,10 +713,14 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - uses: codecov/codecov-action@v1
+
   its-elassandra-distributed:
-    needs: [its-ccm-local, its-pgsql, its-ccm-cass, its-elassandra]
+    needs: [docker-tests, its-ccm-local, its-ccm-cass, its-elassandra]
     name: Distributed tests with Elassandra
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         test-type: [elassandra]
@@ -674,41 +728,30 @@ jobs:
         elassandra-version: ['6.2.3.26']
         grim-min: [2]
         grim-max: [4]
-        cucumber-options: ['--tags ~@cassandra_4_0_onwards']
+        cucumber-options: ['--tags ~@cassandra_4_0_onwards --tags ~@diag_event_subscriptions']
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
+            ${{ runner.os }}-maven2-
 
-      - name: Setup CCM Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.ccm/repository
-          key: ${{ runner.os }}-ccm-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ runner.os }}-ccm-
 
       - name: Setup Java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
-          java-version: '8.0.192'
-          java-package: jdk
-          architecture: x64
+          distribution: 'adopt' # See 'Supported distributions' for available options
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Install ECM
         run: |
@@ -727,6 +770,7 @@ jobs:
           TEST_TYPE: ${{ matrix.test-type }}
           ELASSANDRA_VERSION: ${{ matrix.elassandra-version }}
           STORAGE_TYPE: ${{ matrix.storage-type }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
 
       - name: Run Tests
         run: |
@@ -738,38 +782,37 @@ jobs:
           CUCUMBER_OPTIONS: ${{ matrix.cucumber-options }}
           GRIM_MAX: ${{ matrix.grim-max }}
           GRIM_MIN: ${{ matrix.grim-min }}
+          JDK_VERSION: ${{ matrix.jdk-version }}
+
+      - uses: codecov/codecov-action@v1
 
   release:
     name: Release Reaper
-    needs: [its-distributed, its-flapping, its-sidecar, its-elassandra-distributed]
+    needs: [its-distributed, its-flapping, its-sidecar, its-elassandra-distributed, its-each]
     if: startsWith(github.ref, 'refs/heads/master') || startsWith(github.ref, 'refs/tag')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Setup Maven Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
+            ${{ runner.os }}-maven2-
 
       - name: Setup Java
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
-          java-version: '8.0.192'
-          java-package: jdk
-          architecture: x64
+          distribution: 'adopt' # See 'Supported distributions' for available options
+          java-version: '11'
 
       - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
-
-      - name: Setup bower
-        run: npm install -g bower
 
       - name: Setup Python
         uses: actions/setup-python@v1
@@ -801,123 +844,89 @@ jobs:
           DOCKER_PASS: ${{ secrets.DOCKERHUB_PASSWORD }}
         run: ./.github/scripts/before_deploy.sh
 
-      - name: Upload deb package to Bintray
+      - name: Locate deb and rpm packages for upload
         run: |
           REPO=reaper-deb
           PACKAGE=cassandra-reaper
           VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
           if [ "${GITHUB_REF}" = "refs/heads/master" ]
           then
-            REPO=reaper-deb-beta
-            PACKAGE=cassandra-reaper-beta
+            echo "BETA_RELEASE=yes" >> $GITHUB_ENV
+          else
+            echo "BETA_RELEASE=no" >> $GITHUB_ENV
           fi
 
-          releaseFile=$(ls src/packages/*.deb |grep ${VERSION})
-          targetName=reaper_${VERSION}_amd64.deb
-          echo "uploading ${releaseFile} to Bintray"
-          echo "Upload url : https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${targetName}"
-          curl -T ${releaseFile} \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Debian-Distribution:wheezy,jessie,stretch -H X-Bintray-Debian-Component:main -H X-Bintray-Debian-Architecture:i386,amd64 -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${targetName}
-          echo "Publishing release in Bintray"
-          curl -X POST -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${VERSION}/publish
-
-      - name: Upload rpm package to Bintray
-        run: |
-          REPO=reaper-rpm
-          PACKAGE=cassandra-reaper
-          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-          RPM_VERSION=$(echo "${VERSION}" | sed "s/-/_/")
-          if [ "${GITHUB_REF}" = "refs/heads/master" ]
-          then
-            REPO=reaper-rpm-beta
-            PACKAGE=cassandra-reaper-beta
-          fi
-
-          releaseFile=$(ls src/packages/*.rpm)
-          targetName=reaper-${RPM_VERSION}-1.x86_64.rpm
-          echo "uploading ${releaseFile} to Bintray"
-          echo "Upload url : https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${targetName}"
-          curl -T ${releaseFile} \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${targetName}
-          echo "Publishing release in Bintray"
-          curl -X POST -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${VERSION}/publish
-
-      - name: Upload tarball package to Bintray
-        run: |
-          REPO=reaper-tarball
-          PACKAGE=cassandra-reaper
-          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-          if [ "${GITHUB_REF}" = "refs/heads/master" ]
-          then
-            REPO=reaper-tarball-beta
-            PACKAGE=cassandra-reaper-beta
-          fi
-
-          releaseFile=$(ls src/packages/*.tar.gz |grep ${VERSION})
-          targetName=cassandra-reaper-${VERSION}.tar.gz
-          echo "uploading ${releaseFile} to Bintray"
-          echo "Upload url : https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${targetName}"
-          curl -T ${releaseFile} \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${targetName}
-          echo "Publishing release in Bintray"
-          curl -X POST -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${VERSION}/publish
+          debReleaseFile=$(ls src/packages/*.deb |grep ${VERSION})
+          rpmReleaseFile=$(ls src/packages/*.rpm)
+          echo "DEB_RELEASE_FILE=${debReleaseFile}" >> $GITHUB_ENV
+          echo "RPM_RELEASE_FILE=${rpmReleaseFile}" >> $GITHUB_ENV
 
       - name: Upload artifacts to GitHub Release
         uses: fnkr/github-action-ghr@v1
         if: github.event_name == 'release' && github.event.action == 'published'
         env:
           GHR_PATH: src/packages
-          GITHUB_TOKEN: ${{ secrets.GITHUB_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload maven artifacts to Bintray
-        run: |
-          REPO=reaper-maven
-          PACKAGE=io.cassandrareaper:cassandra-reaper
-          VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate | grep '^VER' | cut -f2)
-          if [ "${GITHUB_REF}" = "refs/heads/master" ]
-          then
-            REPO=reaper-maven-beta
-          fi
+      ## Stable releases
+      - name: Push Debian to Cloudsmith
+        id: push-deb
+        if: ${{ env.BETA_RELEASE == 'no' }}
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: 'push'
+          format: 'deb'
+          owner: 'thelastpickle'
+          repo: 'reaper'
+          distro: 'any-distro'
+          release: 'any-version'
+          republish: 'true'
+          file: ${{ env.DEB_RELEASE_FILE }}
 
-          jarFile=cassandra-reaper-${VERSION}.jar
-          releaseFile=$(ls src/server/target/${jarFile})
-          sourceFile=cassandra-reaper-${VERSION}-sources.jar
-          javadocFile=cassandra-reaper-${VERSION}-javadoc.jar
-          echo "uploading ${releaseFile} to Bintray"
-          echo "Upload url : https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/io/cassandrareaper/cassandra-reaper/${VERSION}"
+      - name: Push RPM to Cloudsmith
+        id: push-rpm
+        if: ${{ env.BETA_RELEASE == 'no' }}
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: "push"
+          format: "rpm"
+          owner: 'thelastpickle'
+          repo: 'reaper'
+          distro: 'any-distro'
+          release: 'any-version'
+          republish: 'true'
+          file: ${{ env.RPM_RELEASE_FILE }}
+      
+      ## Beta releases
+      - name: Push Debian Beta to Cloudsmith
+        id: push-beta-deb
+        if: ${{ env.BETA_RELEASE == 'yes' }}
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: 'push'
+          format: 'deb'
+          owner: 'thelastpickle'
+          repo: 'reaper-beta'
+          distro: 'any-distro'
+          release: 'any-version'
+          republish: 'true'
+          file: ${{ env.DEB_RELEASE_FILE }}
 
-          # Upload the main jar
-          curl -T src/server/target/${jarFile} \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/io/cassandrareaper/cassandra-reaper/${VERSION}/${jarFile}
-          # Upload the sources jar
-          curl -T src/server/target/${sourceFile} \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/io/cassandrareaper/cassandra-reaper/${VERSION}/${sourceFile}
-          # Upload the javadoc jar
-          curl -T src/server/target/${javadocFile} \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/io/cassandrareaper/cassandra-reaper/${VERSION}/${javadocFile}
-          # Upload the pom file
-          curl -T src/server/pom.xml \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/io/cassandrareaper/cassandra-reaper/${VERSION}/cassandra-reaper-${VERSION}.pom
-          # Upload the root pom file
-          curl -T pom.xml \
-            -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} \
-            -H X-Bintray-Version:${VERSION} \
-            https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/io/cassandrareaper/cassandra-reaper/${VERSION}/cassandra-reaper-pom-${VERSION}.pom
-
-          # Publish the release
-          echo "Publishing release in Bintray"
-          curl -X POST -u${{ secrets.BINTRAY_USERNAME }}:${{ secrets.BINTRAY_API_KEY }} https://api.bintray.com/content/thelastpickle/${REPO}/${PACKAGE}/${VERSION}/publish
+      - name: Push RPM Beta to Cloudsmith
+        id: push-beta-rpm
+        if: ${{ env.BETA_RELEASE == 'yes' }}
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: "push"
+          format: "rpm"
+          owner: 'thelastpickle'
+          repo: 'reaper-beta'
+          distro: 'any-distro'
+          release: 'any-version'
+          republish: 'true'
+          file: ${{ env.RPM_RELEASE_FILE }}
+      

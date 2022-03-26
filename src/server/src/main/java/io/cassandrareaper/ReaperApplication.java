@@ -1,6 +1,7 @@
 /*
  * Copyright 2014-2017 Spotify AB
  * Copyright 2016-2019 The Last Pickle Ltd
+ * Copyright 2020-2020 DataStax, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +34,7 @@ import io.cassandrareaper.resources.DiagEventSubscriptionResource;
 import io.cassandrareaper.resources.NodeStatsResource;
 import io.cassandrareaper.resources.PingResource;
 import io.cassandrareaper.resources.ReaperHealthCheck;
+import io.cassandrareaper.resources.ReaperResource;
 import io.cassandrareaper.resources.RepairRunResource;
 import io.cassandrareaper.resources.RepairScheduleResource;
 import io.cassandrareaper.resources.SnapshotResource;
@@ -44,11 +46,8 @@ import io.cassandrareaper.service.Heart;
 import io.cassandrareaper.service.PurgeService;
 import io.cassandrareaper.service.RepairManager;
 import io.cassandrareaper.service.SchedulingManager;
-import io.cassandrareaper.storage.CassandraStorage;
 import io.cassandrareaper.storage.IDistributedStorage;
-import io.cassandrareaper.storage.IStorage;
-import io.cassandrareaper.storage.MemoryStorage;
-import io.cassandrareaper.storage.PostgresStorage;
+import io.cassandrareaper.storage.InitializeStorage;
 
 import java.util.EnumSet;
 import java.util.Map;
@@ -72,26 +71,21 @@ import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
-import io.dropwizard.db.DataSourceFactory;
-import io.dropwizard.jdbi.DBIFactory;
-import io.dropwizard.jetty.BiDiGzipHandler;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.MetricsServlet;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.flywaydb.core.Flyway;
 import org.joda.time.DateTimeZone;
 import org.secnod.dropwizard.shiro.ShiroBundle;
 import org.secnod.dropwizard.shiro.ShiroConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.Signal;
 
 public final class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
@@ -104,13 +98,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     this.context = new AppContext();
   }
 
-  @VisibleForTesting
-  public ReaperApplication(AppContext context) {
-    super();
-    LOG.info("ReaperApplication constructor called with custom AppContext");
-    this.context = context;
-  }
-
   public static void main(String[] args) throws Exception {
     new ReaperApplication().run(args);
   }
@@ -120,6 +107,11 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     return "cassandra-reaper";
   }
 
+  @VisibleForTesting
+  public AppContext getContext() {
+    return context;
+  }
+
   /**
    * Before a Dropwizard application can provide the command-line interface, parse a configuration file, or run as a
    * server, it must first go through a bootstrapping phase. You can add Bundles, Commands, or register Jackson modules
@@ -127,6 +119,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
    */
   @Override
   public void initialize(Bootstrap<ReaperApplicationConfiguration> bootstrap) {
+    bootstrap.addCommand(new ReaperDbMigrationCommand("schema-migration", "Performs database schema migrations"));
     bootstrap.addBundle(new AssetsBundle("/assets/", "/webui", "index.html"));
     bootstrap.getObjectMapper().registerModule(new JavaTimeModule());
 
@@ -153,7 +146,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     bootstrap.setConfigurationSourceProvider(
         new SubstitutingSourceProvider(
             bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
-    bootstrap.getObjectMapper().registerModule(new JavaTimeModule());
   }
 
   @Override
@@ -162,7 +154,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     DateTimeZone.setDefault(DateTimeZone.UTC);
     checkConfiguration(config);
     context.config = config;
-    addSignalHandlers(); // SIGHUP, etc.
     context.metricRegistry = environment.metrics();
     CollectorRegistry.defaultRegistry.register(new DropwizardExports(environment.metrics()));
 
@@ -172,7 +163,9 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         .addMapping("/prometheusMetrics");
 
     int repairThreads = config.getRepairRunThreadCount();
-    LOG.info("initializing runner thread pool with {} threads", repairThreads);
+    int maxParallelRepairs = config.getMaxParallelRepairs();
+    LOG.info("initializing runner thread pool with {} threads and {} repair runners",
+        repairThreads, maxParallelRepairs);
 
     tryInitializeStorage(config, environment);
 
@@ -184,17 +177,16 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     context.repairManager = RepairManager.create(
         context,
         environment.lifecycle().scheduledExecutorService("RepairRunner").threads(repairThreads).build(),
-        config.getHangingRepairTimeoutMins(),
-        TimeUnit.MINUTES,
         config.getRepairManagerSchedulingIntervalSeconds(),
-        TimeUnit.SECONDS);
+        TimeUnit.SECONDS,
+        maxParallelRepairs);
 
     // Enable cross-origin requests for using external GUI applications.
     if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {
       FilterRegistration.Dynamic co = environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);
       co.setInitParameter("allowedOrigins", "*");
       co.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin");
-      co.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD");
+      co.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD,PATCH");
       co.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
     }
 
@@ -208,10 +200,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     final PingResource pingResource = new PingResource(healthCheck);
     environment.jersey().register(pingResource);
 
-    final ClusterResource addClusterResource = new ClusterResource(
-        context,
-        cryptograph,
-        environment.lifecycle().executorService("ClusterResource").minThreads(6).maxThreads(6).build());
+    final ClusterResource addClusterResource = ClusterResource.create(context, cryptograph);
 
     environment.jersey().register(addClusterResource);
     final RepairRunResource addRepairRunResource = new RepairRunResource(context);
@@ -220,6 +209,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     environment.jersey().register(addRepairScheduleResource);
     final SnapshotResource snapshotResource = new SnapshotResource(context, environment);
     environment.jersey().register(snapshotResource);
+    final ReaperResource reaperResource = new ReaperResource(context);
+    environment.jersey().register(reaperResource);
 
     final NodeStatsResource nodeStatsResource = new NodeStatsResource(context);
     environment.jersey().register(nodeStatsResource);
@@ -271,45 +262,20 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
             environment.lifecycle().scheduledExecutorService("ReaperApplication-scheduler").threads(3).build(),
             context.metricRegistry);
 
-    if (context.storage instanceof IDistributedStorage) {
-      // SIDECAR mode must be distributed. ALL|EACH|LOCAL are lazy: we wait until we see multiple reaper instances
-      context.isDistributed
-          .compareAndSet(false, DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability());
+    // SIDECAR mode must be distributed. ALL|EACH|LOCAL are lazy: we wait until we see multiple reaper instances
+    context.isDistributed
+        .compareAndSet(false, DatacenterAvailability.SIDECAR == context.config.getDatacenterAvailability());
 
-      // Allowing multiple Reaper instances require concurrent database polls for repair and metrics statuses
-      scheduleRepairManager(scheduler);
-      scheduleHeartbeat(scheduler);
-    }
+    // Allowing multiple Reaper instances require concurrent database polls for repair and metrics statuses
+    scheduleRepairManager(scheduler);
+    scheduleHeartbeat(scheduler);
+
 
     context.repairManager.resumeRunningRepairRuns();
     schedulePurge(scheduler);
 
     LOG.info("Initialization complete!");
     LOG.warn("Reaper is ready to get things done!");
-  }
-
-  private void tryInitializeStorage(ReaperApplicationConfiguration config, Environment environment)
-      throws ReaperException, InterruptedException {
-    if (context.storage == null) {
-      LOG.info("initializing storage of type: {}", config.getStorageType());
-      int storageFailures = 0;
-      while (true) {
-        try {
-          context.storage = initializeStorage(config, environment);
-          break;
-        } catch (RuntimeException e) {
-          LOG.error("Storage is not ready yet, trying again to connect shortly...", e);
-          storageFailures++;
-          if (storageFailures > 60) {
-            LOG.error("Too many failures when trying to connect storage. Exiting :'(");
-            System.exit(1);
-          }
-          Thread.sleep(10000);
-        }
-      }
-    } else {
-      LOG.info("storage already given in context, not initializing a new one");
-    }
   }
 
   private void initializeJmx(ReaperApplicationConfiguration config, Cryptograph cryptograph) {
@@ -397,8 +363,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
   private static void setupSse(Environment environment) {
     // Enabling gzip buffering will prevent flushing of server-side-events, so we disable compression for SSE
     environment.lifecycle().addServerLifecycleListener(server -> {
-      for (Handler handler : server.getChildHandlersByClass(BiDiGzipHandler.class)) {
-        ((BiDiGzipHandler) handler).addExcludedMimeTypes("text/event-stream");
+      for (Handler handler : server.getChildHandlersByClass(GzipHandler.class)) {
+        ((GzipHandler) handler).addExcludedMimeTypes("text/event-stream");
       }
     });
   }
@@ -462,40 +428,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         TimeUnit.HOURS);
   }
 
-  private IStorage initializeStorage(ReaperApplicationConfiguration config, Environment environment)
-      throws ReaperException {
-    IStorage storage;
-
-    if ("memory".equalsIgnoreCase(config.getStorageType())) {
-      storage = new MemoryStorage();
-    } else if ("cassandra".equalsIgnoreCase(config.getStorageType())) {
-      storage = new CassandraStorage(context.reaperInstanceId, config, environment);
-    } else if ("postgres".equalsIgnoreCase(config.getStorageType())
-        || "h2".equalsIgnoreCase(config.getStorageType())
-        || "database".equalsIgnoreCase(config.getStorageType())) {
-      // create DBI instance
-      final DBIFactory factory = new DBIFactory();
-      if (StringUtils.isEmpty(config.getDataSourceFactory().getDriverClass())
-          && "postgres".equalsIgnoreCase(config.getStorageType())) {
-        config.getDataSourceFactory().setDriverClass("org.postgresql.Driver");
-      } else if (StringUtils.isEmpty(config.getDataSourceFactory().getDriverClass())
-          && "h2".equalsIgnoreCase(config.getStorageType())) {
-        config.getDataSourceFactory().setDriverClass("org.h2.Driver");
-      }
-      // instantiate store
-      storage = new PostgresStorage(
-          context.reaperInstanceId,
-          factory.build(environment, config.getDataSourceFactory(), "postgresql")
-      );
-      initDatabase(config);
-    } else {
-      LOG.error("invalid storageType: {}", config.getStorageType());
-      throw new ReaperException("invalid storage type: " + config.getStorageType());
-    }
-    Preconditions.checkState(storage.isStorageConnected(), "Failed to connect storage");
-    return storage;
-  }
-
   private void checkConfiguration(ReaperApplicationConfiguration config) {
     LOG.debug("repairIntensity: {}", config.getRepairIntensity());
     LOG.debug("incrementalRepair: {}", config.getIncrementalRepair());
@@ -504,45 +436,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.debug("repairParallelism: {}", config.getRepairParallelism());
     LOG.debug("hangingRepairTimeoutMins: {}", config.getHangingRepairTimeoutMins());
     LOG.debug("jmxPorts: {}", config.getJmxPorts());
-  }
-
-  void reloadConfiguration() {
-    // TODO: reload configuration, but how?
-    LOG.warn("SIGHUP signal dropped, missing implementation for configuration reload");
-  }
-
-  private void addSignalHandlers() {
-    if (!System.getProperty("os.name").toLowerCase().contains("win")) {
-      LOG.debug("adding signal handler for SIGHUP");
-      Signal.handle(new Signal("HUP"), signal -> {
-        LOG.info("received SIGHUP signal: {}", signal);
-        reloadConfiguration();
-      });
-    }
-  }
-
-  private void initDatabase(ReaperApplicationConfiguration config) throws ReaperException {
-    Flyway flyway = new Flyway();
-    DataSourceFactory dsfactory = config.getDataSourceFactory();
-    flyway.setDataSource(
-        dsfactory.getUrl(),
-        dsfactory.getUser(),
-        dsfactory.getPassword());
-
-    if ("database".equals(config.getStorageType())) {
-      LOG.warn("!!!!!!!!!!    USAGE 'database' AS STORAGE TYPE IS NOW DEPRECATED   !!!!!!!!!!!!!!");
-      LOG.warn("!!!!!!!!!!    PLEASE USE EITHER 'postgres' OR 'h2' FROM NOW ON     !!!!!!!!!!!!!!");
-      if (config.getDataSourceFactory().getUrl().contains("h2")) {
-        flyway.setLocations("/db/h2");
-      } else {
-        flyway.setLocations("/db/postgres");
-      }
-    } else {
-      flyway.setLocations("/db/".concat(config.getStorageType().toLowerCase()));
-    }
-    flyway.setBaselineOnMigrate(true);
-    flyway.repair();
-    flyway.migrate();
   }
 
   private void initializeJmxSeedsForAllClusters() {
@@ -561,6 +454,33 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
           .forEach(cluster -> jmxConnectionsIntializer.on(cluster));
 
       LOG.info("Initialized JMX seed list for all clusters.");
+    }
+  }
+
+  private void tryInitializeStorage(ReaperApplicationConfiguration config, Environment environment)
+      throws ReaperException, InterruptedException {
+    if (context.storage == null) {
+      LOG.info("initializing storage of type: {}", config.getStorageType());
+      int storageFailures = 0;
+      while (true) {
+        try {
+          context.storage = InitializeStorage.initializeStorage(
+            config, environment, context.reaperInstanceId).initializeStorageBackend();
+
+          // Allows to execute cleanup queries as shutdown hooks
+          environment.lifecycle().manage(context.storage);
+          break;
+        } catch (RuntimeException e) {
+          LOG.error("Storage is not ready yet, trying again to connect shortly...", e);
+          storageFailures++;
+          if (storageFailures > 60) {
+            throw new ReaperException("Too many failures when trying to connect storage. Exiting :'(");
+          }
+          Thread.sleep(10000);
+        }
+      }
+    } else {
+      LOG.info("storage already given in context, not initializing a new one");
     }
   }
 }

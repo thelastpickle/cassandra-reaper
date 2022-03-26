@@ -61,6 +61,24 @@ public final class RepairScheduleService {
     return Optional.empty();
   }
 
+  public Optional<RepairSchedule> identicalRepairUnit(Cluster cluster, RepairUnit.Builder repairUnit) {
+
+    Collection<RepairSchedule> repairSchedules = context.storage
+        .getRepairSchedulesForClusterAndKeyspace(repairUnit.clusterName, repairUnit.keyspaceName);
+
+    for (RepairSchedule sched : repairSchedules) {
+      RepairUnit repairUnitForSched = context.storage.getRepairUnit(sched.getRepairUnitId());
+      Preconditions.checkState(repairUnitForSched.getClusterName().equals(repairUnit.clusterName));
+      Preconditions.checkState(repairUnitForSched.getKeyspaceName().equals(repairUnit.keyspaceName));
+
+      // if the schedule is identical, return immediately
+      if (repairUnitService.identicalUnits(cluster, repairUnitForSched, repairUnit)) {
+        return Optional.of(sched);
+      }
+    }
+    return Optional.empty();
+  }
+
   /**
    * Instantiates a RepairSchedule and stores it in the storage backend.
    *
@@ -77,10 +95,13 @@ public final class RepairScheduleService {
       String owner,
       int segmentCountPerNode,
       RepairParallelism repairParallelism,
-      Double intensity) {
+      Double intensity,
+      boolean force,
+      boolean adaptive,
+      int percentUnrepairedThreshold) {
 
     Preconditions.checkArgument(
-        !conflictingRepairSchedule(cluster, repairUnit.with()).isPresent(),
+        force || !conflictingRepairSchedule(cluster, repairUnit.with()).isPresent(),
         "A repair schedule already exists for cluster \"%s\", keyspace \"%s\", and column families: %s",
         cluster.getName(),
         repairUnit.getKeyspaceName(),
@@ -92,7 +113,9 @@ public final class RepairScheduleService {
         .repairParallelism(repairParallelism)
         .intensity(intensity)
         .segmentCountPerNode(segmentCountPerNode)
-        .owner(owner);
+        .owner(owner)
+        .adaptive(adaptive)
+        .percentUnrepairedThreshold(percentUnrepairedThreshold);
 
     return context.storage.addRepairSchedule(scheduleBuilder);
   }

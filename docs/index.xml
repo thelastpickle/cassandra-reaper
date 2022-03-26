@@ -23,6 +23,15 @@ Login Resource  POST /login  Expected form parameters:
     
     <item>
       <title></title>
+      <link>http://cassandra-reaper.io/docs/backends/astra/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://cassandra-reaper.io/docs/backends/astra/</guid>
+      <description>Astra Backend To use Astra (Cassandra managed service by Datastax) as the persistent storage for Reaper, the storageType setting must be set to astra in the Reaper configuration YAML file. In addition, the connection details for the Astra cluster being used to store Reaper data must be specified in the configuration YAML file. An example of how to configure Astra as persistent storage for Reaper can be found in the cassandra-reaper-astra.</description>
+    </item>
+    
+    <item>
+      <title></title>
       <link>http://cassandra-reaper.io/docs/backends/cassandra/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
@@ -37,7 +46,8 @@ storageType: cassandra cassandra: clusterName: &amp;#34;test&amp;#34; contactPoi
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/backends/h2/</guid>
-      <description>H2 Backend To use H2 as the persistent storage for Reaper, the storageType setting must be set to h2 in the Reaper configuration YAML file. When using H2 storage, the database will be automatically created under the path configured in the configuration YAML file. An example of how to configure H2 as persistent storage for Reaper can be found in the cassandra-reaper-h2.yaml.
+      <description>H2 Backend Removed in v3.0.0
+To use H2 as the persistent storage for Reaper, the storageType setting must be set to h2 in the Reaper configuration YAML file. When using H2 storage, the database will be automatically created under the path configured in the configuration YAML file. An example of how to configure H2 as persistent storage for Reaper can be found in the cassandra-reaper-h2.yaml.
 storageType: h2 h2: # H2 JDBC settings url: jdbc:h2:~/reaper-db/db;MODE=PostgreSQL user: password: </description>
     </item>
     
@@ -57,7 +67,8 @@ storageType: memory In-memory storage is volatile and as such all registered clu
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/backends/postgres/</guid>
-      <description>Postgres Backend To use PostgreSQL as the persistent storage for Reaper, the storageType setting must be set to postgres in the Reaper configuration YAML file. The schema will be initialized/upgraded automatically upon startup in the configured database. Ensure that the correct JDBC credentials are specified in the cassandra-reaper.yaml to allow object creation. An example of how to configure Postgres as persistent storage for Reaper can be found in the cassandra-reaper-postgres.yaml.</description>
+      <description>Postgres Backend Removed in v3.0.0
+To use PostgreSQL as the persistent storage for Reaper, the storageType setting must be set to postgres in the Reaper configuration YAML file. The schema will be initialized/upgraded automatically upon startup in the configured database. Ensure that the correct JDBC credentials are specified in the cassandra-reaper.yaml to allow object creation. An example of how to configure Postgres as persistent storage for Reaper can be found in the cassandra-reaper-postgres.</description>
     </item>
     
     <item>
@@ -166,7 +177,7 @@ Building Reaper Docker Image Prerequisite The generation of the Docker image req
       <description>Running Reaper After modifying the resource/cassandra-reaper.yaml config file, Reaper can be started using the following command line :
 java -jar target/cassandra-reaper-X.X.X.jar server resource/cassandra-reaper.yaml Once started, the UI can be accessed through : http://127.0.0.1:8080/webui/
 Reaper can also be accessed using the REST API exposed on port 8080, or using the command line tool bin/spreaper
-Installing and Running as a Service We provide prebuilt packages for reaper on the Bintray.
+Installing and Running as a Service We provide prebuilt packages for reaper on Cloudsmith.
 RPM Install (CentOS, Fedora, RHEK) Grab the RPM from GitHub and install using the rpm command:</description>
     </item>
     
@@ -272,7 +283,7 @@ Setup a Repair Schedule Click the schedule menu item on the left side to navigat
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/docs/usage/sidecar_mode/</guid>
-      <description>Sidecar Mode Sidecar Mode is a way of deploying Cassandra Reaper with one reaper instance for each node in the cluster. The name &amp;ldquo;Sidecar&amp;rdquo; comes from the Sidecar Pattern which describes a mechanism for co-locating an auxiliary service with its supported application. See also Design Patterns for Container-based Distributed Systems. It is a pattern that is often used in Kubernetes, where the main application and the sidecar application are deployed as separate containers in the same pod.</description>
+      <description>Sidecar Mode Sidecar Mode is a way of deploying Reaper for Apache Cassandra with one reaper instance for each node in the cluster. The name &amp;ldquo;Sidecar&amp;rdquo; comes from the Sidecar Pattern which describes a mechanism for co-locating an auxiliary service with its supported application. See also Design Patterns for Container-based Distributed Systems. It is a pattern that is often used in Kubernetes, where the main application and the sidecar application are deployed as separate containers in the same pod.</description>
     </item>
     
     <item>
@@ -292,7 +303,7 @@ Start a New Repair Click the repair menu item on the left side to navigate to th
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>http://cassandra-reaper.io/faq/</guid>
-      <description>Frequently Asked Questions Why use Reaper instead of noddetool + cron? While it&amp;rsquo;s possible to set up crontab to call nodetool, it requires staggering the crons to ensure overlap is kept to a minimum. Reaper is able to intelligently schedule repairs to avoid putting too much load on the cluster, avoiding impacting performance. Reaper also offers a simple UI to schedule repairs as granularly as needed.
+      <description>Frequently Asked Questions Why use Reaper instead of nodetool + cron? While it&amp;rsquo;s possible to set up crontab to call nodetool, it requires staggering the crons to ensure overlap is kept to a minimum. Reaper is able to intelligently schedule repairs to avoid putting too much load on the cluster, avoiding impacting performance. Reaper also offers a simple UI to schedule repairs as granularly as needed.
 Do I need to do repairs if I&amp;rsquo;m not deleting data?</description>
     </item>
     

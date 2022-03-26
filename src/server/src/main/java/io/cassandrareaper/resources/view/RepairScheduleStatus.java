@@ -64,9 +64,6 @@ public final class RepairScheduleStatus {
   @JsonProperty("incremental_repair")
   private boolean incrementalRepair;
 
-  @JsonProperty("segment_count")
-  private int segmentCount;
-
   @JsonProperty("repair_parallelism")
   private RepairParallelism repairParallelism;
 
@@ -91,6 +88,15 @@ public final class RepairScheduleStatus {
   @JsonProperty("repair_unit_id")
   private UUID repairUnitId;
 
+  @JsonProperty("segment_timeout")
+  private int segmentTimeout;
+
+  @JsonProperty("adaptive")
+  private boolean adaptive;
+
+  @JsonProperty("percent_unrepaired_threshold")
+  private int percentUnrepairedThreshold;
+
   /**
    * Default public constructor Required for Jackson JSON parsing.
    */
@@ -109,7 +115,6 @@ public final class RepairScheduleStatus {
       DateTime pauseTime,
       double intensity,
       boolean incrementalRepair,
-      int segmentCount,
       RepairParallelism repairParallelism,
       int daysBetween,
       Collection<String> nodes,
@@ -117,7 +122,10 @@ public final class RepairScheduleStatus {
       Collection<String> blacklistedTables,
       int segmentCountPerNode,
       int repairThreadCount,
-      UUID repairUnitId) {
+      UUID repairUnitId,
+      int segmentTimeout,
+      boolean adaptive,
+      int percentUnrepairedThreshold) {
 
     this.id = id;
     this.owner = owner;
@@ -130,7 +138,6 @@ public final class RepairScheduleStatus {
     this.pauseTime = pauseTime;
     this.intensity = RepairRunStatus.roundDoubleNicely(intensity);
     this.incrementalRepair = incrementalRepair;
-    this.segmentCount = segmentCount;
     this.repairParallelism = repairParallelism;
     this.daysBetween = daysBetween;
     this.nodes = nodes;
@@ -139,7 +146,9 @@ public final class RepairScheduleStatus {
     this.segmentCountPerNode = segmentCountPerNode;
     this.repairThreadCount = repairThreadCount;
     this.repairUnitId = repairUnitId;
-
+    this.segmentTimeout = segmentTimeout;
+    this.adaptive = adaptive;
+    this.percentUnrepairedThreshold = percentUnrepairedThreshold;
   }
 
   public RepairScheduleStatus(RepairSchedule repairSchedule, RepairUnit repairUnit) {
@@ -155,7 +164,6 @@ public final class RepairScheduleStatus {
         repairSchedule.getPauseTime(),
         repairSchedule.getIntensity(),
         repairUnit.getIncrementalRepair(),
-        repairSchedule.getSegmentCount(),
         repairSchedule.getRepairParallelism(),
         repairSchedule.getDaysBetween(),
         repairUnit.getNodes(),
@@ -163,7 +171,10 @@ public final class RepairScheduleStatus {
         repairUnit.getBlacklistedTables(),
         repairSchedule.getSegmentCountPerNode(),
         repairUnit.getRepairThreadCount(),
-        repairUnit.getId());
+        repairUnit.getId(),
+        repairUnit.getTimeout(),
+        repairSchedule.getAdaptive(),
+        repairSchedule.getPercentUnrepairedThreshold() == null ? -1 : repairSchedule.getPercentUnrepairedThreshold());
   }
 
   public UUID getId() {
@@ -246,20 +257,12 @@ public final class RepairScheduleStatus {
     this.intensity = intensity;
   }
 
-  public int getSegmentCount() {
-    return segmentCount;
-  }
-
   public boolean getIncrementalRepair() {
     return incrementalRepair;
   }
 
   public void setIncrementalRepair(boolean incrementalRepair) {
     this.incrementalRepair = incrementalRepair;
-  }
-
-  public void setSegmentCount(int segmentCount) {
-    this.segmentCount = segmentCount;
   }
 
   public RepairParallelism getRepairParallelism() {
@@ -368,5 +371,21 @@ public final class RepairScheduleStatus {
 
   public void setRepairUnitId(UUID repairUnitId) {
     this.repairUnitId = repairUnitId;
+  }
+
+  public boolean getAdaptive() {
+    return adaptive;
+  }
+
+  public void setAdaptive(boolean adaptive) {
+    this.adaptive = adaptive;
+  }
+
+  public int getPercentUnrepairedThreshold() {
+    return percentUnrepairedThreshold;
+  }
+
+  public void setPercentUnrepairedThreshold(int percentUnrepairedThreshold) {
+    this.percentUnrepairedThreshold = percentUnrepairedThreshold;
   }
 }

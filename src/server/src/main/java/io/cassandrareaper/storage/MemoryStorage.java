@@ -19,6 +19,7 @@ package io.cassandrareaper.storage;
 
 import io.cassandrareaper.core.Cluster;
 import io.cassandrareaper.core.DiagEventSubscription;
+import io.cassandrareaper.core.PercentRepairedMetric;
 import io.cassandrareaper.core.RepairRun;
 import io.cassandrareaper.core.RepairSchedule;
 import io.cassandrareaper.core.RepairSegment;
@@ -26,8 +27,6 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.core.Snapshot;
 import io.cassandrareaper.resources.view.RepairRunStatus;
 import io.cassandrareaper.resources.view.RepairScheduleStatus;
-import io.cassandrareaper.service.RepairParameters;
-import io.cassandrareaper.service.RingRange;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,12 +34,14 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Preconditions;
@@ -49,12 +50,15 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implements the StorageAPI using transient Java classes.
  */
 public final class MemoryStorage implements IStorage {
 
+  private static final Logger LOG = LoggerFactory.getLogger(MemoryStorage.class);
   private final ConcurrentMap<String, Cluster> clusters = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairRun> repairRuns = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, RepairUnit> repairUnits = Maps.newConcurrentMap();
@@ -64,6 +68,8 @@ public final class MemoryStorage implements IStorage {
   private final ConcurrentMap<UUID, RepairSchedule> repairSchedules = Maps.newConcurrentMap();
   private final ConcurrentMap<String, Snapshot> snapshots = Maps.newConcurrentMap();
   private final ConcurrentMap<UUID, DiagEventSubscription> subscriptionsById = Maps.newConcurrentMap();
+  private final ConcurrentMap<String, Map<String, PercentRepairedMetric>> percentRepairedMetrics
+      = Maps.newConcurrentMap();
 
   @Override
   public boolean isStorageConnected() {
@@ -125,7 +131,7 @@ public final class MemoryStorage implements IStorage {
   @Override
   public Cluster deleteCluster(String clusterName) {
     getRepairSchedulesForCluster(clusterName).forEach(schedule -> deleteRepairSchedule(schedule.getId()));
-    getRepairRunIdsForCluster(clusterName).forEach(runId -> deleteRepairRun(runId));
+    getRepairRunIdsForCluster(clusterName, Optional.empty()).forEach(runId -> deleteRepairRun(runId));
 
     getEventSubscriptions(clusterName)
         .stream()
@@ -153,6 +159,11 @@ public final class MemoryStorage implements IStorage {
 
   @Override
   public boolean updateRepairRun(RepairRun repairRun) {
+    return updateRepairRun(repairRun, Optional.of(true));
+  }
+
+  @Override
+  public boolean updateRepairRun(RepairRun repairRun, Optional<Boolean> updateRepairState) {
     if (!getRepairRun(repairRun.getId()).isPresent()) {
       return false;
     } else {
@@ -275,6 +286,12 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
+  public void updateRepairUnit(RepairUnit updatedRepairUnit) {
+    repairUnits.put(updatedRepairUnit.getId(), updatedRepairUnit);
+    repairUnitsByKey.put(updatedRepairUnit.with(), updatedRepairUnit);
+  }
+
+  @Override
   public RepairUnit getRepairUnit(UUID id) {
     RepairUnit unit = repairUnits.get(id);
     Preconditions.checkArgument(null != unit);
@@ -318,28 +335,11 @@ public final class MemoryStorage implements IStorage {
     return repairSegmentsByRunId.get(runId).values();
   }
 
-  private Optional<RepairSegment> getNextFreeSegment(UUID runId) {
-    for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
-      if (segment.getState() == RepairSegment.State.NOT_STARTED) {
-        return Optional.of(segment);
-      }
-    }
-    return Optional.empty();
-  }
-
   @Override
-  public Optional<RepairSegment> getNextFreeSegmentInRange(UUID runId, Optional<RingRange> range) {
-    if (range.isPresent()) {
-      for (RepairSegment segment : repairSegmentsByRunId.get(runId).values()) {
-        if (segment.getState() == RepairSegment.State.NOT_STARTED
-            && range.get().encloses(segment.getTokenRange().getBaseRange())) {
-          return Optional.of(segment);
-        }
-      }
-    } else {
-      return getNextFreeSegment(runId);
-    }
-    return Optional.empty();
+  public List<RepairSegment> getNextFreeSegments(UUID runId) {
+    return repairSegmentsByRunId.get(runId).values().stream()
+                                                    .filter(seg -> seg.getState() == RepairSegment.State.NOT_STARTED)
+                                                    .collect(Collectors.toList());
   }
 
   @Override
@@ -354,21 +354,7 @@ public final class MemoryStorage implements IStorage {
   }
 
   @Override
-  public Collection<RepairParameters> getOngoingRepairsInCluster(String clusterName) {
-    List<RepairParameters> ongoingRepairs = Lists.newArrayList();
-    for (RepairRun run : getRepairRunsWithState(RepairRun.RunState.RUNNING)) {
-      for (RepairSegment segment : getSegmentsWithState(run.getId(), RepairSegment.State.RUNNING)) {
-        RepairUnit unit = getRepairUnit(segment.getRepairUnitId());
-        ongoingRepairs.add(
-            new RepairParameters(
-                segment.getTokenRange(), unit.getKeyspaceName(), unit.getColumnFamilies(), run.getRepairParallelism()));
-      }
-    }
-    return ongoingRepairs;
-  }
-
-  @Override
-  public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName) {
+  public SortedSet<UUID> getRepairRunIdsForCluster(String clusterName, Optional<Integer> limit) {
     SortedSet<UUID> repairRunIds = Sets.newTreeSet((u0, u1) -> (int)(u0.timestamp() - u1.timestamp()));
     for (RepairRun repairRun : repairRuns.values()) {
       if (repairRun.getClusterName().equalsIgnoreCase(clusterName)) {
@@ -420,6 +406,13 @@ public final class MemoryStorage implements IStorage {
       }
     }
     return foundRepairSchedules;
+  }
+
+  @Override
+  public Collection<RepairSchedule> getRepairSchedulesForCluster(String clusterName, boolean incremental) {
+    return getRepairSchedulesForCluster(clusterName).stream()
+        .filter(schedule -> getRepairUnit(schedule.getRepairUnitId()).getIncrementalRepair() == incremental)
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -500,7 +493,9 @@ public final class MemoryStorage implements IStorage {
               unit.getDatacenters(),
               unit.getBlacklistedTables(),
               unit.getRepairThreadCount(),
-              unit.getId()));
+              unit.getId(),
+              unit.getTimeout(),
+              run.getAdaptiveSchedule()));
     }
     return runStatuses;
   }
@@ -569,5 +564,38 @@ public final class MemoryStorage implements IStorage {
   @Override
   public boolean deleteEventSubscription(UUID id) {
     return subscriptionsById.remove(id) != null;
+  }
+
+  @Override
+  public List<PercentRepairedMetric> getPercentRepairedMetrics(String clusterName, UUID repairScheduleId, Long since) {
+    return percentRepairedMetrics.entrySet().stream()
+      .filter(entry -> entry.getKey().equals(clusterName + "-" + repairScheduleId))
+      .map(entry -> entry.getValue().entrySet())
+      .flatMap(Collection::stream)
+      .map(Entry::getValue)
+      .collect(Collectors.toList());
+  }
+
+  @Override
+  public void storePercentRepairedMetric(PercentRepairedMetric metric) {
+    synchronized (this) {
+      String metricKey = metric.getCluster() + "-" + metric.getRepairScheduleId();
+      Map<String, PercentRepairedMetric> newValue = Maps.newHashMap();
+      if (percentRepairedMetrics.containsKey(metricKey)) {
+        newValue.putAll(percentRepairedMetrics.get(metricKey));
+      }
+      newValue.put(metric.getNode(), metric);
+      percentRepairedMetrics.put(metricKey, newValue);
+    }
+  }
+
+  @Override
+  public void start() {
+    // no-op
+  }
+
+  @Override
+  public void stop() {
+    // no-op
   }
 }

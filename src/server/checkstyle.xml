@@ -32,6 +32,7 @@
 -->
 
 <module name = "Checker">
+    <module name="SuppressWarningsFilter"/>
     <property name="charset" value="UTF-8"/>
 
     <property name="fileExtensions" value="java, properties, xml"/>
@@ -44,9 +45,20 @@
     <module name="RegexpHeader">
       <property name="headerFile" value="${checkstyle.header.file}"/>
       <property name="fileExtensions" value="java"/>
+      <property name="multiLines" value="2"/>
     </module>
 
     <module name="TreeWalker">
+        <module name="SuppressWarningsHolder"/>
+
+        <module name="SuppressWarnings">
+            <property name="id" value="checkstyle:suppresswarnings"/>
+        </module> 
+        <module name="SuppressWithNearbyCommentFilter">
+            <property name="commentFormat" value="CHECKSTYLE IGNORE THIS LINE"/>
+            <property name="checkFormat" value=".*"/>
+            <property name="influenceFormat" value="0"/>
+        </module>
         <module name="OuterTypeFilename"/>
         <module name="IllegalTokenText">
             <property name="tokens" value="STRING_LITERAL, CHAR_LITERAL"/>

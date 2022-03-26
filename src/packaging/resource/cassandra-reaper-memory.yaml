@@ -13,10 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Cassandra Reaper Configuration Example.
+# Reaper for Apache Cassandra Configuration Example.
 # See a bit more complete example in:
 # src/server/src/test/resources/cassandra-reaper.yaml
-segmentCountPerNode: 16
+segmentCountPerNode: 64
 repairParallelism: DATACENTER_AWARE
 repairIntensity: 0.9
 scheduleDaysBetween: 7
@@ -30,6 +30,7 @@ enableDynamicSeedList: true
 repairManagerSchedulingIntervalSeconds: 10
 jmxConnectionTimeoutInSeconds: 5
 useAddressTranslator: false
+maxParallelRepairs: 2
 # purgeRecordsAfterInDays: 30
 # numberOfRunsToKeepPerUnit: 10
 

@@ -214,6 +214,8 @@
         
         <li><a href="/docs/backends/cassandra/"> Cassandra </a> </li>
         
+        <li><a href="/docs/backends/astra/"> Astra </a> </li>
+        
     </ul>
     
     </li>
@@ -323,6 +325,7 @@
                     <div class="col-md-9">
                         <div>
                           <h1 id="postgres-backend">Postgres Backend</h1>
+<p><strong>Removed in v3.0.0</strong></p>
 <p>To use PostgreSQL as the persistent storage for Reaper, the <code>storageType</code> setting must be set to <strong>postgres</strong> in the Reaper configuration YAML file. The schema will be initialized/upgraded automatically upon startup in the configured database. Ensure that the correct JDBC credentials are specified in the <em>cassandra-reaper.yaml</em> to allow object creation. An example of how to configure Postgres as persistent storage for Reaper can be found in the <em><a href="https://github.com/thelastpickle/cassandra-reaper/blob/master/src/packaging/resource/cassandra-reaper-postgres.yaml">cassandra-reaper-postgres.yaml</a></em>.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">storageType</span>: postgres
 <span style="color:#66d9ef">postgres</span>:

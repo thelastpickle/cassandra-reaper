@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright 2021- DataStax Inc.
 # Copyright 2017-2019 The Last Pickle Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +18,20 @@ echo "Starting Install step..."
 
 set -xe
 
+function set_java_home() {
+    major_version=$1
+    if [[ "$major_version" == "11" ]]; then
+        export CASSANDRA_USE_JDK11=true
+    else
+        export CASSANDRA_USE_JDK11=false
+    fi
+    for jdk in /opt/hostedtoolcache/Java_Adopt_jdk/${major_version}*/; 
+    do 
+        export JAVA_HOME="${jdk/}"x64/
+        echo "JAVA_HOME is set to $JAVA_HOME"
+    done
+}
+
 configure_ccm () {
   sed -i 's/#MAX_HEAP_SIZE="4G"/MAX_HEAP_SIZE="256m"/' ~/.ccm/test/node$1/conf/cassandra-env.sh
   sed -i 's/#HEAP_NEWSIZE="800M"/HEAP_NEWSIZE="200M"/' ~/.ccm/test/node$1/conf/cassandra-env.sh
@@ -32,14 +47,19 @@ configure_ccm () {
   sed -i 's/internode_compression: dc/internode_compression: none/' ~/.ccm/test/node$1/conf/cassandra.yaml
   sed -i 's/# file_cache_size_in_mb: 512/file_cache_size_in_mb: 1/' ~/.ccm/test/node$1/conf/cassandra.yaml
   echo 'phi_convict_threshold: 16' >> ~/.ccm/test/node$1/conf/cassandra.yaml
-  if  echo "$CASSANDRA_VERSION" | grep -q "trunk"  ; then
+  if [[ "$CASSANDRA_VERSION" == *"trunk"* ]] || [[ "$CASSANDRA_VERSION" == *"4."* ]]; then
     sed -i 's/start_rpc: true//' ~/.ccm/test/node$1/conf/cassandra.yaml
     echo '-Dcassandra.max_local_pause_in_ms=15000' >> ~/.ccm/test/node$1/conf/jvm-server.options
     sed -i 's/#-Dcassandra.available_processors=number_of_processors/-Dcassandra.available_processors=2/' ~/.ccm/test/node$1/conf/jvm-server.options
+    sed -i 's/diagnostic_events_enabled: false/diagnostic_events_enabled: true/' ~/.ccm/test/node$1/conf/cassandra.yaml
   else
     sed -i 's/start_rpc: true/start_rpc: false/' ~/.ccm/test/node$1/conf/cassandra.yaml
   fi
+  # Fix for jmx connections randomly hanging
+  echo "JVM_OPTS=\"\$JVM_OPTS -Djava.rmi.server.hostname=127.0.0.$i\"" >> ~/.ccm/test/node$1/conf/cassandra-env.sh
 }
+
+set_java_home ${JDK_VERSION}
 
 case "${TEST_TYPE}" in
     "")
@@ -50,10 +70,12 @@ case "${TEST_TYPE}" in
         mkdir -p ~/.local
         cp ./.github/files/jmxremote.password ~/.local/jmxremote.password
         chmod 400 ~/.local/jmxremote.password
-        sudo chmod 777 /usr/lib/jvm/zulu-8-azure-amd64/jre/lib/management/jmxremote.access
-        echo "cassandra     readwrite" >> /usr/lib/jvm/zulu-8-azure-amd64/jre/lib/management/jmxremote.access
-        sudo chmod 777 /opt/hostedtoolcache/jdk/8.0.192/x64/jre/lib/management/jmxremote.access
-        echo "cassandra     readwrite" >> /opt/hostedtoolcache/jdk/8.0.192/x64/jre/lib/management/jmxremote.access
+        # Our move to support jdk11 makes it possible to get either jdk 8.0.192 or jdk 8.0.292 which both require to be configured properly.
+        for jdk in /opt/hostedtoolcache/Java_Adopt_jdk/8*/; 
+        do 
+          sudo chmod 777 "${jdk/}"x64/jre/lib/management/jmxremote.access
+          echo "cassandra     readwrite" >> "${jdk/}"x64/jre/lib/management/jmxremote.access
+        done
         if [[ ! -z $ELASSANDRA_VERSION ]]; then
           ccm create test -v file:elassandra-${ELASSANDRA_VERSION}.tar.gz
         else
@@ -75,6 +97,16 @@ case "${TEST_TYPE}" in
         # use "2:0" to ensure the first datacenter name is "dc1" instead of "datacenter1", so to be compatible with CircleCI tests
         ccm populate --vnodes -n 2:0 > /dev/null
         for i in `seq 1 2` ; do
+          sed -i 's/LOCAL_JMX=yes/LOCAL_JMX=no/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+          sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' ~/.ccm/test/node$i/conf/cassandra-env.sh
+          configure_ccm $i
+        done
+        ;;
+    "each")
+        ccm create test -v $CASSANDRA_VERSION > /dev/null
+        # use "2:0" to ensure the first datacenter name is "dc1" instead of "datacenter1", so to be compatible with CircleCI tests
+        ccm populate --vnodes -n 2:2 > /dev/null
+        for i in `seq 1 4` ; do
           sed -i 's/LOCAL_JMX=yes/LOCAL_JMX=no/' ~/.ccm/test/node$i/conf/cassandra-env.sh
           sed -i 's/jmxremote.authenticate=true/jmxremote.authenticate=false/' ~/.ccm/test/node$i/conf/cassandra-env.sh
           configure_ccm $i

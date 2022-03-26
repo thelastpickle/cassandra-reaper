@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Cassandra Reaper Configuration for Acceptance Tests.
+# Reaper for Apache Cassandra Configuration for Acceptance Tests.
 #
 segmentCountPerNode: 16
 repairParallelism: SEQUENTIAL
@@ -27,6 +27,7 @@ blacklistTwcsTables: true
 enableDynamicSeedList: false
 jmxConnectionTimeoutInSeconds: 10
 datacenterAvailability: LOCAL
+percentRepairedCheckIntervalMinutes: 1
 
 logging:
   level: WARN
@@ -45,6 +46,7 @@ server:
       bindHost: 127.0.0.1
 
 jmxPorts:
+  127.0.0.1: 7100
   127.0.0.2: 7200
   127.0.0.3: 7300
   127.0.0.4: 7400

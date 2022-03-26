@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Cassandra Reaper Configuration for Acceptance Tests.
+# Reaper for Apache Cassandra Configuration for Acceptance Tests.
 #
 segmentCountPerNode: 16
 repairParallelism: SEQUENTIAL
@@ -30,6 +30,7 @@ enforcedLocalNode: 127.0.0.3
 enforcedLocalClusterName: test
 enforcedLocalDatacenter: dc2
 enableConcurrentMigrations: false
+percentRepairedCheckIntervalMinutes: 1
 
 logging:
   level: WARN

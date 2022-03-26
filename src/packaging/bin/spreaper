@@ -245,6 +245,8 @@ def _arguments_for_repair_and_schedule(parser):
                               "within the keyspace (do not use spaces after commas)"))
     parser.add_argument("--repair-threads", default=1,
                         help=("The number of threads to use in Cassandra to parallelize repair sessions (from 1 to 4)"))
+    parser.add_argument("--force", default=False, action='store_true',
+                        help=("Force create the repair/schedule even if there is a conflicting repair that was created previously."))
 
 
 def _arguments_for_scheduling(parser):
@@ -256,6 +258,10 @@ def _arguments_for_scheduling(parser):
     parser.add_argument("--schedule-trigger-time", default=None,
                         help="at which time to trigger the first repair (UTC), "
                              "e.g. \"2015-02-10T15:00:00\"")
+    parser.add_argument("--adaptive", default=False, action='store_true',
+                        help=("Create an adaptive repair schedule."))
+    parser.add_argument("--percent-unrepaired-threshold", default=None,
+                        help=("Percent of unrepaired data to trigger repair run for incremental repair schedules."))
     _argument_owner(parser)
 
 
@@ -351,9 +357,9 @@ def _parse_arguments(command, description, usage=None, extra_arguments=None):
 # === The actual CLI ========================================================================
 
 SPREAPER_DESCRIPTION = \
-    """Cassandra Reaper is a centralized, stateful, and highly configurable
+    """Reaper for Apache Cassandra is a centralized, stateful, and highly configurable
     tool for running Cassandra repairs for multi-site clusters.
-    This CLI tool is used to control the Cassandra Reaper service through
+    This CLI tool is used to control the Reaper for Apache Cassandra service through
     its REST API.
 
     First register your cluster with "add-cluster" command,
@@ -502,7 +508,7 @@ class ReaperCLI(object):
         printq("# Sending PING to Reaper...")
         answer = reaper.get("ping")
         printq("# [Reply] {}".format(answer))
-        printq("# Cassandra Reaper is answering in: {0}:{1}".format(args.reaper_host, args.reaper_port))
+        printq("# Reaper for Apache Cassandra is answering in: {0}:{1}".format(args.reaper_host, args.reaper_port))
 
     def list_clusters(self):
         reaper, args = ReaperCLI.prepare_reaper(
@@ -731,7 +737,8 @@ class ReaperCLI(object):
                                 nodes=args.nodes,
                                 datacenters=args.datacenters,
                                 blacklistedTables=args.blacklisted_tables,
-                                repairThreadCount=args.repair_threads)
+                                repairThreadCount=args.repair_threads,
+                                force="true" if args.force else "false")
         else:
             if args.blacklisted_tables :
                 printq ("# Registering repair run for cluster '{0}', and keyspace '{1}', "
@@ -751,7 +758,8 @@ class ReaperCLI(object):
                                 nodes=args.nodes,
                                 datacenters=args.datacenters,
                                 blacklistedTables=args.blacklisted_tables,
-                                repairThreadCount=args.repair_threads)
+                                repairThreadCount=args.repair_threads,
+                                force="true" if args.force else "false")
         repair_run = json.loads(reply)
         printq("# Repair run with id={0} created".format(repair_run.get('id')))
         if not args.dont_start_repair:
@@ -792,7 +800,10 @@ class ReaperCLI(object):
                                 nodes=args.nodes,
                                 datacenters=args.datacenters,
                                 blacklistedTables=args.blacklisted_tables,
-                                repairThreadCount=args.repair_threads)
+                                repairThreadCount=args.repair_threads,
+                                force="true" if args.force else "false",
+                                adaptive="true" if args.adaptive else "false",
+                                percentUnrepairedThreshold=args.percent_unrepaired_threshold)
         else:
             printq ("# Registering repair schedule for cluster '{0}', and keyspace '{1}', "
                    "targeting all tables in the keyspace, with scheduled days between "
@@ -810,7 +821,10 @@ class ReaperCLI(object):
                                 nodes=args.nodes,
                                 datacenters=args.datacenters,
                                 blacklistedTables=args.blacklisted_tables,
-                                repairThreadCount=args.repair_threads)
+                                repairThreadCount=args.repair_threads,
+                                force="true" if args.force else "false",
+                                adaptive="true" if args.adaptive else "false",
+                                percentUnrepairedThreshold=args.percent_unrepaired_threshold)
         repair_schedule = json.loads(reply)
         printq("# Repair schedule with id={0} created:".format(repair_schedule.get('id')))
         print(json.dumps(repair_schedule, indent=2, sort_keys=True))
