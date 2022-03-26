@@ -160,7 +160,7 @@ public final class NodesStatus {
           releaseVersion.orElse(NOT_AVAILABLE),
           tokens.orElse(NOT_AVAILABLE),
           load.orElse(0.0),
-          stargate.isPresent());
+          stargate.isPresent() ? NodeType.STARGATE : NodeType.CASSANDRA);
 
       if (!status.orElse(NOT_AVAILABLE).toLowerCase().contains("left")
           && !status.orElse(NOT_AVAILABLE).toLowerCase().contains("removed")) {
@@ -241,6 +241,11 @@ public final class NodesStatus {
     }
   }
 
+  public enum NodeType {
+    CASSANDRA,
+    STARGATE;
+  }
+
   public static final class EndpointState {
 
     @JsonProperty
@@ -271,7 +276,7 @@ public final class NodesStatus {
     public final Double load;
 
     @JsonProperty
-    public final Boolean stargate;
+    public final NodeType type;
 
     public EndpointState(
         String endpoint,
@@ -283,7 +288,7 @@ public final class NodesStatus {
         String releaseVersion,
         String tokens,
         Double load,
-        Boolean stargate) {
+        NodeType type) {
 
       this.endpoint = endpoint;
       this.hostId = hostId;
@@ -294,7 +299,7 @@ public final class NodesStatus {
       this.releaseVersion = releaseVersion;
       this.tokens = tokens;
       this.load = load;
-      this.stargate = stargate;
+      this.type = type;
     }
 
     public String getDc() {
@@ -334,8 +339,8 @@ public final class NodesStatus {
           + "Tokens : "
           + tokens
           + " / "
-          + "Stargate : "
-          + stargate;
+          + "Type : "
+          + type;
     }
   }
 }
