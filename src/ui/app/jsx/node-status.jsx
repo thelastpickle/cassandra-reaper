@@ -214,9 +214,10 @@ const NodeStatus = CreateReactClass({
       let buttonStyle = "btn btn-xs btn-success";
       let largeButtonStyle = "btn btn-lg btn-static btn-success";
 
+      const isStargate = this.props.endpointStatus.type === "STARGATE";
       // If the node is a Stargate node we won't have real status for it
       // so we'll display it slightly differently
-      if (this.props.endpointStatus.stargate) {
+      if (isStargate) {
           buttonStyle = "btn btn-xs btn-info";
           largeButtonStyle = "btn btn-lg btn-static btn-info";
       // If it's not a stargate node, then we can appropriately use its status
@@ -244,7 +245,7 @@ const NodeStatus = CreateReactClass({
       const tooltip = (
         <Tooltip id="tooltip">
           <strong>{this.props.endpointStatus.endpoint}</strong>
-          {this.props.endpointStatus.stargate &&
+          {isStargate &&
             <span>&nbsp;(Stargate)</span>
           }
           &nbsp;({humanFileSize(this.props.endpointStatus.load, 1024)})

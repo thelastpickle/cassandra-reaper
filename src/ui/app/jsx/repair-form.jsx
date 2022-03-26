@@ -164,10 +164,53 @@ const repairForm = CreateReactClass({
     });
   },
 
+  /**
+   * Utility method for digging through the endpointStates API response structure
+   * to identify all of the possible nodes
+   *
+   * @returns An array of node/endpoint object
+   * @private
+   */
+  _getNodes: function() {
+    const nodes = [];
+    for(let endpointState of this.state.clusterStatus.nodes_status.endpointStates) {
+      if (!endpointState || !endpointState.endpoints) {
+        continue;
+      }
+      for (let datacenterId in endpointState.endpoints) {
+        const datacenter = endpointState.endpoints[datacenterId];
+        if (!datacenter) {
+          continue;
+        }
+        for (let rackId in datacenter) {
+          const rack = datacenter[rackId];
+          if (!rack) {
+            continue;
+          }
+          for (let endpoint of rack) {
+            if (endpoint) {
+              nodes.push(endpoint);
+            }
+          }
+        }
+      }
+    }
+    return nodes;
+  },
+
   _getNodeOptions: function() {
+    let nodes = this._getNodes();
+    if (!nodes) {
+      this.setState({
+        nodeOptions: []
+      });
+      return;
+    }
+    // We should not return Stargate nodes as options, filter them out
+    const nonStargateNodes = nodes.filter(node => node.type !== "STARGATE")
     this.setState({
-      nodeOptions: this.state.clusterStatus.nodes_status.endpointStates[0].endpointNames.sort().map(
-        obj => { return {value: obj, label: obj}; }
+      nodeOptions: nonStargateNodes.map(node => node.endpoint).sort().map(
+          obj => { return {value: obj, label: obj}; }
       )
     });
   },
