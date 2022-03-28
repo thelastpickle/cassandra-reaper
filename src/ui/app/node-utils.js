@@ -1,10 +1,22 @@
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
 /**
  * Utility method for digging through the endpointStates API response structure
  * to identify the possible nodes
  *
+ * @param endpointStates - Array
  * @returns An array of node/endpoint objects
  */
-import {node} from "prop-types";
 
 export const getNodesFromEndpointStates = function(endpointStates) {
   const nodes = [];
@@ -40,9 +52,10 @@ export const getNodesFromEndpointStates = function(endpointStates) {
 /**
  * Utility function for generating a set of options for a select representing a drop down of nodes.
  * If excludeStargateNodes is true stargate nodes will not be included in the set of options generated.
- * @param endpointStates
- * @param excludeStargateNodes
- * @returns {{nodeOptions: {label: *, value: *}[]}|{nodeOptions: *[]}}
+ *
+ * @param endpointStates - Array
+ * @param excludeStargateNodes - Boolean
+ * @returns An object suitable for passing to Select component
  */
 export const getNodeOptions = function(endpointStates, excludeStargateNodes) {
   let nodes = getNodesFromEndpointStates(endpointStates);
