@@ -20,6 +20,7 @@ import CreateReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import Select from 'react-select';
 import {getUrlPrefix} from "jsx/mixin";
+import {getNodeOptions} from "../node-utils";
 
 
 const subscriptionForm = CreateReactClass({
@@ -197,11 +198,7 @@ const subscriptionForm = CreateReactClass({
   },
 
   _getNodeOptions: function() {
-    this.setState({
-      nodeOptions: this.state.clusterStatus.nodes_status.endpointStates[0].endpointNames.map(
-        obj => { return {value: obj, label: obj}; }
-      )
-    });
+    this.setState(getNodeOptions(this.state.clusterStatus.nodes_status.endpointStates, true));
   },
 
   _handleSelectOnChange: function(valueContext, actionContext) {

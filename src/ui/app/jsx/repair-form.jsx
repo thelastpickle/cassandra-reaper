@@ -25,6 +25,7 @@ import Moment from 'moment';
 import moment from "moment";
 import Modal from 'react-bootstrap/lib/Modal';
 import Button from 'react-bootstrap/lib/Button';
+import {getNodeOptions} from "../node-utils";
 
 Moment.locale(navigator.language);
 
@@ -165,11 +166,7 @@ const repairForm = CreateReactClass({
   },
 
   _getNodeOptions: function() {
-    this.setState({
-      nodeOptions: this.state.clusterStatus.nodes_status.endpointStates[0].endpointNames.sort().map(
-        obj => { return {value: obj, label: obj}; }
-      )
-    });
+    this.setState(getNodeOptions(this.state.clusterStatus.nodes_status.endpointStates, true));
   },
 
   _getKeyspaceOptions: function() {
