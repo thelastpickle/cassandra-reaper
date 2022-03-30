@@ -55,17 +55,15 @@ const Cluster = CreateReactClass({
           method: 'GET',
           component: this,
           complete: function(data) {
-            console.log(this.component.props.name + " complete.");
             this.component.setState({clusterStatuses: setTimeout(this.component._refreshClusterStatus, 30000),
                                      clusterStatus: $.parseJSON(data.responseText)});
             
             if(this.component.state.clusterStatus.nodes_status){
               this.component.setState({nodes_status: this.component.state.clusterStatus.nodes_status});
             }
-            console.log(this.component.props.name + " : Next attempt in 30s.")
           },
           error: function(data) {
-            console.log(this.component.props.name + " failed.");
+            console.error(this.component.props.name + " failed.");
             this.component.setState({clusterStatuses: setTimeout(this.component._refreshClusterStatus, 30000)});
 
           }

@@ -21,7 +21,7 @@ This documentation includes instructions on how build, install, and configure Re
 
 ### Compatibility
 
-Reaper supports all versions of Apache Cassandra ranging from 1.2 to 3.11. Incremental repair is supported for versions from 2.1 and above.
+Reaper supports all versions of Apache Cassandra ranging from 1.2 to the latest release. Incremental repair is supported for versions from 2.1 and above.
 
 A single instance of Reaper can handle repairs for clusters running different Apache Cassandra versions.
 

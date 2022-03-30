@@ -24,8 +24,11 @@ import io.dropwizard.cli.ConfiguredCommand;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class ReaperDbMigrationCommand extends ConfiguredCommand<ReaperApplicationConfiguration> {
+  private static final Logger LOG = LoggerFactory.getLogger(ReaperDbMigrationCommand.class);
 
   protected ReaperDbMigrationCommand(
       String name,

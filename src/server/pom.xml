@@ -239,6 +239,11 @@
             <version>${shiro.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>2.1</version>
+        </dependency>
+        <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt</artifactId>
             <version>0.9.1</version>
@@ -583,21 +588,6 @@
                             <executable>npm</executable>
                             <workingDirectory>../ui</workingDirectory>
                             <arguments>
-                                <argument>install</argument>
-                            </arguments>
-                        </configuration>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>exec-bower-install</id>
-                        <phase>generate-sources</phase>
-                        <configuration>
-                            <executable>bower</executable>
-                            <workingDirectory>../ui</workingDirectory>
-                            <arguments>
-                                <argument>--allow-root</argument>
                                 <argument>install</argument>
                             </arguments>
                         </configuration>
