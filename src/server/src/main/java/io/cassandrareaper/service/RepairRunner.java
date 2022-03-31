@@ -31,6 +31,7 @@ import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxProxy;
+import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.Arrays;
@@ -130,6 +131,7 @@ final class RepairRunner implements Runnable {
 
     registerMetric(metricNameForRepairProgressPerKeyspace, (Gauge<Float>) ()  -> repairProgress);
     registerMetric(metricNameForRepairProgress, (Gauge<Float>) ()  -> repairProgress);
+    PrometheusMetricsFilter.ignoreMetric(metricNameForRepairProgress);
 
     metricNameForMillisSinceLastRepairPerKeyspace
       = metricName(
@@ -150,6 +152,7 @@ final class RepairRunner implements Runnable {
 
     registerMetric(metricNameForDoneSegmentsPerKeyspace, (Gauge<Float>) ()  -> segmentsDone);
     registerMetric(metricNameForDoneSegments, (Gauge<Integer>) ()  -> (int)segmentsDone);
+    PrometheusMetricsFilter.ignoreMetric(metricNameForDoneSegments);
 
     String metricNameForTotalSegmentsPerKeyspace
         = metricName("segmentsTotal", repairUnitClusterName, repairUnitKeyspaceName, repairRun.get().getRepairUnitId());
@@ -160,6 +163,7 @@ final class RepairRunner implements Runnable {
 
     registerMetric(metricNameForTotalSegmentsPerKeyspace, (Gauge<Integer>) ()  -> (int)segmentsTotal);
     registerMetric(metricNameForTotalSegments, (Gauge<Float>) ()  -> segmentsTotal);
+    PrometheusMetricsFilter.ignoreMetric(metricNameForTotalSegments);
   }
 
   public static RepairRunner create(
@@ -275,6 +279,7 @@ final class RepairRunner implements Runnable {
 
         context.metricRegistry.remove(metricNameForMillisSinceLastRepairPerKeyspace);
         context.metricRegistry.remove(metricNameForMillisSinceLastRepair);
+        PrometheusMetricsFilter.removeIgnoredMetric(metricNameForMillisSinceLastRepair);
 
         context.metricRegistry.register(
             metricNameForMillisSinceLastRepairPerKeyspace,
@@ -283,7 +288,7 @@ final class RepairRunner implements Runnable {
         context.metricRegistry.register(
             metricNameForMillisSinceLastRepair,
             (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
-
+        PrometheusMetricsFilter.ignoreMetric(metricNameForMillisSinceLastRepair);
         context.metricRegistry.counter(
           MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.DONE.toString())).inc();
 
