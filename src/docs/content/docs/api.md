@@ -277,3 +277,34 @@ Returns OK if all goes well NOT_MODIFIED if new state is the same as the old one
 	    * *text*: The text to encrypt.
   * Encrypt text when cryptograph settings are configured in the reaper yaml.
 
+## Node Resource
+
+* **GET /node/tpstats/{clusterName}/{host}**
+    * Expected query parameters: *None*
+    * Returns thread pool stats for a node.
+
+
+* **GET /node/dropped/{clusterName}/{host}**
+    * Expected query parameters: *None*
+    * Returns dropped messages stats for a node.
+
+
+* **GET /node/clientRequestLatencies/{clusterName}/{host}**
+    * Expected query parameters: *None*
+    * Returns client request latencies for a node.
+
+
+* **GET /node/streams/{clusterName}/{host}**
+    * Expected query parameters: *None*
+    * Returns streams currently happening on a node.
+
+
+* **GET /node/compactions/{clusterName}/{host}**
+    * Expected query parameters: *None*
+    * Returns thread pool stats for a node.
+
+
+* **GET /node/tokens/{clusterName}/{host}**
+    * Expected query parameters: *None*
+    * Returns the tokens owned by a node.
+
