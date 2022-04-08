@@ -146,10 +146,6 @@ loadBalancingPolicy:
   type:
 speculativeExecutionPolicy:
   type:
-queryOptions:
-  consistencyLevel:
-  serialConsistencyLevel:
-  fetchSize:
 socketOptions:
   connectTimeoutMillis:
   readTimeoutMillis:
