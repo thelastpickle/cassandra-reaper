@@ -182,6 +182,9 @@ public final class RepairRunService {
 
     } catch (ReaperException e) {
       LOG.warn("couldn't connect to any host: {}, life sucks...", targetCluster.getSeedHosts(), e);
+    } catch (IllegalArgumentException e) {
+      LOG.error("Couldn't get endpoints for tokens");
+      throw new ReaperException("Couldn't get endpoints for tokens", e);
     }
 
     if (segments.isEmpty() && !repairUnit.getIncrementalRepair()) {
