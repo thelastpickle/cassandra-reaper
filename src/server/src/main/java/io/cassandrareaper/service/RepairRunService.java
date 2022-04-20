@@ -173,6 +173,10 @@ public final class RepairRunService {
       String cassandraVersion = clusterFacade.getCassandraVersion(targetCluster);
 
       int globalSegmentCount = segmentCount;
+      if (globalSegmentCount == 0 && endpointToRange.isEmpty()) {
+        LOG.info("Couldn't get endpoints for tokens");
+        throw new ReaperException("Couldn't get endpoints for tokens");
+      }
       if (globalSegmentCount == 0) {
         globalSegmentCount = computeGlobalSegmentCount(segmentCountPerNode, endpointToRange);
       }
