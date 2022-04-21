@@ -65,6 +65,23 @@ public final class PrometheusMetricsConfiguration {
         "io.cassandrareaper.service.RepairRunner.repairProgress",
         repairProgressMetricLabels));
 
+    final Map<String,String> segmentRunnerMetricLabels = new HashMap<>();
+    segmentRunnerMetricLabels.put("host", "${0}");
+    segmentRunnerMetricLabels.put("cluster", "${1}");
+    segmentRunnerMetricLabels.put("keyspace", "${2}");
+    mapperConfigs.add(new MapperConfig(
+        "io.cassandrareaper.service.SegmentRunner.repairing.*.*.*",
+        "io.cassandrareaper.service.SegmentRunner.repairing",
+        segmentRunnerMetricLabels));
+    mapperConfigs.add(new MapperConfig(
+        "io.cassandrareaper.service.SegmentRunner.postpone.*.*.*",
+        "io.cassandrareaper.service.SegmentRunner.postpone",
+        segmentRunnerMetricLabels));
+    mapperConfigs.add(new MapperConfig(
+        "io.cassandrareaper.service.SegmentRunner.runRepair.*.*.*",
+        "io.cassandrareaper.service.SegmentRunner.runRepair",
+        segmentRunnerMetricLabels));
+
     return new CustomMappingSampleBuilder(mapperConfigs);
   }
 }
