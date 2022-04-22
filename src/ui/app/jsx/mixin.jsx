@@ -103,16 +103,12 @@ export const DeleteStatusMessageMixin = {
 export const CFsListRender = CreateReactClass({
   render: function() {
     return (
-      <div>
-        <div>
-          <p>
-            {
-              this.props.list.map(function(listValue) {
-                return (<span className="text-span-label" key={listValue}>{listValue}</span>);
-              })
-            }
-          </p>
-        </div>
+      <div style={{display: "flex", flexWrap: "wrap"}}>
+        {
+          this.props.list.map(function(listValue) {
+            return (<span className="text-span-label" key={listValue}>{listValue}</span>);
+          })
+        }
       </div>
     )
   }
