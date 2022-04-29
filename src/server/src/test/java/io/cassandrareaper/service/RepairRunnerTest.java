@@ -815,7 +815,7 @@ public final class RepairRunnerTest {
     return map;
   }
 
-  @Test(expected = ConditionTimeoutException.class)
+  @Test
   public void testDontFailRepairAfterTopologyChange() throws InterruptedException, ReaperException,
       MalformedObjectNameException, ReflectionException, IOException {
     final String ksName = "reaper";
@@ -943,13 +943,11 @@ public final class RepairRunnerTest {
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
       .thenReturn(Lists.newArrayList(nodeSetAfterTopologyChange));
     context.repairManager.resumeRunningRepairRuns();
-    // The repair should now fail as the list of replicas for the segments are different from storage
-    await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
-      return RepairRun.RunState.ERROR == storage.getRepairRun(runId).get().getRunState();
-    });
 
-    // We shouldn't get here at all
-    assertEquals(RepairRun.RunState.ERROR, storage.getRepairRun(runId).get().getRunState());
+    // The repair run should succeed despite the topology change.
+    await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
+      return RepairRun.RunState.DONE == storage.getRepairRun(runId).get().getRunState();
+    });
   }
 
   private RepairRun addNewRepairRun(
