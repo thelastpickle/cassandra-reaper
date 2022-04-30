@@ -201,7 +201,6 @@ public final class ClusterFacade {
    * In SIDECAR : Enforce connecting to the local node to get the information
    *
    * @param cluster the cluster to connect to
-   * @param endpoints the list of endpoints to connect to
    * @return a NodeStatus object with all nodes state
    * @throws ReaperException any runtime exception we catch
    */
@@ -266,7 +265,7 @@ public final class ClusterFacade {
    * local node to get the information
    *
    * @param cluster the cluster to connect to
-   * @param keyspaceName the ks to get a map of token ranges for
+   * @param keyspace the ks to get a map of token ranges for
    * @return a map of token ranges with endpoints as items
    * @throws ReaperException any runtime exception we catch
    */
@@ -533,7 +532,6 @@ public final class ClusterFacade {
    * Collect ClientRequest metrics through JMX on a specific node.
    *
    * @param node the node to collect metrics on
-   * @param collectedMetrics the list of metrics to collect
    * @return the list of collected metrics
    * @throws ReaperException any runtime exception we catch in the process
    */
@@ -860,7 +858,6 @@ public final class ClusterFacade {
    * In SIDECAR : We skip that code path as we don’t need to pre-heat connections
    *
    * @param cluster the cluster to connect to
-   * @param endpoints the list of endpoints to connect to
    * @return a JmxProxy object
    * @throws ReaperException any runtime exception we catch
    */

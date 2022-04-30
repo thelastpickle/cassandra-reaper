@@ -72,7 +72,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyCollectionOf;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -160,9 +160,9 @@ public final class RepairRunResourceTest {
             any(BigInteger.class),
             anyString(),
             any(RepairParallelism.class),
-            anyCollectionOf(String.class),
+            anyCollection(),
             anyBoolean(),
-            anyCollectionOf(String.class),
+            anyCollection(),
             any(),
             any(),
             any(Integer.class)))

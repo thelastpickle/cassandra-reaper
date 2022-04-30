@@ -103,6 +103,10 @@ public final class RepairRunnerTest {
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunnerTest.class);
   private static final Set<String> TABLES = ImmutableSet.of("table1");
   private static final Duration POLL_INTERVAL = Duration.TWO_SECONDS;
+  private static final List<BigInteger> THREE_TOKENS = Lists.newArrayList(
+      BigInteger.valueOf(0L),
+      BigInteger.valueOf(100L),
+      BigInteger.valueOf(200L));
 
   private final Cluster cluster = Cluster.builder()
             .withName("test_" + RandomStringUtils.randomAlphabetic(12))
@@ -440,10 +444,7 @@ public final class RepairRunnerTest {
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
-    final List<BigInteger> tokens = Lists.newArrayList(
-        BigInteger.valueOf(0L),
-        BigInteger.valueOf(100L),
-        BigInteger.valueOf(200L));
+    final List<BigInteger> tokens = THREE_TOKENS;
     final IStorage storage = new MemoryStorage();
     AppContext context = new AppContext();
     context.storage = storage;
@@ -571,10 +572,7 @@ public final class RepairRunnerTest {
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
-    final List<BigInteger> tokens = Lists.newArrayList(
-        BigInteger.valueOf(0L),
-        BigInteger.valueOf(100L),
-        BigInteger.valueOf(200L));
+    final List<BigInteger> tokens = THREE_TOKENS;
     final IStorage storage = new MemoryStorage();
     AppContext context = new AppContext();
     context.storage = storage;
@@ -818,24 +816,22 @@ public final class RepairRunnerTest {
   }
 
   @Test
-  public void testFailRepairAfterTopologyChange() throws InterruptedException, ReaperException,
+  public void testDontFailRepairAfterTopologyChange() throws InterruptedException, ReaperException,
       MalformedObjectNameException, ReflectionException, IOException {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = false;
     final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
     final List<String> nodeSetAfterTopologyChange = Lists.newArrayList("127.0.0.1", "127.0.0.2", "127.0.0.4");
-    final Map<String, String> nodeMap = ImmutableMap.of(
-        "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1");
+    final Map<String, String> nodeMap = ImmutableMap.of("127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1");
+    final Map<String, String> nodeMapAfterTopologyChange = ImmutableMap.of(
+        "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.4", "dc1");
     final Set<String> datacenters = Collections.emptySet();
     final Set<String> blacklistedTables = Collections.emptySet();
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
-    final List<BigInteger> tokens = Lists.newArrayList(
-        BigInteger.valueOf(0L),
-        BigInteger.valueOf(100L),
-        BigInteger.valueOf(200L));
+    final List<BigInteger> tokens = THREE_TOKENS;
     final IStorage storage = new MemoryStorage();
     AppContext context = new AppContext();
     context.storage = storage;
@@ -853,26 +849,7 @@ public final class RepairRunnerTest {
             .repairThreadCount(repairThreadCount)
             .timeout(segmentTimeout))
         .getId();
-    RepairRun run = storage.addRepairRun(
-            RepairRun.builder(cluster.getName(), cf)
-                .intensity(intensity)
-                .segmentCount(1)
-                .repairParallelism(RepairParallelism.PARALLEL)
-                .tables(TABLES),
-            Lists.newArrayList(
-                RepairSegment.builder(
-                        Segment.builder()
-                            .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100")))
-                            .withReplicas(nodeMap)
-                            .build(), cf)
-                    .withState(RepairSegment.State.RUNNING)
-                    .withStartTime(DateTime.now())
-                    .withCoordinatorHost("reaper"),
-                RepairSegment.builder(
-                    Segment.builder()
-                        .withTokenRange(new RingRange(new BigInteger("100"), new BigInteger("200")))
-                        .withReplicas(nodeMap)
-                        .build(), cf)));
+    RepairRun run = addNewRepairRun(nodeMap, intensity, storage, cf);
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
     assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
@@ -958,14 +935,47 @@ public final class RepairRunnerTest {
     storage.updateRepairRun(
         run.with().runState(RepairRun.RunState.RUNNING).startTime(DateTime.now()).build(runId));
     // We'll now change the list of replicas for any segment, making the stored ones obsolete
+    when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
+        .thenReturn((Map)ImmutableMap.of(
+            Lists.newArrayList("0", "100"), Lists.newArrayList(nodeSetAfterTopologyChange),
+            Lists.newArrayList("100", "200"), Lists.newArrayList(nodeSetAfterTopologyChange)));
+    when(clusterFacade.getEndpointToHostId(any())).thenReturn(nodeMapAfterTopologyChange);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
       .thenReturn(Lists.newArrayList(nodeSetAfterTopologyChange));
     context.repairManager.resumeRunningRepairRuns();
-    // The repair should now fail as the list of replicas for the segments are different from storage
+
+    // The repair run should succeed despite the topology change.
     await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
-      return RepairRun.RunState.ERROR == storage.getRepairRun(runId).get().getRunState();
+      return RepairRun.RunState.DONE == storage.getRepairRun(runId).get().getRunState();
     });
-    assertEquals(RepairRun.RunState.ERROR, storage.getRepairRun(runId).get().getRunState());
+  }
+
+  private RepairRun addNewRepairRun(
+      final Map<String, String> nodeMap,
+      final double intensity,
+      final IStorage storage,
+      UUID cf
+  ) {
+    return storage.addRepairRun(
+            RepairRun.builder(cluster.getName(), cf)
+                .intensity(intensity)
+                .segmentCount(1)
+                .repairParallelism(RepairParallelism.PARALLEL)
+                .tables(TABLES),
+            Lists.newArrayList(
+                RepairSegment.builder(
+                        Segment.builder()
+                            .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100")))
+                            .withReplicas(nodeMap)
+                            .build(), cf)
+                    .withState(RepairSegment.State.RUNNING)
+                    .withStartTime(DateTime.now())
+                    .withCoordinatorHost("reaper"),
+                RepairSegment.builder(
+                    Segment.builder()
+                        .withTokenRange(new RingRange(new BigInteger("100"), new BigInteger("200")))
+                        .withReplicas(nodeMap)
+                        .build(), cf)));
   }
 
   @Test
@@ -998,10 +1008,7 @@ public final class RepairRunnerTest {
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
-    final List<BigInteger> tokens = Lists.newArrayList(
-        BigInteger.valueOf(0L),
-        BigInteger.valueOf(100L),
-        BigInteger.valueOf(200L));
+    final List<BigInteger> tokens = THREE_TOKENS;
     final AppContext context = new AppContext();
     context.storage = Mockito.mock(CassandraStorage.class);
     RepairUnit repairUnit = RepairUnit.builder()
@@ -1072,10 +1079,7 @@ public final class RepairRunnerTest {
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
-    final List<BigInteger> tokens = Lists.newArrayList(
-        BigInteger.valueOf(0L),
-        BigInteger.valueOf(100L),
-        BigInteger.valueOf(200L));
+    final List<BigInteger> tokens = THREE_TOKENS;
     final IStorage storage = new MemoryStorage();
     AppContext context = new AppContext();
     context.storage = storage;
@@ -1094,28 +1098,7 @@ public final class RepairRunnerTest {
             .timeout(segmentTimeout))
         .getId();
     DateTimeUtils.setCurrentMillisFixed(timeRun);
-    RepairRun run = storage.addRepairRun(
-            RepairRun.builder(cluster.getName(), cf)
-                .intensity(intensity)
-                .segmentCount(1)
-                .repairParallelism(RepairParallelism.PARALLEL)
-                .tables(TABLES),
-            Lists.newArrayList(
-                RepairSegment.builder(
-                        Segment.builder()
-                            .withTokenRange(new RingRange(BigInteger.ZERO, new BigInteger("100")))
-                            .withReplicas(nodeMap)
-                            .build(),
-                        cf)
-                    .withState(RepairSegment.State.RUNNING)
-                    .withStartTime(DateTime.now())
-                    .withCoordinatorHost("reaper"),
-                RepairSegment.builder(
-                    Segment.builder()
-                        .withTokenRange(new RingRange(new BigInteger("100"), new BigInteger("200")))
-                        .withReplicas(nodeMap)
-                        .build(),
-                    cf)));
+    RepairRun run = addNewRepairRun(nodeMap, intensity, storage, cf);
     final UUID runId = run.getId();
     final UUID segmentId = storage.getNextFreeSegments(run.getId()).get(0).getId();
     assertEquals(storage.getRepairSegment(runId, segmentId).get().getState(), RepairSegment.State.NOT_STARTED);
@@ -1173,10 +1156,7 @@ public final class RepairRunnerTest {
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
-    final List<BigInteger> tokens = Lists.newArrayList(
-        BigInteger.valueOf(0L),
-        BigInteger.valueOf(100L),
-        BigInteger.valueOf(200L));
+    final List<BigInteger> tokens = THREE_TOKENS;
     final AppContext context = new AppContext();
     context.storage = Mockito.mock(CassandraStorage.class);
     RepairUnit repairUnit = RepairUnit.builder()
@@ -1261,10 +1241,7 @@ public final class RepairRunnerTest {
     final double intensity = 0.5f;
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
-    final List<BigInteger> tokens = Lists.newArrayList(
-        BigInteger.valueOf(0L),
-        BigInteger.valueOf(100L),
-        BigInteger.valueOf(200L));
+    final List<BigInteger> tokens = THREE_TOKENS;
     final AppContext context = new AppContext();
     context.storage = Mockito.mock(CassandraStorage.class);
     RepairUnit repairUnit = RepairUnit.builder()
@@ -1350,10 +1327,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final int maxDuration = 10;
-    final List<BigInteger> tokens = Lists.newArrayList(
-        BigInteger.valueOf(0L),
-        BigInteger.valueOf(100L),
-        BigInteger.valueOf(200L));
+    final List<BigInteger> tokens = THREE_TOKENS;
     final AppContext context = new AppContext();
     context.storage = Mockito.mock(CassandraStorage.class);
     RepairUnit repairUnit = RepairUnit.builder()
@@ -1439,10 +1413,7 @@ public final class RepairRunnerTest {
     final int repairThreadCount = 1;
     final int segmentTimeout = 30;
     final int maxDuration = 10;
-    final List<BigInteger> tokens = Lists.newArrayList(
-        BigInteger.valueOf(0L),
-        BigInteger.valueOf(100L),
-        BigInteger.valueOf(200L));
+    final List<BigInteger> tokens = THREE_TOKENS;
     final AppContext context = new AppContext();
     context.storage = Mockito.mock(CassandraStorage.class);
     RepairUnit repairUnit = RepairUnit.builder()
