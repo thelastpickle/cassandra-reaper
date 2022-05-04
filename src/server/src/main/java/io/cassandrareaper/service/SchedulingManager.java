@@ -139,7 +139,7 @@ public final class SchedulingManager extends TimerTask {
   /**
    * Manage, i.e. check whether a new repair run should be started with this schedule.
    *
-   * @param schedule The schedule to be checked for activation.
+   * @param schdle The schedule to be checked for activation.
    * @return boolean indicating whether a new RepairRun instance was created and started.
    */
   @VisibleForTesting
