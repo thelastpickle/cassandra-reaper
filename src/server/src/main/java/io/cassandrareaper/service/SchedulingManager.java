@@ -181,15 +181,8 @@ public final class SchedulingManager extends TimerTask {
 
           try {
             RepairRun newRepairRun = createNewRunForUnit(schedule, unit);
-
-            boolean result
-                = context.storage.updateRepairSchedule(
-                    schedule.with().lastRun(newRepairRun.getId()).build(schedule.getId()));
-
-            if (result) {
-              context.repairManager.startRepairRun(newRepairRun);
-              return true;
-            }
+            context.repairManager.startRepairRun(newRepairRun);
+            return true;
           } catch (ReaperException e) {
             LOG.error(e.getMessage(), e);
           }
@@ -286,5 +279,15 @@ public final class SchedulingManager extends TimerTask {
       }
     }
     return true;
+  }
+
+  public void maybeRegisterRepairRunCompleted(RepairRun repairRun) {
+      Collection<RepairSchedule> repairSchedulesForCluster =
+          context.storage.getRepairSchedulesForCluster(repairRun.getClusterName());
+
+      repairSchedulesForCluster.stream().filter(schedule -> repairRunComesFromSchedule(repairRun, schedule))
+          .findFirst()
+          .ifPresent(schedule -> context.storage.updateRepairSchedule(
+              schedule.with().lastRun(repairRun.getId()).build(schedule.getId())));
   }
 }
