@@ -168,17 +168,17 @@ public final class RepairScheduleService {
     return () -> {
       Optional<RepairSchedule> schedule = context.storage.getRepairSchedule(repairSchedule);
 
-      Long lastRepairDate = schedule.orElseThrow(() -> new IllegalArgumentException("Repair schedule not found"))
-          .getRunHistory().stream()
-          .map(uuid -> context.storage.getRepairRun(uuid))
+      Optional<UUID> latestRepairUUID = Optional.ofNullable(schedule.orElseThrow(() -> new IllegalArgumentException("Repair schedule not found"))
+          .getLastRun());
+
+      Long millisSinceLastRepair = latestRepairUUID.map(uuid -> context.storage.getRepairRun(uuid))
           .filter(Optional::isPresent)
           .map(Optional::get)
           .map(RepairRun::getEndTime)
           .filter(Objects::nonNull)
-          .max(DateTime::compareTo)
           .map(dateTime -> DateTime.now().getMillis() - dateTime.getMillis())
-          .orElse(DateTime.now().getMillis()); // Return epoch if no repairs from this schedule ever completed
-      return lastRepairDate;
+          .orElse(DateTime.now().getMillis()); // Return epoch if no repairs from this schedule were completed
+      return millisSinceLastRepair;
     };
   }
 

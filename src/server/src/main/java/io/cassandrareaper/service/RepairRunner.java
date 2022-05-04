@@ -290,6 +290,7 @@ final class RepairRunner implements Runnable {
           MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.DONE.toString())).inc();
 
         maybeAdaptRepairSchedule();
+        context.schedulingManager.maybeRegisterRepairRunCompleted(repairRun.get());
       }
     }
   }
