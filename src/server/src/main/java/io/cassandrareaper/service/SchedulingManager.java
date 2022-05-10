@@ -282,12 +282,12 @@ public final class SchedulingManager extends TimerTask {
   }
 
   public void maybeRegisterRepairRunCompleted(RepairRun repairRun) {
-      Collection<RepairSchedule> repairSchedulesForCluster =
-          context.storage.getRepairSchedulesForCluster(repairRun.getClusterName());
+    Collection<RepairSchedule> repairSchedulesForCluster = context.storage
+        .getRepairSchedulesForCluster(repairRun.getClusterName());
 
-      repairSchedulesForCluster.stream().filter(schedule -> repairRunComesFromSchedule(repairRun, schedule))
-          .findFirst()
-          .ifPresent(schedule -> context.storage.updateRepairSchedule(
-              schedule.with().lastRun(repairRun.getId()).build(schedule.getId())));
+    repairSchedulesForCluster.stream().filter(schedule -> repairRunComesFromSchedule(repairRun, schedule))
+        .findFirst()
+        .ifPresent(schedule -> context.storage.updateRepairSchedule(
+            schedule.with().lastRun(repairRun.getId()).build(schedule.getId())));
   }
 }

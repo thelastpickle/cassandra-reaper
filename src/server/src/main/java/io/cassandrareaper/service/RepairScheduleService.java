@@ -34,6 +34,8 @@ import com.google.common.base.Preconditions;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
 
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanId;
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
 
 public final class RepairScheduleService {
 
@@ -168,10 +170,11 @@ public final class RepairScheduleService {
     return () -> {
       Optional<RepairSchedule> schedule = context.storage.getRepairSchedule(repairSchedule);
 
-      Optional<UUID> latestRepairUUID = Optional.ofNullable(schedule.orElseThrow(() -> new IllegalArgumentException("Repair schedule not found"))
+      Optional<UUID> latestRepairUuid = Optional.ofNullable(schedule.orElseThrow(() ->
+              new IllegalArgumentException("Repair schedule not found"))
           .getLastRun());
 
-      Long millisSinceLastRepair = latestRepairUUID.map(uuid -> context.storage.getRepairRun(uuid))
+      Long millisSinceLastRepair = latestRepairUuid.map(uuid -> context.storage.getRepairRun(uuid))
           .filter(Optional::isPresent)
           .map(Optional::get)
           .map(RepairRun::getEndTime)
@@ -183,11 +186,9 @@ public final class RepairScheduleService {
   }
 
   private String metricName(String metric, String clusterName, String keyspaceName, UUID scheduleId) {
-    String cleanClusterName = clusterName.replaceAll("[^A-Za-z0-9]", "");
-    String cleanScheduleId = scheduleId.toString().replaceAll("-", "");
-    String cleanKeyspaceName = keyspaceName.replaceAll("[^A-Za-z0-9]", "");
     return MetricRegistry.name(RepairScheduleService.class,
-        metric, cleanClusterName, cleanKeyspaceName, cleanScheduleId);
+        metric, cleanName(clusterName), cleanName(keyspaceName), cleanId(scheduleId));
+
   }
 }
 

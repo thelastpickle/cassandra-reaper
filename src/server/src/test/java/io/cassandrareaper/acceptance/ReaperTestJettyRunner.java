@@ -50,6 +50,7 @@ public final class ReaperTestJettyRunner {
 
   final DropwizardTestSupport<ReaperApplicationConfiguration> runnerInstance;
   private SimpleReaperClient reaperClientInstance;
+  private SimpleReaperClient reaperAdminClientInstance;
 
   public ReaperTestJettyRunner(String yamlConfigFile) {
     runnerInstance = new DropwizardTestSupport<ReaperApplicationConfiguration>(
@@ -69,11 +70,22 @@ public final class ReaperTestJettyRunner {
     return SimpleReaperClient.doHttpCall(httpMethod, "localhost", runnerInstance.getLocalPort(), urlPath, params);
   }
 
+  public Response callReaperAdmin(String httpMethod, String urlPath, Optional<Map<String, String>> params) {
+    return SimpleReaperClient.doHttpCall(httpMethod, "localhost", runnerInstance.getAdminPort(), urlPath, params);
+  }
+
   public SimpleReaperClient getClient() {
     if (reaperClientInstance == null) {
       reaperClientInstance = new SimpleReaperClient("localhost", runnerInstance.getLocalPort());
     }
     return reaperClientInstance;
+  }
+
+  public SimpleReaperClient getAdminClient() {
+    if (reaperAdminClientInstance == null) {
+      reaperAdminClientInstance = new SimpleReaperClient("localhost", runnerInstance.getAdminPort());
+    }
+    return reaperAdminClientInstance;
   }
 
   public AppContext getContext() {

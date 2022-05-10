@@ -73,13 +73,23 @@ import org.awaitility.Duration;
 import org.awaitility.core.ConditionTimeoutException;
 import org.glassfish.jersey.client.JerseyClientBuilder;
 import org.glassfish.jersey.client.JerseyWebTarget;
+import org.hamcrest.Matcher;
+import org.hamcrest.core.IsCollectionContaining;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanId;
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
+import static java.lang.Math.toIntExact;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -195,6 +205,19 @@ public final class BasicSteps {
         }
       }
     });
+  }
+
+  private List<String> getMetrics() {
+    Response response = RUNNERS.get(0).callReaperAdmin("GET", "/prometheusMetrics", Optional.empty());
+
+    // Verify metrics are returned
+    Assertions
+        .assertThat(response.getStatus())
+        .withFailMessage("Metrics request at /prometheusMetrics failed.")
+        .isEqualTo(200);
+
+    String responseString = response.readEntity(String.class);
+    return Arrays.asList(responseString.split("\n"));
   }
 
   @Given("^cluster seed host \"([^\"]*)\" points to cluster with name \"([^\"]*)\"$")
@@ -710,6 +733,100 @@ public final class BasicSteps {
         });
       });
     }
+  }
+
+
+  @And("^metrics contain (\\d+) repair schedule metrics for cluster called \"([^\"]*)\"$")
+  public void metrics_contain_repair_schedule_metrics_for_cluster_called(
+      int expectedSchedules,
+      String clusterName) throws Throwable {
+
+    synchronized (BasicSteps.class) {
+      CLIENTS.parallelStream().forEach(client -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
+          try {
+
+            List<RepairScheduleStatus> schedules = client.getRepairSchedulesForCluster(clusterName);
+            List<Matcher<String>> expectedMetricMatchers = schedules.stream()
+                .map(this::getLastRepairedMetricForSchedule)
+                .collect(Collectors.toList());
+
+            List<String> actualMetrics = getMetrics();
+
+            assertThat("There should be " + expectedSchedules + " schedule metrics present",
+                toIntExact(actualMetrics.stream().filter(metric -> metric.startsWith(
+                        "io_cassandrareaper_service_RepairScheduleService_millisSinceLastRepairForSchedule"))
+                    .count()),
+                is(expectedSchedules));
+
+            assertThat("There should be time since last repair metric for each schedule",
+                actualMetrics,
+                IsCollectionContaining.hasItems(expectedMetricMatchers.toArray(new Matcher[0])));
+          } catch (AssertionError ex) {
+            LOG.warn(ex.getMessage());
+            logResponse(RUNNERS.get(0), "/repair_schedule/cluster/" + TestContext.TEST_CLUSTER);
+            return false;
+          }
+          return true;
+        });
+      });
+    }
+  }
+
+  @And("^the schedule metrics for a cluster called \"([^\"]*)\" show that the repairs just completed$")
+  public void the_schedule_metrics_for_a_cluster_called_show_that_the_repair_just_completed(
+      String clusterName) throws Throwable {
+
+    synchronized (BasicSteps.class) {
+      CLIENTS.parallelStream().forEach(client -> {
+        await().with().pollInterval(POLL_INTERVAL).atMost(1, MINUTES).until(() -> {
+          try {
+
+            List<RepairScheduleStatus> schedules = client.getRepairSchedulesForCluster(clusterName);
+            List<Matcher<String>> expectedMetricMatchers = schedules.stream()
+                .map(this::getLastRepairedMetricForSchedule)
+                .collect(Collectors.toList());
+
+            List<String> actualMetrics = getMetrics();
+
+            List<Integer> timeSinceLastRepair = actualMetrics.stream()
+                .filter(metric -> expectedMetricMatchers.stream().anyMatch(matcher -> matcher.matches(metric)))
+                .map(this::getMetricValue)
+                .map(metricValue -> metricValue.intValue())
+                .collect(Collectors.toList());
+
+
+            assertThat("The latest repair for a schedule should have completed less than 5 minutes ago",
+                timeSinceLastRepair,  everyItem(lessThan(5 * 60 * 1000)));
+          } catch (AssertionError ex) {
+            LOG.warn(ex.getMessage());
+            logResponse(RUNNERS.get(0), "/repair_schedule/cluster/" + TestContext.TEST_CLUSTER);
+            return false;
+          }
+          return true;
+        });
+      });
+    }
+  }
+
+  private double getMetricValue(String metricIncludingValue) {
+    return Double.valueOf(metricIncludingValue.split(" ")[1]);
+  }
+
+  @And("^metrics contain no repair schedule metrics")
+  public void metrics_contain_no_repair_schedule_metrics() throws Throwable {
+    List<String> actualMetrics = getMetrics();
+    assertThat("There should be 0 schedule metrics present",
+        toIntExact(actualMetrics.stream().filter(metric -> metric.startsWith(
+                "io_cassandrareaper_service_RepairScheduleService_millisSinceLastRepairForSchedule"))
+            .count()),
+        is(0));
+  }
+
+  private Matcher<String> getLastRepairedMetricForSchedule(RepairScheduleStatus schedule) {
+    return startsWith(String.format("io_cassandrareaper_service_RepairScheduleService"
+            + "_millisSinceLastRepairForSchedule{cluster=\"%s\",keyspace=\"%s\",scheduleid=\"%s\",}",
+        cleanName(schedule.getClusterName()), cleanName(schedule.getKeyspaceName()), cleanId(schedule.getId())));
   }
 
   @And("^reaper has (\\d+) scheduled repairs for the last added cluster$")
@@ -1532,6 +1649,45 @@ public final class BasicSteps {
               Assertions.assertThat(responseData).isNotBlank();
               run.set(SimpleReaperClient.parseRepairRunStatusJSON(responseData));
               return nbSegmentsToBeRepaired <= run.get().getSegmentsRepaired();
+            } catch (AssertionError ex) {
+              LOG.error("GET /repair_run/" + testContext.getCurrentRepairId() + " failed: " + ex.getMessage());
+              if (null != run.get()) {
+                LOG.error("last event was: " + run.get().getLastEvent());
+              }
+              logResponse(runner, "/repair_run/cluster/" + TestContext.TEST_CLUSTER);
+              return false;
+            }
+          });
+        } catch (ConditionTimeoutException ex) {
+          logResponse(runner, "/repair_run/cluster/" + TestContext.TEST_CLUSTER);
+          throw ex;
+        }
+      });
+    }
+  }
+
+  @And("^we wait for all segments to be repaired$")
+  public void we_wait_for_all_segments_to_be_repaired() throws Throwable {
+    synchronized (BasicSteps.class) {
+      RUNNERS.parallelStream().forEach(runner -> {
+        final AtomicReference<RepairRunStatus> run = new AtomicReference<>();
+        try {
+          await().with().pollInterval(POLL_INTERVAL.multiply(2)).atMost(5, MINUTES).until(() -> {
+            try {
+              Response response = runner
+                  .callReaper("GET", "/repair_run/" + testContext.getCurrentRepairId(), EMPTY_PARAMS);
+
+              String responseData = response.readEntity(String.class);
+
+              Assertions
+                  .assertThat(response.getStatus())
+                  .withFailMessage(responseData)
+                  .isEqualTo(Response.Status.OK.getStatusCode());
+
+              Assertions.assertThat(responseData).isNotBlank();
+              run.set(SimpleReaperClient.parseRepairRunStatusJSON(responseData));
+
+              return run.get().getSegmentsRepaired() == run.get().getTotalSegments();
             } catch (AssertionError ex) {
               LOG.error("GET /repair_run/" + testContext.getCurrentRepairId() + " failed: " + ex.getMessage());
               if (null != run.get()) {
