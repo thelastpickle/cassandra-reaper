@@ -70,6 +70,9 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanId;
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
+
 final class RepairRunner implements Runnable {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepairRunner.class);
@@ -755,16 +758,12 @@ final class RepairRunner implements Runnable {
   }
 
   private String metricName(String metric, String clusterName, String keyspaceName, UUID repairRunId) {
-    String cleanClusterName = clusterName.replaceAll("[^A-Za-z0-9]", "");
-    String cleanRepairRunId = repairRunId.toString().replaceAll("-", "");
-    String cleanKeyspaceName = keyspaceName.replaceAll("[^A-Za-z0-9]", "");
-    return MetricRegistry.name(RepairRunner.class, metric, cleanClusterName, cleanKeyspaceName, cleanRepairRunId);
+    return MetricRegistry.name(RepairRunner.class, metric, cleanName(clusterName), cleanName(keyspaceName),
+        cleanId(repairRunId));
   }
 
   private String metricName(String metric, String clusterName, UUID repairRunId) {
-    String cleanClusterName = clusterName.replaceAll("[^A-Za-z0-9]", "");
-    String cleanRepairRunId = repairRunId.toString().replaceAll("-", "");
-    return MetricRegistry.name(RepairRunner.class, metric, cleanClusterName, cleanRepairRunId);
+    return MetricRegistry.name(RepairRunner.class, metric, cleanName(clusterName), cleanId(repairRunId));
   }
 
   private RepairRun fixMissingRepairRunTables(RepairRun repairRun, RepairUnit repairUnit) throws ReaperException {
