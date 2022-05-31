@@ -366,25 +366,12 @@ public final class RepairManager implements AutoCloseable {
           "there is already a repair runner for run with id " + run.getId() + ". This should not happen.");
 
       LOG.debug("scheduling repair for repair run #{}", run.getId());
-
-      if (countRepairRunnersForCluster(run.getClusterName()) >= maxParallelRepairs) {
-        LOG.debug("Maximum parallel repairs reached ({}). Postponing repair run with id {}",
-            maxParallelRepairs, run.getId());
-        // Update the last event on the repair run
-        RepairRun postponedRun = run.with().lastEvent("Maximum parallel repairs reached, postponing repair run.").build(
-            run.getId());
-        if (!context.storage.updateRepairRun(postponedRun, Optional.of(false))) {
-          LOG.warn("Failed to updating repair run #" + run.getId());
-        }
-
-      } else {
-        try {
-          RepairRunner newRunner = RepairRunner.create(context, run.getId(), clusterFacade);
-          repairRunners.put(run.getId(), newRunner);
-          executor.submit(newRunner);
-        } catch (ReaperException e) {
-          LOG.warn("Failed to schedule repair for repair run #" + run.getId(), e);
-        }
+      try {
+        RepairRunner newRunner = RepairRunner.create(context, run.getId(), clusterFacade);
+        repairRunners.put(run.getId(), newRunner);
+        executor.submit(newRunner);
+      } catch (ReaperException e) {
+        LOG.warn("Failed to schedule repair for repair run #" + run.getId(), e);
       }
     } finally {
       repairRunnersLock.unlock();

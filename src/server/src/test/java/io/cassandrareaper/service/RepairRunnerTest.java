@@ -61,6 +61,7 @@ import javax.management.JMException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ReflectionException;
 
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -1489,5 +1490,130 @@ public final class RepairRunnerTest {
       segments.add(segment);
     }
     return segments;
+  }
+
+  @Test
+  public void isAllowedToRunTest() throws ReaperException {
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
+    final Map<String, String> nodeMap = ImmutableMap.of(
+        "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
+        );
+    final Set<String> datacenters = Collections.emptySet();
+    final Set<String> blacklistedTables = Collections.emptySet();
+    final double intensity = 0.5f;
+    final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
+    final int maxDuration = 10;
+    final AppContext context = new AppContext();
+    context.storage = Mockito.mock(CassandraStorage.class);
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setMaxParallelRepairs(3);
+    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
+
+    RepairUnit repairUnit = RepairUnit.builder()
+        .clusterName(cluster.getName())
+        .keyspaceName(ksName)
+        .columnFamilies(cfNames)
+        .incrementalRepair(incrementalRepair)
+        .nodes(nodeSet)
+        .datacenters(datacenters)
+        .blacklistedTables(blacklistedTables)
+        .repairThreadCount(repairThreadCount)
+        .timeout(segmentTimeout)
+        .build(UUID.randomUUID());
+
+    // The allowed run time UUID will be the first one generated
+    UUID allowedRun = UUIDs.timeBased();
+    RepairRun run = RepairRun.builder(cluster.getName(), repairUnit.getId())
+          .intensity(intensity)
+          .segmentCount(100)
+          .repairParallelism(RepairParallelism.PARALLEL)
+          .adaptiveSchedule(false)
+          .tables(TABLES).build(allowedRun);
+
+    List<RepairSegment> segments = generateRepairSegments(100, 30, maxDuration, repairUnit.getId());
+    Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
+    Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
+    Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    Mockito.when(((CassandraStorage) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
+
+    List<UUID> runningRepairs = Lists.newArrayList();
+    for (int i = 0; i < 3; i++) {
+      runningRepairs.add(UUIDs.timeBased());
+    }
+    runningRepairs.add(allowedRun);
+
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    RepairRunner repairRunner = RepairRunner.create(
+        context,
+        UUID.randomUUID(),
+        clusterFacade);
+
+    assertTrue(repairRunner.isAllowedToRun(runningRepairs, allowedRun));
+  }
+
+  @Test
+  public void isNotAllowedToRunTest() throws ReaperException {
+    final String ksName = "reaper";
+    final Set<String> cfNames = Sets.newHashSet("reaper");
+    final boolean incrementalRepair = false;
+    final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
+    final Map<String, String> nodeMap = ImmutableMap.of(
+        "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1"
+        );
+    final Set<String> datacenters = Collections.emptySet();
+    final Set<String> blacklistedTables = Collections.emptySet();
+    final double intensity = 0.5f;
+    final int repairThreadCount = 1;
+    final int segmentTimeout = 30;
+    final int maxDuration = 10;
+    final AppContext context = new AppContext();
+    context.storage = Mockito.mock(CassandraStorage.class);
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setMaxParallelRepairs(3);
+    Mockito.when(context.storage.getCluster(any())).thenReturn(cluster);
+
+    RepairUnit repairUnit = RepairUnit.builder()
+        .clusterName(cluster.getName())
+        .keyspaceName(ksName)
+        .columnFamilies(cfNames)
+        .incrementalRepair(incrementalRepair)
+        .nodes(nodeSet)
+        .datacenters(datacenters)
+        .blacklistedTables(blacklistedTables)
+        .repairThreadCount(repairThreadCount)
+        .timeout(segmentTimeout)
+        .build(UUID.randomUUID());
+
+    List<RepairSegment> segments = generateRepairSegments(100, 30, maxDuration, repairUnit.getId());
+    Mockito.when(((IDistributedStorage) context.storage).countRunningReapers()).thenReturn(1);
+    Mockito.when(((CassandraStorage) context.storage).getRepairUnit(any(UUID.class))).thenReturn(repairUnit);
+    Mockito.when(((CassandraStorage) context.storage).getSegmentsWithState(any(), any())).thenReturn(segments);
+
+    List<UUID> runningRepairs = Lists.newArrayList();
+    for (int i = 0; i < 3; i++) {
+      runningRepairs.add(UUIDs.timeBased());
+    }
+
+    UUID unallowedRun = UUIDs.timeBased();
+    RepairRun run = RepairRun.builder(cluster.getName(), repairUnit.getId())
+          .intensity(intensity)
+          .segmentCount(100)
+          .repairParallelism(RepairParallelism.PARALLEL)
+          .adaptiveSchedule(false)
+          .tables(TABLES).build(unallowedRun);
+    Mockito.when(((CassandraStorage) context.storage).getRepairRun(any())).thenReturn(Optional.of(run));
+    runningRepairs.add(unallowedRun);
+
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    RepairRunner repairRunner = RepairRunner.create(
+        context,
+        UUID.randomUUID(),
+        clusterFacade);
+
+    assertFalse(repairRunner.isAllowedToRun(runningRepairs, unallowedRun));
   }
 }
