@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
@@ -51,6 +52,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.Gauge;
@@ -95,6 +97,7 @@ final class RepairRunner implements Runnable {
   private float segmentsTotal;
   private final List<RingRange> localEndpointRanges;
   private final RepairUnit repairUnit;
+  private AtomicBoolean isRunning = new AtomicBoolean(false);
 
   private RepairRunner(
       AppContext context,
@@ -108,6 +111,7 @@ final class RepairRunner implements Runnable {
     this.repairRunId = repairRunId;
     Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
+    this.isRunning.set(repairRun.get().getRunState() == RepairRun.RunState.RUNNING);
     this.cluster = context.storage.getCluster(repairRun.get().getClusterName());
     repairUnit = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
     this.clusterName = cluster.getName();
@@ -179,6 +183,10 @@ final class RepairRunner implements Runnable {
     context.metricRegistry.register(metricName, gauge);
   }
 
+  boolean isRunning() {
+    return isRunning.get();
+  }
+
   UUID getRepairRunId() {
     return repairRunId;
   }
@@ -190,7 +198,12 @@ final class RepairRunner implements Runnable {
   public void run() {
     Thread.currentThread().setName(clusterName + ":" + repairRunId);
     Map<UUID, RepairRunner> currentRunners = context.repairManager.repairRunners;
-    List<UUID> repairRunIds = new ArrayList<UUID>(currentRunners.keySet());
+    // We only want the repair runners that are in RUNNING state.
+    List<UUID> repairRunIds
+        = new ArrayList<UUID>(currentRunners.entrySet().stream()
+          .filter(entry -> entry.getValue().isRunning())
+          .map(Entry::getKey)
+          .collect(Collectors.toList()));
 
     try {
       Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
@@ -202,6 +215,7 @@ final class RepairRunner implements Runnable {
       }
 
       RepairRun.RunState state = repairRun.get().getRunState();
+      this.isRunning.set(repairRun.get().getRunState() == RepairRun.RunState.RUNNING);
       LOG.debug("run() called for repair run #{} with run state {}", repairRunId, state);
       switch (state) {
         case NOT_STARTED:
@@ -218,6 +232,10 @@ final class RepairRunner implements Runnable {
           } else {
             // There are too many concurrent repairs already and this one hasn't got priority.
             LOG.info("Maximum number of concurrent repairs reached. Repair {} will resume later.", repairRunId);
+            LOG.info("Current active repair runners: {}",
+                repairRunIds.stream()
+                  .map(runId -> Pair.of(runId, UUIDs.unixTimestamp(runId)))
+                  .collect(Collectors.toList()));
             context.repairManager.scheduleRetry(this);
           }
           break;
