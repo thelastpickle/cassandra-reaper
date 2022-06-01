@@ -129,33 +129,33 @@ jobs:
         include:
           # don't run against the following C* versions when using cassandra storage type
           - cassandra-version: "binary:1.2.19"
-            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards --tags ~@metrics'
+            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
             jdk-version: '8'
           - cassandra-version: "binary:2.0.17"
-            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards --tags ~@metrics'
+            cucumber-options: '--tags ~@cassandra_2_1_onwards --tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
             jdk-version: '8'
           - cassandra-version: 'binary:2.1.22'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards --tags ~@metrics'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
             jdk-version: '8'
           - cassandra-version: 'binary:2.2.19'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards --tags ~@metrics'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
             jdk-version: '8'
           - cassandra-version: 'binary:3.0.25'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards --tags ~@metrics'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@cassandra_3_11_onwards'
             experimental: false
             jdk-version: '8'
           - cassandra-version: 'binary:3.11.11'
-            cucumber-options: '--tags ~@cassandra_4_0_onwards --tags ~@metrics'
+            cucumber-options: '--tags ~@cassandra_4_0_onwards'
             experimental: false
             jdk-version: '8'
-          - cassandra-version: 'binary:4.0.1 --tags ~@metrics'
+          - cassandra-version: 'binary:4.0.1'
             experimental: false
             jdk-version: '11'
-          - cassandra-version: 'github:apache/trunk --tags ~@metrics'
+          - cassandra-version: 'github:apache/trunk'
             experimental: true
             jdk-version: '11'
     steps:
