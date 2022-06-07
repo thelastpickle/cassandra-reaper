@@ -27,6 +27,7 @@ import io.cassandrareaper.crypto.NoopCrypotograph;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.JmxConnectionFactory;
 import io.cassandrareaper.jmx.JmxConnectionsInitializer;
+import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.resources.ClusterResource;
 import io.cassandrareaper.resources.CryptoResource;
 import io.cassandrareaper.resources.DiagEventSseResource;
@@ -86,6 +87,8 @@ import org.secnod.dropwizard.shiro.ShiroBundle;
 import org.secnod.dropwizard.shiro.ShiroConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static io.cassandrareaper.metrics.PrometheusMetricsConfiguration.getCustomSampleMethodBuilder;
 
 public final class ReaperApplication extends Application<ReaperApplicationConfiguration> {
 
@@ -155,7 +158,8 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     checkConfiguration(config);
     context.config = config;
     context.metricRegistry = environment.metrics();
-    CollectorRegistry.defaultRegistry.register(new DropwizardExports(environment.metrics()));
+    CollectorRegistry.defaultRegistry.register(new DropwizardExports(environment.metrics(),
+        new PrometheusMetricsFilter(), getCustomSampleMethodBuilder()));
 
     environment
         .admin()

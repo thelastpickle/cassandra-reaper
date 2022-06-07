@@ -31,6 +31,7 @@ import io.cassandrareaper.core.Segment;
 import io.cassandrareaper.jmx.ClusterFacade;
 import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxProxy;
+import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.Arrays;
@@ -68,6 +69,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanId;
+import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
 
 final class RepairRunner implements Runnable {
 
@@ -130,6 +134,7 @@ final class RepairRunner implements Runnable {
 
     registerMetric(metricNameForRepairProgressPerKeyspace, (Gauge<Float>) ()  -> repairProgress);
     registerMetric(metricNameForRepairProgress, (Gauge<Float>) ()  -> repairProgress);
+    PrometheusMetricsFilter.ignoreMetric(metricNameForRepairProgress);
 
     metricNameForMillisSinceLastRepairPerKeyspace
       = metricName(
@@ -150,6 +155,7 @@ final class RepairRunner implements Runnable {
 
     registerMetric(metricNameForDoneSegmentsPerKeyspace, (Gauge<Float>) ()  -> segmentsDone);
     registerMetric(metricNameForDoneSegments, (Gauge<Integer>) ()  -> (int)segmentsDone);
+    PrometheusMetricsFilter.ignoreMetric(metricNameForDoneSegments);
 
     String metricNameForTotalSegmentsPerKeyspace
         = metricName("segmentsTotal", repairUnitClusterName, repairUnitKeyspaceName, repairRun.get().getRepairUnitId());
@@ -160,6 +166,7 @@ final class RepairRunner implements Runnable {
 
     registerMetric(metricNameForTotalSegmentsPerKeyspace, (Gauge<Integer>) ()  -> (int)segmentsTotal);
     registerMetric(metricNameForTotalSegments, (Gauge<Float>) ()  -> segmentsTotal);
+    PrometheusMetricsFilter.ignoreMetric(metricNameForTotalSegments);
   }
 
   public static RepairRunner create(
@@ -275,6 +282,7 @@ final class RepairRunner implements Runnable {
 
         context.metricRegistry.remove(metricNameForMillisSinceLastRepairPerKeyspace);
         context.metricRegistry.remove(metricNameForMillisSinceLastRepair);
+        PrometheusMetricsFilter.removeIgnoredMetric(metricNameForMillisSinceLastRepair);
 
         context.metricRegistry.register(
             metricNameForMillisSinceLastRepairPerKeyspace,
@@ -283,11 +291,12 @@ final class RepairRunner implements Runnable {
         context.metricRegistry.register(
             metricNameForMillisSinceLastRepair,
             (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
-
+        PrometheusMetricsFilter.ignoreMetric(metricNameForMillisSinceLastRepair);
         context.metricRegistry.counter(
           MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.DONE.toString())).inc();
 
         maybeAdaptRepairSchedule();
+        context.schedulingManager.maybeRegisterRepairRunCompleted(repairRun.get());
       }
     }
   }
@@ -749,16 +758,12 @@ final class RepairRunner implements Runnable {
   }
 
   private String metricName(String metric, String clusterName, String keyspaceName, UUID repairRunId) {
-    String cleanClusterName = clusterName.replaceAll("[^A-Za-z0-9]", "");
-    String cleanRepairRunId = repairRunId.toString().replaceAll("-", "");
-    String cleanKeyspaceName = keyspaceName.replaceAll("[^A-Za-z0-9]", "");
-    return MetricRegistry.name(RepairRunner.class, metric, cleanClusterName, cleanKeyspaceName, cleanRepairRunId);
+    return MetricRegistry.name(RepairRunner.class, metric, cleanName(clusterName), cleanName(keyspaceName),
+        cleanId(repairRunId));
   }
 
   private String metricName(String metric, String clusterName, UUID repairRunId) {
-    String cleanClusterName = clusterName.replaceAll("[^A-Za-z0-9]", "");
-    String cleanRepairRunId = repairRunId.toString().replaceAll("-", "");
-    return MetricRegistry.name(RepairRunner.class, metric, cleanClusterName, cleanRepairRunId);
+    return MetricRegistry.name(RepairRunner.class, metric, cleanName(clusterName), cleanId(repairRunId));
   }
 
   private RepairRun fixMissingRepairRunTables(RepairRun repairRun, RepairUnit repairUnit) throws ReaperException {
