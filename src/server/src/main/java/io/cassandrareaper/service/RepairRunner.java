@@ -34,12 +34,14 @@ import io.cassandrareaper.jmx.JmxProxy;
 import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.storage.IDistributedStorage;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
@@ -51,10 +53,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -97,6 +101,7 @@ final class RepairRunner implements Runnable {
   private float segmentsTotal;
   private final List<RingRange> localEndpointRanges;
   private final RepairUnit repairUnit;
+  private AtomicBoolean isRunning = new AtomicBoolean(false);
 
   private RepairRunner(
       AppContext context,
@@ -110,6 +115,7 @@ final class RepairRunner implements Runnable {
     this.repairRunId = repairRunId;
     Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
     assert repairRun.isPresent() : "No RepairRun with ID " + repairRunId + " found from storage";
+    this.isRunning.set(repairRun.get().getRunState() == RepairRun.RunState.RUNNING);
     this.cluster = context.storage.getCluster(repairRun.get().getClusterName());
     repairUnit = context.storage.getRepairUnit(repairRun.get().getRepairUnitId());
     this.clusterName = cluster.getName();
@@ -184,6 +190,10 @@ final class RepairRunner implements Runnable {
     context.metricRegistry.register(metricName, gauge);
   }
 
+  boolean isRunning() {
+    return isRunning.get();
+  }
+
   UUID getRepairRunId() {
     return repairRunId;
   }
@@ -194,6 +204,13 @@ final class RepairRunner implements Runnable {
   @Override
   public void run() {
     Thread.currentThread().setName(clusterName + ":" + repairRunId);
+    Map<UUID, RepairRunner> currentRunners = context.repairManager.repairRunners;
+    // We only want the repair runners that are in RUNNING state.
+    List<UUID> repairRunIds
+        = new ArrayList<UUID>(currentRunners.entrySet().stream()
+          .filter(entry -> entry.getValue().isRunning())
+          .map(Entry::getKey)
+          .collect(Collectors.toList()));
 
     try {
       Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
@@ -205,16 +222,29 @@ final class RepairRunner implements Runnable {
       }
 
       RepairRun.RunState state = repairRun.get().getRunState();
+      this.isRunning.set(repairRun.get().getRunState() == RepairRun.RunState.RUNNING);
       LOG.debug("run() called for repair run #{} with run state {}", repairRunId, state);
       switch (state) {
         case NOT_STARTED:
           start();
           break;
         case RUNNING:
-          startNextSegment();
-          // We're updating the node list of the cluster at the start of each new run.
-          // Helps keeping up with topology changes.
-          updateClusterNodeList();
+          // The number of parallel repairs is bounded to avoid overwhelming nodes.
+          // Only the oldest repairs can run if we're over the max limit.
+          if (isAllowedToRun(repairRunIds, repairRunId)) {
+            startNextSegment();
+            // We're updating the node list of the cluster at the start of each new run.
+            // Helps keeping up with topology changes.
+            updateClusterNodeList();
+          } else {
+            // There are too many concurrent repairs already and this one hasn't got priority.
+            LOG.info("Maximum number of concurrent repairs reached. Repair {} will resume later.", repairRunId);
+            LOG.info("Current active repair runners: {}",
+                repairRunIds.stream()
+                  .map(runId -> Pair.of(runId, UUIDs.unixTimestamp(runId)))
+                  .collect(Collectors.toList()));
+            context.repairManager.scheduleRetry(this);
+          }
           break;
         case PAUSED:
           context.repairManager.scheduleRetry(this);
@@ -228,6 +258,17 @@ final class RepairRunner implements Runnable {
     }
     // Adding this here to catch a deadlock
     LOG.debug("run() exiting for repair run #{}", repairRunId);
+  }
+
+  @VisibleForTesting
+  boolean isAllowedToRun(List<UUID> runningRepairRunIds, UUID currentId) {
+    runningRepairRunIds.sort((id1, id2) -> Long.valueOf(UUIDs.unixTimestamp(id1)).compareTo(UUIDs.unixTimestamp(id2)));
+    for (int i = 0; i < context.config.getMaxParallelRepairs(); i++) {
+      if (runningRepairRunIds.get(i).equals(currentId)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
