@@ -15,9 +15,6 @@ cassandra:
   clusterName: "test"
   contactPoints: ["127.0.0.1"]
   keyspace: reaper_db
-  queryOptions:
-    consistencyLevel: LOCAL_QUORUM
-    serialConsistencyLevel: SERIAL
 ```
 
 If you're using authentication or SSL:
