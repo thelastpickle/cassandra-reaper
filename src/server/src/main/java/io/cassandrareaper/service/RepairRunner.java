@@ -309,35 +309,37 @@ final class RepairRunner implements Runnable {
       // if the segment has been removed ignore. should only happen in tests on backends that delete repair segments.
       Optional<RepairRun> repairRun = context.storage.getRepairRun(repairRunId);
       if (repairRun.isPresent()) {
-        DateTime repairRunCompleted = DateTime.now();
+        try {
+          DateTime repairRunCompleted = DateTime.now();
 
-        context.storage.updateRepairRun(
-            repairRun.get()
-                .with()
-                .runState(RepairRun.RunState.DONE)
-                .endTime(repairRunCompleted)
-                .lastEvent("All done")
-                .build(repairRun.get().getId()));
+          context.storage.updateRepairRun(
+              repairRun.get()
+                  .with()
+                  .runState(RepairRun.RunState.DONE)
+                  .endTime(repairRunCompleted)
+                  .lastEvent("All done")
+                  .build(repairRun.get().getId()));
 
-        killAndCleanupRunner();
+          context.metricRegistry.remove(metricNameForMillisSinceLastRepairPerKeyspace);
+          context.metricRegistry.remove(metricNameForMillisSinceLastRepair);
+          PrometheusMetricsFilter.removeIgnoredMetric(metricNameForMillisSinceLastRepair);
 
-        context.metricRegistry.remove(metricNameForMillisSinceLastRepairPerKeyspace);
-        context.metricRegistry.remove(metricNameForMillisSinceLastRepair);
-        PrometheusMetricsFilter.removeIgnoredMetric(metricNameForMillisSinceLastRepair);
+          context.metricRegistry.register(
+              metricNameForMillisSinceLastRepairPerKeyspace,
+              (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
 
-        context.metricRegistry.register(
-            metricNameForMillisSinceLastRepairPerKeyspace,
-            (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
+          context.metricRegistry.register(
+              metricNameForMillisSinceLastRepair,
+              (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
+          PrometheusMetricsFilter.ignoreMetric(metricNameForMillisSinceLastRepair);
+          context.metricRegistry.counter(
+            MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.DONE.toString())).inc();
 
-        context.metricRegistry.register(
-            metricNameForMillisSinceLastRepair,
-            (Gauge<Long>) () -> DateTime.now().getMillis() - repairRunCompleted.toInstant().getMillis());
-        PrometheusMetricsFilter.ignoreMetric(metricNameForMillisSinceLastRepair);
-        context.metricRegistry.counter(
-          MetricRegistry.name(RepairManager.class, "repairDone", RepairRun.RunState.DONE.toString())).inc();
-
-        maybeAdaptRepairSchedule();
-        context.schedulingManager.maybeRegisterRepairRunCompleted(repairRun.get());
+          maybeAdaptRepairSchedule();
+          context.schedulingManager.maybeRegisterRepairRunCompleted(repairRun.get());
+        } finally {
+          killAndCleanupRunner();
+        }
       }
     }
   }
