@@ -39,9 +39,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven3-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven2-
+            ${{ runner.os }}-maven3-
 
       - name: Setup Java
         uses: actions/setup-java@v2
@@ -84,9 +84,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven3-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven2-
+            ${{ runner.os }}-maven3-
 
 
       - name: Setup Java
@@ -166,9 +166,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven3-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven2-
+            ${{ runner.os }}-maven3-
 
 
       - name: Setup Java
@@ -258,9 +258,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven3-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven2-
+            ${{ runner.os }}-maven3-
 
 
       - name: Setup Java
@@ -329,9 +329,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven3-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven2-
+            ${{ runner.os }}-maven3-
 
 
       - name: Setup Java
@@ -424,9 +424,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven3-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven2-
+            ${{ runner.os }}-maven3-
 
       - name: Setup Java
         uses: actions/setup-java@v2
@@ -499,9 +499,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven3-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven2-
+            ${{ runner.os }}-maven3-
 
       - name: Setup Java
         uses: actions/setup-java@v2
@@ -590,9 +590,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven3-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven2-
+            ${{ runner.os }}-maven3-
 
 
       - name: Setup Java
@@ -668,9 +668,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven3-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven2-
+            ${{ runner.os }}-maven3-
 
 
       - name: Setup Java
@@ -737,9 +737,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven3-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven2-
+            ${{ runner.os }}-maven3-
 
 
       - name: Setup Java
@@ -799,9 +799,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-maven3-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven2-
+            ${{ runner.os }}-maven3-
 
       - name: Setup Java
         uses: actions/setup-java@v2
