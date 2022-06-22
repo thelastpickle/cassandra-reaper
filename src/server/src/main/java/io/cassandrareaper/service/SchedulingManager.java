@@ -126,7 +126,7 @@ public final class SchedulingManager extends TimerTask {
         LOG.error("Error while scheduling repairs due to a connection problem with the database", e);
       } catch (Throwable ex) {
         if (lastId == null) {
-          LOG.error("Failed to managing repair schedules", ex);
+          LOG.error("Failed managing repair schedules", ex);
         } else {
           LOG.error("Failed to managing repair schedule with id '{}'", lastId, ex);
         }
