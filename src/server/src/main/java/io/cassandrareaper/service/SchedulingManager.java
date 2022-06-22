@@ -128,7 +128,7 @@ public final class SchedulingManager extends TimerTask {
         if (lastId == null) {
           LOG.error("Failed managing repair schedules", ex);
         } else {
-          LOG.error("Failed to managing repair schedule with id '{}'", lastId, ex);
+          LOG.error("Failed managing repair schedule with id '{}'", lastId, ex);
         }
         try {
           assert false : "if assertions are enabled then exit the jvm";
