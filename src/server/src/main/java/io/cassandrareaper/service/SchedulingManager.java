@@ -34,6 +34,7 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.exceptions.DriverInternalError;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
@@ -121,9 +122,14 @@ public final class SchedulingManager extends TimerTask {
         }
       } catch (DriverInternalError expected) {
         LOG.debug("Driver connection closed, Reaper is shutting down.");
+      } catch (DriverException e) {
+        LOG.error("Error while scheduling repairs due to a connection problem with the database", e);
       } catch (Throwable ex) {
-        LOG.error("failed managing schedule for run with id: {}", lastId);
-        LOG.error("catch exception", ex);
+        if (lastId == null) {
+          LOG.error("Failed managing repair schedules", ex);
+        } else {
+          LOG.error("Failed managing repair schedule with id '{}'", lastId, ex);
+        }
         try {
           assert false : "if assertions are enabled then exit the jvm";
         } catch (AssertionError ae) {
