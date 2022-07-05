@@ -155,17 +155,17 @@ public final class RepairScheduleService {
 
   private void unregisterScheduleMetrics(UUID repairScheduleId) {
     Optional<RepairSchedule> schedule = context.storage.getRepairSchedule(repairScheduleId);
-    if (schedule.isPresent()) {
-      RepairUnit repairUnit = context.storage.getRepairUnit(schedule.get().getRepairUnitId());
+    schedule.ifPresent(sched -> {
+      RepairUnit repairUnit = context.storage.getRepairUnit(sched.getRepairUnitId());
       String metricName = metricName("millisSinceLastRepairForSchedule",
           repairUnit.getClusterName(),
           repairUnit.getKeyspaceName(),
-          schedule.get().getId());
+          sched.getId());
 
       if (context.metricRegistry.getMetrics().containsKey(metricName)) {
         context.metricRegistry.remove(metricName);
       }
-    }
+    });
   }
 
   private Gauge<Long> getMillisSinceLastRepairForSchedule(UUID repairSchedule) {
