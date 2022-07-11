@@ -39,6 +39,7 @@ import static io.cassandrareaper.metrics.MetricNameUtils.cleanName;
 
 public final class RepairScheduleService {
 
+  public static final String MILLIS_SINCE_LAST_REPAIR_METRIC_NAME = "millisSinceLastRepairForSchedule";
   private final AppContext context;
   private final RepairUnitService repairUnitService;
 
@@ -143,7 +144,7 @@ public final class RepairScheduleService {
   private void registerScheduleMetrics(UUID repairScheduleId) {
     RepairSchedule schedule = context.storage.getRepairSchedule(repairScheduleId).get();
     RepairUnit repairUnit = context.storage.getRepairUnit(schedule.getRepairUnitId());
-    String metricName = metricName("millisSinceLastRepairForSchedule",
+    String metricName = metricName(MILLIS_SINCE_LAST_REPAIR_METRIC_NAME,
             repairUnit.getClusterName(),
             repairUnit.getKeyspaceName(),
             schedule.getId());
@@ -157,7 +158,7 @@ public final class RepairScheduleService {
     Optional<RepairSchedule> schedule = context.storage.getRepairSchedule(repairScheduleId);
     schedule.ifPresent(sched -> {
       RepairUnit repairUnit = context.storage.getRepairUnit(sched.getRepairUnitId());
-      String metricName = metricName("millisSinceLastRepairForSchedule",
+      String metricName = metricName(MILLIS_SINCE_LAST_REPAIR_METRIC_NAME,
           repairUnit.getClusterName(),
           repairUnit.getKeyspaceName(),
           sched.getId());
