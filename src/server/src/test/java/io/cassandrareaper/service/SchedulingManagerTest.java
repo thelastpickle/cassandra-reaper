@@ -91,6 +91,22 @@ public final class SchedulingManagerTest {
   }
 
   @Test
+  public void testCurrentReaperIsSchedulingLeaderEmptyList() {
+    AppContext context = new AppContext();
+    context.isDistributed.set(true);
+    List<UUID> reaperInstances = Lists.newArrayList();
+    // Generate some fake reaper instances id after the current instance id was generated
+    IntStream.range(0,5).forEach(i -> reaperInstances.add(UUIDs.timeBased()));
+    // Add the current reaper instance id to the list
+    reaperInstances.add(context.reaperInstanceId);
+    context.storage = mock(CassandraStorage.class);
+    when(((CassandraStorage)context.storage).getRunningReapers()).thenReturn(Collections.emptyList());
+    SchedulingManager schedulingManager = SchedulingManager.create(context);
+    assertFalse("If we cannot get the list of running reapers, none should be scheduling leader",
+        schedulingManager.currentReaperIsSchedulingLeader());
+  }
+
+  @Test
   public void lastRepairRunIsOldEnoughTest() {
     RepairRun repairRun = RepairRun.builder("test", UUIDs.timeBased())
         .repairParallelism(RepairParallelism.PARALLEL)

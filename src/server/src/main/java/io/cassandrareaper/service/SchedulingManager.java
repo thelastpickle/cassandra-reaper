@@ -259,6 +259,12 @@ public final class SchedulingManager extends TimerTask {
     if (context.isDistributed.get()) {
       List<UUID> runningReapers = ((IDistributedStorage) context.storage).getRunningReapers();
       Collections.sort(runningReapers);
+      if (runningReapers.isEmpty()) {
+        // this should never happen, but if it does, we don't want to start a repair run
+        LOG.warn("No running reapers found but running in distributed mode."
+            + " No scheduling leader can be elected and no scheduled run will start.");
+        return false;
+      }
       return context.reaperInstanceId.equals(runningReapers.get(0));
     }
 
