@@ -106,8 +106,11 @@ public final class SchedulingManager extends TimerTask {
       LOG.debug("Checking for repair schedules...");
       UUID lastId = null;
       try {
+        Collection<RepairSchedule> schedules = context.storage.getAllRepairSchedules();
+        // Cleanup metric registry from deleted schedules
+        cleanupMetricsRegistry(schedules);
+        // Start repairs for schedules that require it
         if (currentReaperIsSchedulingLeader()) {
-          Collection<RepairSchedule> schedules = context.storage.getAllRepairSchedules();
           boolean anyRunStarted = false;
           for (RepairSchedule schedule : schedules) {
             lastId = schedule.getId();
@@ -140,6 +143,19 @@ public final class SchedulingManager extends TimerTask {
         }
       }
     }
+  }
+
+  // Cleanup metric registry from deleted schedules
+  // Such metrics are named after the following pattern:
+  //   "millisSinceLastRepairForSchedule.<cluster>.<keyspace>.<schedule id>"
+  @VisibleForTesting
+  void cleanupMetricsRegistry(Collection<RepairSchedule> schedules) {
+    // Cycle through the metrics registry and delete any metrics that are not in the current schedules
+    context.metricRegistry.getMetrics().keySet().stream()
+        .filter(key -> key.startsWith(RepairScheduleService.MILLIS_SINCE_LAST_REPAIR_METRIC_NAME))
+        .filter(key -> !schedules.stream().anyMatch(
+            schedule -> schedule.getId().toString().equals(key.split("\\.")[3])))
+        .forEach(context.metricRegistry::remove);
   }
 
   /**

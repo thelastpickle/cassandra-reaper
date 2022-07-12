@@ -28,13 +28,18 @@ import io.cassandrareaper.core.RepairUnit;
 import io.cassandrareaper.storage.CassandraStorage;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import org.apache.cassandra.repair.RepairParallelism;
 import org.joda.time.DateTime;
@@ -361,5 +366,39 @@ public final class SchedulingManagerTest {
 
     // We're below the threshold and the repair shouldn't start
     Mockito.verify(context.repairManager, Mockito.times(0)).startRepairRun(any());
+  }
+
+  @Test
+  public void cleanupMetricsRegistryTest() {
+    AppContext context = new AppContext();
+    context.storage = mock(CassandraStorage.class);
+    context.config = new ReaperApplicationConfiguration();
+    context.config.setPercentRepairedCheckIntervalMinutes(10);
+    context.metricRegistry = mock(MetricRegistry.class);
+    List<UUID> scheduleIds = Lists.newArrayList();
+    IntStream.range(0, 4).forEach(i -> scheduleIds.add(UUIDs.timeBased()));
+    HashMap<String, Metric> metrics = Maps.newHashMap();
+    scheduleIds.stream().forEach(scheduleId ->
+        metrics.put(MetricRegistry.name(RepairScheduleService.MILLIS_SINCE_LAST_REPAIR_METRIC_NAME,
+          "test", "test", scheduleId.toString()), null));
+
+    List<RepairSchedule> repairSchedules = scheduleIds.stream().map(scheduleId ->
+        RepairSchedule.builder(scheduleId)
+            .daysBetween(1)
+            .nextActivation(DateTime.now().plusDays(1))
+            .repairParallelism(RepairParallelism.PARALLEL)
+            .intensity(1)
+            .segmentCountPerNode(10)
+            .lastRun(UUIDs.timeBased())
+            .percentUnrepairedThreshold(5)
+            .state(RepairSchedule.State.ACTIVE)
+            .build(scheduleId)).collect(Collectors.toList());
+
+    // Removing a schedule should trigger the removal of one metric
+    repairSchedules.remove(0);
+    when(context.metricRegistry.getMetrics()).thenReturn(metrics);
+    SchedulingManager schedulingManager = SchedulingManager.create(context, () -> null);
+    schedulingManager.cleanupMetricsRegistry(repairSchedules);
+    Mockito.verify(context.metricRegistry, Mockito.times(1)).remove(any());
   }
 }
