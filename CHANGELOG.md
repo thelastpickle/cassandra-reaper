@@ -1,5 +1,24 @@
 ## Change Log
 
+### 3.2.0 (2022/07/12 07:54 +00:00)
+- [#1214](https://github.com/thelastpickle/cassandra-reaper/pull/1214) Cleanup schedule related metrics on a regular basis (#1214) (@adejanovski)
+- [#1209](https://github.com/thelastpickle/cassandra-reaper/pull/1209) Avoid exiting the JVM when no scheduling leader is present (#1209) (@adejanovski)
+- [#1207](https://github.com/thelastpickle/cassandra-reaper/pull/1207) Avoid exiting the JVM in SchedulingManager on database errors (#1207) (@adejanovski)
+- [#1204](https://github.com/thelastpickle/cassandra-reaper/pull/1204) Fix schedule updates after a repair run completes (#1204) (@adejanovski)
+- [#1186](https://github.com/thelastpickle/cassandra-reaper/pull/1186) Removing references to queryOptions from the Docs (#1186) (@Rooks103)
+- [#1197](https://github.com/thelastpickle/cassandra-reaper/pull/1197) Better handle runner concurrency (#1197) (@adejanovski)
+- [#974](https://github.com/thelastpickle/cassandra-reaper/pull/974) Add prometheus metrics endpoint and "millis since last repair"-metric for repair schedules. (#974) (@van-vliet)
+- [#1190](https://github.com/thelastpickle/cassandra-reaper/pull/1190) Don't exit reaper if endpointToRange is empty and segment count 0 (#1190) (@xgerman)
+- [#1171](https://github.com/thelastpickle/cassandra-reaper/pull/1171) Recompute segment replicas (#1171) (@adejanovski)
+- [#1173](https://github.com/thelastpickle/cassandra-reaper/pull/1173) Make heap size configurable through env variable (#1173) (@adejanovski)
+- [aea53f4](https://github.com/thelastpickle/cassandra-reaper/commit/aea53f43626b17a824636b3f3339618836bf0821) Restructure table cell contents to allow wrapping (@jdonenine)
+- [bb009d7](https://github.com/thelastpickle/cassandra-reaper/commit/bb009d7fd180cc317e55a0b490f0b28e45115d11) ISSUE 1180: Enable Shiro variable interpolation (@ossarga)
+- [#1179](https://github.com/thelastpickle/cassandra-reaper/pull/1179) Identify Stargate nodes in the UI (#1179) (@jdonenine)
+- [6c56ca9](https://github.com/thelastpickle/cassandra-reaper/commit/6c56ca9f4339fc683d0bd3744e200a4902ee60a9) UI tooling update (@jdonenine)
+- [db87066](https://github.com/thelastpickle/cassandra-reaper/commit/db87066431a17b4838e25128cc51cefc2eb5a0db) No need to install bower in GHAs directly (@jdonenine)
+- [9d1118c](https://github.com/thelastpickle/cassandra-reaper/commit/9d1118c22adf838cabc0745cea854571955e18b3) ISSUE 1176: Add JDK 11 to build container (@ossarga)
+- [6490c67](https://github.com/thelastpickle/cassandra-reaper/commit/6490c67af40e596c2de49adcc0d272ec6de49ebf) Upgrade spreaper with recently added features (@adejanovski)
+
 ### 3.1.1 (2022/02/10 13:32 +00:00)
 - [5b1cde6](https://github.com/thelastpickle/cassandra-reaper/commit/5b1cde6100b0ae54582be9f55e1534071cdb0ec7) Add a way to skip schema migrations (@adejanovski)
 
