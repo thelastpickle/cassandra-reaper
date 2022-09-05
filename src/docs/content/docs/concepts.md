@@ -21,7 +21,7 @@ Reaper will associate each segment with its replicas, and run repairs sequential
 
 Being a multi threaded service, Reaper will compute how many concurrent repair sessions can run on the cluster and adjust its thread pool accordingly. To that end, it will check the number of nodes in the cluster and the RF (Replication Factor) of the repaired keyspace. On a three node cluster with RF=3, only one segment can be repaired at a time. On a six node cluster with RF=3, two segments can be repaired at the same time.
 
-In the case of a cluster spread around multiple datacenters, the number of concurrent repair will depend on the datacenter with the smallest RF by node. On a cluster composed which a main datacenter with 9 nodes and RF=3 and a backup datacenter with 4 nodes and RF=3, only one segment can be repaired at the same time because of the backup datacenter.
+In the case of a cluster spread around multiple datacenters, the number of concurrent repair will depend on the datacenter with the smallest RF by node. On a cluster composed of a main datacenter with 9 nodes and RF=3 and a backup datacenter with 4 nodes and RF=3, only one segment can be repaired at the same time because of the backup datacenter.
 
 The maximum number of concurrent repairs is 15 by default and can be modified in the YAML configuration (_cassandra-reaper.yaml_) file.
 
