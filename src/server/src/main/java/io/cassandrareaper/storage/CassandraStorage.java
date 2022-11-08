@@ -444,21 +444,21 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .prepare(
             "INSERT INTO repair_run"
                 + "(id,segment_id,repair_unit_id,start_token,end_token,"
-                + " segment_state,fail_count, token_ranges, replicas)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                + " segment_state,fail_count, token_ranges, replicas,host_id)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
     insertRepairSegmentIncrementalPrepStmt = session
         .prepare(
             "INSERT INTO repair_run"
                 + "(id,segment_id,repair_unit_id,start_token,end_token,"
-                + "segment_state,coordinator_host,fail_count,replicas)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                + "segment_state,coordinator_host,fail_count,replicas,host_id)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
     updateRepairSegmentPrepStmt = session
         .prepare(
             "INSERT INTO repair_run"
-                + "(id,segment_id,segment_state,coordinator_host,segment_start_time,fail_count)"
-                + " VALUES(?, ?, ?, ?, ?, ?)")
+                + "(id,segment_id,segment_state,coordinator_host,segment_start_time,fail_count,host_id)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?)")
         .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
     insertRepairSegmentEndTimePrepStmt = session
         .prepare("INSERT INTO repair_run(id, segment_id, segment_end_time) VALUES(?, ?, ?)")
@@ -466,12 +466,12 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
     getRepairSegmentPrepStmt = session
             .prepare(
                 "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
-                    + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas"
+                    + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas, host_id"
                     + " FROM repair_run WHERE id = ? and segment_id = ?")
             .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
     getRepairSegmentsByRunIdPrepStmt = session.prepare(
         "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,segment_start_time,"
-            + "segment_end_time,fail_count, token_ranges, replicas FROM repair_run WHERE id = ?");
+            + "segment_end_time,fail_count, token_ranges, replicas, host_id FROM repair_run WHERE id = ?");
     getRepairSegmentCountByRunIdPrepStmt = session.prepare("SELECT count(*) FROM repair_run WHERE id = ?");
     prepareScheduleStatements();
     prepareLeaderElectionStatements(timeUdf);
@@ -504,7 +504,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       try {
         getRepairSegmentsByRunIdAndStatePrepStmt = session.prepare(
             "SELECT id,repair_unit_id,segment_id,start_token,end_token,segment_state,coordinator_host,"
-                + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas FROM repair_run "
+                + "segment_start_time,segment_end_time,fail_count, token_ranges, replicas, host_id FROM repair_run "
                 + "WHERE id = ? AND segment_state = ? ALLOW FILTERING");
         getRepairSegmentCountByRunIdAndStatePrepStmt = session.prepare(
             "SELECT count(segment_id) FROM repair_run WHERE id = ? AND segment_state = ? ALLOW FILTERING");
@@ -817,7 +817,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
               segment.getState().ordinal(),
               segment.getCoordinatorHost(),
               segment.getFailCount(),
-              segment.getReplicas()));
+              segment.getReplicas(),
+              segment.getHostID()
+            )
+        );
       } else {
         try {
           repairRunBatch.add(
@@ -830,7 +833,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
                   segment.getState().ordinal(),
                   segment.getFailCount(),
                   objectMapper.writeValueAsString(segment.getTokenRange().getTokenRanges()),
-                  segment.getReplicas()));
+                  segment.getReplicas(),
+                  segment.getHostID()
+              )
+          );
         } catch (JsonProcessingException e) {
           throw new IllegalStateException(e);
         }
@@ -1134,7 +1140,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
             segment.getState().ordinal(),
             segment.getCoordinatorHost(),
             segment.hasStartTime() ? segment.getStartTime().toDate() : null,
-            segment.getFailCount()));
+            segment.getFailCount(),
+            segment.getHostID()
+        )
+    );
 
     if (null != segment.getEndTime() || State.NOT_STARTED == segment.getState()) {
 
