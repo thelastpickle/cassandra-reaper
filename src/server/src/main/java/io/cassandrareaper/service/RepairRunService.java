@@ -30,14 +30,8 @@ import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -124,7 +118,7 @@ public final class RepairRunService {
 
     // the last preparation step is to generate actual repair segments
     List<RepairSegment.Builder> segmentBuilders = repairUnit.getIncrementalRepair()
-        ? createRepairSegmentsForIncrementalRepair(nodes, repairUnit)
+        ? createRepairSegmentsForIncrementalRepair(nodes, repairUnit, cluster, clusterFacade)
         : createRepairSegments(tokenSegments, repairUnit);
 
     RepairRun repairRun = context.storage.addRepairRun(runBuilder, segmentBuilders);
@@ -333,7 +327,11 @@ public final class RepairRunService {
   @VisibleForTesting
   static List<RepairSegment.Builder> createRepairSegmentsForIncrementalRepair(
       Map<String, RingRange> nodes,
-      RepairUnit repairUnit) {
+      RepairUnit repairUnit,
+      Cluster cluster,
+      ClusterFacade clusterFacade) throws ReaperException {
+
+    Map<String, String> endpointHostIDMap = clusterFacade.getEndpointToHostId(cluster);
 
     List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
 
@@ -348,7 +346,10 @@ public final class RepairRunService {
                                 .build(),
                             repairUnit.getId())
                         .withReplicas(Collections.emptyMap())
-                        .withCoordinatorHost(range.getKey())));
+                        .withCoordinatorHost(range.getKey())
+                        .withHostID(UUID.fromString(endpointHostIDMap.get(range.getKey())))
+                )
+        );
 
     return repairSegmentBuilders;
   }

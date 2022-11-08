@@ -667,7 +667,7 @@ public final class RepairRunServiceTest {
         .timeout(segmentTimeout).build(UUIDs.timeBased());
 
     List<RepairSegment.Builder> segmentBuilders
-        = RepairRunService.createRepairSegmentsForIncrementalRepair(nodes, repairUnit);
+        = RepairRunService.createRepairSegmentsForIncrementalRepair(nodes, repairUnit, cluster);
     assertEquals("Not enough segment builders were created", 2, segmentBuilders.size());
   }
 
