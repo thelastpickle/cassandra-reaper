@@ -178,7 +178,7 @@ public final class RepairSegment {
       this.failCount = 0;
       this.state = State.NOT_STARTED;
       this.replicas = tokenRange.getReplicas();
-      this.hostID = hostID;
+      this.hostID = null;
     }
 
     private Builder(RepairSegment original) {
