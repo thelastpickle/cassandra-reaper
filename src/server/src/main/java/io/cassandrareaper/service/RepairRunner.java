@@ -466,10 +466,10 @@ final class RepairRunner implements Runnable {
     for (RepairSegment segment : nextRepairSegments) {
       Map<String, String> potentialReplicaMap = this.repairRunService.getDCsByNodeForRepairSegment(
           cluster, segment.getTokenRange(), repairUnit.getKeyspaceName(), repairUnit);
-      Map<String, String> endpointHostIDMap = clusterFacade.getEndpointToHostId(cluster);
+      Map<String, String> endpointHostIdMap = clusterFacade.getEndpointToHostId(cluster);
       String segmentHostID = segment.getHostID().toString();
       if (repairUnit.getIncrementalRepair()) {
-        for (Entry<String, String> e : endpointHostIDMap.entrySet()) {
+        for (Entry<String, String> e : endpointHostIdMap.entrySet()) {
           if (segmentHostID == e.getValue()) {
             potentialReplicas = Collections.singletonList(e.getKey());
             break;

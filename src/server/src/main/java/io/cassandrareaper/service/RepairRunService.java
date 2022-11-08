@@ -30,8 +30,17 @@ import io.cassandrareaper.jmx.EndpointSnitchInfoProxy;
 import io.cassandrareaper.jmx.JmxProxy;
 
 import java.math.BigInteger;
-import java.util.*;
+
+import java.util.Arrays;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -331,7 +340,7 @@ public final class RepairRunService {
       Cluster cluster,
       ClusterFacade clusterFacade) throws ReaperException {
 
-    Map<String, String> endpointHostIDMap = clusterFacade.getEndpointToHostId(cluster);
+    Map<String, String> endpointHostIdMap = clusterFacade.getEndpointToHostId(cluster);
 
     List<RepairSegment.Builder> repairSegmentBuilders = Lists.newArrayList();
 
@@ -347,10 +356,8 @@ public final class RepairRunService {
                             repairUnit.getId())
                         .withReplicas(Collections.emptyMap())
                         .withCoordinatorHost(range.getKey())
-                        .withHostID(UUID.fromString(endpointHostIDMap.get(range.getKey())))
-                )
-        );
-
+                        .withHostID(UUID.fromString(endpointHostIdMap.get(range.getKey())))
+                ));
     return repairSegmentBuilders;
   }
 
