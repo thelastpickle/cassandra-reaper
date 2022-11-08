@@ -495,6 +495,12 @@ public final class RepairRunServiceTest {
         .thenReturn((Map)ImmutableMap.of(Lists.newArrayList("0", "100"), Lists.newArrayList(NODES)));
     when(clusterFacade.getCassandraVersion(any())).thenReturn("3.11.6");
     when(clusterFacade.getTokens(any())).thenReturn(TOKENS);
+    when(clusterFacade.getEndpointToHostId(any(Cluster.class))).thenReturn(Collections.emptyMap());
+    Map<String, String> endpointToHostIDMap = new HashMap<String, String>();
+    endpointToHostIDMap.put("127.0.0.1", UUID.randomUUID().toString());
+    endpointToHostIDMap.put("127.0.0.2", UUID.randomUUID().toString());
+    endpointToHostIDMap.put("127.0.0.3", UUID.randomUUID().toString());
+    when(clusterFacade.getEndpointToHostId(any(Cluster.class))).thenReturn(endpointToHostIDMap);
 
     RepairRunService repairRunService = RepairRunService.create(context, () -> clusterFacade);
 
