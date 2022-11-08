@@ -38,11 +38,13 @@ import java.math.BigInteger;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Semaphore;
 
 import com.datastax.driver.core.utils.UUIDs;
@@ -634,7 +636,7 @@ public final class RepairRunServiceTest {
   }
 
   @Test
-  public void createRepairSegmentsForIncrementalRepairTest() {
+  public void createRepairSegmentsForIncrementalRepairTest() throws ReaperException {
     final String KS_NAME = "reaper";
     final Set<String> CF_NAMES = Sets.newHashSet("reaper");
     final boolean INCREMENTAL_REPAIR = false;
@@ -643,7 +645,7 @@ public final class RepairRunServiceTest {
     final Set<String> BLACKLISTED_TABLES = Collections.emptySet();
     final int REPAIR_THREAD_COUNT = 1;
     final int segmentTimeout = 30;
-    Cluster cluster = Cluster.builder()
+    final Cluster cluster = Cluster.builder()
         .withName("test_" + RandomStringUtils.randomAlphabetic(12))
         .withSeedHosts(ImmutableSet.of("127.0.0.1", "127.0.0.2", "127.0.0.3"))
         .withState(Cluster.State.ACTIVE)
@@ -654,6 +656,12 @@ public final class RepairRunServiceTest {
     nodes.put("127.0.0.1", new RingRange("1", "2"));
     nodes.put("127.0.0.2", new RingRange("3", "4"));
 
+    Map<String, String> endpointToHostIDMap = new HashMap<String, String>();
+    endpointToHostIDMap.put("127.0.0.1", UUID.randomUUID().toString());
+    endpointToHostIDMap.put("127.0.0.2", UUID.randomUUID().toString());
+    endpointToHostIDMap.put("127.0.0.3", UUID.randomUUID().toString());
+    ClusterFacade clusterFacade = mock(ClusterFacade.class);
+    when(clusterFacade.getEndpointToHostId(any(Cluster.class))).thenReturn(endpointToHostIDMap);
     RepairUnit repairUnit = RepairUnit.builder()
         .clusterName(cluster.getName())
         .keyspaceName(KS_NAME)
@@ -665,9 +673,8 @@ public final class RepairRunServiceTest {
         .repairThreadCount(REPAIR_THREAD_COUNT)
         .incrementalRepair(true)
         .timeout(segmentTimeout).build(UUIDs.timeBased());
-
     List<RepairSegment.Builder> segmentBuilders
-        = RepairRunService.createRepairSegmentsForIncrementalRepair(nodes, repairUnit, cluster);
+        = RepairRunService.createRepairSegmentsForIncrementalRepair(nodes, repairUnit, cluster, clusterFacade);
     assertEquals("Not enough segment builders were created", 2, segmentBuilders.size());
   }
 
