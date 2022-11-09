@@ -471,7 +471,7 @@ final class RepairRunner implements Runnable {
         UUID segmentHostID = segment.getHostID();
         if (segmentHostID == null) {
           throw new ReaperException(
-            String.format("No host ID for repair segment %s", segment.getId())
+            String.format("No host ID for repair segment %s", segment.getId().toString())
           );
         }
         for (Entry<String, String> e : endpointHostIdMap.entrySet()) {
@@ -485,7 +485,7 @@ final class RepairRunner implements Runnable {
       }
       if (potentialReplicas.size() < 1) {
         throw new ReaperException(
-            String.format("No potential replicas found for segment ID %s", segment.getId())
+            String.format("No potential replicas found for segment ID %s", segment.getId().toString())
         );
       }
       JmxProxy coordinator = clusterFacade.connect(cluster, potentialReplicas);
