@@ -346,18 +346,19 @@ public final class RepairRunService {
 
     nodes
         .entrySet()
-        .forEach(
-            range ->
-                repairSegmentBuilders.add(
-                    RepairSegment.builder(
-                            Segment.builder()
-                                .withTokenRanges(Arrays.asList(range.getValue()))
-                                .build(),
-                            repairUnit.getId())
-                        .withReplicas(Collections.emptyMap())
-                        .withCoordinatorHost(range.getKey())
-                        .withHostID(UUID.fromString(endpointHostIdMap.get(range.getKey())))
-                ));
+        .forEach(range -> {
+          RepairSegment.Builder segment = RepairSegment.builder(
+                  Segment.builder()
+                      .withTokenRanges(Arrays.asList(range.getValue()))
+                      .build(),
+                  repairUnit.getId())
+              .withReplicas(Collections.emptyMap())
+              .withCoordinatorHost(range.getKey());
+          if (repairUnit.getIncrementalRepair()) {
+            segment.withHostID(UUID.fromString(endpointHostIdMap.get(range.getKey())));
+          }
+          repairSegmentBuilders.add(segment);
+        });
     return repairSegmentBuilders;
   }
 

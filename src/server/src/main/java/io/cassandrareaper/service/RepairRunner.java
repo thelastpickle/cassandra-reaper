@@ -467,10 +467,15 @@ final class RepairRunner implements Runnable {
       Map<String, String> potentialReplicaMap = this.repairRunService.getDCsByNodeForRepairSegment(
           cluster, segment.getTokenRange(), repairUnit.getKeyspaceName(), repairUnit);
       Map<String, String> endpointHostIdMap = clusterFacade.getEndpointToHostId(cluster);
-      String segmentHostID = segment.getHostID().toString();
       if (repairUnit.getIncrementalRepair()) {
+        UUID segmentHostID = segment.getHostID();
+        if (segmentHostID == null) {
+          throw new ReaperException(
+            String.format("No host ID for repair segment %s", segment.getId())
+          );
+        }
         for (Entry<String, String> e : endpointHostIdMap.entrySet()) {
-          if (segmentHostID == e.getValue()) {
+          if (segmentHostID.toString() == e.getValue()) {
             potentialReplicas = Collections.singletonList(e.getKey());
             break;
           }
@@ -479,7 +484,9 @@ final class RepairRunner implements Runnable {
         potentialReplicas = potentialReplicaMap.keySet();
       }
       if (potentialReplicas.size() < 1) {
-        throw new ReaperException(String.format("No potential replicas found for host ID %s", segmentHostID));
+        throw new ReaperException(
+            String.format("No potential replicas found for segment ID %s", segment.getId())
+        );
       }
       JmxProxy coordinator = clusterFacade.connect(cluster, potentialReplicas);
       if (nodesReadyForNewRepair(coordinator, segment, potentialReplicaMap, repairRunId)) {
