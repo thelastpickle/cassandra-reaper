@@ -483,11 +483,6 @@ final class RepairRunner implements Runnable {
       } else {
         potentialReplicas = potentialReplicaMap.keySet();
       }
-      if (potentialReplicas.size() < 1) {
-        throw new ReaperException(
-            String.format("No potential replicas found for segment ID %s", segment.getId().toString())
-        );
-      }
       JmxProxy coordinator = clusterFacade.connect(cluster, potentialReplicas);
       if (nodesReadyForNewRepair(coordinator, segment, potentialReplicaMap, repairRunId)) {
         nextRepairSegment = Optional.of(segment);
