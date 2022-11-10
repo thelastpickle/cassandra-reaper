@@ -997,7 +997,10 @@ public final class RepairRunnerTest {
                     Segment.builder()
                         .withTokenRange(new RingRange(new BigInteger("100"), new BigInteger("200")))
                         .withReplicas(nodeMap)
-                        .build(), cf)));
+                        .build(), cf)
+                    .withHostID(hostID)
+            )
+    );
   }
 
   @Test
@@ -1153,7 +1156,7 @@ public final class RepairRunnerTest {
     context.repairManager.resumeRunningRepairRuns();
 
     // The repair run should succeed despite the topology change.
-    await().with().atMost(20, TimeUnit.SECONDS).until(() -> {
+    await().with().atMost(60, TimeUnit.SECONDS).until(() -> {
       return RepairRun.RunState.DONE == storage.getRepairRun(runId).get().getRunState();
     });
   }
