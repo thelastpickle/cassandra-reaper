@@ -175,6 +175,8 @@ public final class RepairRunnerTest {
     context.config = new ReaperApplicationConfiguration();
     final Semaphore mutex = new Semaphore(0);
     final JmxProxy jmx = JmxProxyTest.mockJmxProxyImpl();
+    Map<String, String> endpointToHostIDMap = endpointToHostIDMap();
+    when(jmx.getEndpointToHostId()).thenReturn(endpointToHostIDMap);
     when(jmx.getClusterName()).thenReturn(cluster.getName());
     when(jmx.isConnectionAlive()).thenReturn(true);
     when(jmx.getRangeToEndpointMap(anyString())).thenReturn(RepairRunnerTest.sixNodeCluster());
@@ -247,6 +249,7 @@ public final class RepairRunnerTest {
     when(clusterFacade.connect(any(Cluster.class), any())).thenReturn(jmx);
     when(clusterFacade.nodeIsAccessibleThroughJmx(any(), any())).thenReturn(true);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any())).thenReturn(Lists.newArrayList(nodeSet));
+    when(clusterFacade.getEndpointToHostId(any())).thenReturn(endpointToHostIDMap);
     when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
         Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
     when(clusterFacade.getRangeToEndpointMap(any(), anyString()))
@@ -493,6 +496,7 @@ public final class RepairRunnerTest {
             Lists.newArrayList("100", "200"), Lists.newArrayList(nodeSet)));
     when(clusterFacade.listActiveCompactions(any())).thenReturn(CompactionStats.builder().withActiveCompactions(
         Collections.emptyList()).withPendingCompactions(Optional.of(0)).build());
+    when(clusterFacade.getEndpointToHostId(any())).thenReturn(nodeMap);
 
     context.repairManager = RepairManager.create(
         context,
@@ -1018,10 +1022,10 @@ public final class RepairRunnerTest {
     final Set<String> cfNames = Sets.newHashSet("reaper");
     final boolean incrementalRepair = true;
     final Set<String> nodeSet = Sets.newHashSet("127.0.0.1", "127.0.0.2", "127.0.0.3");
-    final List<String> nodeSetAfterTopologyChange = Lists.newArrayList("127.0.0.1", "127.0.0.2", "127.0.0.4");
+    final List<String> nodeSetAfterTopologyChange = Lists.newArrayList("127.0.0.3", "127.0.0.2", "127.0.0.4");
     final Map<String, String> nodeMap = ImmutableMap.of("127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.3", "dc1");
     final Map<String, String> nodeMapAfterTopologyChange = ImmutableMap.of(
-        "127.0.0.1", "dc1", "127.0.0.2", "dc1", "127.0.0.4", "dc1");
+        "127.0.0.3", "dc1", "127.0.0.2", "dc1", "127.0.0.4", "dc1");
     final Set<String> datacenters = Collections.emptySet();
     final Set<String> blacklistedTables = Collections.emptySet();
     final double intensity = 0.5f;
@@ -1140,10 +1144,10 @@ public final class RepairRunnerTest {
         .thenReturn((Map) ImmutableMap.of(
             Lists.newArrayList("0", "100"), Lists.newArrayList(nodeSetAfterTopologyChange),
             Lists.newArrayList("100", "200"), Lists.newArrayList(nodeSetAfterTopologyChange)));
-    String hostIdToChange = endpointToHostIDMap.get("127.0.0.3");
-    endpointToHostIDMap.remove("127.0.0.3");
+    String hostIdToChange = endpointToHostIDMap.get("127.0.0.1");
+    endpointToHostIDMap.remove("127.0.0.1");
     endpointToHostIDMap.put("127.0.0.4", hostIdToChange);
-    when(clusterFacade.getEndpointToHostId(any())).thenReturn(nodeMapAfterTopologyChange);
+    when(clusterFacade.getEndpointToHostId(any())).thenReturn(endpointToHostIDMap);
     when(clusterFacade.tokenRangeToEndpoint(any(), anyString(), any()))
         .thenReturn(Lists.newArrayList(nodeSetAfterTopologyChange));
     context.repairManager.resumeRunningRepairRuns();
