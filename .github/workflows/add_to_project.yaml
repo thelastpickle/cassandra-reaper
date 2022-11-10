@@ -1,4 +1,4 @@
-# Copyright 2020-2020 The Last Pickle Ltd
+# Copyright 2022-2022 DataStax, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,21 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+name: Add issues to GH project
 
 on:
-  issues: {types: opened}
+  issues:
+    types:
+      - opened
 
 jobs:
-  apply-label:
+  add-to-project:
+    name: Add issue to GH project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/github-script@0.9.0
+      - uses: actions/add-to-project@v0.3.0
         with:
-          github-token: ${{secrets.MY_GITHUB_TOKEN}}
-          script: |
-            github.issues.addLabels({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              labels: ['new']
-            })
+          project-url: https://github.com/orgs/k8ssandra/projects/8
+          github-token: ${{ secrets.GH_PROJECTS_TOKEN }}
