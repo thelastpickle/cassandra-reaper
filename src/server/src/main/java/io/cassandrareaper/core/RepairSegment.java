@@ -44,7 +44,7 @@ public final class RepairSegment {
   private final DateTime startTime;
   private final DateTime endTime;
   private final Map<String, String> replicas;
-  private final UUID hostID;
+  private final UUID hostID; // This field is only ever populated for incremental repairs. For full repairs it is always null.
 
 
   private RepairSegment(Builder builder, @Nullable UUID id) {

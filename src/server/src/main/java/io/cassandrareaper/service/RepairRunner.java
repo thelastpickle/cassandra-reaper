@@ -466,8 +466,8 @@ final class RepairRunner implements Runnable {
     for (RepairSegment segment : nextRepairSegments) {
       Map<String, String> potentialReplicaMap = this.repairRunService.getDCsByNodeForRepairSegment(
           cluster, segment.getTokenRange(), repairUnit.getKeyspaceName(), repairUnit);
-      Map<String, String> endpointHostIdMap = clusterFacade.getEndpointToHostId(cluster);
       if (repairUnit.getIncrementalRepair()) {
+        Map<String, String> endpointHostIdMap = clusterFacade.getEndpointToHostId(cluster);
         UUID segmentHostID = segment.getHostID();
         if (segmentHostID == null) {
           throw new ReaperException(
