@@ -475,8 +475,8 @@ final class RepairRunner implements Runnable {
           );
         }
         for (Entry<String, String> e : endpointHostIdMap.entrySet()) {
-          if (segmentHostID.toString() == e.getValue()) {
-            potentialReplicas = Collections.singletonList(e.getKey());
+          if (segmentHostID.toString().equals(e.getValue())) {
+            potentialReplicas.add(e.getKey());
             break;
           }
         }
