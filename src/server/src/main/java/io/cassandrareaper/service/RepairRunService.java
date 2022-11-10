@@ -353,10 +353,8 @@ public final class RepairRunService {
                       .build(),
                   repairUnit.getId())
               .withReplicas(Collections.emptyMap())
-              .withCoordinatorHost(range.getKey());
-          if (repairUnit.getIncrementalRepair()) {
-            segment.withHostID(UUID.fromString(endpointHostIdMap.get(range.getKey())));
-          }
+              .withCoordinatorHost(range.getKey())
+              .withHostID(UUID.fromString(endpointHostIdMap.get(range.getKey())));
           repairSegmentBuilders.add(segment);
         });
     return repairSegmentBuilders;
