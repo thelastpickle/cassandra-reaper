@@ -129,6 +129,7 @@ public final class RepairRunnerTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodlength")
   public void testHangingRepair() throws InterruptedException, ReaperException, JMException, IOException {
     final String ksName = "reaper";
     final Set<String> cfNames = Sets.newHashSet("reaper");
