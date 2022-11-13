@@ -1237,6 +1237,10 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
       builder = builder.withReplicas(segmentRow.getMap("replicas", String.class, String.class));
     }
 
+    if (null != segmentRow.getUUID("host_id")) {
+      builder = builder.withHostID(segmentRow.getUUID("host_id"));
+    }
+
     return builder.withId(segmentRow.getUUID("segment_id")).build();
   }
 
