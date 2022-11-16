@@ -35,7 +35,6 @@ import io.cassandrareaper.metrics.PrometheusMetricsFilter;
 import io.cassandrareaper.storage.IDistributedStorage;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -462,27 +461,24 @@ final class RepairRunner implements Runnable {
                 repairRunId);
 
     Optional<RepairSegment> nextRepairSegment = Optional.empty();
-    Collection<String> potentialReplicas = new HashSet<>();
+    final Collection<String> potentialReplicas = new HashSet<>();
     for (RepairSegment segment : nextRepairSegments) {
       Map<String, String> potentialReplicaMap = this.repairRunService.getDCsByNodeForRepairSegment(
           cluster, segment.getTokenRange(), repairUnit.getKeyspaceName(), repairUnit);
       if (repairUnit.getIncrementalRepair()) {
         Map<String, String> endpointHostIdMap = clusterFacade.getEndpointToHostId(cluster);
-        UUID segmentHostID = segment.getHostID();
-        if (segmentHostID == null) {
+        if (segment.getHostID() == null) {
           throw new ReaperException(
             String.format("No host ID for repair segment %s", segment.getId().toString())
           );
         }
-        for (Entry<String, String> e : endpointHostIdMap.entrySet()) {
-          if (segmentHostID.toString().equals(e.getValue())) {
-            potentialReplicas.add(e.getKey());
-            break;
-          }
-        }
+        endpointHostIdMap.entrySet().stream()
+            .filter(entry -> entry.getValue().equals(segment.getHostID().toString()))
+            .forEach(entry -> potentialReplicas.add(entry.getKey()));
       } else {
-        potentialReplicas = potentialReplicaMap.keySet();
+        potentialReplicas.addAll(potentialReplicaMap.keySet());
       }
+      LOG.info("Potential replicas for segment {}: {}", segment.getId(), potentialReplicas);
       JmxProxy coordinator = clusterFacade.connect(cluster, potentialReplicas);
       if (nodesReadyForNewRepair(coordinator, segment, potentialReplicaMap, repairRunId)) {
         nextRepairSegment = Optional.of(segment);
@@ -547,6 +543,7 @@ final class RepairRunner implements Runnable {
       UUID segmentId) {
 
     Collection<String> nodes = getNodesInvolvedInSegment(dcByNode);
+    LOG.info("Nodes involved in segment {}: {}", segmentId, nodes);
     String dc = EndpointSnitchInfoProxy.create(coordinator).getDataCenter();
     boolean requireAllHostMetrics = DatacenterAvailability.LOCAL != context.config.getDatacenterAvailability();
     boolean allLocalDcHostsChecked = true;
@@ -591,6 +588,7 @@ final class RepairRunner implements Runnable {
       LOG.debug("Ok to repair segment '{}' on repair run with id '{}'", segment.getId(), segment.getRunId());
       return true;
     } else {
+      LOG.info("Couldn't get metrics for hosts {}, will retry later", unreachableNodes);LOG.info("Couldn't get metrics for hosts {}, will retry later", unreachableNodes);
       String msg = String.format(
           "Postponed repair segment %s on repair run with id %s because we couldn't get %shosts metrics on %s",
           segment.getId(),
@@ -649,7 +647,7 @@ final class RepairRunner implements Runnable {
     String keyspace = repairUnit.getKeyspaceName();
     LOG.debug("preparing to repair segment {} on run with id {}", segmentId, repairRunId);
 
-    List<String> potentialCoordinators;
+    List<String> potentialCoordinators = Lists.newArrayList();
     if (!repairUnit.getIncrementalRepair()) {
       // full repair
       try {
@@ -689,7 +687,7 @@ final class RepairRunner implements Runnable {
       Thread.sleep(ThreadLocalRandom.current().nextInt(10, 100) * 100);
       Optional<RepairSegment> rs = context.storage.getRepairSegment(repairRunId, segmentId);
       if (rs.isPresent()) {
-        potentialCoordinators = Arrays.asList(rs.get().getCoordinatorHost());
+        potentialCoordinators.addAll(segmentReplicas);
       } else {
         // the segment has been removed. should only happen in tests on backends that delete repair segments.
         return false;
