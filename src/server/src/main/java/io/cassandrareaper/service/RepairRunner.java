@@ -478,7 +478,7 @@ final class RepairRunner implements Runnable {
       } else {
         potentialReplicas.addAll(potentialReplicaMap.keySet());
       }
-      LOG.info("Potential replicas for segment {}: {}", segment.getId(), potentialReplicas);
+      LOG.debug("Potential replicas for segment {}: {}", segment.getId(), potentialReplicas);
       JmxProxy coordinator = clusterFacade.connect(cluster, potentialReplicas);
       if (nodesReadyForNewRepair(coordinator, segment, potentialReplicaMap, repairRunId)) {
         nextRepairSegment = Optional.of(segment);
@@ -543,7 +543,7 @@ final class RepairRunner implements Runnable {
       UUID segmentId) {
 
     Collection<String> nodes = getNodesInvolvedInSegment(dcByNode);
-    LOG.info("Nodes involved in segment {}: {}", segmentId, nodes);
+    LOG.debug("Nodes involved in segment {}: {}", segmentId, nodes);
     String dc = EndpointSnitchInfoProxy.create(coordinator).getDataCenter();
     boolean requireAllHostMetrics = DatacenterAvailability.LOCAL != context.config.getDatacenterAvailability();
     boolean allLocalDcHostsChecked = true;
@@ -588,7 +588,7 @@ final class RepairRunner implements Runnable {
       LOG.debug("Ok to repair segment '{}' on repair run with id '{}'", segment.getId(), segment.getRunId());
       return true;
     } else {
-      LOG.info("Couldn't get metrics for hosts {}, will retry later", unreachableNodes);LOG.info("Couldn't get metrics for hosts {}, will retry later", unreachableNodes);
+      LOG.debug("Couldn't get metrics for hosts {}, will retry later", unreachableNodes);
       String msg = String.format(
           "Postponed repair segment %s on repair run with id %s because we couldn't get %shosts metrics on %s",
           segment.getId(),
