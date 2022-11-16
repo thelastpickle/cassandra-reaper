@@ -1,5 +1,13 @@
 ## Change Log
 
+### 3.2.1 (2022/11/16 13:52 +00:00)
+- [#1235](https://github.com/thelastpickle/cassandra-reaper/pull/1235) Topology change resilience for incremental repair (#1235) (@Miles-Garnsey)
+- [#1237](https://github.com/thelastpickle/cassandra-reaper/pull/1237) Update Apache Shiro to v1.10.0 (#1237) (@emerkle826)
+- [#1234](https://github.com/thelastpickle/cassandra-reaper/pull/1234) Upgrade Dropwizard to 2.0.34. (#1234) (@Miles-Garnsey)
+- [#1224](https://github.com/thelastpickle/cassandra-reaper/pull/1224) Updated the registry clusters entrypoint to support the use of custom username and password, maintained support for default admin credentials if values are not used (#1224) (@paulslaven)
+- [#1215](https://github.com/thelastpickle/cassandra-reaper/pull/1215) Add reference for custom shiro.ini (#1215) (@Eliesmbr)
+- [#1212](https://github.com/thelastpickle/cassandra-reaper/pull/1212) Bump shiro-core from 1.8.0 to 1.9.1 in /src/server (#1212) (@dependabot[bot])
+
 ### 3.2.0 (2022/07/12 07:54 +00:00)
 - [#1214](https://github.com/thelastpickle/cassandra-reaper/pull/1214) Cleanup schedule related metrics on a regular basis (#1214) (@adejanovski)
 - [#1209](https://github.com/thelastpickle/cassandra-reaper/pull/1209) Avoid exiting the JVM when no scheduling leader is present (#1209) (@adejanovski)
