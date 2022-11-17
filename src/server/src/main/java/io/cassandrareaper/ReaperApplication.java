@@ -189,7 +189,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {
       FilterRegistration.Dynamic co = environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);
       co.setInitParameter("allowedOrigins", "*");
-      co.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin");
+      co.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin,Authorization");
       co.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD,PATCH");
       co.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
     }
@@ -204,8 +204,10 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     final PingResource pingResource = new PingResource(healthCheck);
     environment.jersey().register(pingResource);
 
-    final ClusterResource addClusterResource = ClusterResource.create(context, cryptograph);
+    final InfoResource infoResource = new InfoResource(context, healthCheck);
+    environment.jersey().register(infoResource);
 
+    final ClusterResource addClusterResource = ClusterResource.create(context, cryptograph);
     environment.jersey().register(addClusterResource);
     final RepairRunResource addRepairRunResource = new RepairRunResource(context);
     environment.jersey().register(addRepairRunResource);
