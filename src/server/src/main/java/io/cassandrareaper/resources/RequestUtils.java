@@ -26,27 +26,9 @@ import com.google.common.annotations.VisibleForTesting;
 public final class RequestUtils {
   public static final String ALLOW_ALL_OPTIONS_REQUESTS_ENV_VAR_NAME = "ALLOW_ALL_OPTIONS_REQUESTS";
 
-  private static class RequestUtilsHelper {
-    private static final RequestUtils INSTANCE = new RequestUtils();
-  }
+  private RequestUtils() {}
 
-  private Boolean allowAllOptionsRequests;
-
-  private RequestUtils() {
-  }
-
-  public static RequestUtils getInstance() {
-    return RequestUtilsHelper.INSTANCE;
-  }
-
-  public boolean isAllowAllOptionsRequests() {
-    if (allowAllOptionsRequests == null) {
-      allowAllOptionsRequests = getAllowAllOptionsRequestsFromEnvironment();
-    }
-    return allowAllOptionsRequests;
-  }
-
-  public boolean isOptionsRequest(ServletRequest request) {
+  public static boolean isOptionsRequest(ServletRequest request) {
     if (request != null && request instanceof HttpServletRequest) {
       if (((HttpServletRequest) request).getMethod().equalsIgnoreCase(HttpMethod.OPTIONS)) {
         return true;
@@ -56,15 +38,15 @@ public final class RequestUtils {
   }
 
   @VisibleForTesting
-  String getAllowAllOptionsRequestsEnvironmentVariable() {
-    return System.getenv(ALLOW_ALL_OPTIONS_REQUESTS_ENV_VAR_NAME);
-  }
-
-  private boolean getAllowAllOptionsRequestsFromEnvironment() {
-    String allowAllOptionsRequestsEnvVarValue = getAllowAllOptionsRequestsEnvironmentVariable();
+  static boolean isAllowAllOptionsRequests(String allowAllOptionsRequestsEnvVarValue) {
     if (allowAllOptionsRequestsEnvVarValue != null) {
       return Boolean.parseBoolean(allowAllOptionsRequestsEnvVarValue.trim().toLowerCase());
     }
     return false;
+  }
+
+  public static boolean isAllowAllOptionsRequests() {
+    String allowAllOptionsRequestsEnvVarValue = System.getenv(ALLOW_ALL_OPTIONS_REQUESTS_ENV_VAR_NAME);
+    return isAllowAllOptionsRequests(allowAllOptionsRequestsEnvVarValue);
   }
 }

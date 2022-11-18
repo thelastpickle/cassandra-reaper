@@ -29,45 +29,47 @@ import static org.mockito.Mockito.when;
 public class RequestUtilsTest {
   @Test
   public void testGetAllowAllOptionsRequestsFromEnvironmentWithEmptyEnvironmentReturnsFalse() {
-    boolean allowAll = RequestUtils.getInstance().isAllowAllOptionsRequests();
-    Assertions.assertThat(allowAll).isEqualTo(false);
+    boolean allowAll = RequestUtils.isAllowAllOptionsRequests();
+    Assertions.assertThat(allowAll).isFalse();
   }
 
   @Test
-  public void testGetAllowAllOptionsRequestsFromEnvironmentWithEnvironmentReturnsTrue() {
-    RequestUtils mockRequestUtils = spy(RequestUtils.class);
-    when(mockRequestUtils.getAllowAllOptionsRequestsEnvironmentVariable()).thenReturn("true");
-    boolean allowAll = mockRequestUtils.isAllowAllOptionsRequests();
-    Assertions.assertThat(allowAll).isEqualTo(true);
+  public void testGetAllowAllOptionsRequestsFromEnvironmentWithTrueEnvironmentReturnsTrue() {
+    boolean allowAll = RequestUtils.isAllowAllOptionsRequests("true");
+    Assertions.assertThat(allowAll).isTrue();
+  }
+
+  @Test
+  public void testGetAllowAllOptionsRequestsFromEnvironmentWithFalseEnvironmentReturnsFalse() {
+    boolean allowAll = RequestUtils.isAllowAllOptionsRequests("false");
+    Assertions.assertThat(allowAll).isFalse();
   }
 
   @Test
   public void testGetAllowAllOptionsRequestsFromInvalidEnvironmentWithEnvironmentReturnsFalse() {
-    RequestUtils mockRequestUtils = spy(RequestUtils.class);
-    when(mockRequestUtils.getAllowAllOptionsRequestsEnvironmentVariable()).thenReturn("bad");
-    boolean allowAll = mockRequestUtils.isAllowAllOptionsRequests();
-    Assertions.assertThat(allowAll).isEqualTo(false);
+    boolean allowAll = RequestUtils.isAllowAllOptionsRequests("bad");
+    Assertions.assertThat(allowAll).isFalse();
   }
 
   @Test
   public void testIsOptionsRequestInvalidInputReturnsFalse() {
-    boolean isOptionsRequest = RequestUtils.getInstance().isOptionsRequest(null);
-    Assertions.assertThat(isOptionsRequest).isEqualTo(false);
+    boolean isOptionsRequest = RequestUtils.isOptionsRequest(null);
+    Assertions.assertThat(isOptionsRequest).isFalse();
   }
 
   @Test
   public void testIsOptionsRequestOptionsServletInputReturnsTrue() {
     HttpServletRequest mockServletRequest = spy(HttpServletRequest.class);
     when(mockServletRequest.getMethod()).thenReturn(HttpMethod.OPTIONS);
-    boolean isOptionsRequest = RequestUtils.getInstance().isOptionsRequest(mockServletRequest);
-    Assertions.assertThat(isOptionsRequest).isEqualTo(true);
+    boolean isOptionsRequest = RequestUtils.isOptionsRequest(mockServletRequest);
+    Assertions.assertThat(isOptionsRequest).isTrue();
   }
 
   @Test
   public void testIsOptionsRequestGetServletInputReturnsTrue() {
     HttpServletRequest mockServletRequest = spy(HttpServletRequest.class);
     when(mockServletRequest.getMethod()).thenReturn(HttpMethod.GET);
-    boolean isOptionsRequest = RequestUtils.getInstance().isOptionsRequest(mockServletRequest);
-    Assertions.assertThat(isOptionsRequest).isEqualTo(false);
+    boolean isOptionsRequest = RequestUtils.isOptionsRequest(mockServletRequest);
+    Assertions.assertThat(isOptionsRequest).isFalse();
   }
 }

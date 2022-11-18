@@ -25,6 +25,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
@@ -47,12 +48,17 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
   private final boolean allowAllOptionsRequests;
 
   public ShiroJwtVerifyingFilter() {
-    allowAllOptionsRequests = RequestUtils.getInstance().isAllowAllOptionsRequests();
+    allowAllOptionsRequests = RequestUtils.isAllowAllOptionsRequests();
+  }
+
+  @VisibleForTesting
+  boolean isAllowAllOptionsRequests() {
+    return allowAllOptionsRequests;
   }
 
   @Override
   protected boolean isAccessAllowed(ServletRequest req, ServletResponse res, Object mappedValue) throws Exception {
-    if (allowAllOptionsRequests && RequestUtils.getInstance().isOptionsRequest(req)) {
+    if (isAllowAllOptionsRequests() && RequestUtils.isOptionsRequest(req)) {
       return true;
     }
 

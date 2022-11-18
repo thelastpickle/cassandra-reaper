@@ -25,6 +25,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.web.filter.authz.HttpMethodPermissionFilter;
 import org.apache.shiro.web.util.WebUtils;
@@ -33,13 +34,18 @@ public final class RestPermissionsFilter extends HttpMethodPermissionFilter {
   private final boolean allowAllOptionsRequests;
 
   public RestPermissionsFilter() {
-    allowAllOptionsRequests = RequestUtils.getInstance().isAllowAllOptionsRequests();
+    allowAllOptionsRequests = RequestUtils.isAllowAllOptionsRequests();
+  }
+
+  @VisibleForTesting
+  boolean isAllowAllOptionsRequests() {
+    return allowAllOptionsRequests;
   }
 
   @Override
   public boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue)
       throws IOException {
-    if (allowAllOptionsRequests && RequestUtils.getInstance().isOptionsRequest(request)) {
+    if (isAllowAllOptionsRequests() && RequestUtils.isOptionsRequest(request)) {
       return true;
     }
     return super.isAccessAllowed(request, response, mappedValue);
