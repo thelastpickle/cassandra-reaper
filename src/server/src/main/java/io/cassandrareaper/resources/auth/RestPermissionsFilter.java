@@ -17,6 +17,8 @@
 
 package io.cassandrareaper.resources.auth;
 
+import io.cassandrareaper.resources.RequestUtils;
+
 import java.io.IOException;
 
 import javax.servlet.ServletRequest;
@@ -27,20 +29,17 @@ import org.apache.shiro.subject.Subject;
 import org.apache.shiro.web.filter.authz.HttpMethodPermissionFilter;
 import org.apache.shiro.web.util.WebUtils;
 
-import static io.cassandrareaper.resources.RequestUtils.getAllowAllOptionsRequestsFromEnvironment;
-import static io.cassandrareaper.resources.RequestUtils.isOptionsRequest;
-
 public final class RestPermissionsFilter extends HttpMethodPermissionFilter {
   private final boolean allowAllOptionsRequests;
 
   public RestPermissionsFilter() {
-    allowAllOptionsRequests = getAllowAllOptionsRequestsFromEnvironment();
+    allowAllOptionsRequests = RequestUtils.getInstance().isAllowAllOptionsRequests();
   }
 
   @Override
   public boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue)
       throws IOException {
-    if (allowAllOptionsRequests && isOptionsRequest(request)) {
+    if (allowAllOptionsRequests && RequestUtils.getInstance().isOptionsRequest(request)) {
       return true;
     }
     return super.isAccessAllowed(request, response, mappedValue);

@@ -17,6 +17,8 @@
 
 package io.cassandrareaper.resources.auth;
 
+import io.cassandrareaper.resources.RequestUtils;
+
 import java.util.Optional;
 
 import javax.servlet.ServletRequest;
@@ -38,9 +40,6 @@ import org.apache.shiro.web.util.WebUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.cassandrareaper.resources.RequestUtils.getAllowAllOptionsRequestsFromEnvironment;
-import static io.cassandrareaper.resources.RequestUtils.isOptionsRequest;
-
 public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShiroJwtVerifyingFilter.class);
@@ -48,12 +47,12 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
   private final boolean allowAllOptionsRequests;
 
   public ShiroJwtVerifyingFilter() {
-    allowAllOptionsRequests = getAllowAllOptionsRequestsFromEnvironment();
+    allowAllOptionsRequests = RequestUtils.getInstance().isAllowAllOptionsRequests();
   }
 
   @Override
   protected boolean isAccessAllowed(ServletRequest req, ServletResponse res, Object mappedValue) throws Exception {
-    if (allowAllOptionsRequests && isOptionsRequest(req)) {
+    if (allowAllOptionsRequests && RequestUtils.getInstance().isOptionsRequest(req)) {
       return true;
     }
 
