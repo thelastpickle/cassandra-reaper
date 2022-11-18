@@ -17,31 +17,35 @@
 
 package io.cassandrareaper.resources.auth;
 
+import java.util.Optional;
+
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.lang.Strings;
+
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.web.filter.AccessControlFilter;
 import org.apache.shiro.web.subject.WebSubject;
 import org.apache.shiro.web.util.WebUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
-import java.util.Optional;
 
 import static io.cassandrareaper.resources.RequestUtils.getAllowAllOptionsRequestsFromEnvironment;
 import static io.cassandrareaper.resources.RequestUtils.isOptionsRequest;
 
 public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
-  private final boolean allowAllOptionsRequests;
 
   private static final Logger LOG = LoggerFactory.getLogger(ShiroJwtVerifyingFilter.class);
+
+  private final boolean allowAllOptionsRequests;
 
   public ShiroJwtVerifyingFilter() {
     allowAllOptionsRequests = getAllowAllOptionsRequestsFromEnvironment();

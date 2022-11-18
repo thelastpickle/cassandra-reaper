@@ -17,46 +17,48 @@
 
 package io.cassandrareaper.resources.auth;
 
-import org.apache.shiro.subject.Subject;
-import org.apache.shiro.web.filter.authz.HttpMethodPermissionFilter;
-import org.apache.shiro.web.util.WebUtils;
+import java.io.IOException;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+
+import org.apache.shiro.subject.Subject;
+import org.apache.shiro.web.filter.authz.HttpMethodPermissionFilter;
+import org.apache.shiro.web.util.WebUtils;
 
 import static io.cassandrareaper.resources.RequestUtils.getAllowAllOptionsRequestsFromEnvironment;
 import static io.cassandrareaper.resources.RequestUtils.isOptionsRequest;
 
 public final class RestPermissionsFilter extends HttpMethodPermissionFilter {
-    private final boolean allowAllOptionsRequests;
+  private final boolean allowAllOptionsRequests;
 
-    public RestPermissionsFilter() {
-        allowAllOptionsRequests = getAllowAllOptionsRequestsFromEnvironment();
-    }
+  public RestPermissionsFilter() {
+    allowAllOptionsRequests = getAllowAllOptionsRequestsFromEnvironment();
+  }
 
-    @Override
-    public boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue) throws IOException {
-        if (allowAllOptionsRequests && isOptionsRequest(request)) {
-            return true;
-        }
-        return super.isAccessAllowed(request, response, mappedValue);
+  @Override
+  public boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue)
+      throws IOException {
+    if (allowAllOptionsRequests && isOptionsRequest(request)) {
+      return true;
     }
+    return super.isAccessAllowed(request, response, mappedValue);
+  }
 
-    @Override
-    protected Subject getSubject(ServletRequest request, ServletResponse response) {
-        return ShiroJwtVerifyingFilter.getJwtSubject(super.getSubject(request, response), request, response);
-    }
+  @Override
+  protected Subject getSubject(ServletRequest request, ServletResponse response) {
+    return ShiroJwtVerifyingFilter.getJwtSubject(super.getSubject(request, response), request, response);
+  }
 
-    @Override
-    protected boolean onAccessDenied(ServletRequest req, ServletResponse res) throws IOException {
-        WebUtils.toHttp(res).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        WebUtils.toHttp(res).setHeader("Content-Type", "text/plain");
-        Object user = getSubject(req, res).getPrincipal();
-        String err = String.format("Unauthorized `%s` operation for user: %s.", getHttpMethodAction(req), user);
-        WebUtils.toHttp(res).getOutputStream().print(err);
-        WebUtils.toHttp(res).flushBuffer();
-        return false;
-    }
+  @Override
+  protected boolean onAccessDenied(ServletRequest req, ServletResponse res) throws IOException {
+    WebUtils.toHttp(res).setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    WebUtils.toHttp(res).setHeader("Content-Type", "text/plain");
+    Object user = getSubject(req, res).getPrincipal();
+    String err = String.format("Unauthorized `%s` operation for user: %s.", getHttpMethodAction(req), user);
+    WebUtils.toHttp(res).getOutputStream().print(err);
+    WebUtils.toHttp(res).flushBuffer();
+    return false;
+  }
 }
