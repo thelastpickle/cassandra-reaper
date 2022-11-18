@@ -32,7 +32,6 @@ import io.cassandrareaper.resources.ClusterResource;
 import io.cassandrareaper.resources.CryptoResource;
 import io.cassandrareaper.resources.DiagEventSseResource;
 import io.cassandrareaper.resources.DiagEventSubscriptionResource;
-import io.cassandrareaper.resources.InfoResource;
 import io.cassandrareaper.resources.NodeStatsResource;
 import io.cassandrareaper.resources.PingResource;
 import io.cassandrareaper.resources.ReaperHealthCheck;
@@ -204,9 +203,6 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
     LOG.info("creating resources and registering endpoints");
     final PingResource pingResource = new PingResource(healthCheck);
     environment.jersey().register(pingResource);
-
-    final InfoResource infoResource = new InfoResource(context, healthCheck);
-    environment.jersey().register(infoResource);
 
     final ClusterResource addClusterResource = ClusterResource.create(context, cryptograph);
     environment.jersey().register(addClusterResource);
