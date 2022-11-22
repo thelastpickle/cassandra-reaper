@@ -24,7 +24,7 @@ import javax.ws.rs.HttpMethod;
 import com.google.common.annotations.VisibleForTesting;
 
 public final class RequestUtils {
-  public static final String ALLOW_ALL_OPTIONS_REQUESTS_ENV_VAR_NAME = "ALLOW_ALL_OPTIONS_REQUESTS";
+  public static final String ENABLE_CORS_ENV_VAR_NAME = "REAPER_ENABLE_CROSS_ORIGIN";
 
   private RequestUtils() {}
 
@@ -38,15 +38,15 @@ public final class RequestUtils {
   }
 
   @VisibleForTesting
-  static boolean isAllowAllOptionsRequests(String allowAllOptionsRequestsEnvVarValue) {
-    if (allowAllOptionsRequestsEnvVarValue != null) {
-      return Boolean.parseBoolean(allowAllOptionsRequestsEnvVarValue.trim().toLowerCase());
+  static boolean isCorsEnabled(String corsEnabledEnvVarValue) {
+    if (corsEnabledEnvVarValue != null) {
+      return Boolean.parseBoolean(corsEnabledEnvVarValue.trim().toLowerCase());
     }
     return false;
   }
 
-  public static boolean isAllowAllOptionsRequests() {
-    String allowAllOptionsRequestsEnvVarValue = System.getenv(ALLOW_ALL_OPTIONS_REQUESTS_ENV_VAR_NAME);
-    return isAllowAllOptionsRequests(allowAllOptionsRequestsEnvVarValue);
+  public static boolean isCorsEnabled() {
+    String corsEnabledEnvVarValue = System.getenv(ENABLE_CORS_ENV_VAR_NAME);
+    return isCorsEnabled(corsEnabledEnvVarValue);
   }
 }

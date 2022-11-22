@@ -45,20 +45,20 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShiroJwtVerifyingFilter.class);
 
-  private final boolean allowAllOptionsRequests;
+  private final boolean isCorsEnabled;
 
   public ShiroJwtVerifyingFilter() {
-    allowAllOptionsRequests = RequestUtils.isAllowAllOptionsRequests();
+    isCorsEnabled = RequestUtils.isCorsEnabled();
   }
 
   @VisibleForTesting
-  boolean isAllowAllOptionsRequests() {
-    return allowAllOptionsRequests;
+  boolean isCorsEnabled() {
+    return isCorsEnabled;
   }
 
   @Override
   protected boolean isAccessAllowed(ServletRequest req, ServletResponse res, Object mappedValue) throws Exception {
-    if (isAllowAllOptionsRequests() && RequestUtils.isOptionsRequest(req)) {
+    if (isCorsEnabled() && RequestUtils.isOptionsRequest(req)) {
       return true;
     }
 

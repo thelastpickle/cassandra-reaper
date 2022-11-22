@@ -28,26 +28,26 @@ import static org.mockito.Mockito.when;
 
 public class RequestUtilsTest {
   @Test
-  public void testGetAllowAllOptionsRequestsFromEnvironmentWithEmptyEnvironmentReturnsFalse() {
-    boolean allowAll = RequestUtils.isAllowAllOptionsRequests();
+  public void testIsCorsEnabledFromEnvironmentWithEmptyEnvironmentReturnsFalse() {
+    boolean allowAll = RequestUtils.isCorsEnabled();
     Assertions.assertThat(allowAll).isFalse();
   }
 
   @Test
-  public void testGetAllowAllOptionsRequestsFromEnvironmentWithTrueEnvironmentReturnsTrue() {
-    boolean allowAll = RequestUtils.isAllowAllOptionsRequests("true");
+  public void testIsCorsEnabledFromEnvironmentWithTrueEnvironmentReturnsTrue() {
+    boolean allowAll = RequestUtils.isCorsEnabled("true");
     Assertions.assertThat(allowAll).isTrue();
   }
 
   @Test
-  public void testGetAllowAllOptionsRequestsFromEnvironmentWithFalseEnvironmentReturnsFalse() {
-    boolean allowAll = RequestUtils.isAllowAllOptionsRequests("false");
+  public void testIsCorsEnabledFromEnvironmentWithFalseEnvironmentReturnsFalse() {
+    boolean allowAll = RequestUtils.isCorsEnabled("false");
     Assertions.assertThat(allowAll).isFalse();
   }
 
   @Test
-  public void testGetAllowAllOptionsRequestsFromInvalidEnvironmentWithEnvironmentReturnsFalse() {
-    boolean allowAll = RequestUtils.isAllowAllOptionsRequests("bad");
+  public void testIsCorsEnabledFromInvalidEnvironmentWithEnvironmentReturnsFalse() {
+    boolean allowAll = RequestUtils.isCorsEnabled("bad");
     Assertions.assertThat(allowAll).isFalse();
   }
 

@@ -31,21 +31,21 @@ import org.apache.shiro.web.filter.authz.HttpMethodPermissionFilter;
 import org.apache.shiro.web.util.WebUtils;
 
 public final class RestPermissionsFilter extends HttpMethodPermissionFilter {
-  private final boolean allowAllOptionsRequests;
+  private final boolean isCorsEnabled;
 
   public RestPermissionsFilter() {
-    allowAllOptionsRequests = RequestUtils.isAllowAllOptionsRequests();
+    isCorsEnabled = RequestUtils.isCorsEnabled();
   }
 
   @VisibleForTesting
-  boolean isAllowAllOptionsRequests() {
-    return allowAllOptionsRequests;
+  boolean isCorsEnabled() {
+    return isCorsEnabled;
   }
 
   @Override
   public boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue)
       throws IOException {
-    if (isAllowAllOptionsRequests() && RequestUtils.isOptionsRequest(request)) {
+    if (isCorsEnabled() && RequestUtils.isOptionsRequest(request)) {
       return true;
     }
     return super.isAccessAllowed(request, response, mappedValue);

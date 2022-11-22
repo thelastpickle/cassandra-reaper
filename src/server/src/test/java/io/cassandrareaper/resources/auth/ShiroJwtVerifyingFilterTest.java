@@ -204,7 +204,7 @@ public final class ShiroJwtVerifyingFilterTest {
     ShiroJwtVerifyingFilter filter = Mockito.spy(ShiroJwtVerifyingFilter.class);
     HttpServletRequest mockHttpServletRequest = Mockito.spy(HttpServletRequest.class);
     Mockito.when(mockHttpServletRequest.getMethod()).thenReturn(HttpMethod.OPTIONS);
-    Mockito.when(filter.isAllowAllOptionsRequests()).thenReturn(true);
+    Mockito.when(filter.isCorsEnabled()).thenReturn(true);
 
     boolean allowed = filter.isAccessAllowed(
         mockHttpServletRequest,
