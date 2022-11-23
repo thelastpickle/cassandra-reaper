@@ -14,11 +14,22 @@
 # limitations under the License.
 
 FROM ubuntu:20.04
+# Set up non-root user, 'build', with default uid:gid
+# This allows passing --build-arg to use localhost username, and uid:gid:
+#   $ docker build \
+#       -t cassandra-reaper-build:latest \
+#       --build-arg UID_ARG=$(id -u) \
+#       --build-arg GID_ARG=$(id -g) \
+#       .
+# OR
+#   $ docker-compose build \
+#       --build-arg UID_ARG=$(id -u) \
+#       --build-arg GID_ARG=$(id -g)
+#
+ARG UID_ARG=1000
+ARG GID_ARG=1000
 
-# use a common app path, copied from python-onbuild:latest
-ENV WORKDIR /usr/src/app
-RUN mkdir -p ${WORKDIR}
-WORKDIR ${WORKDIR}
+RUN echo "Building image with arguments: UID_ARG=${UID_ARG}, GID_ARG=${GID_ARG}"
 
 # install dependencies
 RUN apt-get update \
@@ -35,13 +46,23 @@ RUN apt-get update \
         nodejs \
         rpm \
         ruby-dev \
+        sudo \
     && mvn --version \
     && gem install fpm \
     && npm install -g bower
 
-WORKDIR ${WORKDIR}
+# Create the build user and make it part of the password-less sudo group
+ENV BUILD_USER="build"
+RUN groupadd --gid ${GID_ARG} --non-unique ${BUILD_USER} && \
+    useradd --create-home --shell /bin/bash --uid ${UID_ARG} --gid ${GID_ARG} --non-unique ${BUILD_USER} && \
+    usermod -aG sudo ${BUILD_USER} && \
+    sed -i 's/\(^%sudo\tALL=(ALL:ALL)\).*/\1 NOPASSWD:ALL/g' /etc/sudoers
+
+ENV WORKDIR "/home/${BUILD_USER}"
 
 # Add entrypoint script
-COPY src/packaging/docker-build/docker-entrypoint.sh ${WORKDIR}
-ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]
+COPY src/packaging/docker-build/docker-entrypoint.sh /usr/local/bin
+USER ${BUILD_USER}
+WORKDIR ${WORKDIR}
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD [""]

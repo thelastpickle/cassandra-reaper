@@ -13,14 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version: '2.1'
+version: '3.9'
 
 services:
   build:
     build:
       context: ../../..
       dockerfile: src/packaging/docker-build/Dockerfile
+    image: cassandra-reaper-build
     volumes:
-      - ../../..:/usr/src/app/cassandra-reaper
-      - ../../packages:/usr/src/app/packages
-      - ~/.m2:/root/.m2
+      - ../../..:/home/build/cassandra-reaper
+      - ~/.m2:/home/build/.m2

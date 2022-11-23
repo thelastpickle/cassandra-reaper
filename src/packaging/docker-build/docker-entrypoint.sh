@@ -22,7 +22,9 @@ set -ex
 # copy built packages into a mounted volume
 pushd ${WORKDIR}/cassandra-reaper > /dev/null
 export VERSION=$(printf 'VER\t${project.version}' | mvn help:evaluate 2>/dev/null | grep '^VER' | cut -f2)
+export PACKAGES_DIR="${WORKDIR}/cassandra-reaper/src/packages"
 echo "Building package for version ${VERSION}"
+mkdir -p ${PACKAGES_DIR}
 # From version 3.1 onwards JDK11 is needed to build Reaper (e9cfc20)
 java_home=""
 java_path=""
@@ -41,9 +43,9 @@ else
   javadoc_path="bin/javadoc"
 fi
 export JAVA_HOME=${java_home}
-update-alternatives --set java "${JAVA_HOME}/${java_path}"
-update-alternatives --set javac "${JAVA_HOME}/${javac_path}"
-update-alternatives --set javadoc "${JAVA_HOME}/${javadoc_path}"
+sudo update-alternatives --set java "${JAVA_HOME}/${java_path}"
+sudo update-alternatives --set javac "${JAVA_HOME}/${javac_path}"
+sudo update-alternatives --set javadoc "${JAVA_HOME}/${javadoc_path}"
 
 make_tasks=()
 # Check if the caller has asked us to build the JAR regardless of whether it exists already.
@@ -56,6 +58,6 @@ make_tasks+=("build-packages")
 
 pushd ${WORKDIR}/cassandra-reaper/src/packaging > /dev/null \
     && make ${make_tasks[*]} \
-    && mv *.deb *.rpm ${WORKDIR}/packages \
-    && cp ../server/target/cassandra-*.jar ${WORKDIR}/packages \
-    && rm -f ${WORKDIR}/packages/cassandra*-sources.jar
+    && mv *.deb *.rpm ${PACKAGES_DIR} \
+    && cp ../server/target/cassandra-*.jar ${PACKAGES_DIR} \
+    && rm -f ${PACKAGES_DIR}/cassandra*-sources.jar
