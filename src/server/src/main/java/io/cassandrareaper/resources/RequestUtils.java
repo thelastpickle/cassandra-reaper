@@ -29,11 +29,11 @@ public final class RequestUtils {
   public static void setCorsEnabled(boolean enabled) {
     isCorsEnabled = enabled;
   }
-  
+
   public static boolean isCorsEnabled() {
     return isCorsEnabled;
   }
-  
+
   public static boolean isOptionsRequest(ServletRequest request) {
     if (request != null && request instanceof HttpServletRequest) {
       if (((HttpServletRequest) request).getMethod().equalsIgnoreCase(HttpMethod.OPTIONS)) {
