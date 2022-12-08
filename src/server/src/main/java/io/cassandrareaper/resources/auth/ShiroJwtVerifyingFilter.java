@@ -45,15 +45,9 @@ public final class ShiroJwtVerifyingFilter extends AccessControlFilter {
 
   private static final Logger LOG = LoggerFactory.getLogger(ShiroJwtVerifyingFilter.class);
 
-  private final boolean isCorsEnabled;
-
-  public ShiroJwtVerifyingFilter() {
-    isCorsEnabled = RequestUtils.isCorsEnabled();
-  }
-
   @VisibleForTesting
   boolean isCorsEnabled() {
-    return isCorsEnabled;
+    return RequestUtils.isCorsEnabled();
   }
 
   @Override

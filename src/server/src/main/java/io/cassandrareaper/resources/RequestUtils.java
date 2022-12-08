@@ -21,8 +21,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.HttpMethod;
 
-import com.google.common.annotations.VisibleForTesting;
-
 public final class RequestUtils {
   private static boolean isCorsEnabled = false;
 

@@ -38,6 +38,7 @@ import io.cassandrareaper.resources.ReaperHealthCheck;
 import io.cassandrareaper.resources.ReaperResource;
 import io.cassandrareaper.resources.RepairRunResource;
 import io.cassandrareaper.resources.RepairScheduleResource;
+import io.cassandrareaper.resources.RequestUtils;
 import io.cassandrareaper.resources.SnapshotResource;
 import io.cassandrareaper.resources.auth.LoginResource;
 import io.cassandrareaper.resources.auth.ShiroExceptionMapper;
@@ -185,6 +186,7 @@ public final class ReaperApplication extends Application<ReaperApplicationConfig
         TimeUnit.SECONDS,
         maxParallelRepairs);
 
+    RequestUtils.setCorsEnabled(config.isEnableCrossOrigin());
     // Enable cross-origin requests for using external GUI applications.
     if (config.isEnableCrossOrigin() || System.getProperty("enableCrossOrigin") != null) {
       FilterRegistration.Dynamic co = environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);

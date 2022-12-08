@@ -31,15 +31,10 @@ import org.apache.shiro.web.filter.authz.HttpMethodPermissionFilter;
 import org.apache.shiro.web.util.WebUtils;
 
 public final class RestPermissionsFilter extends HttpMethodPermissionFilter {
-  private final boolean isCorsEnabled;
-
-  public RestPermissionsFilter() {
-    isCorsEnabled = RequestUtils.isCorsEnabled();
-  }
 
   @VisibleForTesting
   boolean isCorsEnabled() {
-    return isCorsEnabled;
+    return RequestUtils.isCorsEnabled();
   }
 
   @Override
