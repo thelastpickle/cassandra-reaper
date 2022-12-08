@@ -17,18 +17,34 @@
 
 package io.cassandrareaper.resources.auth;
 
+import io.cassandrareaper.resources.RequestUtils;
+
 import java.io.IOException;
+
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.web.filter.authz.HttpMethodPermissionFilter;
 import org.apache.shiro.web.util.WebUtils;
 
 public final class RestPermissionsFilter extends HttpMethodPermissionFilter {
 
-  public RestPermissionsFilter() {}
+  @VisibleForTesting
+  boolean isCorsEnabled() {
+    return RequestUtils.isCorsEnabled();
+  }
+
+  @Override
+  public boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue)
+      throws IOException {
+    if (isCorsEnabled() && RequestUtils.isOptionsRequest(request)) {
+      return true;
+    }
+    return super.isAccessAllowed(request, response, mappedValue);
+  }
 
   @Override
   protected Subject getSubject(ServletRequest request, ServletResponse response) {

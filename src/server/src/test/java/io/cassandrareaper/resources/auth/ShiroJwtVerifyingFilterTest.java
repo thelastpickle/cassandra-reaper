@@ -22,6 +22,7 @@ import io.cassandrareaper.AppContext;
 import java.security.Principal;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.HttpMethod;
 
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.mgt.DefaultSecurityManager;
@@ -30,7 +31,6 @@ import org.apache.shiro.util.ThreadContext;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.Mockito;
-
 
 public final class ShiroJwtVerifyingFilterTest {
 
@@ -199,5 +199,19 @@ public final class ShiroJwtVerifyingFilterTest {
     }
   }
 
+  @Test
+  public void testOptionsRequestWithoutAuthorizationIsAllowed() throws Exception {
+    ShiroJwtVerifyingFilter filter = Mockito.spy(ShiroJwtVerifyingFilter.class);
+    HttpServletRequest mockHttpServletRequest = Mockito.spy(HttpServletRequest.class);
+    Mockito.when(mockHttpServletRequest.getMethod()).thenReturn(HttpMethod.OPTIONS);
+    Mockito.when(filter.isCorsEnabled()).thenReturn(true);
+
+    boolean allowed = filter.isAccessAllowed(
+        mockHttpServletRequest,
+        Mockito.mock(ServletResponse.class),
+        Mockito.mock(Object.class)
+    );
+    Assertions.assertThat(allowed).isTrue();
+  }
 
 }
