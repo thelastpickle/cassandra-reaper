@@ -18,6 +18,7 @@
 package io.cassandrareaper.resources.auth;
 
 import io.cassandrareaper.AppContext;
+import io.cassandrareaper.resources.RequestUtils;
 import io.cassandrareaper.storage.CassandraStorage;
 
 import java.io.IOException;
@@ -51,7 +52,17 @@ public final class ShiroJwtProvider {
   }
 
   String getJwt(HttpServletRequest request) throws IOException {
-    return Jwts.builder().setSubject(request.getUserPrincipal().getName()).signWith(SIG_ALG, SIGNING_KEY).compact();
+    if (RequestUtils.getSessionTimeout().isNegative()) {
+      // No session timeout set, so return a JWT with no expiration time
+      return Jwts.builder().setSubject(request.getUserPrincipal().getName()).signWith(SIG_ALG, SIGNING_KEY).compact();
+    } else {
+      // Return a JWT with an expiration time based on the session timeout
+      return Jwts.builder()
+          .setSubject(request.getUserPrincipal().getName())
+          .setExpiration(new java.util.Date(System.currentTimeMillis() + RequestUtils.getSessionTimeout().toMillis()))
+          .signWith(SIG_ALG, SIGNING_KEY)
+          .compact();
+    }
   }
 
   private static Key getSigningKey(AppContext cxt) {
