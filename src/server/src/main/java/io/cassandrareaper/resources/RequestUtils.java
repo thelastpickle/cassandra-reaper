@@ -17,12 +17,15 @@
 
 package io.cassandrareaper.resources;
 
+import java.time.Duration;
+
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.HttpMethod;
 
 public final class RequestUtils {
   private static boolean isCorsEnabled = false;
+  private static Duration sessionTimeout = Duration.ofMinutes(-1);
 
   private RequestUtils() {}
 
@@ -32,6 +35,14 @@ public final class RequestUtils {
 
   public static boolean isCorsEnabled() {
     return isCorsEnabled;
+  }
+
+  public static void setSessionTimeout(Duration configSessionTimeout) {
+    RequestUtils.sessionTimeout = configSessionTimeout;
+  }
+
+  public static Duration getSessionTimeout() {
+    return sessionTimeout;
   }
 
   public static boolean isOptionsRequest(ServletRequest request) {
