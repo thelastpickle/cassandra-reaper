@@ -157,6 +157,7 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   private PreparedStatement insertRepairRunUnitIndexPrepStmt;
   private PreparedStatement getRepairRunPrepStmt;
   private PreparedStatement getRepairRunForClusterPrepStmt;
+  private PreparedStatement getRepairRunForClusterWhereStatusPrepStmt;
   private PreparedStatement getRepairRunForUnitPrepStmt;
   private PreparedStatement deleteRepairRunPrepStmt;
   private PreparedStatement deleteRepairRunByClusterPrepStmt;
@@ -422,6 +423,8 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         .setConsistencyLevel(ConsistencyLevel.QUORUM);
     getRepairRunForClusterPrepStmt = session.prepare(
         "SELECT * FROM repair_run_by_cluster_v2 WHERE cluster_name = ? limit ?");
+    getRepairRunForClusterWhereStatusPrepStmt = session.prepare(
+        "SELECT * FROM repair_run_by_cluster_v2 WHERE cluster_name = ? AND state = ? limit ?");
     getRepairRunForUnitPrepStmt = session.prepare("SELECT * FROM repair_run_by_unit WHERE repair_unit_id = ?");
     deleteRepairRunPrepStmt = session.prepare("DELETE FROM repair_run WHERE id = ?");
     deleteRepairRunByClusterPrepStmt
@@ -953,6 +956,50 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
         break;
       }
     }
+
+    return getRepairRunsAsync(repairRunFutures);
+  }
+
+  @Override
+  public Collection<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
+    List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();
+    // Grab all RUNNING repair_runs for the given cluster name
+    repairRunFutures.add(
+        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "RUNNING", limit.orElse(
+            MAX_RETURNED_REPAIR_RUNS)))
+    );
+    // Grab all NOT_STARTED repair_runs for the given cluster name
+    repairRunFutures.add(
+        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "NOT_STARTED", limit.orElse(
+            MAX_RETURNED_REPAIR_RUNS)))
+    );
+    // Other possible statuses are:
+    // ERROR,
+    // PAUSED,
+    // ABORTED,
+    // DELETED,
+    // DONE
+    // We add these to the result set according to how interesting this result is.
+    repairRunFutures.add(
+        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "ERROR", limit.orElse(
+            MAX_RETURNED_REPAIR_RUNS)))
+    );
+    repairRunFutures.add(
+        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "PAUSED", limit.orElse(
+            MAX_RETURNED_REPAIR_RUNS)))
+    );
+    repairRunFutures.add(
+        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "ABORTED", limit.orElse(
+            MAX_RETURNED_REPAIR_RUNS)))
+    );
+    repairRunFutures.add(
+        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "DELETED", limit.orElse(
+            MAX_RETURNED_REPAIR_RUNS)))
+    );
+    repairRunFutures.add(
+        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "DONE", limit.orElse(
+            MAX_RETURNED_REPAIR_RUNS)))
+    );
 
     return getRepairRunsAsync(repairRunFutures);
   }

@@ -192,6 +192,8 @@ public final class MemoryStorage implements IStorage {
     }
     return foundRepairRuns;
   }
+  @Override
+  public Collection<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit);
 
   @Override
   public Collection<RepairRun> getRepairRunsForUnit(UUID repairUnitId) {
