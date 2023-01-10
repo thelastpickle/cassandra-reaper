@@ -608,7 +608,7 @@ public final class RepairRunResource {
       @QueryParam("limit") Optional<Integer> limit) {
 
     LOG.debug("get repair run for cluster called with: cluster_name = {}", clusterName);
-    final Collection<RepairRun> repairRuns = context.storage.getRepairRunsForCluster(clusterName, limit);
+    final Collection<RepairRun> repairRuns = context.storage.getRepairRunsForClusterPrioritiseRunning(clusterName, limit);
     final Collection<RepairRunStatus> repairRunViews = new ArrayList<>();
     for (final RepairRun repairRun : repairRuns) {
       repairRunViews.add(getRepairRunStatus(repairRun));
