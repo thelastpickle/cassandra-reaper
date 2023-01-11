@@ -963,44 +963,17 @@ public final class CassandraStorage implements IStorage, IDistributedStorage {
   @Override
   public List<RepairRun> getRepairRunsForClusterPrioritiseRunning(String clusterName, Optional<Integer> limit) {
     List<ResultSetFuture> repairRunFutures = Lists.<ResultSetFuture>newArrayList();
-    // Grab all RUNNING repair_runs for the given cluster name
-    repairRunFutures.add(
-        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "RUNNING", limit.orElse(
-            MAX_RETURNED_REPAIR_RUNS)))
-    );
-    // Grab all NOT_STARTED repair_runs for the given cluster name
-    repairRunFutures.add(
-        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "NOT_STARTED", limit.orElse(
-            MAX_RETURNED_REPAIR_RUNS)))
-    );
-    // Other possible statuses are:
-    // ERROR,
-    // PAUSED,
-    // ABORTED,
-    // DELETED,
-    // DONE
-    // We add these to the result set according to how interesting this result is.
-    repairRunFutures.add(
-        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "ERROR", limit.orElse(
-            MAX_RETURNED_REPAIR_RUNS)))
-    );
-    repairRunFutures.add(
-        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "PAUSED", limit.orElse(
-            MAX_RETURNED_REPAIR_RUNS)))
-    );
-    repairRunFutures.add(
-        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "ABORTED", limit.orElse(
-            MAX_RETURNED_REPAIR_RUNS)))
-    );
-    repairRunFutures.add(
-        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "DELETED", limit.orElse(
-            MAX_RETURNED_REPAIR_RUNS)))
-    );
-    repairRunFutures.add(
-        session.executeAsync(getRepairRunForClusterWhereStatusPrepStmt.bind(clusterName, "DONE", limit.orElse(
-            MAX_RETURNED_REPAIR_RUNS)))
-    );
-
+    // We've set up the RunState enum so that values are declared in order of "interestingness",
+    // we iterate over the table via the secondary index according to that ordering.
+    for (RunState state : RepairRun.RunState.values()) {
+      repairRunFutures.add(
+          session
+              .executeAsync(getRepairRunForClusterWhereStatusPrepStmt
+                  .bind(clusterName, state.toString(), limit.orElse(MAX_RETURNED_REPAIR_RUNS)
+                  )
+              )
+      );
+    }
     List<RepairRun> flattenedRows = Lists.<RepairRun>newArrayList();
     repairRunFutures
         .stream()
